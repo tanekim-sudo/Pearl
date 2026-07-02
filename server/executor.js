@@ -78,7 +78,7 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
       timeoutMs: phase.timeoutMs,
       research: fallbackSearch,
       maxSearchUses: 2,
-      temperature: fast ? 0.35 : 0.4,
+      temperature: fast ? 0.2 : 0.4,
       compact: fast,
     });
     return { output: outputs[0] || "" };

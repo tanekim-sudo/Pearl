@@ -1,12 +1,13 @@
 /** Transform primitive grammar — single source of truth for toolbox + highlighter. */
 
 import { scaleEta } from "./eta.js";
+import { PRIMITIVE_SYSTEM } from "./primitive-output.js";
+
+export { PRIMITIVE_SYSTEM };
 
 /** Legacy phase overhead before ETA_SCALE (resolve / research). */
 const PRIMITIVE_RESOLVE_ETA_MS = 18000;
 const PRIMITIVE_RESEARCH_ETA_MS = 42000;
-
-export const PRIMITIVE_SYSTEM = `One perceptual step on a thinking canvas. Return ONLY the transformed text. Stay on the input subject.`;
 
 export const TRANSFORM_PRIMITIVES = [
   {
@@ -33,7 +34,7 @@ export const TRANSFORM_PRIMITIVES = [
     resolveWhen: "never",
     researchWhen: "never",
     description: "Unfold implications and detail",
-    prompt: "What else?",
+    prompt: "Unfold.",
     maxTokens: 1400,
     estimatedMs: 18000,
   },

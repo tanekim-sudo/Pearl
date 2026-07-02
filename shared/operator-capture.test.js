@@ -36,7 +36,7 @@ describe("operator capture abstraction", () => {
       [id]: { id, kind: "prompt", name: "expand", moveRef: { kind: "primitive", id: expand.id, name: "expand" } },
     };
     const hydrated = hydrateOperatorMap(map, TRANSFORM_PRIMITIVES, "root");
-    assert.match(hydrated[id].prompt, /What else/i);
+    assert.match(hydrated[id].prompt, /Unfold/i);
     assert.ok(hydrated[id].primitive);
   });
 

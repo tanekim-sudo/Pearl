@@ -21,7 +21,14 @@ import {
   isInternalMetadataOutput,
   deliverableRewritePrompt,
 } from "../shared/deliverable-quality.js";
-import { FAST_FUNCTION_ARCHITECT_STANDARDS } from "../shared/function-standards.js";
+import { sanitizePrimitiveOutput, isPrimitiveMetaOutput } from "../shared/primitive-output.js";
+import {
+  DEEP_FUNCTION_ARCHITECT_STANDARDS,
+  DECOMPOSE_PROMPT_HEADER,
+  CREATE_FROM_PROSE_HEADER,
+  EDIT_FROM_PROSE_HEADER,
+  GENERATE_LIST_HEADER,
+} from "../shared/function-standards.js";
 import {
   createOperatorBundle,
   createLensShareBundle,
@@ -346,14 +353,14 @@ function parseJSON(raw) {
   throw new Error("AI returned invalid JSON. Tap ↻ to rebuild, or try again.");
 }
 
-// Teaches Claude how to architect lens functions (compact — faster creation).
-const LENS_SYSTEM = `You architect functions for "lens" — a thinking whiteboard. Users drag functions onto notes and get deliverables.
+// Teaches Claude how to architect deep function trees for the thinking canvas.
+const LENS_SYSTEM = `You architect functions for Lens — a thinking canvas where users drag symbolic transformation pipelines onto sparse notes.
 
-RUNTIME: plans compile to 1–3 phases — resolve (sparse only, if identify-subject leaf exists) → research (only if a leaf has research:true) → synthesize (all other steps merged).
+RUNTIME: plans compile to phases — resolve (internal, sparse input only) → research (one leaf max with research:true) → synthesize (all perceptual moves merged). Resolve/research are NEVER user-facing deliverables.
 
-Design leaves as short perceptual moves. ONE research leaf max per function.
+Design deep trees of perceptual moves — each composite names a real thinking phase; each leaf is one precise cognitive transformation producing one clear output shape.
 
-${FAST_FUNCTION_ARCHITECT_STANDARDS}
+${DEEP_FUNCTION_ARCHITECT_STANDARDS}
 
 Return ONLY valid JSON.`;
 
@@ -458,22 +465,21 @@ async function generateFunctionList(role, operators, opMap) {
   const hasLib = operators?.length > 0;
   const prompt = `The user is a: ${role}.
 
-Design the 8 most valuable FUNCTIONS for their lens whiteboard. Each produces a FULL professional deliverable — never internal metadata (ENTITY/SEARCH_TERMS).
+${GENERATE_LIST_HEADER}
 
-NEVER suggest: "identify subject", "extract entity", "comp universe criteria" as standalone functions.
+Each function is dragged onto a sparse whiteboard note (a word, company name, fragment) and produces a FULL professional deliverable. Functions are visible transformation pipelines — not hidden prompts.
 
-${hasLib ? "Complement existing library — no duplicate names or purposes.\n" : ""}
+NEVER suggest: "identify subject", "extract entity", or metadata-only steps as standalone functions.
+
+${hasLib ? "Complement the user's existing library — no duplicate names or purposes.\n" : ""}
+Think from THIS person's daily work: what deliverables do they repeatedly need? What thinking moves would they perform mentally — now made visible as draggable functions?
+
 For each function:
-- "name": 3–7 words — specific and descriptive (e.g. "Build Full Investment Thesis", "Write IC Investment Memo", "Map Comparable Companies")
-- "description": one sentence stating input → exact deliverable shape (sections, format, decision output)
+- "name": 3–7 words — names a real workflow (e.g. "Build Investment Thesis", "Refine Product Vision", "Synthesize Literature Review")
+- "description": one sentence — sparse canvas input → exact deliverable shape (sections, format, decision output)
 
-Investor examples:
-- "Build Full Investment Thesis" → structured thesis with Thesis, Market, Product, Traction, Team, Risks, Upside, Recommendation
-- "Write IC Investment Memo" → executive summary, highlights, business overview, risks, recommendation
-- "Map Comparable Companies" → table of comps with positioning and metrics
-
-Return ONLY JSON: {"functions":[{"name":"...","description":"..."}]} — exactly 8, ordered by frequency. No markdown, no commentary outside the JSON object.`;
-  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 2000 });
+Return ONLY JSON: {"functions":[{"name":"...","description":"..."}]} — exactly 8, ordered by daily frequency. No markdown, no commentary.`;
+  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 4096 });
   const j = parseJSON(out);
   if (Array.isArray(j.functions) && j.functions.length) return j.functions.slice(0, 8);
   if (Array.isArray(j) && j.length) return j.slice(0, 8);
@@ -482,25 +488,32 @@ Return ONLY JSON: {"functions":[{"name":"...","description":"..."}]} — exactly
 
 // decompose one function into a deep tree of sub-functions ending in primitives
 async function decomposeFunction(role, fn, operators, opMap) {
-  const prompt = `Role: ${role}. Decompose into 2–4 steps: optional research leaf (research:true) → deliverable leaf with markdown sections.
+  const prompt = `Role: ${role}.
 
-NEVER create "identify subject", "extract entity", or SEARCH_TERMS-only steps — those are internal, not user-facing deliverables.
+${DECOMPOSE_PROMPT_HEADER}
+
+NEVER create "identify subject", "extract entity", or SEARCH_TERMS-only steps — runtime handles sparse input internally.
 
 FUNCTION: ${fn.name}
 ${fn.description ? `Description: ${fn.description}` : ""}
 
-Final leaf must output polished markdown sections for the user, not ENTITY/SEARCH metadata.
+Requirements:
+- Complex deliverables: ≥3 tree levels with named thinking phases (Frame → Research → Analyze → Synthesize)
+- No depth cap — nest composites as deep as complexity warrants
+- Exactly ONE leaf with "research":true when facts ground the deliverable
+- Final deliverable leaf outputs polished markdown sections, never ENTITY/SEARCH metadata
+- Each composite groups real cognitive phases; each leaf is one precise perceptual move
 
-JSON only:
-{"name":"...","description":"...","steps":[{"name":"...","description":"...","prompt":"..."},...]}`;
-  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 4096 });
+JSON only — complete nested tree:
+{"name":"...","description":"...","steps":[{"name":"...","description":"...","steps":[...]},{"name":"...","research":true,"prompt":"..."},{"name":"...","prompt":"..."}]}`;
+  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 8192 });
   try {
     return parseJSON(out);
   } catch {
     const retry = await runClaude(
-      `${prompt}\n\nInvalid JSON. Return ONLY one minified JSON object.`,
+      `${prompt}\n\nInvalid JSON. Return ONLY one minified JSON object with the full nested tree.`,
       "",
-      { system: librarySystem(operators, opMap), maxTokens: 4096 }
+      { system: librarySystem(operators, opMap), maxTokens: 8192 }
     );
     return parseJSON(retry);
   }
@@ -673,25 +686,27 @@ async function runMoveSequence(op, map, material, image, onProgress, operators, 
 
 // create a full function from the user's plain-English description
 async function createFunctionFromProse(description, operators, opMap) {
-  const prompt = `Create a function for the lens whiteboard.
+  const prompt = `${CREATE_FROM_PROSE_HEADER}
 
 User description:
 """
 ${description}
 """
 
-Return a tree: 2–4 sub-steps, leaves with short one-line prompts. Match their library style.
+Build a deep tree: named thinking phases as composites, precise leaves as perceptual moves. Complex tasks need ≥3 levels. ONE research leaf max. Final leaf outputs polished markdown sections.
 
-JSON only:
-{"name":"...","description":"...","steps":[{"name":"...","description":"...","steps":[...] OR "prompt":"..."}]}`;
-  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 4096 });
+Match the user's library style and vocabulary.
+
+JSON only — complete nested tree:
+{"name":"...","description":"...","steps":[{"name":"...","description":"...","steps":[...]},{"name":"...","research":true,"prompt":"..."},{"name":"...","prompt":"..."}]}`;
+  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 8192 });
   try {
     return parseJSON(out);
   } catch {
     const retry = await runClaude(
-      `${prompt}\n\nInvalid JSON before. Return ONLY one minified JSON object.`,
+      `${prompt}\n\nInvalid JSON before. Return ONLY one minified JSON object with the full nested tree.`,
       "",
-      { system: librarySystem(operators, opMap), maxTokens: 4096 }
+      { system: librarySystem(operators, opMap), maxTokens: 8192 }
     );
     return parseJSON(retry);
   }
@@ -700,7 +715,7 @@ JSON only:
 // edit an existing function tree from the user's prose instruction
 async function editFunctionWithProse(op, opMap, instruction, operators) {
   const current = serializeTree(op, opMap);
-  const prompt = `Edit this function. Preserve what wasn't asked to change. Short one-line leaf prompts.
+  const prompt = `${EDIT_FROM_PROSE_HEADER}
 
 CURRENT:
 ${current}
@@ -710,16 +725,18 @@ CHANGES:
 ${instruction}
 """
 
-JSON only — complete updated tree:
-{"name":"...","description":"...","steps":[...] OR "prompt":"..."}`;
-  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 4096 });
+When adding steps, decompose into meaningful nested phases — not flat lazy lists. ONE research leaf max. Final deliverable leaf outputs polished markdown.
+
+JSON only — complete updated nested tree:
+{"name":"...","description":"...","steps":[{"name":"...","description":"...","steps":[...]},{"name":"...","prompt":"..."}]}`;
+  const out = await runClaude(prompt, "", { system: librarySystem(operators, opMap), maxTokens: 8192 });
   try {
     return parseJSON(out);
   } catch {
     const retry = await runClaude(
-      `${prompt}\n\nInvalid JSON. Return ONLY one minified JSON object.`,
+      `${prompt}\n\nInvalid JSON. Return ONLY one minified JSON object with the full nested tree.`,
       "",
-      { system: librarySystem(operators, opMap), maxTokens: 4096 }
+      { system: librarySystem(operators, opMap), maxTokens: 8192 }
     );
     return parseJSON(retry);
   }
@@ -2362,7 +2379,9 @@ export default function App() {
       await runMoveSequence(execOp, map, text, image, onProgress, operators, async ({ out: stepOut, stepOp }) => {
         patchJob(jobId, { step: "spawning object…", progress: 0.92 });
         pushHistory();
-        const polished = await polishDeliverable(stepOut, stepOp, text);
+        const polished = isTransformPrimitive(stepOp)
+          ? sanitizePrimitiveOutput(stepOut)
+          : await polishDeliverable(stepOut, stepOp, text);
         const result = spawnTransformOutputs([polished], chainParentIds, atWorld, viaFromOp(stepOp, chainParentIds), {
           anchorBox: chainAnchor || undefined,
         });
@@ -2422,10 +2441,17 @@ export default function App() {
     }
 
     if (!out?.trim()) throw new Error("empty output");
-    patchJob(jobId, { step: "polishing deliverable…", progress: 0.95 });
-    out = await polishDeliverable(out, execOp, text);
-    if (isInternalMetadataOutput(out)) {
-      throw new Error("output looks like internal metadata — try a full function, not a resolve step");
+    if (isTransformPrimitive(execOp)) {
+      out = sanitizePrimitiveOutput(out);
+      if (!out?.trim() || isPrimitiveMetaOutput(out)) {
+        throw new Error(`${execOp.name}: got commentary instead of transformed text — try again`);
+      }
+    } else {
+      patchJob(jobId, { step: "polishing deliverable…", progress: 0.95 });
+      out = await polishDeliverable(out, execOp, text);
+      if (isInternalMetadataOutput(out)) {
+        throw new Error("output looks like internal metadata — try a full function, not a resolve step");
+      }
     }
     patchJob(jobId, { step: "spawning object…", progress: 0.98 });
     const atWorld = atClient ? clientToWorld(atClient.x, atClient.y) : null;

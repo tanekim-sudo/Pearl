@@ -106,7 +106,7 @@ export async function runPrompt({
       max_tokens,
       system: sys,
       messages: [{ role: "user", content: blocks }],
-      temperature: temperature ?? (research ? 0.25 : 0.5),
+      temperature: temperature ?? (research ? 0.25 : compact ? 0.2 : 0.5),
     };
     if (research) params.tools = [WEB_SEARCH_TOOL(maxSearchUses)];
 

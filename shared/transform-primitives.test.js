@@ -48,7 +48,7 @@ describe("transform primitives", () => {
     const plan = compileExecutionPlan(expand, { [expand.id]: expand }, material);
     assert.equal(plan.phases.length, 1);
     assert.equal(plan.phases[0].id, "synthesize");
-    assert.match(plan.phases[0].prompt, /What else/i);
+    assert.match(plan.phases[0].prompt, /Unfold/i);
     assert.ok(plan.fastPath);
   });
 
