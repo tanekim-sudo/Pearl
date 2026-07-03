@@ -272,6 +272,44 @@ const ROLES = [
 ];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+/** Normalize persisted lenses toward git-for-perception metadata. */
+function normalizeLens(l) {
+  if (!l || typeof l !== "object") return l;
+  const createdAt = l.createdAt || l.evolvedAt || Date.now();
+  return {
+    ...l,
+    version: l.version || (l.evolvedAt ? 2 : 1),
+    createdAt,
+    updatedAt: l.updatedAt || l.evolvedAt || createdAt,
+    uploaded: !!(l.uploaded || l.inherited),
+  };
+}
+
+function lensMetaLines(lens, lenses) {
+  const nameOf = (id) => lenses.find((x) => x.id === id)?.name || lens.parentName || lens.forkedFromName || "unknown";
+  const lines = [];
+  if ((lens.version || 1) > 1) lines.push(`v${lens.version}`);
+  if (lens.parentId) {
+    const p = lenses.find((x) => x.id === lens.parentId);
+    lines.push(`branched from “${p?.name || lens.parentName || "unknown"}”`);
+  } else if (lens.parentName) {
+    lines.push(`branched from “${lens.parentName}”`);
+  }
+  if (lens.forkedFrom) {
+    const f = lenses.find((x) => x.id === lens.forkedFrom);
+    lines.push(`forked from “${f?.name || lens.forkedFromName || "unknown"}”`);
+  } else if (lens.forkedFromName) {
+    lines.push(`forked from “${lens.forkedFromName}”`);
+  }
+  if (lens.mergedFrom?.length === 2) {
+    lines.push(`⚭ merged “${nameOf(lens.mergedFrom[0])}” + “${nameOf(lens.mergedFrom[1])}”`);
+  } else if (lens.mergedFromNames?.length === 2) {
+    lines.push(`⚭ merged “${lens.mergedFromNames[0]}” + “${lens.mergedFromNames[1]}”`);
+  }
+  if (lens.uploaded) lines.push("uploaded");
+  return lines;
+}
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 function extractBalancedJSON(s, open, close) {
@@ -1625,7 +1663,7 @@ export default function App() {
   // walking: { nodeId, title, steps: [...], stepIndex } — derived from a node's history on demand
   const [walking, setWalking] = useState(null);
   // lenses: named sets of recurring moves — git for perception
-  const [lenses, setLenses] = useState(() => load(LENSES_KEY, []));
+  const [lenses, setLenses] = useState(() => load(LENSES_KEY, []).map(normalizeLens));
   const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
   const [lensEditor, setLensEditor] = useState(null); // { id|null, name, moveIds }
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
@@ -3183,7 +3221,7 @@ export default function App() {
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
   const activeLens = lenses.find((l) => l.id === activeLensId) || null;
 
-  // ---- lenses: create, evolve, merge, compare, inherit — git for perception ----
+  // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
   function saveLens(draft) {
     const name = (draft.name || "").trim() || "unnamed lens";
     const moveIds = [...new Set(draft.moveIds || [])];
@@ -3193,16 +3231,59 @@ export default function App() {
     }
     if (draft.id) {
       setLenses((ls) =>
-        ls.map((l) => (l.id === draft.id ? { ...l, name, moveIds, evolvedAt: Date.now() } : l))
+        ls.map((l) => {
+          if (l.id !== draft.id) return l;
+          const version = (l.version || 1) + 1;
+          return { ...l, name, moveIds, version, updatedAt: Date.now() };
+        })
       );
-      showToast(`lens evolved · ${name}`);
+      const nextVersion = (lenses.find((l) => l.id === draft.id)?.version || 1) + 1;
+      showToast(`Evolved · ${name} · v${nextVersion}`);
     } else {
-      const lens = { id: uid(), name, moveIds, createdAt: Date.now() };
+      const now = Date.now();
+      const lens = { id: uid(), name, moveIds, version: 1, createdAt: now, updatedAt: now };
       setLenses((ls) => [lens, ...ls]);
       setActiveLensId(lens.id);
-      showToast(`lens created · ${name} — now active`);
+      showToast(`Created · ${name} — now active`);
     }
     setLensEditor(null);
+  }
+
+  function branchLens(parentId) {
+    const parent = lenses.find((l) => l.id === parentId);
+    if (!parent) return;
+    const now = Date.now();
+    const lens = {
+      id: uid(),
+      name: `${parent.name} · branch`.slice(0, 60),
+      moveIds: [...(parent.moveIds || [])],
+      parentId,
+      lineage: [...(parent.lineage || []), parentId],
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setLenses((ls) => [lens, ...ls]);
+    setActiveLensId(lens.id);
+    showToast(`Branched · ${lens.name}`);
+  }
+
+  function forkLens(sourceId) {
+    const source = lenses.find((l) => l.id === sourceId);
+    if (!source) return;
+    const now = Date.now();
+    const lens = {
+      id: uid(),
+      name: `${source.name} · fork`.slice(0, 60),
+      moveIds: [...(source.moveIds || [])],
+      forkedFrom: sourceId,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setLenses((ls) => [lens, ...ls]);
+    setActiveLensId(lens.id);
+    showToast(`Forked · ${lens.name}`);
   }
 
   function mergeLenses(aId, bId) {
@@ -3210,15 +3291,19 @@ export default function App() {
     const a = lenses.find((x) => x.id === aId);
     const b = lenses.find((x) => x.id === bId);
     if (!a || !b) return;
+    const now = Date.now();
     const lens = {
       id: uid(),
       name: `${a.name} ⚭ ${b.name}`.slice(0, 60),
       moveIds: [...new Set([...(a.moveIds || []), ...(b.moveIds || [])])],
       mergedFrom: [a.id, b.id],
-      createdAt: Date.now(),
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
     };
     setLenses((ls) => [lens, ...ls]);
-    showToast(`lenses merged · ${lens.name}`);
+    setActiveLensId(lens.id);
+    showToast(`Merged · ${lens.name}`);
   }
 
   function deleteLens(id) {
@@ -3233,8 +3318,9 @@ export default function App() {
   }
 
   function importLensData(data, opts = {}) {
-    const name = data.name || data.lens?.name || "uploaded lens";
-    const opTrees = data.opTrees || data.lens?.opTrees;
+    const payload = data.lens || data;
+    const name = payload.name || data.name || "uploaded lens";
+    const opTrees = payload.opTrees || data.opTrees;
     if (!Array.isArray(opTrees) || !opTrees.length) throw new Error("not a lens");
     const moveIds = [];
     const newOps = [];
@@ -3249,13 +3335,19 @@ export default function App() {
       moveIds.push(rootId);
     }
     if (newOps.length) setOperators((prev) => [...prev, ...newOps]);
-    const lens = {
+    const now = Date.now();
+    const lens = normalizeLens({
       id: uid(),
       name,
       moveIds,
-      inherited: true,
-      createdAt: Date.now(),
-    };
+      version: payload.version || data.version || 1,
+      parentName: payload.parentName || null,
+      forkedFromName: payload.forkedFromName || null,
+      mergedFromNames: payload.mergedFromNames || null,
+      uploaded: true,
+      createdAt: now,
+      updatedAt: now,
+    });
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
     setRailTab("functions");
@@ -3358,7 +3450,7 @@ export default function App() {
           });
           break;
         case "lens":
-          importLensData({ name: bundle.lens.name, opTrees: bundle.lens.opTrees }, { silent: fromWelcome });
+          importLensData(bundle.lens, { silent: fromWelcome });
           if (fromWelcome) showToast("Added to laboratory");
           break;
         case "symbol": {
@@ -3458,7 +3550,21 @@ export default function App() {
       .map((oid) => opMap[oid])
       .filter(Boolean)
       .map((op) => opToJsonTree(op, opMap));
-    copyShareLink(createLensShareBundle(l.name, opTrees, { name: l.name }));
+    const parent = l.parentId ? lenses.find((x) => x.id === l.parentId) : null;
+    const forked = l.forkedFrom ? lenses.find((x) => x.id === l.forkedFrom) : null;
+    const mergedFromNames =
+      l.mergedFrom?.length === 2
+        ? l.mergedFrom.map((mid) => lenses.find((x) => x.id === mid)?.name).filter(Boolean)
+        : l.mergedFromNames || null;
+    copyShareLink(
+      createLensShareBundle(l.name, opTrees, {
+        name: l.name,
+        version: l.version || 1,
+        parentName: parent?.name || l.parentName || undefined,
+        forkedFromName: forked?.name || l.forkedFromName || undefined,
+        mergedFromNames: mergedFromNames?.length === 2 ? mergedFromNames : undefined,
+      })
+    );
   }
 
   function shareSymbolStruct(struct) {
@@ -4205,16 +4311,22 @@ export default function App() {
                       active={lens.id === activeLensId}
                       opMap={opMap}
                       lenses={lenses}
-                      comparing={lensCompare?.aId === lens.id && !lensCompare?.bId}
+                      comparing={
+                        lensCompare?.aId === lens.id ||
+                        (lensCompare?.bId === lens.id && !!lensCompare?.bId)
+                      }
+                      comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId}
                       onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)}
                       onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })}
+                      onBranch={() => branchLens(lens.id)}
+                      onFork={() => forkLens(lens.id)}
                       onSend={() => exportLens(lens.id)}
                       onCompare={() => {
                         if (lensCompare?.aId && lensCompare.aId !== lens.id) {
                           setLensCompare({ aId: lensCompare.aId, bId: lens.id });
                         } else {
                           setLensCompare({ aId: lens.id });
-                          showToast("now pick the lens to compare against");
+                          showToast("pick another lens to Compare");
                         }
                       }}
                       onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
@@ -4331,7 +4443,7 @@ export default function App() {
         )}
         <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
         {railTab === "functions" && (
-          <div className="rail-hint">drag anything onto canvas · drop op on op to compound · lenses merge on drop</div>
+          <div className="rail-hint">drag onto canvas · drop lens on lens to Merge · git for perception</div>
         )}
         {railTab === "structures" && (
           <div className="rail-hint">drop selection here to save · drag onto canvas to plant</div>
@@ -5330,21 +5442,42 @@ function DraggableStep({ step, opMap, expanded, onToggle, onEdit, depth }) {
   );
 }
 
-function LensCard({ lens, active, opMap, lenses, comparing, onUse, onEvolve, onSend, onCompare, onMergeDrop, onDelete }) {
+function LensCard({
+  lens,
+  active,
+  opMap,
+  lenses,
+  comparing,
+  comparePick,
+  onUse,
+  onEvolve,
+  onBranch,
+  onFork,
+  onSend,
+  onCompare,
+  onMergeDrop,
+  onDelete,
+}) {
   const [mergeOver, setMergeOver] = useState(false);
   const moveNames = (lens.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
-  const parentName = (id) => lenses.find((l) => l.id === id)?.name || "a lost lens";
+  const metaLines = lensMetaLines(lens, lenses);
   return (
     <div
-      className={"lens-card" + (active ? " active" : "") + (mergeOver ? " merge-over" : "") + (comparing ? " comparing" : "")}
+      className={
+        "lens-card" +
+        (active ? " active" : "") +
+        (mergeOver ? " merge-over" : "") +
+        (comparing ? " comparing" : "")
+      }
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(LENS_MIME, lens.id);
-        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.effectAllowed = "copyMove";
       }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(LENS_MIME)) {
           e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
           setMergeOver(true);
         }
       }}
@@ -5358,35 +5491,56 @@ function LensCard({ lens, active, opMap, lenses, comparing, onUse, onEvolve, onS
           onMergeDrop(draggedId);
         }
       }}
-      title="drag onto canvas to apply · drop onto another lens to merge"
+      title="drag onto canvas · drop another lens here to Merge"
     >
       <div className="lens-card-top">
-        <span className="op-drag-grip" title="drag onto canvas">⠿</span>
+        <span className="op-drag-grip" title="drag onto canvas">
+          ⠿
+        </span>
         <span className="lens-card-name">{lens.name}</span>
-        {active && <span className="lens-card-live">looking through</span>}
+        <span className="lens-card-badges">
+          {(lens.version || 1) > 1 && <span className="lens-badge">v{lens.version}</span>}
+          {active && <span className="lens-card-live">active</span>}
+        </span>
       </div>
       <div className="lens-card-moves">
         {moveNames.slice(0, 6).map((n, i) => (
-          <span key={i} className="lens-move-chip">{n}</span>
+          <span key={i} className="lens-move-chip">
+            {n}
+          </span>
         ))}
         {moveNames.length > 6 && <span className="lens-move-chip more">+{moveNames.length - 6}</span>}
       </div>
-      <div className="lens-card-meta">
-        {lens.mergedFrom && <span>⚭ merged from “{parentName(lens.mergedFrom[0])}” + “{parentName(lens.mergedFrom[1])}”</span>}
-        {lens.inherited && <span>uploaded</span>}
-      </div>
+      {metaLines.length > 0 && (
+        <div className="lens-card-meta">
+          {metaLines.map((line, i) => (
+            <span key={i}>{line}</span>
+          ))}
+        </div>
+      )}
+      {mergeOver && <div className="lens-merge-hint">Merge here</div>}
       <div className="lens-card-actions">
-        <button className={"lens-btn" + (active ? " on" : "")} onClick={onUse} title="make this your quick palette">
-          {active ? "◉ in use" : "use"}
+        <button className={"lens-btn" + (active ? " on" : "")} onClick={onUse} title="activate this lens palette">
+          {active ? "Active" : "Use"}
         </button>
-        <button className="lens-btn" onClick={onEvolve} title="evolve — change its moves">
-          evolve
+        <button className="lens-btn" onClick={onEvolve} title="Evolve — update moves in place">
+          Evolve
         </button>
-        <button className={"lens-btn" + (comparing ? " on" : "")} onClick={onCompare} title="compare with another lens">
-          ≍
+        <button className="lens-btn" onClick={onBranch} title="Branch — experiment, keep lineage">
+          Branch
         </button>
-        <button className="lens-btn" onClick={onSend} title="copy share link">
-          ↗
+        <button className="lens-btn" onClick={onFork} title="Fork — independent copy">
+          Fork
+        </button>
+        <button
+          className={"lens-btn" + (comparing || comparePick ? " on" : "")}
+          onClick={onCompare}
+          title="Compare — diff two lenses"
+        >
+          Compare
+        </button>
+        <button className="lens-btn" onClick={onSend} title="Share — copy link">
+          Share
         </button>
         <button className="lens-btn danger" onClick={onDelete} title="delete lens">
           ×
@@ -5462,33 +5616,95 @@ function LensEditor({ draft, groups, onChange, onSave, onClose }) {
 function LensComparePanel({ a, b, opMap, onClose }) {
   if (!a || !b) return null;
   const nameOf = (id) => opMap[id]?.name || "?";
-  const aSet = new Set(a.moveIds || []);
-  const bSet = new Set(b.moveIds || []);
+  const aOrder = a.moveIds || [];
+  const bOrder = b.moveIds || [];
+  const aSet = new Set(aOrder);
+  const bSet = new Set(bOrder);
   const shared = [...aSet].filter((id) => bSet.has(id));
   const onlyA = [...aSet].filter((id) => !bSet.has(id));
   const onlyB = [...bSet].filter((id) => !aSet.has(id));
+  const chipClass = (id, side) => {
+    const inOther = side === "a" ? bSet.has(id) : aSet.has(id);
+    if (inOther) return "lens-move-chip shared";
+    return "lens-move-chip unique";
+  };
   return (
     <div className="onboard-scrim" onClick={onClose}>
       <div className="lens-compare" onClick={(e) => e.stopPropagation()}>
         <h3 className="lens-editor-title">
-          “{a.name}” ≍ “{b.name}”
+          Compare · “{a.name}” ≍ “{b.name}”
         </h3>
         <p className="lens-editor-sub">
-          Two ways of seeing, side by side. The shared moves are common ground; the unique ones are
-          each lens's signature.
+          Move sequences side by side — shared moves in yellow, unique moves highlighted per lens.
         </p>
+        <div className="lens-compare-seq">
+          <div className="lens-compare-seq-col">
+            <div className="rail-section">{a.name}</div>
+            <div className="lens-compare-seq-row">
+              {aOrder.length ? (
+                aOrder.map((id, i) => (
+                  <React.Fragment key={id + i}>
+                    {i > 0 && <span className="lens-seq-arrow">→</span>}
+                    <span className={chipClass(id, "a")}>{nameOf(id)}</span>
+                  </React.Fragment>
+                ))
+              ) : (
+                <span className="lens-compare-none">empty</span>
+              )}
+            </div>
+          </div>
+          <div className="lens-compare-seq-col">
+            <div className="rail-section">{b.name}</div>
+            <div className="lens-compare-seq-row">
+              {bOrder.length ? (
+                bOrder.map((id, i) => (
+                  <React.Fragment key={id + i}>
+                    {i > 0 && <span className="lens-seq-arrow">→</span>}
+                    <span className={chipClass(id, "b")}>{nameOf(id)}</span>
+                  </React.Fragment>
+                ))
+              ) : (
+                <span className="lens-compare-none">empty</span>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="lens-compare-cols">
           <div className="lens-compare-col">
             <div className="rail-section">only “{a.name}”</div>
-            {onlyA.length ? onlyA.map((id) => <span key={id} className="lens-move-chip">{nameOf(id)}</span>) : <span className="lens-compare-none">nothing unique</span>}
+            {onlyA.length ? (
+              onlyA.map((id) => (
+                <span key={id} className="lens-move-chip unique">
+                  {nameOf(id)}
+                </span>
+              ))
+            ) : (
+              <span className="lens-compare-none">nothing unique</span>
+            )}
           </div>
           <div className="lens-compare-col shared">
             <div className="rail-section">shared</div>
-            {shared.length ? shared.map((id) => <span key={id} className="lens-move-chip shared">{nameOf(id)}</span>) : <span className="lens-compare-none">no common ground</span>}
+            {shared.length ? (
+              shared.map((id) => (
+                <span key={id} className="lens-move-chip shared">
+                  {nameOf(id)}
+                </span>
+              ))
+            ) : (
+              <span className="lens-compare-none">no common ground</span>
+            )}
           </div>
           <div className="lens-compare-col">
             <div className="rail-section">only “{b.name}”</div>
-            {onlyB.length ? onlyB.map((id) => <span key={id} className="lens-move-chip">{nameOf(id)}</span>) : <span className="lens-compare-none">nothing unique</span>}
+            {onlyB.length ? (
+              onlyB.map((id) => (
+                <span key={id} className="lens-move-chip unique">
+                  {nameOf(id)}
+                </span>
+              ))
+            ) : (
+              <span className="lens-compare-none">nothing unique</span>
+            )}
           </div>
         </div>
         <div className="lens-editor-foot">

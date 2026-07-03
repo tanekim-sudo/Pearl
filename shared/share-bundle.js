@@ -22,11 +22,17 @@ export function createOperatorBundle(opTree, meta = {}) {
 }
 
 export function createLensShareBundle(name, opTrees, meta = {}) {
+  const { version, parentName, forkedFromName, mergedFromNames, ...restMeta } = meta;
+  const lens = { name, opTrees };
+  if (version != null) lens.version = version;
+  if (parentName) lens.parentName = parentName;
+  if (forkedFromName) lens.forkedFromName = forkedFromName;
+  if (mergedFromNames?.length) lens.mergedFromNames = mergedFromNames;
   return {
     v: SHARE_BUNDLE_VERSION,
     kind: "lens",
-    lens: { name, opTrees },
-    meta: createShareMeta(name, meta),
+    lens,
+    meta: createShareMeta(name, restMeta),
   };
 }
 

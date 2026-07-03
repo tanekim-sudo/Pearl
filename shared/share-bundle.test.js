@@ -64,6 +64,21 @@ describe("share-bundle", () => {
     assert.equal(decoded.bundle.path.items.length, 1);
   });
 
+  it("round-trips lens bundle with lineage metadata", () => {
+    const bundle = createLensShareBundle(
+      "garden lens",
+      [{ name: "garden" }, { name: "compress" }],
+      { name: "garden lens", version: 3, parentName: "base lens", forkedFromName: "other" }
+    );
+    assert.equal(bundle.lens.version, 3);
+    assert.equal(bundle.lens.parentName, "base lens");
+    const token = encodeShareBundle(bundle);
+    const decoded = decodeShareToken(token);
+    assert.equal(decoded.ok, true);
+    assert.equal(decoded.bundle.lens.version, 3);
+    assert.equal(decoded.bundle.lens.opTrees.length, 2);
+  });
+
   it("normalizes legacy lens-lens", () => {
     const legacy = { kind: "lens-lens", version: 1, name: "my lens", opTrees: [{ name: "move" }] };
     const bundle = normalizeLegacyShare(legacy);
