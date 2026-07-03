@@ -42,8 +42,25 @@ import {
   shareDestinationLabel,
 } from "../shared/share-bundle.js";
 import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
+import ThoughtsSidebar from "./components/ThoughtsSidebar.jsx";
+import TopToolbar, { FunctionsDrawer } from "./components/TopToolbar.jsx";
+import RightPalette from "./components/RightPalette.jsx";
+import BottomBar from "./components/BottomBar.jsx";
+import BoardBlockItem from "./components/BoardBlockItem.jsx";
+import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
+import {
+  blockWidth,
+  blockHeight,
+  defaultBlockContent,
+  defaultBlockMeta,
+  isTransformableBlock,
+} from "./lib/board-item-utils.js";
 
 const ITEMS_KEY = "lens.board.items.v1";
+const PAGES_KEY = "lens.board.pages.v1";
+const DOC_TITLE_KEY = "lens.doc.title.v1";
+const DOC_STAR_KEY = "lens.doc.star.v1";
+const THEME_KEY = "lens.theme.v1";
 const CAMERA_KEY = "lens.board.camera.v1";
 const OPERATORS_KEY = "lens.board.operators.v2";
 const LEGACY_OPERATORS_KEY = "lens.board.operators.v1";
@@ -61,7 +78,7 @@ const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 72; // px — generous snap when dragging functions onto ideas
 
-const INK = "#f0f0f0";
+const INK = "var(--ink-stroke)";
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
 const HIGHLIGHT_INK = "#f5e6a3";
@@ -91,7 +108,14 @@ const EXPAND_DIRS = [
  */
 
 function isNoteItem(it) {
-  return it && (it.type === "text" || it.type === "image");
+  return it && isTransformableBlock(it);
+}
+
+function itemVisibleOnPage(it, pageId, worldFilter) {
+  if (!it || it.type === "link") return false;
+  if ((it.pageId || DEFAULT_PAGE_ID) !== pageId) return false;
+  if (worldFilter && it.world && it.world !== worldFilter) return false;
+  return true;
 }
 
 function noteCenter(it) {
@@ -811,10 +835,18 @@ function normalizeItem(it) {
   if (it.type === "link") {
     return { id: it.id, type: "link", fromId: it.fromId, toId: it.toId, fromDir: it.fromDir || null };
   }
-  const base = { rotation: 0, scale: 1, ...it };
+  const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, ...it };
   if (!base.bornAt) base.bornAt = Date.now();
   if (base.type === "text" && !base.w) base.w = 360;
   if (base.type === "image" && !base.h && base.w) base.h = Math.round(base.w * 0.75);
+  if (base.type === "sticky" && !base.color) base.color = "yellow";
+  if (base.type === "callout" && !base.variant) base.variant = "observation";
+  if (base.type === "diagram" && !base.nodes) {
+    base.nodes = defaultBlockMeta("diagram").nodes;
+    base.title = base.title || "Ideas";
+  }
+  if (base.type === "table" && !base.rows) base.rows = defaultBlockMeta("table").rows;
+  if (base.type === "voice" && !base.waveform) base.waveform = defaultBlockMeta("voice").waveform;
   return base;
 }
 
@@ -851,9 +883,28 @@ function itemWorldBBox(it) {
     const h = it.h || Math.round(w * 0.75);
     return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
   }
-  if (it.type === "text") {
-    const w = it.w || 360;
+  if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math") {
+    const w = blockWidth(it) || it.w || 360;
     const h = itemHeight(it);
+    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  }
+  if (it.type === "voice") {
+    const w = it.w || 260;
+    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + 56 };
+  }
+  if (it.type === "diagram") {
+    const w = it.w || 320;
+    const h = it.h || 160;
+    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  }
+  if (it.type === "table") {
+    const w = it.w || 320;
+    const h = itemHeight(it);
+    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  }
+  if (it.type === "video") {
+    const w = it.w || 280;
+    const h = it.h || 158;
     return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
   }
   return null;
@@ -948,8 +999,8 @@ async function gatherMaterialFromItems(itemList) {
 }
 
 function itemWidth(it) {
-  if (it.type === "image") return it.w || 200;
-  if (it.type === "text") return it.w || 360;
+  const w = blockWidth(it);
+  if (w) return w;
   return 0;
 }
 
@@ -974,8 +1025,8 @@ function measureTextHeight(w, text) {
 }
 
 function itemHeight(it) {
-  if (it.type === "image") return it.h || Math.round((it.w || 200) * 0.75);
-  if (it.type === "text") return measureTextHeight(it.w, it.text);
+  const h = blockHeight(it, measureTextHeight);
+  if (h) return h;
   return 0;
 }
 
@@ -984,7 +1035,9 @@ function itemStyle(it) {
     left: it.x,
     top: it.y,
   };
-  if (it.type === "text") style.width = it.w || 360;
+  if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math" || it.type === "table" || it.type === "diagram" || it.type === "voice" || it.type === "video") {
+    style.width = blockWidth(it) || it.w;
+  }
   const rot = it.rotation || 0;
   const sc = it.scale ?? 1;
   if (rot || sc !== 1) {
@@ -1344,8 +1397,8 @@ function clientBoundsForItem(it, worldToClient) {
     const h = (it.h || Math.round((it.w || 200) * 0.75)) * scale;
     return { left: tl.x, top: tl.y, right: tl.x + w, bottom: tl.y + h };
   }
-  if (it.type === "text") {
-    const w = (it.w || 360) * scale;
+  if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math" || it.type === "table" || it.type === "diagram" || it.type === "voice" || it.type === "video") {
+    const w = (blockWidth(it) || it.w || 360) * scale;
     const h = itemHeight(it) * scale;
     return { left: tl.x, top: tl.y, right: tl.x + w, bottom: tl.y + h };
   }
@@ -1695,6 +1748,17 @@ export default function App() {
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const [railPulse, setRailPulse] = useState(false);
+  const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
+  const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
+  const [pages, setPages] = useState(() =>
+    load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID, name: "Page 1", camera: { x: 0, y: 0, scale: 1 } }])
+  );
+  const [activePageId, setActivePageId] = useState(() => load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID }])[0]?.id || DEFAULT_PAGE_ID);
+  const [worldFilter, setWorldFilter] = useState(null);
+  const [theme, setTheme] = useState(() => load(THEME_KEY, "idea"));
+  const [functionsOpen, setFunctionsOpen] = useState(false);
+  const [editMode, setEditMode] = useState(true);
+  const [savedIndicator, setSavedIndicator] = useState(true);
 
   const viewportRef = useRef(null);
   const railRef = useRef(null);
@@ -1721,7 +1785,28 @@ export default function App() {
   selRef.current = selection;
   editingRef.current = editing;
 
+  const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
+  pageFilterRef.current = { pageId: activePageId, world: worldFilter };
+
   useEffect(() => localStorage.setItem(ITEMS_KEY, JSON.stringify(items)), [items]);
+  useEffect(() => {
+    localStorage.setItem(PAGES_KEY, JSON.stringify(pages));
+    setSavedIndicator(true);
+  }, [pages]);
+  useEffect(() => {
+    localStorage.setItem(DOC_TITLE_KEY, JSON.stringify(docTitle));
+    setSavedIndicator(true);
+  }, [docTitle]);
+  useEffect(() => localStorage.setItem(DOC_STAR_KEY, JSON.stringify(docStarred)), [docStarred]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+  }, [theme]);
+  useEffect(() => {
+    setSavedIndicator(false);
+    const t = setTimeout(() => setSavedIndicator(true), 400);
+    return () => clearTimeout(t);
+  }, [items]);
   useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
@@ -1996,7 +2081,7 @@ export default function App() {
           if (g.corner.includes("w")) nx = (g.startX ?? it.x) + g.startW - nw;
           if (g.corner.includes("n")) ny = (g.startY ?? it.y) + g.startH - nh;
           updateItem(g.id, { w: Math.round(nw), h: Math.round(nh), x: Math.round(nx), y: Math.round(ny) });
-        } else if (it.type === "text") {
+        } else if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math") {
           updateItem(g.id, { w: Math.max(120, Math.round(g.startW + dw)) });
         }
       } else if (g.mode === "scale") {
@@ -3660,15 +3745,20 @@ export default function App() {
     if (exact && exact.type !== "link") return exact;
 
     const list = itemsRef.current;
+    const isDropTarget = (it) =>
+      it.type === "text" || it.type === "image" || it.type === "sticky" || it.type === "callout";
+
     for (let i = list.length - 1; i >= 0; i--) {
       const it = list[i];
-      if (it.type !== "text" && it.type !== "image") continue;
+      if (!itemVisibleOnPage(it, pageFilterRef.current.pageId, pageFilterRef.current.world)) continue;
+      if (!isDropTarget(it)) continue;
       const bb = itemScreenBBox(it);
       if (pointInExpandedRect(cx, cy, bb, DROP_TARGET_PAD)) return it;
     }
 
     for (let i = list.length - 1; i >= 0; i--) {
       const it = list[i];
+      if (!itemVisibleOnPage(it, pageFilterRef.current.pageId, pageFilterRef.current.world)) continue;
       if (it.type !== "stroke") continue;
       const bb = itemScreenBBox(it);
       if (pointInExpandedRect(cx, cy, bb, DROP_TARGET_PAD * 0.6)) return it;
@@ -3683,7 +3773,8 @@ export default function App() {
     let bestDist = DROP_TARGET_PAD * 1.25;
     for (let i = list.length - 1; i >= 0; i--) {
       const it = list[i];
-      if (it.type !== "text" && it.type !== "image") continue;
+      if (!itemVisibleOnPage(it, pageFilterRef.current.pageId, pageFilterRef.current.world)) continue;
+      if (!isDropTarget(it)) continue;
       const d = distToRect(cx, cy, itemScreenBBox(it));
       if (d < bestDist) {
         bestDist = d;
@@ -3702,10 +3793,12 @@ export default function App() {
   }
 
   function itemAtPoint(cx, cy, excludeIds = null) {
+    const { pageId, world } = pageFilterRef.current;
     const list = itemsRef.current;
     for (let i = list.length - 1; i >= 0; i--) {
       const it = list[i];
       if (it.type === "link") continue;
+      if (!itemVisibleOnPage(it, pageId, world)) continue;
       if (excludeIds?.has(it.id)) continue;
       if (it.type === "stroke") {
         for (let k = 1; k < it.points.length; k++) {
@@ -3833,7 +3926,7 @@ export default function App() {
 
     if (editingRef.current) {
       if (hit?.id === editingRef.current) {
-        if (hit.type === "text" && textClickRegion(hit, cx, cy) === "interior") {
+        if (isEditableBlock(hit) && textClickRegion(hit, cx, cy) === "interior") {
           gesture.current = { mode: "edit-click", cx, cy, hitId: hit.id };
           try {
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -3871,7 +3964,7 @@ export default function App() {
     }
 
     if (t === "highlight") {
-      const objHit = hit && (hit.type === "text" || hit.type === "image") ? hit : null;
+      const objHit = hit && isTransformableBlock(hit) ? hit : null;
       if (!objHit) {
         pushHistory();
         gesture.current = {
@@ -3908,7 +4001,7 @@ export default function App() {
         : [hit.id];
       setSelection(nextSel);
       let intent = "move";
-      if (hit.type === "text" && nextSel.length === 1 && textClickRegion(hit, cx, cy) === "interior") {
+      if (isEditableBlock(hit) && nextSel.length === 1 && textClickRegion(hit, cx, cy) === "interior") {
         intent = "edit";
       }
       gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
@@ -4096,16 +4189,147 @@ export default function App() {
     setTimeout(() => w.print(), 400);
   }
 
+  function isEditableBlock(it) {
+    return it && (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math");
+  }
+
+  function insertBlock(type, opts = {}) {
+    pushHistory();
+    const c = viewportCenterWorld();
+    const meta = defaultBlockMeta(type);
+    const id = uid();
+    const item = normalizeItem({
+      id,
+      type: type === "text" ? "text" : type,
+      x: c.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
+      y: c.y - 40 + (opts.offsetY || 0),
+      text: defaultBlockContent(type),
+      pageId: activePageId,
+      world: worldFilter || opts.world || null,
+      ...meta,
+      ...opts,
+    });
+    if (type === "callout-obs") {
+      item.type = "callout";
+      item.variant = "observation";
+      item.text = "Your observation…";
+    } else if (type === "callout-q" || opts.variant === "question") {
+      item.type = "callout";
+      item.variant = "question";
+      item.text = "Your question?";
+    }
+    setItems((arr) => [...arr, item]);
+    setSelection([id]);
+    if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
+      setEditing(id);
+    }
+    setTool("select");
+    return id;
+  }
+
+  function insertBlockFromPalette(type) {
+    if (type === "text") {
+      insertBlock("text");
+      return;
+    }
+    if (type === "pen") {
+      setTool("pen");
+      return;
+    }
+    if (type === "image") {
+      pickImage();
+      return;
+    }
+    insertBlock(type);
+  }
+
+  function focusThought(item) {
+    if (!item) return;
+    if ((item.pageId || DEFAULT_PAGE_ID) !== activePageId) {
+      switchPage(item.pageId || DEFAULT_PAGE_ID);
+    }
+    setSelection([item.id]);
+    const bb = itemWorldBBox(item);
+    if (!bb) return;
+    const r = vpRect();
+    const cx = (bb.minx + bb.maxx) / 2;
+    const cy = (bb.miny + bb.maxy) / 2;
+    const scale = camRef.current.scale;
+    setCamera({
+      scale,
+      x: r.width / 2 - cx * scale,
+      y: r.height / 2 - cy * scale,
+    });
+  }
+
+  function switchPage(pageId) {
+    setPages((ps) =>
+      ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
+    );
+    const next = pages.find((p) => p.id === pageId);
+    setActivePageId(pageId);
+    if (next?.camera) setCamera({ ...next.camera });
+    setSelection([]);
+    setEditing(null);
+  }
+
+  function addPage() {
+    const id = uid();
+    const num = pages.length + 1;
+    setPages((ps) => [...ps, { id, name: `Page ${num}`, camera: { x: 0, y: 0, scale: 1 } }]);
+    switchPage(id);
+  }
+
+  function handleMenuAction(action) {
+    if (action === "undo") undo();
+    else if (action === "redo") redo();
+    else if (action === "export-txt") exportSelection("txt");
+    else if (action === "export-md") exportSelection("md");
+    else if (action === "import-path") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = () => input.files?.[0] && importPath(input.files[0]);
+      input.click();
+    } else if (action === "start-fresh") setFreshConfirm(true);
+    else if (action === "zoom-in") setCamera((c) => zoomCamera(c, 1.2));
+    else if (action === "zoom-out") setCamera((c) => zoomCamera(c, 1 / 1.2));
+    else if (action === "zoom-reset") setCamera((c) => ({ ...c, scale: 1 }));
+    else if (action === "theme-toggle") setTheme((t) => (t === "idea" ? "chalk" : "idea"));
+    else if (action === "insert-sticky") insertBlock("sticky");
+    else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
+    else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
+    else if (action === "insert-diagram") insertBlock("diagram");
+    else if (action === "open-functions") {
+      setRailTab("functions");
+      setFunctionsOpen(true);
+    }     else if (action === "open-structures") {
+      setRailTab("structures");
+      setFunctionsOpen(true);
+    } else if (action === "setup-role") setOnboard({ step: "role" });
+    else if (action === "new-function") openCreateFunction();
+    else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
+    else if (action === "help-tips") showToast("Double-click canvas to write · drag functions onto ideas · space to pan");
+  }
+
+  function handleShareBoard() {
+    if (selection.length === 1 && selRef.current[0]) {
+      shareJourneyLink(selRef.current[0]);
+    } else {
+      exportSelection("md");
+      showToast("Exported board — select one idea to share its journey link");
+    }
+  }
+
   // ---- render ----
+  const visibleItems = items.filter((it) => itemVisibleOnPage(it, activePageId, worldFilter));
   const selBBox = selection.length ? selectionWorldBBox() : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
-  const canTransform = selItem && (selItem.type === "text" || selItem.type === "image");
+  const canTransform = selItem && isTransformableBlock(selItem);
   const selCaptureInfo =
-    selItem && (selItem.type === "text" || selItem.type === "image")
-      ? getNodeThreadCapture(selItem.id, items)
-      : null;
+    selItem && isTransformableBlock(selItem) ? getNodeThreadCapture(selItem.id, items) : null;
   const captureName = (captureNameOverride ?? selCaptureInfo?.defaultName ?? "").slice(0, 72);
-  const boardLinks = items.filter((it) => it.type === "link");
+  const boardLinks = visibleItems.filter((it) => it.type === "link");
   const walkStep = walking?.steps?.[walking.stepIndex] || null;
   const walkFocusRects = walkStep
     ? walkStep.itemIds
@@ -4131,329 +4355,44 @@ export default function App() {
   }
 
   return (
-    <div className="board-app">
-      {/* left rail: draggable transformations */}
-      <aside
-        ref={railRef}
-        className={"board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
-        onDragOver={(e) => {
-          if (
-            e.dataTransfer.types.includes(OP_MIME) ||
-            e.dataTransfer.types.includes(STRUCT_MIME) ||
-            e.dataTransfer.types.includes(SEL_MIME)
-          ) {
-            e.preventDefault();
-            setRailDropOver(true);
-            e.dataTransfer.dropEffect = "copy";
+    <div className={"idea-app theme-" + theme}>
+      <TopToolbar
+        title={docTitle}
+        starred={docStarred}
+        saved={savedIndicator}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        tool={tool}
+        imageArmed={imageArmed}
+        onTitleChange={setDocTitle}
+        onToggleStar={() => setDocStarred((s) => !s)}
+        onMenuAction={handleMenuAction}
+        onSelectTool={(id) => {
+          if (id !== "image") {
+            pendingImageRef.current = null;
+            setImageArmed(false);
           }
+          setTool(id);
         }}
-        onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setRailDropOver(false);
-          const selJson = e.dataTransfer.getData(SEL_MIME);
-          if (selJson) {
-            try {
-              saveSelectionByIds(JSON.parse(selJson));
-            } catch {
-              /* ignore bad payload */
-            }
-            return;
-          }
-          const opId = e.dataTransfer.getData(OP_MIME);
-          if (opId) {
-            pinOpToToolbox(opId);
-            return;
-          }
-          const structId = e.dataTransfer.getData(STRUCT_MIME);
-          if (structId) {
-            setRailTab("structures");
-            showToast("already saved");
-          }
-        }}
-      >
-        <div className="rail-head">
-          <div className="rail-title">lens</div>
-          <button
-            className="rail-icon"
-            title="Upload path file"
-            onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = "application/json";
-              input.onchange = () => input.files?.[0] && importPath(input.files[0]);
-              input.click();
-            }}
-          >
-            ↓
-          </button>
-          <button className="rail-icon" title="set up for role" onClick={() => setOnboard({ step: "role" })}>
-            ↻
-          </button>
-          <button className="rail-icon" title="Start fresh — clear canvas and personal functions" onClick={() => setFreshConfirm(true)}>
-            ∅
-          </button>
-        </div>
-        <div className="rail-tabs">
-          <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
-            functions
-          </button>
-          <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
-            structures {structures.length ? `(${structures.length})` : ""}
-          </button>
-        </div>
-        {railTab === "functions" ? (
-          <>
-            <button className="rail-create" onClick={openCreateFunction}>
-              + function
-            </button>
-            <div className="move-quick-add">
-              <input
-                className="move-quick-input"
-                placeholder="your move — e.g. treat as garden"
-                value={moveDraft}
-                onChange={(e) => setMoveDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") createMove();
-                }}
-              />
-              <button
-                type="button"
-                className="move-quick-btn"
-                title="add perceptual move"
-                disabled={!moveDraft.trim()}
-                onClick={() => createMove()}
-              >
-                +
-              </button>
-            </div>
-            {selection.length === 1 && selItem?.type === "text" && (
-              <button type="button" className="sel-capture-save doc-save" onClick={saveSelectedAsDocument}>
-                Save as document
-              </button>
-            )}
-            {selection.length === 1 && selItem && (selItem.type === "text" || selItem.type === "image") && (
-              <div className="sel-capture-panel">
-                <div className="sel-capture-head">
-                  <span className="sel-capture-label">from selection</span>
-                  {selCaptureInfo?.canCapture && (
-                    <span className="sel-capture-meta">
-                      {selCaptureInfo.moveCount} move{selCaptureInfo.moveCount === 1 ? "" : "s"}
-                    </span>
-                  )}
-                </div>
-                {selCaptureInfo?.canCapture ? (
-                  <>
-                    <input
-                      className="sel-capture-name"
-                      value={captureName}
-                      onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))}
-                      placeholder="function name"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveSelectionAsFunction();
-                      }}
-                    />
-                    <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>
-                      ◈ save creation process
-                    </button>
-                    <button
-                      type="button"
-                      className="sel-capture-share"
-                      onClick={() => shareJourneyLink(selRef.current[0])}
-                      title="copy link to this transformation journey"
-                    >
-                      ↗ share journey
-                    </button>
-                    <button
-                      type="button"
-                      className="sel-capture-share ghost"
-                      onClick={() => shareJourneyLink(selRef.current[0], { fullPath: true })}
-                      title="share full canvas path with all notes"
-                    >
-                      ↗ full path
-                    </button>
-                  </>
-                ) : (
-                  <p className="sel-capture-empty">{selCaptureInfo?.reason || "select a thought"}</p>
-                )}
-              </div>
-            )}
-            <div className="rail-lens-actions">
-              <button
-                className="rail-create ghost"
-                onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}
-              >
-                + lens
-              </button>
-              <button
-                className="rail-create ghost"
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "application/json";
-                  input.onchange = () => input.files?.[0] && importLens(input.files[0]);
-                  input.click();
-                }}
-              >
-                ↓ Upload
-              </button>
-            </div>
-            <div className="rail-scroll">
-              {lenses.length > 0 && (
-                <>
-                  <div className="rail-section">lenses</div>
-                  {lenses.map((lens) => (
-                    <LensCard
-                      key={lens.id}
-                      lens={lens}
-                      active={lens.id === activeLensId}
-                      opMap={opMap}
-                      lenses={lenses}
-                      comparing={
-                        lensCompare?.aId === lens.id ||
-                        (lensCompare?.bId === lens.id && !!lensCompare?.bId)
-                      }
-                      comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId}
-                      onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)}
-                      onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })}
-                      onBranch={() => branchLens(lens.id)}
-                      onFork={() => forkLens(lens.id)}
-                      onSend={() => exportLens(lens.id)}
-                      onCompare={() => {
-                        if (lensCompare?.aId && lensCompare.aId !== lens.id) {
-                          setLensCompare({ aId: lensCompare.aId, bId: lens.id });
-                        } else {
-                          setLensCompare({ aId: lens.id });
-                          showToast("pick another lens to Compare");
-                        }
-                      }}
-                      onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
-                      onDelete={() => deleteLens(lens.id)}
-                    />
-                  ))}
-                </>
-              )}
-              {moves.length > 0 && (
-                <>
-                  <div className="rail-section">your moves</div>
-                  {moves.map((op) => (
-                    <DraggableOpCard
-                      key={op.id}
-                      op={op}
-                      opMap={opMap}
-                      expanded={expanded}
-                      onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))}
-                      onEdit={openEditFunction}
-                      onCompose={composeOperators}
-                      onShare={() => shareOperator(op.id)}
-                      flat
-                    />
-                  ))}
-                </>
-              )}
-              {topFunctions.length > 0 && (
-                <>
-                  <div className="rail-section">yours</div>
-                  {topFunctions.map((op) => (
-                    <DraggableOpCard
-                      key={op.id}
-                      op={op}
-                      opMap={opMap}
-                      expanded={expanded}
-                      onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))}
-                      onEdit={openEditFunction}
-                      onCompose={composeOperators}
-                      onShare={() => shareOperator(op.id)}
-                    />
-                  ))}
-                </>
-              )}
-              {primitives.length > 0 && (
-                <>
-                  <div className="rail-section">primitives</div>
-                  {primitives.map((op) => (
-                    <DraggableOpCard
-                      key={op.id}
-                      op={op}
-                      opMap={opMap}
-                      expanded={expanded}
-                      onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))}
-                      onEdit={openEditFunction}
-                      onCompose={composeOperators}
-                      onShare={() => shareOperator(op.id)}
-                      flat
-                    />
-                  ))}
-                </>
-              )}
-              {basics.length > 0 && (
-                <>
-                  <div className="rail-section">basics</div>
-                  {basics.map((op) => (
-                    <DraggableOpCard
-                      key={op.id}
-                      op={op}
-                      opMap={opMap}
-                      expanded={expanded}
-                      onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))}
-                      onEdit={openEditFunction}
-                      onCompose={composeOperators}
-                      onShare={() => shareOperator(op.id)}
-                      flat
-                    />
-                  ))}
-                </>
-              )}
-              {basics.length === 0 && topFunctions.length === 0 && primitives.length === 0 && moves.length === 0 && lenses.length === 0 && (
-                <p className="rail-empty">Tap ↻ to generate functions for your role, or type a move above.</p>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <button
-              className="rail-create"
-              disabled={!selection.length}
-              onClick={() => captureSelectionAsStructure()}
-            >
-              + save selection
-            </button>
-            {selection.length === 1 && selItem?.type === "text" && (
-              <button type="button" className="rail-create doc-save" onClick={saveSelectedAsDocument}>
-                Save as document
-              </button>
-            )}
-            <div className="rail-scroll">
-              {structures.length === 0 ? (
-                <p className="rail-empty">Save selections from the canvas, or discover structures via sameness.</p>
-              ) : (
-                structures.map((struct) => (
-                  <StructureCard
-                    key={struct.id}
-                    struct={struct}
-                    onDelete={() => deleteStructure(struct.id)}
-                    onShare={() => shareSymbolStruct(struct)}
-                  />
-                ))
-              )}
-            </div>
-          </>
-        )}
-        <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
-        {railTab === "functions" && (
-          <div className="rail-hint">drag onto canvas · drop lens on lens to Merge · git for perception</div>
-        )}
-        {railTab === "structures" && (
-          <div className="rail-hint">drop selection here to save · drag onto canvas to plant</div>
-        )}
-        <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>
-          Start fresh
-        </button>
-      </aside>
+        onPickImage={pickImage}
+        onUndo={undo}
+        onRedo={redo}
+        onShare={handleShareBoard}
+      />
 
-      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
+      <div className="idea-body">
+        <ThoughtsSidebar
+          items={items}
+          activePageId={activePageId}
+          worldFilter={worldFilter}
+          onSelectThought={focusThought}
+          onNewThought={() => insertBlock("text")}
+          onSelectWorld={setWorldFilter}
+          onClearWorld={() => setWorldFilter(null)}
+        />
+
+        <div className="idea-center">
+      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
         ref={viewportRef}
         className="viewport"
@@ -4485,8 +4424,8 @@ export default function App() {
               </marker>
             </defs>
             {boardLinks.map((link) => {
-              const from = items.find((i) => i.id === link.fromId);
-              const to = items.find((i) => i.id === link.toId);
+              const from = visibleItems.find((i) => i.id === link.fromId) || items.find((i) => i.id === link.fromId);
+              const to = visibleItems.find((i) => i.id === link.toId) || items.find((i) => i.id === link.toId);
               if (!from || !to) return null;
               const fromC = noteCenter(from);
               const toC = noteCenter(to);
@@ -4511,7 +4450,7 @@ export default function App() {
 
           {/* committed strokes */}
           <svg className="ink-layer" style={{ overflow: "visible" }}>
-            {items
+            {visibleItems
               .filter((it) => it.type === "stroke")
               .map((it) => (
                 <polyline
@@ -4586,20 +4525,37 @@ export default function App() {
           </svg>
 
           {/* text + images */}
-          {items
-            .filter((it) => it.type !== "stroke")
-            .map((it) =>
-              it.type === "image" ? (
-                <img
-                  key={it.id}
-                  data-item={it.id}
-                  className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
-                  src={it.src}
-                  style={{ ...itemStyle(it), width: it.w, height: it.h }}
-                  alt=""
-                />
-              ) : (
-                <BoardText
+          {visibleItems
+            .filter((it) => it.type !== "stroke" && it.type !== "link")
+            .map((it) => {
+              if (it.type === "image") {
+                return (
+                  <img
+                    key={it.id}
+                    data-item={it.id}
+                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
+                    src={it.src}
+                    style={{ ...itemStyle(it), width: it.w, height: it.h }}
+                    alt=""
+                  />
+                );
+              }
+              if (it.type === "text") {
+                return (
+                  <BoardText
+                    key={it.id}
+                    item={it}
+                    selected={selection.includes(it.id)}
+                    dropTarget={dropTargetId === it.id}
+                    dropMagnetic={dropReady && dropTargetId === it.id}
+                    editing={editing === it.id}
+                    editClickRef={editClickRef}
+                    onCommit={(text) => commitEdit(it.id, text)}
+                  />
+                );
+              }
+              return (
+                <BoardBlockItem
                   key={it.id}
                   item={it}
                   selected={selection.includes(it.id)}
@@ -4608,9 +4564,10 @@ export default function App() {
                   editing={editing === it.id}
                   editClickRef={editClickRef}
                   onCommit={(text) => commitEdit(it.id, text)}
+                  itemStyle={itemStyle}
                 />
-              )
-            )}
+              );
+            })}
 
           {/* selection box */}
           {selBBox && selection.length > 1 && (
@@ -4741,26 +4698,138 @@ export default function App() {
       {/* brand moved to rail — canvas stays clean */}
 
       {/* empty hint */}
-      {items.length === 0 && (
+      {visibleItems.length === 0 && (
         <div className="empty-hint">
-          <p>double-click the canvas to write · drag functions from the rail</p>
+          <p>Double-click the canvas to write · open Tools for functions & lenses</p>
           <button type="button" className="starter-btn" onClick={plantStarterThought}>
             ✦ try the highlighter
           </button>
         </div>
       )}
-
-      {/* zoom controls */}
-      <div className="zoom" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={() => setCamera((c) => zoomCamera(c, 1 / 1.2))}>−</button>
-        <button className="zoom-pct" onClick={() => setCamera((c) => ({ ...c, scale: 1 }))}>
-          {Math.round(camera.scale * 100)}%
-        </button>
-        <button onClick={() => setCamera((c) => zoomCamera(c, 1.2))}>+</button>
-      </div>
       </div>
 
-      {!editing && !walking && (
+          <RightPalette activeTool={tool} onSelectTool={(id) => {
+            if (id === "pen") setTool("pen");
+            else if (id === "image") pickImage();
+          }} onInsertBlock={insertBlockFromPalette} />
+        </div>
+      </div>
+
+      <BottomBar
+        pages={pages}
+        activePageId={activePageId}
+        zoomPct={Math.round(camera.scale * 100)}
+        editMode={editMode}
+        onSelectPage={switchPage}
+        onAddPage={addPage}
+        onZoomIn={() => setCamera((c) => zoomCamera(c, 1.2))}
+        onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / 1.2))}
+        onZoomReset={() => setCamera((c) => ({ ...c, scale: 1 }))}
+        onExport={() => exportSelection("md")}
+        onToggleEdit={() => setEditMode((m) => !m)}
+      />
+
+      <FunctionsDrawer open={functionsOpen} onClose={() => setFunctionsOpen(false)}>
+        <aside
+          ref={railRef}
+          className={"board-rail drawer-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+          onDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(STRUCT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME)
+            ) {
+              e.preventDefault();
+              setRailDropOver(true);
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setRailDropOver(false);
+            const selJson = e.dataTransfer.getData(SEL_MIME);
+            if (selJson) {
+              try {
+                saveSelectionByIds(JSON.parse(selJson));
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
+            const opId = e.dataTransfer.getData(OP_MIME);
+            if (opId) {
+              pinOpToToolbox(opId);
+              return;
+            }
+            const structId = e.dataTransfer.getData(STRUCT_MIME);
+            if (structId) {
+              setRailTab("structures");
+              showToast("already saved");
+            }
+          }}
+        >
+          <div className="rail-head">
+            <div className="rail-title">Functions</div>
+            <button type="button" className="rail-icon" onClick={() => setFunctionsOpen(false)} title="Close">
+              ×
+            </button>
+          </div>
+          <div className="rail-tabs">
+            <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
+              functions
+            </button>
+            <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
+              structures {structures.length ? `(${structures.length})` : ""}
+            </button>
+          </div>
+          {railTab === "functions" ? (
+            <>
+              <button className="rail-create" onClick={openCreateFunction}>+ function</button>
+              <div className="move-quick-add">
+                <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+              </div>
+              {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                <div className="sel-capture-panel">
+                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
+                </div>
+              )}
+              <div className="rail-lens-actions">
+                <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
+              </div>
+              <div className="rail-scroll">
+                {lenses.length > 0 && (
+                  <>
+                    <div className="rail-section">lenses · worlds</div>
+                    {lenses.map((lens) => (
+                      <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                    ))}
+                  </>
+                )}
+                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+              </div>
+            </>
+          ) : (
+            <>
+              <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
+              <div className="rail-scroll">
+                {structures.length === 0 ? <p className="rail-empty">Save selections from the canvas.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+              </div>
+            </>
+          )}
+          <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
+          <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
+        </aside>
+      </FunctionsDrawer>
+
+      {!editing && !walking && editMode && (
         <CanvasHud tool={tool} selectionCount={selection.length} imageArmed={imageArmed} />
       )}
 
@@ -4793,22 +4862,6 @@ export default function App() {
         />
       )}
 
-      <InputDeck
-        tool={tool}
-        imageArmed={imageArmed}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onSelectTool={(id) => {
-          if (id !== "image") {
-            pendingImageRef.current = null;
-            setImageArmed(false);
-          }
-          setTool(id);
-        }}
-        onPickImage={pickImage}
-        onUndo={undo}
-        onRedo={redo}
-      />
 
       {toast && <div className="toast">{toast}</div>}
 

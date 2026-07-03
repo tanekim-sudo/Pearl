@@ -1,16 +1,56 @@
-:root {
-  /* classic black chalkboard + white chalk */
+:root,
+html[data-theme="idea"],
+.theme-idea {
+  --paper: #f4f4f5;
+  --paper-deep: #ececef;
+  --card: #ffffff;
+  --card-edge: #f8f8fa;
+  --ink: #1f2937;
+  --ink-stroke: #374151;
+  --ink-2: #4b5563;
+  --faint: #9ca3af;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-2: rgba(15, 23, 42, 0.12);
+  --notebook-line: rgba(15, 23, 42, 0.04);
+  --notebook-margin: rgba(15, 23, 42, 0.06);
+  --accent: #7c3aed;
+  --accent-soft: rgba(124, 58, 237, 0.12);
+  --accent-text: #6d28d9;
+  --chalk-yellow: #fef08a;
+  --chalk-yellow-deep: #eab308;
+  --chalk-yellow-muted: #a16207;
+  --chalk-yellow-text: #854d0e;
+  --chalk-yellow-dark: #fef9c3;
+  --chalk-pink: #fbcfe8;
+  --chalk-danger: #fca5a5;
+  --chalk-glow: rgba(124, 58, 237, 0.08);
+  --shadow-soft: rgba(15, 23, 42, 0.08);
+  --shadow-chalk: rgba(255, 255, 255, 0.8);
+  --sidebar-w: 240px;
+  --rail-w: 300px;
+  --sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --hand: "Segoe Print", "Comic Sans MS", cursive;
+  --canvas-bg: #ffffff;
+}
+
+html[data-theme="chalk"],
+.theme-chalk {
   --paper: #111111;
   --paper-deep: #0d0d0d;
   --card: #1c1c1c;
   --card-edge: #141414;
   --ink: #f0f0f0;
+  --ink-stroke: #f0f0f0;
   --ink-2: #e0e0e0;
   --faint: #888888;
   --line: rgba(240, 240, 240, 0.10);
   --line-2: rgba(240, 240, 240, 0.16);
   --notebook-line: rgba(240, 240, 240, 0.05);
   --notebook-margin: rgba(240, 240, 240, 0.08);
+  --accent: #f5e6a3;
+  --accent-soft: rgba(245, 230, 163, 0.14);
+  --accent-text: #f5e6a3;
   --chalk-yellow: #f5e6a3;
   --chalk-yellow-deep: #e8d878;
   --chalk-yellow-muted: #a8a080;
@@ -21,10 +61,9 @@
   --chalk-glow: rgba(240, 240, 240, 0.12);
   --shadow-soft: rgba(0, 0, 0, 0.35);
   --shadow-chalk: rgba(240, 240, 240, 0.06);
+  --sidebar-w: 240px;
   --rail-w: 280px;
-  --sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --hand: var(--sans);
+  --canvas-bg: #111111;
 }
 
 * {
@@ -40,9 +79,7 @@ body,
 
 body {
   background: var(--paper-deep);
-  background-image:
-    radial-gradient(ellipse at 20% 15%, rgba(255, 255, 255, 0.03) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 85%, rgba(0, 0, 0, 0.45) 0%, transparent 50%);
+  background-image: none;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 14px;
