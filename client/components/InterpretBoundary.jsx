@@ -1,6 +1,7 @@
 import React from "react";
 
 export const PAPER_SESSION_MIME = "application/lens-paper-session";
+export { SKETCH_BUNDLE_MIME } from "../../shared/sketch-bundle.js";
 
 const STATUS_LABEL = {
   idle: "Drop to expand",

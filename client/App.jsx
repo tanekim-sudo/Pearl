@@ -62,6 +62,16 @@ import {
   viewportCenterWorld,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
+import {
+  SKETCH_BUNDLE_MIME,
+  recordingItemTags,
+  registerRecordingItem,
+  buildItemSessionPatch,
+  gatherSketchBundle,
+  bundleAsSession,
+  bundleLabel,
+  buildSketchBundlePrompt,
+} from "../shared/sketch-bundle.js";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
@@ -4076,7 +4086,29 @@ export default function App() {
     }
     const strokeId = g.strokeId || uid();
     paperStrokeIdRef.current = null;
-    return { id: strokeId, type: "stroke", points, pageId: activePageId, ...itemAttrs };
+    const tags = recordingItemTags(rec);
+    return { id: strokeId, type: "stroke", points, pageId: activePageId, ...itemAttrs, ...tags };
+  }
+
+  function tagRecordingItem(item) {
+    const rec = paperSessionRef.current;
+    const tags = recordingItemTags(rec);
+    if (!tags.paperSessionId) return item;
+    registerRecordingItem(rec, item.id);
+    return { ...item, ...tags };
+  }
+
+  function gatherSelectionSketchBundle(selectedIds) {
+    const page = pages.find((p) => p.id === activePageId);
+    const pageItems = itemsRef.current.filter(
+      (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId && isPaperSideItem(it)
+    );
+    return gatherSketchBundle({
+      selectedIds,
+      pageItems,
+      sessions: page?.sessions || [],
+      liveSession: paperSessionRef.current?.recording ? paperSessionRef.current : null,
+    });
   }
 
   async function togglePaperRecord() {
@@ -4094,23 +4126,31 @@ export default function App() {
               : p
           )
         );
+        const sessionPatch = buildItemSessionPatch(session);
         const annotMap = new Map();
         for (const a of session.annotations || []) {
           for (const sid of a.strokeIds || []) {
             annotMap.set(sid, {
               voiceSegmentIds: [a.voiceSegmentIndex],
-              instructionText: a.instruction || undefined,
             });
           }
         }
-        if (annotMap.size) {
-          setItems((arr) =>
-            arr.map((it) => {
-              if (it.type !== "stroke" || !annotMap.has(it.id)) return it;
-              return { ...it, ...annotMap.get(it.id) };
-            })
-          );
-        }
+        const sessionItemIds = new Set([
+          ...(session.itemIds || []),
+          ...itemsRef.current
+            .filter((it) => it.recordingSessionId === session.id || it.paperSessionId === session.id)
+            .map((it) => it.id),
+        ]);
+        session.itemIds = [...sessionItemIds];
+        setItems((arr) =>
+          arr.map((it) => {
+            if (!sessionItemIds.has(it.id)) return it;
+            const next = { ...it, ...sessionPatch };
+            if (annotMap.has(it.id)) Object.assign(next, annotMap.get(it.id));
+            delete next.recordingSessionId;
+            return next;
+          })
+        );
         showToast(
           session.transcript
             ? `session saved · "${session.transcript.slice(0, 48)}…"`
@@ -4133,6 +4173,73 @@ export default function App() {
       showToast("recording — draw and speak on the paper");
     } catch (err) {
       showToast(err.message || "microphone unavailable");
+    }
+  }
+
+  async function interpretSketchBundle(bundle, worldPos = null) {
+    if (!bundle) {
+      showToast("nothing to interpret");
+      return;
+    }
+    const pageItems = itemsRef.current.filter(
+      (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId && isPaperSideItem(it)
+    );
+    const bundleItems = pageItems.filter(
+      (it) => bundle.strokeIds?.includes(it.id) || bundle.itemIds?.includes(it.id)
+    );
+    const session = bundleAsSession(bundle);
+    const prompt = buildSketchBundlePrompt(bundle, bundleItems.length ? bundleItems : pageItems);
+    const image = await compositePaperSnapshot(
+      bundleItems.length ? bundleItems : pageItems.filter((it) => it.type === "stroke" || it.type === "image")
+    );
+    const label = bundleLabel(bundle);
+    const { expandedNode } = createSessionNodes(
+      { ...session, transcript: bundle.transcript || session?.transcript },
+      prompt,
+      worldPos,
+      label
+    );
+    setAiPanel({
+      sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
+      sourcePreview: bundle.transcript?.slice(0, 200) || label,
+      sourceText: prompt,
+      image,
+      loading: true,
+      error: null,
+      opLabel: "interpret paper",
+      activeNodeId: expandedNode.id,
+      sketchBundle: bundle,
+    });
+    try {
+      const out = await runClaude(
+        "Interpret this multimodal notebook bundle. Voice explains what the user drew and placed spatially.",
+        prompt,
+        { image, maxTokens: 2048, compact: true }
+      );
+      const text = out.trim();
+      updateAiNode(expandedNode.id, {
+        expandedText: text,
+        loading: false,
+        error: null,
+        label: "Interpreted",
+      });
+      setAiPanel((prev) => ({
+        ...prev,
+        expandedText: text,
+        loading: false,
+        error: null,
+      }));
+    } catch (err) {
+      updateAiNode(expandedNode.id, {
+        loading: false,
+        error: err.message || "interpret failed",
+      });
+      setAiPanel((prev) => ({
+        ...prev,
+        loading: false,
+        error: err.message || "interpret failed",
+      }));
+      showToast(err.message || "interpret failed");
     }
   }
 
@@ -4414,7 +4521,12 @@ export default function App() {
       const center = at || viewportCenterWorld();
       const scale = Math.min(1, 260 / w);
       const id = uid();
-      setItems((arr) => [...arr, normalizeItem({ id, type: "image", x: center.x, y: center.y, w: Math.round(w * scale), h: Math.round(h * scale), src, rotation: 0, scale: 1 })]);
+      setItems((arr) => [
+        ...arr,
+        tagRecordingItem(
+          normalizeItem({ id, type: "image", x: center.x, y: center.y, w: Math.round(w * scale), h: Math.round(h * scale), src, rotation: 0, scale: 1, pageId: activePageId })
+        ),
+      ]);
       setSelection([id]);
     } catch {
       showToast("could not load that image");
@@ -4452,7 +4564,7 @@ export default function App() {
     const w = clientToWorld(e.clientX, e.clientY);
     const id = uid();
     pushHistory();
-    setItems((arr) => [...arr, normalizeItem({ id, type: "text", x: w.x, y: w.y, text: "", w: 320 })]);
+    setItems((arr) => [...arr, tagRecordingItem(normalizeItem({ id, type: "text", x: w.x, y: w.y, text: "", w: 320, pageId: activePageId }))]);
     setSelection([id]);
     editClickRef.current = { cx: e.clientX, cy: e.clientY };
     setEditing(id);
@@ -4558,17 +4670,19 @@ export default function App() {
     const c = viewportCenterWorld();
     const meta = defaultBlockMeta(type);
     const id = uid();
-    const item = normalizeItem({
-      id,
-      type: type === "text" ? "text" : type,
-      x: c.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
-      y: c.y - 40 + (opts.offsetY || 0),
-      text: defaultBlockContent(type),
-      pageId: activePageId,
-      world: worldFilter || opts.world || null,
-      ...meta,
-      ...opts,
-    });
+    const item = tagRecordingItem(
+      normalizeItem({
+        id,
+        type: type === "text" ? "text" : type,
+        x: c.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
+        y: c.y - 40 + (opts.offsetY || 0),
+        text: defaultBlockContent(type),
+        pageId: activePageId,
+        world: worldFilter || opts.world || null,
+        ...meta,
+        ...opts,
+      })
+    );
     if (type === "callout-obs") {
       item.type = "callout";
       item.variant = "observation";
@@ -4713,11 +4827,11 @@ export default function App() {
     return node;
   }
 
-  function createSessionNodes(session, prompt, worldPos) {
+  function createSessionNodes(session, prompt, worldPos, labelOverride) {
     const pos = nodePositionAt(aiNodesRef.current, "session", worldPos);
     const sessionNode = makeAiNode({
       nodeKind: "session",
-      label: truncateLabel(session.transcript?.slice(0, 24) || "Session"),
+      label: truncateLabel(labelOverride || session.transcript?.slice(0, 24) || "Session"),
       preview: session.transcript?.slice(0, 200) || "Paper session",
       sourceIds: [],
       x: pos.x,
@@ -4970,6 +5084,16 @@ export default function App() {
       return true;
     }
 
+    const bundleJson = e.dataTransfer.getData(SKETCH_BUNDLE_MIME);
+    if (bundleJson) {
+      try {
+        interpretSketchBundle(JSON.parse(bundleJson), pos);
+      } catch {
+        /* ignore */
+      }
+      return true;
+    }
+
     const sessionJson = e.dataTransfer.getData(PAPER_SESSION_MIME);
     if (sessionJson) {
       try {
@@ -4990,6 +5114,12 @@ export default function App() {
       }
     }
     if (!ids?.length) ids = aiPanel?.sourceIds?.length ? aiPanel.sourceIds : selection;
+
+    const sketchBundle = ids?.length ? gatherSelectionSketchBundle(ids) : null;
+    if (sketchBundle && autoExpand) {
+      interpretSketchBundle(sketchBundle, pos);
+      return true;
+    }
 
     const opId = e.dataTransfer.getData(OP_MIME);
     if (opId) {
@@ -5021,6 +5151,10 @@ export default function App() {
     }
 
     if (ids?.length) {
+      if (sketchBundle) {
+        interpretSketchBundle(sketchBundle, pos);
+        return true;
+      }
       const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
       if (autoExpand) {
         expandInAi(ids, {
@@ -5044,7 +5178,8 @@ export default function App() {
       e.dataTransfer.types.includes(THOUGHT_MIME) ||
       e.dataTransfer.types.includes(SEL_MIME) ||
       e.dataTransfer.types.includes(OP_MIME) ||
-      e.dataTransfer.types.includes(PAPER_SESSION_MIME)
+      e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
+      e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME)
     ) {
       e.preventDefault();
       setBoundaryDropOver(true);
@@ -5073,6 +5208,7 @@ export default function App() {
       e.dataTransfer.types.includes(SEL_MIME) ||
       e.dataTransfer.types.includes(OP_MIME) ||
       e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
+      e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
       e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
       e.dataTransfer.types.includes(LENS_MIME)
     ) {
@@ -5174,6 +5310,16 @@ export default function App() {
   }
 
   const hasPaperSession = (pages.find((p) => p.id === activePageId)?.sessions?.length ?? 0) > 0;
+  const selectionSketchBundle =
+    selection.length > 0 ? gatherSelectionSketchBundle(selection) : null;
+  const selectionHasSketch = !!selectionSketchBundle;
+  const selectionScreenBox = selBBox
+    ? (() => {
+        const tl = worldToClient(selBBox.minx, selBBox.miny);
+        const br = worldToClient(selBBox.maxx, selBBox.maxy);
+        return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
+      })()
+    : null;
   const boundaryStatus =
     aiPanel?.loading && aiPanel?.opLabel === "interpret paper"
       ? "interpreting"
@@ -5303,6 +5449,7 @@ export default function App() {
               .map((it) => (
                 <g key={it.id}>
                   {it.instructionText && <title>{it.instructionText}</title>}
+                  {!it.instructionText && it.paperSessionId && <title>Linked to voice recording</title>}
                   <polyline
                     data-item={it.id}
                     points={it.points.map((p) => `${p.x},${p.y}`).join(" ")}
@@ -5315,7 +5462,9 @@ export default function App() {
                     className={
                       (selection.includes(it.id) ? "sel" : "") +
                       (it.highlight ? " hl-stroke" : "") +
-                      (it.instructionText ? " voice-linked" : "")
+                      (it.instructionText || it.paperSessionId || it.recordingSessionId
+                        ? " voice-linked"
+                        : "")
                     }
                   />
                 </g>
@@ -5343,7 +5492,8 @@ export default function App() {
                       className={
                         "draft-stroke" +
                         (draft.highlight ? " hl-stroke" : "") +
-                        (draft.loop ? " hl-loop" : "")
+                        (draft.loop ? " hl-loop" : "") +
+                        (paperRecording ? " voice-linked" : "")
                       }
                       points={draft.points.map((p) => `${p.x},${p.y}`).join(" ")}
                       fill={draft.loop ? "rgba(240, 240, 240, 0.05)" : "none"}
@@ -5474,9 +5624,9 @@ export default function App() {
             return;
           }
           const hit = itemAtPoint(e.clientX, e.clientY);
-          if (hit?.type === "stroke" && hit.instructionText) {
+          if (hit?.type === "stroke" && (hit.instructionText || hit.paperSessionId)) {
             setStrokeTooltip({
-              text: hit.instructionText,
+              text: hit.instructionText || "Linked to voice recording",
               x: e.clientX,
               y: e.clientY,
               id: hit.id,
@@ -5587,8 +5737,14 @@ export default function App() {
           onSave={saveSelectionAsFunction}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
-          onSendToAi={() => expandInAi([selItem.id])}
+          onSendToAi={() =>
+            selectionSketchBundle
+              ? interpretSketchBundle(selectionSketchBundle)
+              : expandInAi([selItem.id])
+          }
           aiDragIds={[selItem.id]}
+          sketchBundle={selectionSketchBundle}
+          interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -5597,8 +5753,26 @@ export default function App() {
       {canTransform && !selCaptureInfo?.canCapture && !walking && selItem && (
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
-          onSendToAi={() => expandInAi([selItem.id])}
+          onSendToAi={() =>
+            selectionSketchBundle
+              ? interpretSketchBundle(selectionSketchBundle)
+              : expandInAi([selItem.id])
+          }
           aiDragIds={[selItem.id]}
+          sketchBundle={selectionSketchBundle}
+          interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
+          onTransferDragStart={() => setTransferDragActive(true)}
+          onTransferDragEnd={() => setTransferDragActive(false)}
+        />
+      )}
+
+      {selectionHasSketch && !canTransform && !walking && selectionScreenBox && (
+        <SelectionCaptureChip
+          bbox={selectionScreenBox}
+          onSendToAi={() => interpretSketchBundle(selectionSketchBundle)}
+          aiDragIds={selection}
+          sketchBundle={selectionSketchBundle}
+          interpretLabel="→ interpret"
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -5661,6 +5835,7 @@ export default function App() {
               e.dataTransfer.types.includes(SEL_MIME) ||
               e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
+              e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
               e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
               e.dataTransfer.types.includes(LENS_MIME)
             ) {
@@ -6088,7 +6263,18 @@ function BoardText({ item, selected, dropTarget, dropMagnetic, editing, editClic
   );
 }
 
-function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, onSendToAi, aiDragIds, onTransferDragStart, onTransferDragEnd }) {
+function SelectionCaptureChip({
+  bbox,
+  onSave,
+  onSaveDocument,
+  onShareJourney,
+  onSendToAi,
+  aiDragIds,
+  sketchBundle,
+  interpretLabel = "→ AI",
+  onTransferDragStart,
+  onTransferDragEnd,
+}) {
   const cx = (bbox.left + bbox.right) / 2;
   return (
     <div
@@ -6106,14 +6292,21 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, on
             onSendToAi?.();
           }}
           onDragStart={(e) => {
+            if (sketchBundle) {
+              e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
+            }
             e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
             e.dataTransfer.effectAllowed = "copy";
             onTransferDragStart?.();
           }}
           onDragEnd={() => onTransferDragEnd?.()}
-          title="Expand in AI · drag to boundary or right column"
+          title={
+            sketchBundle
+              ? "Interpret sketch + voice in AI · drag to right column"
+              : "Expand in AI · drag to boundary or right column"
+          }
         >
-          → AI
+          {interpretLabel}
         </button>
       )}
       {onSaveDocument && (

@@ -18,6 +18,7 @@ export class PaperRecordSession {
     this.audioChunks = [];
     this.voiceSegments = [];
     this.strokes = [];
+    this.itemIds = [];
     this.transcript = "";
     this._currentSegment = null;
     this._mediaRecorder = null;
@@ -166,6 +167,11 @@ export class PaperRecordSession {
     });
   }
 
+  registerItem(itemId) {
+    if (!itemId || this.itemIds.includes(itemId)) return;
+    this.itemIds.push(itemId);
+  }
+
   commitStroke() {
     if (!this._pendingStroke || this._pendingStroke.points.length < 2) {
       this._pendingStroke = null;
@@ -173,6 +179,7 @@ export class PaperRecordSession {
     }
     const stroke = { ...this._pendingStroke };
     this.strokes.push(stroke);
+    this.registerItem(stroke.id);
     this._pendingStroke = null;
     return stroke;
   }
@@ -249,6 +256,7 @@ export class PaperRecordSession {
         text: s.text || undefined,
       })),
       strokes: this.strokes,
+      itemIds: [...this.itemIds],
       annotations,
       paperSize: { width: PAPER_WIDTH, height: PAPER_HEIGHT },
     };
@@ -302,6 +310,15 @@ export function buildPaperInterpretPrompt(session, pageItems = []) {
     .filter((it) => it.type === "stroke")
     .map((s) => `- ${describeStroke(s)}`)
     .join("\n");
+  const pageItemLines = pageItems
+    .filter((it) => it.type !== "stroke" && it.type !== "link")
+    .map((it) => {
+      if (it.type === "text" && it.text?.trim()) return `- text: "${it.text.trim().slice(0, 120)}"`;
+      if (it.type === "image") return `- image at (${Math.round(it.x)},${Math.round(it.y)})`;
+      if (it.text?.trim()) return `- ${it.type}: "${it.text.trim().slice(0, 80)}"`;
+      return `- ${it.type} item`;
+    })
+    .join("\n");
   const voiceLines = (session?.voiceSegments || [])
     .filter((v) => v.text?.trim())
     .map((v, i) => `[${v.startMs}–${v.endMs}ms] ${v.text}`)
@@ -326,6 +343,9 @@ ${strokeLines || "(none)"}
 
 All strokes on page:
 ${pageStrokes || "(none)"}
+
+Other items on page:
+${pageItemLines || "(none)"}
 
 Voice↔stroke associations:
 ${annotLines || "(none)"}
