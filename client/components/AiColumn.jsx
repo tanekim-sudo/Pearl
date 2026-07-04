@@ -98,16 +98,18 @@ export default function AiColumn({
                 <section className="ai-result-section">
                   <div className="ai-section-label">
                     Expanded
-                    <span
-                      className="ai-drag-hint"
+                    <button
+                      type="button"
+                      className="ai-transfer-chip"
                       draggable
                       onDragStart={(e) => {
                         e.dataTransfer.setData(AI_OUTPUT_MIME, expandedText);
                         e.dataTransfer.effectAllowed = "copy";
                       }}
+                      title="Drag onto paper to place as text"
                     >
-                      ⠿ drag to paper
-                    </span>
+                      → Paper
+                    </button>
                   </div>
                   <textarea
                     className="ai-result-text"

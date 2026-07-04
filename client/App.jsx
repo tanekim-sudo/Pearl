@@ -45,6 +45,7 @@ import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
@@ -1798,6 +1799,7 @@ export default function App() {
   const [paperRecordMs, setPaperRecordMs] = useState(0);
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
+  const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [aiSection, setAiSection] = useState("expand");
   const [canvasDropOver, setCanvasDropOver] = useState(false);
 
@@ -3992,6 +3994,7 @@ export default function App() {
             ? `session saved · "${session.transcript.slice(0, 48)}…"`
             : "voice + draw session saved"
         );
+        interpretPaperSession(session);
       } catch (err) {
         showToast(err.message || "could not stop recording");
       }
@@ -4011,14 +4014,15 @@ export default function App() {
     }
   }
 
-  async function interpretPaperSession() {
+  async function interpretPaperSession(sessionOverride = null) {
     const page = pages.find((p) => p.id === activePageId);
     const sessions = page?.sessions || [];
-    const latest = sessions[sessions.length - 1];
+    const latest = sessionOverride || sessions[sessions.length - 1];
     if (!latest) {
       showToast("record a voice + draw session first");
       return;
     }
+    setAiSection("expand");
     const pageItems = itemsRef.current.filter(
       (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId
     );
@@ -4028,6 +4032,7 @@ export default function App() {
       sourceIds: [],
       sourcePreview: latest.transcript?.slice(0, 200) || "Paper session",
       sourceText: prompt,
+      image,
       loading: true,
       error: null,
       opLabel: "interpret paper",
@@ -4628,10 +4633,16 @@ export default function App() {
     showToast("added to paper");
   }
 
-  function handleAiDrop(e) {
-    e.preventDefault();
-    setAiDropOver(false);
-    setAiSection("expand");
+  function absorbTransferPayload(e, { autoExpand = false } = {}) {
+    const sessionJson = e.dataTransfer.getData(PAPER_SESSION_MIME);
+    if (sessionJson) {
+      try {
+        interpretPaperSession(JSON.parse(sessionJson));
+      } catch {
+        /* ignore */
+      }
+      return true;
+    }
 
     const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME) || e.dataTransfer.getData(SEL_MIME);
     let ids = null;
@@ -4647,7 +4658,7 @@ export default function App() {
     const opId = e.dataTransfer.getData(OP_MIME);
     if (opId) {
       const op = opMap[opId];
-      if (!op) return;
+      if (!op) return true;
       if (!ids?.length) {
         setAiPanel((prev) => ({
           ...(prev || {}),
@@ -4655,13 +4666,48 @@ export default function App() {
           opId: op.id,
         }));
         showToast("Select something on the paper, then expand");
-        return;
+        return true;
       }
       expandInAi(ids, { op, opLabel: op.name });
-      return;
+      return true;
     }
 
-    if (ids?.length) expandInAi(ids);
+    if (ids?.length) {
+      if (autoExpand) expandInAi(ids);
+      else {
+        syncAiSource(ids, { keepExpanded: false });
+        setAiSection("expand");
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function handleBoundaryDragOver(e) {
+    if (
+      e.dataTransfer.types.includes(THOUGHT_MIME) ||
+      e.dataTransfer.types.includes(SEL_MIME) ||
+      e.dataTransfer.types.includes(OP_MIME) ||
+      e.dataTransfer.types.includes(PAPER_SESSION_MIME)
+    ) {
+      e.preventDefault();
+      setBoundaryDropOver(true);
+      e.dataTransfer.dropEffect = "copy";
+    }
+  }
+
+  function handleBoundaryDrop(e) {
+    e.preventDefault();
+    setBoundaryDropOver(false);
+    setAiSection("expand");
+    absorbTransferPayload(e);
+  }
+
+  function handleAiDrop(e) {
+    e.preventDefault();
+    setAiDropOver(false);
+    setAiSection("expand");
+    absorbTransferPayload(e, { autoExpand: true });
   }
 
   useEffect(() => {
@@ -4744,6 +4790,16 @@ export default function App() {
     return { x: it.x + w / 2, y: it.y + h / 2 };
   }
 
+  const hasPaperSession = (pages.find((p) => p.id === activePageId)?.sessions?.length ?? 0) > 0;
+  const boundaryStatus =
+    aiPanel?.loading && aiPanel?.opLabel === "interpret paper"
+      ? "interpreting"
+      : aiPanel?.sourceText && !aiPanel?.loading
+        ? "synced"
+        : hasPaperSession || selection.length > 0
+          ? "ready"
+          : "idle";
+
   return (
     <div className={"idea-app theme-" + theme}>
       <TopToolbar
@@ -4793,8 +4849,6 @@ export default function App() {
           paperRecordLevel={paperRecordLevel}
           paperRecordMs={paperRecordMs}
           onTogglePaperRecord={togglePaperRecord}
-          hasPaperSession={(pages.find((p) => p.id === activePageId)?.sessions?.length ?? 0) > 0}
-          onInterpretPaper={interpretPaperSession}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
@@ -5175,6 +5229,19 @@ export default function App() {
       </div>
         </CanvasColumn>
 
+        <InterpretBoundary
+          status={boundaryStatus}
+          dropOver={boundaryDropOver}
+          hasPaperSession={hasPaperSession}
+          loading={aiPanel?.loading && aiPanel?.opLabel === "interpret paper"}
+          onInterpret={() => interpretPaperSession()}
+          onDragOver={handleBoundaryDragOver}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setBoundaryDropOver(false);
+          }}
+          onDrop={handleBoundaryDrop}
+        />
+
         <AiColumn
           panel={aiPanel}
           section={aiSection}
@@ -5185,7 +5252,8 @@ export default function App() {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
               e.dataTransfer.types.includes(SEL_MIME) ||
-              e.dataTransfer.types.includes(OP_MIME)
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(PAPER_SESSION_MIME)
             ) {
               e.preventDefault();
               setAiDropOver(true);
@@ -5615,9 +5683,9 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, on
             e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
             e.dataTransfer.effectAllowed = "copy";
           }}
-          title="Expand in AI layer · drag to right column"
+          title="Send to AI layer · drag to boundary or right column"
         >
-          ✦ expand
+          → AI
         </button>
       )}
       {onSaveDocument && (

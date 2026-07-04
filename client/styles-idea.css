@@ -10,11 +10,11 @@
   background: var(--paper-deep);
 }
 
-/* Two columns: notebook + AI layer */
+/* Two halves + interpretation boundary: paper | seam | AI */
 .two-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr minmax(300px, 34%);
+  grid-template-columns: 1fr auto 1fr;
   min-height: 0;
   gap: 0;
 }
@@ -26,22 +26,160 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--line);
   background: var(--card);
   transition: box-shadow 0.15s, background 0.15s;
 }
 
-.ai-column {
+.canvas-column {
   border-right: none;
+}
+
+.ai-column {
+  border-left: none;
 }
 
 /* legacy alias — same layout */
 .three-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr minmax(300px, 34%);
+  grid-template-columns: 1fr auto 1fr;
   min-height: 0;
   gap: 0;
+}
+
+/* Interpretation boundary — spatial↔AI bridge */
+.interpret-boundary {
+  width: 12px;
+  min-width: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper-deep) 60%, var(--accent) 8%) 0%,
+    color-mix(in srgb, var(--card) 70%, var(--accent) 12%) 50%,
+    color-mix(in srgb, var(--paper-deep) 60%, var(--accent) 8%) 100%
+  );
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  cursor: default;
+  z-index: 20;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.interpret-boundary.ready {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper-deep) 50%, var(--accent) 14%) 0%,
+    color-mix(in srgb, var(--card) 60%, var(--accent) 18%) 50%,
+    color-mix(in srgb, var(--paper-deep) 50%, var(--accent) 14%) 100%
+  );
+}
+
+.interpret-boundary.drop-over {
+  width: 16px;
+  min-width: 16px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--card));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.interpret-boundary.interpreting {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 8%, var(--card)) 0%,
+    color-mix(in srgb, var(--accent) 16%, var(--card)) 50%,
+    color-mix(in srgb, var(--accent) 8%, var(--card)) 100%
+  );
+}
+
+.interpret-boundary.synced .interpret-boundary-dot {
+  background: var(--accent);
+}
+
+.interpret-boundary-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.interpret-boundary-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--line);
+  opacity: 0.7;
+}
+
+.interpret-boundary-dot.pulse {
+  background: var(--accent);
+  animation: ai-pulse 1s ease-in-out infinite;
+}
+
+.interpret-boundary-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+  z-index: 2;
+}
+
+.interpret-boundary-btn:not(:disabled):hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent-text);
+}
+
+.interpret-boundary-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.interpret-boundary-arrow {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.interpret-boundary-status {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.interpret-boundary:hover .interpret-boundary-status,
+.interpret-boundary.drop-over .interpret-boundary-status,
+.interpret-boundary.interpreting .interpret-boundary-status {
+  opacity: 1;
 }
 
 .column-drop-over {
@@ -322,16 +460,23 @@
   gap: 8px;
 }
 
-.ai-drag-hint {
+.ai-drag-hint,
+.ai-transfer-chip {
   font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
   font-size: 11px;
   color: var(--accent-text);
   cursor: grab;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 6px;
   background: var(--accent-soft);
+  border: none;
+  font-family: inherit;
+}
+
+.ai-transfer-chip:active {
+  cursor: grabbing;
 }
 
 .ai-source-box {

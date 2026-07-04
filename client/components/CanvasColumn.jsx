@@ -28,8 +28,6 @@ export default function CanvasColumn({
   paperRecordLevel,
   paperRecordMs,
   onTogglePaperRecord,
-  hasPaperSession,
-  onInterpretPaper,
   onSelectPage,
   onAddPage,
   onRenamePage,
@@ -71,16 +69,6 @@ export default function CanvasColumn({
               </button>
             );
           })}
-          {hasPaperSession && (
-            <button
-              type="button"
-              className="canvas-tool-btn paper-interpret-btn"
-              title="Interpret paper with Claude (voice + drawings)"
-              onClick={onInterpretPaper}
-            >
-              ✦ AI
-            </button>
-          )}
         </div>
         <PaperRecordBar
           recording={paperRecording}
