@@ -144,12 +144,13 @@ export default function AiNodeCanvas({
   }
 
   function handleViewportPointerDown(e) {
-    if (spaceHeld || e.button === 1) {
+    const onVoid =
+      e.target === e.currentTarget ||
+      e.target.classList.contains("ai-void-bg") ||
+      e.target.classList.contains("ai-starfield");
+    if (spaceHeld || e.button === 1 || (e.button === 0 && onVoid)) {
       startPan(e);
       return;
-    }
-    if (e.target === e.currentTarget || e.target.classList.contains("ai-void-bg")) {
-      if (e.button === 0) onSelect?.(null);
     }
   }
 

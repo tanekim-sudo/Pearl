@@ -36,6 +36,7 @@
 
 .ai-column {
   border-left: none;
+  background: #08080c;
 }
 
 /* legacy alias — same layout */
