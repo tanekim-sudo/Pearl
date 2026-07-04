@@ -11,6 +11,7 @@ import {
 } from "./transform-primitives.js";
 import { scaleEta, ETA } from "./eta.js";
 import { compileExecutionPlan, isSingleStepPrompt } from "../server/plan.js";
+import { PHASE_TIMEOUT } from "./phase-timeouts.js";
 
 describe("transform primitives", () => {
   it("defines the canonical grammar", () => {
@@ -91,6 +92,6 @@ describe("transform primitives", () => {
     const plan = compileExecutionPlan(move, { m1: move }, "Cursor AI");
     assert.equal(plan.phases.length, 1);
     assert.equal(plan.phases[0].id, "synthesize");
-    assert.ok(plan.phases[0].timeoutMs <= 45000);
+    assert.ok(plan.phases[0].timeoutMs <= PHASE_TIMEOUT.synthesizePrimitive);
   });
 });

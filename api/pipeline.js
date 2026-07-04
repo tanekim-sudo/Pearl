@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const status = err?.status || 500;
     const message = err?.message || "Pipeline failed.";
     if (message.includes("timeout") || message.includes("Timed out")) {
-      res.status(504).json({ error: "Timed out after 30s. Try again." });
+      res.status(504).json({ error: "Request timed out. Try again." });
       return;
     }
     res.status(status).json({

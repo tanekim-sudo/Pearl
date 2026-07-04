@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
 
 export const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
 
@@ -65,7 +66,7 @@ export async function runPrompt({
   maxTokens = null,
   research = false,
   maxSearchUses = 5,
-  timeoutMs = 90000,
+  timeoutMs = PHASE_TIMEOUT.synthesizeComposite,
   temperature = null,
   compact = false,
 }) {

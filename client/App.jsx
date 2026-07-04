@@ -18,7 +18,7 @@ import {
   opToAbstractTree,
 } from "../shared/operator-capture.js";
 import { scaleEta, ETA } from "../shared/eta.js";
-import { phaseClientAbortMs, PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
+import { pipelineClientAbortMs, CLIENT_ABORT_MS, PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
 import { compileExecutionPlan } from "../server/plan.js";
 import { matchRoleTemplate, isResolveOnlyFunction } from "../shared/role-templates.js";
 import {
@@ -1651,9 +1651,9 @@ async function runExecutionOnServer({ op, opMap, operators, material, image, onP
   }
 
   onProgress?.(phases[0]?.label || op.name);
-  const timeoutMs = phases.reduce((sum, p) => sum + phaseClientAbortMs(p), 3000);
+  const abortMs = pipelineClientAbortMs(phases);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), abortMs);
   try {
     const res = await fetch("/api/execute", {
       method: "POST",
@@ -1692,8 +1692,8 @@ async function runClaude(prompt, text, opts = {}) {
     compact = false,
   } = opts;
   const controller = new AbortController();
-  const abortMs = timeoutMs || phaseClientAbortMs({ timeoutMs: PHASE_TIMEOUT.synthesizeComposite });
-  const timer = setTimeout(() => controller.abort(), abortMs);
+  const serverTimeoutMs = timeoutMs || PHASE_TIMEOUT.synthesizeComposite;
+  const timer = setTimeout(() => controller.abort(), CLIENT_ABORT_MS);
   try {
     const res = await fetch("/api/run", {
       method: "POST",
@@ -1706,7 +1706,7 @@ async function runClaude(prompt, text, opts = {}) {
         system,
         maxTokens,
         research,
-        timeoutMs: abortMs,
+        timeoutMs: serverTimeoutMs,
         compact,
       }),
       signal: controller.signal,
