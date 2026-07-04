@@ -1,5 +1,6 @@
 import React from "react";
 import BottomBar from "./BottomBar.jsx";
+import PaperRecordBar from "./PaperRecordBar.jsx";
 
 const CANVAS_TOOLS = [
   { id: "select", label: "Select", icon: "↖" },
@@ -23,6 +24,12 @@ export default function CanvasColumn({
   activePageId,
   zoomPct,
   editMode,
+  paperRecording,
+  paperRecordLevel,
+  paperRecordMs,
+  onTogglePaperRecord,
+  hasPaperSession,
+  onInterpretPaper,
   onSelectPage,
   onAddPage,
   onZoomIn,
@@ -57,7 +64,23 @@ export default function CanvasColumn({
               </button>
             );
           })}
+          {hasPaperSession && (
+            <button
+              type="button"
+              className="canvas-tool-btn paper-interpret-btn"
+              title="Interpret paper with Claude (voice + drawings)"
+              onClick={onInterpretPaper}
+            >
+              ✦ AI
+            </button>
+          )}
         </div>
+        <PaperRecordBar
+          recording={paperRecording}
+          level={paperRecordLevel}
+          durationMs={paperRecordMs}
+          onToggle={onTogglePaperRecord}
+        />
       </div>
 
       <div className="canvas-column-main">{children}</div>

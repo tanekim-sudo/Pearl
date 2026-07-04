@@ -1047,6 +1047,13 @@
   background:
     radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
   background-size: 24px 24px;
+  background-color: var(--canvas-bg, #e8e4dc);
+}
+
+.canvas-column .paper-sheet {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 8px 32px rgba(0, 0, 0, 0.14);
 }
 
 .idea-center .board-text,

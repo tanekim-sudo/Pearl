@@ -55,6 +55,18 @@ import {
   defaultBlockMeta,
   isTransformableBlock,
 } from "./lib/board-item-utils.js";
+import {
+  PAPER_WIDTH,
+  PAPER_HEIGHT,
+  MIN_SCALE,
+  ZOOM_STEP,
+  clampScale,
+  zoomAtPoint,
+  centerPaperCamera,
+  clampToPaper,
+  paperAllowsPan,
+} from "./lib/paper.js";
+import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 const ITEMS_KEY = "lens.board.items.v1";
 const PAGES_KEY = "lens.board.pages.v1";
@@ -995,7 +1007,18 @@ async function gatherMaterialFromItems(itemList) {
   }
 
   const preview = text.slice(0, 1200) || (image ? "visual material" : "");
-  return { text, image, preview };
+  const voiceInstructions = itemList
+    .filter((it) => it.instructionText)
+    .map((it) => it.instructionText)
+    .join(" · ");
+  const mergedText = voiceInstructions
+    ? [text, `Voice instructions for drawings: ${voiceInstructions}`].filter(Boolean).join("\n\n")
+    : text;
+  return {
+    text: mergedText,
+    image,
+    preview: preview || voiceInstructions?.slice(0, 120) || "",
+  };
 }
 
 function itemWidth(it) {
@@ -1703,7 +1726,11 @@ export default function App() {
     if (fromArtifact.length) return fromArtifact;
     return migrateOldSeeds().map(normalizeItem);
   });
-  const [camera, setCamera] = useState(() => load(CAMERA_KEY, { x: 0, y: 0, scale: 1 }));
+  const [camera, setCamera] = useState(() => {
+    const saved = load(CAMERA_KEY, null);
+    if (saved && typeof saved.scale === "number") return saved;
+    return { x: 0, y: 0, scale: 1 };
+  });
   const [operators, setOperators] = useState(() => {
     const saved = load(OPERATORS_KEY, null) || load(LEGACY_OPERATORS_KEY, null);
     return migrateOperators(migrateOperatorStore(saved));
@@ -1750,19 +1777,30 @@ export default function App() {
   const [railPulse, setRailPulse] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
   const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
-  const [pages, setPages] = useState(() =>
-    load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID, name: "Page 1", camera: { x: 0, y: 0, scale: 1 } }])
-  );
+  const [pages, setPages] = useState(() => {
+    const saved = load(PAGES_KEY, null);
+    const base = Array.isArray(saved) && saved.length
+      ? saved.map((p) => ({ ...p, sessions: p.sessions || [] }))
+      : [{ id: DEFAULT_PAGE_ID, name: "Page 1", camera: { x: 0, y: 0, scale: 1 }, sessions: [] }];
+    return base;
+  });
   const [activePageId, setActivePageId] = useState(() => load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID }])[0]?.id || DEFAULT_PAGE_ID);
   const [worldFilter, setWorldFilter] = useState(null);
   const [theme, setTheme] = useState(() => load(THEME_KEY, "idea"));
   const [editMode, setEditMode] = useState(true);
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
+  const [paperRecording, setPaperRecording] = useState(false);
+  const [paperRecordLevel, setPaperRecordLevel] = useState(0);
+  const [paperRecordMs, setPaperRecordMs] = useState(0);
+  const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
   const [canvasDropOver, setCanvasDropOver] = useState(false);
 
   const viewportRef = useRef(null);
+  const paperSessionRef = useRef(null);
+  const paperStrokeIdRef = useRef(null);
+  const paperRecordTickRef = useRef(null);
   const railRef = useRef(null);
   const inputLayerRef = useRef(null);
   const gesture = useRef(null);
@@ -1810,6 +1848,18 @@ export default function App() {
     return () => clearTimeout(t);
   }, [items]);
   useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
+
+  const paperCenteredRef = useRef(false);
+  useEffect(() => {
+    if (paperCenteredRef.current || !viewportRef.current) return;
+    const r = viewportRef.current.getBoundingClientRect();
+    if (r.width < 40 || r.height < 40) return;
+    paperCenteredRef.current = true;
+    const c = camRef.current;
+    if (c.x === 0 && c.y === 0 && (c.scale === 1 || !load(CAMERA_KEY, null))) {
+      setCamera(centerPaperCamera(r.width, r.height));
+    }
+  });
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
   useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
@@ -1919,7 +1969,8 @@ export default function App() {
   function clientToWorld(clientX, clientY) {
     const l = vpLocal(clientX, clientY);
     const c = camRef.current;
-    return { x: (l.x - c.x) / c.scale, y: (l.y - c.y) / c.scale };
+    const raw = { x: (l.x - c.x) / c.scale, y: (l.y - c.y) / c.scale };
+    return clampToPaper(raw.x, raw.y);
   }
 
   function worldToLocal(wx, wy) {
@@ -1938,14 +1989,11 @@ export default function App() {
     return clientToWorld(r.left + r.width / 2, r.top + r.height / 2);
   }
 
-  function zoomCamera(c, factor) {
+  function zoomCamera(c, factor, anchorLocal = null) {
     const r = vpRect();
-    const lx = r.width / 2;
-    const ly = r.height / 2;
-    const scale = clamp(c.scale * factor, 0.12, 4.5);
-    const wx = (lx - c.x) / c.scale;
-    const wy = (ly - c.y) / c.scale;
-    return { scale, x: lx - wx * scale, y: ly - wy * scale };
+    const lx = anchorLocal?.x ?? r.width / 2;
+    const ly = anchorLocal?.y ?? r.height / 2;
+    return zoomAtPoint(c, lx, ly, factor);
   }
 
   function placeEditCaret(id, cx, cy) {
@@ -1998,6 +2046,8 @@ export default function App() {
       const cy = e.clientY;
 
       if (g.mode === "pan") {
+        const r = vpRect();
+        if (!paperAllowsPan(g.cam.scale, r.width, r.height)) return;
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
@@ -2024,7 +2074,14 @@ export default function App() {
           g.lastCx = cx;
           g.lastCy = cy;
         }
-        g.points.push(w);
+        g.points.push(
+          paperSessionRef.current?.recording
+            ? { ...w, t: paperSessionRef.current.elapsedMs() }
+            : w
+        );
+        if (paperSessionRef.current?.recording) {
+          paperSessionRef.current.addPoint(w.x, w.y);
+        }
         const loop = g.highlight && g.points.length > 8 && isClosedHighlightLoop(g.points, camRef.current.scale);
         setDraft({ points: g.points.slice(), marker: g.marker, highlight: g.highlight, loop });
       } else if (g.mode === "erase") {
@@ -2109,19 +2166,14 @@ export default function App() {
             const pts = g.points.slice();
             const hlW = highlightWorldWidth(camRef.current.scale);
             if (isClosedHighlightLoop(pts, camRef.current.scale)) {
-              const strokeId = uid();
-              setItems((arr) => [
-                ...arr,
-                {
-                  id: strokeId,
-                  type: "stroke",
-                  points: pts,
-                  color: HIGHLIGHT_INK,
-                  width: hlW,
-                  marker: true,
-                  highlight: true,
-                },
-              ]);
+              const strokeItem = finishRecordedStroke(g, pts, {
+                color: HIGHLIGHT_INK,
+                width: hlW,
+                marker: true,
+                highlight: true,
+              });
+              const strokeId = strokeItem.id;
+              setItems((arr) => [...arr, strokeItem]);
               const inside = itemsInsideHighlightLoop(
                 pts,
                 itemsRef.current.filter((it) => it.id !== strokeId)
@@ -2140,19 +2192,14 @@ export default function App() {
                 showToastRef.current("nothing inside the circle");
               }
             } else {
-              const strokeId = uid();
-              setItems((arr) => [
-                ...arr,
-                {
-                  id: strokeId,
-                  type: "stroke",
-                  points: pts,
-                  color: HIGHLIGHT_INK,
-                  width: hlW,
-                  marker: true,
-                  highlight: true,
-                },
-              ]);
+              const strokeItem = finishRecordedStroke(g, pts, {
+                color: HIGHLIGHT_INK,
+                width: hlW,
+                marker: true,
+                highlight: true,
+              });
+              const strokeId = strokeItem.id;
+              setItems((arr) => [...arr, strokeItem]);
               requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                   const extracted = extractTextFromHighlightStroke(
@@ -2174,18 +2221,13 @@ export default function App() {
               });
             }
           } else {
-            setItems((arr) => [
-              ...arr,
-              {
-                id: uid(),
-                type: "stroke",
-                points: g.points,
-                color: INK,
-                width: g.marker ? MARKER_W : PEN_W,
-                marker: g.marker,
-                highlight: false,
-              },
-            ]);
+            const strokeItem = finishRecordedStroke(g, g.points, {
+              color: INK,
+              width: g.marker ? MARKER_W : PEN_W,
+              marker: g.marker,
+              highlight: false,
+            });
+            setItems((arr) => [...arr, strokeItem]);
           }
         }
         setDraft(null);
@@ -2248,12 +2290,7 @@ export default function App() {
       if (e.ctrlKey || e.metaKey) {
         const factor = Math.exp(-e.deltaY * 0.0016);
         const local = vpLocal(e.clientX, e.clientY);
-        setCamera((c) => {
-          const scale = clamp(c.scale * factor, 0.12, 4.5);
-          const wx = (local.x - c.x) / c.scale;
-          const wy = (local.y - c.y) / c.scale;
-          return { scale, x: local.x - wx * scale, y: local.y - wy * scale };
-        });
+        setCamera((c) => zoomAtPoint(c, local.x, local.y, factor));
       } else {
         setCamera((c) => ({ ...c, x: c.x - e.deltaX, y: c.y - e.deltaY }));
       }
@@ -3890,6 +3927,158 @@ export default function App() {
   }
   eraseAtPointerRef.current = eraseAtPointer;
 
+  function finishRecordedStroke(g, pts, itemAttrs) {
+    const rec = paperSessionRef.current;
+    let points = pts;
+    if (rec?.recording && g.strokeId) {
+      const committed = rec.commitStroke();
+      if (committed?.points?.length) points = committed.points;
+    }
+    const strokeId = g.strokeId || uid();
+    paperStrokeIdRef.current = null;
+    return { id: strokeId, type: "stroke", points, pageId: activePageId, ...itemAttrs };
+  }
+
+  async function togglePaperRecord() {
+    if (paperRecording && paperSessionRef.current) {
+      try {
+        const session = await paperSessionRef.current.stop();
+        setPaperRecording(false);
+        setPaperRecordLevel(0);
+        setPaperRecordMs(0);
+        paperSessionRef.current = null;
+        setPages((ps) =>
+          ps.map((p) =>
+            p.id === activePageId
+              ? { ...p, sessions: [...(p.sessions || []), session] }
+              : p
+          )
+        );
+        const annotMap = new Map();
+        for (const a of session.annotations || []) {
+          for (const sid of a.strokeIds || []) {
+            annotMap.set(sid, {
+              voiceSegmentIds: [a.voiceSegmentIndex],
+              instructionText: a.instruction || undefined,
+            });
+          }
+        }
+        if (annotMap.size) {
+          setItems((arr) =>
+            arr.map((it) => {
+              if (it.type !== "stroke" || !annotMap.has(it.id)) return it;
+              return { ...it, ...annotMap.get(it.id) };
+            })
+          );
+        }
+        showToast(
+          session.transcript
+            ? `session saved · "${session.transcript.slice(0, 48)}…"`
+            : "voice + draw session saved"
+        );
+      } catch (err) {
+        showToast(err.message || "could not stop recording");
+      }
+      return;
+    }
+    const session = new PaperRecordSession();
+    try {
+      await session.start({
+        onWaveform: (level) => setPaperRecordLevel(level),
+      });
+      paperSessionRef.current = session;
+      setPaperRecording(true);
+      setPaperRecordMs(0);
+      showToast("recording — draw and speak on the paper");
+    } catch (err) {
+      showToast(err.message || "microphone unavailable");
+    }
+  }
+
+  async function interpretPaperSession() {
+    const page = pages.find((p) => p.id === activePageId);
+    const sessions = page?.sessions || [];
+    const latest = sessions[sessions.length - 1];
+    if (!latest) {
+      showToast("record a voice + draw session first");
+      return;
+    }
+    const pageItems = itemsRef.current.filter(
+      (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId
+    );
+    const prompt = buildPaperInterpretPrompt(latest, pageItems);
+    const image = await compositePaperSnapshot(pageItems);
+    setAiPanel({
+      sourceIds: [],
+      sourcePreview: latest.transcript?.slice(0, 200) || "Paper session",
+      sourceText: prompt,
+      loading: true,
+      error: null,
+      opLabel: "interpret paper",
+    });
+    try {
+      const out = await runClaude(
+        "Interpret this multimodal notebook page. The user's voice explains what their drawings mean spatially.",
+        prompt,
+        { image, maxTokens: 2048, compact: true }
+      );
+      setAiPanel((prev) => ({
+        ...prev,
+        expandedText: out.trim(),
+        loading: false,
+        error: null,
+      }));
+    } catch (err) {
+      setAiPanel((prev) => ({
+        ...prev,
+        loading: false,
+        error: err.message || "interpret failed",
+      }));
+      showToast(err.message || "interpret failed");
+    }
+  }
+
+  async function compositePaperSnapshot(pageItems) {
+    const visuals = pageItems.filter((it) => it.type === "stroke" || it.type === "image");
+    if (!visuals.length) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = PAPER_WIDTH;
+    canvas.height = PAPER_HEIGHT;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, PAPER_WIDTH, PAPER_HEIGHT);
+    for (const it of visuals) {
+      if (it.type === "stroke" && it.points?.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(it.points[0].x, it.points[0].y);
+        for (let i = 1; i < it.points.length; i++) ctx.lineTo(it.points[i].x, it.points[i].y);
+        ctx.strokeStyle = it.highlight ? HIGHLIGHT_INK : it.color || INK;
+        ctx.lineWidth = it.width || PEN_W;
+        ctx.globalAlpha = it.marker ? 0.35 : 0.9;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (it.type === "image" && it.src) {
+        try {
+          const img = await loadImage(it.src);
+          ctx.drawImage(img, it.x, it.y, it.w, it.h);
+        } catch {
+          /* skip */
+        }
+      }
+    }
+    return canvas.toDataURL("image/jpeg", 0.82);
+  }
+
+  function startDrawStroke(w, attrs) {
+    let strokeId = null;
+    const rec = paperSessionRef.current;
+    if (rec?.recording) {
+      strokeId = rec.beginStroke({ id: uid(), ...attrs });
+      rec.addPoint(w.x, w.y);
+    }
+    return strokeId;
+  }
+
   // ---- pointer gestures on the board ----
   function onPointerDown(e) {
     if (e.button === 1) {
@@ -3959,7 +4148,13 @@ export default function App() {
     }
 
     if (t === "pen" || t === "marker") {
-      gesture.current = { mode: "draw", marker: t === "marker", points: [w] };
+      const strokeId = startDrawStroke(w, {
+        color: INK,
+        width: t === "marker" ? MARKER_W : PEN_W,
+        marker: t === "marker",
+        highlight: false,
+      });
+      gesture.current = { mode: "draw", marker: t === "marker", points: [w], strokeId };
       setDraft({ points: [w], marker: t === "marker" });
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       return;
@@ -3969,6 +4164,13 @@ export default function App() {
       const objHit = hit && isTransformableBlock(hit) ? hit : null;
       if (!objHit) {
         pushHistory();
+        const hlW = highlightWorldWidth(camRef.current.scale);
+        const strokeId = startDrawStroke(w, {
+          color: HIGHLIGHT_INK,
+          width: hlW,
+          marker: true,
+          highlight: true,
+        });
         gesture.current = {
           mode: "draw",
           highlight: true,
@@ -3976,6 +4178,7 @@ export default function App() {
           deletedIds: new Set(),
           lastCx: cx,
           lastCy: cy,
+          strokeId,
         };
         setDraft({ points: [w], highlight: true });
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
@@ -4278,7 +4481,9 @@ export default function App() {
   function addPage() {
     const id = uid();
     const num = pages.length + 1;
-    setPages((ps) => [...ps, { id, name: `Page ${num}`, camera: { x: 0, y: 0, scale: 1 } }]);
+    const r = vpRect();
+    const cam = centerPaperCamera(r.width, r.height);
+    setPages((ps) => [...ps, { id, name: `Page ${num}`, camera: cam, sessions: [] }]);
     switchPage(id);
   }
 
@@ -4442,8 +4647,8 @@ export default function App() {
       input.onchange = () => input.files?.[0] && importPath(input.files[0]);
       input.click();
     } else if (action === "start-fresh") setFreshConfirm(true);
-    else if (action === "zoom-in") setCamera((c) => zoomCamera(c, 1.2));
-    else if (action === "zoom-out") setCamera((c) => zoomCamera(c, 1 / 1.2));
+    else if (action === "zoom-in") setCamera((c) => zoomCamera(c, ZOOM_STEP));
+    else if (action === "zoom-out") setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP));
     else if (action === "zoom-reset") setCamera((c) => ({ ...c, scale: 1 }));
     else if (action === "theme-toggle") setTheme((t) => (t === "idea" ? "chalk" : "idea"));
     else if (action === "insert-sticky") insertBlock("sticky");
@@ -4475,6 +4680,8 @@ export default function App() {
     selItem && isTransformableBlock(selItem) ? getNodeThreadCapture(selItem.id, items) : null;
   const captureName = (captureNameOverride ?? selCaptureInfo?.defaultName ?? "").slice(0, 72);
   const boardLinks = visibleItems.filter((it) => it.type === "link");
+  const activePageHasSession =
+    (pages.find((p) => p.id === activePageId)?.sessions?.length || 0) > 0;
   const walkStep = walking?.steps?.[walking.stepIndex] || null;
   const walkFocusRects = walkStep
     ? walkStep.itemIds
@@ -4641,11 +4848,20 @@ export default function App() {
           editMode={editMode}
           onSelectPage={switchPage}
           onAddPage={addPage}
-          onZoomIn={() => setCamera((c) => zoomCamera(c, 1.2))}
-          onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / 1.2))}
-          onZoomReset={() => setCamera((c) => ({ ...c, scale: 1 }))}
+          onZoomIn={() => setCamera((c) => zoomCamera(c, ZOOM_STEP))}
+          onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP))}
+          onZoomReset={() => {
+            const r = vpRect();
+            setCamera(centerPaperCamera(r.width, r.height));
+          }}
           onExport={() => exportSelection("md")}
           onToggleEdit={() => setEditMode((m) => !m)}
+          paperRecording={paperRecording}
+          paperRecordLevel={paperRecordLevel}
+          paperRecordMs={paperRecordMs}
+          onTogglePaperRecord={togglePaperRecord}
+          hasPaperSession={(pages.find((p) => p.id === activePageId)?.sessions?.length ?? 0) > 0}
+          onInterpretPaper={interpretPaperSession}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
@@ -4663,6 +4879,11 @@ export default function App() {
           className="world"
           style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}
         >
+          <div
+            className="paper-sheet"
+            style={{ width: PAPER_WIDTH, height: PAPER_HEIGHT }}
+          >
+            <div className="paper-content" style={{ width: PAPER_WIDTH, height: PAPER_HEIGHT }}>
           {/* branch arrows between notes */}
           <svg className="link-layer" style={{ overflow: "visible" }}>
             <defs>
@@ -4708,18 +4929,24 @@ export default function App() {
             {visibleItems
               .filter((it) => it.type === "stroke")
               .map((it) => (
-                <polyline
-                  key={it.id}
-                  data-item={it.id}
-                  points={it.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                  fill="none"
-                  stroke={it.highlight ? HIGHLIGHT_INK : it.color}
-                  strokeWidth={it.highlight ? highlightWorldWidth(camera.scale) : it.width}
-                  strokeOpacity={it.highlight ? 0.72 : it.marker ? 0.32 : 0.95}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={(selection.includes(it.id) ? "sel" : "") + (it.highlight ? " hl-stroke" : "")}
-                />
+                <g key={it.id}>
+                  {it.instructionText && <title>{it.instructionText}</title>}
+                  <polyline
+                    data-item={it.id}
+                    points={it.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill="none"
+                    stroke={it.highlight ? HIGHLIGHT_INK : it.color}
+                    strokeWidth={it.highlight ? highlightWorldWidth(camera.scale) : it.width}
+                    strokeOpacity={it.highlight ? 0.72 : it.marker ? 0.32 : 0.95}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={
+                      (selection.includes(it.id) ? "sel" : "") +
+                      (it.highlight ? " hl-stroke" : "") +
+                      (it.instructionText ? " voice-linked" : "")
+                    }
+                  />
+                </g>
               ))}
             {draft && draft.points.length >= 1 && (
               <>
@@ -4836,6 +5063,9 @@ export default function App() {
               }}
             />
           )}
+            </div>
+            <span className="paper-edge-label">8.5 × 11</span>
+          </div>
         </div>
 
         {/* live lasso (viewport-local space) */}
@@ -4852,11 +5082,37 @@ export default function App() {
         )}
       </div>
 
+      {strokeTooltip && (
+        <div
+          className="stroke-voice-tooltip"
+          style={{ left: strokeTooltip.x + 12, top: strokeTooltip.y + 12 }}
+        >
+          {strokeTooltip.text}
+        </div>
+      )}
+
       {/* dedicated input surface — all canvas tools attach here */}
       <div
         ref={inputLayerRef}
         className={"canvas-input-layer " + cursorClass}
         onPointerDown={onPointerDown}
+        onPointerMove={(e) => {
+          if (gesture.current || paperRecording) {
+            if (!paperRecording) setStrokeTooltip(null);
+            return;
+          }
+          const hit = itemAtPoint(e.clientX, e.clientY);
+          if (hit?.type === "stroke" && hit.instructionText) {
+            setStrokeTooltip({
+              text: hit.instructionText,
+              x: e.clientX,
+              y: e.clientY,
+              id: hit.id,
+            });
+          } else {
+            setStrokeTooltip(null);
+          }
+        }}
         onDoubleClick={onDoubleClick}
         onDragOver={(e) => {
           if (

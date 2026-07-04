@@ -807,7 +807,156 @@ body {
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--desk, #d8d4cc);
+}
+
+.paper-sheet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: #fffef9;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 24px 48px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.paper-content {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: #fffef9;
+  background-image:
+    linear-gradient(to right, rgba(220, 80, 70, 0.35) 0, rgba(220, 80, 70, 0.35) 1px, transparent 1px),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(0, 0, 0, 0.06) 27px,
+      rgba(0, 0, 0, 0.06) 28px
+    );
+  background-size: 100% 100%, 100% 28px;
+  background-position: 72px 0, 0 8px;
+}
+
+.paper-edge-label {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  user-select: none;
+}
+
+.paper-record-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+.paper-record-bar.active {
+  flex-wrap: wrap;
+}
+
+.paper-record-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--surface, #fff);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.paper-record-btn.recording {
+  border-color: rgba(220, 60, 60, 0.45);
+  background: rgba(220, 60, 60, 0.08);
+}
+
+.paper-record-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.paper-record-btn.recording .paper-record-dot {
+  background: #e04040;
+  animation: paper-rec-pulse 1s ease-in-out infinite;
+}
+
+@keyframes paper-rec-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.85); }
+}
+
+.paper-record-time {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #666);
+}
+
+.paper-record-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.paper-record-bar-seg {
+  display: block;
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
+  background: rgba(220, 60, 60, 0.55);
+  transform-origin: bottom;
+  transition: transform 0.08s ease;
+}
+
+.paper-record-hint {
+  font-size: 10px;
+  color: var(--muted, #888);
+  max-width: 180px;
+  line-height: 1.2;
+}
+
+.paper-interpret-btn {
+  font-size: 10px !important;
+  letter-spacing: 0.02em;
+}
+
+.canvas-tool-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line, rgba(0, 0, 0, 0.12));
+  margin: 0 4px;
+  align-self: center;
+}
+
+.ink-layer .voice-linked {
+  filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.35));
+}
+
+.stroke-voice-tooltip {
+  position: fixed;
+  z-index: 30;
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(20, 20, 24, 0.92);
+  color: #f5f5f5;
+  font-size: 11px;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .canvas-input-layer {
@@ -847,20 +996,6 @@ body {
   transform-origin: 0 0;
   will-change: transform;
   pointer-events: none;
-  background-color: var(--paper);
-  background-image:
-    radial-gradient(ellipse at 18% 22%, rgba(255, 255, 255, 0.025) 0%, transparent 48%),
-    radial-gradient(ellipse at 82% 78%, rgba(0, 0, 0, 0.12) 0%, transparent 50%),
-    linear-gradient(to right, var(--notebook-margin) 0, var(--notebook-margin) 1px, transparent 1px),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 27px,
-      var(--notebook-line) 27px,
-      var(--notebook-line) 28px
-    );
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 28px;
-  background-position: 0 0, 0 0, 88px 0, 0 8px;
 }
 
 .link-layer {
