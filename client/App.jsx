@@ -43,7 +43,6 @@ import {
 } from "../shared/share-bundle.js";
 import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
-import FunctionsColumn from "./components/FunctionsColumn.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
@@ -1795,6 +1794,7 @@ export default function App() {
   const [paperRecordMs, setPaperRecordMs] = useState(0);
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
+  const [aiSection, setAiSection] = useState("expand");
   const [canvasDropOver, setCanvasDropOver] = useState(false);
 
   const viewportRef = useRef(null);
@@ -4667,8 +4667,9 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") setRailTab("functions");
-    else if (action === "open-structures") setRailTab("structures"); else if (action === "setup-role") setOnboard({ step: "role" });
+    else if (action === "open-functions") { setRailTab("functions"); setAiSection("library"); }
+    else if (action === "open-structures") { setRailTab("structures"); setAiSection("library"); }
+    else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
     else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
     else if (action === "help-tips") showToast("Double-click canvas to write · drag functions onto ideas · space to pan");
@@ -4734,113 +4735,7 @@ export default function App() {
         onShare={handleShareBoard}
       />
 
-      <div className="three-column-grid">
-        <FunctionsColumn
-          items={items}
-          activePageId={activePageId}
-          worldFilter={worldFilter}
-          onSelectThought={focusThought}
-          onNewThought={() => insertBlock("text")}
-          onSelectWorld={setWorldFilter}
-          onClearWorld={() => setWorldFilter(null)}
-          dropOver={railDropOver}
-          onDragOver={(e) => {
-            if (
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME)
-            ) {
-              e.preventDefault();
-              setRailDropOver(true);
-              e.dataTransfer.dropEffect = "copy";
-            }
-          }}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setRailDropOver(false);
-            const selJson = e.dataTransfer.getData(SEL_MIME);
-            if (selJson) {
-              try {
-                saveSelectionByIds(JSON.parse(selJson));
-              } catch {
-                /* ignore */
-              }
-              return;
-            }
-            const opId = e.dataTransfer.getData(OP_MIME);
-            if (opId) {
-              pinOpToToolbox(opId);
-              return;
-            }
-            const structId = e.dataTransfer.getData(STRUCT_MIME);
-            if (structId) {
-              setRailTab("structures");
-              showToast("already saved");
-            }
-          }}
-        >
-          <aside
-            ref={railRef}
-            className={"board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
-          >
-            <div className="rail-head">
-              <div className="rail-title">Functions</div>
-            </div>
-            <div className="rail-tabs">
-              <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
-                functions
-              </button>
-              <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
-                structures {structures.length ? `(${structures.length})` : ""}
-              </button>
-            </div>
-            {railTab === "functions" ? (
-              <>
-                <button className="rail-create" onClick={openCreateFunction}>+ function</button>
-                <div className="move-quick-add">
-                  <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                  <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
-                </div>
-                {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                  <div className="sel-capture-panel">
-                    <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
-                    <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
-                  </div>
-                )}
-                <div className="rail-lens-actions">
-                  <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-                </div>
-                <div className="rail-scroll">
-                  {lenses.length > 0 && (
-                    <>
-                      <div className="rail-section">lenses · worlds</div>
-                      {lenses.map((lens) => (
-                        <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
-                      ))}
-                    </>
-                  )}
-                  {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                  {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
-                  {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                  {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                </div>
-              </>
-            ) : (
-              <>
-                <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
-                <div className="rail-scroll">
-                  {structures.length === 0 ? <p className="rail-empty">Save selections from the canvas.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
-                </div>
-              </>
-            )}
-            <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
-            <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
-          </aside>
-        </FunctionsColumn>
-
+      <div className="two-column-grid">
         <CanvasColumn
           tool={tool}
           imageArmed={imageArmed}
@@ -5245,7 +5140,7 @@ export default function App() {
       {/* empty hint */}
       {visibleItems.length === 0 && (
         <div className="empty-hint">
-          <p>Double-click the canvas to write · open Tools for functions & lenses</p>
+          <p>Double-click the paper to write · drag moves from AI Layer onto ideas</p>
           <button type="button" className="starter-btn" onClick={plantStarterThought}>
             ✦ try the highlighter
           </button>
@@ -5256,7 +5151,10 @@ export default function App() {
 
         <AiColumn
           panel={aiPanel}
+          section={aiSection}
+          onSectionChange={setAiSection}
           dropOver={aiDropOver}
+          libraryDropOver={railDropOver}
           onDragOver={(e) => {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
@@ -5272,6 +5170,44 @@ export default function App() {
             if (!e.currentTarget.contains(e.relatedTarget)) setAiDropOver(false);
           }}
           onDrop={handleAiDrop}
+          onLibraryDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(STRUCT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME)
+            ) {
+              e.preventDefault();
+              setRailDropOver(true);
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onLibraryDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+          }}
+          onLibraryDrop={(e) => {
+            e.preventDefault();
+            setRailDropOver(false);
+            const selJson = e.dataTransfer.getData(SEL_MIME);
+            if (selJson) {
+              try {
+                saveSelectionByIds(JSON.parse(selJson));
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
+            const opId = e.dataTransfer.getData(OP_MIME);
+            if (opId) {
+              pinOpToToolbox(opId);
+              return;
+            }
+            const structId = e.dataTransfer.getData(STRUCT_MIME);
+            if (structId) {
+              setRailTab("structures");
+              setAiSection("library");
+              showToast("already saved");
+            }
+          }}
           onExpand={() => {
             const ids = aiPanel?.sourceIds || selection;
             if (!ids?.length) {
@@ -5289,6 +5225,62 @@ export default function App() {
             }
           }}
           onClear={() => setAiPanel(null)}
+          library={
+            <aside
+              ref={railRef}
+              className={"board-rail ai-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+            >
+              <div className="rail-tabs">
+                <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
+                  functions
+                </button>
+                <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
+                  structures {structures.length ? `(${structures.length})` : ""}
+                </button>
+              </div>
+              {railTab === "functions" ? (
+                <>
+                  <button className="rail-create" onClick={openCreateFunction}>+ function</button>
+                  <div className="move-quick-add">
+                    <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                    <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+                  </div>
+                  {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                    <div className="sel-capture-panel">
+                      <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                      <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
+                    </div>
+                  )}
+                  <div className="rail-lens-actions">
+                    <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
+                  </div>
+                  <div className="rail-scroll">
+                    {lenses.length > 0 && (
+                      <>
+                        <div className="rail-section">lenses · worlds</div>
+                        {lenses.map((lens) => (
+                          <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                        ))}
+                      </>
+                    )}
+                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
+                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
+                  <div className="rail-scroll">
+                    {structures.length === 0 ? <p className="rail-empty">Save selections from the paper.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+                  </div>
+                </>
+              )}
+              <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
+              <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
+            </aside>
+          }
         />
       </div>
 

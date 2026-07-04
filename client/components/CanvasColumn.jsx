@@ -1,5 +1,5 @@
 import React from "react";
-import BottomBar from "./BottomBar.jsx";
+import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
 
 const CANVAS_TOOLS = [
@@ -42,7 +42,12 @@ export default function CanvasColumn({
   return (
     <div className={"canvas-column" + (dropOver ? " column-drop-over" : "")}>
       <div className="canvas-column-header">
-        <span className="canvas-column-label">Notebook</span>
+        <PageTabs
+          pages={pages}
+          activePageId={activePageId}
+          onSelectPage={onSelectPage}
+          onAddPage={onAddPage}
+        />
         <div className="canvas-column-tools">
           {CANVAS_TOOLS.map((t) => {
             const active =
@@ -85,19 +90,27 @@ export default function CanvasColumn({
 
       <div className="canvas-column-main">{children}</div>
 
-      <BottomBar
-        pages={pages}
-        activePageId={activePageId}
-        zoomPct={zoomPct}
-        editMode={editMode}
-        onSelectPage={onSelectPage}
-        onAddPage={onAddPage}
-        onZoomIn={onZoomIn}
-        onZoomOut={onZoomOut}
-        onZoomReset={onZoomReset}
-        onExport={onExport}
-        onToggleEdit={onToggleEdit}
-      />
+      <footer className="idea-bottom canvas-bottom">
+        <button type="button" className={"edit-fab" + (editMode ? " active" : "")} onClick={onToggleEdit}>
+          Edit
+        </button>
+        <div className="bottom-controls">
+          <div className="zoom-controls">
+            <button type="button" onClick={onZoomOut} aria-label="Zoom out">
+              −
+            </button>
+            <button type="button" className="zoom-label" onClick={onZoomReset}>
+              {zoomPct}%
+            </button>
+            <button type="button" onClick={onZoomIn} aria-label="Zoom in">
+              +
+            </button>
+          </div>
+          <button type="button" className="export-btn" onClick={onExport} title="Export">
+            ↗
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }
