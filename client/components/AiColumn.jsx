@@ -1,4 +1,5 @@
 import React from "react";
+import AiNodeCanvas from "./AiNodeCanvas.jsx";
 
 const THOUGHT_MIME = "application/lens-thought";
 const SEL_MIME = "application/lens-selection";
@@ -8,9 +9,12 @@ const AI_OUTPUT_MIME = "application/lens-ai-output";
 export { THOUGHT_MIME, SEL_MIME, OP_MIME, AI_OUTPUT_MIME };
 
 export default function AiColumn({
+  nodes,
+  selectedNodeId,
+  onSelectNode,
+  onMoveNode,
+  onExpandNode,
   panel,
-  section,
-  onSectionChange,
   dropOver,
   libraryDropOver,
   onDragOver,
@@ -25,8 +29,18 @@ export default function AiColumn({
   onClear,
   library,
 }) {
-  const { sourcePreview, sourceText, expandedText, loading, error, opLabel } = panel || {};
-  const hasSource = panel?.sourceIds?.length || loading;
+  const selectedNode = nodes?.find((n) => n.id === selectedNodeId);
+  const detailNode =
+    selectedNode ||
+    (panel?.expandedText || panel?.loading
+      ? nodes?.find((n) => n.nodeKind === "expanded" && (n.loading || n.expandedText))
+      : nodes?.find((n) => n.nodeKind === "source")) ||
+    null;
+
+  const expandedText = detailNode?.expandedText ?? panel?.expandedText;
+  const loading = detailNode?.loading ?? panel?.loading;
+  const error = detailNode?.error ?? panel?.error;
+  const hasDetail = detailNode || panel?.sourceIds?.length || loading;
 
   return (
     <aside
@@ -37,108 +51,98 @@ export default function AiColumn({
     >
       <header className="ai-column-head">
         <h2 className="ai-column-title">AI Layer</h2>
-        <div className="ai-section-tabs">
-          <button
-            type="button"
-            className={"ai-section-tab" + (section === "expand" ? " on" : "")}
-            onClick={() => onSectionChange("expand")}
-          >
-            Expand
-          </button>
-          <button
-            type="button"
-            className={"ai-section-tab" + (section === "library" ? " on" : "")}
-            onClick={() => onSectionChange("library")}
-          >
-            Moves & lenses
-          </button>
-        </div>
+        <span className="ai-column-sub">nodes · moves · lenses</span>
       </header>
 
-      {section === "expand" ? (
-        <div className="ai-column-body">
-          {!hasSource ? (
-            <div className="ai-empty">
-              <p>Select something on the paper or drag a move here to expand.</p>
-              <p className="ai-empty-hint">Switch to Moves & lenses to browse functions, lenses, and structures.</p>
-            </div>
-          ) : (
-            <>
-              <section className="ai-source-section">
-                <div className="ai-section-label">Source</div>
-                <div className="ai-source-box">
-                  {sourcePreview || sourceText?.slice(0, 400) || "…"}
-                </div>
-              </section>
+      <div className="ai-column-body unified">
+        <section className="ai-nodes-section">
+          <div className="ai-section-label">Active nodes</div>
+          <AiNodeCanvas
+            nodes={nodes || []}
+            selectedId={selectedNodeId}
+            onSelect={onSelectNode}
+            onMove={onMoveNode}
+            onExpandNode={onExpandNode}
+          />
+        </section>
 
-              <div className="ai-actions">
-                <button
-                  type="button"
-                  className="ai-expand-btn"
-                  disabled={loading || !panel?.sourceIds?.length}
-                  onClick={onExpand}
-                >
-                  {loading ? "Expanding…" : opLabel ? `Run · ${opLabel}` : "Expand"}
-                </button>
-                {expandedText && (
-                  <>
-                    <button type="button" className="ai-action-btn" onClick={onCopy} title="Copy">
-                      Copy
-                    </button>
-                    <button type="button" className="ai-action-btn" onClick={onClear} title="Clear">
-                      Clear
-                    </button>
-                  </>
-                )}
-              </div>
+        {hasDetail && (
+          <section className="ai-detail-section">
+            {detailNode?.preview && detailNode.nodeKind === "source" && (
+              <div className="ai-source-box">{detailNode.preview}</div>
+            )}
+            {!detailNode?.preview && panel?.sourcePreview && (
+              <div className="ai-source-box">{panel.sourcePreview}</div>
+            )}
 
-              {error && <div className="ai-error">{error}</div>}
-
+            <div className="ai-actions">
+              <button
+                type="button"
+                className="ai-expand-btn"
+                disabled={loading || !(detailNode?.sourceIds?.length || panel?.sourceIds?.length)}
+                onClick={onExpand}
+              >
+                {loading ? "Expanding…" : panel?.opLabel ? `Run · ${panel.opLabel}` : "Expand"}
+              </button>
               {expandedText && (
-                <section className="ai-result-section">
-                  <div className="ai-section-label">
-                    Expanded
-                    <button
-                      type="button"
-                      className="ai-transfer-chip"
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(AI_OUTPUT_MIME, expandedText);
-                        e.dataTransfer.effectAllowed = "copy";
-                      }}
-                      title="Drag onto paper to place as text"
-                    >
-                      → Paper
-                    </button>
-                  </div>
-                  <textarea
-                    className="ai-result-text"
-                    value={expandedText}
-                    onChange={(e) => onEditExpanded(e.target.value)}
-                    rows={12}
-                  />
-                </section>
+                <>
+                  <button type="button" className="ai-action-btn" onClick={onCopy} title="Copy">
+                    Copy
+                  </button>
+                  <button type="button" className="ai-action-btn" onClick={onClear} title="Clear">
+                    Clear
+                  </button>
+                </>
               )}
+            </div>
 
-              {loading && (
-                <div className="ai-loading">
-                  <span className="ai-loading-dot" />
-                  <span>Thinking…</span>
+            {error && <div className="ai-error">{error}</div>}
+
+            {expandedText && (
+              <section className="ai-result-section">
+                <div className="ai-section-label">
+                  Expanded
+                  <button
+                    type="button"
+                    className="ai-transfer-chip"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(AI_OUTPUT_MIME, expandedText);
+                      e.dataTransfer.effectAllowed = "copy";
+                    }}
+                    title="Drag onto paper to place as text"
+                  >
+                    → Paper
+                  </button>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <div
-          className={"ai-library-wrap" + (libraryDropOver ? " drop-over" : "")}
+                <textarea
+                  className="ai-result-text"
+                  value={expandedText}
+                  onChange={(e) => onEditExpanded(e.target.value, detailNode?.id)}
+                  rows={8}
+                />
+              </section>
+            )}
+
+            {loading && !expandedText && (
+              <div className="ai-loading">
+                <span className="ai-loading-dot" />
+                <span>Thinking…</span>
+              </div>
+            )}
+          </section>
+        )}
+
+        <section
+          className={"ai-library-section" + (libraryDropOver ? " drop-over" : "")}
           onDragOver={onLibraryDragOver}
           onDragLeave={onLibraryDragLeave}
           onDrop={onLibraryDrop}
         >
-          {library}
-        </div>
-      )}
+          <div className="ai-section-label">Moves & lenses</div>
+          <div className="ai-library-wrap">{library}</div>
+        </section>
+      </div>
     </aside>
   );
 }

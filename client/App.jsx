@@ -45,6 +45,12 @@ import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import {
+  makeAiNode,
+  nextAiNodePosition,
+  childNodePosition,
+  truncateLabel,
+} from "./lib/ai-nodes.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
@@ -1808,6 +1814,8 @@ export default function App() {
   const [editMode, setEditMode] = useState(true);
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
+  const [aiNodes, setAiNodes] = useState([]);
+  const [selectedAiNodeId, setSelectedAiNodeId] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
   const [paperRecordLevel, setPaperRecordLevel] = useState(0);
   const [paperRecordMs, setPaperRecordMs] = useState(0);
@@ -1816,7 +1824,6 @@ export default function App() {
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
-  const [aiSection, setAiSection] = useState("expand");
   const [canvasDropOver, setCanvasDropOver] = useState(false);
 
   const viewportRef = useRef(null);
@@ -1848,10 +1855,10 @@ export default function App() {
   editingRef.current = editing;
 
   const expandInAiRef = useRef(() => {});
-  const setAiSectionRef = useRef(setAiSection);
+  const aiNodesRef = useRef([]);
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
-  setAiSectionRef.current = setAiSection;
+  aiNodesRef.current = aiNodes;
 
   useEffect(() => localStorage.setItem(ITEMS_KEY, JSON.stringify(items)), [items]);
   useEffect(() => {
@@ -2346,7 +2353,6 @@ export default function App() {
         const expandIds = transformableDragIds(g.ids);
         if (isNearTransferBoundary(cx) && expandIds.length && (g.moved || 0) > MOVE_DRAG_THRESHOLD) {
           restoreMovePositions(g.startPositions);
-          setAiSectionRef.current("expand");
           expandInAiRef.current(expandIds);
         } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
@@ -4089,12 +4095,12 @@ export default function App() {
       showToast("record a voice + draw session first");
       return;
     }
-    setAiSection("expand");
     const pageItems = itemsRef.current.filter(
       (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId && isPaperSideItem(it)
     );
     const prompt = buildPaperInterpretPrompt(latest, pageItems);
     const image = await compositePaperSnapshot(pageItems);
+    const { expandedNode } = createSessionNodes(latest, prompt);
     setAiPanel({
       sourceIds: [],
       sourcePreview: latest.transcript?.slice(0, 200) || "Paper session",
@@ -4103,6 +4109,7 @@ export default function App() {
       loading: true,
       error: null,
       opLabel: "interpret paper",
+      activeNodeId: expandedNode.id,
     });
     try {
       const out = await runClaude(
@@ -4110,13 +4117,24 @@ export default function App() {
         prompt,
         { image, maxTokens: 2048, compact: true }
       );
+      const text = out.trim();
+      updateAiNode(expandedNode.id, {
+        expandedText: text,
+        loading: false,
+        error: null,
+        label: "Interpreted",
+      });
       setAiPanel((prev) => ({
         ...prev,
-        expandedText: out.trim(),
+        expandedText: text,
         loading: false,
         error: null,
       }));
     } catch (err) {
+      updateAiNode(expandedNode.id, {
+        loading: false,
+        error: err.message || "interpret failed",
+      });
       setAiPanel((prev) => ({
         ...prev,
         loading: false,
@@ -4585,11 +4603,114 @@ export default function App() {
     setPages((ps) => ps.map((p) => (p.id === pageId ? { ...p, name: trimmed.slice(0, 48) } : p)));
   }
 
+  function moveAiNode(nodeId, x, y) {
+    setAiNodes((nodes) => nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
+  }
+
+  function updateAiNode(nodeId, patch) {
+    setAiNodes((nodes) => nodes.map((n) => (n.id === nodeId ? { ...n, ...patch } : n)));
+  }
+
+  function appendAiNodes(...newNodes) {
+    setAiNodes((nodes) => [...nodes, ...newNodes]);
+    return newNodes;
+  }
+
+  function findSourceNodeForIds(ids) {
+    const key = [...ids].sort().join(",");
+    return aiNodesRef.current.find(
+      (n) =>
+        n.nodeKind === "source" &&
+        n.sourceIds?.length &&
+        [...n.sourceIds].sort().join(",") === key
+    );
+  }
+
+  function ensureSourceNode(ids, preview, label) {
+    const existing = findSourceNodeForIds(ids);
+    if (existing) return existing;
+    const pos = nextAiNodePosition(aiNodesRef.current, "source");
+    const node = makeAiNode({
+      nodeKind: "source",
+      label: truncateLabel(label || preview || "Source"),
+      preview,
+      sourceIds: ids,
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    appendAiNodes(node);
+    return node;
+  }
+
+  function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}) {
+    const pos = childNodePosition(sourceNode, "expanded");
+    const node = makeAiNode({
+      nodeKind: "expanded",
+      label: truncateLabel(opLabel || label),
+      sourceNodeIds: [sourceNode.id],
+      sourceIds: sourceNode.sourceIds || [],
+      opId: opId || null,
+      loading,
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    appendAiNodes(node);
+    setSelectedAiNodeId(node.id);
+    return node;
+  }
+
+  function createSessionNodes(session, prompt) {
+    const pos = nextAiNodePosition(aiNodesRef.current, "session");
+    const sessionNode = makeAiNode({
+      nodeKind: "session",
+      label: truncateLabel(session.transcript?.slice(0, 24) || "Session"),
+      preview: session.transcript?.slice(0, 200) || "Paper session",
+      sourceIds: [],
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    const expandedNode = makeAiNode({
+      nodeKind: "expanded",
+      label: "Interpret",
+      sourceNodeIds: [sessionNode.id],
+      sourceIds: [],
+      loading: true,
+      opLabel: "interpret paper",
+      x: pos.x + 88,
+      y: pos.y,
+      radius: childNodePosition(sessionNode).radius,
+    });
+    appendAiNodes(sessionNode, expandedNode);
+    setSelectedAiNodeId(expandedNode.id);
+    return { sessionNode, expandedNode, prompt };
+  }
+
+  function createMoveNode(op) {
+    const pos = nextAiNodePosition(aiNodesRef.current, "move");
+    const node = makeAiNode({
+      nodeKind: "move",
+      label: truncateLabel(op.name),
+      opId: op.id,
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    appendAiNodes(node);
+    setSelectedAiNodeId(node.id);
+    return node;
+  }
+
   async function syncAiSource(ids, opts = {}) {
     const idSet = new Set(ids);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
     if (!itemList.length) return null;
     const gathered = await gatherMaterialFromItems(itemList);
+    if (!opts.skipNode) {
+      ensureSourceNode(ids, gathered.preview, gathered.preview?.slice(0, 24));
+    }
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -4644,7 +4765,12 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
-    setAiSection("expand");
+    const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source");
+    const expandedNode = createExpandedChild(sourceNode, {
+      opLabel: opts.opLabel || op.name,
+      opId: op.id,
+      loading: true,
+    });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -4652,9 +4778,21 @@ export default function App() {
       error: null,
       opLabel: opts.opLabel || op.name,
       opId: op.id,
+      activeNodeId: expandedNode.id,
     }));
     try {
-      await syncAiSource(ids, { keepExpanded: false, opLabel: op.name, opId: op.id });
+      const gathered = await syncAiSource(ids, {
+        keepExpanded: false,
+        opLabel: op.name,
+        opId: op.id,
+        skipNode: true,
+      });
+      if (gathered) {
+        updateAiNode(sourceNode.id, {
+          preview: gathered.preview,
+          label: truncateLabel(gathered.preview || "Source"),
+        });
+      }
       let out = await runOpForAi(op, ids);
       if (isTransformPrimitive(op)) {
         out = sanitizePrimitiveOutput(out);
@@ -4664,13 +4802,24 @@ export default function App() {
       } else {
         out = await polishDeliverable(out, op, itemsRef.current.filter((it) => ids.includes(it.id)).map((it) => it.text).join("\n"));
       }
+      const text = out.trim();
+      updateAiNode(expandedNode.id, {
+        expandedText: text,
+        loading: false,
+        error: null,
+        label: truncateLabel(opts.opLabel || op.name || "Expanded"),
+      });
       setAiPanel((prev) => ({
         ...prev,
-        expandedText: out.trim(),
+        expandedText: text,
         loading: false,
         error: null,
       }));
     } catch (err) {
+      updateAiNode(expandedNode.id, {
+        loading: false,
+        error: err.message || "expand failed",
+      });
       setAiPanel((prev) => ({
         ...prev,
         loading: false,
@@ -4728,6 +4877,7 @@ export default function App() {
     if (opId) {
       const op = opMap[opId];
       if (!op) return true;
+      createMoveNode(op);
       if (!ids?.length) {
         setAiPanel((prev) => ({
           ...(prev || {}),
@@ -4745,7 +4895,6 @@ export default function App() {
       if (autoExpand) expandInAi(ids);
       else {
         syncAiSource(ids, { keepExpanded: false });
-        setAiSection("expand");
       }
       return true;
     }
@@ -4770,7 +4919,6 @@ export default function App() {
     e.preventDefault();
     setBoundaryDropOver(false);
     setTransferDragActive(false);
-    setAiSection("expand");
     absorbTransferPayload(e, { autoExpand: true });
   }
 
@@ -4778,7 +4926,6 @@ export default function App() {
     e.preventDefault();
     setAiDropOver(false);
     setTransferDragActive(false);
-    setAiSection("expand");
     absorbTransferPayload(e, { autoExpand: true });
   }
 
@@ -4810,8 +4957,8 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") { setRailTab("functions"); setAiSection("library"); }
-    else if (action === "open-structures") { setRailTab("structures"); setAiSection("library"); }
+    else if (action === "open-functions") setRailTab("functions");
+    else if (action === "open-structures") setRailTab("structures");
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
     else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
@@ -5324,9 +5471,15 @@ export default function App() {
         />
 
         <AiColumn
+          nodes={aiNodes}
+          selectedNodeId={selectedAiNodeId}
+          onSelectNode={setSelectedAiNodeId}
+          onMoveNode={moveAiNode}
+          onExpandNode={(nodeId) => {
+            const node = aiNodes.find((n) => n.id === nodeId);
+            if (node?.sourceIds?.length) expandInAi(node.sourceIds, node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {});
+          }}
           panel={aiPanel}
-          section={aiSection}
-          onSectionChange={setAiSection}
           dropOver={aiDropOver}
           libraryDropOver={railDropOver}
           onDragOver={(e) => {
@@ -5383,12 +5536,12 @@ export default function App() {
             const structId = e.dataTransfer.getData(STRUCT_MIME);
             if (structId) {
               setRailTab("structures");
-              setAiSection("library");
               showToast("already saved");
             }
           }}
           onExpand={() => {
-            const ids = aiPanel?.sourceIds || selection;
+            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
+            const ids = node?.sourceIds?.length ? node.sourceIds : aiPanel?.sourceIds || selection;
             if (!ids?.length) {
               showToast("select or drop a thought first");
               return;
@@ -5396,14 +5549,27 @@ export default function App() {
             const op = aiPanel?.opId ? opMap[aiPanel.opId] : null;
             expandInAi(ids, op ? { op, opLabel: op.name } : {});
           }}
-          onEditExpanded={(text) => setAiPanel((prev) => ({ ...prev, expandedText: text }))}
+          onEditExpanded={(text, nodeId) => {
+            const targetId = nodeId || selectedAiNodeId || aiPanel?.activeNodeId;
+            if (targetId) updateAiNode(targetId, { expandedText: text });
+            setAiPanel((prev) => ({ ...prev, expandedText: text }));
+          }}
           onCopy={() => {
-            if (aiPanel?.expandedText) {
-              navigator.clipboard?.writeText(aiPanel.expandedText);
+            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
+            const text = node?.expandedText || aiPanel?.expandedText;
+            if (text) {
+              navigator.clipboard?.writeText(text);
               showToast("copied");
             }
           }}
-          onClear={() => setAiPanel(null)}
+          onClear={() => {
+            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
+            if (node?.nodeKind === "expanded") {
+              setAiNodes((nodes) => nodes.filter((n) => n.id !== node.id));
+              setSelectedAiNodeId(null);
+            }
+            setAiPanel(null);
+          }}
           library={
             <aside
               ref={railRef}

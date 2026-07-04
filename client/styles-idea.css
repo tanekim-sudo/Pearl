@@ -316,31 +316,6 @@
   flex-shrink: 0;
 }
 
-.ai-section-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-left: auto;
-  justify-content: flex-end;
-}
-
-.ai-section-tab {
-  padding: 4px 10px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--faint);
-  cursor: pointer;
-}
-
-.ai-section-tab.on,
-.ai-section-tab:hover {
-  background: var(--accent-soft);
-  color: var(--ink);
-}
-
 .ai-column-head {
   flex-shrink: 0;
   display: flex;
@@ -357,11 +332,6 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.ai-library-wrap.drop-over {
-  background: color-mix(in srgb, var(--accent) 8%, var(--card));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .ai-board-rail {
@@ -458,6 +428,180 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+}
+
+.ai-column-body.unified {
+  gap: 10px;
+}
+
+.ai-nodes-section {
+  flex: 1 1 45%;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-detail-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-library-section {
+  flex: 1 1 40%;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-library-section.drop-over {
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 10px;
+}
+
+.ai-node-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 4%, transparent) 0%, transparent 70%),
+    var(--paper);
+  overflow: auto;
+}
+
+.ai-node-canvas.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-node-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-node-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 320px;
+  min-height: 240px;
+  pointer-events: none;
+}
+
+.ai-node-line {
+  stroke: color-mix(in srgb, var(--accent) 45%, var(--line));
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.ai-node {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 2px solid var(--line);
+  background: var(--card);
+  transition: box-shadow 0.12s, border-color 0.12s, transform 0.12s;
+  z-index: 1;
+}
+
+.ai-node:active {
+  cursor: grabbing;
+}
+
+.ai-node.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.ai-node.loading {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+
+.ai-node.error {
+  border-color: var(--chalk-danger);
+}
+
+.ai-node-source {
+  background: color-mix(in srgb, var(--paper) 80%, var(--card));
+}
+
+.ai-node-expanded {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+}
+
+.ai-node-move {
+  background: color-mix(in srgb, var(--ink-2) 8%, var(--card));
+  border-style: dashed;
+}
+
+.ai-node-lens {
+  background: color-mix(in srgb, var(--accent) 18%, var(--card));
+}
+
+.ai-node-session {
+  background: color-mix(in srgb, var(--accent-soft) 60%, var(--card));
+}
+
+.ai-node-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink-2);
+  pointer-events: none;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.ai-node-spinner {
+  position: absolute;
+  bottom: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ai-pulse 1s ease-in-out infinite;
+}
+
+.ai-node-error-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chalk-danger);
+}
+
+.ai-library-section .ai-library-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .ai-empty {
