@@ -1860,6 +1860,18 @@ export default function App() {
       setCamera(centerPaperCamera(r.width, r.height));
     }
   });
+
+  useEffect(() => {
+    if (!paperRecording) {
+      if (paperRecordTickRef.current) clearInterval(paperRecordTickRef.current);
+      return undefined;
+    }
+    const start = Date.now();
+    paperRecordTickRef.current = setInterval(() => {
+      setPaperRecordMs(Date.now() - start);
+    }, 200);
+    return () => clearInterval(paperRecordTickRef.current);
+  }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
   useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
