@@ -219,14 +219,14 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag objects to move · drag empty canvas to pan · shift+drag to select area",
+    hint: "Drag objects to move · drag empty paper to pan · shift+drag to select area",
   },
   image: {
     id: "image",
     group: "input",
     label: "Image",
     icon: "▢",
-    hint: "Pick an image, then click the canvas to place it.",
+    hint: "Pick an image, then click the paper to place it.",
   },
   pen: {
     id: "pen",
@@ -1779,7 +1779,11 @@ export default function App() {
   const [pages, setPages] = useState(() => {
     const saved = load(PAGES_KEY, null);
     const base = Array.isArray(saved) && saved.length
-      ? saved.map((p) => ({ ...p, sessions: p.sessions || [] }))
+      ? saved.map((p, i) => ({
+          ...p,
+          name: p.name || `Page ${i + 1}`,
+          sessions: p.sessions || [],
+        }))
       : [{ id: DEFAULT_PAGE_ID, name: "Page 1", camera: { x: 0, y: 0, scale: 1 }, sessions: [] }];
     return base;
   });
@@ -2904,7 +2908,7 @@ export default function App() {
     if (camAnimRef.current) cancelAnimationFrame(camAnimRef.current);
     const r = vpRect();
     const from = { ...camRef.current };
-    const scale = clamp(targetScale ?? from.scale, 0.12, 4.5);
+    const scale = clampScale(targetScale ?? from.scale);
     const to = {
       scale,
       x: r.width / 2 - targetWorld.x * scale,
@@ -4286,7 +4290,7 @@ export default function App() {
       pendingImageRef.current = input.files[0];
       setImageArmed(true);
       setTool("image");
-      showToast("click on the canvas to place the image");
+      showToast("click on the paper to place the image");
     };
     input.click();
   }
@@ -4479,13 +4483,17 @@ export default function App() {
     });
   }
 
-  function switchPage(pageId) {
+  function switchPage(pageId, nextCamera) {
     setPages((ps) =>
       ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
     );
-    const next = pages.find((p) => p.id === pageId);
     setActivePageId(pageId);
-    if (next?.camera) setCamera({ ...next.camera });
+    if (nextCamera) {
+      setCamera({ ...nextCamera });
+    } else {
+      const next = pages.find((p) => p.id === pageId);
+      if (next?.camera) setCamera({ ...next.camera });
+    }
     setSelection([]);
     setEditing(null);
   }
@@ -4496,7 +4504,13 @@ export default function App() {
     const r = vpRect();
     const cam = centerPaperCamera(r.width, r.height);
     setPages((ps) => [...ps, { id, name: `Page ${num}`, camera: cam, sessions: [] }]);
-    switchPage(id);
+    switchPage(id, cam);
+  }
+
+  function renamePage(pageId, name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setPages((ps) => ps.map((p) => (p.id === pageId ? { ...p, name: trimmed.slice(0, 48) } : p)));
   }
 
   async function syncAiSource(ids, opts = {}) {
@@ -4611,32 +4625,43 @@ export default function App() {
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
-    showToast("added to canvas");
+    showToast("added to paper");
   }
 
   function handleAiDrop(e) {
     e.preventDefault();
     setAiDropOver(false);
+    setAiSection("expand");
+
+    const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME) || e.dataTransfer.getData(SEL_MIME);
+    let ids = null;
+    if (thoughtJson) {
+      try {
+        ids = JSON.parse(thoughtJson);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!ids?.length) ids = aiPanel?.sourceIds?.length ? aiPanel.sourceIds : selection;
+
     const opId = e.dataTransfer.getData(OP_MIME);
     if (opId) {
       const op = opMap[opId];
-      const ids = aiPanel?.sourceIds?.length ? aiPanel.sourceIds : selection;
-      if (!op || !ids?.length) {
-        showToast("select or drop a thought first");
+      if (!op) return;
+      if (!ids?.length) {
+        setAiPanel((prev) => ({
+          ...(prev || {}),
+          opLabel: op.name,
+          opId: op.id,
+        }));
+        showToast("Select something on the paper, then expand");
         return;
       }
       expandInAi(ids, { op, opLabel: op.name });
       return;
     }
-    const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME) || e.dataTransfer.getData(SEL_MIME);
-    if (thoughtJson) {
-      try {
-        const ids = JSON.parse(thoughtJson);
-        if (ids?.length) expandInAi(ids);
-      } catch {
-        /* ignore */
-      }
-    }
+
+    if (ids?.length) expandInAi(ids);
   }
 
   useEffect(() => {
@@ -4672,7 +4697,7 @@ export default function App() {
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
     else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
-    else if (action === "help-tips") showToast("Double-click canvas to write · drag functions onto ideas · space to pan");
+    else if (action === "help-tips") showToast("Double-click the paper to write · drag moves from AI Layer onto ideas · space to pan");
   }
 
   function handleShareBoard() {
@@ -4755,6 +4780,7 @@ export default function App() {
           editMode={editMode}
           onSelectPage={switchPage}
           onAddPage={addPage}
+          onRenamePage={renamePage}
           onZoomIn={() => setCamera((c) => zoomCamera(c, ZOOM_STEP))}
           onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP))}
           onZoomReset={() => {
@@ -5325,7 +5351,7 @@ export default function App() {
           <div className="modal fresh-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Start fresh?</h3>
             <p className="modal-sub">
-              Clears the canvas, your functions, moves, lenses, and symbols. Built-in thinking primitives stay.
+              Clears the paper, your functions, moves, lenses, and symbols. Built-in thinking primitives stay.
             </p>
             <div className="modal-foot">
               <button type="button" onClick={() => setFreshConfirm(false)}>
@@ -5699,11 +5725,11 @@ function CanvasHud({ tool, selectionCount, imageArmed }) {
   const meta = CANVAS_TOOLS[tool] || CANVAS_TOOLS.select;
   let hint = meta.hint;
   if (imageArmed && tool === "image") {
-    hint = "Click on the canvas to place your image";
+    hint = "Click on the paper to place your image";
   } else if (tool === "highlight" && selectionCount > 1) {
-    hint = `${selectionCount} ideas selected · circle to select inside · drag functions from the rail`;
+    hint = `${selectionCount} ideas selected · circle to select inside · drag moves from AI Layer`;
   } else if (selectionCount >= 2 && tool === "select") {
-    hint = `${selectionCount} selected · drag to move · drag functions from the rail`;
+    hint = `${selectionCount} selected · drag to move · drag moves from AI Layer`;
   } else if (selectionCount > 0 && tool === "select") {
     hint = `${selectionCount} selected · click text to edit · drag to move`;
   } else if (tool === "highlight") {
@@ -5899,10 +5925,10 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title="drag onto canvas to run · drop another operator here to forge a compound"
+        title="drag onto paper to run · drop another operator here to forge a compound"
       >
         <div className="op-card-row">
-          <span className="op-drag-grip" title="drag onto canvas">
+          <span className="op-drag-grip" title="drag onto paper">
             ⠿
           </span>
           <div className="op-card-label">
@@ -5948,7 +5974,7 @@ function DraggableStep({ step, opMap, expanded, onToggle, onEdit, depth }) {
         className={"op-step-chip" + (isLeaf ? " leaf" : "")}
         draggable
         onDragStart={(e) => startOpDrag(e, step)}
-        title="drag onto canvas"
+        title="drag onto paper"
       >
         <span className="op-drag-grip">⠿</span>
         <div className="op-step-label">
@@ -6019,10 +6045,10 @@ function LensCard({
           onMergeDrop(draggedId);
         }
       }}
-      title="drag onto canvas · drop another lens here to Merge"
+      title="drag onto paper · drop another lens here to Merge"
     >
       <div className="lens-card-top">
-        <span className="op-drag-grip" title="drag onto canvas">
+        <span className="op-drag-grip" title="drag onto paper">
           ⠿
         </span>
         <span className="lens-card-name">{lens.name}</span>
@@ -6255,10 +6281,10 @@ function StructureCard({ struct, onDelete, onShare }) {
         className="struct-card"
         draggable
         onDragStart={(e) => startStructDrag(e, struct)}
-        title="drag onto canvas to plant"
+        title="drag onto paper to plant"
       >
         <div className="struct-card-row">
-          <span className="op-drag-grip" title="drag onto canvas">
+          <span className="op-drag-grip" title="drag onto paper">
             ⠿
           </span>
           <div className="struct-card-body">

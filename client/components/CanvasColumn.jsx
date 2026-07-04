@@ -32,6 +32,7 @@ export default function CanvasColumn({
   onInterpretPaper,
   onSelectPage,
   onAddPage,
+  onRenamePage,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -47,6 +48,7 @@ export default function CanvasColumn({
           activePageId={activePageId}
           onSelectPage={onSelectPage}
           onAddPage={onAddPage}
+          onRenamePage={onRenamePage}
         />
         <div className="canvas-column-tools">
           {CANVAS_TOOLS.map((t) => {

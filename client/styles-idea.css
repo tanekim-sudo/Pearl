@@ -14,7 +14,7 @@
 .two-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr minmax(320px, 38%);
+  grid-template-columns: 1fr minmax(300px, 34%);
   min-height: 0;
   gap: 0;
 }
@@ -39,7 +39,7 @@
 .three-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr minmax(320px, 38%);
+  grid-template-columns: 1fr minmax(300px, 34%);
   min-height: 0;
   gap: 0;
 }
@@ -47,39 +47,6 @@
 .column-drop-over {
   background: color-mix(in srgb, var(--accent) 8%, var(--card));
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.functions-column-ideas {
-  flex-shrink: 0;
-  max-height: 38%;
-  min-height: 120px;
-  overflow: hidden;
-  border-bottom: 1px solid var(--line);
-}
-
-.functions-column-ideas .idea-sidebar {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-}
-
-.functions-column-rail {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.functions-column-rail .board-rail {
-  width: 100%;
-  height: 100%;
-  border: none;
-  box-shadow: none;
-  flex: 1;
 }
 
 .canvas-column {
@@ -90,43 +57,66 @@
 .canvas-column-header {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   flex-wrap: wrap;
-  gap: 8px 10px;
-  padding: 6px 12px;
+  gap: 6px 10px;
+  padding: 0 12px;
+  min-height: 44px;
   background: var(--card);
   border-bottom: 1px solid var(--line);
 }
 
 .page-tabs {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 2px;
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  padding-top: 6px;
 }
 
 .page-tabs::-webkit-scrollbar {
   display: none;
 }
 
+.page-tab-wrap {
+  flex-shrink: 0;
+}
+
+.page-tab-wrap.active {
+  z-index: 1;
+}
+
 .page-tab {
   flex-shrink: 0;
-  padding: 5px 12px;
-  border: none;
+  padding: 7px 14px 8px;
+  border: 1px solid transparent;
+  border-bottom: none;
   border-radius: 8px 8px 0 0;
   background: transparent;
   font-size: 12px;
   font-weight: 500;
   color: var(--faint);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.page-tab-input {
+  flex-shrink: 0;
+  width: 110px;
+  padding: 6px 10px 7px;
+  border: 1px solid var(--accent);
+  border-radius: 8px 8px 0 0;
+  background: var(--paper-deep);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
 }
 
 .page-tab:hover {
@@ -134,11 +124,14 @@
   background: var(--accent-soft);
 }
 
-.page-tab.active {
+.page-tab.active,
+.page-tab-wrap.active .page-tab {
   color: var(--ink);
   font-weight: 600;
-  border-bottom-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: var(--paper-deep);
+  border-color: var(--line);
+  border-bottom-color: var(--paper-deep);
+  margin-bottom: -1px;
 }
 
 .page-tab-add {
@@ -156,8 +149,10 @@
 
 .ai-section-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-left: auto;
+  justify-content: flex-end;
 }
 
 .ai-section-tab {
@@ -178,10 +173,13 @@
 }
 
 .ai-column-head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line);
 }
 
 .ai-library-wrap {
@@ -205,6 +203,14 @@
   box-shadow: none;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.ai-board-rail .rail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .canvas-column-label {
@@ -220,6 +226,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .canvas-tool-btn {
@@ -260,12 +268,6 @@
 }
 
 /* AI column */
-.ai-column-head {
-  flex-shrink: 0;
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--line);
-}
-
 .ai-column-title {
   margin: 0;
   font-size: 15px;
