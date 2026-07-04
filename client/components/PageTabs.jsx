@@ -15,7 +15,7 @@ export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage,
   function startRename(page) {
     if (!onRenamePage) return;
     setEditingId(page.id);
-    setDraft(page.name || "Page");
+    setDraft(page.name || "World");
   }
 
   function commitRename(pageId) {
@@ -58,7 +58,7 @@ export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage,
               }}
               title={onRenamePage ? `${page.name} — double-click to rename` : page.name}
             >
-              {page.name || "Page"}
+              {page.name || "World"}
             </button>
           )}
         </div>
@@ -67,8 +67,8 @@ export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage,
         type="button"
         className="page-tab page-tab-add"
         onClick={onAddPage}
-        title="New page"
-        aria-label="New page"
+        title="New world"
+        aria-label="New world"
       >
         +
       </button>

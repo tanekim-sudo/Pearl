@@ -17,6 +17,7 @@ export default function CanvasColumn({
   tool,
   imageArmed,
   dropOver,
+  boundaryMagnet,
   onSelectTool,
   onInsertBlock,
   onPickImage,
@@ -39,7 +40,7 @@ export default function CanvasColumn({
   children,
 }) {
   return (
-    <div className={"canvas-column" + (dropOver ? " column-drop-over" : "")}>
+    <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
       <div className="canvas-column-header">
         <PageTabs
           pages={pages}

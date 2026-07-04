@@ -48,10 +48,39 @@
 }
 
 /* Interpretation boundary — spatial↔AI bridge */
-.interpret-boundary {
+.interpret-boundary-hit {
+  position: relative;
   width: 12px;
   min-width: 12px;
+  z-index: 20;
+  cursor: default;
+}
+
+.interpret-boundary-hit::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -24px;
+  right: -24px;
+  z-index: 0;
+}
+
+.interpret-boundary-hit.drop-over::before,
+.interpret-boundary-hit.magnet::before {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.interpret-boundary-hit.drop-over {
+  width: 16px;
+  min-width: 16px;
+}
+
+.interpret-boundary {
   position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -65,8 +94,12 @@
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
   cursor: default;
-  z-index: 20;
+  z-index: 1;
   transition: background 0.15s, box-shadow 0.15s;
+}
+
+.interpret-boundary.magnet {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .interpret-boundary.ready {
@@ -79,8 +112,6 @@
 }
 
 .interpret-boundary.drop-over {
-  width: 16px;
-  min-width: 16px;
   background: color-mix(in srgb, var(--accent) 22%, var(--card));
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
 }
@@ -1315,10 +1346,26 @@
   background-color: var(--canvas-bg, #e8e4dc);
 }
 
+.canvas-column.boundary-magnet,
+.board-main.boundary-magnet {
+  box-shadow: inset -4px 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.board-main.transfer-drag .interpret-boundary-hit::before,
+.two-column-grid.transfer-drag .ai-column {
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+
 .canvas-column .paper-sheet {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.1),
     0 8px 32px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+}
+
+.canvas-column .paper-content {
+  overflow: hidden;
+  position: relative;
 }
 
 .idea-center .board-text,

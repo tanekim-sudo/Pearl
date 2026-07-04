@@ -88,7 +88,9 @@ const LENS_MIME = "application/lens-lens";
 const LENSES_KEY = "lens.lenses.v1";
 const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
-const DROP_TARGET_PAD = 72; // px — generous snap when dragging functions onto ideas
+const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
+const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
+const MOVE_DRAG_THRESHOLD = 3; // px before pointer-down becomes a move
 
 const INK = "var(--ink-stroke)";
 const PEN_W = 2.4; // world units
@@ -123,8 +125,20 @@ function isNoteItem(it) {
   return it && isTransformableBlock(it);
 }
 
+function migratePageName(name, index) {
+  if (!name) return `World ${index + 1}`;
+  const m = name.match(/^Page (\d+)$/);
+  if (m) return `World ${m[1]}`;
+  return name;
+}
+
+function isPaperSideItem(it) {
+  return it && it.side !== "ai";
+}
+
 function itemVisibleOnPage(it, pageId, worldFilter) {
   if (!it || it.type === "link") return false;
+  if (!isPaperSideItem(it)) return false;
   if ((it.pageId || DEFAULT_PAGE_ID) !== pageId) return false;
   if (worldFilter && it.world && it.world !== worldFilter) return false;
   return true;
@@ -847,7 +861,7 @@ function normalizeItem(it) {
   if (it.type === "link") {
     return { id: it.id, type: "link", fromId: it.fromId, toId: it.toId, fromDir: it.fromDir || null };
   }
-  const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, ...it };
+  const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, side: "paper", ...it };
   if (!base.bornAt) base.bornAt = Date.now();
   if (base.type === "text" && !base.w) base.w = 360;
   if (base.type === "image" && !base.h && base.w) base.h = Math.round(base.w * 0.75);
@@ -1782,10 +1796,10 @@ export default function App() {
     const base = Array.isArray(saved) && saved.length
       ? saved.map((p, i) => ({
           ...p,
-          name: p.name || `Page ${i + 1}`,
+          name: migratePageName(p.name, i),
           sessions: p.sessions || [],
         }))
-      : [{ id: DEFAULT_PAGE_ID, name: "Page 1", camera: { x: 0, y: 0, scale: 1 }, sessions: [] }];
+      : [{ id: DEFAULT_PAGE_ID, name: "World 1", camera: { x: 0, y: 0, scale: 1 }, sessions: [] }];
     return base;
   });
   const [activePageId, setActivePageId] = useState(() => load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID }])[0]?.id || DEFAULT_PAGE_ID);
@@ -1800,6 +1814,8 @@ export default function App() {
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
+  const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
+  const [transferDragActive, setTransferDragActive] = useState(false);
   const [aiSection, setAiSection] = useState("expand");
   const [canvasDropOver, setCanvasDropOver] = useState(false);
 
@@ -1831,8 +1847,11 @@ export default function App() {
   selRef.current = selection;
   editingRef.current = editing;
 
+  const expandInAiRef = useRef(() => {});
+  const setAiSectionRef = useRef(setAiSection);
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
+  setAiSectionRef.current = setAiSection;
 
   useEffect(() => localStorage.setItem(ITEMS_KEY, JSON.stringify(items)), [items]);
   useEffect(() => {
@@ -2007,6 +2026,44 @@ export default function App() {
     return clientToWorld(r.left + r.width / 2, r.top + r.height / 2);
   }
 
+  function isNearTransferBoundary(clientX) {
+    const r = vpRect();
+    return clientX >= r.right - BOUNDARY_MAGNET_PX;
+  }
+
+  function captureMoveStartPositions(ids) {
+    const startPositions = {};
+    for (const id of ids) {
+      const it = itemsRef.current.find((i) => i.id === id);
+      if (!it) continue;
+      if (it.type === "stroke") {
+        startPositions[id] = { points: it.points.map((p) => ({ ...p })) };
+      } else {
+        startPositions[id] = { x: it.x, y: it.y };
+      }
+    }
+    return startPositions;
+  }
+
+  function restoreMovePositions(startPositions) {
+    if (!startPositions) return;
+    setItems((arr) =>
+      arr.map((it) => {
+        const saved = startPositions[it.id];
+        if (!saved) return it;
+        if (it.type === "stroke") return { ...it, points: saved.points };
+        return { ...it, x: saved.x, y: saved.y };
+      })
+    );
+  }
+
+  function transformableDragIds(ids) {
+    return (ids || []).filter((id) => {
+      const it = itemsRef.current.find((i) => i.id === id);
+      return it && isTransformableBlock(it);
+    });
+  }
+
   function zoomCamera(c, factor, anchorLocal = null) {
     const r = vpRect();
     const lx = anchorLocal?.x ?? r.width / 2;
@@ -2121,15 +2178,17 @@ export default function App() {
             return { ...it, x: it.x + dx, y: it.y + dy };
           })
         );
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
       } else if (g.mode === "pending") {
         if (g.intent !== "edit") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
-          if (dist > 4) {
+          if (dist > MOVE_DRAG_THRESHOLD) {
             pushHistoryRef.current();
             g.mode = "move";
             g.moved = 0;
             g.lastCx = cx;
             g.lastCy = cy;
+            g.startPositions = captureMoveStartPositions(g.ids || []);
           }
         }
       } else if (g.mode === "lasso") {
@@ -2281,9 +2340,17 @@ export default function App() {
           }
         }
       } else if (g.mode === "move") {
-        if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
+        setBoundaryMagnetActive(false);
+        const cx = g.lastCx ?? g.cx;
+        const cy = g.lastCy ?? g.cy;
+        const expandIds = transformableDragIds(g.ids);
+        if (isNearTransferBoundary(cx) && expandIds.length && (g.moved || 0) > MOVE_DRAG_THRESHOLD) {
+          restoreMovePositions(g.startPositions);
+          setAiSectionRef.current("expand");
+          expandInAiRef.current(expandIds);
+        } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
-          const target = itemAtPoint(g.lastCx ?? g.cx, g.lastCy ?? g.cy, exclude);
+          const target = itemAtPoint(cx, cy, exclude);
           if (target) combineRef.current?.(g.ids, [target.id]);
         }
       }
@@ -4024,7 +4091,7 @@ export default function App() {
     }
     setAiSection("expand");
     const pageItems = itemsRef.current.filter(
-      (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId
+      (it) => (it.pageId || DEFAULT_PAGE_ID) === activePageId && isPaperSideItem(it)
     );
     const prompt = buildPaperInterpretPrompt(latest, pageItems);
     const image = await compositePaperSnapshot(pageItems);
@@ -4508,7 +4575,7 @@ export default function App() {
     const num = pages.length + 1;
     const r = vpRect();
     const cam = centerPaperCamera(r.width, r.height);
-    setPages((ps) => [...ps, { id, name: `Page ${num}`, camera: cam, sessions: [] }]);
+    setPages((ps) => [...ps, { id, name: `World ${num}`, camera: cam, sessions: [] }]);
     switchPage(id, cam);
   }
 
@@ -4577,6 +4644,7 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
+    setAiSection("expand");
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -4611,6 +4679,7 @@ export default function App() {
       showToast(err.message || "expand failed");
     }
   }
+  expandInAiRef.current = expandInAi;
 
   function spawnTextAtWorld(text, atWorld) {
     const clean = stripMd(text).trim();
@@ -4692,6 +4761,7 @@ export default function App() {
     ) {
       e.preventDefault();
       setBoundaryDropOver(true);
+      setTransferDragActive(true);
       e.dataTransfer.dropEffect = "copy";
     }
   }
@@ -4699,13 +4769,15 @@ export default function App() {
   function handleBoundaryDrop(e) {
     e.preventDefault();
     setBoundaryDropOver(false);
+    setTransferDragActive(false);
     setAiSection("expand");
-    absorbTransferPayload(e);
+    absorbTransferPayload(e, { autoExpand: true });
   }
 
   function handleAiDrop(e) {
     e.preventDefault();
     setAiDropOver(false);
+    setTransferDragActive(false);
     setAiSection("expand");
     absorbTransferPayload(e, { autoExpand: true });
   }
@@ -4816,11 +4888,12 @@ export default function App() {
         onShare={handleShareBoard}
       />
 
-      <div className="two-column-grid">
+      <div className={"two-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
         <CanvasColumn
           tool={tool}
           imageArmed={imageArmed}
           dropOver={canvasDropOver}
+          boundaryMagnet={boundaryMagnetActive}
           onSelectTool={(id) => {
             if (id !== "image") {
               pendingImageRef.current = null;
@@ -4850,7 +4923,7 @@ export default function App() {
           paperRecordMs={paperRecordMs}
           onTogglePaperRecord={togglePaperRecord}
         >
-      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
+      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
         ref={viewportRef}
         className="viewport"
@@ -5051,7 +5124,7 @@ export default function App() {
             />
           )}
             </div>
-            <span className="paper-edge-label">8.5 × 11</span>
+            <span className="paper-edge-label">8 × 11.5</span>
           </div>
         </div>
 
@@ -5204,6 +5277,8 @@ export default function App() {
           onShareJourney={() => shareJourneyLink(selItem.id)}
           onSendToAi={() => expandInAi([selItem.id])}
           aiDragIds={[selItem.id]}
+          onTransferDragStart={() => setTransferDragActive(true)}
+          onTransferDragEnd={() => setTransferDragActive(false)}
         />
       )}
 
@@ -5212,6 +5287,8 @@ export default function App() {
           bbox={itemScreenBBox(selItem)}
           onSendToAi={() => expandInAi([selItem.id])}
           aiDragIds={[selItem.id]}
+          onTransferDragStart={() => setTransferDragActive(true)}
+          onTransferDragEnd={() => setTransferDragActive(false)}
         />
       )}
 
@@ -5232,12 +5309,16 @@ export default function App() {
         <InterpretBoundary
           status={boundaryStatus}
           dropOver={boundaryDropOver}
+          magnetActive={boundaryMagnetActive || transferDragActive}
           hasPaperSession={hasPaperSession}
           loading={aiPanel?.loading && aiPanel?.opLabel === "interpret paper"}
           onInterpret={() => interpretPaperSession()}
           onDragOver={handleBoundaryDragOver}
           onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setBoundaryDropOver(false);
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setBoundaryDropOver(false);
+              setTransferDragActive(false);
+            }
           }}
           onDrop={handleBoundaryDrop}
         />
@@ -5257,11 +5338,15 @@ export default function App() {
             ) {
               e.preventDefault();
               setAiDropOver(true);
+              setTransferDragActive(true);
               e.dataTransfer.dropEffect = "copy";
             }
           }}
           onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setAiDropOver(false);
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setAiDropOver(false);
+              setTransferDragActive(false);
+            }
           }}
           onDrop={handleAiDrop}
           onLibraryDragOver={(e) => {
@@ -5662,7 +5747,7 @@ function BoardText({ item, selected, dropTarget, dropMagnetic, editing, editClic
   );
 }
 
-function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, onSendToAi, aiDragIds }) {
+function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, onSendToAi, aiDragIds, onTransferDragStart, onTransferDragEnd }) {
   const cx = (bbox.left + bbox.right) / 2;
   return (
     <div
@@ -5682,8 +5767,10 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, on
           onDragStart={(e) => {
             e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
             e.dataTransfer.effectAllowed = "copy";
+            onTransferDragStart?.();
           }}
-          title="Send to AI layer · drag to boundary or right column"
+          onDragEnd={() => onTransferDragEnd?.()}
+          title="Expand in AI · drag to boundary or right column"
         >
           → AI
         </button>

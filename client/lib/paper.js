@@ -1,6 +1,6 @@
-/** Letter-size paper at 96dpi — content lives in 0..width × 0..height. */
-export const PAPER_WIDTH = 816;
-export const PAPER_HEIGHT = 1056;
+/** 8×11.5 paper at 96dpi — content lives in 0..width × 0..height. */
+export const PAPER_WIDTH = 768;
+export const PAPER_HEIGHT = 1104;
 export const MIN_SCALE = 0.05;
 export const MAX_SCALE = 1e6;
 export const ZOOM_STEP = 1.2;
