@@ -55,10 +55,12 @@ import {
   childNodePosition,
   nodePositionAt,
   truncateLabel,
+  layoutAfterAppend,
 } from "./lib/ai-nodes.js";
 import {
   centerAiCamera,
   findNearestSourceNode,
+  screenToWorld,
   viewportCenterWorld,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
@@ -117,12 +119,14 @@ const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
 const MOVE_DRAG_THRESHOLD = 3; // px before pointer-down becomes a move
+const SPACE_DOUBLE_TAP_MS = 350;
 
 const INK = "var(--ink-stroke)";
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
 const HIGHLIGHT_INK = "#f5e6a3";
-const HIGHLIGHT_W = 14;
+const HIGHLIGHT_W = 18;
+const HIGHLIGHT_OPACITY = 0.92;
 
 /** Highlight ink stays the same thickness on screen at any zoom. */
 function highlightWorldWidth(scale) {
@@ -1506,6 +1510,10 @@ function highlightErasureHits(items, cx, cy, lastCx, lastCy, scale, worldToClien
   return hits;
 }
 
+function highlightBrushHits(items, cx, cy, lastCx, lastCy, scale, worldToClient, skipIds) {
+  return highlightErasureHits(items, cx, cy, lastCx, lastCy, scale, worldToClient, skipIds);
+}
+
 function itemsInsideHighlightLoop(points, itemList) {
   if (points.length < 3) return [];
   const ids = [];
@@ -1835,7 +1843,9 @@ export default function App() {
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
   const [aiNodes, setAiNodes] = useState([]);
-  const [selectedAiNodeId, setSelectedAiNodeId] = useState(null);
+  const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
+  const [highlightTouchIds, setHighlightTouchIds] = useState([]);
+  const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
   const [paperRecordLevel, setPaperRecordLevel] = useState(0);
   const [paperRecordMs, setPaperRecordMs] = useState(0);
@@ -1859,6 +1869,8 @@ export default function App() {
   const itemsRef = useRef(items);
   const toolRef = useRef(tool);
   const spaceHeldRef = useRef(false);
+  const lastSpaceUpRef = useRef(0);
+  const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
   const editingRef = useRef(editing);
   const combineRef = useRef(null);
@@ -1873,10 +1885,12 @@ export default function App() {
   itemsRef.current = items;
   toolRef.current = tool;
   spaceHeldRef.current = spaceHeld;
+  selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
   editingRef.current = editing;
 
   const expandInAiRef = useRef(() => {});
+  const spaceTransferCompleteRef = useRef(() => {});
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
@@ -1927,7 +1941,7 @@ export default function App() {
     aiCenteredRef.current = true;
     const c = aiCamRef.current;
     if (c.x === 0 && c.y === 0 && c.scale === 1) {
-      setAiCamera(centerAiCamera(w, h));
+      setAiCamera(centerAiCamera(w, h, 0.75));
     }
   });
 
@@ -2076,6 +2090,88 @@ export default function App() {
     return clientX >= r.right - BOUNDARY_MAGNET_PX;
   }
 
+  function isOverPaperColumn(clientX, clientY) {
+    const el = viewportRef.current?.closest?.(".canvas-column") || viewportRef.current;
+    const r = el?.getBoundingClientRect();
+    return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
+  function isOverAiColumn(clientX, clientY) {
+    const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
+    const r = el?.getBoundingClientRect();
+    return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
+  function getAiDropWorldFromClient(clientX, clientY) {
+    const rect = aiViewportRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return screenToWorld(aiCamRef.current, clientX - rect.left, clientY - rect.top);
+  }
+
+  function startSpaceTransfer(e, origin, ids) {
+    if (!ids?.length) return;
+    setGesturing(true);
+    setTransferDragActive(true);
+    gesture.current = {
+      mode: "space-transfer",
+      origin,
+      ids: ids.slice(),
+      cx: e.clientX,
+      cy: e.clientY,
+      lastCx: e.clientX,
+      lastCy: e.clientY,
+    };
+    setSpaceTransferGhost({
+      cx: e.clientX,
+      cy: e.clientY,
+      count: ids.length,
+      target: null,
+    });
+    try {
+      (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function transferAiNodesToPaper(nodeIds, atWorld) {
+    const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+    if (!nodes.length) return;
+    let yOffset = 0;
+    for (const node of nodes) {
+      let text = node.expandedText || node.preview || "";
+      if (!text?.trim() && node.sourceIds?.length) {
+        text = itemsRef.current
+          .filter((it) => node.sourceIds.includes(it.id))
+          .map((it) => (it.type === "text" ? it.text : it.preview || it.label || ""))
+          .filter(Boolean)
+          .join("\n\n");
+      }
+      if (text?.trim()) {
+        spawnTextAtWorld(text, { x: atWorld.x, y: atWorld.y + yOffset });
+        yOffset += 72;
+      }
+    }
+    setSelectedAiNodeIds([]);
+  }
+
+  function handleAiNodeSelect(idOrIds, opts = {}) {
+    if (Array.isArray(idOrIds)) {
+      setSelectedAiNodeIds(idOrIds);
+      return;
+    }
+    const id = idOrIds;
+    if (opts.toggle) {
+      setSelectedAiNodeIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+    } else if (opts.add) {
+      setSelectedAiNodeIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    } else {
+      setSelectedAiNodeIds([id]);
+    }
+  }
+
   function captureMoveStartPositions(ids) {
     const startPositions = {};
     for (const id of ids) {
@@ -2169,6 +2265,29 @@ export default function App() {
         const r = vpRect();
         if (!paperAllowsPan(g.cam.scale, r.width, r.height)) return;
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
+      } else if (g.mode === "space-transfer") {
+        g.lastCx = cx;
+        g.lastCy = cy;
+        const target =
+          g.origin === "paper"
+            ? isOverAiColumn(cx, cy)
+              ? "ai"
+              : isOverPaperColumn(cx, cy)
+              ? "paper"
+              : null
+            : isOverPaperColumn(cx, cy)
+            ? "paper"
+            : isOverAiColumn(cx, cy)
+            ? "ai"
+            : null;
+        setBoundaryMagnetActive(g.origin === "paper" && target === "ai");
+        setTransferDragActive(true);
+        setSpaceTransferGhost({
+          cx,
+          cy,
+          count: g.ids.length,
+          target,
+        });
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
         if (g.highlight) {
@@ -2190,6 +2309,19 @@ export default function App() {
               if (hl && g.deletedIds.has(hl.itemId)) return null;
               return hl;
             });
+          }
+          const brushed = highlightBrushHits(
+            itemsRef.current,
+            cx,
+            cy,
+            g.lastCx,
+            g.lastCy,
+            camRef.current.scale,
+            worldToClient,
+            g.deletedIds
+          );
+          if (brushed.length) {
+            setHighlightTouchIds((prev) => [...new Set([...prev, ...brushed])]);
           }
           g.lastCx = cx;
           g.lastCy = cy;
@@ -2280,8 +2412,17 @@ export default function App() {
       gesture.current = null;
       if (!g) return;
       if (g.mode === "pan") setPanningRef.current(false);
+      if (g.mode === "space-transfer") {
+        setTransferDragActive(false);
+        setBoundaryMagnetActive(false);
+        setSpaceTransferGhost(null);
+        const cx = g.lastCx ?? g.cx;
+        const cy = g.lastCy ?? g.cy;
+        spaceTransferCompleteRef.current(g, cx, cy);
+      }
 
       if (g.mode === "draw") {
+        setHighlightTouchIds([]);
         if (g.points.length > 1) {
           const isHighlight = !!g.highlight;
           if (isHighlight) {
@@ -2293,6 +2434,7 @@ export default function App() {
                 width: hlW,
                 marker: true,
                 highlight: true,
+                loop: true,
               });
               const strokeId = strokeItem.id;
               setItems((arr) => [...arr, strokeItem]);
@@ -2442,20 +2584,13 @@ export default function App() {
         pendingImageRef.current = null;
         setImageArmed(false);
       }
-      // space: hold to pan · tap toggles highlighter ↔ pointer
+      // space: hold for transfer · double-tap toggles highlight ↔ select
       if (e.key === " " && !e.repeat && !walkingRef.current) {
         e.preventDefault();
         spaceHeldRef.current = true;
         setSpaceHeld(true);
         pendingImageRef.current = null;
         setImageArmed(false);
-        if (toolRef.current === "highlight") {
-          setItems((arr) => arr.filter((it) => !(it.type === "stroke" && it.highlight)));
-          setHighlight(null);
-          setTool("select");
-        } else {
-          setTool("highlight");
-        }
         return;
       }
       if ((e.key === "Delete" || e.key === "Backspace") && selRef.current.length) {
@@ -2481,6 +2616,13 @@ export default function App() {
     }
     function up(e) {
       if (e.key === " ") {
+        const now = Date.now();
+        if (now - lastSpaceUpRef.current < SPACE_DOUBLE_TAP_MS) {
+          setTool((t) => (t === "highlight" ? "select" : "highlight"));
+          lastSpaceUpRef.current = 0;
+        } else {
+          lastSpaceUpRef.current = now;
+        }
         spaceHeldRef.current = false;
         setSpaceHeld(false);
       }
@@ -4329,6 +4471,15 @@ export default function App() {
     let hit = itemAtPoint(cx, cy);
 
     if (spaceHeldRef.current) {
+      const paperSel = selRef.current;
+      if (paperSel.length > 0) {
+        startSpaceTransfer(e, "paper", paperSel);
+        return;
+      }
+      return;
+    }
+
+    if (e.altKey) {
       setPanning(true);
       gesture.current = { mode: "pan", cx, cy, cam: { ...camRef.current } };
       try {
@@ -4404,6 +4555,7 @@ export default function App() {
           lastCy: cy,
           strokeId,
         };
+        setHighlightTouchIds([]);
         setDraft({ points: [w], highlight: true });
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
         return;
@@ -4736,7 +4888,7 @@ export default function App() {
   }
 
   function appendAiNodes(...newNodes) {
-    setAiNodes((nodes) => [...nodes, ...newNodes]);
+    setAiNodes((nodes) => layoutAfterAppend(nodes, newNodes));
     return newNodes;
   }
 
@@ -4765,12 +4917,13 @@ export default function App() {
       radius: pos.radius,
     });
     appendAiNodes(node);
-    setSelectedAiNodeId(node.id);
+    setSelectedAiNodeIds([node.id]);
     return node;
   }
 
   function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}, worldPos) {
-    const pos = worldPos || childNodePosition(sourceNode, "expanded");
+    const existing = aiNodesRef.current;
+    const pos = worldPos || childNodePosition(sourceNode, "expanded", existing);
     const node = makeAiNode({
       nodeKind: "expanded",
       label: truncateLabel(opLabel || label),
@@ -4784,12 +4937,13 @@ export default function App() {
       radius: pos.radius,
     });
     appendAiNodes(node);
-    setSelectedAiNodeId(node.id);
+    setSelectedAiNodeIds([node.id]);
     return node;
   }
 
   function createSessionNodes(session, prompt, worldPos, labelOverride) {
-    const pos = nodePositionAt(aiNodesRef.current, "session", worldPos);
+    const existing = aiNodesRef.current;
+    const pos = nodePositionAt(existing, "session", worldPos);
     const sessionNode = makeAiNode({
       nodeKind: "session",
       label: truncateLabel(labelOverride || session.transcript?.slice(0, 24) || "Session"),
@@ -4799,7 +4953,7 @@ export default function App() {
       y: pos.y,
       radius: pos.radius,
     });
-    const expandedPos = childNodePosition(sessionNode, "expanded");
+    const expandedPos = childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
     const expandedNode = makeAiNode({
       nodeKind: "expanded",
       label: "Interpret",
@@ -4813,7 +4967,7 @@ export default function App() {
       radius: expandedPos.radius,
     });
     appendAiNodes(sessionNode, expandedNode);
-    setSelectedAiNodeId(expandedNode.id);
+    setSelectedAiNodeIds([expandedNode.id]);
     return { sessionNode, expandedNode, prompt };
   }
 
@@ -4824,27 +4978,30 @@ export default function App() {
       label: truncateLabel(op.name),
       opId: op.id,
       sourceNodeIds: linkTo ? [linkTo.id] : [],
+      parentId: linkTo?.id || null,
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
     });
     appendAiNodes(node);
-    setSelectedAiNodeId(node.id);
+    setSelectedAiNodeIds([node.id]);
     return node;
   }
 
-  function createLensNode(lens, worldPos) {
+  function createLensNode(lens, worldPos, linkTo) {
     const pos = nodePositionAt(aiNodesRef.current, "lens", worldPos);
     const node = makeAiNode({
       nodeKind: "lens",
       label: truncateLabel(lens.name),
       lensId: lens.id,
+      sourceNodeIds: linkTo ? [linkTo.id] : [],
+      parentId: linkTo?.id || null,
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
     });
     appendAiNodes(node);
-    setSelectedAiNodeId(node.id);
+    setSelectedAiNodeIds([node.id]);
     return node;
   }
 
@@ -4860,7 +5017,7 @@ export default function App() {
       radius: pos.radius,
     });
     appendAiNodes(node);
-    setSelectedAiNodeId(node.id);
+    setSelectedAiNodeIds([node.id]);
     return node;
   }
 
@@ -4998,6 +5155,21 @@ export default function App() {
     }
   }
   expandInAiRef.current = expandInAi;
+  spaceTransferCompleteRef.current = (g, cx, cy) => {
+    if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
+      const ids = g.ids;
+      const sketchBundle = gatherSelectionSketchBundle(ids);
+      const world = getAiDropWorldFromClient(cx, cy);
+      if (sketchBundle) {
+        interpretSketchBundle(sketchBundle, world);
+      } else {
+        const expandIds = transformableDragIds(ids);
+        if (expandIds.length) expandInAi(expandIds);
+      }
+    } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
+      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy));
+    }
+  };
 
   function spawnTextAtWorld(text, atWorld) {
     const clean = stripMd(text).trim();
@@ -5041,7 +5213,10 @@ export default function App() {
     const lensId = e.dataTransfer.getData(LENS_MIME);
     if (lensId) {
       const lens = lenses.find((l) => l.id === lensId);
-      if (lens) createLensNode(lens, pos);
+      if (lens) {
+        const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
+        createLensNode(lens, pos, linkTo);
+      }
       return true;
     }
 
@@ -5104,7 +5279,7 @@ export default function App() {
         op,
         opLabel: op.name,
         sourceNode,
-        expandedAt: childNodePosition(sourceNode, "expanded"),
+        expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
       });
       return true;
     }
@@ -5118,7 +5293,7 @@ export default function App() {
       if (autoExpand) {
         expandInAi(ids, {
           sourceNode,
-          expandedAt: childNodePosition(sourceNode, "expanded"),
+          expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
         });
       } else {
         syncAiSource(ids, { keepExpanded: false, skipNode: true });
@@ -5232,6 +5407,8 @@ export default function App() {
 
   // ---- render ----
   const visibleItems = items.filter((it) => itemVisibleOnPage(it, activePageId, worldFilter));
+  const selectedAiNodeId = selectedAiNodeIds[selectedAiNodeIds.length - 1] ?? null;
+  const highlightTouchSet = useMemo(() => new Set(highlightTouchIds), [highlightTouchIds]);
   const selBBox = selection.length ? selectionWorldBBox() : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
   const canTransform = selItem && isTransformableBlock(selItem);
@@ -5249,7 +5426,9 @@ export default function App() {
         .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
-    panning || spaceHeld
+    spaceHeld && (selection.length || selectedAiNodeIds.length)
+      ? "cur-space-transfer"
+      : panning
       ? "cur-grab"
       : tool === "highlight"
       ? "cur-highlight"
@@ -5411,12 +5590,14 @@ export default function App() {
                     fill="none"
                     stroke={it.highlight ? HIGHLIGHT_INK : it.color}
                     strokeWidth={it.highlight ? highlightWorldWidth(camera.scale) : it.width}
-                    strokeOpacity={it.highlight ? 0.72 : it.marker ? 0.32 : 0.95}
+                    strokeOpacity={it.highlight ? HIGHLIGHT_OPACITY : it.marker ? 0.32 : 0.95}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className={
                       (selection.includes(it.id) ? "sel" : "") +
+                      (highlightTouchSet.has(it.id) ? " hl-touch" : "") +
                       (it.highlight ? " hl-stroke" : "") +
+                      (it.loop ? " hl-loop-fill" : "") +
                       (it.instructionText || it.paperSessionId || it.recordingSessionId
                         ? " voice-linked"
                         : "")
@@ -5439,7 +5620,7 @@ export default function App() {
                         : PEN_W / 2
                     }
                     fill={draft.highlight ? HIGHLIGHT_INK : INK}
-                    fillOpacity={draft.highlight ? 0.72 : draft.marker ? 0.32 : 0.95}
+                    fillOpacity={draft.highlight ? HIGHLIGHT_OPACITY : draft.marker ? 0.32 : 0.95}
                   />
                 ) : (
                   <>
@@ -5492,7 +5673,7 @@ export default function App() {
                   <img
                     key={it.id}
                     data-item={it.id}
-                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
+                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (highlightTouchSet.has(it.id) ? " hl-touch" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
                     src={it.src}
                     style={{ ...itemStyle(it), width: it.w, height: it.h }}
                     alt=""
@@ -5505,6 +5686,7 @@ export default function App() {
                     key={it.id}
                     item={it}
                     selected={selection.includes(it.id)}
+                    highlightTouched={highlightTouchSet.has(it.id)}
                     dropTarget={dropTargetId === it.id}
                     dropMagnetic={dropReady && dropTargetId === it.id}
                     editing={editing === it.id}
@@ -5518,6 +5700,7 @@ export default function App() {
                   key={it.id}
                   item={it}
                   selected={selection.includes(it.id)}
+                  highlightTouched={highlightTouchSet.has(it.id)}
                   dropTarget={dropTargetId === it.id}
                   dropMagnetic={dropReady && dropTargetId === it.id}
                   editing={editing === it.id}
@@ -5758,10 +5941,12 @@ export default function App() {
           nodes={aiNodes}
           camera={aiCamera}
           onCameraChange={setAiCamera}
-          selectedNodeId={selectedAiNodeId}
-          onSelectNode={setSelectedAiNodeId}
+          selectedNodeIds={selectedAiNodeIds}
+          onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           spaceHeld={spaceHeld}
+          tool={tool}
+          onSpaceTransferStart={(e) => startSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
           viewportRef={aiViewportRef}
           canvasDropOver={aiCanvasDropOver}
           onCanvasDragOver={handleAiCanvasDragOver}
@@ -5861,7 +6046,7 @@ export default function App() {
             const node = aiNodes.find((n) => n.id === selectedAiNodeId);
             if (node?.nodeKind === "expanded") {
               setAiNodes((nodes) => nodes.filter((n) => n.id !== node.id));
-              setSelectedAiNodeId(null);
+              setSelectedAiNodeIds([]);
             }
             setAiPanel(null);
           }}
@@ -6025,6 +6210,22 @@ export default function App() {
           onClose={() => setLensCompare(null)}
         />
       )}
+
+      {spaceTransferGhost && (
+        <div
+          className={
+            "space-transfer-ghost" +
+            (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
+            (spaceTransferGhost.target === "paper" ? " to-paper" : "")
+          }
+          style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
+        >
+          <span className="space-transfer-ghost-count">{spaceTransferGhost.count}</span>
+          <span className="space-transfer-ghost-arrow">
+            {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -6126,7 +6327,7 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
   );
 }
 
-function BoardText({ item, selected, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
+function BoardText({ item, selected, highlightTouched, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
@@ -6193,6 +6394,7 @@ function BoardText({ item, selected, dropTarget, dropMagnetic, editing, editClic
       className={
         "board-text" +
         (selected ? " sel" : "") +
+        (highlightTouched ? " hl-touch" : "") +
         (dropTarget ? " drop-target" : "") +
         (dropMagnetic ? " drop-magnetic" : "") +
         (item.portal ? " portal" : "")

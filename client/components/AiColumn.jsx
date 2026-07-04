@@ -13,7 +13,7 @@ export default function AiColumn({
   nodes,
   camera,
   onCameraChange,
-  selectedNodeId,
+  selectedNodeIds,
   onSelectNode,
   onMoveNode,
   onExpandNode,
@@ -36,9 +36,11 @@ export default function AiColumn({
   onClear,
   toolbox,
   spaceHeld,
+  tool,
+  onSpaceTransferStart,
   viewportRef,
 }) {
-  const selectedNode = nodes?.find((n) => n.id === selectedNodeId);
+  const selectedNode = nodes?.find((n) => selectedNodeIds?.includes(n.id));
   const detailNode =
     selectedNode ||
     (panel?.expandedText || panel?.loading
@@ -77,7 +79,7 @@ export default function AiColumn({
             nodes={nodes || []}
             camera={camera}
             onCameraChange={onCameraChange}
-            selectedId={selectedNodeId}
+            selectedIds={selectedNodeIds || []}
             onSelect={onSelectNode}
             onMove={onMoveNode}
             onExpandNode={onExpandNode}
@@ -86,6 +88,8 @@ export default function AiColumn({
             onCanvasDragLeave={onCanvasDragLeave}
             canvasDropOver={canvasDropOver}
             spaceHeld={spaceHeld}
+            tool={tool}
+            onSpaceTransferStart={onSpaceTransferStart}
             viewportRef={viewportRef}
           />
 

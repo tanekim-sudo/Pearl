@@ -691,10 +691,33 @@ body.ai-node-dragging * {
 }
 
 .ai-node-line {
-  stroke: rgba(120, 160, 255, 0.35);
-  stroke-width: 1.5;
-  stroke-dasharray: 6 4;
-  filter: drop-shadow(0 0 3px rgba(100, 140, 255, 0.4));
+  stroke-width: 1;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.ai-node-line-glow {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 2.5;
+  opacity: 0.7;
+}
+
+.ai-node-line-expand {
+  stroke: rgba(255, 210, 100, 0.42);
+}
+
+.ai-node-line-interpret {
+  stroke: rgba(200, 180, 255, 0.45);
+}
+
+.ai-node-line-move {
+  stroke: rgba(80, 220, 255, 0.4);
+  stroke-dasharray: 5 6;
+}
+
+.ai-node-line-link,
+.ai-node-line-branch {
+  stroke: rgba(180, 200, 255, 0.32);
 }
 
 .ai-node {
@@ -704,13 +727,13 @@ body.ai-node-dragging * {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 6px;
+  padding: 2px;
   cursor: grab;
   user-select: none;
   box-shadow:
-    0 0 12px rgba(100, 140, 255, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.4);
-  border: 1.5px solid rgba(140, 170, 255, 0.35);
+    0 0 8px rgba(100, 140, 255, 0.2),
+    0 1px 4px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(140, 170, 255, 0.35);
   background: rgba(18, 22, 38, 0.92);
   transition: box-shadow 0.12s, border-color 0.12s;
   z-index: 2;
@@ -721,10 +744,33 @@ body.ai-node-dragging * {
 }
 
 .ai-node.selected {
-  border-color: rgba(160, 200, 255, 0.85);
+  border-color: rgba(200, 230, 255, 0.95);
+  transform: scale(1.08);
+  z-index: 4;
   box-shadow:
-    0 0 0 3px rgba(100, 150, 255, 0.2),
-    0 0 20px rgba(100, 150, 255, 0.35);
+    0 0 0 4px rgba(100, 180, 255, 0.35),
+    0 0 28px rgba(120, 180, 255, 0.55),
+    0 0 48px rgba(100, 150, 255, 0.25);
+}
+
+.ai-node.multi-selected {
+  box-shadow:
+    0 0 0 3px rgba(245, 230, 163, 0.45),
+    0 0 24px rgba(120, 180, 255, 0.45);
+}
+
+.ai-node-viewport.space-transfer-ready {
+  cursor: grabbing;
+}
+
+.ai-lasso {
+  position: absolute;
+  border: 2px dashed rgba(160, 200, 255, 0.75);
+  background: rgba(100, 150, 255, 0.08);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(100, 150, 255, 0.2);
 }
 
 .ai-node.loading {
@@ -763,22 +809,32 @@ body.ai-node-dragging * {
 }
 
 .ai-node-label {
-  font-size: 10px;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 8px;
   font-weight: 600;
   line-height: 1.2;
-  color: rgba(210, 220, 245, 0.9);
+  color: rgba(210, 220, 245, 0);
   pointer-events: none;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  max-width: 72px;
+  text-overflow: ellipsis;
+  transition: color 0.12s;
+}
+
+.ai-node:hover .ai-node-label,
+.ai-node.selected .ai-node-label {
+  color: rgba(210, 220, 245, 0.85);
 }
 
 .ai-node-spinner {
   position: absolute;
-  bottom: 6px;
-  width: 6px;
-  height: 6px;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: rgba(140, 180, 255, 0.9);
   animation: ai-pulse 1s ease-in-out infinite;
@@ -1744,7 +1800,28 @@ body.ai-node-dragging * {
 }
 
 .board-sticky.sel {
-  outline: 2px solid var(--accent);
+  outline: 3px solid rgba(245, 230, 163, 0.85);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 4px rgba(245, 230, 163, 0.25),
+    0 0 16px rgba(245, 230, 163, 0.2);
+}
+.board-sticky.hl-touch:not(.sel),
+.board-callout.hl-touch:not(.sel),
+.board-text.hl-touch:not(.sel) {
+  outline: 2px solid rgba(245, 230, 163, 0.5);
+  outline-offset: 2px;
+  background: rgba(245, 230, 163, 0.1);
+}
+
+.idea-center .board-text.sel,
+.canvas-column .board-text.sel {
+  background: rgba(245, 230, 163, 0.16);
+  border-color: rgba(245, 200, 80, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(245, 230, 163, 0.4),
+    0 0 14px rgba(245, 230, 163, 0.22);
+  outline: 2px solid rgba(245, 200, 80, 0.5);
   outline-offset: 2px;
 }
 
@@ -2135,7 +2212,7 @@ html[data-theme="chalk"] body {
 
 .ai-node-starburst {
   position: absolute;
-  inset: -35%;
+  inset: -18%;
   pointer-events: none;
   border-radius: 50%;
   background:
@@ -2232,6 +2309,8 @@ html[data-theme="chalk"] body {
 
 .ai-node.selected .ai-node-starburst {
   opacity: 1;
+  animation-duration: 1.2s;
+  filter: brightness(1.3);
 }
 
 @keyframes ai-star-twinkle {
@@ -2242,12 +2321,12 @@ html[data-theme="chalk"] body {
 .ai-node::after {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -2px;
   border-radius: 50%;
   pointer-events: none;
   box-shadow:
-    0 0 8px 2px rgba(255, 255, 255, 0.08),
-    0 0 20px 4px rgba(100, 150, 255, 0.12);
+    0 0 4px 1px rgba(255, 255, 255, 0.06),
+    0 0 10px 2px rgba(100, 150, 255, 0.08);
 }
 
 .ai-node-expanded::after {
