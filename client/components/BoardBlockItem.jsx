@@ -64,11 +64,15 @@ function EditableBlock({ item, className, editing, editClickRef, onCommit, style
   );
 }
 
-function VoiceBlock({ item, selected, style }) {
+function VoiceBlock({ item, selected, highlightTouched, style }) {
   const bars = item.waveform || [0.3, 0.5, 0.8, 0.4, 0.6, 0.9, 0.5, 0.3, 0.7, 0.4, 0.6, 0.8];
   const dur = item.durationLabel || (item.duration ? `0:${String(item.duration).padStart(2, "0")}` : "0:24");
   return (
-    <div className={"board-voice" + (selected ? " sel" : "")} data-item={item.id} style={style}>
+    <div
+      className={"board-voice" + (selected ? " sel" : "") + (highlightTouched ? " hl-touch" : "")}
+      data-item={item.id}
+      style={style}
+    >
       <button type="button" className="voice-play" onPointerDown={(e) => e.stopPropagation()} title="Play (stub)">
         ▶
       </button>
@@ -82,13 +86,17 @@ function VoiceBlock({ item, selected, style }) {
   );
 }
 
-function DiagramBlock({ item, selected, style }) {
+function DiagramBlock({ item, selected, highlightTouched, style }) {
   const w = item.w || 320;
   const h = item.h || 160;
   const nodes = item.nodes || [];
   const cx = nodes.find((n) => n.id === "c") || nodes[0];
   return (
-    <div className={"board-diagram" + (selected ? " sel" : "")} data-item={item.id} style={style}>
+    <div
+      className={"board-diagram" + (selected ? " sel" : "") + (highlightTouched ? " hl-touch" : "")}
+      data-item={item.id}
+      style={style}
+    >
       {item.title && <div className="diagram-title">{item.title}</div>}
       <svg viewBox={`0 0 ${w} ${h}`} className="diagram-svg">
         {nodes
@@ -117,13 +125,17 @@ function DiagramBlock({ item, selected, style }) {
   );
 }
 
-function TableBlock({ item, selected, style }) {
+function TableBlock({ item, selected, highlightTouched, style }) {
   const rows = item.rows || [
     ["A", "B"],
     ["", ""],
   ];
   return (
-    <div className={"board-table" + (selected ? " sel" : "")} data-item={item.id} style={style}>
+    <div
+      className={"board-table" + (selected ? " sel" : "") + (highlightTouched ? " hl-touch" : "")}
+      data-item={item.id}
+      style={style}
+    >
       <table>
         <tbody>
           {rows.map((row, ri) => (
@@ -139,9 +151,10 @@ function TableBlock({ item, selected, style }) {
   );
 }
 
-function VideoBlock({ item, selected, style }) {
+function VideoBlock({ item, selected, highlightTouched, style }) {
   return (
-    <div className={"board-video" + (selected ? " sel" : "")} data-item={item.id} style={style}>
+    <div
+      className={"board-video" + (selected ? " sel" : "") + (highlightTouched ? " hl-touch" : "")} data-item={item.id} style={style}>
       <div className="video-placeholder">
         <span className="video-play">▶</span>
       </div>
@@ -153,6 +166,7 @@ function VideoBlock({ item, selected, style }) {
 export default function BoardBlockItem({
   item,
   selected,
+  highlightTouched,
   dropTarget,
   dropMagnetic,
   editing,
@@ -162,7 +176,10 @@ export default function BoardBlockItem({
 }) {
   const style = itemStyle(item);
   const cls =
-    (selected ? " sel" : "") + (dropTarget ? " drop-target" : "") + (dropMagnetic ? " drop-magnetic" : "");
+    (selected ? " sel" : "") +
+    (highlightTouched ? " hl-touch" : "") +
+    (dropTarget ? " drop-target" : "") +
+    (dropMagnetic ? " drop-magnetic" : "");
 
   if (item.type === "sticky") {
     return (
@@ -192,10 +209,10 @@ export default function BoardBlockItem({
     );
   }
 
-  if (item.type === "voice") return <VoiceBlock item={item} selected={selected} style={style} />;
-  if (item.type === "diagram") return <DiagramBlock item={item} selected={selected} style={style} />;
-  if (item.type === "table") return <TableBlock item={item} selected={selected} style={style} />;
-  if (item.type === "video") return <VideoBlock item={item} selected={selected} style={style} />;
+  if (item.type === "voice") return <VoiceBlock item={item} selected={selected} highlightTouched={highlightTouched} style={style} />;
+  if (item.type === "diagram") return <DiagramBlock item={item} selected={selected} highlightTouched={highlightTouched} style={style} />;
+  if (item.type === "table") return <TableBlock item={item} selected={selected} highlightTouched={highlightTouched} style={style} />;
+  if (item.type === "video") return <VideoBlock item={item} selected={selected} highlightTouched={highlightTouched} style={style} />;
 
   if (item.type === "code") {
     return (
