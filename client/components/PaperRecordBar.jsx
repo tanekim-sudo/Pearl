@@ -28,7 +28,6 @@ export default function PaperRecordBar({ recording, level, durationMs, onToggle 
               />
             ))}
           </div>
-          <span className="paper-record-hint">Speak while you draw — voice tags your marks</span>
         </>
       )}
     </div>

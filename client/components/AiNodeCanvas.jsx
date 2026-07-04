@@ -276,12 +276,7 @@ export default function AiNodeCanvas({
         })}
       </div>
 
-      {nodes.length === 0 && (
-        <div className="ai-node-empty">
-          <p>Drop anything here — instant node.</p>
-          <p className="ai-empty-hint">Pan empty space · scroll to zoom · space+drag to pan</p>
-        </div>
-      )}
+      {nodes.length === 0 && <div className="ai-node-empty" aria-hidden="true" />}
 
       <div className="ai-zoom-hint" aria-hidden="true">
         {Math.round(camera.scale * 100)}%

@@ -2307,7 +2307,6 @@ export default function App() {
                   const extracted = extractTextFromLoopSelection(inside, itemsRef.current);
                   if (extracted) {
                     setSelection([extracted.itemId]);
-                    showToastRef.current("highlighted · drag a function from the rail");
                   }
                 });
               } else {
@@ -2332,12 +2331,8 @@ export default function App() {
                   );
                   if (extracted) {
                     setSelection([extracted.itemId]);
-                    showToastRef.current("highlighted · drag a function from the rail");
                   } else {
                     setItems((arr) => arr.filter((it) => it.id !== strokeId));
-                    if (!g.deletedIds?.size) {
-                      showToastRef.current("scribble to erase · circle to select · draw over text to think");
-                    }
                   }
                 });
               });
@@ -2788,8 +2783,6 @@ export default function App() {
       const ids = resolveTargetIds(atClient);
       if (ids.length) {
         expandInAi(ids, { op, opLabel: op.name });
-      } else {
-        showToast("expansion runs in AI Layer — select paper content or drop on the right");
       }
       return;
     }
@@ -3481,18 +3474,6 @@ export default function App() {
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
-  const compressionMoves = useMemo(() => moves.filter(isCompressionOperator), [moves]);
-  const expansionMoves = useMemo(() => moves.filter(isExpansionOperator), [moves]);
-  const compressionPrimitives = useMemo(() => primitives.filter(isCompressionOperator), [primitives]);
-  const expansionPrimitives = useMemo(() => primitives.filter(isExpansionOperator), [primitives]);
-  const compressionBasics = useMemo(() => basics.filter(isCompressionOperator), [basics]);
-  const expansionBasics = useMemo(() => basics.filter(isExpansionOperator), [basics]);
-  const compressionTopFunctions = useMemo(() => topFunctions.filter(isCompressionOperator), [topFunctions]);
-  const expansionTopFunctions = useMemo(() => topFunctions.filter(isExpansionOperator), [topFunctions]);
-  const compressionPaletteOps = useMemo(
-    () => [...compressionPrimitives, ...compressionBasics, ...compressionMoves, ...compressionTopFunctions],
-    [compressionPrimitives, compressionBasics, compressionMoves, compressionTopFunctions]
-  );
   const activeLens = lenses.find((l) => l.id === activeLensId) || null;
 
   // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
@@ -3883,25 +3864,6 @@ export default function App() {
     );
   }
 
-  function plantStarterThought() {
-    pushHistory();
-    const c = viewportCenterWorld();
-    const id = uid();
-    const text = "The father runs to the prodigal son.";
-    setItems([
-      normalizeItem({
-        id,
-        type: "text",
-        x: c.x - 160,
-        y: c.y - 36,
-        text,
-        w: 360,
-      }),
-    ]);
-    setSelection([id]);
-    setTool("highlight");
-    showToast("draw over the text with the highlighter");
-  }
 
   function itemScreenBBox(it) {
     if (it.type === "stroke") {
@@ -4170,7 +4132,7 @@ export default function App() {
       paperSessionRef.current = session;
       setPaperRecording(true);
       setPaperRecordMs(0);
-      showToast("recording — draw and speak on the paper");
+      showToast("recording");
     } catch (err) {
       showToast(err.message || "microphone unavailable");
     }
@@ -4541,7 +4503,6 @@ export default function App() {
       pendingImageRef.current = input.files[0];
       setImageArmed(true);
       setTool("image");
-      showToast("click on the paper to place the image");
     };
     input.click();
   }
@@ -5126,7 +5087,6 @@ export default function App() {
       const op = opMap[opId];
       if (!op) return true;
       if (isCompressionOperator(op)) {
-        showToast("compression runs on paper — drag onto a selection on the left");
         return true;
       }
       const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
@@ -5137,7 +5097,6 @@ export default function App() {
           opLabel: op.name,
           opId: op.id,
         }));
-        showToast("Move placed — drop a thought to run it");
         return true;
       }
       const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
@@ -5261,8 +5220,6 @@ export default function App() {
     else if (action === "open-structures") setRailTab("structures");
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
-    else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
-    else if (action === "help-tips") showToast("Double-click the paper to write · compress moves on the left · expand moves on the right");
   }
 
   function handleShareBoard() {
@@ -5270,7 +5227,6 @@ export default function App() {
       shareJourneyLink(selRef.current[0]);
     } else {
       exportSelection("md");
-      showToast("Exported board — select one idea to share its journey link");
     }
   }
 
@@ -5379,7 +5335,6 @@ export default function App() {
           paperRecordLevel={paperRecordLevel}
           paperRecordMs={paperRecordMs}
           onTogglePaperRecord={togglePaperRecord}
-          compressionOps={compressionPaletteOps}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
@@ -5779,16 +5734,6 @@ export default function App() {
       )}
 
       {/* brand moved to rail — canvas stays clean */}
-
-      {/* empty hint */}
-      {visibleItems.length === 0 && (
-        <div className="empty-hint">
-          <p>Double-click the paper to write · compress on the left · expand on the right</p>
-          <button type="button" className="starter-btn" onClick={plantStarterThought}>
-            ✦ try the highlighter
-          </button>
-        </div>
-      )}
       </div>
         </CanvasColumn>
 
@@ -5920,7 +5865,7 @@ export default function App() {
             }
             setAiPanel(null);
           }}
-          library={
+          toolbox={
             <aside
               ref={railRef}
               className={"board-rail ai-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
@@ -5958,17 +5903,17 @@ export default function App() {
                         ))}
                       </>
                     )}
-                    {expansionMoves.length > 0 && (<><div className="rail-section">your moves</div>{expansionMoves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {expansionTopFunctions.length > 0 && (<><div className="rail-section">yours</div>{expansionTopFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} starlike />))}</>)}
-                    {expansionPrimitives.length > 0 && (<><div className="rail-section">primitives</div>{expansionPrimitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {expansionBasics.length > 0 && (<><div className="rail-section">basics</div>{expansionBasics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} starlike />))}</>)}
+                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
                   </div>
                 </>
               ) : (
                 <>
                   <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
                   <div className="rail-scroll">
-                    {structures.length === 0 ? <p className="rail-empty">Save selections from the paper.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+                    {structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
                   </div>
                 </>
               )}
@@ -6019,9 +5964,6 @@ export default function App() {
         <div className="modal-scrim" onClick={() => setFreshConfirm(false)}>
           <div className="modal fresh-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Start fresh?</h3>
-            <p className="modal-sub">
-              Clears the paper, your functions, moves, lenses, and symbols. Built-in thinking primitives stay.
-            </p>
             <div className="modal-foot">
               <button type="button" onClick={() => setFreshConfirm(false)}>
                 Cancel
@@ -6300,11 +6242,7 @@ function SelectionCaptureChip({
             onTransferDragStart?.();
           }}
           onDragEnd={() => onTransferDragEnd?.()}
-          title={
-            sketchBundle
-              ? "Interpret sketch + voice in AI · drag to right column"
-              : "Expand in AI · drag to boundary or right column"
-          }
+          title={sketchBundle ? "Interpret" : "AI"}
         >
           {interpretLabel}
         </button>
@@ -6317,7 +6255,7 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveDocument();
           }}
-          title="Save this idea as a document in Structures"
+          title="Save as document"
         >
           Save as document
         </button>
@@ -6330,7 +6268,7 @@ function SelectionCaptureChip({
           e.stopPropagation();
           onSave();
         }}
-        title="Save this node's creation process as a reusable function"
+        title="Save process"
       >
         ◈ save process
       </button>
@@ -6343,7 +6281,7 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onShareJourney();
           }}
-          title="Copy link to this transformation journey"
+          title="Share"
         >
           ↗ share
         </button>
@@ -6412,20 +6350,6 @@ function startStructDrag(e, struct) {
 
 function CanvasHud({ tool, selectionCount, imageArmed }) {
   const meta = CANVAS_TOOLS[tool] || CANVAS_TOOLS.select;
-  let hint = meta.hint;
-  if (imageArmed && tool === "image") {
-    hint = "Click on the paper to place your image";
-  } else if (tool === "highlight" && selectionCount > 1) {
-    hint = `${selectionCount} ideas selected · circle to select inside · drag expand moves from AI Layer`;
-  } else if (selectionCount >= 2 && tool === "select") {
-    hint = `${selectionCount} selected · drag to move · drag expand moves from AI Layer`;
-  } else if (selectionCount > 0 && tool === "select") {
-    hint = `${selectionCount} selected · click text to edit · drag to move`;
-  } else if (tool === "highlight") {
-    hint = "Scribble to erase · closed circle selects inside · space → clear highlights, back to mouse";
-  } else if (tool === "select" && selectionCount === 0) {
-    hint = meta.hint + " · space → highlighter · hold space or middle-click to pan";
-  }
 
   return (
     <div className="canvas-hud" onPointerDown={(e) => e.stopPropagation()}>
@@ -6442,7 +6366,6 @@ function CanvasHud({ tool, selectionCount, imageArmed }) {
         <span className="mode-icon">{meta.icon}</span>
         <span className="mode-label">{meta.label}</span>
       </div>
-      <p className="mode-hint">{hint}</p>
     </div>
   );
 }
@@ -6614,10 +6537,10 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title="drag onto AI nodes or boundary to expand · drop another operator here to forge a compound"
+        title={op.name}
       >
         <div className="op-card-row">
-          <span className="op-drag-grip" title="drag onto paper">
+          <span className="op-drag-grip" title="Drag">
             ⠿
           </span>
           <div className="op-card-label">
@@ -6663,7 +6586,7 @@ function DraggableStep({ step, opMap, expanded, onToggle, onEdit, depth }) {
         className={"op-step-chip" + (isLeaf ? " leaf" : "")}
         draggable
         onDragStart={(e) => startOpDrag(e, step)}
-        title="drag onto paper"
+        title="Drag"
       >
         <span className="op-drag-grip">⠿</span>
         <div className="op-step-label">
@@ -6737,7 +6660,7 @@ function LensCard({
       title="drag onto paper · drop another lens here to Merge"
     >
       <div className="lens-card-top">
-        <span className="op-drag-grip" title="drag onto paper">
+        <span className="op-drag-grip" title="Drag">
           ⠿
         </span>
         <span className="lens-card-name">{lens.name}</span>
@@ -6973,7 +6896,7 @@ function StructureCard({ struct, onDelete, onShare }) {
         title="drag onto paper to plant"
       >
         <div className="struct-card-row">
-          <span className="op-drag-grip" title="drag onto paper">
+          <span className="op-drag-grip" title="Drag">
             ⠿
           </span>
           <div className="struct-card-body">
@@ -7019,9 +6942,6 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
         <div className="onboard">
           <div className="onboard-mark">lens</div>
           <h2>What do you do?</h2>
-          <p className="onboard-sub">
-            Pick a role — I'll build thinking functions in the background while you use the canvas.
-          </p>
           <div className="role-grid">
             {ROLES.map((r) => (
               <button key={r} className="role-btn" onClick={() => onStart(r)}>
@@ -7055,7 +6975,6 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
         <div className="onboard">
           <div className="onboard-mark">lens</div>
           <h2>Building your toolbox</h2>
-          <p className="onboard-sub">designing functions for a {state.role}, each composed of smaller functions…</p>
           <div className="progress">
             <div className="progress-bar" style={{ width: `${pct}%` }} />
           </div>
@@ -7073,9 +6992,6 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
         <div className="onboard">
           <div className="onboard-mark">lens</div>
           <h2>Your toolbox is ready</h2>
-          <p className="onboard-sub">
-            {state.count} functions built for a {state.role}. Drag functions onto ideas on the canvas, or drag ideas together to combine.
-          </p>
           <button className="onboard-go" onClick={onClose}>
             start thinking
           </button>

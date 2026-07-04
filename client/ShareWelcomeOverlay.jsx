@@ -171,9 +171,6 @@ export default function ShareWelcomeOverlay({ bundle, railRef, canvasRef, onAcce
           {step === "cta" && (
             <div className="share-welcome-step cta">
               <p className="share-welcome-cta-q">{ctaQuestion}</p>
-              <p className="share-welcome-cta-hint">
-                It will land in your {destLabel} — ready to use on your board.
-              </p>
               <div className="share-welcome-actions">
                 <button type="button" className="share-welcome-add" onClick={handleAccept}>
                   Add it

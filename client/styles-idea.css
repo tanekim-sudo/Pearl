@@ -408,6 +408,14 @@ html[data-theme="chalk"] .ai-column {
   overflow: hidden;
 }
 
+.ai-toolbox-body .ai-board-rail {
+  max-height: calc(40vh - 36px);
+}
+
+.ai-toolbox-body .ai-board-rail .rail-scroll {
+  max-height: calc(40vh - 120px);
+}
+
 .ai-board-rail .rail-scroll {
   flex: 1;
   min-height: 0;
@@ -486,21 +494,87 @@ html[data-theme="chalk"] .ai-column {
 
 .ai-column-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 12px 14px;
+  overflow: hidden;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   min-height: 0;
 }
 
 .ai-column-body.unified {
+  gap: 0;
+}
+
+.ai-toolbox {
+  flex-shrink: 0;
+  max-height: 40vh;
+  overflow: auto;
+  border-bottom: 1px solid var(--ai-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ai-toolbox.collapsed {
+  max-height: 36px;
+  overflow: hidden;
+}
+
+.ai-toolbox.drop-over {
+  background: color-mix(in srgb, var(--accent) 8%, #0a0a0c);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ai-toolbox-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ai-ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ai-toolbox-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ai-toolbox-chevron {
+  font-size: 10px;
+  opacity: 0.7;
+  width: 12px;
+}
+
+.ai-toolbox-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-spacetime {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px 14px 12px;
   gap: 10px;
 }
 
 .ai-nodes-section {
-  flex: 1 1 45%;
-  min-height: 180px;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -511,9 +585,8 @@ html[data-theme="chalk"] .ai-column {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  padding: 8px 0 0;
+  border-top: 1px solid var(--ai-line);
 }
 
 .ai-library-section {
@@ -533,7 +606,7 @@ html[data-theme="chalk"] .ai-column {
 .ai-node-viewport {
   position: relative;
   flex: 1;
-  min-height: 200px;
+  min-height: 0;
   border: 1px solid color-mix(in srgb, var(--accent) 18%, #1a1a22);
   border-radius: 12px;
   background: #050508;

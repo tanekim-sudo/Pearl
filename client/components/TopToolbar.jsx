@@ -100,11 +100,6 @@ export default function TopToolbar({
         { id: "new-function", label: "Create function" },
       ],
     },
-    {
-      id: "help",
-      label: "Help",
-      items: [{ id: "help-tips", label: "Tips & shortcuts" }],
-    },
   ];
 
   return (

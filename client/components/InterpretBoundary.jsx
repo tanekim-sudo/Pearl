@@ -4,10 +4,10 @@ export const PAPER_SESSION_MIME = "application/lens-paper-session";
 export { SKETCH_BUNDLE_MIME } from "../../shared/sketch-bundle.js";
 
 const STATUS_LABEL = {
-  idle: "Drop to expand",
-  ready: "Ready to interpret",
-  interpreting: "Interpreting…",
-  synced: "Synced",
+  idle: "",
+  ready: "",
+  interpreting: "…",
+  synced: "✓",
 };
 
 export default function InterpretBoundary({
@@ -22,6 +22,7 @@ export default function InterpretBoundary({
   onDrop,
 }) {
   const canInterpret = hasPaperSession && !loading;
+  const statusLabel = STATUS_LABEL[status] || "";
 
   return (
     <div
@@ -33,7 +34,7 @@ export default function InterpretBoundary({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      title="Interpretation boundary — drag items here to expand in AI"
+      title="Interpret"
     >
       <div
         className={
@@ -53,18 +54,16 @@ export default function InterpretBoundary({
           className="interpret-boundary-btn"
           disabled={!canInterpret}
           onClick={onInterpret}
-          title={
-            hasPaperSession
-              ? "Send voice + drawings across boundary for AI interpretation"
-              : "Record a voice + draw session first"
-          }
+          title="Interpret"
         >
           <span className="interpret-boundary-arrow">→</span>
           <span className="interpret-boundary-label">
             {loading ? "…" : "Interpret"}
           </span>
         </button>
-        <span className="interpret-boundary-status">{STATUS_LABEL[status] || STATUS_LABEL.idle}</span>
+        {statusLabel && (
+          <span className="interpret-boundary-status">{statusLabel}</span>
+        )}
       </div>
     </div>
   );
