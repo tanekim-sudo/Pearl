@@ -615,6 +615,12 @@ html[data-theme="chalk"] .ai-column {
   touch-action: none;
 }
 
+body.ai-node-dragging,
+body.ai-node-dragging * {
+  user-select: none !important;
+  cursor: grabbing !important;
+}
+
 .ai-node-viewport.drop-over {
   box-shadow:
     inset 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent),

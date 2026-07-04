@@ -91,7 +91,7 @@ export default function AiNodeCanvas({
       cam: { ...camera },
     };
 
-    function onMove(ev) {
+    function handlePanMove(ev) {
       if (!panRef.current) return;
       const dx = ev.clientX - panRef.current.startX;
       const dy = ev.clientY - panRef.current.startY;
@@ -102,20 +102,21 @@ export default function AiNodeCanvas({
       });
     }
 
-    function onUp() {
+    function handlePanEnd() {
       panRef.current = null;
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("pointermove", handlePanMove);
+      window.removeEventListener("pointerup", handlePanEnd);
+      window.removeEventListener("pointercancel", handlePanEnd);
     }
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointermove", handlePanMove);
+    window.addEventListener("pointerup", handlePanEnd);
+    window.addEventListener("pointercancel", handlePanEnd);
   }
 
   function startNodeDrag(e, node) {
     if (e.button !== 0) return;
+    e.preventDefault();
     e.stopPropagation();
     onSelect?.(node.id);
     const startX = e.clientX;
@@ -123,34 +124,49 @@ export default function AiNodeCanvas({
     const origX = node.x;
     const origY = node.y;
     dragRef.current = { nodeId: node.id, startX, startY, origX, origY, scale: camera.scale };
+    document.body.classList.add("ai-node-dragging");
 
-    function onMove(ev) {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+
+    function handleDragMove(ev) {
       if (!dragRef.current) return;
       const dx = (ev.clientX - dragRef.current.startX) / dragRef.current.scale;
       const dy = (ev.clientY - dragRef.current.startY) / dragRef.current.scale;
       onMove?.(dragRef.current.nodeId, dragRef.current.origX + dx, dragRef.current.origY + dy);
     }
 
-    function onUp() {
+    function handleDragEnd(ev) {
       dragRef.current = null;
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      document.body.classList.remove("ai-node-dragging");
+      try {
+        e.currentTarget.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
+      window.removeEventListener("pointermove", handleDragMove);
+      window.removeEventListener("pointerup", handleDragEnd);
+      window.removeEventListener("pointercancel", handleDragEnd);
     }
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointermove", handleDragMove);
+    window.addEventListener("pointerup", handleDragEnd);
+    window.addEventListener("pointercancel", handleDragEnd);
   }
 
   function handleViewportPointerDown(e) {
+    if (e.target.closest?.(".ai-node")) return;
     const onVoid =
       e.target === e.currentTarget ||
       e.target.classList.contains("ai-void-bg") ||
-      e.target.classList.contains("ai-starfield");
+      e.target.classList.contains("ai-starfield") ||
+      e.target.classList.contains("ai-world-layer") ||
+      e.target.classList.contains("ai-node-lines");
     if (spaceHeld || e.button === 1 || (e.button === 0 && onVoid)) {
       startPan(e);
-      return;
     }
   }
 
