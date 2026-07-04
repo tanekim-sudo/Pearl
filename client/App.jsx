@@ -42,10 +42,10 @@ import {
   shareDestinationLabel,
 } from "../shared/share-bundle.js";
 import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
-import ThoughtsSidebar from "./components/ThoughtsSidebar.jsx";
-import TopToolbar, { FunctionsDrawer } from "./components/TopToolbar.jsx";
-import RightPalette from "./components/RightPalette.jsx";
-import BottomBar from "./components/BottomBar.jsx";
+import TopToolbar from "./components/TopToolbar.jsx";
+import FunctionsColumn from "./components/FunctionsColumn.jsx";
+import CanvasColumn from "./components/CanvasColumn.jsx";
+import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
@@ -1756,9 +1756,11 @@ export default function App() {
   const [activePageId, setActivePageId] = useState(() => load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID }])[0]?.id || DEFAULT_PAGE_ID);
   const [worldFilter, setWorldFilter] = useState(null);
   const [theme, setTheme] = useState(() => load(THEME_KEY, "idea"));
-  const [functionsOpen, setFunctionsOpen] = useState(false);
   const [editMode, setEditMode] = useState(true);
   const [savedIndicator, setSavedIndicator] = useState(true);
+  const [aiPanel, setAiPanel] = useState(null);
+  const [aiDropOver, setAiDropOver] = useState(false);
+  const [canvasDropOver, setCanvasDropOver] = useState(false);
 
   const viewportRef = useRef(null);
   const railRef = useRef(null);
@@ -4280,6 +4282,154 @@ export default function App() {
     switchPage(id);
   }
 
+  async function syncAiSource(ids, opts = {}) {
+    const idSet = new Set(ids);
+    const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
+    if (!itemList.length) return null;
+    const gathered = await gatherMaterialFromItems(itemList);
+    setAiPanel((prev) => ({
+      ...(prev || {}),
+      sourceIds: ids,
+      sourcePreview: gathered.preview,
+      sourceText: gathered.text,
+      image: gathered.image,
+      expandedText: opts.keepExpanded ? prev?.expandedText : null,
+      loading: false,
+      error: null,
+      opLabel: opts.opLabel || null,
+      opId: opts.opId || null,
+    }));
+    return gathered;
+  }
+
+  async function runOpForAi(op, ids) {
+    const idSet = new Set(ids);
+    const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
+    const gathered = await gatherMaterialFromItems(itemList);
+    const text = gathered.text;
+    const { image } = gathered;
+    if (!text?.trim() && !image) throw new Error("no readable content");
+
+    const map = hydrateOperatorMap(opMap, operators, op.id);
+    const execOp = map[op.id] || op;
+    const plan = compileExecutionPlan(execOp, map, text);
+
+    if (plan.phases.length === 1 && plan.phases[0].id === "synthesize") {
+      const phase = plan.phases[0];
+      return runClaude(phase.prompt, text.trim(), {
+        system: phase.system,
+        maxTokens: phase.maxTokens,
+        timeoutMs: phase.timeoutMs,
+        image,
+        compact: plan.fastPath,
+      });
+    }
+
+    return runExecutionOnServer({
+      op: execOp,
+      opMap: map,
+      operators,
+      material: text,
+      image,
+      plan,
+    });
+  }
+
+  async function expandInAi(ids, opts = {}) {
+    const op = opts.op || opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
+    if (!op) {
+      showToast("expand primitive not found");
+      return;
+    }
+    setAiPanel((prev) => ({
+      ...(prev || {}),
+      sourceIds: ids,
+      loading: true,
+      error: null,
+      opLabel: opts.opLabel || op.name,
+      opId: op.id,
+    }));
+    try {
+      await syncAiSource(ids, { keepExpanded: false, opLabel: op.name, opId: op.id });
+      let out = await runOpForAi(op, ids);
+      if (isTransformPrimitive(op)) {
+        out = sanitizePrimitiveOutput(out);
+        if (!out?.trim() || isPrimitiveMetaOutput(out)) {
+          throw new Error("got commentary instead of transformed text — try again");
+        }
+      } else {
+        out = await polishDeliverable(out, op, itemsRef.current.filter((it) => ids.includes(it.id)).map((it) => it.text).join("\n"));
+      }
+      setAiPanel((prev) => ({
+        ...prev,
+        expandedText: out.trim(),
+        loading: false,
+        error: null,
+      }));
+    } catch (err) {
+      setAiPanel((prev) => ({
+        ...prev,
+        loading: false,
+        error: err.message || "expand failed",
+      }));
+      showToast(err.message || "expand failed");
+    }
+  }
+
+  function spawnTextAtWorld(text, atWorld) {
+    const clean = stripMd(text).trim();
+    if (!clean) return;
+    pushHistory();
+    const w = Math.min(480, Math.max(240, Math.round(clean.length * 0.45 + 180)));
+    const id = uid();
+    const item = normalizeItem({
+      id,
+      type: "text",
+      x: atWorld.x,
+      y: atWorld.y,
+      text: clean,
+      w,
+      pageId: activePageId,
+      world: worldFilter || null,
+    });
+    setItems((arr) => [...arr, item]);
+    setSelection([id]);
+    showToast("added to canvas");
+  }
+
+  function handleAiDrop(e) {
+    e.preventDefault();
+    setAiDropOver(false);
+    const opId = e.dataTransfer.getData(OP_MIME);
+    if (opId) {
+      const op = opMap[opId];
+      const ids = aiPanel?.sourceIds?.length ? aiPanel.sourceIds : selection;
+      if (!op || !ids?.length) {
+        showToast("select or drop a thought first");
+        return;
+      }
+      expandInAi(ids, { op, opLabel: op.name });
+      return;
+    }
+    const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME) || e.dataTransfer.getData(SEL_MIME);
+    if (thoughtJson) {
+      try {
+        const ids = JSON.parse(thoughtJson);
+        if (ids?.length) expandInAi(ids);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (selection.length !== 1 || walking) return;
+    const item = items.find((it) => it.id === selection[0]);
+    if (!item || !isTransformableBlock(item)) return;
+    if (aiPanel?.loading) return;
+    syncAiSource([selection[0]], { keepExpanded: true });
+  }, [selection, items, walking]);
+
   function handleMenuAction(action) {
     if (action === "undo") undo();
     else if (action === "redo") redo();
@@ -4300,13 +4450,8 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") {
-      setRailTab("functions");
-      setFunctionsOpen(true);
-    }     else if (action === "open-structures") {
-      setRailTab("structures");
-      setFunctionsOpen(true);
-    } else if (action === "setup-role") setOnboard({ step: "role" });
+    else if (action === "open-functions") setRailTab("functions");
+    else if (action === "open-structures") setRailTab("structures"); else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
     else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
     else if (action === "help-tips") showToast("Double-click canvas to write · drag functions onto ideas · space to pan");
@@ -4362,26 +4507,16 @@ export default function App() {
         saved={savedIndicator}
         canUndo={canUndo}
         canRedo={canRedo}
-        tool={tool}
-        imageArmed={imageArmed}
         onTitleChange={setDocTitle}
         onToggleStar={() => setDocStarred((s) => !s)}
         onMenuAction={handleMenuAction}
-        onSelectTool={(id) => {
-          if (id !== "image") {
-            pendingImageRef.current = null;
-            setImageArmed(false);
-          }
-          setTool(id);
-        }}
-        onPickImage={pickImage}
         onUndo={undo}
         onRedo={redo}
         onShare={handleShareBoard}
       />
 
-      <div className="idea-body">
-        <ThoughtsSidebar
+      <div className="three-column-grid">
+        <FunctionsColumn
           items={items}
           activePageId={activePageId}
           worldFilter={worldFilter}
@@ -4389,9 +4524,129 @@ export default function App() {
           onNewThought={() => insertBlock("text")}
           onSelectWorld={setWorldFilter}
           onClearWorld={() => setWorldFilter(null)}
-        />
+          dropOver={railDropOver}
+          onDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(STRUCT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME)
+            ) {
+              e.preventDefault();
+              setRailDropOver(true);
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setRailDropOver(false);
+            const selJson = e.dataTransfer.getData(SEL_MIME);
+            if (selJson) {
+              try {
+                saveSelectionByIds(JSON.parse(selJson));
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
+            const opId = e.dataTransfer.getData(OP_MIME);
+            if (opId) {
+              pinOpToToolbox(opId);
+              return;
+            }
+            const structId = e.dataTransfer.getData(STRUCT_MIME);
+            if (structId) {
+              setRailTab("structures");
+              showToast("already saved");
+            }
+          }}
+        >
+          <aside
+            ref={railRef}
+            className={"board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+          >
+            <div className="rail-head">
+              <div className="rail-title">Functions</div>
+            </div>
+            <div className="rail-tabs">
+              <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
+                functions
+              </button>
+              <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
+                structures {structures.length ? `(${structures.length})` : ""}
+              </button>
+            </div>
+            {railTab === "functions" ? (
+              <>
+                <button className="rail-create" onClick={openCreateFunction}>+ function</button>
+                <div className="move-quick-add">
+                  <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                  <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+                </div>
+                {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                  <div className="sel-capture-panel">
+                    <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                    <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
+                  </div>
+                )}
+                <div className="rail-lens-actions">
+                  <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
+                </div>
+                <div className="rail-scroll">
+                  {lenses.length > 0 && (
+                    <>
+                      <div className="rail-section">lenses · worlds</div>
+                      {lenses.map((lens) => (
+                        <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                      ))}
+                    </>
+                  )}
+                  {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                  {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
+                  {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                  {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                </div>
+              </>
+            ) : (
+              <>
+                <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
+                <div className="rail-scroll">
+                  {structures.length === 0 ? <p className="rail-empty">Save selections from the canvas.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+                </div>
+              </>
+            )}
+            <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
+            <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
+          </aside>
+        </FunctionsColumn>
 
-        <div className="idea-center">
+        <CanvasColumn
+          tool={tool}
+          imageArmed={imageArmed}
+          dropOver={canvasDropOver}
+          onSelectTool={(id) => {
+            if (id !== "image") {
+              pendingImageRef.current = null;
+              setImageArmed(false);
+            }
+            setTool(id);
+          }}
+          onInsertBlock={insertBlockFromPalette}
+          onPickImage={pickImage}
+          pages={pages}
+          activePageId={activePageId}
+          zoomPct={Math.round(camera.scale * 100)}
+          editMode={editMode}
+          onSelectPage={switchPage}
+          onAddPage={addPage}
+          onZoomIn={() => setCamera((c) => zoomCamera(c, 1.2))}
+          onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / 1.2))}
+          onZoomReset={() => setCamera((c) => ({ ...c, scale: 1 }))}
+          onExport={() => exportSelection("md")}
+          onToggleEdit={() => setEditMode((m) => !m)}
+        >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
         ref={viewportRef}
@@ -4608,10 +4863,12 @@ export default function App() {
             e.dataTransfer.types.includes(OP_MIME) ||
             e.dataTransfer.types.includes(LENS_MIME) ||
             e.dataTransfer.types.includes(STRUCT_MIME) ||
+            e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
             e.dataTransfer.types.includes("Files")
           ) {
             e.preventDefault();
             setDropReady(true);
+            setCanvasDropOver(true);
             if (e.dataTransfer.types.includes(OP_MIME) || e.dataTransfer.types.includes(LENS_MIME)) {
               e.dataTransfer.dropEffect = "copy";
               const hit = itemAtPointForDrop(e.clientX, e.clientY);
@@ -4619,6 +4876,8 @@ export default function App() {
               if (hit) setDropTargetId(hit.id);
               else if (sel.length === 1) setDropTargetId(sel[0]);
               else setDropTargetId(null);
+            } else if (e.dataTransfer.types.includes(AI_OUTPUT_MIME)) {
+              e.dataTransfer.dropEffect = "copy";
             }
           }
         }}
@@ -4626,12 +4885,20 @@ export default function App() {
           if (!e.currentTarget.contains(e.relatedTarget)) {
             setDropReady(false);
             setDropTargetId(null);
+            setCanvasDropOver(false);
           }
         }}
         onDrop={(e) => {
           setDropReady(false);
           setDropTargetId(null);
+          setCanvasDropOver(false);
           e.preventDefault();
+          const aiOut = e.dataTransfer.getData(AI_OUTPUT_MIME);
+          if (aiOut) {
+            const w = clientToWorld(e.clientX, e.clientY);
+            spawnTextAtWorld(aiOut, w);
+            return;
+          }
           const opId = e.dataTransfer.getData(OP_MIME);
           if (opId) {
             applyOpDrop(opId, { x: e.clientX, y: e.clientY });
@@ -4692,6 +4959,16 @@ export default function App() {
           onSave={saveSelectionAsFunction}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
+          onSendToAi={() => expandInAi([selItem.id])}
+          aiDragIds={[selItem.id]}
+        />
+      )}
+
+      {canTransform && !selCaptureInfo?.canCapture && !walking && selItem && (
+        <SelectionCaptureChip
+          bbox={itemScreenBBox(selItem)}
+          onSendToAi={() => expandInAi([selItem.id])}
+          aiDragIds={[selItem.id]}
         />
       )}
 
@@ -4707,127 +4984,45 @@ export default function App() {
         </div>
       )}
       </div>
+        </CanvasColumn>
 
-          <RightPalette activeTool={tool} onSelectTool={(id) => {
-            if (id === "pen") setTool("pen");
-            else if (id === "image") pickImage();
-          }} onInsertBlock={insertBlockFromPalette} />
-        </div>
-      </div>
-
-      <BottomBar
-        pages={pages}
-        activePageId={activePageId}
-        zoomPct={Math.round(camera.scale * 100)}
-        editMode={editMode}
-        onSelectPage={switchPage}
-        onAddPage={addPage}
-        onZoomIn={() => setCamera((c) => zoomCamera(c, 1.2))}
-        onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / 1.2))}
-        onZoomReset={() => setCamera((c) => ({ ...c, scale: 1 }))}
-        onExport={() => exportSelection("md")}
-        onToggleEdit={() => setEditMode((m) => !m)}
-      />
-
-      <FunctionsDrawer open={functionsOpen} onClose={() => setFunctionsOpen(false)}>
-        <aside
-          ref={railRef}
-          className={"board-rail drawer-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+        <AiColumn
+          panel={aiPanel}
+          dropOver={aiDropOver}
           onDragOver={(e) => {
             if (
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME)
+              e.dataTransfer.types.includes(THOUGHT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME) ||
+              e.dataTransfer.types.includes(OP_MIME)
             ) {
               e.preventDefault();
-              setRailDropOver(true);
+              setAiDropOver(true);
               e.dataTransfer.dropEffect = "copy";
             }
           }}
           onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+            if (!e.currentTarget.contains(e.relatedTarget)) setAiDropOver(false);
           }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setRailDropOver(false);
-            const selJson = e.dataTransfer.getData(SEL_MIME);
-            if (selJson) {
-              try {
-                saveSelectionByIds(JSON.parse(selJson));
-              } catch {
-                /* ignore */
-              }
+          onDrop={handleAiDrop}
+          onExpand={() => {
+            const ids = aiPanel?.sourceIds || selection;
+            if (!ids?.length) {
+              showToast("select or drop a thought first");
               return;
             }
-            const opId = e.dataTransfer.getData(OP_MIME);
-            if (opId) {
-              pinOpToToolbox(opId);
-              return;
-            }
-            const structId = e.dataTransfer.getData(STRUCT_MIME);
-            if (structId) {
-              setRailTab("structures");
-              showToast("already saved");
+            const op = aiPanel?.opId ? opMap[aiPanel.opId] : null;
+            expandInAi(ids, op ? { op, opLabel: op.name } : {});
+          }}
+          onEditExpanded={(text) => setAiPanel((prev) => ({ ...prev, expandedText: text }))}
+          onCopy={() => {
+            if (aiPanel?.expandedText) {
+              navigator.clipboard?.writeText(aiPanel.expandedText);
+              showToast("copied");
             }
           }}
-        >
-          <div className="rail-head">
-            <div className="rail-title">Functions</div>
-            <button type="button" className="rail-icon" onClick={() => setFunctionsOpen(false)} title="Close">
-              ×
-            </button>
-          </div>
-          <div className="rail-tabs">
-            <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
-              functions
-            </button>
-            <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
-              structures {structures.length ? `(${structures.length})` : ""}
-            </button>
-          </div>
-          {railTab === "functions" ? (
-            <>
-              <button className="rail-create" onClick={openCreateFunction}>+ function</button>
-              <div className="move-quick-add">
-                <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
-              </div>
-              {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                <div className="sel-capture-panel">
-                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
-                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
-                </div>
-              )}
-              <div className="rail-lens-actions">
-                <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-              </div>
-              <div className="rail-scroll">
-                {lenses.length > 0 && (
-                  <>
-                    <div className="rail-section">lenses · worlds</div>
-                    {lenses.map((lens) => (
-                      <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
-                    ))}
-                  </>
-                )}
-                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-              </div>
-            </>
-          ) : (
-            <>
-              <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
-              <div className="rail-scroll">
-                {structures.length === 0 ? <p className="rail-empty">Save selections from the canvas.</p> : structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
-              </div>
-            </>
-          )}
-          <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
-          <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
-        </aside>
-      </FunctionsDrawer>
+          onClear={() => setAiPanel(null)}
+        />
+      </div>
 
       {!editing && !walking && editMode && (
         <CanvasHud tool={tool} selectionCount={selection.length} imageArmed={imageArmed} />
@@ -5113,7 +5308,7 @@ function BoardText({ item, selected, dropTarget, dropMagnetic, editing, editClic
   );
 }
 
-function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney }) {
+function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney, onSendToAi, aiDragIds }) {
   const cx = (bbox.left + bbox.right) / 2;
   return (
     <div
@@ -5121,6 +5316,24 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney }) 
       style={{ left: cx, top: bbox.top - 34, transform: "translateX(-50%)" }}
       onPointerDown={(e) => e.stopPropagation()}
     >
+      {aiDragIds?.length && (
+        <button
+          type="button"
+          className="sel-capture-chip ai"
+          draggable
+          onClick={(e) => {
+            e.stopPropagation();
+            onSendToAi?.();
+          }}
+          onDragStart={(e) => {
+            e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
+            e.dataTransfer.effectAllowed = "copy";
+          }}
+          title="Expand in AI layer · drag to right column"
+        >
+          ✦ expand
+        </button>
+      )}
       {onSaveDocument && (
         <button
           type="button"
@@ -5134,6 +5347,7 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney }) 
           Save as document
         </button>
       )}
+      {onSave && (
       <button
         type="button"
         className="sel-capture-chip"
@@ -5145,6 +5359,7 @@ function SelectionCaptureChip({ bbox, onSave, onSaveDocument, onShareJourney }) 
       >
         ◈ save process
       </button>
+      )}
       {onShareJourney && (
         <button
           type="button"

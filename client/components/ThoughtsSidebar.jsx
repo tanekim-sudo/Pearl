@@ -16,7 +16,7 @@ export default function ThoughtsSidebar({
   return (
     <aside className="idea-sidebar">
       <section className="sidebar-section">
-        <h2 className="sidebar-heading">Thoughts</h2>
+        <h2 className="sidebar-heading">Ideas</h2>
         <div className="thoughts-feed">
           {groups.length === 0 ? (
             <p className="sidebar-empty">No thoughts yet — add something to the canvas.</p>

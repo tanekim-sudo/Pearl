@@ -32,57 +32,19 @@ function MenuDropdown({ label, items, onAction }) {
   );
 }
 
-export function FunctionsDrawer({ open, onClose, children }) {
-  return (
-    <>
-      {open && <div className="functions-drawer-scrim" onClick={onClose} />}
-      <div className={"functions-drawer-wrap" + (open ? " open" : "")}>
-        <div className="functions-drawer" onClick={(e) => e.stopPropagation()}>
-          {open && (
-            <div className="functions-drawer-head">
-              <h2>Functions & Lenses</h2>
-              <button type="button" className="drawer-close" onClick={onClose} aria-label="Close">
-                ×
-              </button>
-            </div>
-          )}
-          <div className="functions-drawer-body">{children}</div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 export default function TopToolbar({
   title,
   starred,
   saved,
   canUndo,
   canRedo,
-  tool,
-  imageArmed,
   onTitleChange,
   onToggleStar,
   onMenuAction,
-  onSelectTool,
-  onPickImage,
   onUndo,
   onRedo,
   onShare,
 }) {
-  const toolbarTools = [
-    { id: "select", label: "Select", icon: "↖" },
-    { id: "pen", label: "Pen", icon: "✎" },
-    { id: "eraser", label: "Eraser", icon: "⌫" },
-    { id: "marker", label: "Shapes", icon: "◯" },
-    { id: "text", label: "Text", icon: "T" },
-    { id: "highlight", label: "Highlighter", icon: "▬" },
-    { id: "select", label: "Rectangle", icon: "▭", alias: "rect" },
-    { id: "image", label: "Image", icon: "🖼" },
-    { id: "select", label: "Add", icon: "+", alias: "add" },
-    { id: "select", label: "Pan", icon: "✋", alias: "pan" },
-  ];
-
   const menus = [
     {
       id: "file",
@@ -126,8 +88,8 @@ export default function TopToolbar({
       id: "tools",
       label: "Tools",
       items: [
-        { id: "open-functions", label: "Functions & lenses" },
-        { id: "open-structures", label: "Structures" },
+        { id: "open-functions", label: "Functions tab" },
+        { id: "open-structures", label: "Structures tab" },
       ],
     },
     {
@@ -146,8 +108,8 @@ export default function TopToolbar({
   ];
 
   return (
-    <header className="idea-toolbar">
-      <div className="toolbar-row toolbar-row-title">
+    <header className="idea-toolbar idea-toolbar-compact">
+      <div className="toolbar-row toolbar-row-compact">
         <div className="toolbar-title-block">
           <input
             className="doc-title-input"
@@ -164,31 +126,7 @@ export default function TopToolbar({
             ★
           </button>
         </div>
-        <span className={"save-indicator" + (saved ? " saved" : "")}>
-          {saved ? "All changes saved" : "Saving…"}
-        </span>
-        <nav className="toolbar-menus">
-          {menus.map((menu) => (
-            <MenuDropdown key={menu.id} label={menu.label} items={menu.items} onAction={onMenuAction} />
-          ))}
-        </nav>
-        <div className="toolbar-collab">
-          <div className="collab-avatars">
-            <span className="collab-avatar a1">Y</span>
-            <span className="collab-avatar a2">M</span>
-            <span className="collab-avatar a3">K</span>
-            <span className="collab-more">+3</span>
-          </div>
-          <button type="button" className="share-btn" onClick={onShare}>
-            <span className="share-lock">🔒</span> Share
-          </button>
-          <button type="button" className="comment-btn" title="Comments">
-            💬
-          </button>
-        </div>
-      </div>
 
-      <div className="toolbar-row toolbar-row-tools">
         <div className="toolbar-history">
           <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo">
             ↩
@@ -197,29 +135,22 @@ export default function TopToolbar({
             ↪
           </button>
         </div>
-        <div className="toolbar-tools">
-          {toolbarTools.map((t, i) => {
-            const active =
-              (t.id === "image" && imageArmed) ||
-              (t.id !== "image" && tool === t.id && !t.alias);
-            return (
-              <button
-                key={`${t.id}-${i}`}
-                type="button"
-                className={"toolbar-tool" + (active ? " active" : "")}
-                title={t.label}
-                onClick={() => {
-                  if (t.id === "image") onPickImage();
-                  else if (t.alias === "pan") onMenuAction("pan-mode");
-                  else if (t.alias === "add") onMenuAction("insert-sticky");
-                  else onSelectTool(t.id);
-                }}
-              >
-                {t.icon}
-              </button>
-            );
-          })}
-        </div>
+
+        <span className={"save-indicator" + (saved ? " saved" : "")}>
+          {saved ? "Saved" : "Saving…"}
+        </span>
+
+        <nav className="toolbar-menus">
+          {menus.map((menu) => (
+            <MenuDropdown key={menu.id} label={menu.label} items={menu.items} onAction={onMenuAction} />
+          ))}
+        </nav>
+
+        <div className="toolbar-spacer" />
+
+        <button type="button" className="share-btn" onClick={onShare}>
+          Share
+        </button>
       </div>
     </header>
   );
