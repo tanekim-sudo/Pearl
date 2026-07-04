@@ -10,16 +10,22 @@ export { THOUGHT_MIME, SEL_MIME, OP_MIME, AI_OUTPUT_MIME };
 
 export default function AiColumn({
   nodes,
+  camera,
+  onCameraChange,
   selectedNodeId,
   onSelectNode,
   onMoveNode,
   onExpandNode,
   panel,
   dropOver,
+  canvasDropOver,
   libraryDropOver,
   onDragOver,
   onDragLeave,
   onDrop,
+  onCanvasDrop,
+  onCanvasDragOver,
+  onCanvasDragLeave,
   onLibraryDragOver,
   onLibraryDragLeave,
   onLibraryDrop,
@@ -28,6 +34,8 @@ export default function AiColumn({
   onCopy,
   onClear,
   library,
+  spaceHeld,
+  viewportRef,
 }) {
   const selectedNode = nodes?.find((n) => n.id === selectedNodeId);
   const detailNode =
@@ -51,7 +59,7 @@ export default function AiColumn({
     >
       <header className="ai-column-head">
         <h2 className="ai-column-title">AI Layer</h2>
-        <span className="ai-column-sub">nodes · moves · lenses</span>
+        <span className="ai-column-sub">spacetime · nodes · moves</span>
       </header>
 
       <div className="ai-column-body unified">
@@ -59,10 +67,18 @@ export default function AiColumn({
           <div className="ai-section-label">Active nodes</div>
           <AiNodeCanvas
             nodes={nodes || []}
+            camera={camera}
+            onCameraChange={onCameraChange}
             selectedId={selectedNodeId}
             onSelect={onSelectNode}
             onMove={onMoveNode}
             onExpandNode={onExpandNode}
+            onCanvasDrop={onCanvasDrop}
+            onCanvasDragOver={onCanvasDragOver}
+            onCanvasDragLeave={onCanvasDragLeave}
+            canvasDropOver={canvasDropOver}
+            spaceHeld={spaceHeld}
+            viewportRef={viewportRef}
           />
         </section>
 
@@ -139,7 +155,7 @@ export default function AiColumn({
           onDragLeave={onLibraryDragLeave}
           onDrop={onLibraryDrop}
         >
-          <div className="ai-section-label">Moves & lenses</div>
+          <div className="ai-section-label">Expand · moves & lenses</div>
           <div className="ai-library-wrap">{library}</div>
         </section>
       </div>

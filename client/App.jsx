@@ -7,6 +7,10 @@ import {
   estimatePrimitiveMs,
 } from "../shared/transform-primitives.js";
 import {
+  isCompressionOperator,
+  isExpansionOperator,
+} from "../shared/operator-direction.js";
+import {
   viaFromOp,
   abstractStepFromVia,
   buildCaptureMetadata,
@@ -49,8 +53,14 @@ import {
   makeAiNode,
   nextAiNodePosition,
   childNodePosition,
+  nodePositionAt,
   truncateLabel,
 } from "./lib/ai-nodes.js";
+import {
+  centerAiCamera,
+  findNearestSourceNode,
+  viewportCenterWorld,
+} from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
@@ -1821,6 +1831,8 @@ export default function App() {
   const [paperRecordMs, setPaperRecordMs] = useState(0);
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
+  const [aiCanvasDropOver, setAiCanvasDropOver] = useState(false);
+  const [aiCamera, setAiCamera] = useState({ x: 0, y: 0, scale: 1 });
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
@@ -1856,6 +1868,9 @@ export default function App() {
 
   const expandInAiRef = useRef(() => {});
   const aiNodesRef = useRef([]);
+  const aiCamRef = useRef(aiCamera);
+  const aiViewportRef = useRef(null);
+  aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
   aiNodesRef.current = aiNodes;
@@ -1890,6 +1905,19 @@ export default function App() {
     const c = camRef.current;
     if (c.x === 0 && c.y === 0 && (c.scale === 1 || !load(CAMERA_KEY, null))) {
       setCamera(centerPaperCamera(r.width, r.height));
+    }
+  });
+
+  const aiCenteredRef = useRef(false);
+  useEffect(() => {
+    if (aiCenteredRef.current || !aiViewportRef.current) return;
+    const w = aiViewportRef.current.clientWidth;
+    const h = aiViewportRef.current.clientHeight;
+    if (w < 40 || h < 40) return;
+    aiCenteredRef.current = true;
+    const c = aiCamRef.current;
+    if (c.x === 0 && c.y === 0 && c.scale === 1) {
+      setAiCamera(centerAiCamera(w, h));
     }
   });
 
@@ -2746,6 +2774,15 @@ export default function App() {
     if (!atClient) return;
     const op = opMap[opId];
     if (!op) return;
+    if (isExpansionOperator(op)) {
+      const ids = resolveTargetIds(atClient);
+      if (ids.length) {
+        expandInAi(ids, { op, opLabel: op.name });
+      } else {
+        showToast("expansion runs in AI Layer — select paper content or drop on the right");
+      }
+      return;
+    }
     const ids = resolveTargetIds(atClient);
     if (!ids.length) {
       showToast("drop onto text, image, or drawing");
@@ -3434,6 +3471,18 @@ export default function App() {
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
+  const compressionMoves = useMemo(() => moves.filter(isCompressionOperator), [moves]);
+  const expansionMoves = useMemo(() => moves.filter(isExpansionOperator), [moves]);
+  const compressionPrimitives = useMemo(() => primitives.filter(isCompressionOperator), [primitives]);
+  const expansionPrimitives = useMemo(() => primitives.filter(isExpansionOperator), [primitives]);
+  const compressionBasics = useMemo(() => basics.filter(isCompressionOperator), [basics]);
+  const expansionBasics = useMemo(() => basics.filter(isExpansionOperator), [basics]);
+  const compressionTopFunctions = useMemo(() => topFunctions.filter(isCompressionOperator), [topFunctions]);
+  const expansionTopFunctions = useMemo(() => topFunctions.filter(isExpansionOperator), [topFunctions]);
+  const compressionPaletteOps = useMemo(
+    () => [...compressionPrimitives, ...compressionBasics, ...compressionMoves, ...compressionTopFunctions],
+    [compressionPrimitives, compressionBasics, compressionMoves, compressionTopFunctions]
+  );
   const activeLens = lenses.find((l) => l.id === activeLensId) || null;
 
   // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
@@ -4087,7 +4136,7 @@ export default function App() {
     }
   }
 
-  async function interpretPaperSession(sessionOverride = null) {
+  async function interpretPaperSession(sessionOverride = null, worldPos = null) {
     const page = pages.find((p) => p.id === activePageId);
     const sessions = page?.sessions || [];
     const latest = sessionOverride || sessions[sessions.length - 1];
@@ -4100,7 +4149,7 @@ export default function App() {
     );
     const prompt = buildPaperInterpretPrompt(latest, pageItems);
     const image = await compositePaperSnapshot(pageItems);
-    const { expandedNode } = createSessionNodes(latest, prompt);
+    const { expandedNode } = createSessionNodes(latest, prompt, worldPos);
     setAiPanel({
       sourceIds: [],
       sourcePreview: latest.transcript?.slice(0, 200) || "Paper session",
@@ -4626,29 +4675,32 @@ export default function App() {
     );
   }
 
-  function ensureSourceNode(ids, preview, label) {
+  function ensureSourceNode(ids, preview, label, worldPos) {
     const existing = findSourceNodeForIds(ids);
     if (existing) return existing;
-    const pos = nextAiNodePosition(aiNodesRef.current, "source");
+    const pos = nodePositionAt(aiNodesRef.current, "source", worldPos);
     const node = makeAiNode({
       nodeKind: "source",
       label: truncateLabel(label || preview || "Source"),
       preview,
       sourceIds: ids,
+      loading: !preview,
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
     });
     appendAiNodes(node);
+    setSelectedAiNodeId(node.id);
     return node;
   }
 
-  function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}) {
-    const pos = childNodePosition(sourceNode, "expanded");
+  function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}, worldPos) {
+    const pos = worldPos || childNodePosition(sourceNode, "expanded");
     const node = makeAiNode({
       nodeKind: "expanded",
       label: truncateLabel(opLabel || label),
       sourceNodeIds: [sourceNode.id],
+      parentId: sourceNode.id,
       sourceIds: sourceNode.sourceIds || [],
       opId: opId || null,
       loading,
@@ -4661,8 +4713,8 @@ export default function App() {
     return node;
   }
 
-  function createSessionNodes(session, prompt) {
-    const pos = nextAiNodePosition(aiNodesRef.current, "session");
+  function createSessionNodes(session, prompt, worldPos) {
+    const pos = nodePositionAt(aiNodesRef.current, "session", worldPos);
     const sessionNode = makeAiNode({
       nodeKind: "session",
       label: truncateLabel(session.transcript?.slice(0, 24) || "Session"),
@@ -4672,28 +4724,62 @@ export default function App() {
       y: pos.y,
       radius: pos.radius,
     });
+    const expandedPos = childNodePosition(sessionNode, "expanded");
     const expandedNode = makeAiNode({
       nodeKind: "expanded",
       label: "Interpret",
       sourceNodeIds: [sessionNode.id],
+      parentId: sessionNode.id,
       sourceIds: [],
       loading: true,
       opLabel: "interpret paper",
-      x: pos.x + 88,
-      y: pos.y,
-      radius: childNodePosition(sessionNode).radius,
+      x: expandedPos.x,
+      y: expandedPos.y,
+      radius: expandedPos.radius,
     });
     appendAiNodes(sessionNode, expandedNode);
     setSelectedAiNodeId(expandedNode.id);
     return { sessionNode, expandedNode, prompt };
   }
 
-  function createMoveNode(op) {
-    const pos = nextAiNodePosition(aiNodesRef.current, "move");
+  function createMoveNode(op, worldPos, linkTo) {
+    const pos = nodePositionAt(aiNodesRef.current, "move", worldPos);
     const node = makeAiNode({
       nodeKind: "move",
       label: truncateLabel(op.name),
       opId: op.id,
+      sourceNodeIds: linkTo ? [linkTo.id] : [],
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    appendAiNodes(node);
+    setSelectedAiNodeId(node.id);
+    return node;
+  }
+
+  function createLensNode(lens, worldPos) {
+    const pos = nodePositionAt(aiNodesRef.current, "lens", worldPos);
+    const node = makeAiNode({
+      nodeKind: "lens",
+      label: truncateLabel(lens.name),
+      lensId: lens.id,
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+    });
+    appendAiNodes(node);
+    setSelectedAiNodeId(node.id);
+    return node;
+  }
+
+  function createOutputNode(text, worldPos) {
+    const pos = nodePositionAt(aiNodesRef.current, "expanded", worldPos);
+    const clean = String(text || "").trim();
+    const node = makeAiNode({
+      nodeKind: "expanded",
+      label: truncateLabel(clean.slice(0, 24) || "Output"),
+      expandedText: clean,
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
@@ -4765,12 +4851,19 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
-    const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source");
-    const expandedNode = createExpandedChild(sourceNode, {
-      opLabel: opts.opLabel || op.name,
-      opId: op.id,
-      loading: true,
-    });
+    const sourceNode =
+      opts.sourceNode ||
+      findSourceNodeForIds(ids) ||
+      ensureSourceNode(ids, null, "Source", opts.atWorld);
+    const expandedNode = createExpandedChild(
+      sourceNode,
+      {
+        opLabel: opts.opLabel || op.name,
+        opId: op.id,
+        loading: true,
+      },
+      opts.expandedAt
+    );
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -4791,6 +4884,7 @@ export default function App() {
         updateAiNode(sourceNode.id, {
           preview: gathered.preview,
           label: truncateLabel(gathered.preview || "Source"),
+          loading: false,
         });
       }
       let out = await runOpForAi(op, ids);
@@ -4851,11 +4945,35 @@ export default function App() {
     showToast("added to paper");
   }
 
-  function absorbTransferPayload(e, { autoExpand = false } = {}) {
+  function getAiDropWorld(fallbackWorld) {
+    if (fallbackWorld) return fallbackWorld;
+    const el = aiViewportRef.current;
+    if (el) {
+      return viewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight);
+    }
+    return { x: 0, y: 0 };
+  }
+
+  function absorbTransferPayloadAt(e, worldPos, { autoExpand = false } = {}) {
+    const pos = getAiDropWorld(worldPos);
+
+    const aiOut = e.dataTransfer.getData(AI_OUTPUT_MIME);
+    if (aiOut?.trim()) {
+      createOutputNode(aiOut, pos);
+      return true;
+    }
+
+    const lensId = e.dataTransfer.getData(LENS_MIME);
+    if (lensId) {
+      const lens = lenses.find((l) => l.id === lensId);
+      if (lens) createLensNode(lens, pos);
+      return true;
+    }
+
     const sessionJson = e.dataTransfer.getData(PAPER_SESSION_MIME);
     if (sessionJson) {
       try {
-        interpretPaperSession(JSON.parse(sessionJson));
+        interpretPaperSession(JSON.parse(sessionJson), pos);
       } catch {
         /* ignore */
       }
@@ -4877,28 +4995,48 @@ export default function App() {
     if (opId) {
       const op = opMap[opId];
       if (!op) return true;
-      createMoveNode(op);
+      if (isCompressionOperator(op)) {
+        showToast("compression runs on paper — drag onto a selection on the left");
+        return true;
+      }
+      const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
+      createMoveNode(op, pos, linkTo);
       if (!ids?.length) {
         setAiPanel((prev) => ({
           ...(prev || {}),
           opLabel: op.name,
           opId: op.id,
         }));
-        showToast("Select something on the paper, then expand");
+        showToast("Move placed — drop a thought to run it");
         return true;
       }
-      expandInAi(ids, { op, opLabel: op.name });
+      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
+      expandInAi(ids, {
+        op,
+        opLabel: op.name,
+        sourceNode,
+        expandedAt: childNodePosition(sourceNode, "expanded"),
+      });
       return true;
     }
 
     if (ids?.length) {
-      if (autoExpand) expandInAi(ids);
-      else {
-        syncAiSource(ids, { keepExpanded: false });
+      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
+      if (autoExpand) {
+        expandInAi(ids, {
+          sourceNode,
+          expandedAt: childNodePosition(sourceNode, "expanded"),
+        });
+      } else {
+        syncAiSource(ids, { keepExpanded: false, skipNode: true });
       }
       return true;
     }
     return false;
+  }
+
+  function absorbTransferPayload(e, opts) {
+    return absorbTransferPayloadAt(e, null, opts);
   }
 
   function handleBoundaryDragOver(e) {
@@ -4927,6 +5065,32 @@ export default function App() {
     setAiDropOver(false);
     setTransferDragActive(false);
     absorbTransferPayload(e, { autoExpand: true });
+  }
+
+  function handleAiCanvasDragOver(e) {
+    if (
+      e.dataTransfer.types.includes(THOUGHT_MIME) ||
+      e.dataTransfer.types.includes(SEL_MIME) ||
+      e.dataTransfer.types.includes(OP_MIME) ||
+      e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
+      e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
+      e.dataTransfer.types.includes(LENS_MIME)
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      setAiCanvasDropOver(true);
+      setAiDropOver(true);
+      setTransferDragActive(true);
+      e.dataTransfer.dropEffect = "copy";
+    }
+  }
+
+  function handleAiCanvasDrop(e, world) {
+    e.preventDefault();
+    setAiCanvasDropOver(false);
+    setAiDropOver(false);
+    setTransferDragActive(false);
+    absorbTransferPayloadAt(e, world, { autoExpand: true });
   }
 
   useEffect(() => {
@@ -4962,7 +5126,7 @@ export default function App() {
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
     else if (action === "pan-mode") showToast("Hold space or middle-click to pan");
-    else if (action === "help-tips") showToast("Double-click the paper to write · drag moves from AI Layer onto ideas · space to pan");
+    else if (action === "help-tips") showToast("Double-click the paper to write · compress moves on the left · expand moves on the right");
   }
 
   function handleShareBoard() {
@@ -5069,6 +5233,7 @@ export default function App() {
           paperRecordLevel={paperRecordLevel}
           paperRecordMs={paperRecordMs}
           onTogglePaperRecord={togglePaperRecord}
+          compressionOps={compressionPaletteOps}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
       <div
@@ -5444,7 +5609,7 @@ export default function App() {
       {/* empty hint */}
       {visibleItems.length === 0 && (
         <div className="empty-hint">
-          <p>Double-click the paper to write · drag moves from AI Layer onto ideas</p>
+          <p>Double-click the paper to write · compress on the left · expand on the right</p>
           <button type="button" className="starter-btn" onClick={plantStarterThought}>
             ✦ try the highlighter
           </button>
@@ -5472,9 +5637,17 @@ export default function App() {
 
         <AiColumn
           nodes={aiNodes}
+          camera={aiCamera}
+          onCameraChange={setAiCamera}
           selectedNodeId={selectedAiNodeId}
           onSelectNode={setSelectedAiNodeId}
           onMoveNode={moveAiNode}
+          spaceHeld={spaceHeld}
+          viewportRef={aiViewportRef}
+          canvasDropOver={aiCanvasDropOver}
+          onCanvasDragOver={handleAiCanvasDragOver}
+          onCanvasDragLeave={() => setAiCanvasDropOver(false)}
+          onCanvasDrop={handleAiCanvasDrop}
           onExpandNode={(nodeId) => {
             const node = aiNodes.find((n) => n.id === nodeId);
             if (node?.sourceIds?.length) expandInAi(node.sourceIds, node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {});
@@ -5487,7 +5660,9 @@ export default function App() {
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
               e.dataTransfer.types.includes(SEL_MIME) ||
               e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(PAPER_SESSION_MIME)
+              e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
+              e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
+              e.dataTransfer.types.includes(LENS_MIME)
             ) {
               e.preventDefault();
               setAiDropOver(true);
@@ -5608,10 +5783,10 @@ export default function App() {
                         ))}
                       </>
                     )}
-                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} />))}</>)}
-                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
-                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat />))}</>)}
+                    {expansionMoves.length > 0 && (<><div className="rail-section">your moves</div>{expansionMoves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {expansionTopFunctions.length > 0 && (<><div className="rail-section">yours</div>{expansionTopFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} starlike />))}</>)}
+                    {expansionPrimitives.length > 0 && (<><div className="rail-section">primitives</div>{expansionPrimitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {expansionBasics.length > 0 && (<><div className="rail-section">basics</div>{expansionBasics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
                   </div>
                 </>
               ) : (
@@ -6048,9 +6223,9 @@ function CanvasHud({ tool, selectionCount, imageArmed }) {
   if (imageArmed && tool === "image") {
     hint = "Click on the paper to place your image";
   } else if (tool === "highlight" && selectionCount > 1) {
-    hint = `${selectionCount} ideas selected · circle to select inside · drag moves from AI Layer`;
+    hint = `${selectionCount} ideas selected · circle to select inside · drag expand moves from AI Layer`;
   } else if (selectionCount >= 2 && tool === "select") {
-    hint = `${selectionCount} selected · drag to move · drag moves from AI Layer`;
+    hint = `${selectionCount} selected · drag to move · drag expand moves from AI Layer`;
   } else if (selectionCount > 0 && tool === "select") {
     hint = `${selectionCount} selected · click text to edit · drag to move`;
   } else if (tool === "highlight") {
@@ -6217,7 +6392,7 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, flat }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, flat, starlike }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -6225,7 +6400,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
   return (
     <div className="op-card-wrap">
       <div
-        className={"op-card" + (composeOver ? " compose-over" : "")}
+        className={"op-card" + (composeOver ? " compose-over" : "") + (starlike ? " starlike-op" : "")}
         draggable
         onDragStart={(e) => startOpDrag(e, op)}
         onDragOver={(e) => {
@@ -6246,7 +6421,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title="drag onto paper to run · drop another operator here to forge a compound"
+        title="drag onto AI nodes or boundary to expand · drop another operator here to forge a compound"
       >
         <div className="op-card-row">
           <span className="op-drag-grip" title="drag onto paper">

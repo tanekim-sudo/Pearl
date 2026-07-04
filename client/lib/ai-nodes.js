@@ -6,6 +6,14 @@ export const AI_NODE_RADIUS = {
   session: 40,
 };
 
+export function nodePositionAt(existing, kind = "source", worldPos) {
+  const radius = AI_NODE_RADIUS[kind] || 40;
+  if (worldPos) {
+    return { x: worldPos.x, y: worldPos.y, radius };
+  }
+  return nextAiNodePosition(existing, kind);
+}
+
 export function nextAiNodePosition(existing, kind = "source") {
   const idx = existing.length;
   const cols = 3;
@@ -40,6 +48,7 @@ export function makeAiNode({ nodeKind, label, id, ...rest }) {
     expandedText: null,
     opId: null,
     preview: null,
+    parentId: null,
     loading: false,
     error: null,
     x: 0,

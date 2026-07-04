@@ -1,6 +1,7 @@
 import React from "react";
 import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
+import CompressionPalette from "./CompressionPalette.jsx";
 
 const CANVAS_TOOLS = [
   { id: "select", label: "Select", icon: "↖" },
@@ -37,6 +38,7 @@ export default function CanvasColumn({
   onZoomReset,
   onExport,
   onToggleEdit,
+  compressionOps,
   children,
 }) {
   return (
@@ -78,6 +80,8 @@ export default function CanvasColumn({
           onToggle={onTogglePaperRecord}
         />
       </div>
+
+      <CompressionPalette ops={compressionOps} />
 
       <div className="canvas-column-main">{children}</div>
 
