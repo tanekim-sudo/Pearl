@@ -18,6 +18,9 @@ export default function AiColumn({
   onSelectNode,
   onMoveNode,
   onExpandNode,
+  onExploreNode,
+  onReturnToConstellation,
+  focusedNodeId,
   panel,
   dropOver,
   canvasDropOver,
@@ -53,7 +56,9 @@ export default function AiColumn({
   const expandedText = detailNode?.expandedText ?? panel?.expandedText;
   const loading = detailNode?.loading ?? panel?.loading;
   const error = detailNode?.error ?? panel?.error;
-  const hasDetail = detailNode || panel?.sourceIds?.length || loading;
+  const explorationMode = (camera?.scale ?? 1) > 0.8;
+  const hasDetail =
+    !explorationMode && (detailNode || panel?.sourceIds?.length || loading);
 
   return (
     <aside
@@ -81,6 +86,9 @@ export default function AiColumn({
             onSelect={onSelectNode}
             onMove={onMoveNode}
             onExpandNode={onExpandNode}
+            onExploreNode={onExploreNode}
+            onReturnToConstellation={onReturnToConstellation}
+            focusedNodeId={focusedNodeId}
             onCanvasDrop={onCanvasDrop}
             onCanvasDragOver={onCanvasDragOver}
             onCanvasDragLeave={onCanvasDragLeave}

@@ -2619,3 +2619,62 @@ html[data-theme="chalk"] body {
   border-radius: 10px;
   border: 1px dashed rgba(255, 230, 120, 0.35);
 }
+
+.ai-node-viewport.ai-exploration-mode {
+  cursor: default;
+}
+
+.ai-node.focused {
+  z-index: 4;
+  transform: scale(1.35);
+  transition: transform 0.35s ease;
+}
+
+.ai-node.focused .ai-node-starburst {
+  opacity: 1;
+  filter: brightness(1.45);
+}
+
+.ai-explore-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 18px 20px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 8, 0) 0%,
+    rgba(5, 5, 8, 0.35) 40%,
+    rgba(5, 5, 8, 0.82) 100%
+  );
+}
+
+.ai-explore-overlay-inner {
+  pointer-events: auto;
+  width: min(92%, 520px);
+  max-height: 52%;
+  overflow: auto;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(10, 14, 24, 0.94);
+  border: 1px solid rgba(160, 200, 255, 0.28);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.ai-explore-overlay-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(160, 200, 255, 0.75);
+  margin-bottom: 8px;
+}
+
+.ai-explore-overlay-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(235, 240, 255, 0.92);
+  white-space: pre-wrap;
+}

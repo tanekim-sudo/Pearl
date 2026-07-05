@@ -58,8 +58,11 @@ import {
   layoutAfterAppend,
 } from "./lib/ai-nodes.js";
 import {
-  centerAiCamera,
+  CONSTELLATION_ZOOM_THRESHOLD,
+  EXPLORE_ZOOM_SCALE,
   findNearestSourceNode,
+  fitAiConstellation,
+  focusAiNode,
   screenToWorld,
   viewportCenterWorld,
 } from "./lib/ai-space.js";
@@ -1896,6 +1899,7 @@ export default function App() {
   const [aiDropOver, setAiDropOver] = useState(false);
   const [aiCanvasDropOver, setAiCanvasDropOver] = useState(false);
   const [aiCamera, setAiCamera] = useState({ x: 0, y: 0, scale: 1 });
+  const [aiFocusedNodeId, setAiFocusedNodeId] = useState(null);
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
@@ -1940,6 +1944,8 @@ export default function App() {
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
+  const aiCamAnimRef = useRef(null);
+  const prevAiNodeCountRef = useRef(0);
   aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
@@ -1984,9 +1990,30 @@ export default function App() {
     aiCenteredRef.current = true;
     const c = aiCamRef.current;
     if (c.x === 0 && c.y === 0 && c.scale === 1) {
-      setAiCamera(centerAiCamera(w, h, 0.75));
+      setAiCamera(fitAiConstellation(aiNodesRef.current, w, h));
     }
   });
+
+  useEffect(() => {
+    const count = aiNodes.length;
+    const prev = prevAiNodeCountRef.current;
+    prevAiNodeCountRef.current = count;
+    if (count === 0) return;
+    const el = aiViewportRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    if (w < 40 || h < 40) return;
+
+    if (prev === 0 && count >= 1) {
+      setAiCamera(fitAiConstellation(aiNodes, w, h));
+      return;
+    }
+
+    if (count - prev >= 3 && aiCamRef.current.scale <= CONSTELLATION_ZOOM_THRESHOLD) {
+      setAiCamera(fitAiConstellation(aiNodes, w, h));
+    }
+  }, [aiNodes]);
 
   useEffect(() => {
     if (!paperRecording) {
@@ -2217,6 +2244,102 @@ export default function App() {
       setSelectedAiNodeIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     } else {
       setSelectedAiNodeIds([id]);
+    }
+  }
+
+  function animateAiCameraTo(targetCamera, ms = 700) {
+    if (aiCamAnimRef.current) cancelAnimationFrame(aiCamAnimRef.current);
+    const from = { ...aiCamRef.current };
+    const to = targetCamera;
+    const t0 = performance.now();
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const tick = (now) => {
+      const t = Math.min(1, (now - t0) / ms);
+      const k = ease(t);
+      setAiCamera({
+        x: from.x + (to.x - from.x) * k,
+        y: from.y + (to.y - from.y) * k,
+        scale: from.scale + (to.scale - from.scale) * k,
+      });
+      if (t < 1) aiCamAnimRef.current = requestAnimationFrame(tick);
+      else aiCamAnimRef.current = null;
+    };
+    aiCamAnimRef.current = requestAnimationFrame(tick);
+  }
+
+  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE) {
+    const el = aiViewportRef.current;
+    if (!el || !node) return;
+    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale));
+  }
+
+  function returnAiToConstellation() {
+    const el = aiViewportRef.current;
+    if (!el) return;
+    setAiFocusedNodeId(null);
+    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight));
+  }
+
+  function exploreAiNode(nodeId) {
+    const node = aiNodesRef.current.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    handleAiNodeSelect(nodeId, { replace: true });
+    setAiFocusedNodeId(nodeId);
+    zoomAiToNode(node);
+
+    if (node.nodeKind === "move" && node.opId) {
+      const linkId = node.sourceNodeIds?.[0] || node.parentId;
+      const source = aiNodesRef.current.find((n) => n.id === linkId);
+      const ids = source?.sourceIds;
+      const op = opMap[node.opId];
+      if (ids?.length && op) {
+        expandInAi(ids, { op, opLabel: op.name, sourceNode: source });
+      }
+      return;
+    }
+
+    if (node.nodeKind === "expanded") {
+      if (node.sourceIds?.length && !node.loading) {
+        expandInAi(
+          node.sourceIds,
+          node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
+        );
+      }
+      if (node.expandedText) {
+        setAiPanel((prev) => ({
+          ...(prev || {}),
+          expandedText: node.expandedText,
+          activeNodeId: node.id,
+          loading: node.loading,
+          error: node.error,
+        }));
+      }
+      return;
+    }
+
+    if (node.nodeKind === "session") {
+      const child = aiNodesRef.current.find(
+        (n) => n.parentId === node.id && n.nodeKind === "expanded"
+      );
+      if (child) {
+        setAiFocusedNodeId(child.id);
+        handleAiNodeSelect(child.id, { replace: true });
+        zoomAiToNode(child);
+        if (!child.expandedText && !child.loading && aiPanel?.sketchBundle) {
+          interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
+        }
+      } else if (aiPanel?.sketchBundle) {
+        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
+      }
+      return;
+    }
+
+    if (node.sourceIds?.length && !node.loading) {
+      expandInAi(
+        node.sourceIds,
+        node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
+      );
     }
   }
 
@@ -5964,10 +6087,10 @@ export default function App() {
           onCanvasDragOver={handleAiCanvasDragOver}
           onCanvasDragLeave={() => setAiCanvasDropOver(false)}
           onCanvasDrop={handleAiCanvasDrop}
-          onExpandNode={(nodeId) => {
-            const node = aiNodes.find((n) => n.id === nodeId);
-            if (node?.sourceIds?.length) expandInAi(node.sourceIds, node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {});
-          }}
+          onExploreNode={exploreAiNode}
+          onReturnToConstellation={returnAiToConstellation}
+          focusedNodeId={aiFocusedNodeId}
+          onExpandNode={(nodeId) => exploreAiNode(nodeId)}
           panel={aiPanel}
           dropOver={aiDropOver}
           libraryDropOver={railDropOver}
