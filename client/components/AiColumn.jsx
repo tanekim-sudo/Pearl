@@ -1,7 +1,6 @@
 import React from "react";
 import AiNodeCanvas from "./AiNodeCanvas.jsx";
 import AiToolbox from "./AiToolbox.jsx";
-import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
 
 const THOUGHT_MIME = "application/lens-thought";
 const SEL_MIME = "application/lens-selection";
@@ -21,7 +20,6 @@ export default function AiColumn({
   onExploreNode,
   onReturnToConstellation,
   focusedNodeId,
-  panel,
   dropOver,
   canvasDropOver,
   libraryDropOver,
@@ -34,10 +32,6 @@ export default function AiColumn({
   onLibraryDragOver,
   onLibraryDragLeave,
   onLibraryDrop,
-  onExpand,
-  onEditExpanded,
-  onCopy,
-  onClear,
   toolbox,
   spaceHeld,
   tool,
@@ -45,21 +39,6 @@ export default function AiColumn({
   onFragmentTransfer,
   viewportRef,
 }) {
-  const selectedNode = nodes?.find((n) => selectedNodeIds?.includes(n.id));
-  const detailNode =
-    selectedNode ||
-    (panel?.expandedText || panel?.loading
-      ? nodes?.find((n) => n.nodeKind === "expanded" && (n.loading || n.expandedText))
-      : nodes?.find((n) => n.nodeKind === "source")) ||
-    null;
-
-  const expandedText = detailNode?.expandedText ?? panel?.expandedText;
-  const loading = detailNode?.loading ?? panel?.loading;
-  const error = detailNode?.error ?? panel?.error;
-  const explorationMode = (camera?.scale ?? 1) > 0.8;
-  const hasDetail =
-    !explorationMode && (detailNode || panel?.sourceIds?.length || loading);
-
   return (
     <aside
       className={"ai-column" + (dropOver ? " column-drop-over" : "")}
@@ -77,7 +56,7 @@ export default function AiColumn({
           {toolbox}
         </AiToolbox>
 
-        <section className="ai-spacetime">
+        <section className="ai-spacetime ai-void-only">
           <AiNodeCanvas
             nodes={nodes || []}
             camera={camera}
@@ -99,88 +78,6 @@ export default function AiColumn({
             onFragmentTransfer={onFragmentTransfer}
             viewportRef={viewportRef}
           />
-
-          {hasDetail && (
-            <section className="ai-detail-section">
-              {detailNode?.preview && detailNode.nodeKind === "source" && (
-                <div className="ai-source-box">{detailNode.preview}</div>
-              )}
-              {!detailNode?.preview && panel?.sourcePreview && (
-                <div className="ai-source-box">{panel.sourcePreview}</div>
-              )}
-
-              <div className="ai-actions">
-                <button
-                  type="button"
-                  className={"ai-expand-btn" + (loading ? " loading" : "")}
-                  disabled={loading || !(detailNode?.sourceIds?.length || panel?.sourceIds?.length)}
-                  onClick={onExpand}
-                  aria-busy={loading || undefined}
-                >
-                  {loading ? (
-                    <span className="ai-expand-spinner" aria-hidden="true" />
-                  ) : (
-                    "Expand"
-                  )}
-                </button>
-                {expandedText && (
-                  <>
-                    <button type="button" className="ai-action-btn" onClick={onCopy} title="Copy">
-                      Copy
-                    </button>
-                    <button type="button" className="ai-action-btn" onClick={onClear} title="Clear">
-                      Clear
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {error && <div className="ai-error">{error}</div>}
-
-              {expandedText && (
-                <section className={"ai-result-section" + (tool === "highlight" ? " ai-highlight-mode" : "")}>
-                  <div className="ai-section-label">
-                    Expanded
-                    {tool === "highlight" ? (
-                      <span className="ai-highlight-hint">highlight words → paper</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="ai-transfer-chip"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData(AI_OUTPUT_MIME, expandedText);
-                          e.dataTransfer.effectAllowed = "copy";
-                        }}
-                        title="Drag to paper"
-                      >
-                        → Paper
-                      </button>
-                    )}
-                  </div>
-                  {tool === "highlight" ? (
-                    <div className="ai-result-highlight-wrap">
-                      <div className="ai-result-text ai-result-readonly">{expandedText}</div>
-                      <FragmentHighlightLayer
-                        active
-                        text={expandedText}
-                        onFragment={onFragmentTransfer}
-                        className="ai-result-highlight"
-                      />
-                    </div>
-                  ) : (
-                    <textarea
-                      className="ai-result-text"
-                      value={expandedText}
-                      onChange={(e) => onEditExpanded(e.target.value, detailNode?.id)}
-                      rows={8}
-                    />
-                  )}
-                </section>
-              )}
-
-            </section>
-          )}
         </section>
       </div>
     </aside>

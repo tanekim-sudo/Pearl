@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #ffffff;
 }
 
 /* Two halves + interpretation boundary: paper | seam | AI */
@@ -143,12 +143,17 @@
   --paper-deep: #ffffff;
   --paper: #ffffff;
   --card: #ffffff;
-  --canvas-bg: #f0f0f0;
-  --desk: #f0f0f0;
-  --line: rgba(0, 0, 0, 0.08);
-  --line-2: rgba(0, 0, 0, 0.12);
+  --canvas-bg: #ffffff;
+  --desk: #ffffff;
+  --gold: #ffd700;
+  --gold-deep: #f5c842;
+  --gold-stroke: #e8b923;
+  --gold-fill: rgba(255, 215, 0, 0.45);
+  --gold-ring: rgba(245, 200, 66, 0.95);
+  --line: rgba(0, 0, 0, 0.06);
+  --line-2: rgba(0, 0, 0, 0.1);
   --faint: rgba(0, 0, 0, 0.38);
-  background: #f0f0f0;
+  background: #ffffff;
   color: #000000;
   position: relative;
 }
@@ -195,27 +200,60 @@ html[data-theme="chalk"] .canvas-column {
   margin-left: auto;
 }
 
-.canvas-tools-grip {
+.canvas-tools-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.canvas-tools-bar.collapsed {
+  max-width: 120px;
+}
+
+.canvas-tools-bar.expanded {
+  max-width: none;
+}
+
+.canvas-tools-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   background: transparent;
-  color: rgba(0, 0, 0, 0.35);
-  font-size: 14px;
-  letter-spacing: 2px;
-  padding: 4px 8px;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 8px;
   cursor: pointer;
-  border-radius: 999px;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.12s;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
-.canvas-edge-top:hover .canvas-tools-grip,
-.canvas-edge-top.open .canvas-tools-grip {
-  opacity: 1;
-}
-
-.canvas-tools-grip:hover {
+.canvas-tools-toggle:hover {
   background: rgba(0, 0, 0, 0.04);
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.canvas-tools-label {
+  font-size: 10px;
+}
+
+.canvas-tools-chevron {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.canvas-tools-grip {
+  display: none;
 }
 
 .canvas-column-tools {
@@ -223,16 +261,6 @@ html[data-theme="chalk"] .canvas-column {
   flex-wrap: nowrap;
   gap: 0;
   flex-shrink: 0;
-  max-width: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-width 0.2s ease, opacity 0.15s;
-}
-
-.canvas-edge-top:hover .canvas-column-tools,
-.canvas-edge-top.open .canvas-column-tools {
-  max-width: 320px;
-  opacity: 1;
 }
 
 .canvas-edge-bottom {
@@ -575,16 +603,16 @@ html[data-theme="chalk"] .ai-column {
 }
 
 .ai-toolbox.collapsed {
-  max-height: 4px;
-  overflow: hidden;
-  border-bottom: none;
+  max-height: none;
+  overflow: visible;
+  border-bottom: 1px solid var(--ai-line);
+  min-height: 36px;
 }
 
 .ai-toolbox.collapsed .ai-toolbox-toggle {
-  padding: 0;
-  min-height: 4px;
-  justify-content: center;
-  background: transparent;
+  min-height: 36px;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .ai-toolbox-toggle {
@@ -593,38 +621,35 @@ html[data-theme="chalk"] .ai-column {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border: none;
   background: transparent;
   color: var(--ai-faint);
   font-size: 10px;
-  font-weight: 400;
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   cursor: pointer;
   text-align: left;
 }
 
 .ai-toolbox-toggle:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--ai-ink);
 }
 
-.ai-toolbox-line {
-  display: block;
-  width: 100%;
-  max-width: 48px;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 0 auto;
+.ai-toolbox-label {
+  flex: 1;
 }
 
-.ai-toolbox.collapsed .ai-toolbox-line {
-  max-width: 100%;
+.ai-toolbox-line {
+  display: none;
 }
 
 .ai-toolbox-chevron {
-  display: none;
+  font-size: 10px;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 .ai-toolbox.drop-over {
@@ -646,8 +671,12 @@ html[data-theme="chalk"] .ai-column {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 10px 14px 12px;
-  gap: 10px;
+  padding: 0;
+  gap: 0;
+}
+
+.ai-spacetime.ai-void-only {
+  padding: 0;
 }
 
 .ai-nodes-section {
@@ -822,19 +851,19 @@ body.ai-node-dragging * {
 }
 
 .ai-node.selected {
-  border-color: rgba(200, 230, 255, 0.95);
+  border-color: rgba(255, 215, 0, 0.85);
   transform: scale(1.08);
   z-index: 4;
   box-shadow:
-    0 0 0 4px rgba(100, 180, 255, 0.35),
-    0 0 28px rgba(120, 180, 255, 0.55),
-    0 0 48px rgba(100, 150, 255, 0.25);
+    0 0 0 4px rgba(255, 215, 0, 0.45),
+    0 0 28px rgba(232, 185, 35, 0.55),
+    0 0 48px rgba(245, 200, 66, 0.25);
 }
 
 .ai-node.multi-selected {
   box-shadow:
-    0 0 0 3px rgba(245, 230, 163, 0.45),
-    0 0 24px rgba(120, 180, 255, 0.45);
+    0 0 0 3px rgba(255, 215, 0, 0.55),
+    0 0 24px rgba(232, 185, 35, 0.45);
 }
 
 .ai-node-viewport.space-transfer-ready {
@@ -1940,14 +1969,18 @@ body.ai-node-dragging * {
 }
 
 .canvas-column .viewport {
-  background: #f0f0f0;
+  background: #ffffff;
   background-image: none;
 }
 
 .canvas-column .paper-sheet {
   background: #ffffff;
   border: none;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
@@ -1995,29 +2028,81 @@ body.ai-node-dragging * {
 }
 
 .board-sticky.sel {
-  outline: 3px solid rgba(245, 230, 163, 0.85);
+  outline: 3px solid var(--gold-ring, rgba(245, 200, 66, 0.95));
   outline-offset: 2px;
   box-shadow:
-    0 0 0 4px rgba(245, 230, 163, 0.25),
-    0 0 16px rgba(245, 230, 163, 0.2);
+    0 0 0 6px var(--gold-fill, rgba(255, 215, 0, 0.45)),
+    0 0 20px rgba(255, 215, 0, 0.35);
+  background: color-mix(in srgb, var(--gold, #ffd700) 18%, white);
 }
+
 .board-sticky.hl-touch:not(.sel),
 .board-callout.hl-touch:not(.sel),
-.board-text.hl-touch:not(.sel) {
-  outline: 2px solid rgba(245, 230, 163, 0.5);
+.board-text.hl-touch:not(.sel),
+.board-img.hl-touch:not(.sel),
+.board-voice.hl-touch:not(.sel),
+.board-diagram.hl-touch:not(.sel),
+.board-table.hl-touch:not(.sel),
+.board-code.hl-touch:not(.sel),
+.board-math.hl-touch:not(.sel),
+.board-video.hl-touch:not(.sel) {
+  outline: 3px solid var(--gold-stroke, #e8b923);
   outline-offset: 2px;
-  background: rgba(245, 230, 163, 0.1);
+  box-shadow:
+    0 0 0 5px var(--gold-fill, rgba(255, 215, 0, 0.45)),
+    0 0 18px rgba(232, 185, 35, 0.5);
+  animation: idea-flash 400ms ease-out;
 }
 
 .idea-center .board-text.sel,
 .canvas-column .board-text.sel {
-  background: rgba(245, 230, 163, 0.16);
-  border-color: rgba(245, 200, 80, 0.65);
+  background: var(--gold-fill, rgba(255, 215, 0, 0.45));
+  border-color: var(--gold-deep, #f5c842);
   box-shadow:
-    0 0 0 3px rgba(245, 230, 163, 0.4),
-    0 0 14px rgba(245, 230, 163, 0.22);
-  outline: 2px solid rgba(245, 200, 80, 0.5);
+    0 0 0 3px var(--gold-ring, rgba(245, 200, 66, 0.95)),
+    0 0 16px rgba(255, 215, 0, 0.4);
+  outline: 3px solid var(--gold-stroke, #e8b923);
   outline-offset: 2px;
+}
+
+.canvas-column .board-img.sel,
+.canvas-column .board-sticky.sel,
+.canvas-column .board-callout.sel,
+.canvas-column .board-voice.sel,
+.canvas-column .board-diagram.sel,
+.canvas-column .board-table.sel,
+.canvas-column .board-code.sel,
+.canvas-column .board-math.sel,
+.canvas-column .board-video.sel {
+  outline: 3px solid var(--gold-ring, rgba(245, 200, 66, 0.95));
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 6px var(--gold-fill, rgba(255, 215, 0, 0.45)),
+    0 0 20px rgba(255, 215, 0, 0.35);
+}
+
+.canvas-column .ink-layer polyline.hl-stroke {
+  stroke: var(--gold-stroke, #e8b923) !important;
+  stroke-width: 22px !important;
+  stroke-opacity: 0.92 !important;
+}
+
+@keyframes idea-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.9);
+    outline-color: #ffd700;
+  }
+  45% {
+    box-shadow:
+      0 0 0 10px rgba(255, 215, 0, 0.55),
+      0 0 28px rgba(232, 185, 35, 0.65);
+    outline-color: #e8b923;
+  }
+  100% {
+    box-shadow:
+      0 0 0 5px rgba(255, 215, 0, 0.35),
+      0 0 14px rgba(232, 185, 35, 0.3);
+  }
 }
 
 .board-callout {
@@ -2216,8 +2301,11 @@ body.ai-node-dragging * {
 .board-code.sel,
 .board-math.sel,
 .board-video.sel {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--gold-ring, rgba(245, 200, 66, 0.95));
   outline-offset: 2px;
+  box-shadow:
+    0 0 0 5px var(--gold-fill, rgba(255, 215, 0, 0.45)),
+    0 0 16px rgba(255, 215, 0, 0.3);
 }
 
 /* Hide legacy bottom input deck & zoom when using idea layout */
@@ -2677,4 +2765,89 @@ html[data-theme="chalk"] body {
   line-height: 1.55;
   color: rgba(235, 240, 255, 0.92);
   white-space: pre-wrap;
+}
+
+/* ── Transfer animation (paper ↔ AI) ── */
+.transfer-animation-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: visible;
+}
+
+.transfer-ring {
+  animation: transfer-ring-expand 780ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.transfer-streak {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: transfer-streak-draw 680ms ease-out 0.12s forwards;
+}
+
+.transfer-node-flash {
+  opacity: 0;
+  animation: transfer-node-birth 520ms ease-out 0.42s forwards;
+}
+
+.transfer-land-splash {
+  opacity: 0;
+  animation: transfer-land-splash 620ms ease-out 0.55s forwards;
+}
+
+@keyframes transfer-ring-expand {
+  0% {
+    r: 6;
+    opacity: 0.95;
+    stroke-width: 4;
+  }
+  55% {
+    r: 42;
+    opacity: 0.65;
+    stroke-width: 3;
+  }
+  100% {
+    r: 64;
+    opacity: 0;
+    stroke-width: 1;
+  }
+}
+
+@keyframes transfer-streak-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes transfer-node-birth {
+  0% {
+    opacity: 0;
+    r: 4;
+  }
+  35% {
+    opacity: 1;
+    r: 22;
+  }
+  100% {
+    opacity: 0;
+    r: 36;
+  }
+}
+
+@keyframes transfer-land-splash {
+  0% {
+    opacity: 0.85;
+    r: 8;
+  }
+  100% {
+    opacity: 0;
+    r: 48;
+  }
+}
+
+.ai-column .ai-detail-section {
+  display: none;
 }

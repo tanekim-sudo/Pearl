@@ -116,6 +116,7 @@ import {
   truncatePreview,
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
+import TransferAnimation from "./components/TransferAnimation.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 const ITEMS_KEY = "lens.board.items.v1";
@@ -147,9 +148,9 @@ const SPACE_DOUBLE_TAP_MS = 350;
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
-const HIGHLIGHT_INK = "#ffe566";
-const HIGHLIGHT_W = 18;
-const HIGHLIGHT_OPACITY = 0.88;
+const HIGHLIGHT_INK = "#E8B923";
+const HIGHLIGHT_W = 20;
+const HIGHLIGHT_OPACITY = 0.92;
 const MARKER_OPACITY = 0.72;
 
 /** Highlight ink stays the same thickness on screen at any zoom. */
@@ -1919,7 +1920,9 @@ export default function App() {
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
   const [canvasDropOver, setCanvasDropOver] = useState(false);
+  const [transferAnim, setTransferAnim] = useState(null);
 
+  const transferAnimKeyRef = useRef(0);
   const viewportRef = useRef(null);
   const paperSessionRef = useRef(null);
   const paperStrokeIdRef = useRef(null);
@@ -2227,6 +2230,7 @@ export default function App() {
   function transferAiNodesToPaper(nodeIds, atWorld) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     if (!nodes.length) return;
+    triggerTransferAnimation("to-paper", { atWorld });
     let yOffset = 0;
     for (const node of nodes) {
       let text = node.expandedText || node.preview || "";
@@ -4348,6 +4352,73 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
+  function boundaryCenterX() {
+    const el = document.querySelector(".interpret-boundary-hit");
+    const r = el?.getBoundingClientRect();
+    return r ? r.left + r.width / 2 : window.innerWidth / 2;
+  }
+
+  function centerOfRects(rects) {
+    if (!rects?.length) return null;
+    let sx = 0;
+    let sy = 0;
+    for (const r of rects) {
+      sx += (r.left + r.right) / 2;
+      sy += (r.top + r.bottom) / 2;
+    }
+    return { x: sx / rects.length, y: sy / rects.length };
+  }
+
+  function triggerTransferAnimation(direction, opts = {}) {
+    const boundaryX = boundaryCenterX();
+    let fromX;
+    let fromY;
+    let toX;
+    let toY;
+
+    if (direction === "to-ai") {
+      const ids = opts.itemIds || [];
+      const rects = ids
+        .map((id) => itemsRef.current.find((i) => i.id === id))
+        .filter(Boolean)
+        .map((it) => itemScreenBBox(it));
+      const center = centerOfRects(rects) || opts.fromClient || {
+        x: boundaryX - 72,
+        y: window.innerHeight / 2,
+      };
+      fromX = center.x;
+      fromY = center.y;
+      toX = boundaryX + 36;
+      toY = fromY;
+    } else {
+      const atWorld = opts.atWorld || viewportCenterWorld();
+      const dest = worldToClient(atWorld.x, atWorld.y);
+      toX = dest.x;
+      toY = dest.y;
+      fromX = boundaryX + 24;
+      fromY = toY;
+      if (opts.fromClient) {
+        fromX = opts.fromClient.x;
+        fromY = opts.fromClient.y;
+      }
+    }
+
+    transferAnimKeyRef.current += 1;
+    setTransferAnim({
+      key: transferAnimKeyRef.current,
+      direction,
+      fromX,
+      fromY,
+      boundaryX,
+      toX,
+      toY,
+    });
+  }
+
+  function clearTransferAnimation(key) {
+    setTransferAnim((a) => (a?.key === key ? null : a));
+  }
+
   function pointInExpandedRect(cx, cy, bb, pad) {
     return cx >= bb.left - pad && cx <= bb.right + pad && cy >= bb.top - pad && cy <= bb.bottom + pad;
   }
@@ -4639,6 +4710,7 @@ export default function App() {
       aiNodeId: expandedNode.id,
       inputPreview: truncatePreview(bundle.transcript || label, 120),
     });
+    triggerTransferAnimation("to-ai", { itemIds: bundleSourceIds });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
       sourcePreview: bundle.transcript?.slice(0, 200) || label,
@@ -5456,6 +5528,7 @@ export default function App() {
       aiNodeId: sourceNode.id,
       opName: opts.opLabel || op.name,
     });
+    triggerTransferAnimation("to-ai", { itemIds: ids });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -5525,7 +5598,7 @@ export default function App() {
     if (!ideaIds?.length) return;
     recordItemEvents(ideaIds, "highlight-transfer", {});
     setHighlightTouchIds(ideaIds);
-    window.setTimeout(() => setHighlightTouchIds([]), 320);
+    window.setTimeout(() => setHighlightTouchIds([]), 400);
     const sketchBundle = gatherSelectionSketchBundle(ideaIds);
     const world = getAiDropWorld();
     if (sketchBundle) {
@@ -6650,6 +6723,8 @@ export default function App() {
           </span>
         </div>
       )}
+
+      <TransferAnimation anim={transferAnim} onComplete={clearTransferAnimation} />
     </div>
   );
 }

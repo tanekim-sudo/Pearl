@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
+
+const TOOLS_COLLAPSED_KEY = "lens.canvas-tools.collapsed";
 
 const CANVAS_TOOLS = [
   { id: "select", label: "Select", icon: "↖" },
@@ -36,18 +38,28 @@ export default function CanvasColumn({
   onZoomReset,
   children,
 }) {
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(() => {
+    try {
+      return localStorage.getItem(TOOLS_COLLAPSED_KEY) === "0";
+    } catch {
+      return false;
+    }
+  });
   const [zoomOpen, setZoomOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TOOLS_COLLAPSED_KEY, toolsOpen ? "0" : "1");
+    } catch {
+      /* ignore */
+    }
+  }, [toolsOpen]);
 
   return (
     <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
       <div className="canvas-column-main">{children}</div>
 
-      <div
-        className={"canvas-edge-top" + (toolsOpen ? " open" : "")}
-        onMouseEnter={() => setToolsOpen(true)}
-        onMouseLeave={() => setToolsOpen(false)}
-      >
+      <div className={"canvas-edge-top" + (toolsOpen ? " open" : "")}>
         <PageTabs
           pages={pages}
           activePageId={activePageId}
@@ -55,38 +67,43 @@ export default function CanvasColumn({
           onAddPage={onAddPage}
           onRenamePage={onRenamePage}
         />
-        <div className="canvas-tools-strip">
+        <div className={"canvas-tools-bar" + (toolsOpen ? " expanded" : " collapsed")}>
           <button
             type="button"
-            className="canvas-tools-grip"
+            className="canvas-tools-toggle"
             aria-expanded={toolsOpen}
-            aria-label="Drawing tools"
+            aria-label={toolsOpen ? "Collapse drawing tools" : "Expand drawing tools"}
             onClick={() => setToolsOpen((o) => !o)}
           >
-            ···
+            <span className="canvas-tools-label">Tools</span>
+            <span className="canvas-tools-chevron" aria-hidden="true">
+              {toolsOpen ? "▲" : "▼"}
+            </span>
           </button>
-          <div className="canvas-column-tools">
-            {CANVAS_TOOLS.map((t) => {
-              const active =
-                (t.id === "image" && imageArmed) ||
-                (t.id !== "image" && tool === t.id);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={"canvas-tool-btn" + (active ? " active" : "")}
-                  title={t.label}
-                  onClick={() => {
-                    if (t.id === "image") onPickImage();
-                    else if (t.id === "sticky" || t.id === "text") onInsertBlock(t.id);
-                    else onSelectTool(t.id);
-                  }}
-                >
-                  {t.icon}
-                </button>
-              );
-            })}
-          </div>
+          {toolsOpen && (
+            <div className="canvas-column-tools">
+              {CANVAS_TOOLS.map((t) => {
+                const active =
+                  (t.id === "image" && imageArmed) ||
+                  (t.id !== "image" && tool === t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={"canvas-tool-btn" + (active ? " active" : "")}
+                    title={t.label}
+                    onClick={() => {
+                      if (t.id === "image") onPickImage();
+                      else if (t.id === "sticky" || t.id === "text") onInsertBlock(t.id);
+                      else onSelectTool(t.id);
+                    }}
+                  >
+                    {t.icon}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

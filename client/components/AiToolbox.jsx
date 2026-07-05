@@ -41,8 +41,10 @@ export default function AiToolbox({
         aria-expanded={!collapsed}
         title={collapsed ? "Expand toolbox" : "Collapse toolbox"}
       >
-        <span className="ai-toolbox-line" aria-hidden="true" />
-        {!collapsed && <span className="ai-toolbox-label">tools</span>}
+        <span className="ai-toolbox-label">Tools</span>
+        <span className="ai-toolbox-chevron" aria-hidden="true">
+          {collapsed ? "▼" : "▲"}
+        </span>
       </button>
       {!collapsed && <div className="ai-toolbox-body">{children}</div>}
     </section>

@@ -89,10 +89,18 @@ export default function AiNodeCanvas({
 
     function onWheel(e) {
       e.preventDefault();
+      if (e.shiftKey) {
+        onCameraChange?.({
+          ...camera,
+          x: camera.x - e.deltaX,
+          y: camera.y - e.deltaY,
+        });
+        return;
+      }
       const rect = el.getBoundingClientRect();
       const localX = e.clientX - rect.left;
       const localY = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      const factor = Math.exp(-e.deltaY * 0.0016);
       const next = zoomAtPoint(camera, localX, localY, factor);
       onCameraChange?.(next);
       if (
