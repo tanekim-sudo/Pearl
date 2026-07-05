@@ -1,4 +1,4 @@
-import { runPrompt } from "./claude.js";
+import { runPrompt } from "./llm.js";
 import {
   compileExecutionPlan,
   buildPhaseMaterial,
@@ -48,7 +48,6 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
       maxTokens: phase.maxTokens,
       timeoutMs: phase.timeoutMs,
       research: true,
-      maxSearchUses: phase.maxSearchUses || 3,
     });
     return { output: outputs[0] || "", research: outputs[0] || "" };
   }
@@ -62,7 +61,7 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
 
     const fallbackSearch = !fast && !!context.researchFallback && !context.research?.trim();
     if (fallbackSearch) {
-      sys += `\nWeb search available — 1 quick search if needed, then write the deliverable.`;
+      sys += `\nResearch data may be limited — use your best judgment and produce the deliverable anyway.`;
     }
 
     const text = fast
@@ -77,7 +76,6 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
       maxTokens: phase.maxTokens,
       timeoutMs: phase.timeoutMs,
       research: fallbackSearch,
-      maxSearchUses: 2,
       temperature: fast ? 0.2 : 0.4,
       compact: fast,
     });

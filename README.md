@@ -1,12 +1,12 @@
 # Lens
 
-Create prompt **symbols**, then drag a symbol onto your text to transform it with the Claude API.
+Create prompt **symbols**, then drag a symbol onto your text to transform it with open models via Hugging Face Inference Providers.
 
 - **Make a symbol** — give it a name, icon, color, and a prompt (e.g. "Summarize", "Fix grammar", "Translate to French").
-- **Drop it on text** — type/paste text, optionally select part of it, then drag a symbol onto the text box. Claude runs the prompt on that text.
-- **Apply the result** — replace the text (or just the selection) with Claude's output, or copy it.
+- **Drop it on text** — type/paste text, optionally select part of it, then drag a symbol onto the text box. The model runs the prompt on that text.
+- **Apply the result** — replace the text (or just the selection) with the model's output, or copy it.
 
-Symbols are saved in your browser (localStorage). Your API key stays on the server.
+Symbols are saved in your browser (localStorage). Your API token stays on the server.
 
 ## Setup
 
@@ -16,11 +16,11 @@ Symbols are saved in your browser (localStorage). Your API key stays on the serv
    npm install
    ```
 
-2. Add your Claude API key:
+2. Add your Hugging Face token (create one at https://huggingface.co/settings/tokens/new with "Make calls to Inference Providers"):
 
    ```bash
    cp .env.example .env
-   # then edit .env and set ANTHROPIC_API_KEY=sk-ant-...
+   # then edit .env and set HF_TOKEN=hf_...
    ```
 
 3. Run it (starts the API server + the web app):
@@ -46,11 +46,11 @@ as serverless functions in `api/` (`/api/run`, `/api/health`).
 1. Import the GitHub repo into Vercel (or run `vercel`).
 2. Add an Environment Variable in **Project Settings → Environment Variables**:
 
-   | Name                | Value              |
-   | ------------------- | ------------------ |
-   | `ANTHROPIC_API_KEY` | your Claude API key |
+   | Name       | Value                        |
+   | ---------- | ---------------------------- |
+   | `HF_TOKEN` | your Hugging Face API token  |
 
-   (Optionally also set `CLAUDE_MODEL`.)
+   (Optionally also set `HF_MODEL`, `HF_VISION_MODEL`, or `HF_PROVIDER`.)
 3. Deploy. Vercel uses `vercel.json`: build command `npm run build`, output `dist`.
 
 **Production URL:** [https://representation-eta.vercel.app](https://representation-eta.vercel.app)
@@ -59,15 +59,17 @@ as serverless functions in `api/` (`/api/run`, `/api/health`).
 > (an old Create React App). This repo deploys to the `representation` project
 > under `tane-kims-projects`, aliased to `representation-eta.vercel.app`.
 
-> Never put your API key in the code or commit it. Set it only in Vercel's
+> Never put your API token in the code or commit it. Set it only in Vercel's
 > Environment Variables (or your local `.env`, which is gitignored).
 
 ## Configuration
 
 Set these in `.env`:
 
-| Variable            | Default                          | Description                  |
-| ------------------- | -------------------------------- | ---------------------------- |
-| `ANTHROPIC_API_KEY` | _(required)_                     | Your Claude API key          |
-| `CLAUDE_MODEL`      | `claude-sonnet-4-5-20250929`     | Which Claude model to use    |
-| `PORT`              | `8787`                           | API server port              |
+| Variable          | Default                              | Description                                        |
+| ----------------- | ------------------------------------ | -------------------------------------------------- |
+| `HF_TOKEN`        | _(required)_                         | Your Hugging Face API token                        |
+| `HF_MODEL`        | `Qwen/Qwen2.5-72B-Instruct:fastest`  | Text model (policy suffixes: `:fastest` etc.)      |
+| `HF_VISION_MODEL` | `Qwen/Qwen2.5-VL-7B-Instruct:fastest`| Model used when a canvas item includes an image    |
+| `HF_PROVIDER`     | _(auto)_                             | Force a specific inference provider (e.g. `groq`)  |
+| `PORT`            | `8787`                               | API server port                                    |

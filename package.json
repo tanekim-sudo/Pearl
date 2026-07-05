@@ -1,7 +1,7 @@
 {
   "name": "lens",
   "version": "1.0.0",
-  "description": "Create prompt symbols and drag them onto text to transform it with the Claude API.",
+  "description": "Create prompt symbols and drag them onto text to transform it with open models via Hugging Face.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "test": "node --test shared/transform-primitives.test.js shared/operator-direction.test.js shared/operator-capture.test.js shared/eta.test.js shared/share-bundle.test.js shared/deliverable-quality.test.js shared/primitive-output.test.js shared/function-standards.test.js shared/sketch-bundle.test.js client/lib/ai-nodes.test.js client/lib/ai-space.test.js client/lib/paper.test.js client/lib/highlight-text.test.js client/lib/item-history.test.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.107.0",
+    "@huggingface/inference": "^4.13.22",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

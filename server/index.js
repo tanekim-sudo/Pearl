@@ -4,7 +4,7 @@ import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
-import { runPrompt, hasKey, MODEL } from "./claude.js";
+import { runPrompt, hasKey, MODEL, VISION_MODEL } from "./llm.js";
 import { runPipeline } from "./pipeline.js";
 import { compileExecutionPlan } from "./plan.js";
 import { runPhase, runExecutionPlan } from "./executor.js";
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 8787;
 
 if (!hasKey()) {
   console.warn(
-    "\n[lens] WARNING: ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.\n"
+    "\n[lens] WARNING: HF_TOKEN is not set. Copy .env.example to .env and add your Hugging Face token.\n"
   );
 }
 
@@ -30,18 +30,29 @@ app.use(cors());
 app.use(express.json({ limit: "16mb" }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, hasKey: hasKey(), model: MODEL });
+  res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL });
 });
 
 app.post("/api/run", async (req, res) => {
   try {
-    const { prompt, text, count, image, system, maxTokens, research, timeoutMs } = req.body ?? {};
-    const data = await runPrompt({ prompt, text, count, image, system, maxTokens, research, timeoutMs });
+    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact } =
+      req.body ?? {};
+    const data = await runPrompt({
+      prompt,
+      text,
+      count,
+      image,
+      system,
+      maxTokens,
+      research,
+      timeoutMs,
+      compact,
+    });
     res.json(data);
   } catch (err) {
     console.error("[lens] /api/run failed:", err?.message || err);
     res.status(err?.status || 500).json({
-      error: err?.error?.error?.message || err?.message || "Something went wrong calling Claude.",
+      error: err?.error?.error?.message || err?.message || "Something went wrong calling the model.",
     });
   }
 });
@@ -144,6 +155,7 @@ if (fs.existsSync(distDir)) {
 app.listen(PORT, () => {
   console.log(`\n[lens] server running on http://localhost:${PORT}`);
   console.log(`[lens] model: ${MODEL}`);
+  if (VISION_MODEL !== MODEL) console.log(`[lens] vision model: ${VISION_MODEL}`);
   if (!fs.existsSync(distDir)) {
     console.log(`[lens] dev: open the Vite client at http://localhost:5173\n`);
   }
