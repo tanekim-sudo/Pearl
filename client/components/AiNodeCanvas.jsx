@@ -66,6 +66,7 @@ export default function AiNodeCanvas({
   onSpaceTransferStart,
   onFragmentReplace,
   onFragmentToPaper,
+  isPaperDestination,
   viewportRef: externalViewportRef,
 }) {
   const localViewportRef = useRef(null);
@@ -219,7 +220,7 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleLassoEnd);
   }
 
-  function startStrandDrag(e, node) {
+  function startStrandDrag(e, node, seedX = e.clientX, seedY = e.clientY) {
     if (e.button !== 0) return;
     if (tool === "highlight") {
       e.preventDefault();
@@ -234,7 +235,6 @@ export default function AiNodeCanvas({
       return;
     }
     e.stopPropagation();
-    e.preventDefault();
 
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -244,8 +244,8 @@ export default function AiNodeCanvas({
     const choices = pool.slice(0, count);
     if (!choices.length) return;
 
-    const startX = e.clientX;
-    const startY = e.clientY;
+    const startX = seedX;
+    const startY = seedY;
     const nodeScreen = worldToScreen(cameraRef.current, node.x, node.y);
     const originX = nodeScreen.x;
     const originY = nodeScreen.y;
@@ -267,10 +267,17 @@ export default function AiNodeCanvas({
     setStrandDrag({ ...dragState });
     document.body.classList.add("ai-strand-dragging");
 
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+    const captureTarget = e.currentTarget;
+    let captured = false;
+
+    function ensureCapture(ev) {
+      if (captured || !captureTarget) return;
+      captured = true;
+      try {
+        captureTarget.setPointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
     }
 
     function updateFromPointer(clientX, clientY) {
@@ -282,6 +289,7 @@ export default function AiNodeCanvas({
       const dy = py - state.originY;
       const dist = Math.hypot(dx, dy);
       if (!state.active && dist <= STRAND_DRAG_THRESHOLD) return;
+      ensureCapture(ev);
 
       const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
       const baseAngle = Math.atan2(dy, dx);
@@ -310,7 +318,7 @@ export default function AiNodeCanvas({
       document.body.classList.remove("ai-strand-dragging");
 
       try {
-        e.currentTarget.releasePointerCapture(ev.pointerId);
+        if (captured) captureTarget.releasePointerCapture(ev.pointerId);
       } catch {
         /* ignore */
       }
@@ -364,10 +372,69 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleStrandEnd);
   }
 
+  function startConstellationNodeGesture(e, node) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let activated = false;
+
+    function onMove(ev) {
+      if (activated) return;
+      const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+      if (dist <= STRAND_DRAG_THRESHOLD) return;
+      activated = true;
+      cleanup();
+      startStrandDrag(e, node, startX, startY);
+      updateFromDeferredStrand(ev.clientX, ev.clientY);
+    }
+
+    function updateFromDeferredStrand(clientX, clientY) {
+      const state = strandDragRef.current;
+      if (!state) return;
+      const px = clientX - state.rectLeft;
+      const py = clientY - state.rectTop;
+      const dx = px - state.originX;
+      const dy = py - state.originY;
+      const dist = Math.hypot(dx, dy);
+      const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
+      const baseAngle = Math.atan2(dy, dx);
+      const angles = fanStrandAngles(state.choices.length, baseAngle);
+      const hoverIdx = pickStrandIndex(baseAngle, angles);
+      const next = {
+        ...state,
+        active: true,
+        length,
+        baseAngle,
+        angles,
+        hoverIdx,
+        pointerX: clientX,
+        pointerY: clientY,
+      };
+      strandDragRef.current = next;
+      setStrandDrag(next);
+    }
+
+    function onUp() {
+      cleanup();
+      if (!activated) onSelect?.(node.id, { replace: true });
+    }
+
+    function cleanup() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
   function startNodeDrag(e, node) {
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
     if (constellationMode && tool !== "highlight") {
-      startStrandDrag(e, node);
+      startConstellationNodeGesture(e, node);
       return;
     }
 
@@ -750,6 +817,7 @@ export default function AiNodeCanvas({
                       text={node.expandedText}
                       onFragmentReplace={onFragmentReplace}
                       onFragmentToPaper={onFragmentToPaper}
+                      isPaperDestination={isPaperDestination}
                       className="ai-node-fragment-highlight"
                     />
                   </div>
@@ -839,7 +907,19 @@ export default function AiNodeCanvas({
             <div className="ai-explore-overlay-label">
               {focusedNode?.label || "Expanded"}
             </div>
-            <div className="ai-explore-overlay-text">{renderFocusText(focusDetail)}</div>
+            <div className="ai-explore-overlay-text-wrap">
+              <div className="ai-explore-overlay-text">{renderFocusText(focusDetail)}</div>
+              {tool === "highlight" && focusedNode?.expandedText?.trim() && !focusedNode?.loading && (
+                <FragmentHighlightLayer
+                  active
+                  text={focusedNode.expandedText}
+                  onFragmentReplace={onFragmentReplace}
+                  onFragmentToPaper={onFragmentToPaper}
+                  isPaperDestination={isPaperDestination}
+                  className="ai-explore-fragment-highlight"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

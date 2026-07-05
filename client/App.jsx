@@ -5791,9 +5791,21 @@ export default function App() {
     const expandIds = transformableDragIds(ideaIds);
     if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
   };
-  transferFragmentToPaperRef.current = (fragment) => {
+  transferFragmentToPaperRef.current = (fragment, opts = {}) => {
     if (!fragment?.trim()) return;
-    spawnTextAtWorld(fragment, viewportCenterWorld(), { silent: true });
+    const atWorld =
+      opts.atWorld ||
+      (opts.clientX != null && opts.clientY != null
+        ? clientToWorld(opts.clientX, opts.clientY)
+        : viewportCenterWorld());
+    triggerTransferAnimation("to-paper", {
+      atWorld,
+      fromClient:
+        opts.clientX != null && opts.clientY != null
+          ? { x: opts.clientX, y: opts.clientY }
+          : undefined,
+    });
+    spawnTextAtWorld(fragment, atWorld, { silent: true });
   };
   transferFragmentReplaceRef.current = (fragment) => {
     const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
@@ -6218,7 +6230,7 @@ export default function App() {
           {/* committed strokes */}
           <svg className="ink-layer">
             {visibleItems
-              .filter((it) => it.type === "stroke")
+              .filter((it) => it.type === "stroke" && !it.highlight)
               .map((it) => (
                 <g key={it.id}>
                   {it.instructionText && <title>{it.instructionText}</title>}
@@ -6639,7 +6651,8 @@ export default function App() {
           tool={tool}
           onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
-          onFragmentToPaper={(fragment) => transferFragmentToPaperRef.current(fragment)}
+          onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
+          isPaperDestination={(x, y) => isOverPaperColumn(x, y)}
           viewportRef={aiViewportRef}
           canvasDropOver={aiCanvasDropOver}
           onCanvasDragOver={handleAiCanvasDragOver}

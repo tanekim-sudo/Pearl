@@ -80,6 +80,22 @@ export default function CanvasColumn({
               {toolsOpen ? "▲" : "▼"}
             </span>
           </button>
+          <button
+            type="button"
+            className={"canvas-tools-record" + (paperRecording ? " recording" : "")}
+            title={paperRecording ? `Stop (${mm}:${ss})` : "Record voice + drawing"}
+            aria-label={paperRecording ? "Stop recording" : "Record voice + drawing"}
+            onClick={onTogglePaperRecord}
+          >
+            <span
+              className="paper-record-dot"
+              style={
+                paperRecording
+                  ? { transform: `scale(${0.85 + (paperRecordLevel || 0) * 0.35})` }
+                  : undefined
+              }
+            />
+          </button>
           {toolsOpen && (
             <div className="canvas-column-tools">
               {CANVAS_TOOLS.map((t) => {

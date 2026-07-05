@@ -7,13 +7,14 @@ const MIN_STROKE_PX = 4;
 
 /**
  * Transparent overlay for word/fragment highlight gestures on AI-side text.
- * Default release → replace/highlight in node; Shift+release → send to paper.
+ * Default release → replace/highlight in node; Shift+release or drop on paper → spawn on paper.
  */
 export default function FragmentHighlightLayer({
   active,
   text,
   onFragmentReplace,
   onFragmentToPaper,
+  isPaperDestination,
   className = "",
 }) {
   const surfaceRef = useRef(null);
@@ -30,13 +31,14 @@ export default function FragmentHighlightLayer({
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  function finishStroke(clientPoints, toPaper) {
+  function finishStroke(clientPoints, clientX, clientY, toPaper) {
     const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
     if (!el || clientPoints.length < 2) return;
     const extracted = extractTextRangeFromHighlightStroke(el, clientPoints, HIGHLIGHT_W);
     if (!extracted?.quote) return;
-    if (toPaper) onFragmentToPaper?.(extracted.quote);
-    else onFragmentReplace?.(extracted.quote);
+    const opts = { clientX, clientY };
+    if (toPaper) onFragmentToPaper?.(extracted.quote, opts);
+    else onFragmentReplace?.(extracted.quote, opts);
   }
 
   function onPointerDown(e) {
@@ -70,7 +72,10 @@ export default function FragmentHighlightLayer({
         if (i === 0) return 0;
         return acc + Math.hypot(p.x - arr[i - 1].x, p.y - arr[i - 1].y);
       }, 0);
-      if (len >= MIN_STROKE_PX) finishStroke(g.points, ev.shiftKey);
+      if (len >= MIN_STROKE_PX) {
+        const toPaper = ev.shiftKey || isPaperDestination?.(ev.clientX, ev.clientY);
+        finishStroke(g.points, ev.clientX, ev.clientY, toPaper);
+      }
     }
 
     window.addEventListener("pointermove", onMove);

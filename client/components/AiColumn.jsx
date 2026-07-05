@@ -42,6 +42,7 @@ export default function AiColumn({
   onSpaceTransferStart,
   onFragmentReplace,
   onFragmentToPaper,
+  isPaperDestination,
   viewportRef,
 }) {
   return (
@@ -85,6 +86,7 @@ export default function AiColumn({
             onSpaceTransferStart={onSpaceTransferStart}
             onFragmentReplace={onFragmentReplace}
             onFragmentToPaper={onFragmentToPaper}
+            isPaperDestination={isPaperDestination}
             viewportRef={viewportRef}
           />
           <div className="ai-strand-setting">
