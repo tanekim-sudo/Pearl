@@ -5872,7 +5872,6 @@ export default function App() {
           onShareJourney={() => shareJourneyLink(selItem.id)}
           aiDragIds={[selItem.id]}
           sketchBundle={selectionSketchBundle}
-          interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -5883,7 +5882,6 @@ export default function App() {
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
           sketchBundle={selectionSketchBundle}
-          interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -5894,7 +5892,6 @@ export default function App() {
           bbox={selectionScreenBox}
           aiDragIds={selection}
           sketchBundle={selectionSketchBundle}
-          interpretLabel="→ interpret"
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -6395,7 +6392,6 @@ function SelectionCaptureChip({
   onShareJourney,
   aiDragIds,
   sketchBundle,
-  interpretLabel = "→ AI",
   onTransferDragStart,
   onTransferDragEnd,
 }) {
@@ -6420,9 +6416,8 @@ function SelectionCaptureChip({
             onTransferDragStart?.();
           }}
           onDragEnd={() => onTransferDragEnd?.()}
-          title={sketchBundle ? "Interpret" : "AI"}
         >
-          {interpretLabel}
+          → AI
         </button>
       )}
       {onSaveDocument && (
