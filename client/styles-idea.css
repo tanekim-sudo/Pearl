@@ -346,15 +346,17 @@ html[data-theme="chalk"] .canvas-column {
 
 .paper-record-dot-btn .paper-record-dot {
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
-  transition: background 0.12s, transform 0.08s;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
 }
 
 .paper-record-dot-btn:hover .paper-record-dot {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.48);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
 .paper-record-dot-btn.recording .paper-record-dot {
@@ -677,6 +679,7 @@ html[data-theme="chalk"] .ai-column {
 
 .ai-spacetime.ai-void-only {
   padding: 0;
+  position: relative;
 }
 
 .ai-nodes-section {
@@ -780,13 +783,166 @@ body.ai-node-dragging * {
 }
 
 .ai-zoom-hint {
+  display: none;
+}
+
+/* ── Strand count (bottom-right only control) ── */
+.ai-strand-setting {
   position: absolute;
-  bottom: 8px;
+  bottom: 10px;
   right: 10px;
-  font-size: 10px;
-  color: rgba(160, 170, 200, 0.45);
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.ai-strand-setting-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(8, 10, 18, 0.72);
+  border: 1px solid rgba(140, 170, 255, 0.18);
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
+.ai-strand-setting-icon {
+  font-size: 11px;
+  color: rgba(180, 200, 255, 0.65);
+  line-height: 1;
+}
+
+.ai-strand-setting-slider {
+  width: 72px;
+  height: 3px;
+  accent-color: rgba(140, 190, 255, 0.85);
+  cursor: pointer;
+}
+
+.ai-strand-setting-value {
+  min-width: 12px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(200, 215, 255, 0.8);
+  text-align: center;
+}
+
+/* ── Drag-out strand gesture ── */
+body.ai-strand-dragging,
+body.ai-strand-dragging * {
+  user-select: none !important;
+  cursor: crosshair !important;
+}
+
+.ai-strand-drag-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15;
   pointer-events: none;
-  z-index: 3;
+  overflow: visible;
+}
+
+.ai-strand-drag-origin {
+  fill: rgba(180, 210, 255, 0.9);
+  filter: drop-shadow(0 0 6px rgba(140, 190, 255, 0.8));
+}
+
+.ai-strand-drag-strand {
+  opacity: 0;
+  animation: ai-strand-unfurl 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--strand-i, 0) * 55ms);
+}
+
+.ai-strand-drag-path {
+  fill: none;
+  stroke: rgba(180, 210, 255, 0.55);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: ai-strand-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--strand-i, 0) * 55ms + 40ms);
+}
+
+.ai-strand-drag-tip {
+  fill: rgba(200, 220, 255, 0.35);
+  stroke: rgba(180, 210, 255, 0.7);
+  stroke-width: 1.5;
+  transition: r 0.12s ease, fill 0.12s ease;
+}
+
+.ai-strand-drag-label {
+  fill: rgba(230, 238, 255, 0.92);
+  font-size: 11px;
+  font-family: var(--font-ui, system-ui, sans-serif);
+  text-anchor: middle;
+  pointer-events: none;
+  opacity: 0;
+  animation: ai-strand-label-in 0.28s ease forwards;
+  animation-delay: calc(var(--strand-i, 0) * 55ms + 180ms);
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-path {
+  stroke: rgba(255, 220, 140, 0.95);
+  stroke-width: 2.8;
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-tip {
+  fill: rgba(255, 220, 140, 0.55);
+  stroke: rgba(255, 210, 100, 0.95);
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-label {
+  fill: rgba(255, 235, 180, 1);
+}
+
+.ai-strand-drag-kind-move .ai-strand-drag-path {
+  stroke: rgba(80, 220, 255, 0.6);
+}
+
+.ai-strand-drag-kind-expand .ai-strand-drag-path {
+  stroke: rgba(255, 210, 100, 0.55);
+}
+
+.ai-strand-drag-kind-interpret .ai-strand-drag-path {
+  stroke: rgba(200, 180, 255, 0.65);
+}
+
+@keyframes ai-strand-unfurl {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ai-strand-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ai-strand-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-constellation-mode .ai-node {
+  cursor: crosshair;
+}
+
+.ai-constellation-mode .ai-node:active {
+  cursor: crosshair;
 }
 
 .ai-node-lines {
@@ -872,6 +1028,174 @@ body.ai-node-dragging * {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   white-space: nowrap;
+}
+
+/* Bottom-right strand count (only AI-side chrome control) */
+.ai-strand-setting {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.ai-strand-setting-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(8, 10, 18, 0.72);
+  border: 1px solid rgba(140, 160, 220, 0.22);
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
+.ai-strand-setting-icon {
+  font-size: 11px;
+  color: rgba(180, 200, 255, 0.55);
+  line-height: 1;
+}
+
+.ai-strand-setting-slider {
+  width: 72px;
+  height: 4px;
+  accent-color: rgba(140, 190, 255, 0.85);
+  cursor: pointer;
+}
+
+.ai-strand-setting-value {
+  min-width: 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(200, 210, 240, 0.75);
+}
+
+/* Drag-out strand fan overlay */
+.ai-strand-drag-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.ai-strand-drag-origin {
+  fill: rgba(255, 220, 140, 0.9);
+  filter: drop-shadow(0 0 8px rgba(255, 200, 100, 0.6));
+  animation: ai-strand-origin-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ai-strand-origin-pulse {
+  0%, 100% { r: 6; opacity: 0.85; }
+  50% { r: 8; opacity: 1; }
+}
+
+.ai-strand-drag-strand {
+  opacity: 0;
+  animation: ai-strand-fan-in 0.22s ease-out forwards;
+  animation-delay: calc(var(--strand-i, 0) * 0.04s);
+}
+
+@keyframes ai-strand-fan-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: var(--strand-origin-x, 50%) var(--strand-origin-y, 50%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ai-strand-drag-path {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke: rgba(180, 210, 255, 0.55);
+  transition: stroke 0.12s ease, stroke-width 0.12s ease;
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-path {
+  stroke-width: 3.5;
+  stroke: rgba(255, 230, 160, 0.95);
+}
+
+.ai-strand-drag-kind-expand .ai-strand-drag-path {
+  stroke: rgba(255, 210, 100, 0.65);
+}
+
+.ai-strand-drag-kind-expand.hovered .ai-strand-drag-path {
+  stroke: rgba(255, 220, 120, 1);
+}
+
+.ai-strand-drag-kind-interpret .ai-strand-drag-path {
+  stroke: rgba(200, 180, 255, 0.65);
+}
+
+.ai-strand-drag-kind-interpret.hovered .ai-strand-drag-path {
+  stroke: rgba(220, 200, 255, 1);
+}
+
+.ai-strand-drag-kind-move .ai-strand-drag-path {
+  stroke: rgba(100, 230, 255, 0.65);
+}
+
+.ai-strand-drag-kind-move.hovered .ai-strand-drag-path {
+  stroke: rgba(120, 240, 255, 1);
+}
+
+.ai-strand-drag-tip {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: rgba(255, 220, 140, 0.7);
+  stroke-width: 1.5;
+  transition: r 0.1s ease, fill 0.1s ease;
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-tip {
+  fill: rgba(255, 240, 200, 1);
+  stroke: rgba(255, 230, 160, 1);
+}
+
+.ai-strand-drag-label {
+  fill: rgba(220, 230, 255, 0.85);
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  pointer-events: none;
+  opacity: 0;
+  animation: ai-strand-label-in 0.18s ease-out forwards;
+  animation-delay: calc(0.08s + var(--strand-i, 0) * 0.04s);
+}
+
+@keyframes ai-strand-label-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-strand-drag-strand.hovered .ai-strand-drag-label {
+  fill: rgba(255, 245, 220, 1);
+  font-weight: 600;
+}
+
+body.ai-strand-dragging {
+  cursor: crosshair;
+}
+
+body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode {
+  cursor: crosshair;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node {
+  cursor: grab;
+}
+
+.ai-node-viewport.ai-constellation-mode.ai-strand-dragging .ai-node,
+body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
+  cursor: crosshair;
 }
 
 .ai-node-line {

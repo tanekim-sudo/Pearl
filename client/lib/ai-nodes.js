@@ -219,6 +219,76 @@ export function truncateLabel(text, max = 22) {
   return clean.slice(0, max - 1) + "…";
 }
 
+/** Evenly fan strand angles around a base direction (radians). */
+export function fanStrandAngles(count, baseAngle = 0, spread = Math.PI * 0.82) {
+  if (count <= 0) return [];
+  if (count === 1) return [baseAngle];
+  const start = baseAngle - spread / 2;
+  return Array.from({ length: count }, (_, i) => start + (spread * i) / (count - 1));
+}
+
+/** Pick the strand index whose angle is closest to pointerAngle. */
+export function pickStrandIndex(pointerAngle, angles) {
+  if (!angles?.length) return -1;
+  let best = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < angles.length; i++) {
+    let diff = Math.abs(pointerAngle - angles[i]);
+    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * Build ordered operation choices for strand drag-out on a node.
+ * @returns {{ id: string, label: string, kind: string, op?: object }[]}
+ */
+export function collectStrandChoices(
+  node,
+  { expansionPrimitives = [], topFunctions = [], moves = [], maxChoices = 8 } = {}
+) {
+  if (!node) return [];
+  const choices = [];
+  const seen = new Set();
+  const push = (choice) => {
+    if (choices.length >= maxChoices || seen.has(choice.id)) return;
+    seen.add(choice.id);
+    choices.push(choice);
+  };
+
+  if (node.nodeKind === "session") {
+    push({ id: "interpret", label: "interpret", kind: "interpret" });
+  }
+
+  const canExpand =
+    node.sourceIds?.length ||
+    node.nodeKind === "source" ||
+    node.nodeKind === "expanded" ||
+    node.nodeKind === "move";
+
+  if (canExpand) {
+    for (const op of expansionPrimitives) {
+      push({ id: op.id, label: op.name, kind: "expand", op });
+    }
+  }
+
+  for (const op of topFunctions) {
+    push({ id: op.id, label: op.name, kind: "function", op });
+  }
+
+  for (const op of moves) {
+    push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+  }
+
+  push({ id: "explore", label: "explore", kind: "explore" });
+
+  return choices.slice(0, maxChoices);
+}
+
 /** Apply layout after adding nodes: fan siblings + resolve overlaps. */
 export function layoutAfterAppend(nodes, newNodes) {
   let updated = [...nodes, ...newNodes];

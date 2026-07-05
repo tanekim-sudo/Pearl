@@ -2,19 +2,27 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   collectAiEdges,
   edgeGeometry,
+  fanStrandAngles,
+  pickStrandIndex,
   truncateLabel,
 } from "../lib/ai-nodes.js";
 import {
   AI_DOT_ONLY_THRESHOLD,
+  AI_STRAND_DRAG_MAX_SCALE,
   CONSTELLATION_ZOOM_THRESHOLD,
   screenToWorld,
   viewportCenterWorld,
+  worldToScreen,
 } from "../lib/ai-space.js";
 import { attachCanvasWheel } from "../lib/canvas-navigation.js";
 import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
 
 const AI_OUTPUT_MIME = "application/lens-ai-output";
 const NODE_DRAG_THRESHOLD = 8;
+const STRAND_DRAG_THRESHOLD = 4;
+const STRAND_MIN_LENGTH = 52;
+const STRAND_MAX_LENGTH = 148;
+const STRAND_TIP_HIT = 36;
 
 const STAR_COUNT = 120;
 
@@ -46,6 +54,9 @@ export default function AiNodeCanvas({
   onExploreNode,
   onReturnToConstellation,
   focusedNodeId,
+  strandCount = 4,
+  getStrandChoices,
+  onStrandSelect,
   onCanvasDrop,
   onCanvasDragOver,
   onCanvasDragLeave,
@@ -69,6 +80,9 @@ export default function AiNodeCanvas({
   const [lasso, setLasso] = useState(null);
   const [strandTip, setStrandTip] = useState(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
+  const [strandDrag, setStrandDrag] = useState(null);
+  const strandDragRef = useRef(null);
+  strandDragRef.current = strandDrag;
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -205,7 +219,158 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleLassoEnd);
   }
 
+  function startStrandDrag(e, node) {
+    if (e.button !== 0) return;
+    if (tool === "highlight") {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect?.(node.id, { replace: true });
+      return;
+    }
+    if (spaceHeld && tool === "select" && selectedIds.length) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSpaceTransferStart?.(e);
+      return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const pool = getStrandChoices?.(node) || [];
+    const count = Math.max(1, Math.min(strandCount, pool.length || strandCount));
+    const choices = pool.slice(0, count);
+    if (!choices.length) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const nodeScreen = worldToScreen(cameraRef.current, node.x, node.y);
+    const originX = nodeScreen.x;
+    const originY = nodeScreen.y;
+
+    const dragState = {
+      nodeId: node.id,
+      originX,
+      originY,
+      rectLeft: rect.left,
+      rectTop: rect.top,
+      choices,
+      length: 0,
+      baseAngle: 0,
+      hoverIdx: -1,
+      active: false,
+      startedAt: performance.now(),
+    };
+    strandDragRef.current = dragState;
+    setStrandDrag({ ...dragState });
+    document.body.classList.add("ai-strand-dragging");
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+
+    function updateFromPointer(clientX, clientY) {
+      const state = strandDragRef.current;
+      if (!state) return;
+      const px = clientX - state.rectLeft;
+      const py = clientY - state.rectTop;
+      const dx = px - state.originX;
+      const dy = py - state.originY;
+      const dist = Math.hypot(dx, dy);
+      if (!state.active && dist <= STRAND_DRAG_THRESHOLD) return;
+
+      const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
+      const baseAngle = Math.atan2(dy, dx);
+      const angles = fanStrandAngles(state.choices.length, baseAngle);
+      const pointerAngle = baseAngle;
+      const hoverIdx = pickStrandIndex(pointerAngle, angles);
+
+      const next = {
+        ...state,
+        active: true,
+        length,
+        baseAngle,
+        angles,
+        hoverIdx,
+        pointerX: clientX,
+        pointerY: clientY,
+      };
+      strandDragRef.current = next;
+      setStrandDrag(next);
+    }
+
+    function finishStrandDrag(ev) {
+      const state = strandDragRef.current;
+      strandDragRef.current = null;
+      setStrandDrag(null);
+      document.body.classList.remove("ai-strand-dragging");
+
+      try {
+        e.currentTarget.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
+      window.removeEventListener("pointermove", handleStrandMove);
+      window.removeEventListener("pointerup", handleStrandEnd);
+      window.removeEventListener("pointercancel", handleStrandEnd);
+
+      if (!state?.active) return;
+
+      const rectNow = viewportRef.current?.getBoundingClientRect();
+      if (!rectNow) return;
+
+      let pickIdx = state.hoverIdx;
+      if (pickIdx < 0 && state.angles?.length) {
+        pickIdx = pickStrandIndex(state.baseAngle, state.angles);
+      }
+
+      if (state.angles?.length) {
+        let bestIdx = -1;
+        let bestD = STRAND_TIP_HIT;
+        const px = ev.clientX - rectNow.left;
+        const py = ev.clientY - rectNow.top;
+        for (let i = 0; i < state.angles.length; i++) {
+          const tipX = state.originX + Math.cos(state.angles[i]) * state.length;
+          const tipY = state.originY + Math.sin(state.angles[i]) * state.length;
+          const d = Math.hypot(px - tipX, py - tipY);
+          if (d < bestD) {
+            bestD = d;
+            bestIdx = i;
+          }
+        }
+        if (bestIdx >= 0) pickIdx = bestIdx;
+      }
+
+      const choice = state.choices[pickIdx];
+      if (choice) {
+        onStrandSelect?.(state.nodeId, choice);
+      }
+    }
+
+    function handleStrandMove(ev) {
+      updateFromPointer(ev.clientX, ev.clientY);
+    }
+
+    function handleStrandEnd(ev) {
+      finishStrandDrag(ev);
+    }
+
+    window.addEventListener("pointermove", handleStrandMove);
+    window.addEventListener("pointerup", handleStrandEnd);
+    window.addEventListener("pointercancel", handleStrandEnd);
+  }
+
   function startNodeDrag(e, node) {
+    const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
+    if (constellationMode && tool !== "highlight") {
+      startStrandDrag(e, node);
+      return;
+    }
+
     if (e.button !== 0) return;
     if (tool === "highlight") {
       e.preventDefault();
@@ -257,7 +422,10 @@ export default function AiNodeCanvas({
       if (!dragging) {
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) {
-          onExploreNode?.(node.id);
+          onSelect?.(node.id, { replace: true });
+          if (cameraRef.current.scale > AI_STRAND_DRAG_MAX_SCALE) {
+            onExploreNode?.(node.id);
+          }
         }
       }
       dragRef.current = null;
@@ -548,6 +716,12 @@ export default function AiNodeCanvas({
               }}
               title={constellationMode ? undefined : node.preview || node.expandedText || node.label}
               onPointerDown={(e) => startNodeDrag(e, node)}
+              onDoubleClick={(e) => {
+                if (constellationMode) {
+                  e.stopPropagation();
+                  onExploreNode?.(node.id);
+                }
+              }}
             >
               <span className="ai-node-cell" aria-hidden="true">
                 <span className="ai-node-cell-glow" />
@@ -609,6 +783,53 @@ export default function AiNodeCanvas({
         </div>
       )}
 
+      {strandDrag?.active && (
+        <svg className="ai-strand-drag-layer" aria-hidden="true">
+          <defs>
+            <filter id="ai-drag-strand-glow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <circle
+            className="ai-strand-drag-origin"
+            cx={strandDrag.originX}
+            cy={strandDrag.originY}
+            r={6}
+          />
+          {strandDrag.choices.map((choice, i) => {
+            const angle = strandDrag.angles?.[i] ?? 0;
+            const len = strandDrag.length;
+            const x2 = strandDrag.originX + Math.cos(angle) * len;
+            const y2 = strandDrag.originY + Math.sin(angle) * len;
+            const midX = strandDrag.originX + Math.cos(angle) * len * 0.55 + Math.sin(angle) * 8;
+            const midY = strandDrag.originY + Math.sin(angle) * len * 0.55 - Math.cos(angle) * 8;
+            const pathD = `M ${strandDrag.originX} ${strandDrag.originY} Q ${midX} ${midY} ${x2} ${y2}`;
+            const hovered = strandDrag.hoverIdx === i;
+            return (
+              <g
+                key={choice.id}
+                className={
+                  "ai-strand-drag-strand" +
+                  (hovered ? " hovered" : "") +
+                  ` ai-strand-drag-kind-${choice.kind}`
+                }
+                style={{ "--strand-i": i }}
+              >
+                <path d={pathD} className="ai-strand-drag-path" filter="url(#ai-drag-strand-glow)" />
+                <circle cx={x2} cy={y2} r={hovered ? 10 : 7} className="ai-strand-drag-tip" />
+                <text x={x2} y={y2 - 14} className="ai-strand-drag-label">
+                  {truncateLabel(choice.label, 14)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
+
       {explorationMode && focusDetail && (
         <div
           className="ai-explore-overlay"
@@ -623,9 +844,6 @@ export default function AiNodeCanvas({
         </div>
       )}
 
-      <div className="ai-zoom-hint" aria-hidden="true">
-        {Math.round(camera.scale * 100)}%
-      </div>
     </div>
   );
 }

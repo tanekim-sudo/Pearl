@@ -11,6 +11,9 @@ import {
   edgeLabelForEdge,
   childNodePosition,
   layoutAfterAppend,
+  fanStrandAngles,
+  pickStrandIndex,
+  collectStrandChoices,
 } from "./ai-nodes.js";
 
 describe("ai-nodes layout", () => {
@@ -93,5 +96,29 @@ describe("ai-nodes layout", () => {
     const kids = out.filter((n) => n.parentId === "p");
     const d = Math.hypot(kids[0].x - kids[1].x, kids[0].y - kids[1].y);
     assert.ok(d > 80);
+  });
+
+  it("fanStrandAngles spreads strands evenly", () => {
+    const angles = fanStrandAngles(4, 0, Math.PI / 2);
+    assert.equal(angles.length, 4);
+    assert.ok(angles[0] < angles[3]);
+  });
+
+  it("pickStrandIndex finds nearest angle", () => {
+    const angles = fanStrandAngles(3, Math.PI / 2);
+    const idx = pickStrandIndex(Math.PI / 2, angles);
+    assert.equal(idx, 1);
+  });
+
+  it("collectStrandChoices includes expand ops and explore", () => {
+    const node = { id: "s", nodeKind: "source", sourceIds: ["a"] };
+    const choices = collectStrandChoices(node, {
+      expansionPrimitives: [{ id: "op-expand", name: "expand" }],
+      topFunctions: [{ id: "f1", name: "summarize" }],
+      moves: [{ id: "m1", name: "reframe" }],
+    });
+    assert.ok(choices.some((c) => c.kind === "expand"));
+    assert.ok(choices.some((c) => c.kind === "explore"));
+    assert.ok(choices.some((c) => c.label === "reframe"));
   });
 });

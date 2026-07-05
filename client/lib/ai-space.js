@@ -26,6 +26,8 @@ export function viewportCenterWorld(camera, vpWidth, vpHeight) {
 export const DEFAULT_CONSTELLATION_SCALE = 0.25;
 export const EXPLORE_ZOOM_SCALE = 1.2;
 export const CONSTELLATION_ZOOM_THRESHOLD = 0.8;
+/** Drag-out strand gestures only when zoomed out (brain-cell / constellation view). */
+export const AI_STRAND_DRAG_MAX_SCALE = CONSTELLATION_ZOOM_THRESHOLD;
 /** Below this scale, nodes render as dots/planets with no label text. */
 export const AI_DOT_ONLY_THRESHOLD = 0.6;
 

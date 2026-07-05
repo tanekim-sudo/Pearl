@@ -56,6 +56,7 @@ import {
   nodePositionAt,
   truncateLabel,
   layoutAfterAppend,
+  collectStrandChoices,
 } from "./lib/ai-nodes.js";
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
@@ -140,6 +141,7 @@ const STRUCT_MIME = "application/lens-structure";
 const SEL_MIME = "application/lens-selection";
 const LENS_MIME = "application/lens-lens";
 const LENSES_KEY = "lens.lenses.v1";
+const AI_STRAND_COUNT_KEY = "lens.ai.strandCount";
 const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
@@ -1922,6 +1924,14 @@ export default function App() {
     centerAiCamera(400, 300, DEFAULT_CONSTELLATION_SCALE)
   );
   const [aiFocusedNodeId, setAiFocusedNodeId] = useState(null);
+  const [aiStrandCount, setAiStrandCount] = useState(() => {
+    try {
+      const v = parseInt(localStorage.getItem(AI_STRAND_COUNT_KEY), 10);
+      return Number.isFinite(v) && v >= 1 && v <= 8 ? v : 4;
+    } catch {
+      return 4;
+    }
+  });
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
@@ -4027,6 +4037,75 @@ export default function App() {
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
   const activeLens = lenses.find((l) => l.id === activeLensId) || null;
+
+  function resolveNodeSourceIds(node) {
+    if (node.sourceIds?.length) return { ids: node.sourceIds, sourceNode: node };
+    const linkId = node.sourceNodeIds?.[0] || node.parentId;
+    const linked = linkId ? aiNodesRef.current.find((n) => n.id === linkId) : null;
+    if (linked?.sourceIds?.length) return { ids: linked.sourceIds, sourceNode: linked };
+    return { ids: null, sourceNode: node };
+  }
+
+  function handleAiStrandCountChange(n) {
+    const v = Math.max(1, Math.min(8, n));
+    setAiStrandCount(v);
+    try {
+      localStorage.setItem(AI_STRAND_COUNT_KEY, String(v));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function getStrandChoicesForNode(node) {
+    const lensMoves = activeLens?.moveIds?.length
+      ? moves.filter((m) => activeLens.moveIds.includes(m.id))
+      : moves;
+    return collectStrandChoices(node, {
+      expansionPrimitives: primitives.filter(isExpansionOperator),
+      topFunctions,
+      moves: lensMoves.length ? lensMoves : moves,
+      maxChoices: 8,
+    });
+  }
+
+  function handleStrandSelect(nodeId, choice) {
+    const node = aiNodesRef.current.find((n) => n.id === nodeId);
+    if (!node || !choice) return;
+
+    handleAiNodeSelect(nodeId, { replace: true });
+
+    if (choice.kind === "explore") {
+      exploreAiNode(nodeId);
+      return;
+    }
+
+    if (choice.kind === "interpret") {
+      if (aiPanel?.sketchBundle) {
+        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
+      } else {
+        exploreAiNode(nodeId);
+      }
+      return;
+    }
+
+    if (choice.op) {
+      const { ids, sourceNode } = resolveNodeSourceIds(node);
+      if (choice.kind === "move") {
+        createMoveNode(choice.op, null, sourceNode || node);
+        return;
+      }
+      if (ids?.length) {
+        expandInAi(ids, {
+          op: choice.op,
+          opLabel: choice.op.name,
+          sourceNode: sourceNode || node,
+        });
+        return;
+      }
+    }
+
+    exploreAiNode(nodeId);
+  }
 
   // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
   function saveLens(draft) {
@@ -6569,6 +6648,10 @@ export default function App() {
           onExploreNode={exploreAiNode}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
+          strandCount={aiStrandCount}
+          onStrandCountChange={handleAiStrandCountChange}
+          getStrandChoices={getStrandChoicesForNode}
+          onStrandSelect={handleStrandSelect}
           onExpandNode={(nodeId) => exploreAiNode(nodeId)}
           panel={aiPanel}
           dropOver={aiDropOver}
