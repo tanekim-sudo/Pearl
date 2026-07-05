@@ -905,6 +905,8 @@ function normalizeItem(it) {
   if (it.type === "link") {
     return { id: it.id, type: "link", fromId: it.fromId, toId: it.toId, fromDir: it.fromDir || null };
   }
+  // Ephemeral highlight scribbles should never persist — drop orphans from saved boards.
+  if (it.type === "stroke" && it.highlight) return null;
   const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, side: "paper", ...it };
   if (!base.bornAt) base.bornAt = Date.now();
   if (base.type === "text") base.w = clampTextWidth(base.w || 360);
@@ -917,7 +919,7 @@ function normalizeItem(it) {
   }
   if (base.type === "table" && !base.rows) base.rows = defaultBlockMeta("table").rows;
   if (base.type === "voice" && !base.waveform) base.waveform = defaultBlockMeta("voice").waveform;
-  if (base.type === "stroke" && base.marker && !base.highlight && !base.color) base.color = PAPER_INK;
+  if (base.type === "stroke" && !base.highlight) base.color = PAPER_INK;
   return clampItemToPaper(base, itemWorldBBox);
 }
 
@@ -1118,7 +1120,9 @@ function itemStyle(it) {
     top: it.y,
   };
   if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math" || it.type === "table" || it.type === "diagram" || it.type === "voice" || it.type === "video") {
-    style.width = blockWidth(it) || it.w;
+    const w = blockWidth(it) || it.w;
+    style.width = w;
+    if (it.type === "text") style.maxWidth = maxTextWidth();
   }
   const rot = it.rotation || 0;
   const sc = it.scale ?? 1;
@@ -1784,7 +1788,7 @@ function distToSeg(px, py, ax, ay, bx, by) {
 export default function App() {
   const [items, setItems] = useState(() => {
     const saved = load(ITEMS_KEY, null);
-    if (Array.isArray(saved) && saved.length) return saved.map(normalizeItem);
+    if (Array.isArray(saved) && saved.length) return saved.map(normalizeItem).filter(Boolean);
     const fromArtifact = migrateFromArtifact();
     if (fromArtifact.length) return fromArtifact;
     return migrateOldSeeds().map(normalizeItem);
@@ -2359,7 +2363,12 @@ export default function App() {
         setDraft({ points: g.points.slice(), marker: g.marker, highlight: g.highlight, loop });
       } else if (g.mode === "erase") {
         const hit = itemAtPoint(cx, cy);
-        if (hit) setItems((arr) => arr.filter((it) => it.id !== hit.id));
+        if (hit && !g.deletedIds?.has(hit.id)) {
+          if (!g.deletedIds) g.deletedIds = new Set();
+          g.deletedIds.add(hit.id);
+          setItems((arr) => arr.filter((it) => !g.deletedIds.has(it.id)));
+          setSelection((sel) => sel.filter((id) => !g.deletedIds.has(id)));
+        }
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
@@ -2459,19 +2468,7 @@ export default function App() {
             const pts = g.points.slice();
             const hlW = highlightWorldWidth(camRef.current.scale);
             if (isClosedHighlightLoop(pts, camRef.current.scale)) {
-              const strokeItem = finishRecordedStroke(g, pts, {
-                color: HIGHLIGHT_INK,
-                width: hlW,
-                marker: true,
-                highlight: true,
-                loop: true,
-              });
-              const strokeId = strokeItem.id;
-              setItems((arr) => [...arr, strokeItem]);
-              const inside = itemsInsideHighlightLoop(
-                pts,
-                itemsRef.current.filter((it) => it.id !== strokeId)
-              );
+              const inside = itemsInsideHighlightLoop(pts, itemsRef.current);
               if (inside.length) {
                 setSelection(inside);
                 showToastRef.current(`selected ${inside.length} item${inside.length > 1 ? "s" : ""}`);
@@ -2483,32 +2480,17 @@ export default function App() {
                 });
               } else {
                 showToastRef.current("nothing inside the circle");
-                setItems((arr) => arr.filter((it) => it.id !== strokeId));
               }
             } else {
-              const strokeItem = finishRecordedStroke(g, pts, {
-                color: HIGHLIGHT_INK,
-                width: hlW,
-                marker: true,
-                highlight: true,
-              });
-              const strokeId = strokeItem.id;
-              setItems((arr) => [...arr, strokeItem]);
-              requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                  const extracted = extractTextFromHighlightStroke(
-                    pts,
-                    hlW,
-                    itemsRef.current.filter((it) => it.id !== strokeId),
-                    worldToClient
-                  );
-                  if (extracted) {
-                    setSelection([extracted.itemId]);
-                  } else {
-                    setItems((arr) => arr.filter((it) => it.id !== strokeId));
-                  }
-                });
-              });
+              const extracted = extractTextFromHighlightStroke(
+                pts,
+                hlW,
+                itemsRef.current,
+                worldToClient
+              );
+              if (extracted) {
+                setSelection([extracted.itemId]);
+              }
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -2578,19 +2560,18 @@ export default function App() {
     };
   }, []);
 
-  // wheel: two-finger scroll pans; pinch (ctrl/meta+wheel) zooms toward cursor
+  // wheel: two-finger scroll zooms; shift+scroll pans; pinch (ctrl/meta+wheel) also zooms
   useEffect(() => {
     const el = inputLayerRef.current;
     if (!el) return;
     function onWheel(e) {
       e.preventDefault();
-      const pinchZoom = e.ctrlKey || e.metaKey;
-      if (pinchZoom) {
-        const factor = Math.exp(-e.deltaY * 0.0016);
-        const local = vpLocal(e.clientX, e.clientY);
-        setCamera((c) => zoomAtPoint(c, local.x, local.y, factor));
-      } else {
+      const local = vpLocal(e.clientX, e.clientY);
+      if (e.shiftKey) {
         setCamera((c) => ({ ...c, x: c.x - e.deltaX, y: c.y - e.deltaY }));
+      } else {
+        const factor = Math.exp(-e.deltaY * 0.0016);
+        setCamera((c) => zoomAtPoint(c, local.x, local.y, factor));
       }
     }
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -4595,9 +4576,13 @@ export default function App() {
 
     if (t === "eraser") {
       pushHistory();
-      gesture.current = { mode: "erase" };
+      gesture.current = { mode: "erase", deletedIds: new Set() };
       const hit = itemAtPoint(cx, cy);
-      if (hit) setItems((arr) => arr.filter((it) => it.id !== hit.id));
+      if (hit) {
+        gesture.current.deletedIds.add(hit.id);
+        setItems((arr) => arr.filter((it) => it.id !== hit.id));
+        setSelection((sel) => sel.filter((id) => id !== hit.id));
+      }
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       return;
     }
@@ -4699,31 +4684,13 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click blank canvas: create text, or alt+double-click to fit page
+  // double-click blank paper: reset zoom to fit page
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
     if (hit) return;
-    if (e.shiftKey) {
-      const r = vpRect();
-      setCamera(fitPaperInView(r.width, r.height));
-      return;
-    }
-    if (editingRef.current) finishEditing();
-    const w = clientToWorld(e.clientX, e.clientY);
-    const textW = clampTextWidth(320);
-    const pos = spawnPositionForBox(w.x, w.y, textW, 40);
-    const id = uid();
-    pushHistory();
-    setItems((arr) => [
-      ...arr,
-      tagRecordingItem(
-        normalizeItem({ id, type: "text", x: pos.x, y: pos.y, text: "", w: textW, pageId: activePageId })
-      ),
-    ]);
-    setSelection([id]);
-    editClickRef.current = { cx: e.clientX, cy: e.clientY };
-    setEditing(id);
+    const r = vpRect();
+    setCamera(fitPaperInView(r.width, r.height));
   }
 
   function onViewportDoubleClick(e) {
@@ -5619,7 +5586,7 @@ export default function App() {
                     fill="none"
                     stroke={it.highlight ? HIGHLIGHT_INK : it.color || PAPER_INK}
                     strokeWidth={it.highlight ? highlightWorldWidth(camera.scale) : it.width}
-                    strokeOpacity={it.highlight ? HIGHLIGHT_OPACITY : it.marker ? MARKER_OPACITY : 0.95}
+                    strokeOpacity={it.highlight ? HIGHLIGHT_OPACITY : it.marker ? MARKER_OPACITY : 1}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className={
@@ -5649,7 +5616,7 @@ export default function App() {
                         : PEN_W / 2
                     }
                     fill={draft.highlight ? HIGHLIGHT_INK : INK}
-                    fillOpacity={draft.highlight ? HIGHLIGHT_OPACITY : draft.marker ? 0.32 : 0.95}
+                    fillOpacity={draft.highlight ? HIGHLIGHT_OPACITY : draft.marker ? 0.32 : 1}
                   />
                 ) : (
                   <>
@@ -5662,7 +5629,7 @@ export default function App() {
                       }
                       points={draft.points.map((p) => `${p.x},${p.y}`).join(" ")}
                       fill={draft.loop ? "rgba(240, 240, 240, 0.05)" : "none"}
-                      stroke={draft.loop ? "var(--ink)" : draft.highlight ? HIGHLIGHT_INK : INK}
+                      stroke={draft.loop ? PAPER_INK : draft.highlight ? HIGHLIGHT_INK : INK}
                       strokeWidth={
                         draft.highlight
                           ? highlightWorldWidth(camera.scale)
@@ -5670,7 +5637,7 @@ export default function App() {
                           ? MARKER_W
                           : PEN_W
                       }
-                      strokeOpacity={draft.loop ? 0.4 : draft.highlight ? 0.72 : draft.marker ? 0.32 : 0.95}
+                      strokeOpacity={draft.loop ? 0.4 : draft.highlight ? 0.72 : draft.marker ? 0.32 : 1}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -5681,7 +5648,7 @@ export default function App() {
                         y1={draft.points[draft.points.length - 1].y}
                         x2={draft.points[0].x}
                         y2={draft.points[0].y}
-                        stroke="var(--ink)"
+                        stroke={PAPER_INK}
                         strokeWidth={1.5 / camera.scale}
                         strokeOpacity={0.35}
                         strokeDasharray={`${6 / camera.scale} ${4 / camera.scale}`}

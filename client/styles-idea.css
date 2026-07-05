@@ -1973,6 +1973,12 @@ body.ai-node-dragging * {
   color: var(--ink);
   font-family: var(--sans);
   overflow: hidden;
+  max-width: calc(768px - 48px);
+  word-break: break-word;
+}
+
+.canvas-column .ink-layer polyline:not(.hl-stroke) {
+  stroke: #000000;
 }
 
 /* Block item types */

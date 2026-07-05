@@ -59,20 +59,27 @@ export function bboxClampOffset(bb, margin = PAPER_MARGIN) {
 /** Move an item so its bbox stays within paper margins. */
 export function clampItemToPaper(item, getBBox, margin = PAPER_MARGIN) {
   if (!item) return item;
-  const bb = getBBox?.(item);
-  if (!bb) return item;
+  let next = item;
+  if (next.type === "text") {
+    const w = clampTextWidth(next.w, margin);
+    const x = Math.max(margin, Math.min(next.x ?? 0, PAPER_WIDTH - margin - w));
+    const y = Math.max(margin, next.y ?? 0);
+    next = { ...next, w, x, y };
+  }
+  const bb = getBBox?.(next);
+  if (!bb) return next;
   const { dx, dy } = bboxClampOffset(bb, margin);
-  if (!dx && !dy) return item;
-  if (item.type === "stroke" && item.points?.length) {
+  if (!dx && !dy) return next;
+  if (next.type === "stroke" && next.points?.length) {
     return {
-      ...item,
-      points: item.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
+      ...next,
+      points: next.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
     };
   }
-  if (item.x != null || item.y != null) {
-    return { ...item, x: (item.x || 0) + dx, y: (item.y || 0) + dy };
+  if (next.x != null || next.y != null) {
+    return { ...next, x: (next.x || 0) + dx, y: (next.y || 0) + dy };
   }
-  return item;
+  return next;
 }
 
 export function clampTextWidth(w, margin = PAPER_MARGIN) {

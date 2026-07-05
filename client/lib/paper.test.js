@@ -37,6 +37,14 @@ describe("paper bounds", () => {
     assert.ok(clamped.x >= PAPER_MARGIN);
   });
 
+  it("clamps text width and x so content stays on the page", () => {
+    const item = { type: "text", x: 700, y: 10, w: 900, text: "wide" };
+    const bb = (it) => ({ minx: it.x, miny: it.y, maxx: it.x + it.w, maxy: it.y + 40 });
+    const clamped = clampItemToPaper(item, bb);
+    assert.equal(clamped.w, maxTextWidth());
+    assert.ok(clamped.x + clamped.w <= PAPER_WIDTH - PAPER_MARGIN);
+  });
+
   it("fitPaperInView centers the sheet", () => {
     const cam = fitPaperInView(900, 1200);
     assert.ok(cam.scale > 0 && cam.scale <= 1);
