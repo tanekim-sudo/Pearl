@@ -718,7 +718,7 @@ html[data-theme="chalk"] .ai-column {
   border-radius: 12px;
   background: #050508;
   overflow: hidden;
-  cursor: default;
+  cursor: grab;
   touch-action: none;
 }
 
@@ -734,12 +734,13 @@ body.ai-node-dragging * {
     0 0 24px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-.ai-node-viewport.pan-ready {
-  cursor: grab;
+.ai-node-viewport.ai-panning,
+.ai-node-viewport.ai-panning:active {
+  cursor: grabbing;
 }
 
-.ai-node-viewport.pan-ready:active {
-  cursor: grabbing;
+.ai-node-viewport .ai-node {
+  cursor: pointer;
 }
 
 .ai-void-bg {

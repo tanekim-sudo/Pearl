@@ -5998,7 +5998,7 @@ export default function App() {
     spaceHeld && tool === "select" && (selection.length || selectedAiNodeIds.length)
       ? "cur-space-transfer"
       : panning
-      ? "cur-grab"
+      ? "cur-grabbing"
       : tool === "highlight"
       ? "cur-highlight"
       : tool === "pen" || tool === "marker"

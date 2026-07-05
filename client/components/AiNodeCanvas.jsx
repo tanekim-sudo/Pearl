@@ -277,12 +277,15 @@ export default function AiNodeCanvas({
 
   function handleViewportPointerDown(e) {
     if (e.target.closest?.(".ai-node")) return;
+    if (e.target.closest?.(".ai-explore-overlay")) return;
     const onVoid =
       e.target === e.currentTarget ||
       e.target.classList.contains("ai-void-bg") ||
       e.target.classList.contains("ai-starfield") ||
       e.target.classList.contains("ai-world-layer") ||
       e.target.classList.contains("ai-node-lines");
+
+    if (!onVoid) return;
 
     if (spaceHeld && tool === "select" && selectedIds.length) {
       onSpaceTransferStart?.(e);
@@ -294,23 +297,14 @@ export default function AiNodeCanvas({
       return;
     }
 
-    if (tool === "select" && e.button === 0 && onVoid) {
-      if (camera.scale > CONSTELLATION_ZOOM_THRESHOLD) {
-        onReturnToConstellation?.();
-        return;
-      }
+    if (e.button !== 0) return;
+
+    if (tool === "select" && e.shiftKey) {
       startLasso(e);
       return;
     }
 
-    if (tool === "highlight" && e.button === 0 && onVoid) {
-      startPan(e);
-      return;
-    }
-
-    if (e.button === 0 && onVoid && !selectedIds.length) {
-      startPan(e);
-    }
+    startPan(e);
   }
 
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
@@ -361,7 +355,7 @@ export default function AiNodeCanvas({
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
         (spaceHeld && tool === "select" && selectedIds.length ? " space-transfer-ready" : "") +
-        (spaceHeld ? " pan-ready" : "") +
+        (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : "") +
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
