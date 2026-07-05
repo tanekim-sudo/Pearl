@@ -5,11 +5,12 @@ import {
   truncateLabel,
 } from "../lib/ai-nodes.js";
 import {
+  AI_DOT_ONLY_THRESHOLD,
   CONSTELLATION_ZOOM_THRESHOLD,
   screenToWorld,
   viewportCenterWorld,
-  zoomAtPoint,
 } from "../lib/ai-space.js";
+import { attachCanvasWheel } from "../lib/canvas-navigation.js";
 import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
 
 const AI_OUTPUT_MIME = "application/lens-ai-output";
@@ -52,7 +53,8 @@ export default function AiNodeCanvas({
   spaceHeld,
   tool = "select",
   onSpaceTransferStart,
-  onFragmentTransfer,
+  onFragmentReplace,
+  onFragmentToPaper,
   viewportRef: externalViewportRef,
 }) {
   const localViewportRef = useRef(null);
@@ -60,6 +62,9 @@ export default function AiNodeCanvas({
   const dragRef = useRef(null);
   const panRef = useRef(null);
   const lassoRef = useRef(null);
+  const cameraRef = useRef(camera);
+  cameraRef.current = camera;
+  const [panning, setPanning] = useState(false);
   const [vpSize, setVpSize] = useState({ w: 320, h: 240 });
   const [lasso, setLasso] = useState(null);
 
@@ -87,42 +92,34 @@ export default function AiNodeCanvas({
     const el = viewportRef.current;
     if (!el) return;
 
-    function onWheel(e) {
-      e.preventDefault();
-      if (e.shiftKey) {
-        onCameraChange?.({
-          ...camera,
-          x: camera.x - e.deltaX,
-          y: camera.y - e.deltaY,
-        });
-        return;
+    return attachCanvasWheel(
+      el,
+      () => cameraRef.current,
+      (next) => onCameraChange?.(next),
+      (e) => {
+        const rect = el.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      },
+      (_prev, next) => {
+        if (
+          cameraRef.current.scale > CONSTELLATION_ZOOM_THRESHOLD &&
+          next.scale <= CONSTELLATION_ZOOM_THRESHOLD
+        ) {
+          onReturnToConstellation?.();
+        }
       }
-      const rect = el.getBoundingClientRect();
-      const localX = e.clientX - rect.left;
-      const localY = e.clientY - rect.top;
-      const factor = Math.exp(-e.deltaY * 0.0016);
-      const next = zoomAtPoint(camera, localX, localY, factor);
-      onCameraChange?.(next);
-      if (
-        camera.scale > CONSTELLATION_ZOOM_THRESHOLD &&
-        next.scale <= CONSTELLATION_ZOOM_THRESHOLD
-      ) {
-        onReturnToConstellation?.();
-      }
-    }
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [camera, onCameraChange, onReturnToConstellation, viewportRef]);
+    );
+  }, [onCameraChange, onReturnToConstellation, viewportRef]);
 
   function startPan(e) {
     if (e.button !== 0 && e.button !== 1) return;
     if (dragRef.current || lassoRef.current) return;
     e.preventDefault();
+    setPanning(true);
     panRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      cam: { ...camera },
+      cam: { ...cameraRef.current },
     };
 
     function handlePanMove(ev) {
@@ -138,6 +135,7 @@ export default function AiNodeCanvas({
 
     function handlePanEnd() {
       panRef.current = null;
+      setPanning(false);
       window.removeEventListener("pointermove", handlePanMove);
       window.removeEventListener("pointerup", handlePanEnd);
       window.removeEventListener("pointercancel", handlePanEnd);
@@ -327,10 +325,34 @@ export default function AiNodeCanvas({
   const starOffsetX = ((camera.x * 0.02) % 1) * 100;
   const starOffsetY = ((camera.y * 0.02) % 1) * 100;
   const explorationMode = camera.scale > CONSTELLATION_ZOOM_THRESHOLD;
+  const zoomTier =
+    camera.scale < AI_DOT_ONLY_THRESHOLD
+      ? "dot"
+      : camera.scale < CONSTELLATION_ZOOM_THRESHOLD
+        ? "short"
+        : "full";
   const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
   const focusDetail =
     focusedNode?.expandedText?.trim() ||
     (focusedNode?.preview?.trim() && focusedNode.nodeKind !== "expanded" ? focusedNode.preview : null);
+
+  function renderFocusText(text) {
+    const golden = focusedNode?.goldenFragment;
+    if (!golden || !text.includes("⟦") || !text.includes("⟧")) {
+      return text;
+    }
+    const parts = text.split(/(⟦[^⟧]+⟧)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("⟦") && part.endsWith("⟧")) {
+        return (
+          <mark key={i} className="ai-golden-fragment">
+            {part.slice(1, -1)}
+          </mark>
+        );
+      }
+      return part;
+    });
+  }
 
   return (
     <div
@@ -341,7 +363,8 @@ export default function AiNodeCanvas({
         (spaceHeld && tool === "select" && selectedIds.length ? " space-transfer-ready" : "") +
         (spaceHeld ? " pan-ready" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
-        (explorationMode ? " ai-exploration-mode" : "")
+        (explorationMode ? " ai-exploration-mode" : "") +
+        (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
       }
       onPointerDown={handleViewportPointerDown}
       onDragOver={(e) => {
@@ -492,7 +515,11 @@ export default function AiNodeCanvas({
               onPointerDown={(e) => startNodeDrag(e, node)}
             >
               <span className="ai-node-starburst" aria-hidden="true" />
-              <span className="ai-node-label">{truncateLabel(node.label, 12)}</span>
+              <span className="ai-node-label">
+                {zoomTier === "short"
+                  ? truncateLabel(node.label, 8)
+                  : truncateLabel(node.label, 18)}
+              </span>
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
               {tool === "highlight" &&
@@ -507,7 +534,8 @@ export default function AiNodeCanvas({
                     <FragmentHighlightLayer
                       active
                       text={node.expandedText}
-                      onFragment={onFragmentTransfer}
+                      onFragmentReplace={onFragmentReplace}
+                      onFragmentToPaper={onFragmentToPaper}
                       className="ai-node-fragment-highlight"
                     />
                   </div>
@@ -540,7 +568,7 @@ export default function AiNodeCanvas({
             <div className="ai-explore-overlay-label">
               {focusedNode?.label || "Expanded"}
             </div>
-            <div className="ai-explore-overlay-text">{focusDetail}</div>
+            <div className="ai-explore-overlay-text">{renderFocusText(focusDetail)}</div>
           </div>
         </div>
       )}

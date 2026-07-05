@@ -12,10 +12,10 @@ export default function AiToolbox({
   const [collapsed, setCollapsed] = useState(() => {
     try {
       const stored = localStorage.getItem(COLLAPSED_KEY);
-      if (stored === "0") return false;
-      return true;
+      if (stored === "1") return true;
+      return false;
     } catch {
-      return true;
+      return false;
     }
   });
 

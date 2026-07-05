@@ -929,7 +929,23 @@ body.ai-node-dragging * {
   overflow: hidden;
   max-width: 72px;
   text-overflow: ellipsis;
-  transition: color 0.12s;
+  transition: color 0.12s, opacity 0.12s;
+}
+
+.ai-node-viewport.ai-zoom-dot .ai-node-label {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.ai-node-viewport.ai-zoom-short .ai-node-label {
+  max-width: 48px;
+  font-size: 7px;
+}
+
+.ai-node-viewport.ai-zoom-full .ai-node-label,
+.ai-node-viewport.ai-zoom-short .ai-node.selected .ai-node-label,
+.ai-node-viewport.ai-zoom-short .ai-node:hover .ai-node-label {
+  color: rgba(210, 220, 245, 0.85);
 }
 
 .ai-node:hover .ai-node-label,
@@ -2850,4 +2866,109 @@ html[data-theme="chalk"] body {
 
 .ai-column .ai-detail-section {
   display: none;
+}
+
+/* ── Paper selection boundary (edge = move, interior = clone) ── */
+.selection-boundary-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.selection-boundary-outer {
+  position: absolute;
+  border: 2px dashed rgba(232, 185, 35, 0.85);
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 0 18px rgba(232, 185, 35, 0.18);
+}
+
+.selection-boundary-inner {
+  position: absolute;
+  border: 1.5px solid rgba(26, 26, 26, 0.35);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.selection-boundary-edge {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  z-index: 13;
+}
+
+.selection-boundary-edge:active {
+  cursor: grabbing;
+}
+
+/* ── Clone drag ghost (semi-transparent copy) ── */
+.clone-drag-ghost {
+  position: fixed;
+  z-index: 9997;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px dashed rgba(232, 185, 35, 0.75);
+  background: rgba(232, 185, 35, 0.18);
+  box-shadow:
+    0 0 0 6px rgba(232, 185, 35, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.72;
+  transition: border-color 0.12s, background 0.12s, opacity 0.12s;
+}
+
+.clone-drag-ghost.to-ai {
+  border-style: solid;
+  border-color: #e8b923;
+  background: rgba(232, 185, 35, 0.32);
+  opacity: 0.92;
+  box-shadow:
+    0 0 0 8px rgba(232, 185, 35, 0.15),
+    0 0 28px rgba(232, 185, 35, 0.35);
+}
+
+.clone-drag-ghost-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(26, 26, 26, 0.75);
+  font-family: var(--sans);
+}
+
+.clone-drag-ghost.to-ai .clone-drag-ghost-badge {
+  color: rgba(255, 250, 230, 0.95);
+}
+
+/* ── Golden fragment highlight in explore overlay ── */
+.ai-golden-fragment {
+  background: linear-gradient(180deg, rgba(232, 185, 35, 0.45), rgba(232, 185, 35, 0.28));
+  color: rgba(255, 252, 235, 0.98);
+  border-radius: 3px;
+  padding: 0 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.fragment-highlight-draft path {
+  filter: drop-shadow(0 0 4px rgba(232, 185, 35, 0.55));
+}
+
+.ai-node-viewport.ai-highlight-mode .ai-node-fragment-panel {
+  border-color: rgba(232, 185, 35, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(232, 185, 35, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.ai-highlight-hint::after {
+  content: " · Shift+highlight → paper";
+  opacity: 0.7;
+  font-size: 9px;
 }

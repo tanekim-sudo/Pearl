@@ -36,7 +36,8 @@ export default function AiColumn({
   spaceHeld,
   tool,
   onSpaceTransferStart,
-  onFragmentTransfer,
+  onFragmentReplace,
+  onFragmentToPaper,
   viewportRef,
 }) {
   return (
@@ -75,7 +76,8 @@ export default function AiColumn({
             spaceHeld={spaceHeld}
             tool={tool}
             onSpaceTransferStart={onSpaceTransferStart}
-            onFragmentTransfer={onFragmentTransfer}
+            onFragmentReplace={onFragmentReplace}
+            onFragmentToPaper={onFragmentToPaper}
             viewportRef={viewportRef}
           />
         </section>

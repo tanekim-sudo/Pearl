@@ -102,8 +102,8 @@ import {
   bboxClampOffset,
   fitPaperInView,
   maxTextWidth,
-  paperAllowsPan,
 } from "./lib/paper.js";
+import { attachCanvasWheel } from "./lib/canvas-navigation.js";
 import {
   appendItemHistory,
   buildItemTimeline,
@@ -117,6 +117,7 @@ import {
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
 import TransferAnimation from "./components/TransferAnimation.jsx";
+import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 const ITEMS_KEY = "lens.board.items.v1";
@@ -289,7 +290,7 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag objects to move · drag empty paper to pan · shift+drag to select area",
+    hint: "Drag objects to move · drag empty paper to pan · pinch or ⌘+scroll to zoom · shift+drag to select area",
   },
   image: {
     id: "image",
@@ -1908,6 +1909,7 @@ export default function App() {
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
+  const [cloneGhost, setCloneGhost] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
   const [paperRecordLevel, setPaperRecordLevel] = useState(0);
   const [paperRecordMs, setPaperRecordMs] = useState(0);
@@ -1958,6 +1960,7 @@ export default function App() {
   const expandInAiRef = useRef(() => {});
   const paperHighlightTransferRef = useRef(() => {});
   const transferFragmentToPaperRef = useRef(() => {});
+  const transferFragmentReplaceRef = useRef(() => {});
   const spaceTransferCompleteRef = useRef(() => {});
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
@@ -2400,6 +2403,56 @@ export default function App() {
     });
   }
 
+  function duplicateItemsAt(ids, atWorld) {
+    if (!ids?.length) return;
+    const bb = selectionWorldBBoxForIds(ids);
+    if (!bb) return;
+    pushHistory();
+    const ox = atWorld.x - (bb.minx + bb.maxx) / 2;
+    const oy = atWorld.y - (bb.miny + bb.maxy) / 2;
+    const newIds = [];
+    const copies = [];
+    for (const id of ids) {
+      const it = itemsRef.current.find((i) => i.id === id);
+      if (!it || it.type === "link") continue;
+      const newId = uid();
+      let copy;
+      if (it.type === "stroke") {
+        copy = {
+          ...it,
+          id: newId,
+          points: it.points.map((p) => ({ ...p, x: p.x + ox, y: p.y + oy })),
+        };
+      } else {
+        copy = { ...it, id: newId, x: it.x + ox, y: it.y + oy };
+      }
+      copy = tagRecordingItem(normalizeItem(copy));
+      if (!copy) continue;
+      copies.push(copy);
+      newIds.push(newId);
+      recordItemEvent(newId, "born", { itemSnapshot: itemSnapshot(copy) });
+    }
+    if (copies.length) {
+      setItems((arr) => [...arr, ...copies]);
+      setSelection(newIds);
+    }
+  }
+
+  function replaceFragmentInAiNode(nodeId, quote) {
+    const q = quote?.trim();
+    if (!nodeId || !q) return;
+    const node = aiNodesRef.current.find((n) => n.id === nodeId);
+    if (!node?.expandedText) return;
+    const text = node.expandedText;
+    const idx = text.indexOf(q);
+    const updated =
+      idx >= 0 ? text.slice(0, idx) + `⟦${q}⟧` + text.slice(idx + q.length) : `${text}\n\n⟦${q}⟧`;
+    updateAiNode(nodeId, { expandedText: updated, goldenFragment: q });
+    setAiPanel((prev) =>
+      prev?.activeNodeId === nodeId ? { ...prev, expandedText: updated } : prev
+    );
+  }
+
   function zoomCamera(c, factor, anchorLocal = null) {
     const r = vpRect();
     const lx = anchorLocal?.x ?? r.width / 2;
@@ -2457,8 +2510,6 @@ export default function App() {
       const cy = e.clientY;
 
       if (g.mode === "pan") {
-        const r = vpRect();
-        if (!paperAllowsPan(g.cam.scale, r.width, r.height)) return;
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
       } else if (g.mode === "pending-space-transfer") {
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -2544,6 +2595,12 @@ export default function App() {
           setItems((arr) => arr.filter((it) => !g.deletedIds.has(it.id)));
           setSelection((sel) => sel.filter((id) => !g.deletedIds.has(id)));
         }
+      } else if (g.mode === "clone") {
+        g.lastCx = cx;
+        g.lastCy = cy;
+        setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        setTransferDragActive(isOverAiColumn(cx, cy) || isNearTransferBoundary(cx));
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
@@ -2565,9 +2622,20 @@ export default function App() {
             return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
           })
         );
-        setBoundaryMagnetActive(isNearTransferBoundary(cx));
       } else if (g.mode === "pending") {
-        if (g.intent !== "edit") {
+        if (g.intent === "edit") {
+          /* wait for click-up to edit */
+        } else if (g.intent === "clone") {
+          const dist = Math.hypot(cx - g.cx, cy - g.cy);
+          if (dist > MOVE_DRAG_THRESHOLD) {
+            g.mode = "clone";
+            g.lastCx = cx;
+            g.lastCy = cy;
+            setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
+            setBoundaryMagnetActive(isNearTransferBoundary(cx));
+            setTransferDragActive(isOverAiColumn(cx, cy) || isNearTransferBoundary(cx));
+          }
+        } else {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
           if (dist > MOVE_DRAG_THRESHOLD) {
             pushHistoryRef.current();
@@ -2695,15 +2763,32 @@ export default function App() {
             }
           }
         }
+      } else if (g.mode === "clone") {
+        setCloneGhost(null);
+        setBoundaryMagnetActive(false);
+        setTransferDragActive(false);
+        const cx = g.lastCx ?? g.cx;
+        const cy = g.lastCy ?? g.cy;
+        const sketchBundle = gatherSelectionSketchBundle(g.ids);
+        const world = getAiDropWorldFromClient(cx, cy);
+        if (isOverAiColumn(cx, cy)) {
+          if (sketchBundle) {
+            interpretSketchBundle(sketchBundle, world);
+          } else {
+            const expandIds = transformableDragIds(g.ids);
+            if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+          }
+        } else {
+          const dist = Math.hypot(cx - g.cx, cy - g.cy);
+          if (dist > MOVE_DRAG_THRESHOLD) {
+            duplicateItemsAt(g.ids, clientToWorld(cx, cy));
+          }
+        }
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
-        const expandIds = transformableDragIds(g.ids);
-        if (isNearTransferBoundary(cx) && expandIds.length && (g.moved || 0) > TRANSFER_DRAG_THRESHOLD) {
-          restoreMovePositions(g.startPositions);
-          expandInAiRef.current(expandIds);
-        } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
+        if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
           const target = itemAtPoint(cx, cy, exclude);
           if (target) combineRef.current?.(g.ids, [target.id]);
@@ -2721,22 +2806,16 @@ export default function App() {
     };
   }, []);
 
-  // wheel: two-finger scroll zooms; shift+scroll pans; pinch (ctrl/meta+wheel) also zooms
+  // wheel: pinch / ctrl+scroll zooms at cursor; two-finger scroll pans
   useEffect(() => {
     const el = inputLayerRef.current;
     if (!el) return;
-    function onWheel(e) {
-      e.preventDefault();
-      const local = vpLocal(e.clientX, e.clientY);
-      if (e.shiftKey) {
-        setCamera((c) => ({ ...c, x: c.x - e.deltaX, y: c.y - e.deltaY }));
-      } else {
-        const factor = Math.exp(-e.deltaY * 0.0016);
-        setCamera((c) => zoomAtPoint(c, local.x, local.y, factor));
-      }
-    }
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    return attachCanvasWheel(
+      el,
+      () => camRef.current,
+      (next) => setCamera(next),
+      (e) => vpLocal(e.clientX, e.clientY)
+    );
   }, []);
 
   // keyboard: escape, delete while not typing in a field
@@ -4994,8 +5073,9 @@ export default function App() {
         ? selRef.current
         : [hit.id];
       setSelection(nextSel);
-      let intent = "move";
-      if (isEditableBlock(hit) && nextSel.length === 1 && textClickRegion(hit, cx, cy) === "interior") {
+      const clickRegion = textClickRegion(hit, cx, cy);
+      let intent = clickRegion === "interior" ? "clone" : "move";
+      if (isEditableBlock(hit) && nextSel.length === 1 && clickRegion === "interior") {
         intent = "edit";
       }
       gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
@@ -5023,6 +5103,28 @@ export default function App() {
     gesture.current = { mode, cx: e.clientX, cy: e.clientY, ...payload };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function startSelectionEdgeMove(e) {
+    const ids = selRef.current;
+    if (!ids.length) return;
+    setGesturing(true);
+    pushHistory();
+    gesture.current = {
+      mode: "move",
+      cx: e.clientX,
+      cy: e.clientY,
+      ids: ids.slice(),
+      moved: 0,
+      lastCx: e.clientX,
+      lastCy: e.clientY,
+      startPositions: captureMoveStartPositions(ids),
+    };
+    try {
+      (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
@@ -5612,6 +5714,10 @@ export default function App() {
     if (!fragment?.trim()) return;
     spawnTextAtWorld(fragment, viewportCenterWorld(), { silent: true });
   };
+  transferFragmentReplaceRef.current = (fragment) => {
+    const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
+    replaceFragmentInAiNode(nodeId, fragment);
+  };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
       const ids = g.ids;
@@ -6196,8 +6302,8 @@ export default function App() {
               );
             })}
 
-          {/* selection box */}
-          {selBBox && selection.length > 1 && (
+          {/* selection boundary — edge = move original, interior = clone */}
+          {selection.length > 1 && (
             <div
               className="sel-box"
               style={{
@@ -6354,7 +6460,11 @@ export default function App() {
         />
       )}
 
-      {/* screen-space transform handles (outside zoomed world) */}
+      {/* screen-space selection boundary + transform handles */}
+      {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
+        <SelectionBoundary bbox={selectionScreenBox} onEdgePointerDown={startSelectionEdgeMove} />
+      )}
+
       {canTransform && !editing && !historyReplay && (
         <ScreenTransformHandles
           bbox={itemScreenBBox(selItem)}
@@ -6447,7 +6557,8 @@ export default function App() {
           spaceHeld={spaceHeld}
           tool={tool}
           onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
-          onFragmentTransfer={(fragment) => transferFragmentToPaperRef.current(fragment)}
+          onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
+          onFragmentToPaper={(fragment) => transferFragmentToPaperRef.current(fragment)}
           viewportRef={aiViewportRef}
           canvasDropOver={aiCanvasDropOver}
           onCanvasDragOver={handleAiCanvasDragOver}
@@ -6721,6 +6832,18 @@ export default function App() {
           <span className="space-transfer-ghost-arrow">
             {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
           </span>
+        </div>
+      )}
+
+      {cloneGhost && (
+        <div
+          className={
+            "clone-drag-ghost" +
+            (isOverAiColumn(cloneGhost.cx, cloneGhost.cy) || boundaryMagnetActive ? " to-ai" : "")
+          }
+          style={{ left: cloneGhost.cx, top: cloneGhost.cy }}
+        >
+          <span className="clone-drag-ghost-badge">{cloneGhost.count}</span>
         </div>
       )}
 
