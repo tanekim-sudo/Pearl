@@ -108,6 +108,11 @@ import {
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
 import {
+  highlightWorldWidth,
+  highlightBrushHits as inkHighlightBrushHits,
+  itemsFromHighlightGesture,
+} from "./lib/highlight-ink.js";
+import {
   appendItemHistory,
   buildItemTimeline,
   createHistoryEvent,
@@ -157,11 +162,6 @@ const HIGHLIGHT_INK = "#E8B923";
 const HIGHLIGHT_W = 20;
 const HIGHLIGHT_OPACITY = 0.92;
 const MARKER_OPACITY = 0.72;
-
-/** Highlight ink stays the same thickness on screen at any zoom. */
-function highlightWorldWidth(scale) {
-  return HIGHLIGHT_W / Math.max(scale, 0.12);
-}
 
 /** Branch / link directions — include east for clean left→right transform arrows. */
 const EXPAND_DIRS = [
@@ -286,7 +286,7 @@ const CANVAS_TOOLS = {
     group: "think",
     label: "Highlighter",
     icon: "▬",
-    hint: "Draw over text to transform · scribble to erase · circle to select inside",
+    hint: "Draw over ink to select fragments · Delete removes · drag or Space+drag → AI",
     swatch: HIGHLIGHT_INK,
   },
   select: {
@@ -1541,17 +1541,29 @@ function brushHitsItem(it, cx, cy, lastCx, lastCy, brush, worldToClient) {
 }
 
 function highlightErasureHits(items, cx, cy, lastCx, lastCy, scale, worldToClient, skipIds) {
-  const brush = Math.max(14, HIGHLIGHT_W * scale * 0.52);
-  const hits = [];
-  for (const it of items) {
-    if (skipIds?.has(it.id)) continue;
-    if (brushHitsItem(it, cx, cy, lastCx, lastCy, brush, worldToClient)) hits.push(it.id);
-  }
-  return hits;
+  return inkHighlightBrushHits(
+    items,
+    cx,
+    cy,
+    lastCx,
+    lastCy,
+    scale,
+    worldToClient,
+    skipIds,
+    blockWidth,
+    itemHeight
+  );
 }
 
 function highlightBrushHits(items, cx, cy, lastCx, lastCy, scale, worldToClient, skipIds) {
   return highlightErasureHits(items, cx, cy, lastCx, lastCy, scale, worldToClient, skipIds);
+}
+
+function ideasFromHighlightGesture(points, scale, itemList, worldToClient, tapItemId = null) {
+  return itemsFromHighlightGesture(points, scale, itemList, worldToClient, blockWidth, itemHeight, {
+    isTransformableBlock,
+    tapItemId,
+  });
 }
 
 function itemsInsideHighlightLoop(points, itemList) {
@@ -1575,30 +1587,6 @@ function itemsInsideHighlightLoop(points, itemList) {
   return [...new Set(ids)];
 }
 
-/** Whole-idea ids from a paper highlight gesture (loop or scribble bbox). */
-function ideasFromHighlightGesture(points, scale, itemList) {
-  if (!points?.length) return [];
-  const hlW = highlightWorldWidth(scale);
-  const loop = points.length > 8 && isClosedHighlightLoop(points, scale);
-  const keep = (it) =>
-    it &&
-    it.type !== "link" &&
-    (isTransformableBlock(it) || it.type === "stroke" || it.type === "image");
-
-  if (loop) {
-    return itemsInsideHighlightLoop(points, itemList).filter((id) => keep(itemList.find((i) => i.id === id)));
-  }
-
-  const bb = strokeWorldBBox(points, hlW * 0.65);
-  if (!bb) return [];
-  const ids = [];
-  for (const it of itemList) {
-    if (!keep(it)) continue;
-    const ibb = itemWorldBBox(it);
-    if (ibb && bboxesOverlap(ibb, bb)) ids.push(it.id);
-  }
-  return [...new Set(ids)];
-}
 
 function extractTextFromLoopSelection(itemIds, itemList) {
   const texts = itemList.filter((it) => itemIds.includes(it.id) && it.type === "text" && it.text?.trim());
@@ -1912,6 +1900,7 @@ export default function App() {
   const [aiNodes, setAiNodes] = useState([]);
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
+  const [highlightSelectionIds, setHighlightSelectionIds] = useState([]);
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
@@ -1953,6 +1942,7 @@ export default function App() {
   const lastSpaceUpRef = useRef(0);
   const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
+  const highlightSelectionRef = useRef(highlightSelectionIds);
   const editingRef = useRef(editing);
   const combineRef = useRef(null);
   const showToastRef = useRef(() => {});
@@ -1969,6 +1959,7 @@ export default function App() {
   spaceHeldRef.current = spaceHeld;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
+  highlightSelectionRef.current = highlightSelectionIds;
   editingRef.current = editing;
 
   const expandInAiRef = useRef(() => {});
@@ -2567,6 +2558,7 @@ export default function App() {
             if (!g.deletedIds) g.deletedIds = new Set();
             erased.forEach((id) => g.deletedIds.add(id));
             setItems((arr) => arr.filter((it) => !g.deletedIds.has(it.id)));
+            setHighlightSelectionIds((prev) => prev.filter((id) => !g.deletedIds.has(id)));
             setHighlight((hl) => {
               if (hl && g.deletedIds.has(hl.itemId)) return null;
               return hl;
@@ -2583,6 +2575,8 @@ export default function App() {
             g.deletedIds
           );
           if (brushed.length) {
+            if (!g.brushedIds) g.brushedIds = new Set();
+            brushed.forEach((id) => g.brushedIds.add(id));
             setHighlightTouchIds((prev) => [...new Set([...prev, ...brushed])]);
           }
           g.lastCx = cx;
@@ -2607,6 +2601,12 @@ export default function App() {
           setSelection((sel) => sel.filter((id) => !g.deletedIds.has(id)));
         }
       } else if (g.mode === "clone") {
+        g.lastCx = cx;
+        g.lastCy = cy;
+        setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        setTransferDragActive(isOverAiColumn(cx, cy) || isNearTransferBoundary(cx));
+      } else if (g.mode === "highlight-drag") {
         g.lastCx = cx;
         g.lastCy = cy;
         setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
@@ -2715,19 +2715,30 @@ export default function App() {
       }
 
       if (g.mode === "draw") {
+        const brushedDuring = g.brushedIds ? [...g.brushedIds] : [];
         setHighlightTouchIds([]);
         if (g.points.length > 1) {
           const isHighlight = !!g.highlight;
           if (isHighlight) {
             const pts = g.points.slice();
             if (g.strokeId) paperSessionRef.current?.cancelStroke?.();
-            let ideaIds = ideasFromHighlightGesture(pts, camRef.current.scale, itemsRef.current);
-            if (!ideaIds.length && g.points.length <= 3) {
-              const tapHit = itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy);
-              if (tapHit && isTransformableBlock(tapHit)) ideaIds = [tapHit.id];
-            }
-            if (ideaIds.length) {
-              paperHighlightTransferRef.current(ideaIds);
+            const tapHit =
+              g.points.length <= 3
+                ? itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy)
+                : null;
+            let ideaIds = ideasFromHighlightGesture(
+              pts,
+              camRef.current.scale,
+              itemsRef.current,
+              worldToClient,
+              tapHit && isTransformableBlock(tapHit) ? tapHit.id : null
+            );
+            const erased = g.deletedIds ? [...g.deletedIds] : [];
+            const merged = [...new Set([...ideaIds, ...brushedDuring])].filter((id) => !erased.includes(id));
+            if (merged.length) {
+              accumulateHighlightSelection(merged, g.additive);
+            } else if (!g.additive && g.points.length <= 3) {
+              setHighlightSelectionIds([]);
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -2795,6 +2806,16 @@ export default function App() {
             duplicateItemsAt(g.ids, clientToWorld(cx, cy));
           }
         }
+      } else if (g.mode === "highlight-drag") {
+        setCloneGhost(null);
+        setBoundaryMagnetActive(false);
+        setTransferDragActive(false);
+        const cx = g.lastCx ?? g.cx;
+        const cy = g.lastCy ?? g.cy;
+        const world = getAiDropWorldFromClient(cx, cy);
+        if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
+          transferHighlightSelectionToAi(g.ids, world);
+        }
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
         const cx = g.lastCx ?? g.cx;
@@ -2845,6 +2866,8 @@ export default function App() {
           }
           return null;
         });
+        setHighlightSelectionIds([]);
+        setHighlightTouchIds([]);
         pendingImageRef.current = null;
         setImageArmed(false);
       }
@@ -2855,6 +2878,11 @@ export default function App() {
         setSpaceHeld(true);
         pendingImageRef.current = null;
         setImageArmed(false);
+        return;
+      }
+      if ((e.key === "Delete" || e.key === "Backspace") && highlightSelectionRef.current.length) {
+        e.preventDefault();
+        deleteHighlightSelection();
         return;
       }
       if ((e.key === "Delete" || e.key === "Backspace") && selRef.current.length) {
@@ -2941,6 +2969,44 @@ export default function App() {
     }
     setItems((arr) => arr.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
+  function deleteHighlightSelection() {
+    const ids = highlightSelectionRef.current;
+    if (!ids.length) return false;
+    pushHistory();
+    const idSet = new Set(ids);
+    setItems((arr) =>
+      arr.filter((it) => {
+        if (idSet.has(it.id)) return false;
+        if (it.type === "link" && (idSet.has(it.fromId) || idSet.has(it.toId))) return false;
+        return true;
+      })
+    );
+    setHighlightSelectionIds([]);
+    setHighlightTouchIds([]);
+    return true;
+  }
+
+  function transferHighlightSelectionToAi(ids, worldPos = null) {
+    if (!ids?.length) return;
+    recordItemEvents(ids, "highlight-transfer", {});
+    const sketchBundle = gatherSelectionSketchBundle(ids);
+    const world = worldPos || getAiDropWorld();
+    if (sketchBundle) {
+      interpretSketchBundle(sketchBundle, world);
+      return;
+    }
+    const expandIds = transformableDragIds(ids);
+    if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+  }
+
+  function accumulateHighlightSelection(newIds, addToExisting = false) {
+    if (!newIds?.length) return;
+    setHighlightSelectionIds((prev) => {
+      const merged = addToExisting ? [...new Set([...prev, ...newIds])] : [...new Set(newIds)];
+      return merged;
+    });
+  }
+
   function deleteSelection() {
     pushHistory();
     const ids = new Set(selRef.current);
@@ -5037,11 +5103,18 @@ export default function App() {
     const lp = vpLocal(cx, cy);
     let hit = itemAtPoint(cx, cy);
 
-    if (spaceHeldRef.current && toolRef.current === "select") {
-      const paperSel = selRef.current;
-      if (paperSel.length > 0) {
-        startPendingSpaceTransfer(e, "paper", paperSel);
+    if (spaceHeldRef.current) {
+      const hlIds = highlightSelectionRef.current;
+      if (toolRef.current === "highlight" && hlIds.length > 0) {
+        startPendingSpaceTransfer(e, "paper", hlIds);
         return;
+      }
+      if (toolRef.current === "select") {
+        const paperSel = selRef.current;
+        if (paperSel.length > 0) {
+          startPendingSpaceTransfer(e, "paper", paperSel);
+          return;
+        }
       }
       return;
     }
@@ -5103,6 +5176,25 @@ export default function App() {
     }
 
     if (t === "highlight") {
+      const hlSel = highlightSelectionRef.current;
+      if (hlSel.length && hit && hlSel.includes(hit.id)) {
+        pushHistory();
+        gesture.current = {
+          mode: "highlight-drag",
+          cx,
+          cy,
+          lastCx: cx,
+          lastCy: cy,
+          ids: hlSel.slice(),
+        };
+        setCloneGhost({ cx, cy, ids: hlSel, count: hlSel.length });
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
       pushHistory();
       const hlW = highlightWorldWidth(camRef.current.scale);
       const strokeId = startDrawStroke(w, {
@@ -5114,8 +5206,10 @@ export default function App() {
       gesture.current = {
         mode: "draw",
         highlight: true,
+        additive: e.shiftKey,
         points: [w],
         deletedIds: new Set(),
+        brushedIds: new Set(),
         lastCx: cx,
         lastCy: cy,
         strokeId,
@@ -5778,18 +5872,7 @@ export default function App() {
   expandInAiRef.current = expandInAi;
   itemAtPointRef.current = itemAtPoint;
   paperHighlightTransferRef.current = (ideaIds) => {
-    if (!ideaIds?.length) return;
-    recordItemEvents(ideaIds, "highlight-transfer", {});
-    setHighlightTouchIds(ideaIds);
-    window.setTimeout(() => setHighlightTouchIds([]), 400);
-    const sketchBundle = gatherSelectionSketchBundle(ideaIds);
-    const world = getAiDropWorld();
-    if (sketchBundle) {
-      interpretSketchBundle(sketchBundle, world);
-      return;
-    }
-    const expandIds = transformableDragIds(ideaIds);
-    if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+    transferHighlightSelectionToAi(ideaIds);
   };
   transferFragmentToPaperRef.current = (fragment, opts = {}) => {
     if (!fragment?.trim()) return;
@@ -6064,6 +6147,7 @@ export default function App() {
   const visibleItems = items.filter((it) => itemVisibleOnPage(it, activePageId, worldFilter));
   const selectedAiNodeId = selectedAiNodeIds[selectedAiNodeIds.length - 1] ?? null;
   const highlightTouchSet = useMemo(() => new Set(highlightTouchIds), [highlightTouchIds]);
+  const highlightSelectionSet = useMemo(() => new Set(highlightSelectionIds), [highlightSelectionIds]);
   const selBBox = selection.length ? selectionWorldBBox() : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
   const canTransform = selItem && isTransformableBlock(selItem);
@@ -6088,7 +6172,9 @@ export default function App() {
         .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
-    spaceHeld && tool === "select" && (selection.length || selectedAiNodeIds.length)
+    spaceHeld &&
+    ((tool === "select" && (selection.length || selectedAiNodeIds.length)) ||
+      (tool === "highlight" && highlightSelectionIds.length))
       ? "cur-space-transfer"
       : panning
       ? "cur-grabbing"
@@ -6245,7 +6331,8 @@ export default function App() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className={
-                      (selection.includes(it.id) ? "sel" : "") +
+                      (selection.includes(it.id) ? " sel" : "") +
+                      (highlightSelectionSet.has(it.id) ? " hl-selected" : "") +
                       (highlightTouchSet.has(it.id) ? " hl-touch" : "") +
                       (it.highlight ? " hl-stroke" : "") +
                       (it.loop ? " hl-loop-fill" : "") +
@@ -6357,7 +6444,7 @@ export default function App() {
                   <img
                     key={it.id}
                     data-item={it.id}
-                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (highlightTouchSet.has(it.id) ? " hl-touch" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
+                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (highlightSelectionSet.has(it.id) ? " hl-selected" : "") + (highlightTouchSet.has(it.id) ? " hl-touch" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
                     src={it.src}
                     style={{ ...itemStyle(it), width: it.w, height: it.h }}
                     alt=""
@@ -6371,6 +6458,7 @@ export default function App() {
                     item={it}
                     selected={selection.includes(it.id)}
                     highlightTouched={highlightTouchSet.has(it.id)}
+                    highlightSelected={highlightSelectionSet.has(it.id)}
                     dropTarget={dropTargetId === it.id}
                     dropMagnetic={dropReady && dropTargetId === it.id}
                     editing={editing === it.id}
@@ -6385,6 +6473,7 @@ export default function App() {
                   item={it}
                   selected={selection.includes(it.id)}
                   highlightTouched={highlightTouchSet.has(it.id)}
+                  highlightSelected={highlightSelectionSet.has(it.id)}
                   dropTarget={dropTargetId === it.id}
                   dropMagnetic={dropReady && dropTargetId === it.id}
                   editing={editing === it.id}
@@ -7047,7 +7136,7 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
   );
 }
 
-function BoardText({ item, selected, highlightTouched, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
+function BoardText({ item, selected, highlightTouched, highlightSelected, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
@@ -7114,6 +7203,7 @@ function BoardText({ item, selected, highlightTouched, dropTarget, dropMagnetic,
       className={
         "board-text" +
         (selected ? " sel" : "") +
+        (highlightSelected ? " hl-selected" : "") +
         (highlightTouched ? " hl-touch" : "") +
         (dropTarget ? " drop-target" : "") +
         (dropMagnetic ? " drop-magnetic" : "") +

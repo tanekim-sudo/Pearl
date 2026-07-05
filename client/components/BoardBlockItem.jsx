@@ -167,6 +167,7 @@ export default function BoardBlockItem({
   item,
   selected,
   highlightTouched,
+  highlightSelected,
   dropTarget,
   dropMagnetic,
   editing,
@@ -177,6 +178,7 @@ export default function BoardBlockItem({
   const style = itemStyle(item);
   const cls =
     (selected ? " sel" : "") +
+    (highlightSelected ? " hl-selected" : "") +
     (highlightTouched ? " hl-touch" : "") +
     (dropTarget ? " drop-target" : "") +
     (dropMagnetic ? " drop-magnetic" : "");

@@ -14,7 +14,7 @@ import {
 
 describe("paper bounds", () => {
   it("clamps coordinates inside paper", () => {
-    assert.deepEqual(clampToPaper(-10, 2000), { x: 0, y: PAPER_HEIGHT });
+    assert.deepEqual(clampToPaper(-10, 2000, 0, { forceBounds: true }), { x: 0, y: PAPER_HEIGHT });
     assert.deepEqual(clampToPaper(100, 100, PAPER_MARGIN), { x: 100, y: 100 });
   });
 
@@ -25,22 +25,31 @@ describe("paper bounds", () => {
   });
 
   it("computes bbox clamp offset", () => {
-    const off = bboxClampOffset({ minx: -20, miny: 10, maxx: 800, maxy: 50 });
+    const off = bboxClampOffset({ minx: -20, miny: 10, maxx: 800, maxy: 50 }, PAPER_MARGIN, {
+      forceBounds: true,
+    });
     assert.equal(off.dx, PAPER_WIDTH - PAPER_MARGIN - 800);
     assert.equal(off.dy, PAPER_MARGIN - 10);
+  });
+
+  it("ambiguous mode skips clamping by default", () => {
+    assert.deepEqual(clampToPaper(-10, 2000), { x: -10, y: 2000 });
+    const off = bboxClampOffset({ minx: -20, miny: 10, maxx: 800, maxy: 50 });
+    assert.equal(off.dx, 0);
+    assert.equal(off.dy, 0);
   });
 
   it("moves text items back onto the page", () => {
     const item = { type: "text", x: -40, y: 20, w: 200, text: "hello" };
     const bb = (it) => ({ minx: it.x, miny: it.y, maxx: it.x + it.w, maxy: it.y + 40 });
-    const clamped = clampItemToPaper(item, bb);
+    const clamped = clampItemToPaper(item, bb, PAPER_MARGIN, { forceBounds: true });
     assert.ok(clamped.x >= PAPER_MARGIN);
   });
 
   it("clamps text width and x so content stays on the page", () => {
     const item = { type: "text", x: 700, y: 10, w: 900, text: "wide" };
     const bb = (it) => ({ minx: it.x, miny: it.y, maxx: it.x + it.w, maxy: it.y + 40 });
-    const clamped = clampItemToPaper(item, bb);
+    const clamped = clampItemToPaper(item, bb, PAPER_MARGIN, { forceBounds: true });
     assert.equal(clamped.w, maxTextWidth());
     assert.ok(clamped.x + clamped.w <= PAPER_WIDTH - PAPER_MARGIN);
   });

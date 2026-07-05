@@ -1,4 +1,4 @@
-/** 8×11.5 paper at 96dpi — content lives in 0..width × 0..height. */
+/** 8×11.5 paper at 96dpi — legacy coord space; ambiguous mode hides bounds. */
 export const PAPER_WIDTH = 768;
 export const PAPER_HEIGHT = 1104;
 export const PAPER_MARGIN = 24;
@@ -6,6 +6,9 @@ export const MIN_SCALE = 0.05;
 export const MAX_SCALE = 1e6;
 export const ZOOM_STEP = 1.2;
 export const PAPER_INK = "#000000";
+
+/** Infinite ambiguous sketch space — no page edges, no clamping. */
+export const AMBIGUOUS_PAPER = true;
 
 export function clampScale(scale) {
   return Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
@@ -33,7 +36,8 @@ export function centerPaperCamera(vpWidth, vpHeight, scale = null) {
   };
 }
 
-export function clampToPaper(x, y, margin = 0) {
+export function clampToPaper(x, y, margin = 0, opts = {}) {
+  if (AMBIGUOUS_PAPER && !opts.forceBounds) return { x, y };
   return {
     x: Math.max(margin, Math.min(PAPER_WIDTH - margin, x)),
     y: Math.max(margin, Math.min(PAPER_HEIGHT - margin, y)),
@@ -45,7 +49,8 @@ export function maxTextWidth(margin = PAPER_MARGIN) {
 }
 
 /** Offset needed so a bbox fits inside paper margins. */
-export function bboxClampOffset(bb, margin = PAPER_MARGIN) {
+export function bboxClampOffset(bb, margin = PAPER_MARGIN, opts = {}) {
+  if (AMBIGUOUS_PAPER && !opts.forceBounds) return { dx: 0, dy: 0 };
   if (!bb) return { dx: 0, dy: 0 };
   let dx = 0;
   let dy = 0;
@@ -57,8 +62,9 @@ export function bboxClampOffset(bb, margin = PAPER_MARGIN) {
 }
 
 /** Move an item so its bbox stays within paper margins. */
-export function clampItemToPaper(item, getBBox, margin = PAPER_MARGIN) {
+export function clampItemToPaper(item, getBBox, margin = PAPER_MARGIN, opts = {}) {
   if (!item) return item;
+  if (AMBIGUOUS_PAPER && !opts.forceBounds) return item;
   let next = item;
   if (next.type === "text") {
     const w = clampTextWidth(next.w, margin);
@@ -88,7 +94,18 @@ export function clampTextWidth(w, margin = PAPER_MARGIN) {
 
 /** Fit the full paper sheet in a viewport (alias for centerPaperCamera). */
 export function fitPaperInView(vpWidth, vpHeight) {
+  if (AMBIGUOUS_PAPER) return ambiguousCenterCamera(vpWidth, vpHeight);
   return centerPaperCamera(vpWidth, vpHeight);
+}
+
+/** Default camera for ambiguous sketch space — no page framing. */
+export function ambiguousCenterCamera(vpWidth, vpHeight) {
+  const scale = clampScale(0.92);
+  return {
+    scale,
+    x: vpWidth * 0.08,
+    y: vpHeight * 0.06,
+  };
 }
 
 /** Pan is meaningful only when the zoomed paper exceeds the viewport. */

@@ -2590,21 +2590,37 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .canvas-column .paper-sheet {
-  background: #ffffff;
+  background: transparent;
   border: none;
-  border-radius: 3px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .canvas-column .paper-content {
-  overflow: hidden;
-  position: relative;
-  background-color: #ffffff;
+  overflow: visible;
+  background: transparent;
   background-image: none;
+}
+
+.canvas-edge-top .page-tabs {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.canvas-edge-top:hover .page-tabs {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.idea-center .board-text,
+.canvas-column .board-text {
+  color: var(--ink);
+  font-family: var(--sans);
+  overflow: visible;
+  max-width: none;
+  word-break: break-word;
 }
 
 .canvas-column.boundary-magnet,
@@ -2615,15 +2631,6 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .board-main.transfer-drag .interpret-boundary-hit::before,
 .two-column-grid.transfer-drag .ai-column {
   background: color-mix(in srgb, var(--accent) 6%, var(--card));
-}
-
-.idea-center .board-text,
-.canvas-column .board-text {
-  color: var(--ink);
-  font-family: var(--sans);
-  overflow: visible;
-  max-width: calc(768px - 48px);
-  word-break: break-word;
 }
 
 .canvas-column .ink-layer polyline:not(.hl-stroke) {
@@ -2650,6 +2657,28 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 0 0 6px var(--gold-fill, rgba(255, 215, 0, 0.45)),
     0 0 20px rgba(255, 215, 0, 0.35);
   background: color-mix(in srgb, var(--gold, #ffd700) 18%, white);
+}
+
+.board-sticky.hl-selected:not(.sel),
+.board-callout.hl-selected:not(.sel),
+.board-text.hl-selected:not(.sel),
+.board-img.hl-selected:not(.sel),
+.board-voice.hl-selected:not(.sel),
+.board-diagram.hl-selected:not(.sel),
+.board-table.hl-selected:not(.sel),
+.board-code.hl-selected:not(.sel),
+.board-math.hl-selected:not(.sel),
+.board-video.hl-selected:not(.sel) {
+  outline: 3px solid var(--gold-stroke, #e8b923);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 5px var(--gold-fill, rgba(255, 215, 0, 0.38)),
+    0 0 16px rgba(232, 185, 35, 0.42);
+}
+
+.canvas-column .ink-layer polyline.hl-selected {
+  filter: drop-shadow(0 0 5px rgba(232, 185, 35, 0.75)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.45));
+  stroke-opacity: 1 !important;
 }
 
 .board-sticky.hl-touch:not(.sel),
