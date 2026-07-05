@@ -104,6 +104,18 @@ import {
   maxTextWidth,
   paperAllowsPan,
 } from "./lib/paper.js";
+import {
+  appendItemHistory,
+  buildItemTimeline,
+  createHistoryEvent,
+  isReplayableItem,
+  itemSnapshot,
+  loadItemHistoryLog,
+  replayStepDuration,
+  saveItemHistoryLog,
+  truncatePreview,
+} from "./lib/item-history.js";
+import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 const ITEMS_KEY = "lens.board.items.v1";
@@ -1837,6 +1849,9 @@ export default function App() {
   });
   // walking: { nodeId, title, steps: [...], stepIndex } — derived from a node's history on demand
   const [walking, setWalking] = useState(null);
+  // historyReplay: paper object timeline — { itemId, title, steps, stepIndex, playing }
+  const [historyReplay, setHistoryReplay] = useState(null);
+  const [itemHistoryLog, setItemHistoryLog] = useState(() => loadItemHistoryLog());
   // lenses: named sets of recurring moves — git for perception
   const [lenses, setLenses] = useState(() => load(LENSES_KEY, []).map(normalizeLens));
   const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
@@ -2223,7 +2238,12 @@ export default function App() {
           .join("\n\n");
       }
       if (text?.trim()) {
-        spawnTextAtWorld(text, { x: atWorld.x, y: atWorld.y + yOffset });
+        spawnTextAtWorld(text, { x: atWorld.x, y: atWorld.y + yOffset }, {
+          silent: true,
+          fromAi: true,
+          aiNodeId: node.id,
+          sourceIds: node.sourceIds,
+        });
         yOffset += 72;
       }
     }
@@ -2634,6 +2654,7 @@ export default function App() {
               highlight: false,
             });
             setItems((arr) => [...arr, strokeItem]);
+            recordItemEvent(strokeItem.id, "born", { itemSnapshot: itemSnapshot(strokeItem) });
           }
         } else if (g.highlight && g.strokeId) {
           paperSessionRef.current?.cancelStroke?.();
@@ -2815,6 +2836,15 @@ export default function App() {
 
   // ---- item helpers ----
   function updateItem(id, patch) {
+    if (patch.text != null) {
+      const prev = itemsRef.current.find((it) => it.id === id);
+      if (prev?.text != null && prev.text !== patch.text) {
+        recordItemEvent(id, "edit", {
+          itemSnapshot: itemSnapshot({ ...prev, ...patch }),
+          textDiff: { from: truncatePreview(prev.text, 80), to: truncatePreview(patch.text, 80) },
+        });
+      }
+    }
     setItems((arr) => arr.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
   function deleteSelection() {
@@ -2845,6 +2875,7 @@ export default function App() {
 
     const fallbackWorld = parentIds?.length ? null : atWorld;
     const newIds = [];
+    const spawnRecords = [];
     let lastAnchorBox = null;
     let lastParentIds = parentIds || [];
 
@@ -2871,6 +2902,7 @@ export default function App() {
           via,
           ...(opts.portal != null ? { portal: opts.portal } : {}),
         });
+        spawnRecords.push({ id, item, via });
         newItems.push(item);
         placedSoFar.push(item);
         for (const sid of linkFrom) {
@@ -2887,6 +2919,18 @@ export default function App() {
 
       return [...arr, ...newLinks, ...newItems];
     });
+
+    for (const { id, item, via: moveVia } of spawnRecords) {
+      recordItemEvent(
+        id,
+        moveVia ? "expand" : "born",
+        {
+          itemSnapshot: itemSnapshot(item),
+          opName: moveVia?.name,
+          outputPreview: truncatePreview(item.text, 120),
+        }
+      );
+    }
 
     if (newIds.length) setSelection(newIds);
     return { ids: newIds, lastAnchorBox, lastParentIds };
@@ -3308,7 +3352,31 @@ export default function App() {
 
   const walkingRef = useRef(walking);
   walkingRef.current = walking;
+  const historyReplayRef = useRef(historyReplay);
+  historyReplayRef.current = historyReplay;
+  const itemHistoryLogRef = useRef(itemHistoryLog);
+  itemHistoryLogRef.current = itemHistoryLog;
+  const historyPlayTimerRef = useRef(null);
   const camAnimRef = useRef(null);
+
+  useEffect(() => saveItemHistoryLog(itemHistoryLog), [itemHistoryLog]);
+
+  function recordItemEvent(itemId, kind, meta = {}) {
+    if (!itemId) return;
+    const it = itemsRef.current.find((x) => x.id === itemId);
+    const event = createHistoryEvent(kind, {
+      itemSnapshot: meta.itemSnapshot || (it ? itemSnapshot(it) : null),
+      ...meta,
+    });
+    setItemHistoryLog((log) => appendItemHistory(log, itemId, event));
+    setItems((arr) =>
+      arr.map((x) => (x.id === itemId ? { ...x, history: [...(x.history || []), event] } : x))
+    );
+  }
+
+  function recordItemEvents(itemIds, kind, meta = {}) {
+    for (const id of itemIds || []) recordItemEvent(id, kind, meta);
+  }
 
   function animateCameraTo(targetWorld, targetScale, ms = 850) {
     if (camAnimRef.current) cancelAnimationFrame(camAnimRef.current);
@@ -3520,7 +3588,116 @@ export default function App() {
     }
   }
 
-  // camera follows the walk
+  function startHistoryReplay(itemId) {
+    const item = itemsRef.current.find((it) => it.id === itemId);
+    if (!item || !isReplayableItem(item)) {
+      showToast("nothing to replay yet");
+      return;
+    }
+    finishEditing();
+    setWalking(null);
+    const timeline = buildItemTimeline(itemId, {
+      item,
+      allItems: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      pages,
+      historyLog: itemHistoryLogRef.current,
+    });
+    if (!timeline?.steps?.length) {
+      showToast("nothing to replay yet");
+      return;
+    }
+    setSelection([itemId]);
+    setHistoryReplay({ ...timeline, stepIndex: 0, playing: false });
+  }
+
+  function historyReplayTo(stepIndex) {
+    const r = historyReplayRef.current;
+    if (!r) return;
+    setHistoryReplay({ ...r, stepIndex: clamp(stepIndex, 0, r.steps.length - 1) });
+  }
+
+  function endHistoryReplay() {
+    if (historyPlayTimerRef.current) {
+      clearTimeout(historyPlayTimerRef.current);
+      historyPlayTimerRef.current = null;
+    }
+    setHistoryReplay(null);
+  }
+
+  function toggleHistoryReplayPlay() {
+    const r = historyReplayRef.current;
+    if (!r) return;
+    setHistoryReplay({ ...r, playing: !r.playing });
+  }
+
+  // camera follows history replay
+  useEffect(() => {
+    if (!historyReplay) return;
+    const step = historyReplay.steps?.[historyReplay.stepIndex];
+    if (!step) return;
+    const focus = stepFocusCenter(step);
+    if (focus) animateCameraTo(focus, stepFocusScale(focus));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyReplay?.itemId, historyReplay?.stepIndex]);
+
+  // auto-advance while playing
+  useEffect(() => {
+    if (!historyReplay?.playing) {
+      if (historyPlayTimerRef.current) {
+        clearTimeout(historyPlayTimerRef.current);
+        historyPlayTimerRef.current = null;
+      }
+      return;
+    }
+    const r = historyReplayRef.current;
+    if (!r) return;
+    const step = r.steps[r.stepIndex];
+    const ms = replayStepDuration(step?.kind);
+    historyPlayTimerRef.current = window.setTimeout(() => {
+      const cur = historyReplayRef.current;
+      if (!cur?.playing) return;
+      if (cur.stepIndex >= cur.steps.length - 1) {
+        setHistoryReplay({ ...cur, playing: false });
+        return;
+      }
+      historyReplayTo(cur.stepIndex + 1);
+    }, ms);
+    return () => {
+      if (historyPlayTimerRef.current) {
+        clearTimeout(historyPlayTimerRef.current);
+        historyPlayTimerRef.current = null;
+      }
+    };
+  }, [historyReplay?.playing, historyReplay?.stepIndex, historyReplay?.itemId]);
+
+  // keyboard + click-outside while replaying
+  useEffect(() => {
+    if (!historyReplay) return;
+    function onKey(e) {
+      const typing = e.target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target.tagName || "");
+      if (typing) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        endHistoryReplay();
+      } else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        toggleHistoryReplayPlay();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const r = historyReplayRef.current;
+        if (r && r.stepIndex < r.steps.length - 1) historyReplayTo(r.stepIndex + 1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        historyReplayTo((historyReplayRef.current?.stepIndex ?? 0) - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", onKey, { capture: true });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!historyReplay]);
   useEffect(() => {
     if (!walking) return;
     const step = walking.steps?.[walking.stepIndex];
@@ -4409,6 +4586,12 @@ export default function App() {
             ? `session saved · "${session.transcript.slice(0, 48)}…"`
             : "voice + draw session saved"
         );
+        for (const sid of sessionItemIds) {
+          recordItemEvent(sid, "voice-session", {
+            sessionId: session.id,
+            transcript: truncatePreview(session.transcript, 160),
+          });
+        }
       } catch (err) {
         showToast(err.message || "could not stop recording");
       }
@@ -4451,6 +4634,11 @@ export default function App() {
       worldPos,
       label
     );
+    const bundleSourceIds = [...new Set([...(bundle.strokeIds || []), ...(bundle.itemIds || [])])];
+    recordItemEvents(bundleSourceIds, "transfer-to-ai", {
+      aiNodeId: expandedNode.id,
+      inputPreview: truncatePreview(bundle.transcript || label, 120),
+    });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
       sourcePreview: bundle.transcript?.slice(0, 200) || label,
@@ -4788,13 +4976,23 @@ export default function App() {
       const center = at || viewportCenterWorld();
       const scale = Math.min(1, 260 / w);
       const id = uid();
-      setItems((arr) => [
-        ...arr,
-        tagRecordingItem(
-          normalizeItem({ id, type: "image", x: center.x, y: center.y, w: Math.round(w * scale), h: Math.round(h * scale), src, rotation: 0, scale: 1, pageId: activePageId })
-        ),
-      ]);
+      const imgItem = tagRecordingItem(
+        normalizeItem({
+          id,
+          type: "image",
+          x: center.x,
+          y: center.y,
+          w: Math.round(w * scale),
+          h: Math.round(h * scale),
+          src,
+          rotation: 0,
+          scale: 1,
+          pageId: activePageId,
+        })
+      );
+      setItems((arr) => [...arr, imgItem]);
       setSelection([id]);
+      recordItemEvent(id, "born", { itemSnapshot: itemSnapshot(imgItem) });
     } catch {
       showToast("could not load that image");
     }
@@ -4821,10 +5019,15 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click blank paper: reset zoom to fit page
+  // double-click object: replay history · blank paper: reset zoom
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
+    if (hit && isReplayableItem(hit)) {
+      e.preventDefault();
+      startHistoryReplay(hit.id);
+      return;
+    }
     if (hit) return;
     const r = vpRect();
     setCamera(fitPaperInView(r.width, r.height));
@@ -4961,6 +5164,7 @@ export default function App() {
     }
     setItems((arr) => [...arr, item]);
     setSelection([id]);
+    recordItemEvent(id, "born", { itemSnapshot: itemSnapshot(item) });
     if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
       setEditing(id);
     }
@@ -5248,6 +5452,10 @@ export default function App() {
       },
       opts.expandedAt
     );
+    recordItemEvents(ids, "transfer-to-ai", {
+      aiNodeId: sourceNode.id,
+      opName: opts.opLabel || op.name,
+    });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -5287,6 +5495,11 @@ export default function App() {
         error: null,
         label: truncateLabel(opts.opLabel || op.name || "Expanded"),
       });
+      recordItemEvents(ids, "expand", {
+        aiNodeId: expandedNode.id,
+        opName: opts.opLabel || op.name,
+        outputPreview: truncatePreview(text, 120),
+      });
       setAiPanel((prev) => ({
         ...prev,
         expandedText: text,
@@ -5310,6 +5523,7 @@ export default function App() {
   itemAtPointRef.current = itemAtPoint;
   paperHighlightTransferRef.current = (ideaIds) => {
     if (!ideaIds?.length) return;
+    recordItemEvents(ideaIds, "highlight-transfer", {});
     setHighlightTouchIds(ideaIds);
     window.setTimeout(() => setHighlightTouchIds([]), 320);
     const sketchBundle = gatherSelectionSketchBundle(ideaIds);
@@ -5358,9 +5572,16 @@ export default function App() {
       w,
       pageId: activePageId,
       world: worldFilter || null,
+      bornFrom: opts.sourceIds || undefined,
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
+    recordItemEvent(id, opts.fromAi ? "transfer-to-paper" : "born", {
+      itemSnapshot: itemSnapshot(item),
+      textSnapshot: clean,
+      aiNodeId: opts.aiNodeId,
+      outputPreview: truncatePreview(clean, 120),
+    });
     if (!opts.silent) showToast("added to paper");
   }
 
@@ -5587,6 +5808,13 @@ export default function App() {
         .filter(Boolean)
         .map((it) => itemScreenBBox(it))
     : [];
+  const historyReplayStep = historyReplay?.steps?.[historyReplay.stepIndex] || null;
+  const historyReplayFocusRects = historyReplayStep
+    ? historyReplayStep.itemIds
+        .map((id) => items.find((it) => it.id === id))
+        .filter(Boolean)
+        .map((it) => itemScreenBBox(it))
+    : [];
   const cursorClass =
     spaceHeld && tool === "select" && (selection.length || selectedAiNodeIds.length)
       ? "cur-space-transfer"
@@ -5668,7 +5896,7 @@ export default function App() {
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
       <div
         ref={viewportRef}
-        className="viewport"
+        className={"viewport" + (historyReplay ? " history-replay-active" : "")}
         onPointerDown={
           editing
             ? (e) => {
@@ -5814,6 +6042,39 @@ export default function App() {
               </>
             )}
           </svg>
+
+          {historyReplay && historyReplayStep?.priorSnapshot && (
+            <>
+              {historyReplayStep.priorSnapshot.type === "stroke" && historyReplayStep.priorSnapshot.points && (
+                <svg className="ink-layer history-replay-ghost-layer">
+                  <polyline
+                    points={historyReplayStep.priorSnapshot.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill="none"
+                    stroke={historyReplayStep.priorSnapshot.color || PAPER_INK}
+                    strokeWidth={historyReplayStep.priorSnapshot.width || PEN_W}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="history-replay-ghost-stroke"
+                  />
+                </svg>
+              )}
+              {(historyReplayStep.priorSnapshot.type === "text" ||
+                historyReplayStep.priorSnapshot.type === "sticky" ||
+                historyReplayStep.priorSnapshot.type === "callout") &&
+                historyReplayStep.priorSnapshot.text && (
+                  <div
+                    className="history-replay-ghost-text board-text"
+                    style={{
+                      left: historyReplayStep.priorSnapshot.x,
+                      top: historyReplayStep.priorSnapshot.y,
+                      width: historyReplayStep.priorSnapshot.w || 360,
+                    }}
+                  >
+                    {historyReplayStep.priorSnapshot.text}
+                  </div>
+                )}
+            </>
+          )}
 
           {/* text + images */}
           {visibleItems
@@ -5988,8 +6249,40 @@ export default function App() {
         }}
       />
 
+      {selItem && isReplayableItem(selItem) && !walking && !historyReplay && (
+        <button
+          type="button"
+          className="history-replay-trigger"
+          style={{
+            left: itemScreenBBox(selItem).right - 6,
+            top: itemScreenBBox(selItem).top - 6,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            startHistoryReplay(selItem.id);
+          }}
+          title="Replay history"
+        >
+          ◷
+        </button>
+      )}
+
+      {historyReplay && historyReplayStep && (
+        <HistoryReplayOverlay
+          replay={historyReplay}
+          stepIndex={historyReplay.stepIndex}
+          step={historyReplayStep}
+          rects={historyReplayFocusRects}
+          playing={!!historyReplay.playing}
+          onScrub={historyReplayTo}
+          onPlayPause={toggleHistoryReplayPlay}
+          onExit={endHistoryReplay}
+          onBackdropClick={endHistoryReplay}
+        />
+      )}
+
       {/* screen-space transform handles (outside zoomed world) */}
-      {canTransform && !editing && (
+      {canTransform && !editing && !historyReplay && (
         <ScreenTransformHandles
           bbox={itemScreenBBox(selItem)}
           onRotateStart={(e) => {
@@ -6020,7 +6313,7 @@ export default function App() {
         />
       )}
 
-      {selCaptureInfo?.canCapture && !walking && selItem && (
+      {selCaptureInfo?.canCapture && !walking && !historyReplay && selItem && (
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           onSave={saveSelectionAsFunction}
@@ -6033,7 +6326,7 @@ export default function App() {
         />
       )}
 
-      {canTransform && !selCaptureInfo?.canCapture && !walking && selItem && (
+      {canTransform && !selCaptureInfo?.canCapture && !walking && !historyReplay && selItem && (
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
@@ -6043,7 +6336,7 @@ export default function App() {
         />
       )}
 
-      {selectionHasSketch && !canTransform && !walking && selectionScreenBox && (
+      {selectionHasSketch && !canTransform && !walking && !historyReplay && selectionScreenBox && (
         <SelectionCaptureChip
           bbox={selectionScreenBox}
           aiDragIds={selection}
