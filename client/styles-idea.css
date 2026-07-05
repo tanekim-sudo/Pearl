@@ -714,9 +714,9 @@ html[data-theme="chalk"] .ai-column {
   position: relative;
   flex: 1;
   min-height: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, #1a1a22);
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, #121218);
   border-radius: 12px;
-  background: #050508;
+  background: #0a0a0a;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
@@ -796,6 +796,82 @@ body.ai-node-dragging * {
   height: 100%;
   overflow: visible;
   pointer-events: none;
+  z-index: 1;
+}
+
+.ai-edge {
+  pointer-events: visiblePainted;
+}
+
+.ai-edge-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: crosshair;
+}
+
+.ai-strand-aura {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.ai-edge.hover .ai-strand-aura,
+.ai-edge:hover .ai-strand-aura {
+  opacity: 0.85;
+}
+
+.ai-edge.hover .ai-node-line-glow,
+.ai-edge:hover .ai-node-line-glow {
+  stroke: rgba(255, 230, 160, 0.28);
+  opacity: 1;
+}
+
+.ai-edge.hover .ai-node-line-expand,
+.ai-edge:hover .ai-node-line-expand {
+  stroke: rgba(255, 220, 120, 0.72);
+}
+
+.ai-edge.hover .ai-node-line-interpret,
+.ai-edge:hover .ai-node-line-interpret {
+  stroke: rgba(210, 190, 255, 0.72);
+}
+
+.ai-edge.hover .ai-node-line-move,
+.ai-edge:hover .ai-node-line-move {
+  stroke: rgba(100, 230, 255, 0.72);
+}
+
+.ai-edge.hover .ai-node-line-link,
+.ai-edge.hover .ai-node-line-branch,
+.ai-edge:hover .ai-node-line-link,
+.ai-edge:hover .ai-node-line-branch {
+  stroke: rgba(190, 215, 255, 0.62);
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-line {
+  stroke-width: 0.75;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-line-glow {
+  stroke-width: 2;
+  opacity: 0.55;
+}
+
+.ai-strand-tooltip {
+  position: fixed;
+  z-index: 20;
+  transform: translate(12px, -50%);
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 235, 190, 0.95);
+  background: rgba(8, 10, 16, 0.92);
+  border: 1px solid rgba(255, 210, 120, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .ai-node-line {
@@ -805,27 +881,197 @@ body.ai-node-dragging * {
 }
 
 .ai-node-line-glow {
-  stroke: rgba(255, 255, 255, 0.12);
+  stroke: rgba(255, 255, 255, 0.1);
   stroke-width: 2.5;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 .ai-node-line-expand {
-  stroke: rgba(255, 210, 100, 0.42);
+  stroke: rgba(255, 210, 100, 0.38);
 }
 
 .ai-node-line-interpret {
-  stroke: rgba(200, 180, 255, 0.45);
+  stroke: rgba(200, 180, 255, 0.4);
 }
 
 .ai-node-line-move {
-  stroke: rgba(80, 220, 255, 0.4);
-  stroke-dasharray: 5 6;
+  stroke: rgba(80, 220, 255, 0.36);
+  stroke-dasharray: 4 7;
 }
 
 .ai-node-line-link,
 .ai-node-line-branch {
-  stroke: rgba(180, 200, 255, 0.32);
+  stroke: rgba(160, 200, 255, 0.3);
+}
+
+/* ── Brain-cell constellation nodes ── */
+.ai-node-cell {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ai-node-cell-glow,
+.ai-node-cell-membrane,
+.ai-node-cell-nucleus {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ai-node-cell-glow {
+  inset: calc(-28% * var(--ai-cell-weight, 1));
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(255, 220, 140, 0.55) 0%,
+    rgba(255, 190, 80, 0.22) 28%,
+    rgba(80, 160, 220, 0.12) 52%,
+    transparent 72%
+  );
+  filter: blur(1px);
+  animation: ai-cell-pulse 4.2s ease-in-out infinite;
+}
+
+.ai-node-cell-membrane {
+  inset: 8%;
+  border: 1px solid rgba(255, 210, 130, 0.28);
+  box-shadow:
+    inset 0 0 12px rgba(255, 200, 100, 0.12),
+    0 0 16px rgba(255, 190, 80, 0.18);
+}
+
+.ai-node-cell-nucleus {
+  width: 22%;
+  height: 22%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255, 245, 210, 0.95),
+    rgba(255, 200, 90, 0.65) 45%,
+    rgba(255, 160, 60, 0.2) 100%
+  );
+  box-shadow: 0 0 8px rgba(255, 210, 120, 0.55);
+}
+
+.ai-node-source .ai-node-cell-glow {
+  background: radial-gradient(
+    circle at 40% 36%,
+    rgba(140, 190, 255, 0.5) 0%,
+    rgba(80, 140, 220, 0.2) 35%,
+    rgba(60, 100, 180, 0.08) 58%,
+    transparent 75%
+  );
+}
+
+.ai-node-source .ai-node-cell-membrane {
+  border-color: rgba(140, 190, 255, 0.32);
+  box-shadow:
+    inset 0 0 10px rgba(120, 170, 255, 0.1),
+    0 0 14px rgba(100, 150, 255, 0.16);
+}
+
+.ai-node-source .ai-node-cell-nucleus {
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(220, 235, 255, 0.95),
+    rgba(140, 180, 255, 0.6) 50%,
+    rgba(80, 120, 200, 0.15) 100%
+  );
+}
+
+.ai-node-move .ai-node-cell-glow {
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(80, 230, 255, 0.45) 0%,
+    rgba(60, 180, 220, 0.18) 38%,
+    transparent 72%
+  );
+}
+
+.ai-node-move .ai-node-cell-membrane {
+  border-color: rgba(80, 220, 255, 0.3);
+  border-style: dashed;
+}
+
+.ai-node-move .ai-node-cell-nucleus {
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(200, 245, 255, 0.95),
+    rgba(80, 210, 255, 0.55) 50%,
+    rgba(40, 160, 200, 0.12) 100%
+  );
+}
+
+.ai-node-expanded .ai-node-cell-glow {
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(255, 210, 100, 0.52) 0%,
+    rgba(255, 170, 60, 0.2) 34%,
+    rgba(200, 140, 80, 0.08) 58%,
+    transparent 74%
+  );
+}
+
+.ai-node-viewport.ai-zoom-dot .ai-node,
+.ai-node-viewport.ai-zoom-short .ai-node,
+.ai-node-viewport.ai-constellation-mode .ai-node {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ai-node-viewport.ai-zoom-dot .ai-node-cell,
+.ai-node-viewport.ai-zoom-short .ai-node-cell,
+.ai-node-viewport.ai-constellation-mode .ai-node-cell {
+  opacity: 1;
+}
+
+.ai-node-viewport.ai-zoom-dot .ai-node-starburst,
+.ai-node-viewport.ai-zoom-short .ai-node-starburst,
+.ai-node-viewport.ai-constellation-mode .ai-node-starburst {
+  opacity: 0;
+}
+
+.ai-node-viewport.ai-zoom-dot .ai-node::after,
+.ai-node-viewport.ai-zoom-short .ai-node::after,
+.ai-node-viewport.ai-constellation-mode .ai-node::after {
+  box-shadow: none;
+}
+
+.ai-node-viewport.ai-zoom-full .ai-node-cell {
+  opacity: 0;
+}
+
+.ai-node-viewport.ai-zoom-full .ai-node-starburst {
+  opacity: 0.55;
+}
+
+@keyframes ai-cell-pulse {
+  0%, 100% {
+    transform: scale(calc(0.96 * var(--ai-cell-weight, 1)));
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(calc(1.04 * var(--ai-cell-weight, 1)));
+    opacity: 1;
+  }
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node.selected .ai-node-cell-membrane {
+  border-color: rgba(255, 220, 120, 0.72);
+  box-shadow:
+    inset 0 0 14px rgba(255, 210, 100, 0.22),
+    0 0 24px rgba(255, 200, 80, 0.35);
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node.selected {
+  transform: scale(1.12);
+  box-shadow: none;
 }
 
 .ai-node {
@@ -844,7 +1090,7 @@ body.ai-node-dragging * {
   border: 1px solid rgba(140, 170, 255, 0.35);
   background: rgba(18, 22, 38, 0.92);
   transition: box-shadow 0.12s, border-color 0.12s;
-  z-index: 2;
+  z-index: 3;
 }
 
 .ai-node:active {

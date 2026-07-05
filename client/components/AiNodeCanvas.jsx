@@ -67,6 +67,8 @@ export default function AiNodeCanvas({
   const [panning, setPanning] = useState(false);
   const [vpSize, setVpSize] = useState({ w: 320, h: 240 });
   const [lasso, setLasso] = useState(null);
+  const [strandTip, setStrandTip] = useState(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -319,6 +321,7 @@ export default function AiNodeCanvas({
   const starOffsetX = ((camera.x * 0.02) % 1) * 100;
   const starOffsetY = ((camera.y * 0.02) % 1) * 100;
   const explorationMode = camera.scale > CONSTELLATION_ZOOM_THRESHOLD;
+  const constellationMode = !explorationMode;
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
@@ -357,7 +360,7 @@ export default function AiNodeCanvas({
         (spaceHeld && tool === "select" && selectedIds.length ? " space-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
-        (explorationMode ? " ai-exploration-mode" : "") +
+        (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
       }
       onPointerDown={handleViewportPointerDown}
@@ -400,7 +403,7 @@ export default function AiNodeCanvas({
           transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`,
         }}
       >
-        <svg className="ai-node-lines" aria-hidden="true">
+        <svg className="ai-node-lines" aria-hidden={!strandTip}>
           <defs>
             <marker
               id="ai-edge-arrow-expand"
@@ -453,9 +456,17 @@ export default function AiNodeCanvas({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <filter id="ai-strand-glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          {edges.map(({ id, from, to, kind }) => {
+          {edges.map(({ id, from, to, kind, label }) => {
             const geom = edgeGeometry(from, to, kind === "move" ? 0.04 : 0.07);
+            const pathD = `M ${geom.x1} ${geom.y1} Q ${geom.cx} ${geom.cy} ${geom.x2} ${geom.y2}`;
             const marker =
               kind === "expand"
                 ? "url(#ai-edge-arrow-expand)"
@@ -464,19 +475,46 @@ export default function AiNodeCanvas({
                   : kind === "move"
                     ? "url(#ai-edge-arrow-move)"
                     : "url(#ai-edge-arrow-default)";
+            const isHovered = hoveredEdgeId === id;
             return (
-              <g key={id} className={`ai-edge ai-edge-${kind}`}>
+              <g
+                key={id}
+                className={`ai-edge ai-edge-${kind}${isHovered ? " hovered" : ""}`}
+                onPointerEnter={(e) => {
+                  setHoveredEdgeId(id);
+                  setStrandTip({ label, x: e.clientX, y: e.clientY });
+                }}
+                onPointerMove={(e) => {
+                  setStrandTip({ label, x: e.clientX, y: e.clientY });
+                }}
+                onPointerLeave={() => {
+                  setHoveredEdgeId(null);
+                  setStrandTip(null);
+                }}
+              >
                 <path
-                  d={`M ${geom.x1} ${geom.y1} Q ${geom.cx} ${geom.cy} ${geom.x2} ${geom.y2}`}
+                  d={pathD}
+                  className="ai-edge-hit"
+                  fill="none"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <path
+                  d={pathD}
+                  className="ai-node-line ai-node-line-glow ai-strand-aura"
+                  fill="none"
+                  filter="url(#ai-strand-glow)"
+                />
+                <path
+                  d={pathD}
                   className="ai-node-line ai-node-line-glow"
                   fill="none"
                   filter="url(#ai-edge-glow)"
                 />
                 <path
-                  d={`M ${geom.x1} ${geom.y1} Q ${geom.cx} ${geom.cy} ${geom.x2} ${geom.y2}`}
+                  d={pathD}
                   className={`ai-node-line ai-node-line-${kind}`}
                   fill="none"
-                  markerEnd={marker}
+                  markerEnd={constellationMode ? undefined : marker}
                 />
               </g>
             );
@@ -487,6 +525,8 @@ export default function AiNodeCanvas({
           const r = node.radius || 20;
           const isSelected = selectedIds.includes(node.id);
           const isFocused = focusedNodeId === node.id;
+          const childCount = nodes.filter((n) => n.parentId === node.id).length;
+          const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           return (
             <div
               key={node.id}
@@ -504,10 +544,16 @@ export default function AiNodeCanvas({
                 top: node.y - r,
                 width: r * 2,
                 height: r * 2,
+                "--ai-cell-weight": cellWeight,
               }}
-              title={node.preview || node.expandedText || node.label}
+              title={constellationMode ? undefined : node.preview || node.expandedText || node.label}
               onPointerDown={(e) => startNodeDrag(e, node)}
             >
+              <span className="ai-node-cell" aria-hidden="true">
+                <span className="ai-node-cell-glow" />
+                <span className="ai-node-cell-membrane" />
+                <span className="ai-node-cell-nucleus" />
+              </span>
               <span className="ai-node-starburst" aria-hidden="true" />
               <span className="ai-node-label">
                 {zoomTier === "short"
@@ -552,6 +598,16 @@ export default function AiNodeCanvas({
       )}
 
       {nodes.length === 0 && <div className="ai-node-empty" aria-hidden="true" />}
+
+      {strandTip && (
+        <div
+          className="ai-strand-tooltip"
+          style={{ left: strandTip.x, top: strandTip.y }}
+          role="tooltip"
+        >
+          {strandTip.label}
+        </div>
+      )}
 
       {explorationMode && focusDetail && (
         <div

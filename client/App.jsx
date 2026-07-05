@@ -59,7 +59,9 @@ import {
 } from "./lib/ai-nodes.js";
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
+  DEFAULT_CONSTELLATION_SCALE,
   EXPLORE_ZOOM_SCALE,
+  centerAiCamera,
   findNearestSourceNode,
   fitAiConstellation,
   focusAiNode,
@@ -1916,7 +1918,9 @@ export default function App() {
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
   const [aiCanvasDropOver, setAiCanvasDropOver] = useState(false);
-  const [aiCamera, setAiCamera] = useState({ x: 0, y: 0, scale: 1 });
+  const [aiCamera, setAiCamera] = useState(() =>
+    centerAiCamera(400, 300, DEFAULT_CONSTELLATION_SCALE)
+  );
   const [aiFocusedNodeId, setAiFocusedNodeId] = useState(null);
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
@@ -2009,10 +2013,7 @@ export default function App() {
     const h = aiViewportRef.current.clientHeight;
     if (w < 40 || h < 40) return;
     aiCenteredRef.current = true;
-    const c = aiCamRef.current;
-    if (c.x === 0 && c.y === 0 && c.scale === 1) {
-      setAiCamera(fitAiConstellation(aiNodesRef.current, w, h));
-    }
+    setAiCamera(fitAiConstellation(aiNodesRef.current, w, h));
   });
 
   useEffect(() => {
@@ -5461,6 +5462,7 @@ export default function App() {
       parentId: sourceNode.id,
       sourceIds: sourceNode.sourceIds || [],
       opId: opId || null,
+      opLabel: opLabel || label,
       loading,
       x: pos.x,
       y: pos.y,

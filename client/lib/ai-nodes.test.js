@@ -8,6 +8,7 @@ import {
   layoutChildren,
   resolveOverlaps,
   collectAiEdges,
+  edgeLabelForEdge,
   childNodePosition,
   layoutAfterAppend,
 } from "./ai-nodes.js";
@@ -59,12 +60,29 @@ describe("ai-nodes layout", () => {
   it("collectAiEdges gathers parentId and sourceNodeIds links", () => {
     const nodes = [
       { id: "src", nodeKind: "source", x: 0, y: 0 },
-      { id: "exp", nodeKind: "expanded", parentId: "src", sourceNodeIds: ["src"], x: 200, y: 0 },
-      { id: "mov", nodeKind: "move", sourceNodeIds: ["src"], x: 100, y: 100 },
+      {
+        id: "exp",
+        nodeKind: "expanded",
+        parentId: "src",
+        sourceNodeIds: ["src"],
+        opLabel: "summarize",
+        x: 200,
+        y: 0,
+      },
+      { id: "mov", nodeKind: "move", label: "reframe", sourceNodeIds: ["src"], x: 100, y: 100 },
     ];
     const edges = collectAiEdges(nodes);
     assert.ok(edges.some((e) => e.fromId === "src" && e.toId === "exp" && e.kind === "expand"));
     assert.ok(edges.some((e) => e.fromId === "src" && e.toId === "mov" && e.kind === "move"));
+    const expandEdge = edges.find((e) => e.toId === "exp");
+    assert.equal(expandEdge.label, "summarize");
+    const moveEdge = edges.find((e) => e.toId === "mov");
+    assert.equal(moveEdge.label, "reframe");
+  });
+
+  it("edgeLabelForEdge falls back to kind names", () => {
+    assert.equal(edgeLabelForEdge(null, { nodeKind: "expanded" }, "expand"), "expand");
+    assert.equal(edgeLabelForEdge(null, null, "link"), "link");
   });
 
   it("layoutAfterAppend fans and resolves", () => {

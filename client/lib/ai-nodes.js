@@ -121,6 +121,25 @@ function edgeKindForNode(node) {
   return "branch";
 }
 
+/** Human-readable strand label from edge endpoints and kind. */
+export function edgeLabelForEdge(fromNode, toNode, kind) {
+  if (toNode) {
+    for (const field of ["opLabel", "opName", "functionName", "methodName", "method", "label"]) {
+      const value = toNode[field];
+      if (value && String(value).trim() && String(value).trim() !== "···") {
+        return String(value).trim();
+      }
+    }
+  }
+  if (fromNode?.nodeKind === "move" && fromNode.label) return fromNode.label;
+  if (kind === "expand") return "expand";
+  if (kind === "interpret") return "interpret";
+  if (kind === "move") return "move";
+  if (kind === "link") return "link";
+  if (kind === "branch") return "derive";
+  return kind || "link";
+}
+
 /** Collect all lineage / related-concept edges from node graph. */
 export function collectAiEdges(nodes) {
   const edges = [];
@@ -133,7 +152,15 @@ export function collectAiEdges(nodes) {
     if (seen.has(key)) return;
     if (!byId.has(fromId) || !byId.has(toId)) return;
     seen.add(key);
-    edges.push({ id: key, fromId, toId, kind });
+    const from = byId.get(fromId);
+    const to = byId.get(toId);
+    edges.push({
+      id: key,
+      fromId,
+      toId,
+      kind,
+      label: edgeLabelForEdge(from, to, kind),
+    });
   }
 
   for (const node of nodes) {
