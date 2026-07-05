@@ -105,11 +105,16 @@ export default function AiColumn({
               <div className="ai-actions">
                 <button
                   type="button"
-                  className="ai-expand-btn"
+                  className={"ai-expand-btn" + (loading ? " loading" : "")}
                   disabled={loading || !(detailNode?.sourceIds?.length || panel?.sourceIds?.length)}
                   onClick={onExpand}
+                  aria-busy={loading || undefined}
                 >
-                  {loading ? "Expanding…" : panel?.opLabel ? `Run · ${panel.opLabel}` : "Expand"}
+                  {loading ? (
+                    <span className="ai-expand-spinner" aria-hidden="true" />
+                  ) : (
+                    "Expand"
+                  )}
                 </button>
                 {expandedText && (
                   <>
@@ -151,12 +156,6 @@ export default function AiColumn({
                 </section>
               )}
 
-              {loading && !expandedText && (
-                <div className="ai-loading">
-                  <span className="ai-loading-dot" />
-                  <span>Thinking…</span>
-                </div>
-              )}
             </section>
           )}
         </section>

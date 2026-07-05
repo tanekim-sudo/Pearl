@@ -118,7 +118,8 @@ const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
-const MOVE_DRAG_THRESHOLD = 3; // px before pointer-down becomes a move
+const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
+const TRANSFER_DRAG_THRESHOLD = 8; // px before space-transfer or boundary transfer activates
 const SPACE_DOUBLE_TAP_MS = 350;
 
 const INK = "var(--ink-stroke)";
@@ -2108,12 +2109,11 @@ export default function App() {
     return screenToWorld(aiCamRef.current, clientX - rect.left, clientY - rect.top);
   }
 
-  function startSpaceTransfer(e, origin, ids) {
+  function startPendingSpaceTransfer(e, origin, ids) {
     if (!ids?.length) return;
     setGesturing(true);
-    setTransferDragActive(true);
     gesture.current = {
-      mode: "space-transfer",
+      mode: "pending-space-transfer",
       origin,
       ids: ids.slice(),
       cx: e.clientX,
@@ -2121,17 +2121,23 @@ export default function App() {
       lastCx: e.clientX,
       lastCy: e.clientY,
     };
-    setSpaceTransferGhost({
-      cx: e.clientX,
-      cy: e.clientY,
-      count: ids.length,
-      target: null,
-    });
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
+  }
+
+  function activateSpaceTransfer(g, cx, cy) {
+    g.mode = "space-transfer";
+    g.activated = true;
+    setTransferDragActive(true);
+    setSpaceTransferGhost({
+      cx,
+      cy,
+      count: g.ids.length,
+      target: null,
+    });
   }
 
   function transferAiNodesToPaper(nodeIds, atWorld) {
@@ -2265,6 +2271,11 @@ export default function App() {
         const r = vpRect();
         if (!paperAllowsPan(g.cam.scale, r.width, r.height)) return;
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
+      } else if (g.mode === "pending-space-transfer") {
+        const dist = Math.hypot(cx - g.cx, cy - g.cy);
+        if (dist > TRANSFER_DRAG_THRESHOLD) {
+          activateSpaceTransfer(g, cx, cy);
+        }
       } else if (g.mode === "space-transfer") {
         g.lastCx = cx;
         g.lastCy = cy;
@@ -2412,13 +2423,17 @@ export default function App() {
       gesture.current = null;
       if (!g) return;
       if (g.mode === "pan") setPanningRef.current(false);
-      if (g.mode === "space-transfer") {
+      if (g.mode === "pending-space-transfer") {
+        setTransferDragActive(false);
+        setBoundaryMagnetActive(false);
+        setSpaceTransferGhost(null);
+      } else if (g.mode === "space-transfer") {
         setTransferDragActive(false);
         setBoundaryMagnetActive(false);
         setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
-        spaceTransferCompleteRef.current(g, cx, cy);
+        if (g.activated) spaceTransferCompleteRef.current(g, cx, cy);
       }
 
       if (g.mode === "draw") {
@@ -2526,7 +2541,7 @@ export default function App() {
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
         const expandIds = transformableDragIds(g.ids);
-        if (isNearTransferBoundary(cx) && expandIds.length && (g.moved || 0) > MOVE_DRAG_THRESHOLD) {
+        if (isNearTransferBoundary(cx) && expandIds.length && (g.moved || 0) > TRANSFER_DRAG_THRESHOLD) {
           restoreMovePositions(g.startPositions);
           expandInAiRef.current(expandIds);
         } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
@@ -4260,7 +4275,6 @@ export default function App() {
             ? `session saved · "${session.transcript.slice(0, 48)}…"`
             : "voice + draw session saved"
         );
-        interpretPaperSession(session);
       } catch (err) {
         showToast(err.message || "could not stop recording");
       }
@@ -4325,7 +4339,7 @@ export default function App() {
         expandedText: text,
         loading: false,
         error: null,
-        label: "Interpreted",
+        label: truncateLabel(text, 12),
       });
       setAiPanel((prev) => ({
         ...prev,
@@ -4382,7 +4396,7 @@ export default function App() {
         expandedText: text,
         loading: false,
         error: null,
-        label: "Interpreted",
+        label: truncateLabel(text, 12),
       });
       setAiPanel((prev) => ({
         ...prev,
@@ -4473,7 +4487,7 @@ export default function App() {
     if (spaceHeldRef.current) {
       const paperSel = selRef.current;
       if (paperSel.length > 0) {
-        startSpaceTransfer(e, "paper", paperSel);
+        startPendingSpaceTransfer(e, "paper", paperSel);
         return;
       }
       return;
@@ -4956,7 +4970,7 @@ export default function App() {
     const expandedPos = childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
     const expandedNode = makeAiNode({
       nodeKind: "expanded",
-      label: "Interpret",
+      label: "···",
       sourceNodeIds: [sessionNode.id],
       parentId: sessionNode.id,
       sourceIds: [],
@@ -5249,8 +5263,6 @@ export default function App() {
         /* ignore */
       }
     }
-    if (!ids?.length) ids = aiPanel?.sourceIds?.length ? aiPanel.sourceIds : selection;
-
     const sketchBundle = ids?.length ? gatherSelectionSketchBundle(ids) : null;
     if (sketchBundle && autoExpand) {
       interpretSketchBundle(sketchBundle, pos);
@@ -5363,14 +5375,6 @@ export default function App() {
     absorbTransferPayloadAt(e, world, { autoExpand: true });
   }
 
-  useEffect(() => {
-    if (selection.length !== 1 || walking) return;
-    const item = items.find((it) => it.id === selection[0]);
-    if (!item || !isTransformableBlock(item)) return;
-    if (aiPanel?.loading) return;
-    syncAiSource([selection[0]], { keepExpanded: true });
-  }, [selection, items, walking]);
-
   function handleMenuAction(action) {
     if (action === "undo") undo();
     else if (action === "redo") redo();
@@ -5444,7 +5448,6 @@ export default function App() {
     return { x: it.x + w / 2, y: it.y + h / 2 };
   }
 
-  const hasPaperSession = (pages.find((p) => p.id === activePageId)?.sessions?.length ?? 0) > 0;
   const selectionSketchBundle =
     selection.length > 0 ? gatherSelectionSketchBundle(selection) : null;
   const selectionHasSketch = !!selectionSketchBundle;
@@ -5455,14 +5458,6 @@ export default function App() {
         return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
       })()
     : null;
-  const boundaryStatus =
-    aiPanel?.loading && aiPanel?.opLabel === "interpret paper"
-      ? "interpreting"
-      : aiPanel?.sourceText && !aiPanel?.loading
-        ? "synced"
-        : hasPaperSession || selection.length > 0
-          ? "ready"
-          : "idle";
 
   return (
     <div className={"idea-app theme-" + theme}>
@@ -5875,11 +5870,6 @@ export default function App() {
           onSave={saveSelectionAsFunction}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
-          onSendToAi={() =>
-            selectionSketchBundle
-              ? interpretSketchBundle(selectionSketchBundle)
-              : expandInAi([selItem.id])
-          }
           aiDragIds={[selItem.id]}
           sketchBundle={selectionSketchBundle}
           interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
@@ -5891,11 +5881,6 @@ export default function App() {
       {canTransform && !selCaptureInfo?.canCapture && !walking && selItem && (
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
-          onSendToAi={() =>
-            selectionSketchBundle
-              ? interpretSketchBundle(selectionSketchBundle)
-              : expandInAi([selItem.id])
-          }
           aiDragIds={[selItem.id]}
           sketchBundle={selectionSketchBundle}
           interpretLabel={selectionHasSketch ? "→ interpret" : "→ AI"}
@@ -5907,7 +5892,6 @@ export default function App() {
       {selectionHasSketch && !canTransform && !walking && selectionScreenBox && (
         <SelectionCaptureChip
           bbox={selectionScreenBox}
-          onSendToAi={() => interpretSketchBundle(selectionSketchBundle)}
           aiDragIds={selection}
           sketchBundle={selectionSketchBundle}
           interpretLabel="→ interpret"
@@ -5921,12 +5905,9 @@ export default function App() {
         </CanvasColumn>
 
         <InterpretBoundary
-          status={boundaryStatus}
           dropOver={boundaryDropOver}
           magnetActive={boundaryMagnetActive || transferDragActive}
-          hasPaperSession={hasPaperSession}
-          loading={aiPanel?.loading && aiPanel?.opLabel === "interpret paper"}
-          onInterpret={() => interpretPaperSession()}
+          loading={!!aiPanel?.loading}
           onDragOver={handleBoundaryDragOver}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -5946,7 +5927,7 @@ export default function App() {
           onMoveNode={moveAiNode}
           spaceHeld={spaceHeld}
           tool={tool}
-          onSpaceTransferStart={(e) => startSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
+          onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
           viewportRef={aiViewportRef}
           canvasDropOver={aiCanvasDropOver}
           onCanvasDragOver={handleAiCanvasDragOver}
@@ -6412,7 +6393,6 @@ function SelectionCaptureChip({
   onSave,
   onSaveDocument,
   onShareJourney,
-  onSendToAi,
   aiDragIds,
   sketchBundle,
   interpretLabel = "→ AI",
@@ -6431,10 +6411,6 @@ function SelectionCaptureChip({
           type="button"
           className="sel-capture-chip ai"
           draggable
-          onClick={(e) => {
-            e.stopPropagation();
-            onSendToAi?.();
-          }}
           onDragStart={(e) => {
             if (sketchBundle) {
               e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));

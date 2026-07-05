@@ -3,6 +3,7 @@ import { collectAiEdges, edgeGeometry, truncateLabel } from "../lib/ai-nodes.js"
 import { screenToWorld, viewportCenterWorld, zoomAtPoint } from "../lib/ai-space.js";
 
 const AI_OUTPUT_MIME = "application/lens-ai-output";
+const NODE_DRAG_THRESHOLD = 8;
 
 const STAR_COUNT = 120;
 
@@ -183,19 +184,13 @@ export default function AiNodeCanvas({
       onSpaceTransferStart?.(e);
       return;
     }
-    e.preventDefault();
     e.stopPropagation();
-    if (e.shiftKey) {
-      onSelect?.(node.id, { toggle: true });
-    } else if (!selectedIds.includes(node.id)) {
-      onSelect?.(node.id, { replace: true });
-    }
     const startX = e.clientX;
     const startY = e.clientY;
     const origX = node.x;
     const origY = node.y;
-    dragRef.current = { nodeId: node.id, startX, startY, origX, origY, scale: camera.scale };
-    document.body.classList.add("ai-node-dragging");
+    const pending = { nodeId: node.id, startX, startY, origX, origY, scale: camera.scale };
+    let dragging = false;
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -204,6 +199,14 @@ export default function AiNodeCanvas({
     }
 
     function handleDragMove(ev) {
+      if (!dragging) {
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (dist <= NODE_DRAG_THRESHOLD) return;
+        dragging = true;
+        dragRef.current = pending;
+        document.body.classList.add("ai-node-dragging");
+        ev.preventDefault();
+      }
       if (!dragRef.current) return;
       const dx = (ev.clientX - dragRef.current.startX) / dragRef.current.scale;
       const dy = (ev.clientY - dragRef.current.startY) / dragRef.current.scale;
@@ -408,7 +411,6 @@ export default function AiNodeCanvas({
             (node.nodeKind === "source" || node.nodeKind === "session") &&
             node.sourceIds?.length &&
             !node.loading;
-          const canTransfer = node.nodeKind === "expanded" && node.expandedText && !node.loading;
           return (
             <div
               key={node.id}
@@ -427,13 +429,6 @@ export default function AiNodeCanvas({
                 height: r * 2,
               }}
               title={node.preview || node.expandedText || node.label}
-              draggable={canTransfer && !spaceHeld}
-              onDragStart={(e) => {
-                if (!canTransfer || spaceHeld) return;
-                e.stopPropagation();
-                e.dataTransfer.setData(AI_OUTPUT_MIME, node.expandedText);
-                e.dataTransfer.effectAllowed = "copy";
-              }}
               onPointerDown={(e) => startNodeDrag(e, node)}
               onClick={(e) => {
                 e.stopPropagation();

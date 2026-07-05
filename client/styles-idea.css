@@ -48,7 +48,7 @@
   gap: 0;
 }
 
-/* Interpretation boundary — spatial↔AI bridge */
+/* Interpretation boundary — paper | seam | AI */
 .interpret-boundary-hit {
   position: relative;
   width: 12px;
@@ -69,7 +69,7 @@
 
 .interpret-boundary-hit.drop-over::before,
 .interpret-boundary-hit.magnet::before {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .interpret-boundary-hit.drop-over {
@@ -82,136 +82,51 @@
   width: 100%;
   height: 100%;
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--paper-deep) 60%, var(--accent) 8%) 0%,
-    color-mix(in srgb, var(--card) 70%, var(--accent) 12%) 50%,
-    color-mix(in srgb, var(--paper-deep) 60%, var(--accent) 8%) 100%
+    90deg,
+    color-mix(in srgb, var(--paper-deep) 92%, transparent) 0%,
+    color-mix(in srgb, var(--line) 40%, transparent) 50%,
+    color-mix(in srgb, #08080c 92%, transparent) 100%
   );
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-  cursor: default;
+  pointer-events: none;
   z-index: 1;
   transition: background 0.15s, box-shadow 0.15s;
 }
 
-.interpret-boundary.magnet {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.interpret-boundary.ready {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--paper-deep) 50%, var(--accent) 14%) 0%,
-    color-mix(in srgb, var(--card) 60%, var(--accent) 18%) 50%,
-    color-mix(in srgb, var(--paper-deep) 50%, var(--accent) 14%) 100%
-  );
-}
-
-.interpret-boundary.drop-over {
-  background: color-mix(in srgb, var(--accent) 22%, var(--card));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-
-.interpret-boundary.interpreting {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 8%, var(--card)) 0%,
-    color-mix(in srgb, var(--accent) 16%, var(--card)) 50%,
-    color-mix(in srgb, var(--accent) 8%, var(--card)) 100%
-  );
-}
-
-.interpret-boundary.synced .interpret-boundary-dot {
-  background: var(--accent);
-}
-
-.interpret-boundary-track {
+.interpret-boundary::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.interpret-boundary-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--line);
-  opacity: 0.7;
-}
-
-.interpret-boundary-dot.pulse {
-  background: var(--accent);
-  animation: ai-pulse 1s ease-in-out infinite;
-}
-
-.interpret-boundary-btn {
-  position: absolute;
+  top: 0;
+  bottom: 0;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--ink-2);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
-  z-index: 2;
+  transform: translateX(-50%);
+  width: 1px;
+  background: color-mix(in srgb, var(--line) 70%, var(--accent) 15%);
+  opacity: 0.85;
+  transition: opacity 0.15s, box-shadow 0.15s;
 }
 
-.interpret-boundary-btn:not(:disabled):hover {
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
-  color: var(--accent-text);
-}
-
-.interpret-boundary-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.interpret-boundary-arrow {
-  font-size: 11px;
-  line-height: 1;
-}
-
-.interpret-boundary-status {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-90deg);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--faint);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.interpret-boundary:hover .interpret-boundary-status,
-.interpret-boundary.drop-over .interpret-boundary-status,
-.interpret-boundary.interpreting .interpret-boundary-status {
+.interpret-boundary.magnet::after,
+.interpret-boundary.drop-over::after {
+  width: 2px;
   opacity: 1;
+  background: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.interpret-boundary.processing::after {
+  animation: boundary-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes boundary-pulse {
+  0%, 100% {
+    opacity: 0.45;
+    box-shadow: 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
 }
 
 .column-drop-over {
@@ -943,6 +858,26 @@ body.ai-node-dragging * {
 .ai-expand-btn:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.ai-expand-btn.loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+}
+
+.ai-expand-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ai-expand-spin 0.7s linear infinite;
+}
+
+@keyframes ai-expand-spin {
+  to { transform: rotate(360deg); }
 }
 
 .ai-action-btn {
