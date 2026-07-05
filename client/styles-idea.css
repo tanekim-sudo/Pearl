@@ -1971,7 +1971,8 @@ body.ai-node-dragging * {
 .idea-center .board-text,
 .canvas-column .board-text {
   color: var(--ink);
-  font-family: var(--hand);
+  font-family: var(--sans);
+  overflow: hidden;
 }
 
 /* Block item types */
