@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { collectAiEdges, edgeGeometry, truncateLabel } from "../lib/ai-nodes.js";
 import { screenToWorld, viewportCenterWorld, zoomAtPoint } from "../lib/ai-space.js";
+import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
 
 const AI_OUTPUT_MIME = "application/lens-ai-output";
 const NODE_DRAG_THRESHOLD = 8;
@@ -39,6 +40,7 @@ export default function AiNodeCanvas({
   spaceHeld,
   tool = "select",
   onSpaceTransferStart,
+  onFragmentTransfer,
   viewportRef: externalViewportRef,
 }) {
   const localViewportRef = useRef(null);
@@ -178,7 +180,18 @@ export default function AiNodeCanvas({
 
   function startNodeDrag(e, node) {
     if (e.button !== 0) return;
-    if (spaceHeld && selectedIds.length) {
+    if (tool === "highlight") {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect?.(node.id, { replace: true });
+      const canExpand =
+        (node.nodeKind === "source" || node.nodeKind === "session") &&
+        node.sourceIds?.length &&
+        !node.loading;
+      if (canExpand && !node.expandedText) onExpandNode?.(node.id);
+      return;
+    }
+    if (spaceHeld && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
       onSpaceTransferStart?.(e);
@@ -240,7 +253,7 @@ export default function AiNodeCanvas({
       e.target.classList.contains("ai-world-layer") ||
       e.target.classList.contains("ai-node-lines");
 
-    if (spaceHeld && selectedIds.length) {
+    if (spaceHeld && tool === "select" && selectedIds.length) {
       onSpaceTransferStart?.(e);
       return;
     }
@@ -250,8 +263,13 @@ export default function AiNodeCanvas({
       return;
     }
 
-    if ((tool === "select" || tool === "highlight") && e.button === 0 && onVoid) {
+    if (tool === "select" && e.button === 0 && onVoid) {
       startLasso(e);
+      return;
+    }
+
+    if (tool === "highlight" && e.button === 0 && onVoid) {
+      startPan(e);
       return;
     }
 
@@ -278,8 +296,9 @@ export default function AiNodeCanvas({
       className={
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
-        (spaceHeld && selectedIds.length ? " space-transfer-ready" : "") +
-        (spaceHeld ? " pan-ready" : "")
+        (spaceHeld && tool === "select" && selectedIds.length ? " space-transfer-ready" : "") +
+        (spaceHeld ? " pan-ready" : "") +
+        (tool === "highlight" ? " ai-highlight-mode" : "")
       }
       onPointerDown={handleViewportPointerDown}
       onDragOver={(e) => {
@@ -447,6 +466,23 @@ export default function AiNodeCanvas({
               <span className="ai-node-label">{truncateLabel(node.label, 12)}</span>
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
+              {tool === "highlight" &&
+                isSelected &&
+                node.expandedText?.trim() &&
+                !node.loading && (
+                  <div
+                    className="ai-node-fragment-panel"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FragmentHighlightLayer
+                      active
+                      text={node.expandedText}
+                      onFragment={onFragmentTransfer}
+                      className="ai-node-fragment-highlight"
+                    />
+                  </div>
+                )}
             </div>
           );
         })}

@@ -1636,7 +1636,22 @@ body {
 }
 .board-text.hl-touch:not(.sel) {
   background: rgba(245, 230, 163, 0.12);
-  box-shadow: 0 0 0 2px rgba(245, 230, 163, 0.35);
+  box-shadow:
+    0 0 0 3px rgba(245, 230, 163, 0.55),
+    0 0 20px rgba(245, 230, 163, 0.35);
+  animation: hl-transfer-flash 0.32s ease-out;
+}
+@keyframes hl-transfer-flash {
+  0% {
+    box-shadow:
+      0 0 0 4px rgba(245, 230, 163, 0.85),
+      0 0 28px rgba(245, 230, 163, 0.55);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(245, 230, 163, 0.35),
+      0 0 12px rgba(245, 230, 163, 0.2);
+  }
 }
 .board-text.editing {
   outline: none;

@@ -1554,6 +1554,31 @@ function itemsInsideHighlightLoop(points, itemList) {
   return [...new Set(ids)];
 }
 
+/** Whole-idea ids from a paper highlight gesture (loop or scribble bbox). */
+function ideasFromHighlightGesture(points, scale, itemList) {
+  if (!points?.length) return [];
+  const hlW = highlightWorldWidth(scale);
+  const loop = points.length > 8 && isClosedHighlightLoop(points, scale);
+  const keep = (it) =>
+    it &&
+    it.type !== "link" &&
+    (isTransformableBlock(it) || it.type === "stroke" || it.type === "image");
+
+  if (loop) {
+    return itemsInsideHighlightLoop(points, itemList).filter((id) => keep(itemList.find((i) => i.id === id)));
+  }
+
+  const bb = strokeWorldBBox(points, hlW * 0.65);
+  if (!bb) return [];
+  const ids = [];
+  for (const it of itemList) {
+    if (!keep(it)) continue;
+    const ibb = itemWorldBBox(it);
+    if (ibb && bboxesOverlap(ibb, bb)) ids.push(it.id);
+  }
+  return [...new Set(ids)];
+}
+
 function extractTextFromLoopSelection(itemIds, itemList) {
   const texts = itemList.filter((it) => itemIds.includes(it.id) && it.type === "text" && it.text?.trim());
   if (!texts.length) return null;
@@ -1897,6 +1922,7 @@ export default function App() {
   const lastPointerRef = useRef(null);
   const editClickRef = useRef(null);
   const eraseAtPointerRef = useRef(() => false);
+  const itemAtPointRef = useRef(() => null);
   const historyRef = useRef({ past: [], future: [] });
   const pushHistoryRef = useRef(() => {});
   camRef.current = camera;
@@ -1908,6 +1934,8 @@ export default function App() {
   editingRef.current = editing;
 
   const expandInAiRef = useRef(() => {});
+  const paperHighlightTransferRef = useRef(() => {});
+  const transferFragmentToPaperRef = useRef(() => {});
   const spaceTransferCompleteRef = useRef(() => {});
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
@@ -2466,31 +2494,14 @@ export default function App() {
           const isHighlight = !!g.highlight;
           if (isHighlight) {
             const pts = g.points.slice();
-            const hlW = highlightWorldWidth(camRef.current.scale);
-            if (isClosedHighlightLoop(pts, camRef.current.scale)) {
-              const inside = itemsInsideHighlightLoop(pts, itemsRef.current);
-              if (inside.length) {
-                setSelection(inside);
-                showToastRef.current(`selected ${inside.length} item${inside.length > 1 ? "s" : ""}`);
-                requestAnimationFrame(() => {
-                  const extracted = extractTextFromLoopSelection(inside, itemsRef.current);
-                  if (extracted) {
-                    setSelection([extracted.itemId]);
-                  }
-                });
-              } else {
-                showToastRef.current("nothing inside the circle");
-              }
-            } else {
-              const extracted = extractTextFromHighlightStroke(
-                pts,
-                hlW,
-                itemsRef.current,
-                worldToClient
-              );
-              if (extracted) {
-                setSelection([extracted.itemId]);
-              }
+            if (g.strokeId) paperSessionRef.current?.cancelStroke?.();
+            let ideaIds = ideasFromHighlightGesture(pts, camRef.current.scale, itemsRef.current);
+            if (!ideaIds.length && g.points.length <= 3) {
+              const tapHit = itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy);
+              if (tapHit && isTransformableBlock(tapHit)) ideaIds = [tapHit.id];
+            }
+            if (ideaIds.length) {
+              paperHighlightTransferRef.current(ideaIds);
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -2501,6 +2512,8 @@ export default function App() {
             });
             setItems((arr) => [...arr, strokeItem]);
           }
+        } else if (g.highlight && g.strokeId) {
+          paperSessionRef.current?.cancelStroke?.();
         }
         setDraft(null);
       } else if (g.mode === "lasso") {
@@ -4482,7 +4495,7 @@ export default function App() {
     const lp = vpLocal(cx, cy);
     let hit = itemAtPoint(cx, cy);
 
-    if (spaceHeldRef.current) {
+    if (spaceHeldRef.current && toolRef.current === "select") {
       const paperSel = selRef.current;
       if (paperSel.length > 0) {
         startPendingSpaceTransfer(e, "paper", paperSel);
@@ -4548,30 +4561,31 @@ export default function App() {
     }
 
     if (t === "highlight") {
-      const objHit = hit && isTransformableBlock(hit) ? hit : null;
-      if (!objHit) {
-        pushHistory();
-        const hlW = highlightWorldWidth(camRef.current.scale);
-        const strokeId = startDrawStroke(w, {
-          color: HIGHLIGHT_INK,
-          width: hlW,
-          marker: true,
-          highlight: true,
-        });
-        gesture.current = {
-          mode: "draw",
-          highlight: true,
-          points: [w],
-          deletedIds: new Set(),
-          lastCx: cx,
-          lastCy: cy,
-          strokeId,
-        };
-        setHighlightTouchIds([]);
-        setDraft({ points: [w], highlight: true });
-        try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-        return;
+      pushHistory();
+      const hlW = highlightWorldWidth(camRef.current.scale);
+      const strokeId = startDrawStroke(w, {
+        color: HIGHLIGHT_INK,
+        width: hlW,
+        marker: true,
+        highlight: true,
+      });
+      gesture.current = {
+        mode: "draw",
+        highlight: true,
+        points: [w],
+        deletedIds: new Set(),
+        lastCx: cx,
+        lastCy: cy,
+        strokeId,
+      };
+      setHighlightTouchIds([]);
+      setDraft({ points: [w], highlight: true });
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
       }
+      return;
     }
 
     if (t === "eraser") {
@@ -5170,6 +5184,24 @@ export default function App() {
     }
   }
   expandInAiRef.current = expandInAi;
+  itemAtPointRef.current = itemAtPoint;
+  paperHighlightTransferRef.current = (ideaIds) => {
+    if (!ideaIds?.length) return;
+    setHighlightTouchIds(ideaIds);
+    window.setTimeout(() => setHighlightTouchIds([]), 320);
+    const sketchBundle = gatherSelectionSketchBundle(ideaIds);
+    const world = getAiDropWorld();
+    if (sketchBundle) {
+      interpretSketchBundle(sketchBundle, world);
+      return;
+    }
+    const expandIds = transformableDragIds(ideaIds);
+    if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+  };
+  transferFragmentToPaperRef.current = (fragment) => {
+    if (!fragment?.trim()) return;
+    spawnTextAtWorld(fragment, viewportCenterWorld(), { silent: true });
+  };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
       const ids = g.ids;
@@ -5186,7 +5218,7 @@ export default function App() {
     }
   };
 
-  function spawnTextAtWorld(text, atWorld) {
+  function spawnTextAtWorld(text, atWorld, opts = {}) {
     const clean = stripMd(text).trim();
     if (!clean) return;
     pushHistory();
@@ -5206,7 +5238,7 @@ export default function App() {
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
-    showToast("added to paper");
+    if (!opts.silent) showToast("added to paper");
   }
 
   function getAiDropWorld(fallbackWorld) {
@@ -5433,7 +5465,7 @@ export default function App() {
         .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
-    spaceHeld && (selection.length || selectedAiNodeIds.length)
+    spaceHeld && tool === "select" && (selection.length || selectedAiNodeIds.length)
       ? "cur-space-transfer"
       : panning
       ? "cur-grab"
@@ -5926,6 +5958,7 @@ export default function App() {
           spaceHeld={spaceHeld}
           tool={tool}
           onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
+          onFragmentTransfer={(fragment) => transferFragmentToPaperRef.current(fragment)}
           viewportRef={aiViewportRef}
           canvasDropOver={aiCanvasDropOver}
           onCanvasDragOver={handleAiCanvasDragOver}

@@ -184,6 +184,11 @@ export class PaperRecordSession {
     return stroke;
   }
 
+  /** Drop an in-progress stroke (e.g. ephemeral highlight ink). */
+  cancelStroke() {
+    this._pendingStroke = null;
+  }
+
   stop() {
     return new Promise((resolve) => {
       if (!this.recording) {

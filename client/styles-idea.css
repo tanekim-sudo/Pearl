@@ -2531,3 +2531,91 @@ html[data-theme="chalk"] body {
     0 0 10px 2px rgba(80, 220, 255, 0.15),
     0 0 22px 5px rgba(60, 200, 255, 0.1);
 }
+
+/* ---- AI fragment highlight (highlight tool) ---- */
+.ai-highlight-hint {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--chalk-yellow-deep, #e6c84a);
+  letter-spacing: 0.02em;
+}
+
+.ai-result-highlight-wrap {
+  position: relative;
+}
+
+.ai-result-readonly {
+  min-height: 200px;
+  white-space: pre-wrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.fragment-highlight-layer {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  z-index: 2;
+}
+
+.fragment-highlight-text {
+  width: 100%;
+  min-height: 200px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: var(--hand);
+  color: transparent;
+  white-space: pre-wrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.fragment-highlight-draft {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ai-node-viewport.ai-highlight-mode {
+  cursor: crosshair;
+}
+
+.ai-node-fragment-panel {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: max(220px, 18vw);
+  max-width: 320px;
+  max-height: 180px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(12, 16, 28, 0.92);
+  border: 1px solid rgba(255, 230, 120, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 6;
+  overflow: hidden;
+}
+
+.ai-node-fragment-panel .fragment-highlight-text {
+  min-height: 120px;
+  max-height: 160px;
+  overflow: auto;
+  font-size: 11px;
+  padding: 0;
+}
+
+.ai-node-fragment-panel .fragment-highlight-layer {
+  position: relative;
+  min-height: 120px;
+  max-height: 160px;
+}
+
+.ai-result-section.ai-highlight-mode .ai-result-highlight-wrap {
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 230, 120, 0.35);
+}
