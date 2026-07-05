@@ -1,43 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 
+/** Legacy bottom bar — gutted to micro zoom dot; kept for compatibility. */
 export default function BottomBar({
   pages,
   activePageId,
   zoomPct,
-  editMode,
   onSelectPage,
   onAddPage,
   onZoomIn,
   onZoomOut,
   onZoomReset,
-  onExport,
-  onToggleEdit,
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <footer className="idea-bottom">
-      <button type="button" className={"edit-fab" + (editMode ? " active" : "")} onClick={onToggleEdit}>
-        Edit
-      </button>
-
-      <div className="page-filmstrip">
-        {pages.map((page) => (
-          <button
-            key={page.id}
-            type="button"
-            className={"page-thumb" + (page.id === activePageId ? " active" : "")}
-            onClick={() => onSelectPage(page.id)}
-            title={page.name}
-          >
-            <span className="page-thumb-inner">{page.name?.slice(0, 1) || "P"}</span>
-          </button>
-        ))}
-        <button type="button" className="page-add" onClick={onAddPage} title="Add page">
-          +
-        </button>
-      </div>
-
-      <div className="bottom-controls">
-        <div className="zoom-controls">
+    <footer className="idea-bottom idea-bottom-minimal">
+      <div
+        className={"canvas-edge-bottom" + (open ? " open" : "")}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <button type="button" className="zoom-micro-dot" aria-label="Zoom" />
+        <div className="zoom-micro-panel">
           <button type="button" onClick={onZoomOut} aria-label="Zoom out">
             −
           </button>
@@ -48,12 +32,6 @@ export default function BottomBar({
             +
           </button>
         </div>
-        <button type="button" className="export-btn" onClick={onExport} title="Export">
-          ↗
-        </button>
-        <button type="button" className="help-btn" title="Help">
-          ?
-        </button>
       </div>
     </footer>
   );

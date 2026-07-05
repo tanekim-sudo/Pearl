@@ -60,10 +60,6 @@ export default function AiColumn({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <header className="ai-column-head">
-        <h2 className="ai-column-title">AI Layer</h2>
-      </header>
-
       <div className="ai-column-body unified">
         <AiToolbox
           dropOver={libraryDropOver}

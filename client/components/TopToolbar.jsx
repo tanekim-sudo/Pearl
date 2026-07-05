@@ -3,8 +3,8 @@ import React, { useState } from "react";
 function MenuDropdown({ label, items, onAction }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={"menu-dropdown" + (open ? " open" : "")}>
-      <button type="button" className="menu-item" onClick={() => setOpen(!open)}>
+    <div className={"menu-dropdown menu-dropdown-minimal" + (open ? " open" : "")}>
+      <button type="button" className="menu-item menu-item-minimal" onClick={() => setOpen(!open)}>
         {label}
       </button>
       {open && (
@@ -45,106 +45,63 @@ export default function TopToolbar({
   onRedo,
   onShare,
 }) {
-  const menus = [
-    {
-      id: "file",
-      label: "File",
-      items: [
-        { id: "export-txt", label: "Export as text" },
-        { id: "export-md", label: "Export as markdown" },
-        { id: "import-path", label: "Import path" },
-        { id: "start-fresh", label: "Start fresh…" },
-      ],
-    },
-    {
-      id: "edit",
-      label: "Edit",
-      items: [
-        { id: "undo", label: "Undo", disabled: !canUndo },
-        { id: "redo", label: "Redo", disabled: !canRedo },
-      ],
-    },
-    {
-      id: "view",
-      label: "View",
-      items: [
-        { id: "zoom-in", label: "Zoom in" },
-        { id: "zoom-out", label: "Zoom out" },
-        { id: "zoom-reset", label: "Reset zoom" },
-        { id: "theme-toggle", label: "Toggle theme" },
-      ],
-    },
-    {
-      id: "insert",
-      label: "Insert",
-      items: [
-        { id: "insert-sticky", label: "Sticky note" },
-        { id: "insert-callout-obs", label: "Observation" },
-        { id: "insert-callout-q", label: "Question" },
-        { id: "insert-diagram", label: "Diagram" },
-      ],
-    },
-    {
-      id: "tools",
-      label: "Tools",
-      items: [
-        { id: "open-functions", label: "Functions tab" },
-        { id: "open-structures", label: "Structures tab" },
-      ],
-    },
-    {
-      id: "ai",
-      label: "AI",
-      items: [
-        { id: "setup-role", label: "Set up for role" },
-        { id: "new-function", label: "Create function" },
-      ],
-    },
+  const allItems = [
+    { id: "export-txt", label: "Export as text" },
+    { id: "export-md", label: "Export as markdown" },
+    { id: "import-path", label: "Import path" },
+    { id: "start-fresh", label: "Start fresh…" },
+    { id: "undo", label: "Undo", disabled: !canUndo },
+    { id: "redo", label: "Redo", disabled: !canRedo },
+    { id: "zoom-in", label: "Zoom in" },
+    { id: "zoom-out", label: "Zoom out" },
+    { id: "zoom-reset", label: "Reset zoom" },
+    { id: "theme-toggle", label: "Toggle theme" },
+    { id: "insert-sticky", label: "Sticky note" },
+    { id: "insert-callout-obs", label: "Observation" },
+    { id: "insert-callout-q", label: "Question" },
+    { id: "insert-diagram", label: "Diagram" },
+    { id: "open-functions", label: "Functions tab" },
+    { id: "open-structures", label: "Structures tab" },
+    { id: "setup-role", label: "Set up for role" },
+    { id: "new-function", label: "Create function" },
   ];
 
   return (
-    <header className="idea-toolbar idea-toolbar-compact">
-      <div className="toolbar-row toolbar-row-compact">
-        <div className="toolbar-title-block">
-          <input
-            className="doc-title-input"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            aria-label="Document title"
-          />
-          <button
-            type="button"
-            className={"star-btn" + (starred ? " starred" : "")}
-            onClick={onToggleStar}
-            title={starred ? "Unstar" : "Star"}
-          >
-            ★
-          </button>
-        </div>
+    <header className="idea-toolbar idea-toolbar-minimal">
+      <div className="toolbar-row toolbar-row-minimal">
+        <input
+          className="doc-title-input doc-title-minimal"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          aria-label="Document title"
+          placeholder="Untitled"
+        />
 
-        <div className="toolbar-history">
+        <div className="toolbar-hover-actions">
           <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo">
             ↩
           </button>
           <button type="button" disabled={!canRedo} onClick={onRedo} title="Redo">
             ↪
           </button>
+          <button
+            type="button"
+            className={"star-btn star-btn-minimal" + (starred ? " starred" : "")}
+            onClick={onToggleStar}
+            title={starred ? "Unstar" : "Star"}
+          >
+            ★
+          </button>
+          <span className={"save-indicator save-indicator-minimal" + (saved ? " saved" : "")} aria-live="polite">
+            {saved ? "" : "·"}
+          </span>
         </div>
-
-        <span className={"save-indicator" + (saved ? " saved" : "")}>
-          {saved ? "Saved" : "Saving…"}
-        </span>
-
-        <nav className="toolbar-menus">
-          {menus.map((menu) => (
-            <MenuDropdown key={menu.id} label={menu.label} items={menu.items} onAction={onMenuAction} />
-          ))}
-        </nav>
 
         <div className="toolbar-spacer" />
 
-        <button type="button" className="share-btn" onClick={onShare}>
-          Share
+        <MenuDropdown label="···" items={allItems} onAction={onMenuAction} />
+        <button type="button" className="share-btn share-btn-minimal" onClick={onShare} title="Share">
+          ↗
         </button>
       </div>
     </header>

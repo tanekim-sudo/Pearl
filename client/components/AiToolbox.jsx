@@ -11,9 +11,11 @@ export default function AiToolbox({
 }) {
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem(COLLAPSED_KEY) === "1";
+      const stored = localStorage.getItem(COLLAPSED_KEY);
+      if (stored === "0") return false;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   });
 
@@ -39,10 +41,8 @@ export default function AiToolbox({
         aria-expanded={!collapsed}
         title={collapsed ? "Expand toolbox" : "Collapse toolbox"}
       >
-        <span className="ai-toolbox-chevron" aria-hidden="true">
-          {collapsed ? "▶" : "▼"}
-        </span>
-        <span className="ai-toolbox-label">Toolbox</span>
+        <span className="ai-toolbox-line" aria-hidden="true" />
+        {!collapsed && <span className="ai-toolbox-label">tools</span>}
       </button>
       {!collapsed && <div className="ai-toolbox-body">{children}</div>}
     </section>

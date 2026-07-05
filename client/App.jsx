@@ -86,12 +86,19 @@ import {
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
+  PAPER_MARGIN,
+  PAPER_INK,
   MIN_SCALE,
   ZOOM_STEP,
   clampScale,
   zoomAtPoint,
   centerPaperCamera,
   clampToPaper,
+  clampItemToPaper,
+  clampTextWidth,
+  bboxClampOffset,
+  fitPaperInView,
+  maxTextWidth,
   paperAllowsPan,
 } from "./lib/paper.js";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
@@ -122,12 +129,13 @@ const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transf
 const TRANSFER_DRAG_THRESHOLD = 8; // px before space-transfer or boundary transfer activates
 const SPACE_DOUBLE_TAP_MS = 350;
 
-const INK = "var(--ink-stroke)";
+const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
-const HIGHLIGHT_INK = "#f5e6a3";
+const HIGHLIGHT_INK = "#ffe566";
 const HIGHLIGHT_W = 18;
-const HIGHLIGHT_OPACITY = 0.92;
+const HIGHLIGHT_OPACITY = 0.88;
+const MARKER_OPACITY = 0.72;
 
 /** Highlight ink stays the same thickness on screen at any zoom. */
 function highlightWorldWidth(scale) {
@@ -878,6 +886,11 @@ function load(key, fallback) {
   }
 }
 
+function spawnPositionForBox(x, y, boxW, boxH) {
+  const { dx, dy } = bboxClampOffset({ minx: x, miny: y, maxx: x + boxW, maxy: y + boxH });
+  return { x: x + dx, y: y + dy };
+}
+
 function stripMd(s) {
   return (s || "")
     .replace(/^#{1,6}\s*/gm, "")
@@ -894,7 +907,7 @@ function normalizeItem(it) {
   }
   const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, side: "paper", ...it };
   if (!base.bornAt) base.bornAt = Date.now();
-  if (base.type === "text" && !base.w) base.w = 360;
+  if (base.type === "text") base.w = clampTextWidth(base.w || 360);
   if (base.type === "image" && !base.h && base.w) base.h = Math.round(base.w * 0.75);
   if (base.type === "sticky" && !base.color) base.color = "yellow";
   if (base.type === "callout" && !base.variant) base.variant = "observation";
@@ -904,7 +917,8 @@ function normalizeItem(it) {
   }
   if (base.type === "table" && !base.rows) base.rows = defaultBlockMeta("table").rows;
   if (base.type === "voice" && !base.waveform) base.waveform = defaultBlockMeta("voice").waveform;
-  return base;
+  if (base.type === "stroke" && base.marker && !base.highlight && !base.color) base.color = PAPER_INK;
+  return clampItemToPaper(base, itemWorldBBox);
 }
 
 function migrateFromArtifact() {
@@ -1840,7 +1854,6 @@ export default function App() {
   const [activePageId, setActivePageId] = useState(() => load(PAGES_KEY, [{ id: DEFAULT_PAGE_ID }])[0]?.id || DEFAULT_PAGE_ID);
   const [worldFilter, setWorldFilter] = useState(null);
   const [theme, setTheme] = useState(() => load(THEME_KEY, "idea"));
-  const [editMode, setEditMode] = useState(true);
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
   const [aiNodes, setAiNodes] = useState([]);
@@ -1927,10 +1940,7 @@ export default function App() {
     const r = viewportRef.current.getBoundingClientRect();
     if (r.width < 40 || r.height < 40) return;
     paperCenteredRef.current = true;
-    const c = camRef.current;
-    if (c.x === 0 && c.y === 0 && (c.scale === 1 || !load(CAMERA_KEY, null))) {
-      setCamera(centerPaperCamera(r.width, r.height));
-    }
+    setCamera(fitPaperInView(r.width, r.height));
   });
 
   const aiCenteredRef = useRef(false);
@@ -2362,8 +2372,13 @@ export default function App() {
         setItems((arr) =>
           arr.map((it) => {
             if (!ids.has(it.id)) return it;
-            if (it.type === "stroke") return { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
-            return { ...it, x: it.x + dx, y: it.y + dy };
+            if (it.type === "stroke") {
+              return clampItemToPaper(
+                { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
+                itemWorldBBox
+              );
+            }
+            return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
           })
         );
         setBoundaryMagnetActive(isNearTransferBoundary(cx));
@@ -2406,7 +2421,7 @@ export default function App() {
           if (g.corner.includes("n")) ny = (g.startY ?? it.y) + g.startH - nh;
           updateItem(g.id, { w: Math.round(nw), h: Math.round(nh), x: Math.round(nx), y: Math.round(ny) });
         } else if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math") {
-          updateItem(g.id, { w: Math.max(120, Math.round(g.startW + dw)) });
+          updateItem(g.id, { w: clampTextWidth(Math.max(120, Math.round(g.startW + dw))) });
         }
       } else if (g.mode === "scale") {
         const it = itemsRef.current.find((i) => i.id === g.id);
@@ -2468,6 +2483,7 @@ export default function App() {
                 });
               } else {
                 showToastRef.current("nothing inside the circle");
+                setItems((arr) => arr.filter((it) => it.id !== strokeId));
               }
             } else {
               const strokeItem = finishRecordedStroke(g, pts, {
@@ -2562,13 +2578,14 @@ export default function App() {
     };
   }, []);
 
-  // wheel: pan; cmd/ctrl+wheel: zoom toward cursor
+  // wheel: two-finger scroll pans; pinch (ctrl/meta+wheel) zooms toward cursor
   useEffect(() => {
-    const el = viewportRef.current;
+    const el = inputLayerRef.current;
     if (!el) return;
     function onWheel(e) {
       e.preventDefault();
-      if (e.ctrlKey || e.metaKey) {
+      const pinchZoom = e.ctrlKey || e.metaKey;
+      if (pinchZoom) {
         const factor = Math.exp(-e.deltaY * 0.0016);
         const local = vpLocal(e.clientX, e.clientY);
         setCamera((c) => zoomAtPoint(c, local.x, local.y, factor));
@@ -4682,19 +4699,38 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click blank canvas: create a text box
+  // double-click blank canvas: create text, or alt+double-click to fit page
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
     if (hit) return;
+    if (e.shiftKey) {
+      const r = vpRect();
+      setCamera(fitPaperInView(r.width, r.height));
+      return;
+    }
     if (editingRef.current) finishEditing();
     const w = clientToWorld(e.clientX, e.clientY);
+    const textW = clampTextWidth(320);
+    const pos = spawnPositionForBox(w.x, w.y, textW, 40);
     const id = uid();
     pushHistory();
-    setItems((arr) => [...arr, tagRecordingItem(normalizeItem({ id, type: "text", x: w.x, y: w.y, text: "", w: 320, pageId: activePageId }))]);
+    setItems((arr) => [
+      ...arr,
+      tagRecordingItem(
+        normalizeItem({ id, type: "text", x: pos.x, y: pos.y, text: "", w: textW, pageId: activePageId })
+      ),
+    ]);
     setSelection([id]);
     editClickRef.current = { cx: e.clientX, cy: e.clientY };
     setEditing(id);
+  }
+
+  function onViewportDoubleClick(e) {
+    const hit = itemAtPoint(e.clientX, e.clientY);
+    if (hit) return;
+    const r = vpRect();
+    setCamera(fitPaperInView(r.width, r.height));
   }
 
   // ---- export / object helpers ----
@@ -4868,14 +4904,12 @@ export default function App() {
       ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
     );
     setActivePageId(pageId);
-    if (nextCamera) {
-      setCamera({ ...nextCamera });
-    } else {
-      const next = pages.find((p) => p.id === pageId);
-      if (next?.camera) setCamera({ ...next.camera });
-    }
     setSelection([]);
     setEditing(null);
+    requestAnimationFrame(() => {
+      const r = vpRect();
+      setCamera(nextCamera || fitPaperInView(r.width, r.height));
+    });
   }
 
   function addPage() {
@@ -5189,13 +5223,15 @@ export default function App() {
     const clean = stripMd(text).trim();
     if (!clean) return;
     pushHistory();
-    const w = Math.min(480, Math.max(240, Math.round(clean.length * 0.45 + 180)));
+    const w = clampTextWidth(Math.min(480, Math.max(240, Math.round(clean.length * 0.45 + 180))));
+    const h = measureTextHeight(w, clean);
+    const pos = spawnPositionForBox(atWorld.x, atWorld.y, w, h);
     const id = uid();
     const item = normalizeItem({
       id,
       type: "text",
-      x: atWorld.x,
-      y: atWorld.y,
+      x: pos.x,
+      y: pos.y,
       text: clean,
       w,
       pageId: activePageId,
@@ -5493,7 +5529,6 @@ export default function App() {
           pages={pages}
           activePageId={activePageId}
           zoomPct={Math.round(camera.scale * 100)}
-          editMode={editMode}
           onSelectPage={switchPage}
           onAddPage={addPage}
           onRenamePage={renamePage}
@@ -5501,16 +5536,14 @@ export default function App() {
           onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP))}
           onZoomReset={() => {
             const r = vpRect();
-            setCamera(centerPaperCamera(r.width, r.height));
+            setCamera(fitPaperInView(r.width, r.height));
           }}
-          onExport={() => exportSelection("md")}
-          onToggleEdit={() => setEditMode((m) => !m)}
           paperRecording={paperRecording}
           paperRecordLevel={paperRecordLevel}
           paperRecordMs={paperRecordMs}
           onTogglePaperRecord={togglePaperRecord}
         >
-      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "") + (!editMode ? " view-mode" : "")}>
+      <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
       <div
         ref={viewportRef}
         className="viewport"
@@ -5532,7 +5565,7 @@ export default function App() {
           >
             <div className="paper-content" style={{ width: PAPER_WIDTH, height: PAPER_HEIGHT }}>
           {/* branch arrows between notes */}
-          <svg className="link-layer" style={{ overflow: "visible" }}>
+          <svg className="link-layer">
             <defs>
               <marker
                 id="board-link-arrow"
@@ -5547,6 +5580,7 @@ export default function App() {
               </marker>
             </defs>
             {boardLinks.map((link) => {
+              if (!selection.includes(link.fromId) && !selection.includes(link.toId)) return null;
               const from = visibleItems.find((i) => i.id === link.fromId) || items.find((i) => i.id === link.fromId);
               const to = visibleItems.find((i) => i.id === link.toId) || items.find((i) => i.id === link.toId);
               if (!from || !to) return null;
@@ -5572,7 +5606,7 @@ export default function App() {
           </svg>
 
           {/* committed strokes */}
-          <svg className="ink-layer" style={{ overflow: "visible" }}>
+          <svg className="ink-layer">
             {visibleItems
               .filter((it) => it.type === "stroke")
               .map((it) => (
@@ -5583,9 +5617,9 @@ export default function App() {
                     data-item={it.id}
                     points={it.points.map((p) => `${p.x},${p.y}`).join(" ")}
                     fill="none"
-                    stroke={it.highlight ? HIGHLIGHT_INK : it.color}
+                    stroke={it.highlight ? HIGHLIGHT_INK : it.color || PAPER_INK}
                     strokeWidth={it.highlight ? highlightWorldWidth(camera.scale) : it.width}
-                    strokeOpacity={it.highlight ? HIGHLIGHT_OPACITY : it.marker ? 0.32 : 0.95}
+                    strokeOpacity={it.highlight ? HIGHLIGHT_OPACITY : it.marker ? MARKER_OPACITY : 0.95}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className={
@@ -6087,10 +6121,6 @@ export default function App() {
         />
       </div>
 
-      {!editing && !walking && editMode && (
-        <CanvasHud tool={tool} selectionCount={selection.length} imageArmed={imageArmed} />
-      )}
-
       {walking && walkStep && (
         <WalkOverlay
           walk={walking}
@@ -6519,28 +6549,6 @@ function startStructDrag(e, struct) {
   e.stopPropagation();
   e.dataTransfer.setData(STRUCT_MIME, struct.id);
   e.dataTransfer.effectAllowed = "copy";
-}
-
-function CanvasHud({ tool, selectionCount, imageArmed }) {
-  const meta = CANVAS_TOOLS[tool] || CANVAS_TOOLS.select;
-
-  return (
-    <div className="canvas-hud" onPointerDown={(e) => e.stopPropagation()}>
-      <div className={"canvas-mode-pill" + (tool === "highlight" ? " cognition" : "")}>
-        {meta.swatch && (
-          <span
-            className="mode-swatch"
-            style={{
-              background: meta.swatch,
-              opacity: meta.swatchOpacity ?? (tool === "highlight" ? 0.85 : 1),
-            }}
-          />
-        )}
-        <span className="mode-icon">{meta.icon}</span>
-        <span className="mode-label">{meta.label}</span>
-      </div>
-    </div>
-  );
 }
 
 function InputDeck({ tool, imageArmed, canUndo, canRedo, onSelectTool, onPickImage, onUndo, onRedo }) {

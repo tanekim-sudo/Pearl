@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
 
@@ -24,7 +24,6 @@ export default function CanvasColumn({
   pages,
   activePageId,
   zoomPct,
-  editMode,
   paperRecording,
   paperRecordLevel,
   paperRecordMs,
@@ -35,13 +34,20 @@ export default function CanvasColumn({
   onZoomIn,
   onZoomOut,
   onZoomReset,
-  onExport,
-  onToggleEdit,
   children,
 }) {
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
+
   return (
     <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
-      <div className="canvas-column-header">
+      <div className="canvas-column-main">{children}</div>
+
+      <div
+        className={"canvas-edge-top" + (toolsOpen ? " open" : "")}
+        onMouseEnter={() => setToolsOpen(true)}
+        onMouseLeave={() => setToolsOpen(false)}
+      >
         <PageTabs
           pages={pages}
           activePageId={activePageId}
@@ -49,59 +55,71 @@ export default function CanvasColumn({
           onAddPage={onAddPage}
           onRenamePage={onRenamePage}
         />
-        <div className="canvas-column-tools">
-          {CANVAS_TOOLS.map((t) => {
-            const active =
-              (t.id === "image" && imageArmed) ||
-              (t.id !== "image" && tool === t.id);
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={"canvas-tool-btn" + (active ? " active" : "")}
-                title={t.label}
-                onClick={() => {
-                  if (t.id === "image") onPickImage();
-                  else if (t.id === "sticky" || t.id === "text") onInsertBlock(t.id);
-                  else onSelectTool(t.id);
-                }}
-              >
-                {t.icon}
-              </button>
-            );
-          })}
+        <div className="canvas-tools-strip">
+          <button
+            type="button"
+            className="canvas-tools-grip"
+            aria-expanded={toolsOpen}
+            aria-label="Drawing tools"
+            onClick={() => setToolsOpen((o) => !o)}
+          >
+            ···
+          </button>
+          <div className="canvas-column-tools">
+            {CANVAS_TOOLS.map((t) => {
+              const active =
+                (t.id === "image" && imageArmed) ||
+                (t.id !== "image" && tool === t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={"canvas-tool-btn" + (active ? " active" : "")}
+                  title={t.label}
+                  onClick={() => {
+                    if (t.id === "image") onPickImage();
+                    else if (t.id === "sticky" || t.id === "text") onInsertBlock(t.id);
+                    else onSelectTool(t.id);
+                  }}
+                >
+                  {t.icon}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <PaperRecordBar
-          recording={paperRecording}
-          level={paperRecordLevel}
-          durationMs={paperRecordMs}
-          onToggle={onTogglePaperRecord}
-        />
       </div>
 
-      <div className="canvas-column-main">{children}</div>
+      <PaperRecordBar
+        recording={paperRecording}
+        level={paperRecordLevel}
+        durationMs={paperRecordMs}
+        onToggle={onTogglePaperRecord}
+      />
 
-      <footer className="idea-bottom canvas-bottom">
-        <button type="button" className={"edit-fab" + (editMode ? " active" : "")} onClick={onToggleEdit}>
-          Edit
-        </button>
-        <div className="bottom-controls">
-          <div className="zoom-controls">
-            <button type="button" onClick={onZoomOut} aria-label="Zoom out">
-              −
-            </button>
-            <button type="button" className="zoom-label" onClick={onZoomReset}>
-              {zoomPct}%
-            </button>
-            <button type="button" onClick={onZoomIn} aria-label="Zoom in">
-              +
-            </button>
-          </div>
-          <button type="button" className="export-btn" onClick={onExport} title="Export">
-            ↗
+      <div
+        className={"canvas-edge-bottom" + (zoomOpen ? " open" : "")}
+        onMouseEnter={() => setZoomOpen(true)}
+        onMouseLeave={() => setZoomOpen(false)}
+      >
+        <button
+          type="button"
+          className="zoom-micro-dot"
+          aria-label="Zoom"
+          onClick={() => setZoomOpen((o) => !o)}
+        />
+        <div className="zoom-micro-panel">
+          <button type="button" onClick={onZoomOut} aria-label="Zoom out">
+            −
+          </button>
+          <button type="button" className="zoom-label" onClick={onZoomReset}>
+            {zoomPct}%
+          </button>
+          <button type="button" onClick={onZoomIn} aria-label="Zoom in">
+            +
           </button>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

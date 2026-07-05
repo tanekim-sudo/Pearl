@@ -1,9 +1,11 @@
 /** 8×11.5 paper at 96dpi — content lives in 0..width × 0..height. */
 export const PAPER_WIDTH = 768;
 export const PAPER_HEIGHT = 1104;
+export const PAPER_MARGIN = 24;
 export const MIN_SCALE = 0.05;
 export const MAX_SCALE = 1e6;
 export const ZOOM_STEP = 1.2;
+export const PAPER_INK = "#000000";
 
 export function clampScale(scale) {
   return Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
@@ -31,11 +33,55 @@ export function centerPaperCamera(vpWidth, vpHeight, scale = null) {
   };
 }
 
-export function clampToPaper(x, y) {
+export function clampToPaper(x, y, margin = 0) {
   return {
-    x: Math.max(0, Math.min(PAPER_WIDTH, x)),
-    y: Math.max(0, Math.min(PAPER_HEIGHT, y)),
+    x: Math.max(margin, Math.min(PAPER_WIDTH - margin, x)),
+    y: Math.max(margin, Math.min(PAPER_HEIGHT - margin, y)),
   };
+}
+
+export function maxTextWidth(margin = PAPER_MARGIN) {
+  return PAPER_WIDTH - margin * 2;
+}
+
+/** Offset needed so a bbox fits inside paper margins. */
+export function bboxClampOffset(bb, margin = PAPER_MARGIN) {
+  if (!bb) return { dx: 0, dy: 0 };
+  let dx = 0;
+  let dy = 0;
+  if (bb.minx < margin) dx = margin - bb.minx;
+  if (bb.miny < margin) dy = margin - bb.miny;
+  if (bb.maxx + dx > PAPER_WIDTH - margin) dx = PAPER_WIDTH - margin - bb.maxx;
+  if (bb.maxy + dy > PAPER_HEIGHT - margin) dy = PAPER_HEIGHT - margin - bb.maxy;
+  return { dx, dy };
+}
+
+/** Move an item so its bbox stays within paper margins. */
+export function clampItemToPaper(item, getBBox, margin = PAPER_MARGIN) {
+  if (!item) return item;
+  const bb = getBBox?.(item);
+  if (!bb) return item;
+  const { dx, dy } = bboxClampOffset(bb, margin);
+  if (!dx && !dy) return item;
+  if (item.type === "stroke" && item.points?.length) {
+    return {
+      ...item,
+      points: item.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
+    };
+  }
+  if (item.x != null || item.y != null) {
+    return { ...item, x: (item.x || 0) + dx, y: (item.y || 0) + dy };
+  }
+  return item;
+}
+
+export function clampTextWidth(w, margin = PAPER_MARGIN) {
+  return Math.max(120, Math.min(w || maxTextWidth(margin), maxTextWidth(margin)));
+}
+
+/** Fit the full paper sheet in a viewport (alias for centerPaperCamera). */
+export function fitPaperInView(vpWidth, vpHeight) {
+  return centerPaperCamera(vpWidth, vpHeight);
 }
 
 /** Pan is meaningful only when the zoomed paper exceeds the viewport. */
