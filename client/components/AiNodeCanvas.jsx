@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   collectAiEdges,
+  edgeBundleOffsets,
   edgeGeometry,
   fanStrandAngles,
   pickStrandIndex,
@@ -610,6 +611,7 @@ export default function AiNodeCanvas({
       to: nodeById.get(edge.toId),
     }))
     .filter((e) => e.from && e.to);
+  const bundleOffsets = edgeBundleOffsets(edges);
 
   const contentBlend = zoomContentBlend(camera.scale);
   const explorationMode = contentBlend > 0.04;
@@ -744,9 +746,12 @@ export default function AiNodeCanvas({
               </feMerge>
             </filter>
           </defs>
-          {edges.map(({ id, from, to, kind, label }) => {
-            const geom = edgeGeometry(from, to, kind === "move" ? 0.04 : 0.07);
-            const pathD = `M ${geom.x1} ${geom.y1} Q ${geom.cx} ${geom.cy} ${geom.x2} ${geom.y2}`;
+          {edges.map(({ id, from, to, kind, label }, edgeIdx) => {
+            const geom = edgeGeometry(from, to, {
+              bundleOffset: bundleOffsets.get(id) || 0,
+              curveSign: edgeIdx % 2 === 0 ? 1 : -1,
+            });
+            const pathD = geom.path;
             const marker =
               kind === "expand"
                 ? "url(#ai-edge-arrow-expand)"
@@ -796,6 +801,20 @@ export default function AiNodeCanvas({
                   className={`ai-node-line ai-node-line-${kind}`}
                   fill="none"
                   markerEnd={constellationMode ? undefined : marker}
+                />
+                <circle
+                  cx={geom.x1}
+                  cy={geom.y1}
+                  r={3.2}
+                  className={`ai-synapse ai-synapse-${kind}`}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <circle
+                  cx={geom.x2}
+                  cy={geom.y2}
+                  r={2.6}
+                  className={`ai-synapse ai-synapse-${kind} ai-synapse-terminal`}
+                  vectorEffect="non-scaling-stroke"
                 />
               </g>
             );

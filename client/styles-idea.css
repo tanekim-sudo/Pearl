@@ -842,6 +842,7 @@ body.ai-node-dragging * {
   inset: 0;
   transform-origin: 0 0;
   z-index: 1;
+  overflow: visible;
 }
 
 .ai-node-empty {
@@ -1025,7 +1026,8 @@ body.ai-strand-dragging * {
 
 .ai-node-lines {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
@@ -1049,8 +1051,50 @@ body.ai-strand-dragging * {
 }
 
 .ai-strand-aura {
-  opacity: 0.35;
+  opacity: 0.5;
   transition: opacity 0.15s ease;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-strand-aura {
+  opacity: 0.72;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-line-glow {
+  stroke-width: 4;
+  opacity: 0.82;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-line-expand,
+.ai-node-viewport.ai-constellation-mode .ai-node-line-interpret,
+.ai-node-viewport.ai-constellation-mode .ai-node-line-move,
+.ai-node-viewport.ai-constellation-mode .ai-node-line-link,
+.ai-node-viewport.ai-constellation-mode .ai-node-line-branch {
+  stroke-width: 1.35;
+  opacity: 0.88;
+}
+
+.ai-synapse {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 0.5;
+  pointer-events: none;
+}
+
+.ai-synapse-terminal {
+  fill: rgba(255, 255, 255, 0.72);
+}
+
+.ai-synapse-expand {
+  fill: rgba(255, 235, 180, 0.7);
+}
+
+.ai-synapse-move {
+  fill: rgba(180, 230, 255, 0.65);
+}
+
+.ai-edge.hover .ai-synapse,
+.ai-edge:hover .ai-synapse {
+  fill: rgba(255, 255, 255, 0.95);
 }
 
 .ai-edge.hover .ai-strand-aura,
@@ -1281,33 +1325,33 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node-line {
-  stroke-width: 1;
+  stroke-width: 1.25;
   fill: none;
   vector-effect: non-scaling-stroke;
 }
 
 .ai-node-line-glow {
-  stroke: rgba(255, 255, 255, 0.16);
-  stroke-width: 3;
-  opacity: 0.75;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 5;
+  opacity: 0.85;
 }
 
 .ai-node-line-expand {
-  stroke: rgba(255, 255, 255, 0.5);
+  stroke: rgba(255, 255, 255, 0.62);
 }
 
 .ai-node-line-interpret {
-  stroke: rgba(235, 240, 255, 0.45);
+  stroke: rgba(240, 245, 255, 0.58);
 }
 
 .ai-node-line-move {
-  stroke: rgba(235, 240, 255, 0.42);
-  stroke-dasharray: 4 7;
+  stroke: rgba(220, 240, 255, 0.55);
+  stroke-dasharray: 5 8;
 }
 
 .ai-node-line-link,
 .ai-node-line-branch {
-  stroke: rgba(235, 240, 255, 0.35);
+  stroke: rgba(230, 240, 255, 0.48);
 }
 
 /* ── Brain-cell constellation nodes ── */

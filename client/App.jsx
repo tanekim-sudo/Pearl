@@ -5949,7 +5949,14 @@ export default function App() {
   }
 
   function createMoveNode(op, worldPos, linkTo) {
-    const pos = nodePositionAt(aiNodesRef.current, "move", worldPos);
+    const existing = aiNodesRef.current;
+    let pos;
+    if (linkTo) {
+      pos = childNodePosition(linkTo, "move", existing);
+      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
+    } else {
+      pos = nodePositionAt(existing, "move", worldPos);
+    }
     const node = makeAiNode({
       nodeKind: "move",
       label: truncateLabel(op.name),
@@ -5966,7 +5973,14 @@ export default function App() {
   }
 
   function createLensNode(lens, worldPos, linkTo) {
-    const pos = nodePositionAt(aiNodesRef.current, "lens", worldPos);
+    const existing = aiNodesRef.current;
+    let pos;
+    if (linkTo) {
+      pos = childNodePosition(linkTo, "lens", existing);
+      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
+    } else {
+      pos = nodePositionAt(existing, "lens", worldPos);
+    }
     const node = makeAiNode({
       nodeKind: "lens",
       label: truncateLabel(lens.name),
@@ -5982,13 +5996,22 @@ export default function App() {
     return node;
   }
 
-  function createOutputNode(text, worldPos) {
-    const pos = nodePositionAt(aiNodesRef.current, "expanded", worldPos);
+  function createOutputNode(text, worldPos, linkTo = null) {
+    const existing = aiNodesRef.current;
+    let pos;
+    if (linkTo) {
+      pos = childNodePosition(linkTo, "expanded", existing);
+      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
+    } else {
+      pos = nodePositionAt(existing, "expanded", worldPos);
+    }
     const clean = String(text || "").trim();
     const node = makeAiNode({
       nodeKind: "expanded",
       label: truncateLabel(clean.slice(0, 24) || "Output"),
       expandedText: clean,
+      parentId: linkTo?.id || null,
+      sourceNodeIds: linkTo ? [linkTo.id] : [],
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
