@@ -29,7 +29,7 @@ export const EXPLORE_ZOOM_SCALE = 1.9;
 /** Below this scale, nodes are pure brain-cell circles. */
 export const AI_CELL_ZOOM_MAX = 0.72;
 /** Crossfade from circle → text begins here. */
-export const AI_BLEND_ZOOM_START = 0.82;
+export const AI_BLEND_ZOOM_START = 0.76;
 /** Text fully readable above this scale. */
 export const AI_TEXT_ZOOM_FULL = 1.72;
 export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;

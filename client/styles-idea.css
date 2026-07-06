@@ -1438,9 +1438,9 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 0 0 1px rgba(255, 215, 100, 0.08),
     0 12px 40px rgba(0, 0, 0, 0.55),
     0 0 48px rgba(255, 200, 80, calc(var(--ai-content-blend, 0) * 0.22));
-  transform: scale(calc(0.42 + 0.58 * var(--ai-content-blend, 0)));
+  transform: scale(calc(0.38 + 0.62 * var(--ai-content-blend, 0)));
   transform-origin: center top;
-  transition: opacity 0.06s linear, transform 0.06s linear, box-shadow 0.12s ease;
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out, box-shadow 0.18s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1458,12 +1458,12 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .ai-node-focus-bloom-body {
   flex: 1;
   overflow: auto;
-  padding: 4px 14px 14px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: rgba(235, 240, 255, 0.92);
+  padding: 8px 16px 16px;
+  font-size: 14px;
+  line-height: 1.62;
+  color: rgba(235, 240, 255, 0.94);
   white-space: pre-wrap;
-  max-height: min(42vh, 320px);
+  max-height: min(52vh, 420px);
 }
 
 .ai-node-focus-fragment-highlight {

@@ -68,7 +68,7 @@ import {
   fitAiConstellation,
   focusAiNode,
   screenToWorld,
-  viewportCenterWorld,
+  viewportCenterWorld as aiViewportCenterWorld,
   worldToScreen,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
@@ -2182,7 +2182,7 @@ export default function App() {
     return { x: l.x + r.left, y: l.y + r.top };
   }
 
-  function viewportCenterWorld() {
+  function paperViewportCenterWorld() {
     const r = vpRect();
     return clientToWorld(r.left + r.width / 2, r.top + r.height / 2);
   }
@@ -2294,10 +2294,10 @@ export default function App() {
     });
   }
 
-  function transferAiNodesToPaper(nodeIds, atWorld) {
+  function transferAiNodesToPaper(nodeIds, atWorld, opts = {}) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     if (!nodes.length) return;
-    triggerTransferAnimation("to-paper", { atWorld });
+    triggerTransferAnimation("to-paper", { atWorld, fromClient: opts.fromClient });
     let yOffset = 0;
     for (const node of nodes) {
       let text = node.expandedText || node.preview || "";
@@ -2461,7 +2461,11 @@ export default function App() {
   }
 
   function focusAiNodeFromZoom(nodeId) {
-    exploreAiNode(nodeId, { animate: false, runExpand: false });
+    const node = aiNodesRef.current.find((n) => n.id === nodeId);
+    if (!node) return;
+    setAiFocusedNodeId(nodeId);
+    handleAiNodeSelect(nodeId, { replace: true });
+    focusAiNodeContent(node);
   }
 
   function captureMoveStartPositions(ids) {
@@ -3015,7 +3019,7 @@ export default function App() {
       const text = e.clipboardData?.getData("text/plain")?.trim();
       if (text) {
         e.preventDefault();
-        const center = viewportCenterWorld();
+        const center = paperViewportCenterWorld();
         const id = uid();
         setItems((arr) => [...arr, normalizeItem({ id, type: "text", x: center.x, y: center.y, text, w: 360 })]);
         setSelection([id]);
@@ -3056,9 +3060,16 @@ export default function App() {
     return true;
   }
 
-  function transferHighlightSelectionToAi(ids, worldPos = null) {
+  function transferHighlightSelectionToAi(ids, worldPos = null, opts = {}) {
     if (!ids?.length) return;
     emitTourEvent("highlight-transfer");
+    const sketchBundle = gatherSelectionSketchBundle(ids);
+    const world = worldPos || getAiDropWorld();
+    const expandIds = transformableDragIds(ids);
+    if (!sketchBundle && !expandIds.length) {
+      showToast("Nothing here can transfer to AI");
+      return;
+    }
     setHighlightTransferringIds(ids);
     window.setTimeout(() => {
       setHighlightTransferringIds([]);
@@ -3066,14 +3077,11 @@ export default function App() {
       setHighlightTouchIds([]);
     }, 920);
     recordItemEvents(ids, "highlight-transfer", {});
-    const sketchBundle = gatherSelectionSketchBundle(ids);
-    const world = worldPos || getAiDropWorld();
     if (sketchBundle) {
-      interpretSketchBundle(sketchBundle, world);
+      interpretSketchBundle(sketchBundle, world, opts);
       return;
     }
-    const expandIds = transformableDragIds(ids);
-    if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+    if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient });
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -3118,7 +3126,7 @@ export default function App() {
 
     setItems((arr) => {
       const placedSoFar = [];
-      let anchor = opts.anchorBox || spawnAnchorBox(parentIds, arr, fallbackWorld, viewportCenterWorld);
+      let anchor = opts.anchorBox || spawnAnchorBox(parentIds, arr, fallbackWorld, paperViewportCenterWorld);
       let linkFrom = parentIds || [];
       const newItems = [];
       const newLinks = [];
@@ -4041,7 +4049,7 @@ export default function App() {
       return null;
     }
     const bb = selectionWorldBBoxForIds(ids);
-    const anchor = bb ? { x: bb.minx, y: bb.miny } : viewportCenterWorld();
+    const anchor = bb ? { x: bb.minx, y: bb.miny } : paperViewportCenterWorld();
     const relativeItems = sel.map((it) => {
       const base = { ...it, id: uid() };
       if (it.type === "stroke") {
@@ -4142,7 +4150,7 @@ export default function App() {
 
   function plantStructure(struct, atWorld) {
     if (!struct?.items?.length) return;
-    const center = atWorld || viewportCenterWorld();
+    const center = atWorld || paperViewportCenterWorld();
     const newIds = [];
     const newItems = struct.items.map((it) => {
       const id = uid();
@@ -4164,7 +4172,7 @@ export default function App() {
   function applyStructureDrop(structId, atClient) {
     const struct = structures.find((s) => s.id === structId);
     if (!struct) return;
-    const at = atClient ? clientToWorld(atClient.x, atClient.y) : viewportCenterWorld();
+    const at = atClient ? clientToWorld(atClient.x, atClient.y) : paperViewportCenterWorld();
     plantStructure(struct, at);
   }
 
@@ -4186,7 +4194,7 @@ export default function App() {
       const parsed = parseSameness(out);
       const num = nextStructNumber();
       const title = `#${num} · ${parsed.name}`;
-      const center = viewportCenterWorld();
+      const center = paperViewportCenterWorld();
       const body = `${parsed.name.toUpperCase()}\n\n${parsed.body}`;
       spawnNewObject(body, nodes.map((n) => n.id), center, { name: "sameness" });
       const struct = {
@@ -4450,7 +4458,7 @@ export default function App() {
     const notes = items.filter((it) => it.type !== "link" && it.type !== "stroke");
     const cx = notes.length ? notes.reduce((s, it) => s + (it.x || 0), 0) / notes.length : 0;
     const cy = notes.length ? notes.reduce((s, it) => s + (it.y || 0), 0) / notes.length : 0;
-    const center = viewportCenterWorld();
+    const center = paperViewportCenterWorld();
     const dx = center.x - cx;
     const dy = center.y - cy;
     const newItems = items.map((it) => {
@@ -4708,8 +4716,8 @@ export default function App() {
     return { x: rect.left + local.x, y: rect.top + local.y };
   }
 
-  function launchPaperToAiTransfer({ itemIds = [], nodeIds = [], aiWorld }) {
-    triggerTransferAnimation("to-ai", { itemIds, aiWorld });
+  function launchPaperToAiTransfer({ itemIds = [], nodeIds = [], aiWorld, fromClient }) {
+    triggerTransferAnimation("to-ai", { itemIds, aiWorld, fromClient });
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
       const next = new Set(prev);
@@ -4725,12 +4733,14 @@ export default function App() {
       const el = aiViewportRef.current;
       const focusId = nodeIds[nodeIds.length - 1];
       const focusNode = aiNodesRef.current.find((n) => n.id === focusId);
-      if (el && focusNode) {
-        zoomAiToNode(focusNode, 0.88, 425);
+      if (focusNode) {
+        setAiFocusedNodeId(focusId);
+        focusAiNodeContent(focusNode);
+        zoomAiToNode(focusNode, EXPLORE_ZOOM_SCALE, 620);
       } else if (el && aiNodesRef.current.length) {
         animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight, { maxScale: 0.55 }), 425);
       }
-    }, 1180);
+    }, 960);
   }
 
   function triggerTransferAnimation(direction, opts = {}) {
@@ -4761,7 +4771,7 @@ export default function App() {
         toY = fromY;
       }
     } else {
-      const atWorld = opts.atWorld || viewportCenterWorld();
+      const atWorld = opts.atWorld || paperViewportCenterWorld();
       const dest = worldToClient(atWorld.x, atWorld.y);
       toX = dest.x;
       toY = dest.y;
@@ -5055,7 +5065,7 @@ export default function App() {
     }
   }
 
-  async function interpretSketchBundle(bundle, worldPos = null) {
+  async function interpretSketchBundle(bundle, worldPos = null, opts = {}) {
     if (!bundle) {
       showToast("nothing to interpret");
       return;
@@ -5072,7 +5082,7 @@ export default function App() {
       bundleItems.length ? bundleItems : pageItems.filter((it) => it.type === "stroke" || it.type === "image")
     );
     const label = bundleLabel(bundle);
-    const { expandedNode } = createSessionNodes(
+    const { sessionNode, expandedNode } = createSessionNodes(
       { ...session, transcript: bundle.transcript || session?.transcript },
       prompt,
       worldPos,
@@ -5087,6 +5097,7 @@ export default function App() {
       itemIds: bundleSourceIds,
       nodeIds: [sessionNode.id, expandedNode.id],
       aiWorld: { x: expandedNode.x, y: expandedNode.y },
+      fromClient: opts?.fromClient,
     });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
@@ -5496,7 +5507,7 @@ export default function App() {
     try {
       pushHistory();
       const { src, w, h } = await fileToImage(file);
-      const center = at || viewportCenterWorld();
+      const center = at || paperViewportCenterWorld();
       const scale = Math.min(1, 260 / w);
       const id = uid();
       const imgItem = tagRecordingItem(
@@ -5664,7 +5675,7 @@ export default function App() {
     const meta = defaultBlockMeta(type);
     const origin = opts.atWorld
       ? blockOriginAtPointer(type, opts.atWorld)
-      : blockOriginAtViewportCenter(type, viewportCenterWorld());
+      : blockOriginAtViewportCenter(type, paperViewportCenterWorld());
     const id = uid();
     const item = tagRecordingItem(
       normalizeItem({
@@ -5991,10 +6002,11 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
+    const dropWorld = opts.expandedAt ?? opts.atWorld;
     const sourceNode =
       opts.sourceNode ||
       findSourceNodeForIds(ids) ||
-      ensureSourceNode(ids, null, "Source", opts.atWorld);
+      ensureSourceNode(ids, null, "Source", dropWorld);
     const expandedNode = createExpandedChild(
       sourceNode,
       {
@@ -6002,7 +6014,7 @@ export default function App() {
         opId: op.id,
         loading: true,
       },
-      opts.expandedAt
+      dropWorld
     );
     recordItemEvents(ids, "transfer-to-ai", {
       aiNodeId: sourceNode.id,
@@ -6012,6 +6024,7 @@ export default function App() {
       itemIds: ids,
       nodeIds: [sourceNode.id, expandedNode.id],
       aiWorld: { x: expandedNode.x, y: expandedNode.y },
+      fromClient: opts.fromClient,
     });
     setAiPanel((prev) => ({
       ...(prev || {}),
@@ -6088,7 +6101,7 @@ export default function App() {
       opts.atWorld ||
       (opts.clientX != null && opts.clientY != null
         ? clientToWorld(opts.clientX, opts.clientY)
-        : viewportCenterWorld());
+        : paperViewportCenterWorld());
     triggerTransferAnimation("to-paper", {
       atWorld,
       fromClient:
@@ -6105,23 +6118,24 @@ export default function App() {
   };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     emitTourEvent("transfer");
+    const fromClient = { x: cx, y: cy };
     if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
       const ids = g.ids;
       const world = getAiDropWorldFromClient(cx, cy);
       if (g.kind === "highlight") {
-        transferHighlightSelectionToAi(ids, world);
+        transferHighlightSelectionToAi(ids, world, { fromClient });
         return;
       }
       const sketchBundle = gatherSelectionSketchBundle(ids);
       if (sketchBundle) {
-        interpretSketchBundle(sketchBundle, world);
+        interpretSketchBundle(sketchBundle, world, { fromClient });
       } else {
         const expandIds = transformableDragIds(ids);
-        if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+        if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient });
       }
     } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
       emitTourEvent("transfer-to-paper");
-      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy));
+      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
     }
   };
 
@@ -6159,7 +6173,7 @@ export default function App() {
     if (fallbackWorld) return fallbackWorld;
     const el = aiViewportRef.current;
     if (el) {
-      return viewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight);
+      return aiViewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight);
     }
     return { x: 0, y: 0 };
   }

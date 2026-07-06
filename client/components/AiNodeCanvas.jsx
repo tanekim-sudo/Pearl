@@ -568,11 +568,6 @@ export default function AiNodeCanvas({
       return;
     }
 
-    if (tool === "highlight" && selectedIds.length) {
-      onSpaceTransferStart?.(e);
-      return;
-    }
-
     if (e.button === 1 || e.altKey) {
       startPan(e);
       return;
@@ -887,11 +882,12 @@ export default function AiNodeCanvas({
             style={{
               left: focusedNode.x,
               top: focusedNode.y,
-              width: 56 + contentBlend * 360,
-              marginLeft: -(28 + contentBlend * 180),
-              marginTop: -(28 + contentBlend * 140),
-              minHeight: 56 + contentBlend * 260,
-              opacity: contentBlend,
+              width: 80 + contentBlend * 440,
+              marginLeft: -(40 + contentBlend * 220),
+              marginTop: -(40 + contentBlend * 160),
+              minHeight: 72 + contentBlend * 300,
+              opacity: Math.min(1, 0.32 + contentBlend * 0.68),
+              "--ai-content-blend": contentBlend,
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
