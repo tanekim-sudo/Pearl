@@ -2996,19 +2996,30 @@ export default function App() {
         pendingImageRef.current = null;
         setImageArmed(false);
       }
-      // Space cycles primary utensils: pen → highlight → select
-      if (e.key === " " && !e.repeat && !walkingRef.current) {
+      // Space: on AI side → highlight/select toggle; on paper → cycle utensils
+      if (e.key === " " && !e.repeat) {
         const typing =
           e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
         if (typing) return;
+        const lp = lastPointerRef.current;
+        const onAi = lp ? isOverAiColumn(lp.cx, lp.cy) : false;
+        if (!onAi && walkingRef.current) return;
         e.preventDefault();
-        setTool((t) => {
-          const next = cyclePrimaryUtensil(t);
+        if (onAi) {
+          const next = toolRef.current === "highlight" ? "select" : "highlight";
+          setTool(next);
           toolRef.current = next;
           emitTourEvent("space-toggle-tool");
           showToast(UTENSIL_LABELS[next] || next);
-          return next;
-        });
+        } else {
+          setTool((t) => {
+            const next = cyclePrimaryUtensil(t);
+            toolRef.current = next;
+            emitTourEvent("space-toggle-tool");
+            showToast(UTENSIL_LABELS[next] || next);
+            return next;
+          });
+        }
         pendingImageRef.current = null;
         setImageArmed(false);
         return;
@@ -7226,6 +7237,9 @@ export default function App() {
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
           onExpandNode={(nodeId) => exploreAiNode(nodeId, { runExpand: true })}
+          onPointerTrack={(cx, cy) => {
+            lastPointerRef.current = { cx, cy };
+          }}
           landingNodeIds={aiLandingNodeIds}
           panel={aiPanel}
           dropOver={aiDropOver}

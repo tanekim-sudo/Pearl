@@ -1478,6 +1478,22 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   opacity: calc(1 - var(--ai-node-blend, 0) * 0.98);
 }
 
+.ai-node.morphing .ai-node-cell-glow {
+  animation: none;
+}
+
+/* Once text is showing, fully remove circle chrome (glow reads through at high zoom). */
+.ai-node.text-visible .ai-node-cell,
+.ai-node.text-visible .ai-node-starburst,
+.ai-node.text-visible .ai-node-label,
+.ai-node.text-visible::after,
+.ai-node.text-visible .ai-node-born-ring,
+.ai-node.text-visible .ai-node-fn-count {
+  opacity: 0 !important;
+  visibility: hidden;
+  animation: none;
+}
+
 .ai-node-viewport.ai-zoom-dot .ai-node-starburst,
 .ai-node-viewport.ai-zoom-short .ai-node-starburst,
 .ai-node-viewport.ai-constellation-mode .ai-node-starburst {
@@ -1491,7 +1507,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node-viewport.ai-zoom-full .ai-node-starburst {
-  opacity: 0.55;
+  opacity: calc(0.55 * (1 - var(--ai-node-blend, 0)));
 }
 
 @keyframes ai-cell-pulse {

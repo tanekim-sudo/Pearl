@@ -55,6 +55,7 @@ export default function AiNodeCanvas({
   viewportRef: externalViewportRef,
   onTourEvent,
   landingNodeIds,
+  onPointerTrack,
 }) {
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
@@ -694,6 +695,8 @@ export default function AiNodeCanvas({
       }
       style={{ "--ai-content-blend": contentBlend }}
       onPointerDown={handleViewportPointerDown}
+      onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
+      onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
       onDragOver={(e) => {
         onCanvasDragOver?.(e);
       }}
@@ -874,6 +877,7 @@ export default function AiNodeCanvas({
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
                 (nodeBlend > 0.02 ? " morphing" : "") +
+                (nodeBlend > 0.55 ? " text-visible" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +

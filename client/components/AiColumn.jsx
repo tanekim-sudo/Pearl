@@ -46,6 +46,7 @@ export default function AiColumn({
   isPaperDestination,
   viewportRef,
   landingNodeIds,
+  onPointerTrack,
 }) {
   return (
     <aside
@@ -54,6 +55,8 @@ export default function AiColumn({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
+      onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
     >
       <div className="ai-column-body unified">
         <AiToolbox
@@ -94,6 +97,7 @@ export default function AiColumn({
             viewportRef={viewportRef}
             onTourEvent={onTourEvent}
             landingNodeIds={landingNodeIds}
+            onPointerTrack={onPointerTrack}
           />
         </section>
       </div>
