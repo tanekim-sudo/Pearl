@@ -157,6 +157,15 @@ export const TOUR_STEPS = [
     allowSkip: true,
   },
   {
+    id: "space-cycle-tools",
+    phase: "Paper",
+    title: "Cycle utensils",
+    instruction: "Press **Space** to cycle **✎ Pen** → **▬ Highlight** → **↖ Select**. Each mode is a primary way to work on paper.",
+    verifyKind: "event",
+    verify: (ctx) => ctx.events.has("space-toggle-tool"),
+    allowSkip: true,
+  },
+  {
     id: "text-sticky",
     phase: "Paper",
     title: "Text & notes",
@@ -234,10 +243,10 @@ export const TOUR_STEPS = [
     allowSkip: true,
   },
   {
-    id: "space-transfer",
+    id: "shift-transfer",
     phase: "Select & transfer",
-    title: "Space + drag transfer",
-    instruction: "Hold **Space** and drag a selection toward the right column. Release on the glowing boundary or over AI spacetime.",
+    title: "Shift + drag transfer",
+    instruction: "Hold **Shift** and drag a selection toward the right column. Release on the glowing boundary or over AI spacetime.",
     target: '[data-tour="interpret-boundary"]',
     demo: "transfer-hint",
     verifyKind: "event",
@@ -449,7 +458,7 @@ export const TOUR_STEPS = [
     phase: "Extras",
     title: "Hidden gestures",
     instruction:
-      "**Space** (hold) = transfer mode · **Space** double-tap = toggle Highlight/Select · **Shift+lasso** = area select · **Alt+drag** = pan · **⌘V** = paste · Menu **···** for export, theme, and more.",
+      "**Space** = cycle Pen / Highlight / Select · **Shift+drag** = transfer to AI · **Shift+lasso** = area select · **Alt+drag** = pan · **⌘V** = paste",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("space-toggle-tool"),
     allowSkip: true,

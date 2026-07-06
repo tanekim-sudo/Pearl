@@ -109,6 +109,7 @@ import {
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
 import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
+import { cyclePrimaryUtensil, UTENSIL_LABELS } from "./lib/primary-utensils.js";
 import {
   highlightWorldWidth,
   highlightBrushHits as inkHighlightBrushHits,
@@ -154,8 +155,7 @@ const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
 const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
-const TRANSFER_DRAG_THRESHOLD = 8; // px before space-transfer or boundary transfer activates
-const SPACE_DOUBLE_TAP_MS = 350;
+const TRANSFER_DRAG_THRESHOLD = 8; // px before boundary transfer activates
 
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
@@ -288,7 +288,7 @@ const CANVAS_TOOLS = {
     group: "think",
     label: "Highlighter",
     icon: "▬",
-    hint: "Draw over ink to select fragments · Delete removes · drag or Space+drag → AI",
+    hint: "Draw over ink to select fragments · Delete removes · drag → AI to transfer",
     swatch: HIGHLIGHT_INK,
   },
   select: {
@@ -296,7 +296,7 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag objects to move · drag empty paper to pan · pinch or ⌘+scroll to zoom · shift+drag to select area",
+    hint: "Drag objects to move · clone inside · edge to move original · Space cycles tools",
   },
   image: {
     id: "image",
@@ -310,7 +310,7 @@ const CANVAS_TOOLS = {
     group: "draw",
     label: "Pen",
     icon: "✎",
-    hint: "Precise ink lines.",
+    hint: "Precise ink lines · Space cycles pen / highlight / select",
     swatch: INK,
   },
   marker: {
@@ -1859,7 +1859,6 @@ export default function App() {
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
 
   const [tool, setTool] = useState("highlight"); // highlight | select | pen | marker | eraser | image
-  const [spaceHeld, setSpaceHeld] = useState(false);
   const [panning, setPanning] = useState(false);
   const [moveDraft, setMoveDraft] = useState("");
   const [selection, setSelection] = useState([]);
@@ -1950,8 +1949,6 @@ export default function App() {
   const camRef = useRef(camera);
   const itemsRef = useRef(items);
   const toolRef = useRef(tool);
-  const spaceHeldRef = useRef(false);
-  const lastSpaceUpRef = useRef(0);
   const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
   const highlightSelectionRef = useRef(highlightSelectionIds);
@@ -1968,7 +1965,6 @@ export default function App() {
   camRef.current = camera;
   itemsRef.current = items;
   toolRef.current = tool;
-  spaceHeldRef.current = spaceHeld;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
   highlightSelectionRef.current = highlightSelectionIds;
@@ -2875,11 +2871,18 @@ export default function App() {
         pendingImageRef.current = null;
         setImageArmed(false);
       }
-      // space: hold for transfer · double-tap toggles highlight ↔ select
+      // Space cycles primary utensils: pen → highlight → select
       if (e.key === " " && !e.repeat && !walkingRef.current) {
+        const typing =
+          e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
+        if (typing) return;
         e.preventDefault();
-        spaceHeldRef.current = true;
-        setSpaceHeld(true);
+        setTool((t) => {
+          const next = cyclePrimaryUtensil(t);
+          emitTourEvent("space-toggle-tool");
+          showToast(UTENSIL_LABELS[next] || next);
+          return next;
+        });
         pendingImageRef.current = null;
         setImageArmed(false);
         return;
@@ -2910,25 +2913,9 @@ export default function App() {
         eraseAtPointerRef.current(lastPointerRef.current.cx, lastPointerRef.current.cy);
       }
     }
-    function up(e) {
-      if (e.key === " ") {
-        const now = Date.now();
-        if (now - lastSpaceUpRef.current < SPACE_DOUBLE_TAP_MS) {
-          setTool((t) => (t === "highlight" ? "select" : "highlight"));
-          emitTourEvent("space-toggle-tool");
-          lastSpaceUpRef.current = 0;
-        } else {
-          lastSpaceUpRef.current = now;
-        }
-        spaceHeldRef.current = false;
-        setSpaceHeld(false);
-      }
-    }
     window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
     return () => {
       window.removeEventListener("keydown", down);
-      window.removeEventListener("keyup", up);
     };
   }, []);
 
@@ -5159,20 +5146,17 @@ export default function App() {
     const lp = vpLocal(cx, cy);
     let hit = itemAtPoint(cx, cy);
 
-    if (spaceHeldRef.current) {
+    if (e.shiftKey && toolRef.current === "select") {
+      const paperSel = selRef.current;
+      if (paperSel.length > 0) {
+        startPendingSpaceTransfer(e, "paper", paperSel);
+        return;
+      }
       const hlIds = highlightSelectionRef.current;
-      if (toolRef.current === "highlight" && hlIds.length > 0) {
+      if (hlIds.length > 0) {
         startPendingSpaceTransfer(e, "paper", hlIds);
         return;
       }
-      if (toolRef.current === "select") {
-        const paperSel = selRef.current;
-        if (paperSel.length > 0) {
-          startPendingSpaceTransfer(e, "paper", paperSel);
-          return;
-        }
-      }
-      return;
     }
 
     if (e.altKey) {
@@ -6245,11 +6229,7 @@ export default function App() {
         .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
-    spaceHeld &&
-    ((tool === "select" && (selection.length || selectedAiNodeIds.length)) ||
-      (tool === "highlight" && highlightSelectionIds.length))
-      ? "cur-space-transfer"
-      : panning
+    panning
       ? "cur-grabbing"
       : tool === "highlight"
       ? "cur-highlight"
@@ -6890,7 +6870,6 @@ export default function App() {
           selectedNodeIds={selectedAiNodeIds}
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
-          spaceHeld={spaceHeld}
           tool={tool}
           onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}

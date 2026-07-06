@@ -40,7 +40,6 @@ export default function AiColumn({
   onLibraryDragLeave,
   onLibraryDrop,
   toolbox,
-  spaceHeld,
   tool,
   onSpaceTransferStart,
   onFragmentReplace,
@@ -87,7 +86,6 @@ export default function AiColumn({
             onCanvasDragOver={onCanvasDragOver}
             onCanvasDragLeave={onCanvasDragLeave}
             canvasDropOver={canvasDropOver}
-            spaceHeld={spaceHeld}
             tool={tool}
             onSpaceTransferStart={onSpaceTransferStart}
             onFragmentReplace={onFragmentReplace}

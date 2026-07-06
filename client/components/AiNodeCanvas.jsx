@@ -61,7 +61,6 @@ export default function AiNodeCanvas({
   onCanvasDragOver,
   onCanvasDragLeave,
   canvasDropOver,
-  spaceHeld,
   tool = "select",
   onSpaceTransferStart,
   onFragmentReplace,
@@ -234,7 +233,7 @@ export default function AiNodeCanvas({
       onSelect?.(node.id, { replace: true });
       return;
     }
-    if (spaceHeld && tool === "select" && selectedIds.length) {
+    if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
       onSpaceTransferStart?.(e);
@@ -457,7 +456,7 @@ export default function AiNodeCanvas({
       if (canExpand && !node.expandedText) onExpandNode?.(node.id);
       return;
     }
-    if (spaceHeld && tool === "select" && selectedIds.length) {
+    if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
       onSpaceTransferStart?.(e);
@@ -531,7 +530,7 @@ export default function AiNodeCanvas({
 
     if (!onVoid) return;
 
-    if (spaceHeld && tool === "select" && selectedIds.length) {
+    if (e.shiftKey && tool === "select" && selectedIds.length) {
       onSpaceTransferStart?.(e);
       return;
     }
@@ -599,7 +598,7 @@ export default function AiNodeCanvas({
       className={
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
-        (spaceHeld && tool === "select" && selectedIds.length ? " space-transfer-ready" : "") +
+        (e.shiftKey && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +

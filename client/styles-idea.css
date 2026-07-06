@@ -1466,7 +1466,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 0 24px rgba(232, 185, 35, 0.45);
 }
 
-.ai-node-viewport.space-transfer-ready {
+.ai-node-viewport.shift-transfer-ready {
   cursor: grabbing;
 }
 
