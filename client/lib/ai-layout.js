@@ -3,7 +3,7 @@
  * graph-aware positioning so threads read as one connected neural body.
  */
 
-import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-nodes.js";
+import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-constants.js";
 
 const GOLDEN_ANGLE = 2.399963229728653;
 const DEFAULT_ITERATIONS = 96;
@@ -229,7 +229,9 @@ export function layoutAiGraph(nodes, opts = {}) {
 
   return nodes.map((n) => {
     const s = byId.get(n.id);
-    return { ...n, x: s.x, y: s.y };
+    const x = Number.isFinite(s.x) ? s.x : n.x || 0;
+    const y = Number.isFinite(s.y) ? s.y : n.y || 0;
+    return { ...n, x, y };
   });
 }
 
@@ -246,6 +248,17 @@ export function suggestRootPosition(nodes, kind = "source") {
  * After adding nodes: semantic placement + global relaxation so threads stay one body.
  */
 export function layoutAfterAppend(nodes, newNodes) {
+  if (!newNodes?.length) return nodes;
+
+  try {
+    return layoutAfterAppendInner(nodes, newNodes);
+  } catch (err) {
+    console.error("[ai-layout] layoutAfterAppend failed, using fallback positions", err);
+    return [...nodes, ...newNodes.map((n) => ({ ...n }))];
+  }
+}
+
+function layoutAfterAppendInner(nodes, newNodes) {
   if (!newNodes.length) return nodes;
 
   let combined = [...nodes.map((n) => ({ ...n })), ...newNodes.map((n) => ({ ...n }))];

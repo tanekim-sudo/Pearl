@@ -5864,7 +5864,14 @@ export default function App() {
   }
 
   function appendAiNodes(...newNodes) {
-    setAiNodes((nodes) => layoutAfterAppend(nodes, newNodes));
+    setAiNodes((nodes) => {
+      try {
+        return layoutAfterAppend(nodes, newNodes);
+      } catch (err) {
+        console.error("appendAiNodes layout failed", err);
+        return [...nodes, ...newNodes];
+      }
+    });
     return newNodes;
   }
 

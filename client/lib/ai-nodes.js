@@ -1,3 +1,4 @@
+import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-constants.js";
 import {
   layoutAfterAppend,
   relayoutAiConstellation,
@@ -5,21 +6,8 @@ import {
   suggestRootPosition,
 } from "./ai-layout.js";
 
+export { AI_NODE_RADIUS, AI_SPAWN_MIN_DIST, AI_NODE_MIN_GAP };
 export { layoutAfterAppend, relayoutAiConstellation, suggestChildPosition, suggestRootPosition };
-
-export const AI_NODE_RADIUS = {
-  source: 34,
-  expanded: 30,
-  move: 26,
-  lens: 30,
-  session: 34,
-};
-
-/** Minimum center-to-center distance from parent when spawning children. */
-export const AI_SPAWN_MIN_DIST = 480;
-
-/** Minimum gap between node edges during overlap resolution. */
-export const AI_NODE_MIN_GAP = 240;
 
 export function nodePositionAt(existing, kind = "source", worldPos) {
   const radius = AI_NODE_RADIUS[kind] || 20;
@@ -187,6 +175,9 @@ export function edgeBundleOffsets(edges) {
 
 /** Synaptic strand geometry — membrane to membrane with smooth cubic curve. */
 export function edgeGeometry(from, to, opts = {}) {
+  if (!from || !to) {
+    return { x1: 0, y1: 0, x2: 0, y2: 0, cx: 0, cy: 0, len: 0, path: "M 0 0 L 0 0" };
+  }
   const fr = from.radius || 20;
   const tr = to.radius || 20;
   const dx = to.x - from.x;

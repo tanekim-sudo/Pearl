@@ -747,10 +747,12 @@ export default function AiNodeCanvas({
             </filter>
           </defs>
           {edges.map(({ id, from, to, kind, label }, edgeIdx) => {
+            if (!from || !to) return null;
             const geom = edgeGeometry(from, to, {
               bundleOffset: bundleOffsets.get(id) || 0,
               curveSign: edgeIdx % 2 === 0 ? 1 : -1,
             });
+            if (!geom?.path) return null;
             const pathD = geom.path;
             const marker =
               kind === "expand"
