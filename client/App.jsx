@@ -62,11 +62,11 @@ import {
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
   DEFAULT_CONSTELLATION_SCALE,
-  EXPLORE_ZOOM_SCALE,
   centerAiCamera,
   findNearestSourceNode,
   fitAiConstellation,
-  focusAiNode,
+  focusAiNodeCard,
+  nodeCardLayout,
   screenToWorld,
   viewportCenterWorld as aiViewportCenterWorld,
   worldToScreen,
@@ -2383,10 +2383,17 @@ export default function App() {
     aiCamAnimRef.current = requestAnimationFrame(tick);
   }
 
-  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE, ms = 475) {
+  /** Chatbot-style framing: zoom so the node's content card fills the view, read from the top. */
+  function aiCardCameraFor(node, el) {
+    const detail = node.expandedText || node.preview || node.label || "";
+    const card = nodeCardLayout(node.radius || 20, detail.length);
+    return focusAiNodeCard(node, card, el.clientWidth, el.clientHeight);
+  }
+
+  function zoomAiToNode(node, ms = 560) {
     const el = aiViewportRef.current;
     if (!el || !node) return;
-    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale), ms);
+    animateAiCameraTo(aiCardCameraFor(node, el), ms);
   }
 
   function focusAiNodeContent(node) {
@@ -2417,7 +2424,7 @@ export default function App() {
     } else {
       const el = aiViewportRef.current;
       if (el) {
-        setAiCamera(focusAiNode(node, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
+        setAiCamera(aiCardCameraFor(node, el));
       }
     }
 
@@ -2458,7 +2465,7 @@ export default function App() {
         if (animate) zoomAiToNode(child);
         else {
           const el = aiViewportRef.current;
-          if (el) setAiCamera(focusAiNode(child, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
+          if (el) setAiCamera(aiCardCameraFor(child, el));
         }
         if (!child.expandedText && !child.loading && aiPanel?.sketchBundle) {
           interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
@@ -4813,7 +4820,7 @@ export default function App() {
       if (focusNode) {
         setAiFocusedNodeId(focusId);
         focusAiNodeContent(focusNode);
-        zoomAiToNode(focusNode, EXPLORE_ZOOM_SCALE, 620);
+        zoomAiToNode(focusNode, 620);
       } else if (el && aiNodesRef.current.length) {
         animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight, { maxScale: 0.55 }), 425);
       }

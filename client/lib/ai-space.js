@@ -136,6 +136,43 @@ export function focusAiNode(node, vpWidth, vpHeight, targetScale = EXPLORE_ZOOM_
   };
 }
 
+/**
+ * The content card that replaces a node when zoomed in — sized to the node's
+ * footprint, with a font size computed so the response fits the card.
+ * All units are AI-world px (the camera scale makes them readable).
+ */
+export function nodeCardLayout(radius = 20, textLen = 0) {
+  const w = Math.max(110, radius * 4.6);
+  const h = Math.max(84, radius * 3.4);
+  const fontSize = fitCardFontSize(w, h, textLen);
+  return { w, h, fontSize };
+}
+
+/** Largest font (world px) at which ~textLen chars fit inside a w×h card. */
+export function fitCardFontSize(w, h, textLen) {
+  if (!textLen) return 7;
+  // usable area after padding/header; avg glyph ≈ 0.52em wide × 1.5em line box
+  const usable = w * h * 0.7;
+  const perChar = 0.52 * 1.5;
+  const fs = Math.sqrt(usable / (textLen * perChar));
+  return Math.min(9, Math.max(2.4, fs));
+}
+
+/**
+ * Camera that frames a node's content card like an open chat message:
+ * card fills most of the viewport, read from the top.
+ */
+export function focusAiNodeCard(node, card, vpWidth, vpHeight, topMargin = 56) {
+  const scale = clampScale(
+    Math.min((vpWidth * 0.72) / card.w, (vpHeight * 0.82) / card.h)
+  );
+  return {
+    scale,
+    x: vpWidth / 2 - node.x * scale,
+    y: topMargin - (node.y - card.h / 2) * scale,
+  };
+}
+
 export function findNearestSourceNode(nodes, wx, wy) {
   const sources = nodes.filter((n) => n.nodeKind === "source" || n.nodeKind === "session");
   if (!sources.length) return null;

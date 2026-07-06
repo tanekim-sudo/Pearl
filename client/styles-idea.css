@@ -1400,20 +1400,19 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   box-shadow: none;
 }
 
-/* In-place morph: each node's content card fades in exactly where the circle was. */
+/* In-place morph: each node's content card fades in exactly where the circle was.
+   Width/height/font-size are set inline (world units, fitted to the response). */
 .ai-node-content-card {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) scale(calc(0.5 + 0.5 * var(--ai-node-blend, 0)));
-  width: 270px;
-  max-height: 230px;
-  border-radius: 14px;
+  border-radius: 1.2em;
   background: rgba(8, 10, 18, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.32);
   box-shadow:
-    0 10px 36px rgba(0, 0, 0, 0.55),
-    0 0 40px rgba(255, 255, 255, calc(var(--ai-node-blend, 0) * 0.16));
+    0 0.8em 2.6em rgba(0, 0, 0, 0.55),
+    0 0 3em rgba(255, 255, 255, calc(var(--ai-node-blend, 0) * 0.16));
   overflow: hidden;
   pointer-events: none;
   display: flex;
@@ -1424,8 +1423,8 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .ai-node-content-card-head {
   flex-shrink: 0;
-  padding: 9px 13px 4px;
-  font-size: 8.5px;
+  padding: 0.8em 1.1em 0.3em;
+  font-size: 0.62em;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(240, 195, 80, 0.9);
@@ -1436,14 +1435,14 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .ai-node-content-card-body {
   flex: 1;
-  padding: 2px 13px 12px;
-  font-size: 11px;
-  line-height: 1.55;
+  padding: 0.2em 1.1em 1em;
+  font-size: 1em;
+  line-height: 1.5;
   color: rgba(245, 248, 255, 0.96);
   white-space: pre-wrap;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 82%, transparent 100%);
 }
 
 .ai-node-viewport.ai-text-dominant .ai-node-lines {

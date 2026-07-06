@@ -12,6 +12,7 @@ import {
   AI_STRAND_DRAG_MAX_SCALE,
   AI_BLEND_ZOOM_START,
   findNearestNodeToCenter,
+  nodeCardLayout,
   screenToWorld,
   viewportCenterWorld,
   worldToScreen,
@@ -485,7 +486,11 @@ export default function AiNodeCanvas({
 
     function onUp() {
       cleanup();
-      if (!activated) onSelect?.(node.id, { replace: true });
+      if (!activated) {
+        onSelect?.(node.id, { replace: true });
+        // Click opens the node like a chat message: zoom to its content card.
+        onExploreNode?.(node.id);
+      }
     }
 
     function cleanup() {
@@ -845,6 +850,7 @@ export default function AiNodeCanvas({
           // Every node with content morphs in place: circle dissolves, text fades in.
           const detail = nodeDetailText(node);
           const nodeBlend = detail ? contentBlend : 0;
+          const card = detail ? nodeCardLayout(r, detail.length) : null;
           const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
@@ -891,7 +897,15 @@ export default function AiNodeCanvas({
                   : truncateLabel(node.label, 18)}
               </span>
               {detail && nodeBlend > 0.02 && (
-                <div className="ai-node-content-card" style={{ opacity: nodeBlend }}>
+                <div
+                  className="ai-node-content-card"
+                  style={{
+                    opacity: nodeBlend,
+                    width: card.w,
+                    height: card.h,
+                    fontSize: card.fontSize,
+                  }}
+                >
                   <div className="ai-node-content-card-head">{node.label}</div>
                   <div className="ai-node-content-card-body">{renderNodeText(node, detail)}</div>
                 </div>
