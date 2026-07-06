@@ -65,11 +65,10 @@ import {
   centerAiCamera,
   findNearestSourceNode,
   fitAiConstellation,
-  focusAiNodeCard,
+  focusAiNodeRead,
   focusAiNode,
   computeNodesBBox,
-  nodeCardLayout,
-  readingCardForNode,
+  nodeTextLayout,
   screenToWorld,
   viewportCenterWorld as aiViewportCenterWorld,
   worldToScreen,
@@ -2392,11 +2391,11 @@ export default function App() {
     aiCamAnimRef.current = requestAnimationFrame(tick);
   }
 
-  /** Chatbot-style framing: zoom so the node's content card fills the view, read from the top. */
+  /** Zoom so borderless node text fills the view, anchored from the top. */
   function aiCardCameraFor(node, el) {
     const detail = node.expandedText || node.preview || node.label || "";
-    const card = readingCardForNode(el.clientWidth, el.clientHeight, detail);
-    return focusAiNodeCard(node, card, el.clientWidth, el.clientHeight);
+    const layout = nodeTextLayout(node.radius || 20, detail.length);
+    return focusAiNodeRead(node, layout, el.clientWidth, el.clientHeight);
   }
 
   function zoomAiToNode(node, ms = 560) {

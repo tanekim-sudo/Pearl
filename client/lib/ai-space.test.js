@@ -8,11 +8,11 @@ import {
   AI_TEXT_ZOOM_FULL,
   computeNodesBBox,
   fitAiConstellation,
-  fitCardFontSize,
+  fitTextFontSize,
   focusAiNode,
-  focusAiNodeCard,
-  nodeCardLayout,
-  readingCardForNode,
+  focusAiNodeRead,
+  nodeTextLayout,
+  nodeTextLayoutAtBlend,
   zoomContentBlend,
 } from "./ai-space.js";
 
@@ -60,42 +60,41 @@ describe("ai-space", () => {
     assert.ok(mid > 0.4 && mid < 0.6);
   });
 
-  it("nodeCardLayout scales the card with node radius", () => {
-    const small = nodeCardLayout(20, 300);
-    const big = nodeCardLayout(40, 300);
+  it("nodeTextLayout scales with node radius and text length", () => {
+    const small = nodeTextLayout(20, 300);
+    const big = nodeTextLayout(40, 300);
     assert.ok(big.w > small.w);
-    assert.ok(big.h > small.h);
-    assert.ok(small.w >= 110);
-    assert.ok(small.h >= 84);
+    assert.ok(big.h >= small.h);
+    assert.ok(small.w >= 148);
+    assert.equal(small.anchorY, -20);
   });
 
-  it("fitCardFontSize shrinks for longer responses within bounds", () => {
-    const short = fitCardFontSize(120, 90, 60);
-    const long = fitCardFontSize(120, 90, 5000);
+  it("fitTextFontSize shrinks for longer responses within bounds", () => {
+    const short = fitTextFontSize(148, 60, 20);
+    const long = fitTextFontSize(148, 5000, 20);
     assert.ok(short > long);
-    assert.ok(long >= 4.2);
-    assert.ok(short <= 9);
-    assert.equal(fitCardFontSize(120, 90, 0), 7);
+    assert.ok(long >= 4.6);
+    assert.ok(short <= 9.5);
   });
 
-  it("readingCardForNode keeps a readable screen font at reading zoom", () => {
-    const card = readingCardForNode(800, 600, "x".repeat(4000));
-    assert.equal(card.targetScale, AI_READING_ZOOM);
-    assert.ok(Math.abs(card.fontSize * card.targetScale - 15) < 0.05);
-    assert.ok(card.w * card.targetScale <= 800 * 0.84);
+  it("nodeTextLayoutAtBlend grows from inside the circle to full layout", () => {
+    const inner = nodeTextLayoutAtBlend(20, 400, 0);
+    const full = nodeTextLayoutAtBlend(20, 400, 1);
+    assert.ok(full.w > inner.w);
+    assert.ok(full.h > inner.h);
+    assert.ok(full.fontSize > inner.fontSize);
   });
 
-  it("focusAiNodeCard frames the card from the top like a chat message", () => {
+  it("focusAiNodeRead frames full text from the top", () => {
     const node = { x: 100, y: 50, radius: 30 };
-    const card = readingCardForNode(800, 600, "x".repeat(300));
-    const cam = focusAiNodeCard(node, card, 800, 600);
-    // node horizontally centered
+    const layout = nodeTextLayout(30, 300);
+    const cam = focusAiNodeRead(node, layout, 800, 600);
     assert.ok(Math.abs(node.x * cam.scale + cam.x - 400) < 1);
-    // card top sits at the top margin
-    const topY = (node.y - card.h / 2) * cam.scale + cam.y;
-    assert.ok(Math.abs(topY - 48) < 1);
-    assert.equal(cam.scale, AI_READING_ZOOM);
-    // deep zoom → text fully blended in
+    const topY = (node.y + layout.anchorY) * cam.scale + cam.y;
+    assert.ok(Math.abs(topY - 44) < 1);
+    assert.ok(cam.scale <= AI_READING_ZOOM);
+    const screenH = layout.h * cam.scale;
+    assert.ok(screenH <= 600 * 0.92 + 1);
     assert.equal(zoomContentBlend(cam.scale), 1);
   });
 });

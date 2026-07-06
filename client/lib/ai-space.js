@@ -139,62 +139,98 @@ export function focusAiNode(node, vpWidth, vpHeight, targetScale = EXPLORE_ZOOM_
 }
 
 /**
- * The content card that replaces a node when zoomed in — sized to the node's
- * footprint, with a font size computed so the response fits the card.
- * All units are AI-world px (the camera scale makes them readable).
+ * Borderless text block for a node — world units, top-anchored at the cell rim.
+ * The full response is laid out (no clipping); the camera scales to fit on click.
  */
-export function nodeCardLayout(radius = 20, textLen = 0) {
-  const w = Math.max(110, radius * 4.6);
-  const h = Math.max(84, radius * 3.4);
-  const fontSize = fitCardFontSize(w, h, textLen);
-  return { w, h, fontSize };
+export function nodeTextLayout(radius = 20, textLen = 0) {
+  const w = Math.max(radius * 4.4, 148);
+  const lineHeight = 1.48;
+  const fontSize = fitTextFontSize(w, textLen, radius);
+  const charsPerLine = Math.max(14, Math.floor(w / (fontSize * 0.52)));
+  const lines = Math.max(1, Math.ceil(Math.max(textLen, 1) / charsPerLine));
+  const h = lines * fontSize * lineHeight;
+  return { w, h, fontSize, lineHeight, anchorY: -radius };
 }
 
-/** Largest font (world px) at which ~textLen chars fit inside a w×h card. */
-export function fitCardFontSize(w, h, textLen) {
-  if (!textLen) return 7;
-  // usable area after padding/header; avg glyph ≈ 0.52em wide × 1.5em line box
-  const usable = w * h * 0.7;
-  const perChar = 0.52 * 1.5;
-  const fs = Math.sqrt(usable / (textLen * perChar));
-  return Math.min(9, Math.max(4.2, fs));
+/** @deprecated Use nodeTextLayout */
+export function nodeCardLayout(radius, textLen) {
+  return nodeTextLayout(radius, textLen);
+}
+
+/** Readable world font for a given column width and response length. */
+export function fitTextFontSize(w, textLen, radius = 20) {
+  if (!textLen) return Math.max(5.5, radius * 0.32);
+  const lineHeight = 1.48;
+  const ideal = Math.min(9.5, Math.max(6, radius * 0.38));
+  const charsPerLine = Math.max(14, Math.floor(w / (ideal * 0.52)));
+  const lines = Math.ceil(textLen / charsPerLine);
+  const maxH = Math.max(radius * 10, 520);
+  const neededH = lines * ideal * lineHeight;
+  if (neededH <= maxH) return ideal;
+  return Math.max(4.6, maxH / (lines * lineHeight));
+}
+
+/** @deprecated Use fitTextFontSize */
+export function fitCardFontSize(w, _h, textLen) {
+  return fitTextFontSize(w, textLen);
+}
+
+/** Interpolate text footprint from inside the circle → full response layout. */
+export function nodeTextLayoutAtBlend(radius, textLen, blend) {
+  const full = nodeTextLayout(radius, textLen);
+  const t = Math.min(1, Math.max(0, blend));
+  const inner = radius * 1.88;
+  return {
+    w: inner + (full.w - inner) * t,
+    h: inner + (full.h - inner) * t,
+    fontSize: radius * 0.26 + (full.fontSize - radius * 0.26) * t,
+    lineHeight: full.lineHeight,
+    anchorY: full.anchorY,
+  };
 }
 
 /**
- * Viewport-sized reading card for click-to-zoom — fixed screen font, not shrunk for long text.
+ * Camera for click-to-read: top of the text at the viewport top, full response in frame.
  */
-export function readingCardForNode(vpWidth, vpHeight, text = "", opts = {}) {
-  const targetScale = clampScale(
-    opts.targetScale ?? Math.max(AI_TEXT_ZOOM_FULL + 0.15, AI_READING_ZOOM)
-  );
-  const screenFontPx = opts.screenFontPx ?? 15;
-  const fontSize = screenFontPx / targetScale;
-  const lineHeight = 1.5;
-  const charsPerLine = Math.max(
-    28,
-    Math.floor((vpWidth * 0.78) / targetScale / (fontSize * 0.52))
-  );
-  const lines = Math.max(5, Math.ceil(String(text || "").length / charsPerLine));
-  const padY = fontSize * 2.6;
-  const w = (vpWidth * 0.82) / targetScale;
-  const h = Math.min((vpHeight * 0.86) / targetScale, lines * fontSize * lineHeight + padY);
-  return { w, h, fontSize, targetScale, screenFontPx };
-}
+export function focusAiNodeRead(node, layout, vpWidth, vpHeight, opts = {}) {
+  const topMargin = opts.topMargin ?? 44;
+  const padX = opts.padX ?? 0.9;
+  const padY = opts.padY ?? 0.9;
+  const maxScale = opts.maxScale ?? AI_READING_ZOOM;
+  const minScreenFontPx = opts.minScreenFontPx ?? 14;
 
-/**
- * Camera that frames a node's content card like an open chat message:
- * card fills most of the viewport, read from the top.
- */
-export function focusAiNodeCard(node, card, vpWidth, vpHeight, topMargin = 48) {
-  const scale = clampScale(
-    card.targetScale ??
-      Math.min((vpWidth * 0.82) / card.w, (vpHeight * 0.86) / card.h, AI_READING_ZOOM)
-  );
+  const fitScale = Math.min((vpWidth * padX) / layout.w, (vpHeight * padY) / layout.h);
+  const minReadScale = minScreenFontPx / layout.fontSize;
+  const scale = clampScale(Math.min(Math.max(fitScale, minReadScale), maxScale));
+
+  const textTopWorld = node.y + layout.anchorY;
   return {
     scale,
     x: vpWidth / 2 - node.x * scale,
-    y: topMargin - (node.y - card.h / 2) * scale,
+    y: topMargin - textTopWorld * scale,
   };
+}
+
+/** @deprecated Use nodeTextLayout + focusAiNodeRead */
+export function readingCardForNode(vpWidth, vpHeight, text = "", opts = {}) {
+  const layout = nodeTextLayout(20, String(text || "").length);
+  const cam = focusAiNodeRead({ x: 0, y: 0, radius: 20 }, layout, vpWidth, vpHeight, opts);
+  return {
+    ...layout,
+    targetScale: cam.scale,
+    screenFontPx: layout.fontSize * cam.scale,
+  };
+}
+
+/** @deprecated Use focusAiNodeRead */
+export function focusAiNodeCard(node, card, vpWidth, vpHeight, topMargin = 48) {
+  const layout = {
+    w: card.w,
+    h: card.h,
+    fontSize: card.fontSize,
+    anchorY: -(node.radius || 20),
+  };
+  return focusAiNodeRead(node, layout, vpWidth, vpHeight, { topMargin });
 }
 
 export function findNearestSourceNode(nodes, wx, wy) {

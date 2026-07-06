@@ -13,8 +13,7 @@ import {
   AI_STRAND_DRAG_MAX_SCALE,
   AI_BLEND_ZOOM_START,
   findNearestNodeToCenter,
-  nodeCardLayout,
-  readingCardForNode,
+  nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
   worldToScreen,
@@ -581,7 +580,7 @@ export default function AiNodeCanvas({
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) {
           onSelect?.(node.id, { replace: true });
-          if (tool !== "highlight" && cameraRef.current.scale > AI_STRAND_DRAG_MAX_SCALE) {
+          if (tool !== "highlight") {
             onExploreNode?.(node.id);
           }
         }
@@ -675,7 +674,7 @@ export default function AiNodeCanvas({
   }
 
   const highlightReaderNode =
-    tool === "highlight" && selectedIds.length === 1
+    tool === "highlight" && selectedIds.length === 1 && contentBlend < 0.1
       ? nodes.find((n) => n.id === selectedIds[0] && n.expandedText?.trim())
       : null;
 
@@ -864,11 +863,7 @@ export default function AiNodeCanvas({
           // Every node with content morphs in place: circle dissolves, text fades in.
           const detail = nodeDetailText(node);
           const nodeBlend = detail ? contentBlend : 0;
-          const card = detail
-            ? nodeBlend > 0.82
-              ? readingCardForNode(vpSize.w, vpSize.h, detail)
-              : nodeCardLayout(r, detail.length)
-            : null;
+          const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
           const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
@@ -914,35 +909,36 @@ export default function AiNodeCanvas({
                   ? truncateLabel(node.label, 8)
                   : truncateLabel(node.label, 18)}
               </span>
-              {detail && nodeBlend > 0.02 && (
+              {detail && nodeBlend > 0.02 && textLayout && (
                 <div
-                  className="ai-node-content-card"
+                  className="ai-node-content-text"
                   style={{
                     opacity: nodeBlend,
-                    width: card.w,
-                    height: card.h,
-                    fontSize: card.fontSize,
+                    width: textLayout.w,
+                    fontSize: textLayout.fontSize,
+                    lineHeight: textLayout.lineHeight,
                   }}
                 >
-                  <div className="ai-node-content-card-head">{node.label}</div>
-                  <div className="ai-node-content-card-body">{renderNodeText(node, detail)}</div>
+                  <div className="ai-node-content-text-body" aria-label={node.label}>
+                    {renderNodeText(node, detail)}
+                  </div>
                   {tool === "highlight" &&
                     node.expandedText?.trim() &&
                     (isSelected || isFocused) &&
-                    nodeBlend > 0.12 && (
+                    nodeBlend > 0.06 && (
                       <div
-                        className="ai-node-card-highlight"
+                        className="ai-node-text-highlight"
                         onPointerDown={(ev) => ev.stopPropagation()}
                         onClick={(ev) => ev.stopPropagation()}
                       >
                         <FragmentHighlightLayer
                           active
                           text={node.expandedText}
-                          fontSize={card.fontSize}
+                          fontSize={textLayout.fontSize}
                           onFragmentReplace={onFragmentReplace}
                           onFragmentToPaper={onFragmentToPaper}
                           isPaperDestination={isPaperDestination}
-                          className="ai-node-card-fragment"
+                          className="ai-node-text-fragment"
                         />
                       </div>
                     )}
