@@ -2757,6 +2757,18 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   border: 1px dashed rgba(0, 0, 0, 0.18);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   outline: none;
+  min-width: 160px;
+  min-height: 32px;
+  padding: 6px 8px;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.canvas-column .board-text.editing:empty::before,
+.idea-center .board-text.editing:empty::before {
+  content: "Type here";
+  color: rgba(0, 0, 0, 0.32);
+  pointer-events: none;
 }
 
 .canvas-column.boundary-magnet,

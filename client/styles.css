@@ -964,6 +964,7 @@ body {
   background: transparent;
 }
 .board-main.editing-text .canvas-input-layer {
+  pointer-events: none;
   cursor: default;
 }
 .cur-select {

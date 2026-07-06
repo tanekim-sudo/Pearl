@@ -2950,6 +2950,7 @@ export default function App() {
         e.preventDefault();
         setTool((t) => {
           const next = cyclePrimaryUtensil(t);
+          toolRef.current = next;
           emitTourEvent("space-toggle-tool");
           showToast(UTENSIL_LABELS[next] || next);
           return next;
@@ -5302,20 +5303,24 @@ export default function App() {
     }
 
     if (t === "text") {
-      if (hit && isEditableBlock(hit)) {
-        setSelection([hit.id]);
-        editingRef.current = hit.id;
-        setEditing(hit.id);
+      const editHit = itemAtPoint(cx, cy);
+      if (
+        editHit &&
+        isEditableBlock(editHit) &&
+        textClickRegion(editHit, cx, cy) === "interior"
+      ) {
+        setSelection([editHit.id]);
+        editingRef.current = editHit.id;
+        setEditing(editHit.id);
         editClickRef.current = { cx, cy };
         setGesturing(false);
         return;
       }
-      if (!hit) {
-        insertBlock("text", { atWorld: w });
-        editClickRef.current = { cx, cy };
-        setGesturing(false);
-        return;
-      }
+      const id = insertBlock("text", { atWorld: w });
+      editingRef.current = id;
+      editClickRef.current = { cx, cy };
+      setGesturing(false);
+      return;
     }
 
     if (t === "pen" || t === "marker" || t === "eraser") {
@@ -5664,6 +5669,7 @@ export default function App() {
     recordItemEvent(id, "born", { itemSnapshot: itemSnapshot(item) });
     if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
       setEditing(id);
+      editingRef.current = id;
     }
     if (type !== "text") setTool("select");
     return id;
@@ -5671,6 +5677,7 @@ export default function App() {
 
   function insertBlockFromPalette(type) {
     if (type === "text") {
+      toolRef.current = "text";
       setTool("text");
       return;
     }
