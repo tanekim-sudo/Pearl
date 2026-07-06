@@ -1,0 +1,49 @@
+# Supabase local development configuration for Lens.
+# Governs `supabase start` / `supabase db reset` only — hosted projects are
+# configured in the dashboard (see the launch checklist in the README).
+project_id = "lens"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+# Local email testing: captured by the CLI's mail viewer, no SMTP needed.
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+# Access-token TTL bounds how long an already-issued token outlives a password
+# reset (other sessions lose refresh tokens immediately; full sign-out happens
+# at their next refresh). Keep this deliberately short.
+jwt_expiry = 1800
+enable_refresh_token_rotation = true
+enable_signup = true
+minimum_password_length = 8
+password_requirements = "letters_digits"
+
+[auth.email]
+enable_signup = true
+# Hosted projects default confirmations ON; keep local ON too so the signup
+# and recovery flows behave identically in both environments.
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = false
+max_frequency = "1m"
+# Email links / OTPs expire after one hour at most.
+otp_expiry = 3600
