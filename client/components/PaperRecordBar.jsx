@@ -1,4 +1,5 @@
 import React from "react";
+import MicIcon from "./MicIcon.jsx";
 
 export default function PaperRecordBar({ recording, level, durationMs, onToggle }) {
   const secs = Math.floor((durationMs || 0) / 1000);
@@ -14,11 +15,12 @@ export default function PaperRecordBar({ recording, level, durationMs, onToggle 
         aria-label={recording ? "Stop recording" : "Record voice + drawing"}
         onClick={onToggle}
       >
-        <span
-          className="paper-record-dot"
+        <MicIcon
+          className="paper-record-mic"
+          recording={recording}
           style={
             recording
-              ? { transform: `scale(${0.85 + (level || 0) * 0.35})` }
+              ? { transform: `scale(${0.92 + (level || 0) * 0.2})` }
               : undefined
           }
         />

@@ -3,7 +3,7 @@
 import { sampleStrokePoints } from "./highlight-text.js";
 
 export const HIGHLIGHT_INK = "#E8B923";
-export const HIGHLIGHT_W = 20;
+export const HIGHLIGHT_W = 12;
 
 export function highlightWorldWidth(scale) {
   return HIGHLIGHT_W / Math.max(scale, 0.12);

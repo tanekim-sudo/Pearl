@@ -11,7 +11,7 @@ export function wheelPanDelta(e) {
 }
 
 /** Smooth exponential zoom factor from vertical wheel delta. */
-export function wheelZoomFactor(e, sensitivity = 0.0016) {
+export function wheelZoomFactor(e, sensitivity = 0.0032) {
   return Math.exp(-e.deltaY * sensitivity);
 }
 

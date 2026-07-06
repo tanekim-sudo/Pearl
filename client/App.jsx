@@ -155,13 +155,13 @@ const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
 const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
-const TRANSFER_DRAG_THRESHOLD = 8; // px before boundary transfer activates
+const TRANSFER_DRAG_THRESHOLD = 4; // px before boundary transfer activates
 
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
 const HIGHLIGHT_INK = "#E8B923";
-const HIGHLIGHT_W = 20;
+const HIGHLIGHT_W = 12;
 const HIGHLIGHT_OPACITY = 0.92;
 const MARKER_OPACITY = 0.72;
 
@@ -2243,18 +2243,27 @@ export default function App() {
 
   function startPendingSpaceTransfer(e, origin, ids, opts = {}) {
     if (!ids?.length) return;
+    const previewBox = opts.previewBox || computeTransferPreviewBox(origin, ids);
     setGesturing(true);
     gesture.current = {
       mode: "pending-space-transfer",
       origin,
       ids: ids.slice(),
       kind: opts.kind || null,
-      previewBox: opts.previewBox || computeTransferPreviewBox(origin, ids),
+      previewBox,
       cx: e.clientX,
       cy: e.clientY,
       lastCx: e.clientX,
       lastCy: e.clientY,
     };
+    setTransferDragActive(true);
+    setSpaceTransferGhost({
+      cx: e.clientX,
+      cy: e.clientY,
+      count: ids.length,
+      target: null,
+      previewBox,
+    });
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
@@ -2324,7 +2333,7 @@ export default function App() {
     }
   }
 
-  function animateAiCameraTo(targetCamera, ms = 700) {
+  function animateAiCameraTo(targetCamera, ms = 350) {
     if (aiCamAnimRef.current) cancelAnimationFrame(aiCamAnimRef.current);
     const from = { ...aiCamRef.current };
     const to = targetCamera;
@@ -2344,7 +2353,7 @@ export default function App() {
     aiCamAnimRef.current = requestAnimationFrame(tick);
   }
 
-  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE, ms = 950) {
+  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE, ms = 475) {
     const el = aiViewportRef.current;
     if (!el || !node) return;
     animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale), ms);
@@ -2443,7 +2452,7 @@ export default function App() {
     if (!el) return;
     emitTourEvent("return-constellation");
     setAiFocusedNodeId(null);
-    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 900);
+    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 450);
   }
 
   function focusAiNodeFromZoom(nodeId) {
@@ -2596,6 +2605,15 @@ export default function App() {
         }
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
       } else if (g.mode === "pending-space-transfer") {
+        g.lastCx = cx;
+        g.lastCy = cy;
+        setSpaceTransferGhost({
+          cx,
+          cy,
+          count: g.ids.length,
+          target: null,
+          previewBox: g.previewBox,
+        });
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
         if (dist > TRANSFER_DRAG_THRESHOLD) {
           activateSpaceTransfer(g, cx, cy);
@@ -3627,7 +3645,7 @@ export default function App() {
     for (const id of itemIds || []) recordItemEvent(id, kind, meta);
   }
 
-  function animateCameraTo(targetWorld, targetScale, ms = 850) {
+  function animateCameraTo(targetWorld, targetScale, ms = 425) {
     if (camAnimRef.current) cancelAnimationFrame(camAnimRef.current);
     const r = vpRect();
     const from = { ...camRef.current };
@@ -4699,10 +4717,14 @@ export default function App() {
         return next;
       });
       const el = aiViewportRef.current;
-      if (el && aiNodesRef.current.length) {
-        animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 850);
+      const focusId = nodeIds[nodeIds.length - 1];
+      const focusNode = aiNodesRef.current.find((n) => n.id === focusId);
+      if (el && focusNode) {
+        zoomAiToNode(focusNode, 0.88, 425);
+      } else if (el && aiNodesRef.current.length) {
+        animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight, { maxScale: 0.55 }), 425);
       }
-    }, 920);
+    }, 1180);
   }
 
   function triggerTransferAnimation(direction, opts = {}) {
@@ -5279,6 +5301,23 @@ export default function App() {
       return;
     }
 
+    if (t === "text") {
+      if (hit && isEditableBlock(hit)) {
+        setSelection([hit.id]);
+        editingRef.current = hit.id;
+        setEditing(hit.id);
+        editClickRef.current = { cx, cy };
+        setGesturing(false);
+        return;
+      }
+      if (!hit) {
+        insertBlock("text", { atWorld: w });
+        editClickRef.current = { cx, cy };
+        setGesturing(false);
+        return;
+      }
+    }
+
     if (t === "pen" || t === "marker" || t === "eraser") {
       pushHistory();
     }
@@ -5595,15 +5634,15 @@ export default function App() {
 
   function insertBlock(type, opts = {}) {
     pushHistory();
-    const c = viewportCenterWorld();
+    const center = opts.atWorld || viewportCenterWorld();
     const meta = defaultBlockMeta(type);
     const id = uid();
     const item = tagRecordingItem(
       normalizeItem({
         id,
         type: type === "text" ? "text" : type,
-        x: c.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
-        y: c.y - 40 + (opts.offsetY || 0),
+        x: center.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
+        y: center.y - 20 + (opts.offsetY || 0),
         text: defaultBlockContent(type),
         pageId: activePageId,
         world: worldFilter || opts.world || null,
@@ -5626,13 +5665,13 @@ export default function App() {
     if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
       setEditing(id);
     }
-    setTool("select");
+    if (type !== "text") setTool("select");
     return id;
   }
 
   function insertBlockFromPalette(type) {
     if (type === "text") {
-      insertBlock("text");
+      setTool("text");
       return;
     }
     if (type === "pen") {
@@ -6311,6 +6350,8 @@ export default function App() {
   const cursorClass =
     panning
       ? "cur-grabbing"
+      : tool === "text"
+      ? "cur-text"
       : tool === "highlight" && highlightGrabHover
       ? "cur-grab"
       : tool === "highlight"

@@ -993,7 +993,7 @@ body {
 
 .space-transfer-ghost-wrap {
   position: fixed;
-  z-index: 9999;
+  z-index: 10050;
   transform: translate(-50%, -50%);
   pointer-events: none;
   display: flex;
@@ -1003,13 +1003,14 @@ body {
 }
 
 .space-transfer-ghost-preview {
-  border: 2px solid rgba(232, 185, 35, 0.85);
+  border: 2px solid rgba(232, 185, 35, 0.95);
   border-radius: 8px;
-  background: rgba(255, 215, 0, 0.12);
+  background: rgba(255, 255, 255, 0.88);
   box-shadow:
-    0 0 0 4px rgba(255, 215, 0, 0.1),
-    0 0 20px rgba(232, 185, 35, 0.45);
+    0 0 0 4px rgba(255, 215, 0, 0.18),
+    0 8px 28px rgba(0, 0, 0, 0.22);
   transition: border-color 120ms ease, box-shadow 120ms ease;
+  opacity: 0.96;
 }
 
 .space-transfer-ghost-preview.to-ai {

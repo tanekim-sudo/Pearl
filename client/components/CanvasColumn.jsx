@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
+import MicIcon from "./MicIcon.jsx";
 
 const TOOLS_COLLAPSED_KEY = "lens.canvas-tools.collapsed";
 
@@ -8,7 +9,6 @@ const CANVAS_TOOLS = [
   { id: "select", label: "Select", icon: "↖" },
   { id: "highlight", label: "Highlight", icon: "▬" },
   { id: "pen", label: "Pen", icon: "✎" },
-  { id: "marker", label: "Marker", icon: "◯" },
   { id: "eraser", label: "Eraser", icon: "⌫" },
   { id: "text", label: "Text", icon: "T" },
   { id: "sticky", label: "Note", icon: "▢" },
@@ -107,21 +107,15 @@ export default function CanvasColumn({
             aria-label={paperRecording ? "Stop recording" : "Record voice + drawing"}
             onClick={onTogglePaperRecord}
           >
-            <span
-              className="paper-record-dot"
-              style={
-                paperRecording
-                  ? { transform: `scale(${0.85 + (paperRecordLevel || 0) * 0.35})` }
-                  : undefined
-              }
-            />
+            <MicIcon className="paper-record-mic" recording={paperRecording} />
           </button>
           {toolsOpen && (
             <div className="canvas-column-tools">
               {CANVAS_TOOLS.map((t) => {
                 const active =
                   (t.id === "image" && imageArmed) ||
-                  (t.id !== "image" && tool === t.id);
+                  (t.id === "text" && tool === "text") ||
+                  (t.id !== "image" && t.id !== "text" && tool === t.id);
                 return (
                   <button
                     key={t.id}
