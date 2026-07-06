@@ -68,6 +68,7 @@ export default function AiNodeCanvas({
   isPaperDestination,
   viewportRef: externalViewportRef,
   onTourEvent,
+  landingNodeIds,
 }) {
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
@@ -152,6 +153,11 @@ export default function AiNodeCanvas({
     if (dragRef.current || lassoRef.current) return;
     e.preventDefault();
     setPanning(true);
+    try {
+      viewportRef.current?.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
     panRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -174,9 +180,14 @@ export default function AiNodeCanvas({
       });
     }
 
-    function handlePanEnd() {
+    function handlePanEnd(ev) {
       panRef.current = null;
       setPanning(false);
+      try {
+        viewportRef.current?.releasePointerCapture?.(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
       window.removeEventListener("pointermove", handlePanMove);
       window.removeEventListener("pointerup", handlePanEnd);
       window.removeEventListener("pointercancel", handlePanEnd);
@@ -539,22 +550,16 @@ export default function AiNodeCanvas({
 
   function handleViewportPointerDown(e) {
     if (e.target.closest?.(".ai-node")) return;
-    if (e.target.closest?.(".ai-explore-overlay")) return;
-    const onVoid =
-      e.target === e.currentTarget ||
-      e.target.classList.contains("ai-void-bg") ||
-      e.target.classList.contains("ai-starfield") ||
-      e.target.classList.contains("ai-world-layer") ||
-      e.target.classList.contains("ai-node-lines");
-
-    if (!onVoid) return;
+    if (e.target.closest?.(".ai-explore-overlay-inner")) return;
+    if (e.target.closest?.(".ai-strand-setting")) return;
+    if (e.target.closest?.(".ai-node-fragment-panel")) return;
 
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       onSpaceTransferStart?.(e);
       return;
     }
 
-    if (e.button === 1) {
+    if (e.button === 1 || e.altKey) {
       startPan(e);
       return;
     }
@@ -788,6 +793,7 @@ export default function AiNodeCanvas({
           const isFocused = focusedNodeId === node.id;
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
+          const isLanding = landingNodeIds?.has?.(node.id);
           return (
             <div
               key={node.id}
@@ -798,7 +804,8 @@ export default function AiNodeCanvas({
                 (isFocused ? " focused" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
-                (node.error ? " error" : "")
+                (node.error ? " error" : "") +
+                (isLanding ? " landing" : "")
               }
               style={{
                 left: node.x - r,

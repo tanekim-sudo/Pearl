@@ -1,27 +1,31 @@
 import React, { useEffect } from "react";
 
-const DURATION_MS = 920;
+export const TRANSFER_ANIM_MS = 920;
 
 /**
  * Full-screen golden transfer streak: paper ↔ AI boundary.
- * anim: { key, direction: 'to-ai' | 'to-paper', fromX, fromY, boundaryX, toX, toY }
+ * anim: { key, direction: 'to-ai' | 'to-paper', fromX, fromY, boundaryX, toX, toY, throughBoundary? }
  */
 export default function TransferAnimation({ anim, onComplete }) {
   useEffect(() => {
     if (!anim) return;
-    const t = window.setTimeout(() => onComplete?.(anim.key), DURATION_MS);
+    const t = window.setTimeout(() => onComplete?.(anim.key), TRANSFER_ANIM_MS);
     return () => window.clearTimeout(t);
   }, [anim, onComplete]);
 
   if (!anim) return null;
 
-  const { direction, fromX, fromY, boundaryX, toX, toY } = anim;
-  const streakEndX = direction === "to-ai" ? boundaryX : toX;
-  const streakEndY = direction === "to-ai" ? fromY : toY;
+  const { direction, fromX, fromY, boundaryX, toX, toY, throughBoundary } = anim;
+  const streakEndX = direction === "to-ai" && !throughBoundary ? boundaryX : toX;
+  const streakEndY = direction === "to-ai" && !throughBoundary ? fromY : toY;
   const streakStartX = direction === "to-ai" ? fromX : boundaryX;
   const streakStartY = direction === "to-ai" ? fromY : fromY;
-  const flashX = direction === "to-ai" ? boundaryX + 28 : toX;
-  const flashY = direction === "to-ai" ? fromY : toY;
+  const streakPath =
+    direction === "to-ai" && throughBoundary
+      ? `M ${fromX} ${fromY} L ${boundaryX} ${fromY} L ${toX} ${toY}`
+      : `M ${streakStartX} ${streakStartY} L ${streakEndX} ${streakEndY}`;
+  const flashX = toX;
+  const flashY = toY;
 
   return (
     <svg className="transfer-animation-layer" aria-hidden="true">
@@ -51,15 +55,14 @@ export default function TransferAnimation({ anim, onComplete }) {
         filter="url(#transfer-gold-glow)"
       />
 
-      <line
+      <path
         className="transfer-streak"
-        x1={streakStartX}
-        y1={streakStartY}
-        x2={streakEndX}
-        y2={streakEndY}
+        d={streakPath}
+        fill="none"
         stroke="#E8B923"
         strokeWidth="3"
         strokeLinecap="round"
+        strokeLinejoin="round"
         filter="url(#transfer-gold-glow)"
       />
 
@@ -70,10 +73,10 @@ export default function TransferAnimation({ anim, onComplete }) {
         filter="url(#transfer-gold-glow)"
       >
         <animateMotion
-          dur={`${DURATION_MS * 0.72}ms`}
+          dur={`${TRANSFER_ANIM_MS * 0.72}ms`}
           begin="0.08s"
           fill="freeze"
-          path={`M ${streakStartX} ${streakStartY} L ${streakEndX} ${streakEndY}`}
+          path={streakPath}
         />
       </circle>
 
@@ -86,6 +89,18 @@ export default function TransferAnimation({ anim, onComplete }) {
       />
 
       {direction === "to-paper" && (
+        <circle
+          className="transfer-land-splash"
+          cx={toX}
+          cy={toY}
+          r="10"
+          fill="none"
+          stroke="#F5C842"
+          strokeWidth="2"
+        />
+      )}
+
+      {direction === "to-ai" && throughBoundary && (
         <circle
           className="transfer-land-splash"
           cx={toX}

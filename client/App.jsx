@@ -69,6 +69,7 @@ import {
   focusAiNode,
   screenToWorld,
   viewportCenterWorld,
+  worldToScreen,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import {
@@ -1912,6 +1913,7 @@ export default function App() {
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
   const [highlightSelectionIds, setHighlightSelectionIds] = useState([]);
   const [highlightTransferringIds, setHighlightTransferringIds] = useState([]);
+  const [aiLandingNodeIds, setAiLandingNodeIds] = useState(() => new Set());
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
@@ -2982,7 +2984,6 @@ export default function App() {
   function transferHighlightSelectionToAi(ids, worldPos = null) {
     if (!ids?.length) return;
     emitTourEvent("highlight-transfer");
-    triggerTransferAnimation("to-ai", { itemIds: ids });
     setHighlightTransferringIds(ids);
     window.setTimeout(() => {
       setHighlightTransferringIds([]);
@@ -4635,6 +4636,35 @@ export default function App() {
     return { x: sx / rects.length, y: sy / rects.length };
   }
 
+  function aiWorldToClient(wx, wy) {
+    const rect = aiViewportRef.current?.getBoundingClientRect();
+    const cam = aiCamRef.current;
+    if (!rect) return { x: window.innerWidth * 0.72, y: window.innerHeight / 2 };
+    const local = worldToScreen(cam, wx, wy);
+    return { x: rect.left + local.x, y: rect.top + local.y };
+  }
+
+  function launchPaperToAiTransfer({ itemIds = [], nodeIds = [], aiWorld }) {
+    triggerTransferAnimation("to-ai", { itemIds, aiWorld });
+    if (!nodeIds.length) return;
+    setAiLandingNodeIds((prev) => {
+      const next = new Set(prev);
+      nodeIds.forEach((id) => next.add(id));
+      return next;
+    });
+    window.setTimeout(() => {
+      setAiLandingNodeIds((prev) => {
+        const next = new Set(prev);
+        nodeIds.forEach((id) => next.delete(id));
+        return next;
+      });
+      const el = aiViewportRef.current;
+      if (el && aiNodesRef.current.length) {
+        animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 850);
+      }
+    }, 920);
+  }
+
   function triggerTransferAnimation(direction, opts = {}) {
     const boundaryX = boundaryCenterX();
     let fromX;
@@ -4654,8 +4684,14 @@ export default function App() {
       };
       fromX = center.x;
       fromY = center.y;
-      toX = boundaryX + 36;
-      toY = fromY;
+      if (opts.aiWorld) {
+        const dest = aiWorldToClient(opts.aiWorld.x, opts.aiWorld.y);
+        toX = dest.x;
+        toY = dest.y;
+      } else {
+        toX = boundaryX + 36;
+        toY = fromY;
+      }
     } else {
       const atWorld = opts.atWorld || viewportCenterWorld();
       const dest = worldToClient(atWorld.x, atWorld.y);
@@ -4678,6 +4714,7 @@ export default function App() {
       boundaryX,
       toX,
       toY,
+      throughBoundary: direction === "to-ai" && !!opts.aiWorld,
     });
   }
 
@@ -4978,7 +5015,11 @@ export default function App() {
       aiNodeId: expandedNode.id,
       inputPreview: truncatePreview(bundle.transcript || label, 120),
     });
-    triggerTransferAnimation("to-ai", { itemIds: bundleSourceIds });
+    launchPaperToAiTransfer({
+      itemIds: bundleSourceIds,
+      nodeIds: [sessionNode.id, expandedNode.id],
+      aiWorld: { x: expandedNode.x, y: expandedNode.y },
+    });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
       sourcePreview: bundle.transcript?.slice(0, 200) || label,
@@ -5847,7 +5888,11 @@ export default function App() {
       aiNodeId: sourceNode.id,
       opName: opts.opLabel || op.name,
     });
-    triggerTransferAnimation("to-ai", { itemIds: ids });
+    launchPaperToAiTransfer({
+      itemIds: ids,
+      nodeIds: [sourceNode.id, expandedNode.id],
+      aiWorld: { x: expandedNode.x, y: expandedNode.y },
+    });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -6891,6 +6936,7 @@ export default function App() {
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
           onExpandNode={(nodeId) => exploreAiNode(nodeId)}
+          landingNodeIds={aiLandingNodeIds}
           panel={aiPanel}
           dropOver={aiDropOver}
           libraryDropOver={railDropOver}

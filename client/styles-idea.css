@@ -988,6 +988,10 @@ body.ai-strand-dragging * {
   pointer-events: visiblePainted;
 }
 
+.ai-node-viewport.ai-panning .ai-edge {
+  pointer-events: none;
+}
+
 .ai-edge-hit {
   stroke: transparent;
   stroke-width: 14;
@@ -1478,6 +1482,30 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   pointer-events: none;
   z-index: 5;
   box-shadow: 0 0 12px rgba(100, 150, 255, 0.2);
+}
+
+.ai-node.landing {
+  opacity: 0;
+  pointer-events: none;
+  animation: ai-node-land 780ms cubic-bezier(0.22, 1, 0.36, 1) 0.38s forwards;
+}
+
+@keyframes ai-node-land {
+  0% {
+    opacity: 0;
+    transform: scale(0.12);
+    filter: brightness(2.2);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.14);
+    filter: brightness(1.45);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 .ai-node.loading {

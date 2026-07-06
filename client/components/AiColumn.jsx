@@ -46,6 +46,7 @@ export default function AiColumn({
   onFragmentToPaper,
   isPaperDestination,
   viewportRef,
+  landingNodeIds,
 }) {
   return (
     <aside
@@ -93,6 +94,7 @@ export default function AiColumn({
             isPaperDestination={isPaperDestination}
             viewportRef={viewportRef}
             onTourEvent={onTourEvent}
+            landingNodeIds={landingNodeIds}
           />
           <div className="ai-strand-setting" data-tour="strand-count">
             <label className="ai-strand-setting-label" title="Strands per drag">
