@@ -1668,11 +1668,11 @@ body {
 }
 .history-replay-bar {
   position: fixed;
-  left: calc((100vw - var(--rail-w)) / 4);
+  left: 25%;
   bottom: 22px;
   transform: translateX(-50%);
   z-index: 61;
-  width: min(420px, calc((100vw - var(--rail-w)) / 2 - 40px));
+  width: min(440px, 42vw);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1696,6 +1696,15 @@ body {
 }
 .history-replay-btn:hover {
   background: var(--line-1);
+}
+.history-replay-caption {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .history-replay-btn.ghost {
   color: var(--faint);

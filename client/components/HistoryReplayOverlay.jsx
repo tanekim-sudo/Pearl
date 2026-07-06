@@ -82,6 +82,9 @@ export default function HistoryReplayOverlay({
         <button type="button" className="history-replay-btn" onClick={onPlayPause} aria-label={playing ? "Pause" : "Play"}>
           {playing ? "❚❚" : "▶"}
         </button>
+        <div className="history-replay-caption" title={step?.caption}>
+          {step?.caption || "…"}
+        </div>
         <input
           type="range"
           className="history-replay-scrub"

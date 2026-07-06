@@ -66,7 +66,9 @@ import {
   findNearestSourceNode,
   fitAiConstellation,
   focusAiNodeCard,
+  focusAiNode,
   nodeCardLayout,
+  readingCardForNode,
   screenToWorld,
   viewportCenterWorld as aiViewportCenterWorld,
   worldToScreen,
@@ -130,6 +132,7 @@ import {
   loadItemHistoryLog,
   replayStepDuration,
   saveItemHistoryLog,
+  snapshotWorldBBox,
   truncatePreview,
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
@@ -2386,7 +2389,7 @@ export default function App() {
   /** Chatbot-style framing: zoom so the node's content card fills the view, read from the top. */
   function aiCardCameraFor(node, el) {
     const detail = node.expandedText || node.preview || node.label || "";
-    const card = nodeCardLayout(node.radius || 20, detail.length);
+    const card = readingCardForNode(el.clientWidth, el.clientHeight, detail);
     return focusAiNodeCard(node, card, el.clientWidth, el.clientHeight);
   }
 
@@ -2409,7 +2412,7 @@ export default function App() {
   }
 
   function exploreAiNode(nodeId, opts = {}) {
-    const { animate = true, runExpand = true } = opts;
+    const { animate = true, runExpand = false } = opts;
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node) return;
     emitTourEvent("explore-node");
@@ -2442,14 +2445,15 @@ export default function App() {
     }
 
     if (node.nodeKind === "expanded") {
+      if (node.expandedText) {
+        focusAiNodeContent(node);
+        return;
+      }
       if (node.sourceIds?.length && !node.loading) {
         expandInAi(
           node.sourceIds,
           node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
         );
-      }
-      if (node.expandedText) {
-        focusAiNodeContent(node);
       }
       return;
     }
@@ -2476,7 +2480,7 @@ export default function App() {
       return;
     }
 
-    if (node.sourceIds?.length && !node.loading) {
+    if (node.sourceIds?.length && !node.loading && !node.expandedText) {
       expandInAi(
         node.sourceIds,
         node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
@@ -3724,8 +3728,10 @@ export default function App() {
   function stepFocusCenter(step) {
     const ids = new Set(step.itemIds || []);
     const targets = itemsRef.current.filter((it) => ids.has(it.id));
-    if (!targets.length) return step.fallbackCenter || null;
-    let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+    let minx = Infinity,
+      miny = Infinity,
+      maxx = -Infinity,
+      maxy = -Infinity;
     for (const it of targets) {
       const bb = itemWorldBBox(it);
       if (!bb) continue;
@@ -3734,8 +3740,28 @@ export default function App() {
       maxx = Math.max(maxx, bb.maxx);
       maxy = Math.max(maxy, bb.maxy);
     }
-    if (minx === Infinity) return step.fallbackCenter || null;
-    return { x: (minx + maxx) / 2, y: (miny + maxy) / 2, w: maxx - minx, h: maxy - miny };
+    if (minx !== Infinity) {
+      return { x: (minx + maxx) / 2, y: (miny + maxy) / 2, w: maxx - minx, h: maxy - miny };
+    }
+    const snap = step.itemSnapshot;
+    const sbb = snapshotWorldBBox(snap);
+    if (sbb) {
+      return {
+        x: (sbb.minx + sbb.maxx) / 2,
+        y: (sbb.miny + sbb.maxy) / 2,
+        w: sbb.maxx - sbb.minx,
+        h: sbb.maxy - sbb.miny,
+      };
+    }
+    return step.fallbackCenter || null;
+  }
+
+  function snapshotScreenBBox(snap) {
+    const bb = snapshotWorldBBox(snap);
+    if (!bb) return null;
+    const tl = worldToClient(bb.minx, bb.miny);
+    const br = worldToClient(bb.maxx, bb.maxy);
+    return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
   }
 
   function stepFocusScale(focus) {
@@ -3956,6 +3982,21 @@ export default function App() {
     if (!step) return;
     const focus = stepFocusCenter(step);
     if (focus) animateCameraTo(focus, stepFocusScale(focus));
+
+    if (step.aiNodeId) {
+      const node = aiNodesRef.current.find((n) => n.id === step.aiNodeId);
+      const el = aiViewportRef.current;
+      if (node && el) {
+        if (step.kind === "expand" && (node.expandedText || node.preview)) {
+          animateAiCameraTo(aiCardCameraFor(node, el), 520);
+        } else {
+          animateAiCameraTo(
+            focusAiNode(node, el.clientWidth, el.clientHeight, 0.42),
+            520
+          );
+        }
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyReplay?.itemId, historyReplay?.stepIndex]);
 
@@ -4365,7 +4406,7 @@ export default function App() {
     }
 
     if (choice.kind === "explore") {
-      exploreAiNode(nodeId);
+      exploreAiNode(nodeId, { runExpand: false });
       return;
     }
 
@@ -4373,7 +4414,7 @@ export default function App() {
       if (aiPanel?.sketchBundle) {
         interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
       } else {
-        exploreAiNode(nodeId);
+        exploreAiNode(nodeId, { runExpand: false });
       }
       return;
     }
@@ -4394,7 +4435,7 @@ export default function App() {
       }
     }
 
-    exploreAiNode(nodeId);
+    exploreAiNode(nodeId, { runExpand: false });
   }
 
   // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
@@ -6438,9 +6479,17 @@ export default function App() {
   const historyReplayStep = historyReplay?.steps?.[historyReplay.stepIndex] || null;
   const historyReplayFocusRects = historyReplayStep
     ? historyReplayStep.itemIds
-        .map((id) => items.find((it) => it.id === id))
+        .map((id) => {
+          const it = items.find((i) => i.id === id);
+          if (it) {
+            const bb = itemScreenBBox(it);
+            if (bb.right > bb.left && bb.bottom > bb.top) return bb;
+          }
+          const snap =
+            historyReplayStep.itemSnapshot?.id === id ? historyReplayStep.itemSnapshot : null;
+          return snap ? snapshotScreenBBox(snap) : null;
+        })
         .filter(Boolean)
-        .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
     panning
@@ -7114,7 +7163,7 @@ export default function App() {
           onCanvasDragOver={handleAiCanvasDragOver}
           onCanvasDragLeave={() => setAiCanvasDropOver(false)}
           onCanvasDrop={handleAiCanvasDrop}
-          onExploreNode={exploreAiNode}
+          onExploreNode={(nodeId) => exploreAiNode(nodeId, { runExpand: false })}
           onFocusFromZoom={focusAiNodeFromZoom}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
@@ -7123,7 +7172,7 @@ export default function App() {
           onTourEvent={emitTourEvent}
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
-          onExpandNode={(nodeId) => exploreAiNode(nodeId)}
+          onExpandNode={(nodeId) => exploreAiNode(nodeId, { runExpand: true })}
           landingNodeIds={aiLandingNodeIds}
           panel={aiPanel}
           dropOver={aiDropOver}

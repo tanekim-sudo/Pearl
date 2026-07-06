@@ -32,6 +32,8 @@ export const AI_CELL_ZOOM_MAX = 0.72;
 export const AI_BLEND_ZOOM_START = 0.76;
 /** Text fully readable above this scale. */
 export const AI_TEXT_ZOOM_FULL = 1.72;
+/** Click-to-read zoom — card fills viewport with ~15px screen font. */
+export const AI_READING_ZOOM = 2.35;
 export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;
 /** Drag-out strand gestures only when zoomed out (brain-cell / constellation view). */
 export const AI_STRAND_DRAG_MAX_SCALE = AI_CELL_ZOOM_MAX;
@@ -155,16 +157,38 @@ export function fitCardFontSize(w, h, textLen) {
   const usable = w * h * 0.7;
   const perChar = 0.52 * 1.5;
   const fs = Math.sqrt(usable / (textLen * perChar));
-  return Math.min(9, Math.max(2.4, fs));
+  return Math.min(9, Math.max(4.2, fs));
+}
+
+/**
+ * Viewport-sized reading card for click-to-zoom — fixed screen font, not shrunk for long text.
+ */
+export function readingCardForNode(vpWidth, vpHeight, text = "", opts = {}) {
+  const targetScale = clampScale(
+    opts.targetScale ?? Math.max(AI_TEXT_ZOOM_FULL + 0.15, AI_READING_ZOOM)
+  );
+  const screenFontPx = opts.screenFontPx ?? 15;
+  const fontSize = screenFontPx / targetScale;
+  const lineHeight = 1.5;
+  const charsPerLine = Math.max(
+    28,
+    Math.floor((vpWidth * 0.78) / targetScale / (fontSize * 0.52))
+  );
+  const lines = Math.max(5, Math.ceil(String(text || "").length / charsPerLine));
+  const padY = fontSize * 2.6;
+  const w = (vpWidth * 0.82) / targetScale;
+  const h = Math.min((vpHeight * 0.86) / targetScale, lines * fontSize * lineHeight + padY);
+  return { w, h, fontSize, targetScale, screenFontPx };
 }
 
 /**
  * Camera that frames a node's content card like an open chat message:
  * card fills most of the viewport, read from the top.
  */
-export function focusAiNodeCard(node, card, vpWidth, vpHeight, topMargin = 56) {
+export function focusAiNodeCard(node, card, vpWidth, vpHeight, topMargin = 48) {
   const scale = clampScale(
-    Math.min((vpWidth * 0.72) / card.w, (vpHeight * 0.82) / card.h)
+    card.targetScale ??
+      Math.min((vpWidth * 0.82) / card.w, (vpHeight * 0.86) / card.h, AI_READING_ZOOM)
   );
   return {
     scale,

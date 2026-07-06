@@ -1,16 +1,16 @@
 export const AI_NODE_RADIUS = {
-  source: 22,
-  expanded: 20,
-  move: 18,
-  lens: 20,
-  session: 22,
+  source: 34,
+  expanded: 30,
+  move: 26,
+  lens: 30,
+  session: 34,
 };
 
 /** Minimum center-to-center distance from parent when spawning children. */
-export const AI_SPAWN_MIN_DIST = 240;
+export const AI_SPAWN_MIN_DIST = 480;
 
 /** Minimum gap between node edges during overlap resolution. */
-export const AI_NODE_MIN_GAP = 120;
+export const AI_NODE_MIN_GAP = 240;
 
 export function nodePositionAt(existing, kind = "source", worldPos) {
   const radius = AI_NODE_RADIUS[kind] || 20;
@@ -23,8 +23,8 @@ export function nodePositionAt(existing, kind = "source", worldPos) {
 export function nextAiNodePosition(existing, kind = "source") {
   const idx = existing.length;
   const cols = 3;
-  const spacingX = 280;
-  const spacingY = 240;
+  const spacingX = 560;
+  const spacingY = 480;
   const col = idx % cols;
   const row = Math.floor(idx / cols);
   const radius = AI_NODE_RADIUS[kind] || 20;

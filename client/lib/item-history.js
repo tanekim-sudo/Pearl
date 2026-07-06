@@ -37,6 +37,36 @@ export function truncatePreview(text, max = 120) {
 }
 
 /** Minimal serializable snapshot for replay ghosts. */
+/** World-space bbox from a stored snapshot (for history replay when live item moved). */
+export function snapshotWorldBBox(snap) {
+  if (!snap) return null;
+  if (snap.type === "stroke" && snap.points?.length) {
+    const xs = snap.points.map((p) => p.x);
+    const ys = snap.points.map((p) => p.y);
+    return {
+      minx: Math.min(...xs),
+      miny: Math.min(...ys),
+      maxx: Math.max(...xs),
+      maxy: Math.max(...ys),
+    };
+  }
+  const w =
+    snap.w ||
+    (snap.type === "image" ? 200 : snap.type === "voice" ? 260 : snap.type === "video" ? 280 : 360);
+  const h =
+    snap.h ||
+    (snap.type === "image"
+      ? 150
+      : snap.type === "voice"
+        ? 56
+        : snap.type === "video"
+          ? 158
+          : 120);
+  const x = snap.x ?? 0;
+  const y = snap.y ?? 0;
+  return { minx: x, miny: y, maxx: x + w, maxy: y + h };
+}
+
 export function itemSnapshot(it) {
   if (!it) return null;
   const snap = { id: it.id, type: it.type };

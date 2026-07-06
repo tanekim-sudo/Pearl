@@ -13,6 +13,7 @@ import {
   AI_BLEND_ZOOM_START,
   findNearestNodeToCenter,
   nodeCardLayout,
+  readingCardForNode,
   screenToWorld,
   viewportCenterWorld,
   worldToScreen,
@@ -27,25 +28,6 @@ const STRAND_DRAG_THRESHOLD = 4;
 const STRAND_MIN_LENGTH = 52;
 const STRAND_MAX_LENGTH = 148;
 const STRAND_TIP_HIT = 36;
-
-const STAR_COUNT = 120;
-
-function makeStars(seed = 1) {
-  const stars = [];
-  let s = seed;
-  for (let i = 0; i < STAR_COUNT; i++) {
-    s = (s * 16807 + 0) % 2147483647;
-    stars.push({
-      x: (s % 10000) / 10000,
-      y: ((s * 7) % 10000) / 10000,
-      r: 0.4 + ((s * 3) % 100) / 100,
-      a: 0.15 + ((s * 11) % 100) / 200,
-    });
-  }
-  return stars;
-}
-
-const STARS = makeStars(42);
 
 export default function AiNodeCanvas({
   nodes,
@@ -629,8 +611,6 @@ export default function AiNodeCanvas({
     }))
     .filter((e) => e.from && e.to);
 
-  const starOffsetX = ((camera.x * 0.02) % 1) * 100;
-  const starOffsetY = ((camera.y * 0.02) % 1) * 100;
   const contentBlend = zoomContentBlend(camera.scale);
   const explorationMode = contentBlend > 0.04;
   const constellationMode = camera.scale <= AI_STRAND_DRAG_MAX_SCALE;
@@ -695,25 +675,7 @@ export default function AiNodeCanvas({
         onCanvasDrop?.(e, world);
       }}
     >
-      <div
-        className="ai-void-bg"
-        aria-hidden="true"
-        style={{
-          transform: `translate(${-starOffsetX}px, ${-starOffsetY}px)`,
-        }}
-      >
-        <svg className="ai-starfield" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {STARS.map((star, i) => (
-            <circle
-              key={i}
-              cx={star.x * 100}
-              cy={star.y * 100}
-              r={star.r * 0.15}
-              fill={`rgba(200,210,255,${star.a})`}
-            />
-          ))}
-        </svg>
-      </div>
+      <div className="ai-void-bg" aria-hidden="true" />
 
       <div
         className="ai-world-layer"
@@ -850,7 +812,11 @@ export default function AiNodeCanvas({
           // Every node with content morphs in place: circle dissolves, text fades in.
           const detail = nodeDetailText(node);
           const nodeBlend = detail ? contentBlend : 0;
-          const card = detail ? nodeCardLayout(r, detail.length) : null;
+          const card = detail
+            ? nodeBlend > 0.82
+              ? readingCardForNode(vpSize.w, vpSize.h, detail)
+              : nodeCardLayout(r, detail.length)
+            : null;
           const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
