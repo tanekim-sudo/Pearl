@@ -44,6 +44,8 @@ export default function TopToolbar({
   onUndo,
   onRedo,
   onShare,
+  account,
+  onAccountAction,
 }) {
   const allItems = [
     { id: "export-txt", label: "Export as text" },
@@ -100,6 +102,23 @@ export default function TopToolbar({
 
         <div className="toolbar-spacer" />
 
+        {account &&
+          (account.email ? (
+            <MenuDropdown
+              label={account.email}
+              items={[{ id: "sign-out", label: "Sign out" }]}
+              onAction={onAccountAction}
+              dataTour="account-menu"
+            />
+          ) : (
+            <button
+              type="button"
+              className="menu-item menu-item-minimal auth-signin"
+              onClick={() => onAccountAction("sign-in")}
+            >
+              Sign in
+            </button>
+          ))}
         <MenuDropdown label="···" items={allItems} onAction={onMenuAction} dataTour="toolbar-menu" />
         <button type="button" className="share-btn share-btn-minimal" onClick={onShare} title="Share">
           ↗

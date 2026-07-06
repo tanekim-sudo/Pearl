@@ -48,6 +48,9 @@ import {
 import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
 import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
+import AuthOverlay from "./components/AuthOverlay.jsx";
+import { useSupabaseSession } from "./lib/auth-session.js";
+import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
 import {
@@ -1888,6 +1891,11 @@ export default function App() {
   const [expandToolboxSignal, setExpandToolboxSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
+  const supaAuth = useSupabaseSession();
+  const [authOpen, setAuthOpen] = useState(
+    () => isSupabaseConfigured() && Boolean(supaAuth.bootAuthError)
+  );
+  const prevSessionRef = useRef("unresolved");
   const [railPulse, setRailPulse] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
   const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
@@ -2090,6 +2098,38 @@ export default function App() {
     setTimeout(() => setToast((t) => (t === msg ? null : t)), 3200);
   }
   showToastRef.current = showToast;
+
+  const [authBootError, setAuthBootError] = useState(supaAuth.bootAuthError);
+  useEffect(() => {
+    if (!supaAuth.sessionResolved) return;
+    if (prevSessionRef.current === "unresolved") {
+      prevSessionRef.current = supaAuth.session;
+      return;
+    }
+    const prev = prevSessionRef.current;
+    prevSessionRef.current = supaAuth.session;
+    if (!prev && supaAuth.session) {
+      // Any SIGNED_IN closes the auth overlay regardless of its internal view
+      // (covers cross-tab confirmation).
+      setAuthOpen(false);
+      if (!supaAuth.passwordRecovery) {
+        showToast("signed in as " + (supaAuth.session.user?.email || "your account"));
+      }
+    } else if (prev && !supaAuth.session) {
+      // Passive UI swap only — cross-tab sign-out and refresh failures must
+      // never unmount the canvas or interrupt drafts, jobs, or recordings.
+      showToast("signed out");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supaAuth.session, supaAuth.sessionResolved]);
+
+  function handleAccountAction(action) {
+    if (action === "sign-in") setAuthOpen(true);
+    if (action === "sign-out") {
+      // Local scope: signing out here leaves the user's other devices alone.
+      getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
+    }
+  }
 
   function pushHistory() {
     const snap = JSON.stringify(itemsRef.current);
@@ -6381,6 +6421,14 @@ export default function App() {
         onUndo={undo}
         onRedo={redo}
         onShare={handleShareBoard}
+        account={
+          isSupabaseConfigured() && supaAuth.sessionResolved
+            ? supaAuth.session
+              ? { email: supaAuth.session.user?.email || "your account" }
+              : { email: null }
+            : null
+        }
+        onAccountAction={handleAccountAction}
       />
 
       <div className={"two-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
@@ -7200,7 +7248,7 @@ export default function App() {
         </div>
       )}
 
-      {pendingShareBundle && (
+      {pendingShareBundle && !supaAuth.passwordRecovery && (
         <ShareWelcomeOverlay
           bundle={pendingShareBundle}
           railRef={railRef}
@@ -7210,8 +7258,26 @@ export default function App() {
         />
       )}
 
-      {onboard && (
+      {onboard && !supaAuth.passwordRecovery && (
         <Onboarding state={onboard} onStart={runOnboarding} onSkip={skipOnboarding} onClose={() => setOnboard(null)} />
+      )}
+
+      {(authOpen || supaAuth.passwordRecovery) && (
+        <AuthOverlay
+          forced={supaAuth.passwordRecovery}
+          accountEmail={supaAuth.session?.user?.email || null}
+          bootError={authBootError}
+          onClose={() => {
+            setAuthOpen(false);
+            setAuthBootError(null);
+          }}
+          onPasswordUpdated={() => {
+            supaAuth.clearPasswordRecovery();
+            setAuthOpen(false);
+            setAuthBootError(null);
+            showToast("password updated");
+          }}
+        />
       )}
 
       {tourActive && (

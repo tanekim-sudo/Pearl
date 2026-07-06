@@ -10,7 +10,7 @@
     "dev:client": "vite",
     "build": "vite build",
     "start": "node server/index.js",
-    "test": "node --test shared/transform-primitives.test.js shared/operator-direction.test.js shared/operator-capture.test.js shared/eta.test.js shared/share-bundle.test.js shared/deliverable-quality.test.js shared/primitive-output.test.js shared/function-standards.test.js shared/sketch-bundle.test.js client/lib/ai-nodes.test.js client/lib/ai-space.test.js client/lib/paper.test.js client/lib/canvas-navigation.test.js client/lib/highlight-text.test.js client/lib/highlight-ink.test.js client/lib/item-history.test.js client/lib/onboarding-steps.test.js client/lib/primary-utensils.test.js client/lib/supabase.test.js client/lib/auth-hash.test.js"
+    "test": "node --test shared/transform-primitives.test.js shared/operator-direction.test.js shared/operator-capture.test.js shared/eta.test.js shared/share-bundle.test.js shared/deliverable-quality.test.js shared/primitive-output.test.js shared/function-standards.test.js shared/sketch-bundle.test.js client/lib/ai-nodes.test.js client/lib/ai-space.test.js client/lib/paper.test.js client/lib/canvas-navigation.test.js client/lib/highlight-text.test.js client/lib/highlight-ink.test.js client/lib/item-history.test.js client/lib/onboarding-steps.test.js client/lib/primary-utensils.test.js client/lib/supabase.test.js client/lib/auth-hash.test.js client/lib/auth-errors.test.js"
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.22",
