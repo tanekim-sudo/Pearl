@@ -168,6 +168,7 @@ export default function BoardBlockItem({
   selected,
   highlightTouched,
   highlightSelected,
+  highlightTransferring,
   dropTarget,
   dropMagnetic,
   editing,
@@ -180,6 +181,7 @@ export default function BoardBlockItem({
     (selected ? " sel" : "") +
     (highlightSelected ? " hl-selected" : "") +
     (highlightTouched ? " hl-touch" : "") +
+    (highlightTransferring ? " hl-transferring" : "") +
     (dropTarget ? " drop-target" : "") +
     (dropMagnetic ? " drop-magnetic" : "");
 

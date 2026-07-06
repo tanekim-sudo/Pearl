@@ -1912,6 +1912,7 @@ export default function App() {
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
   const [highlightSelectionIds, setHighlightSelectionIds] = useState([]);
+  const [highlightTransferringIds, setHighlightTransferringIds] = useState([]);
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
   const [paperRecording, setPaperRecording] = useState(false);
@@ -2564,26 +2565,6 @@ export default function App() {
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
         if (g.highlight) {
-          const erased = highlightErasureHits(
-            itemsRef.current,
-            cx,
-            cy,
-            g.lastCx,
-            g.lastCy,
-            camRef.current.scale,
-            worldToClient,
-            g.deletedIds
-          );
-          if (erased.length) {
-            if (!g.deletedIds) g.deletedIds = new Set();
-            erased.forEach((id) => g.deletedIds.add(id));
-            setItems((arr) => arr.filter((it) => !g.deletedIds.has(it.id)));
-            setHighlightSelectionIds((prev) => prev.filter((id) => !g.deletedIds.has(id)));
-            setHighlight((hl) => {
-              if (hl && g.deletedIds.has(hl.itemId)) return null;
-              return hl;
-            });
-          }
           const brushed = highlightBrushHits(
             itemsRef.current,
             cx,
@@ -2592,7 +2573,7 @@ export default function App() {
             g.lastCy,
             camRef.current.scale,
             worldToClient,
-            g.deletedIds
+            null
           );
           if (brushed.length) {
             if (!g.brushedIds) g.brushedIds = new Set();
@@ -2757,8 +2738,7 @@ export default function App() {
               worldToClient,
               tapHit && isTransformableBlock(tapHit) ? tapHit.id : null
             );
-            const erased = g.deletedIds ? [...g.deletedIds] : [];
-            const merged = [...new Set([...ideaIds, ...brushedDuring])].filter((id) => !erased.includes(id));
+            const merged = [...new Set([...ideaIds, ...brushedDuring])];
             if (merged.length) {
               accumulateHighlightSelection(merged, g.additive);
             } else if (!g.additive && g.points.length <= 3) {
@@ -3015,6 +2995,13 @@ export default function App() {
   function transferHighlightSelectionToAi(ids, worldPos = null) {
     if (!ids?.length) return;
     emitTourEvent("highlight-transfer");
+    triggerTransferAnimation("to-ai", { itemIds: ids });
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
     recordItemEvents(ids, "highlight-transfer", {});
     const sketchBundle = gatherSelectionSketchBundle(ids);
     const world = worldPos || getAiDropWorld();
@@ -5264,7 +5251,6 @@ export default function App() {
         }
         return;
       }
-      pushHistory();
       const hlW = highlightWorldWidth(camRef.current.scale);
       const strokeId = startDrawStroke(w, {
         color: HIGHLIGHT_INK,
@@ -5277,7 +5263,6 @@ export default function App() {
         highlight: true,
         additive: e.shiftKey,
         points: [w],
-        deletedIds: new Set(),
         brushedIds: new Set(),
         lastCx: cx,
         lastCy: cy,
@@ -6234,7 +6219,9 @@ export default function App() {
   const selectedAiNodeId = selectedAiNodeIds[selectedAiNodeIds.length - 1] ?? null;
   const highlightTouchSet = useMemo(() => new Set(highlightTouchIds), [highlightTouchIds]);
   const highlightSelectionSet = useMemo(() => new Set(highlightSelectionIds), [highlightSelectionIds]);
+  const highlightTransferringSet = useMemo(() => new Set(highlightTransferringIds), [highlightTransferringIds]);
   const selBBox = selection.length ? selectionWorldBBox() : null;
+  const highlightBBox = highlightSelectionIds.length ? selectionWorldBBoxForIds(highlightSelectionIds) : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
   const canTransform = selItem && isTransformableBlock(selItem);
   const selCaptureInfo =
@@ -6288,6 +6275,15 @@ export default function App() {
         return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
       })()
     : null;
+  const highlightScreenBox = highlightBBox
+    ? (() => {
+        const tl = worldToClient(highlightBBox.minx, highlightBBox.miny);
+        const br = worldToClient(highlightBBox.maxx, highlightBBox.maxy);
+        return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
+      })()
+    : null;
+  const highlightSketchBundle =
+    highlightSelectionIds.length > 0 ? gatherSelectionSketchBundle(highlightSelectionIds) : null;
 
   const tourState = useMemo(
     () => ({
@@ -6444,6 +6440,7 @@ export default function App() {
                       (selection.includes(it.id) ? " sel" : "") +
                       (highlightSelectionSet.has(it.id) ? " hl-selected" : "") +
                       (highlightTouchSet.has(it.id) ? " hl-touch" : "") +
+                      (highlightTransferringSet.has(it.id) ? " hl-transferring" : "") +
                       (it.highlight ? " hl-stroke" : "") +
                       (it.loop ? " hl-loop-fill" : "") +
                       (it.instructionText || it.paperSessionId || it.recordingSessionId
@@ -6489,7 +6486,7 @@ export default function App() {
                           ? MARKER_W
                           : PEN_W
                       }
-                      strokeOpacity={draft.loop ? 0.4 : draft.highlight ? 0.72 : draft.marker ? 0.32 : 1}
+                      strokeOpacity={draft.loop ? 0.4 : draft.highlight ? 0.88 : draft.marker ? 0.32 : 1}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -6554,7 +6551,7 @@ export default function App() {
                   <img
                     key={it.id}
                     data-item={it.id}
-                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (highlightSelectionSet.has(it.id) ? " hl-selected" : "") + (highlightTouchSet.has(it.id) ? " hl-touch" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
+                    className={"board-img" + (selection.includes(it.id) ? " sel" : "") + (highlightSelectionSet.has(it.id) ? " hl-selected" : "") + (highlightTouchSet.has(it.id) ? " hl-touch" : "") + (highlightTransferringSet.has(it.id) ? " hl-transferring" : "") + (dropTargetId === it.id ? " drop-target" : "") + (dropReady && dropTargetId === it.id ? " drop-magnetic" : "")}
                     src={it.src}
                     style={{ ...itemStyle(it), width: it.w, height: it.h }}
                     alt=""
@@ -6569,6 +6566,7 @@ export default function App() {
                     selected={selection.includes(it.id)}
                     highlightTouched={highlightTouchSet.has(it.id)}
                     highlightSelected={highlightSelectionSet.has(it.id)}
+                    highlightTransferring={highlightTransferringSet.has(it.id)}
                     dropTarget={dropTargetId === it.id}
                     dropMagnetic={dropReady && dropTargetId === it.id}
                     editing={editing === it.id}
@@ -6584,6 +6582,7 @@ export default function App() {
                   selected={selection.includes(it.id)}
                   highlightTouched={highlightTouchSet.has(it.id)}
                   highlightSelected={highlightSelectionSet.has(it.id)}
+                  highlightTransferring={highlightTransferringSet.has(it.id)}
                   dropTarget={dropTargetId === it.id}
                   dropMagnetic={dropReady && dropTargetId === it.id}
                   editing={editing === it.id}
@@ -6593,6 +6592,37 @@ export default function App() {
                 />
               );
             })}
+
+          {/* golden glow for highlight selection */}
+          {highlightSelectionIds.length > 0 && (
+            <svg className="highlight-glow-layer" aria-hidden="true">
+              {highlightSelectionIds.map((id) => {
+                const it = visibleItems.find((i) => i.id === id);
+                if (!it) return null;
+                const bb = selectionWorldBBoxForIds([id]);
+                if (!bb) return null;
+                const pad = 10;
+                const x = bb.minx - pad;
+                const y = bb.miny - pad;
+                const w = bb.maxx - bb.minx + pad * 2;
+                const h = bb.maxy - bb.miny + pad * 2;
+                return (
+                  <rect
+                    key={id}
+                    className={
+                      "highlight-glow-rect" +
+                      (highlightTransferringSet.has(id) ? " transferring" : "")
+                    }
+                    x={x}
+                    y={y}
+                    width={w}
+                    height={h}
+                    rx={8}
+                  />
+                );
+              })}
+            </svg>
+          )}
 
           {/* selection boundary — edge = move original, interior = clone */}
           {selection.length > 1 && (
@@ -6806,6 +6836,20 @@ export default function App() {
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
           sketchBundle={selectionSketchBundle}
+          onTransferDragStart={() => setTransferDragActive(true)}
+          onTransferDragEnd={() => setTransferDragActive(false)}
+        />
+      )}
+
+      {highlightSelectionIds.length >= 1 &&
+        highlightScreenBox &&
+        tool === "highlight" &&
+        !walking &&
+        !historyReplay && (
+        <SelectionCaptureChip
+          bbox={highlightScreenBox}
+          aiDragIds={highlightSelectionIds}
+          sketchBundle={highlightSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
         />
@@ -7271,7 +7315,7 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
   );
 }
 
-function BoardText({ item, selected, highlightTouched, highlightSelected, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
+function BoardText({ item, selected, highlightTouched, highlightSelected, highlightTransferring, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
@@ -7340,6 +7384,7 @@ function BoardText({ item, selected, highlightTouched, highlightSelected, dropTa
         (selected ? " sel" : "") +
         (highlightSelected ? " hl-selected" : "") +
         (highlightTouched ? " hl-touch" : "") +
+        (highlightTransferring ? " hl-transferring" : "") +
         (dropTarget ? " drop-target" : "") +
         (dropMagnetic ? " drop-magnetic" : "") +
         (item.portal ? " portal" : "")

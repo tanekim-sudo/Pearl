@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 
-const DURATION_MS = 780;
+const DURATION_MS = 920;
 
 /**
  * Full-screen golden transfer streak: paper ↔ AI boundary.
