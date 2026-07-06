@@ -20,8 +20,6 @@ export default function AiColumn({
   onExploreNode,
   onReturnToConstellation,
   focusedNodeId,
-  strandCount = 4,
-  onStrandCountChange,
   expandToolboxSignal = 0,
   onToolboxExpanded,
   onTourEvent,
@@ -80,7 +78,6 @@ export default function AiColumn({
             onExploreNode={onExploreNode}
             onReturnToConstellation={onReturnToConstellation}
             focusedNodeId={focusedNodeId}
-            strandCount={strandCount}
             getStrandChoices={getStrandChoices}
             onStrandSelect={onStrandSelect}
             onCanvasDrop={onCanvasDrop}
@@ -96,24 +93,6 @@ export default function AiColumn({
             onTourEvent={onTourEvent}
             landingNodeIds={landingNodeIds}
           />
-          <div className="ai-strand-setting" data-tour="strand-count">
-            <label className="ai-strand-setting-label" title="Strands per drag">
-              <span className="ai-strand-setting-icon" aria-hidden="true">
-                ◎
-              </span>
-              <input
-                type="range"
-                className="ai-strand-setting-slider"
-                min={1}
-                max={8}
-                step={1}
-                value={strandCount}
-                onChange={(e) => onStrandCountChange?.(Number(e.target.value))}
-                aria-label="Strands"
-              />
-              <span className="ai-strand-setting-value">{strandCount}</span>
-            </label>
-          </div>
         </section>
       </div>
     </aside>

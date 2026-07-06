@@ -54,7 +54,6 @@ export default function AiNodeCanvas({
   onExploreNode,
   onReturnToConstellation,
   focusedNodeId,
-  strandCount = 4,
   getStrandChoices,
   onStrandSelect,
   onCanvasDrop,
@@ -257,12 +256,6 @@ export default function AiNodeCanvas({
 
   function startStrandDrag(e, node, seedX = e.clientX, seedY = e.clientY) {
     if (e.button !== 0) return;
-    if (tool === "highlight") {
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.(node.id, { replace: true });
-      return;
-    }
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
@@ -275,8 +268,7 @@ export default function AiNodeCanvas({
     if (!rect) return;
 
     const pool = getStrandChoices?.(node) || [];
-    const count = Math.max(1, Math.min(strandCount, pool.length || strandCount));
-    const choices = pool.slice(0, count);
+    const choices = pool;
     if (!choices.length) return;
 
     const startX = seedX;
@@ -315,7 +307,7 @@ export default function AiNodeCanvas({
       }
     }
 
-    function updateFromPointer(clientX, clientY) {
+    function updateFromPointer(clientX, clientY, moveEv) {
       const state = strandDragRef.current;
       if (!state) return;
       const px = clientX - state.rectLeft;
@@ -324,7 +316,7 @@ export default function AiNodeCanvas({
       const dy = py - state.originY;
       const dist = Math.hypot(dx, dy);
       if (!state.active && dist <= STRAND_DRAG_THRESHOLD) return;
-      ensureCapture(ev);
+      if (moveEv) ensureCapture(moveEv);
 
       const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
       const baseAngle = Math.atan2(dy, dx);
@@ -396,7 +388,7 @@ export default function AiNodeCanvas({
     }
 
     function handleStrandMove(ev) {
-      updateFromPointer(ev.clientX, ev.clientY);
+      updateFromPointer(ev.clientX, ev.clientY, ev);
     }
 
     function handleStrandEnd(ev) {
@@ -422,33 +414,31 @@ export default function AiNodeCanvas({
       activated = true;
       cleanup();
       startStrandDrag(e, node, startX, startY);
-      updateFromDeferredStrand(ev.clientX, ev.clientY);
-    }
-
-    function updateFromDeferredStrand(clientX, clientY) {
       const state = strandDragRef.current;
-      if (!state) return;
-      const px = clientX - state.rectLeft;
-      const py = clientY - state.rectTop;
-      const dx = px - state.originX;
-      const dy = py - state.originY;
-      const dist = Math.hypot(dx, dy);
-      const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
-      const baseAngle = Math.atan2(dy, dx);
-      const angles = fanStrandAngles(state.choices.length, baseAngle);
-      const hoverIdx = pickStrandIndex(baseAngle, angles);
-      const next = {
-        ...state,
-        active: true,
-        length,
-        baseAngle,
-        angles,
-        hoverIdx,
-        pointerX: clientX,
-        pointerY: clientY,
-      };
-      strandDragRef.current = next;
-      setStrandDrag(next);
+      if (state) {
+        const px = ev.clientX - state.rectLeft;
+        const py = ev.clientY - state.rectTop;
+        const dx = px - state.originX;
+        const dy = py - state.originY;
+        const distNow = Math.hypot(dx, dy);
+        const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, distNow));
+        const baseAngle = Math.atan2(dy, dx);
+        const angles = fanStrandAngles(state.choices.length, baseAngle);
+        const hoverIdx = pickStrandIndex(baseAngle, angles);
+        const next = {
+          ...state,
+          active: true,
+          length,
+          baseAngle,
+          angles,
+          hoverIdx,
+          pointerX: ev.clientX,
+          pointerY: ev.clientY,
+        };
+        onTourEvent?.("strand-drag");
+        strandDragRef.current = next;
+        setStrandDrag(next);
+      }
     }
 
     function onUp() {
@@ -469,7 +459,7 @@ export default function AiNodeCanvas({
 
   function startNodeDrag(e, node) {
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
-    if (constellationMode && tool !== "highlight") {
+    if (constellationMode) {
       startConstellationNodeGesture(e, node);
       return;
     }

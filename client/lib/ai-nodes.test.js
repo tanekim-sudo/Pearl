@@ -110,15 +110,33 @@ describe("ai-nodes layout", () => {
     assert.equal(idx, 1);
   });
 
-  it("collectStrandChoices includes expand ops and explore", () => {
+  it("collectStrandChoices includes expand ops and toolbox moves", () => {
     const node = { id: "s", nodeKind: "source", sourceIds: ["a"] };
-    const choices = collectStrandChoices(node, {
+    const choices = collectStrandChoices(node, [], {
       expansionPrimitives: [{ id: "op-expand", name: "expand" }],
       topFunctions: [{ id: "f1", name: "summarize" }],
       moves: [{ id: "m1", name: "reframe" }],
+      opMap: { m1: { id: "m1", name: "reframe" } },
     });
     assert.ok(choices.some((c) => c.kind === "expand"));
-    assert.ok(choices.some((c) => c.kind === "explore"));
     assert.ok(choices.some((c) => c.label === "reframe"));
+    assert.ok(choices.some((c) => c.label === "summarize"));
+    assert.equal(choices.length, 3);
+  });
+
+  it("collectStrandChoices includes child move nodes on parent", () => {
+    const node = { id: "src", nodeKind: "source", sourceIds: ["a"] };
+    const allNodes = [
+      node,
+      { id: "mv", nodeKind: "move", opId: "m1", parentId: "src", label: "reframe" },
+    ];
+    const choices = collectStrandChoices(node, allNodes, {
+      opMap: { m1: { id: "m1", name: "reframe" } },
+      moves: [],
+      topFunctions: [],
+      expansionPrimitives: [],
+    });
+    assert.equal(choices.length, 1);
+    assert.equal(choices[0].label, "reframe");
   });
 });

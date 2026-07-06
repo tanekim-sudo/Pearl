@@ -244,21 +244,29 @@ export function pickStrandIndex(pointerAngle, angles) {
 }
 
 /**
- * Build ordered operation choices for strand drag-out on a node.
+ * Build operation choices for strand drag-out — one strand per loaded function on the node.
  * @returns {{ id: string, label: string, kind: string, op?: object }[]}
  */
 export function collectStrandChoices(
   node,
-  { expansionPrimitives = [], topFunctions = [], moves = [], maxChoices = 8 } = {}
+  allNodes = [],
+  { expansionPrimitives = [], topFunctions = [], moves = [], opMap = {} } = {}
 ) {
   if (!node) return [];
   const choices = [];
   const seen = new Set();
   const push = (choice) => {
-    if (choices.length >= maxChoices || seen.has(choice.id)) return;
+    if (seen.has(choice.id)) return;
     seen.add(choice.id);
     choices.push(choice);
   };
+
+  for (const child of allNodes) {
+    if (child.nodeKind !== "move" || !child.opId) continue;
+    if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
+    const op = opMap[child.opId];
+    if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
+  }
 
   if (node.nodeKind === "session") {
     push({ id: "interpret", label: "interpret", kind: "interpret" });
@@ -284,9 +292,7 @@ export function collectStrandChoices(
     push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
   }
 
-  push({ id: "explore", label: "explore", kind: "explore" });
-
-  return choices.slice(0, maxChoices);
+  return choices;
 }
 
 /** Apply layout after adding nodes: fan siblings + resolve overlaps. */

@@ -150,7 +150,6 @@ const STRUCT_MIME = "application/lens-structure";
 const SEL_MIME = "application/lens-selection";
 const LENS_MIME = "application/lens-lens";
 const LENSES_KEY = "lens.lenses.v1";
-const AI_STRAND_COUNT_KEY = "lens.ai.strandCount";
 const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
@@ -1926,14 +1925,6 @@ export default function App() {
     centerAiCamera(400, 300, DEFAULT_CONSTELLATION_SCALE)
   );
   const [aiFocusedNodeId, setAiFocusedNodeId] = useState(null);
-  const [aiStrandCount, setAiStrandCount] = useState(() => {
-    try {
-      const v = parseInt(localStorage.getItem(AI_STRAND_COUNT_KEY), 10);
-      return Number.isFinite(v) && v >= 1 && v <= 8 ? v : 4;
-    } catch {
-      return 4;
-    }
-  });
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
@@ -4152,26 +4143,15 @@ export default function App() {
     return { ids: null, sourceNode: node };
   }
 
-  function handleAiStrandCountChange(n) {
-    const v = Math.max(1, Math.min(8, n));
-    setAiStrandCount(v);
-    emitTourEvent("strand-count-change");
-    try {
-      localStorage.setItem(AI_STRAND_COUNT_KEY, String(v));
-    } catch {
-      /* ignore */
-    }
-  }
-
   function getStrandChoicesForNode(node) {
     const lensMoves = activeLens?.moveIds?.length
       ? moves.filter((m) => activeLens.moveIds.includes(m.id))
       : moves;
-    return collectStrandChoices(node, {
+    return collectStrandChoices(node, aiNodesRef.current, {
       expansionPrimitives: primitives.filter(isExpansionOperator),
       topFunctions,
       moves: lensMoves.length ? lensMoves : moves,
-      maxChoices: 8,
+      opMap,
     });
   }
 
@@ -6928,8 +6908,6 @@ export default function App() {
           onExploreNode={exploreAiNode}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
-          strandCount={aiStrandCount}
-          onStrandCountChange={handleAiStrandCountChange}
           expandToolboxSignal={expandToolboxSignal}
           onToolboxExpanded={() => emitTourEvent("toolbox-expanded")}
           onTourEvent={emitTourEvent}
