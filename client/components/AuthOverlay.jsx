@@ -175,23 +175,41 @@ export default function AuthOverlay({
     switchView("checkEmail");
   }
 
-  async function resendEmail() {
-    if (busy || cooldownMs > 0 || !checkEmailInfo) return;
+  // Sends (or re-sends) the email for a check-email context. Returns true
+  // when the send went through (or was silently absorbed — uniform states
+  // stay enumeration-safe); false only on rate-limit, which gets shown.
+  async function sendEmailFor(kind, targetEmail) {
     setBusy(true);
     setError(null);
     const supabase = getSupabase();
     const { error: err } =
-      checkEmailInfo.kind === "reset"
-        ? await supabase.auth.resetPasswordForEmail(checkEmailInfo.email, {
+      kind === "reset"
+        ? await supabase.auth.resetPasswordForEmail(targetEmail, {
             redirectTo: window.location.origin,
           })
-        : await supabase.auth.resend({ type: "signup", email: checkEmailInfo.email });
+        : await supabase.auth.resend({ type: "signup", email: targetEmail });
     setBusy(false);
     if (err && err.code === "over_email_send_rate_limit") {
       setError(describeAuthError(err.code));
-      return;
+      return false;
     }
     startCooldown();
+    return true;
+  }
+
+  async function resendEmail() {
+    if (busy || cooldownMs > 0 || !checkEmailInfo) return;
+    await sendEmailFor(checkEmailInfo.kind, checkEmailInfo.email);
+  }
+
+  async function submitResendConfirm(e) {
+    e.preventDefault();
+    if (busy) return;
+    if (await sendEmailFor("signup", email)) {
+      setNotice(null);
+      setCheckEmailInfo({ email, kind: "signup" });
+      switchView("checkEmail");
+    }
   }
 
   async function submitUpdatePassword(e) {
@@ -337,24 +355,7 @@ export default function AuthOverlay({
         )}
 
         {view === "resendConfirm" && (
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (busy) return;
-              setBusy(true);
-              setError(null);
-              const { error: err } = await getSupabase().auth.resend({ type: "signup", email });
-              setBusy(false);
-              if (err && err.code === "over_email_send_rate_limit") {
-                setError(describeAuthError(err.code));
-                return;
-              }
-              startCooldown();
-              setNotice(null);
-              setCheckEmailInfo({ email, kind: "signup" });
-              switchView("checkEmail");
-            }}
-          >
+          <form onSubmit={submitResendConfirm}>
             <h3>Resend confirmation</h3>
             <p className="auth-note">We'll send a fresh confirmation link.</p>
             {emailField(true)}
