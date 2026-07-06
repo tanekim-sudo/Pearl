@@ -89,6 +89,27 @@ export default function AiNodeCanvas({
   const [strandDrag, setStrandDrag] = useState(null);
   const strandDragRef = useRef(null);
   strandDragRef.current = strandDrag;
+  const knownNodeIdsRef = useRef(null);
+  const [bornIds, setBornIds] = useState(() => new Set());
+
+  // New nodes glow gold, then fade to stardust white over ~5s.
+  useEffect(() => {
+    if (!knownNodeIdsRef.current) {
+      knownNodeIdsRef.current = new Set(nodes.map((n) => n.id));
+      return;
+    }
+    const fresh = nodes.filter((n) => !knownNodeIdsRef.current.has(n.id)).map((n) => n.id);
+    if (!fresh.length) return;
+    fresh.forEach((id) => knownNodeIdsRef.current.add(id));
+    setBornIds((prev) => new Set([...prev, ...fresh]));
+    window.setTimeout(() => {
+      setBornIds((prev) => {
+        const next = new Set(prev);
+        fresh.forEach((id) => next.delete(id));
+        return next;
+      });
+    }, 5200);
+  }, [nodes]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -369,6 +390,17 @@ export default function AiNodeCanvas({
       const rectNow = viewportRef.current?.getBoundingClientRect();
       if (!rectNow) return;
 
+      // Loaded functions: releasing the drag runs ALL of them, one child per strand.
+      if (state.choices.some((c) => c.kind === "loaded")) {
+        onStrandSelect?.(state.nodeId, state.choices[0], {
+          choices: state.choices,
+          angles:
+            state.angles || fanStrandAngles(state.choices.length, state.baseAngle),
+          baseAngle: state.baseAngle,
+        });
+        return;
+      }
+
       let pickIdx = state.hoverIdx;
       if (pickIdx < 0 && state.angles?.length) {
         pickIdx = pickStrandIndex(state.baseAngle, state.angles);
@@ -478,7 +510,7 @@ export default function AiNodeCanvas({
     }
 
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
-    if (constellationMode) {
+    if (constellationMode || node.loadedOpIds?.length) {
       startConstellationNodeGesture(e, node);
       return;
     }
@@ -604,14 +636,21 @@ export default function AiNodeCanvas({
         ? "short"
         : "full";
   const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
-  const focusDetail =
-    focusedNode?.expandedText?.trim() ||
-    focusedNode?.preview?.trim() ||
-    focusedNode?.label?.trim() ||
+  // The morph target: the node dissolving into its content as you zoom.
+  // Falls back to the node nearest viewport center so zooming ALWAYS morphs.
+  const morphNode =
+    focusedNode ||
+    (contentBlend > 0.01
+      ? findNearestNodeToCenter(nodes, camera, vpSize.w, vpSize.h)
+      : null);
+  const morphDetail =
+    morphNode?.expandedText?.trim() ||
+    morphNode?.preview?.trim() ||
+    morphNode?.label?.trim() ||
     null;
 
   function renderFocusText(text) {
-    const golden = focusedNode?.goldenFragment;
+    const golden = morphNode?.goldenFragment;
     if (!golden || !text.includes("⟦") || !text.includes("⟧")) {
       return text;
     }
@@ -809,8 +848,9 @@ export default function AiNodeCanvas({
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
-          const isFocusTarget = focusedNodeId === node.id;
+          const isFocusTarget = morphNode?.id === node.id;
           const nodeBlend = isFocusTarget ? contentBlend : 0;
+          const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
               key={node.id}
@@ -823,7 +863,9 @@ export default function AiNodeCanvas({
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
-                (isLanding ? " landing" : "")
+                (isLanding ? " landing" : "") +
+                (bornIds.has(node.id) ? " born-gold" : "") +
+                (fnCount ? " fn-loaded" : "")
               }
               style={{
                 left: node.x - r,
@@ -845,6 +887,8 @@ export default function AiNodeCanvas({
                 <span className="ai-node-cell-membrane" />
                 <span className="ai-node-cell-nucleus" />
               </span>
+              {bornIds.has(node.id) && <span className="ai-node-born-ring" aria-hidden="true" />}
+              {fnCount > 0 && <span className="ai-node-fn-count">{fnCount}</span>}
               <span className="ai-node-starburst" aria-hidden="true" />
               <span className="ai-node-label">
                 {zoomTier === "short"
@@ -876,27 +920,27 @@ export default function AiNodeCanvas({
           );
         })}
 
-        {focusedNode && focusDetail && contentBlend > 0.02 && (
+        {morphNode && morphDetail && contentBlend > 0.02 && (
           <div
             className="ai-node-focus-bloom"
             style={{
-              left: focusedNode.x,
-              top: focusedNode.y,
-              width: 80 + contentBlend * 440,
-              marginLeft: -(40 + contentBlend * 220),
-              marginTop: -(40 + contentBlend * 160),
-              minHeight: 72 + contentBlend * 300,
-              opacity: Math.min(1, 0.32 + contentBlend * 0.68),
+              left: morphNode.x,
+              top: morphNode.y,
+              width: 80 + contentBlend * 460,
+              marginLeft: -(40 + contentBlend * 230),
+              marginTop: -(40 + contentBlend * 170),
+              minHeight: 72 + contentBlend * 310,
+              opacity: contentBlend,
               "--ai-content-blend": contentBlend,
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="ai-node-focus-bloom-head">{focusedNode.label}</div>
-            <div className="ai-node-focus-bloom-body">{renderFocusText(focusDetail)}</div>
-            {tool === "highlight" && focusedNode.expandedText?.trim() && !focusedNode.loading && (
+            <div className="ai-node-focus-bloom-head">{morphNode.label}</div>
+            <div className="ai-node-focus-bloom-body">{renderFocusText(morphDetail)}</div>
+            {tool === "highlight" && morphNode.expandedText?.trim() && !morphNode.loading && (
               <FragmentHighlightLayer
                 active
-                text={focusedNode.expandedText}
+                text={morphNode.expandedText}
                 onFragmentReplace={onFragmentReplace}
                 onFragmentToPaper={onFragmentToPaper}
                 isPaperDestination={isPaperDestination}

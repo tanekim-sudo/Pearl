@@ -154,6 +154,7 @@ function VideoBlock({ item, selected, highlightTouched, style }) {
 export default function BoardBlockItem({
   item,
   selected,
+  bornGold,
   highlightTouched,
   highlightSelected,
   highlightTransferring,
@@ -167,6 +168,7 @@ export default function BoardBlockItem({
   const style = itemStyle(item);
   const cls =
     (selected ? " sel" : "") +
+    (bornGold ? " born-gold" : "") +
     (highlightSelected ? " hl-selected" : "") +
     (highlightTouched ? " hl-touch" : "") +
     (highlightTransferring ? " hl-transferring" : "") +

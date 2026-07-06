@@ -5,9 +5,9 @@ html[data-theme="idea"],
   --paper-deep: #ececef;
   --card: #ffffff;
   --card-edge: #f8f8fa;
-  --ink: #1f2937;
-  --ink-stroke: #374151;
-  --ink-2: #4b5563;
+  --ink: #101216;
+  --ink-stroke: #14161b;
+  --ink-2: #3a3f47;
   --faint: #9ca3af;
   --line: rgba(15, 23, 42, 0.08);
   --line-2: rgba(15, 23, 42, 0.12);
@@ -992,78 +992,142 @@ body {
   cursor: grabbing;
 }
 
+/* ── Drag-morph ghost: text card on paper ↔ glowing orb in the void ── */
 .space-transfer-ghost-wrap {
   position: fixed;
   z-index: 10050;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
 }
 
-.space-transfer-ghost-preview {
-  border: 2px solid rgba(232, 185, 35, 0.95);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 0 0 4px rgba(255, 215, 0, 0.18),
-    0 8px 28px rgba(0, 0, 0, 0.22);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-  opacity: 0.96;
-}
-
-.space-transfer-ghost-preview.to-ai {
-  border-color: rgba(100, 150, 255, 0.75);
-  background: rgba(100, 150, 255, 0.1);
-  box-shadow:
-    0 0 0 4px rgba(100, 150, 255, 0.12),
-    0 0 20px rgba(100, 150, 255, 0.4);
-}
-
-.space-transfer-ghost-preview.to-paper {
-  border-color: rgba(245, 230, 163, 0.9);
-}
-
-.space-transfer-ghost {
+.transfer-morph {
   position: relative;
-  transform: translateY(-8px);
+  width: 260px;
+  height: 130px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(18, 22, 38, 0.92);
-  border: 2px solid rgba(245, 230, 163, 0.55);
+  justify-content: center;
+}
+
+.transfer-morph-card {
+  position: absolute;
+  max-width: 260px;
+  max-height: 120px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #101216;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  border: 1.5px solid rgba(212, 168, 60, 0.85);
   box-shadow:
-    0 0 0 4px rgba(245, 230, 163, 0.15),
-    0 8px 24px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(245, 230, 163, 0.95);
-  letter-spacing: 0.03em;
+    0 0 0 3px rgba(240, 195, 80, 0.2),
+    0 0 26px rgba(255, 205, 85, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
-.space-transfer-ghost.to-ai {
-  border-color: rgba(100, 150, 255, 0.7);
-  color: rgba(180, 210, 255, 0.95);
-}
-.space-transfer-ghost.to-paper {
-  border-color: rgba(245, 230, 163, 0.85);
-}
-.space-transfer-ghost-count {
+
+.transfer-morph-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(245, 230, 163, 0.2);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(212, 168, 60, 0.95);
 }
-.space-transfer-ghost.to-ai .space-transfer-ghost-count {
-  background: rgba(100, 150, 255, 0.25);
+
+.transfer-morph-orb {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.transfer-morph-orb-glow {
+  position: absolute;
+  inset: -60%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(240, 210, 130, 0.3) 40%,
+    transparent 70%
+  );
+  animation: transfer-orb-breathe 1.4s ease-in-out infinite;
+}
+
+.transfer-morph-orb-core {
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255, 255, 255, 1),
+    rgba(240, 244, 255, 0.85) 55%,
+    rgba(210, 220, 255, 0.3) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.85);
+}
+
+.transfer-morph-orb-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0a0c14;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 2;
+}
+
+@keyframes transfer-orb-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Over paper: it's a text card. Over the void: it's a node. Mid-boundary: caught mid-morph. */
+.space-transfer-ghost-wrap.over-paper .transfer-morph-card {
+  opacity: 1;
+  transform: scale(1);
+}
+.space-transfer-ghost-wrap.over-paper .transfer-morph-orb {
+  opacity: 0;
+  transform: scale(0.3);
+}
+.space-transfer-ghost-wrap.over-ai .transfer-morph-card {
+  opacity: 0;
+  transform: scale(0.35);
+  border-radius: 50%;
+}
+.space-transfer-ghost-wrap.over-ai .transfer-morph-orb {
+  opacity: 1;
+  transform: scale(1);
+}
+.space-transfer-ghost-wrap.over-boundary .transfer-morph-card {
+  opacity: 0.5;
+  transform: scale(0.68);
+  border-radius: 26px;
+}
+.space-transfer-ghost-wrap.over-boundary .transfer-morph-orb {
+  opacity: 0.65;
+  transform: scale(0.85);
 }
 
 .world {
@@ -1774,6 +1838,36 @@ body {
 }
 
 /* text written straight onto the board */
+/* Fresh arrivals from across the boundary glow gold, then settle to ink over 5s. */
+.board-text.born-gold,
+.board-sticky.born-gold,
+.board-callout.born-gold,
+.board-block.born-gold {
+  animation: paper-born-gold 5s ease-out forwards;
+}
+
+@keyframes paper-born-gold {
+  0% {
+    color: #a87b12;
+    background: rgba(255, 214, 90, 0.16);
+    box-shadow:
+      0 0 0 2px rgba(255, 205, 80, 0.4),
+      0 0 28px rgba(255, 205, 85, 0.45);
+  }
+  55% {
+    color: #6a5310;
+    background: rgba(255, 214, 90, 0.07);
+    box-shadow:
+      0 0 0 1px rgba(255, 205, 80, 0.2),
+      0 0 14px rgba(255, 205, 85, 0.2);
+  }
+  100% {
+    color: var(--ink);
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
 .board-text {
   position: absolute;
   font-family: var(--sans);

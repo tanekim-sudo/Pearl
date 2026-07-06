@@ -133,7 +133,6 @@ import {
   truncatePreview,
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
-import TransferAnimation from "./components/TransferAnimation.jsx";
 import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
@@ -1935,9 +1934,8 @@ export default function App() {
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
   const [canvasDropOver, setCanvasDropOver] = useState(false);
-  const [transferAnim, setTransferAnim] = useState(null);
+  const [goldBornIds, setGoldBornIds] = useState(() => new Set());
 
-  const transferAnimKeyRef = useRef(0);
   const viewportRef = useRef(null);
   const paperSessionRef = useRef(null);
   const paperStrokeIdRef = useRef(null);
@@ -2198,20 +2196,6 @@ export default function App() {
     return !!(r && clientX <= r.left + BOUNDARY_MAGNET_PX);
   }
 
-  function pointInHighlightBBox(clientX, clientY, ids) {
-    const bb = selectionWorldBBoxForIds(ids);
-    if (!bb) return false;
-    const tl = worldToClient(bb.minx, bb.miny);
-    const br = worldToClient(bb.maxx, bb.maxy);
-    const pad = 12;
-    return (
-      clientX >= tl.x - pad &&
-      clientX <= br.x + pad &&
-      clientY >= tl.y - pad &&
-      clientY <= br.y + pad
-    );
-  }
-
   function computeTransferPreviewBox(origin, ids) {
     if (origin === "paper" && ids?.length) {
       const bb = selectionWorldBBoxForIds(ids);
@@ -2246,9 +2230,45 @@ export default function App() {
     return screenToWorld(aiCamRef.current, clientX - rect.left, clientY - rect.top);
   }
 
+  function markGoldBorn(id) {
+    setGoldBornIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    window.setTimeout(() => {
+      setGoldBornIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 5200);
+  }
+
+  function transferPreviewText(origin, ids) {
+    if (origin === "paper") {
+      const picked = itemsRef.current.filter((it) => ids.includes(it.id));
+      const texts = picked
+        .map((it) => (typeof it.text === "string" ? it.text.trim() : ""))
+        .filter(Boolean);
+      if (texts.length) return texts.join("  ·  ").slice(0, 180);
+      const strokes = picked.filter((it) => it.type === "stroke").length;
+      if (strokes) return `${strokes} ink stroke${strokes > 1 ? "s" : ""}`;
+      return `${ids.length} item${ids.length > 1 ? "s" : ""}`;
+    }
+    const nodes = aiNodesRef.current.filter((n) => ids.includes(n.id));
+    const t = nodes
+      .map((n) => n.expandedText || n.preview || n.label)
+      .filter(Boolean)
+      .join("  ·  ");
+    return t.slice(0, 180) || `${ids.length} node${ids.length > 1 ? "s" : ""}`;
+  }
+
   function startPendingSpaceTransfer(e, origin, ids, opts = {}) {
     if (!ids?.length) return;
     const previewBox = opts.previewBox || computeTransferPreviewBox(origin, ids);
+    const preview = transferPreviewText(origin, ids);
     setGesturing(true);
     gesture.current = {
       mode: "pending-space-transfer",
@@ -2256,6 +2276,7 @@ export default function App() {
       ids: ids.slice(),
       kind: opts.kind || null,
       previewBox,
+      preview,
       cx: e.clientX,
       cy: e.clientY,
       lastCx: e.clientX,
@@ -2267,6 +2288,8 @@ export default function App() {
       cy: e.clientY,
       count: ids.length,
       target: null,
+      origin,
+      preview,
       previewBox,
     });
     try {
@@ -2284,20 +2307,22 @@ export default function App() {
       emitTourEvent("highlight-drag");
     }
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
+    if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
     setSpaceTransferGhost({
       cx,
       cy,
       count: g.ids.length,
       target: null,
+      origin: g.origin,
+      preview: g.preview,
       previewBox: g.previewBox,
     });
   }
 
-  function transferAiNodesToPaper(nodeIds, atWorld, opts = {}) {
+  function transferAiNodesToPaper(nodeIds, atWorld) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     if (!nodes.length) return;
-    triggerTransferAnimation("to-paper", { atWorld, fromClient: opts.fromClient });
     let yOffset = 0;
     for (const node of nodes) {
       let text = node.expandedText || node.preview || "";
@@ -2621,6 +2646,8 @@ export default function App() {
           cy,
           count: g.ids.length,
           target: null,
+          origin: g.origin,
+          preview: g.preview,
           previewBox: g.previewBox,
         });
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -2652,6 +2679,8 @@ export default function App() {
           cy,
           count: g.ids.length,
           target,
+          origin: g.origin,
+          preview: g.preview,
           previewBox: g.previewBox,
         });
       } else if (g.mode === "draw") {
@@ -4236,6 +4265,13 @@ export default function App() {
   }
 
   function getStrandChoicesForNode(node) {
+    if (node?.loadedOpIds?.length) {
+      const loaded = node.loadedOpIds
+        .map((id) => opMap[id])
+        .filter(Boolean)
+        .map((op) => ({ id: `loaded-${op.id}`, label: op.name, kind: "loaded", op }));
+      if (loaded.length) return loaded;
+    }
     const lensMoves = activeLens?.moveIds?.length
       ? moves.filter((m) => activeLens.moveIds.includes(m.id))
       : moves;
@@ -4247,12 +4283,79 @@ export default function App() {
     });
   }
 
-  function handleStrandSelect(nodeId, choice) {
+  /** Press a function in the rail: run it on the highlighted material (or selected node) — forms a new node in AI space. */
+  function runFunctionFromRail(op) {
+    if (!op) return;
+    const hlIds = highlightSelectionRef.current;
+    if (hlIds.length) {
+      const sketchBundle = gatherSelectionSketchBundle(hlIds);
+      const expandIds = transformableDragIds(hlIds);
+      if (expandIds.length) {
+        expandInAi(expandIds, { op, opLabel: op.name });
+      } else if (sketchBundle) {
+        interpretSketchBundle(sketchBundle);
+      } else {
+        showToast("highlighted items can't be transformed");
+        return;
+      }
+      setHighlightSelectionIds([]);
+      setHighlightTouchIds([]);
+      return;
+    }
+    const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
+    if (nodeId) {
+      const node = aiNodesRef.current.find((n) => n.id === nodeId);
+      if (node) {
+        const { ids, sourceNode } = resolveNodeSourceIds(node);
+        if (ids?.length) {
+          expandInAi(ids, { op, opLabel: op.name, sourceNode: sourceNode || node });
+          return;
+        }
+      }
+    }
+    if (selRef.current.length) {
+      const expandIds = transformableDragIds(selRef.current);
+      if (expandIds.length) {
+        expandInAi(expandIds, { op, opLabel: op.name });
+        return;
+      }
+    }
+    showToast("highlight something first, then press a function");
+  }
+
+  function handleStrandSelect(nodeId, choice, info = {}) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node || !choice) return;
     emitTourEvent("strand-select");
 
     handleAiNodeSelect(nodeId, { replace: true });
+
+    const loadedChoices = (info.choices || []).filter((c) => c.kind === "loaded" && c.op);
+    if (loadedChoices.length) {
+      const { ids, sourceNode } = resolveNodeSourceIds(node);
+      const src = sourceNode || node;
+      if (!ids?.length) {
+        showToast("this node has no source material to run functions on");
+        return;
+      }
+      const angles = info.angles || [];
+      const distWorld = (node.radius || 20) * 3 + 150;
+      loadedChoices.forEach((c, i) => {
+        const angle = angles[i] ?? info.baseAngle ?? 0;
+        expandInAi(ids, {
+          op: c.op,
+          opLabel: c.op.name,
+          sourceNode: src,
+          expandedAt: {
+            x: node.x + Math.cos(angle) * distWorld,
+            y: node.y + Math.sin(angle) * distWorld,
+          },
+          quiet: true,
+        });
+      });
+      showToast(`exploring ${loadedChoices.length} function${loadedChoices.length > 1 ? "s" : ""}…`);
+      return;
+    }
 
     if (choice.kind === "explore") {
       exploreAiNode(nodeId);
@@ -4691,33 +4794,7 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  function boundaryCenterX() {
-    const el = document.querySelector(".interpret-boundary-hit");
-    const r = el?.getBoundingClientRect();
-    return r ? r.left + r.width / 2 : window.innerWidth / 2;
-  }
-
-  function centerOfRects(rects) {
-    if (!rects?.length) return null;
-    let sx = 0;
-    let sy = 0;
-    for (const r of rects) {
-      sx += (r.left + r.right) / 2;
-      sy += (r.top + r.bottom) / 2;
-    }
-    return { x: sx / rects.length, y: sy / rects.length };
-  }
-
-  function aiWorldToClient(wx, wy) {
-    const rect = aiViewportRef.current?.getBoundingClientRect();
-    const cam = aiCamRef.current;
-    if (!rect) return { x: window.innerWidth * 0.72, y: window.innerHeight / 2 };
-    const local = worldToScreen(cam, wx, wy);
-    return { x: rect.left + local.x, y: rect.top + local.y };
-  }
-
-  function launchPaperToAiTransfer({ itemIds = [], nodeIds = [], aiWorld, fromClient }) {
-    triggerTransferAnimation("to-ai", { itemIds, aiWorld, fromClient });
+  function launchPaperToAiTransfer({ nodeIds = [] }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
       const next = new Set(prev);
@@ -4741,63 +4818,6 @@ export default function App() {
         animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight, { maxScale: 0.55 }), 425);
       }
     }, 960);
-  }
-
-  function triggerTransferAnimation(direction, opts = {}) {
-    const boundaryX = boundaryCenterX();
-    let fromX;
-    let fromY;
-    let toX;
-    let toY;
-
-    if (direction === "to-ai") {
-      const ids = opts.itemIds || [];
-      const rects = ids
-        .map((id) => itemsRef.current.find((i) => i.id === id))
-        .filter(Boolean)
-        .map((it) => itemScreenBBox(it));
-      const center = centerOfRects(rects) || opts.fromClient || {
-        x: boundaryX - 72,
-        y: window.innerHeight / 2,
-      };
-      fromX = center.x;
-      fromY = center.y;
-      if (opts.aiWorld) {
-        const dest = aiWorldToClient(opts.aiWorld.x, opts.aiWorld.y);
-        toX = dest.x;
-        toY = dest.y;
-      } else {
-        toX = boundaryX + 36;
-        toY = fromY;
-      }
-    } else {
-      const atWorld = opts.atWorld || paperViewportCenterWorld();
-      const dest = worldToClient(atWorld.x, atWorld.y);
-      toX = dest.x;
-      toY = dest.y;
-      fromX = boundaryX + 24;
-      fromY = toY;
-      if (opts.fromClient) {
-        fromX = opts.fromClient.x;
-        fromY = opts.fromClient.y;
-      }
-    }
-
-    transferAnimKeyRef.current += 1;
-    setTransferAnim({
-      key: transferAnimKeyRef.current,
-      direction,
-      fromX,
-      fromY,
-      boundaryX,
-      toX,
-      toY,
-      throughBoundary: direction === "to-ai" && !!opts.aiWorld,
-    });
-  }
-
-  function clearTransferAnimation(key) {
-    setTransferAnim((a) => (a?.key === key ? null : a));
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -5093,12 +5113,7 @@ export default function App() {
       aiNodeId: expandedNode.id,
       inputPreview: truncatePreview(bundle.transcript || label, 120),
     });
-    launchPaperToAiTransfer({
-      itemIds: bundleSourceIds,
-      nodeIds: [sessionNode.id, expandedNode.id],
-      aiWorld: { x: expandedNode.x, y: expandedNode.y },
-      fromClient: opts?.fromClient,
-    });
+    launchPaperToAiTransfer({ nodeIds: [sessionNode.id, expandedNode.id] });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
       sourcePreview: bundle.transcript?.slice(0, 200) || label,
@@ -5375,13 +5390,9 @@ export default function App() {
 
     if (t === "highlight") {
       const hlSel = highlightSelectionRef.current;
-      if (hlSel.length) {
-        const inSel = hit && hlSel.includes(hit.id);
-        const inBBox = pointInHighlightBBox(cx, cy, hlSel);
-        if (inSel || inBBox) {
-          startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
-          return;
-        }
+      if (hlSel.length && hit && hlSel.includes(hit.id)) {
+        startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
+        return;
       }
       const hlW = highlightWorldWidth(camRef.current.scale);
       const strokeId = startDrawStroke(w, {
@@ -6020,12 +6031,9 @@ export default function App() {
       aiNodeId: sourceNode.id,
       opName: opts.opLabel || op.name,
     });
-    launchPaperToAiTransfer({
-      itemIds: ids,
-      nodeIds: [sourceNode.id, expandedNode.id],
-      aiWorld: { x: expandedNode.x, y: expandedNode.y },
-      fromClient: opts.fromClient,
-    });
+    if (!opts.quiet) {
+      launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
+    }
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -6102,14 +6110,7 @@ export default function App() {
       (opts.clientX != null && opts.clientY != null
         ? clientToWorld(opts.clientX, opts.clientY)
         : paperViewportCenterWorld());
-    triggerTransferAnimation("to-paper", {
-      atWorld,
-      fromClient:
-        opts.clientX != null && opts.clientY != null
-          ? { x: opts.clientX, y: opts.clientY }
-          : undefined,
-    });
-    spawnTextAtWorld(fragment, atWorld, { silent: true });
+    spawnTextAtWorld(fragment, atWorld, { silent: true, fromAi: true });
   };
   transferFragmentReplaceRef.current = (fragment) => {
     emitTourEvent("fragment-highlight");
@@ -6160,6 +6161,7 @@ export default function App() {
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
+    if (opts.fromAi) markGoldBorn(id);
     recordItemEvent(id, opts.fromAi ? "transfer-to-paper" : "born", {
       itemSnapshot: itemSnapshot(item),
       textSnapshot: clean,
@@ -6167,6 +6169,17 @@ export default function App() {
       outputPreview: truncatePreview(clean, 120),
     });
     if (!opts.silent) showToast("added to paper");
+    return id;
+  }
+
+  function aiNodeAtWorld(wx, wy) {
+    const list = aiNodesRef.current;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const n = list[i];
+      const r = (n.radius || 20) + 28;
+      if ((n.x - wx) ** 2 + (n.y - wy) ** 2 <= r * r) return n;
+    }
+    return null;
   }
 
   function getAiDropWorld(fallbackWorld) {
@@ -6237,6 +6250,16 @@ export default function App() {
     if (opId) {
       const op = opMap[opId];
       if (!op) return true;
+      const hitNode = aiNodeAtWorld(pos.x, pos.y);
+      if (hitNode) {
+        const loaded = [...new Set([...(hitNode.loadedOpIds || []), op.id])];
+        updateAiNode(hitNode.id, { loadedOpIds: loaded });
+        setSelectedAiNodeIds([hitNode.id]);
+        showToast(
+          `${op.name} loaded — drag out to run ${loaded.length} function${loaded.length > 1 ? "s" : ""}`
+        );
+        return true;
+      }
       if (isCompressionOperator(op)) {
         return true;
       }
@@ -6732,6 +6755,7 @@ export default function App() {
                     key={it.id}
                     item={it}
                     selected={selection.includes(it.id)}
+                    bornGold={goldBornIds.has(it.id)}
                     highlightTouched={highlightTouchSet.has(it.id)}
                     highlightSelected={highlightSelectionSet.has(it.id)}
                     highlightTransferring={highlightTransferringSet.has(it.id)}
@@ -6749,6 +6773,7 @@ export default function App() {
                   key={it.id}
                   item={it}
                   selected={selection.includes(it.id)}
+                  bornGold={goldBornIds.has(it.id)}
                   highlightTouched={highlightTouchSet.has(it.id)}
                   highlightSelected={highlightSelectionSet.has(it.id)}
                   highlightTransferring={highlightTransferringSet.has(it.id)}
@@ -6848,9 +6873,7 @@ export default function App() {
           if (toolRef.current === "highlight" && highlightSelectionRef.current.length) {
             const hlSel = highlightSelectionRef.current;
             const hit = itemAtPoint(cx, cy);
-            const overHighlight =
-              pointInHighlightBBox(cx, cy, hlSel) || (hit && hlSel.includes(hit.id));
-            setHighlightGrabHover(overHighlight);
+            setHighlightGrabHover(!!(hit && hlSel.includes(hit.id)));
           } else if (highlightGrabHover) {
             setHighlightGrabHover(false);
           }
@@ -7238,10 +7261,10 @@ export default function App() {
                         ))}
                       </>
                     )}
-                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} starlike />))}</>)}
-                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
+                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
+                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
                   </div>
                 </>
               ) : (
@@ -7370,33 +7393,30 @@ export default function App() {
 
       {spaceTransferGhost && (
         <div
-          className="space-transfer-ghost-wrap"
+          className={
+            "space-transfer-ghost-wrap" +
+            (spaceTransferGhost.target === "ai"
+              ? " over-ai"
+              : spaceTransferGhost.target === "paper"
+                ? " over-paper"
+                : " over-boundary")
+          }
           style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
         >
-          {spaceTransferGhost.previewBox && (
-            <div
-              className={
-                "space-transfer-ghost-preview" +
-                (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
-                (spaceTransferGhost.target === "paper" ? " to-paper" : "")
-              }
-              style={{
-                width: spaceTransferGhost.previewBox.width,
-                height: spaceTransferGhost.previewBox.height,
-              }}
-            />
-          )}
-          <div
-            className={
-              "space-transfer-ghost" +
-              (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
-              (spaceTransferGhost.target === "paper" ? " to-paper" : "")
-            }
-          >
-            <span className="space-transfer-ghost-count">{spaceTransferGhost.count}</span>
-            <span className="space-transfer-ghost-arrow">
-              {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
-            </span>
+          <div className="transfer-morph">
+            <div className="transfer-morph-card">
+              {spaceTransferGhost.preview}
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
+            <div className="transfer-morph-orb">
+              <span className="transfer-morph-orb-glow" />
+              <span className="transfer-morph-orb-core" />
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-orb-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -7413,7 +7433,6 @@ export default function App() {
         </div>
       )}
 
-      <TransferAnimation anim={transferAnim} onComplete={clearTransferAnimation} />
     </div>
   );
 }
@@ -7518,6 +7537,7 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
 function BoardText({
   item,
   selected,
+  bornGold,
   highlightTouched,
   highlightSelected,
   highlightTransferring,
@@ -7585,6 +7605,7 @@ function BoardText({
       className={
         "board-text" +
         (selected ? " sel" : "") +
+        (bornGold ? " born-gold" : "") +
         (highlightSelected ? " hl-selected" : "") +
         (highlightTouched ? " hl-touch" : "") +
         (highlightTransferring ? " hl-transferring" : "") +
@@ -7876,7 +7897,7 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, flat, starlike }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onRun, flat, starlike }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -7886,6 +7907,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
       <div
         className={"op-card" + (composeOver ? " compose-over" : "") + (starlike ? " starlike-op" : "")}
         draggable
+        onClick={() => onRun?.(op)}
         onDragStart={(e) => startOpDrag(e, op)}
         onDragOver={(e) => {
           if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
@@ -7919,15 +7941,36 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             )}
           </div>
           {!flat && steps.length > 0 && (
-            <button className="op-card-toggle" onClick={() => onToggle(op.id)} title={`${steps.length} steps`}>
+            <button
+            className="op-card-toggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(op.id);
+            }}
+            title={`${steps.length} steps`}
+          >
               {open ? "▾" : "▸"}
             </button>
           )}
-          <button className="op-card-edit" onClick={() => onEdit(op)} title="edit">
+          <button
+            className="op-card-edit"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(op);
+            }}
+            title="edit"
+          >
             ⚙
           </button>
           {onShare && (
-            <button className="op-card-share" onClick={() => onShare(op)} title="copy share link">
+            <button
+              className="op-card-share"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(op);
+              }}
+              title="copy share link"
+            >
               ↗
             </button>
           )}
