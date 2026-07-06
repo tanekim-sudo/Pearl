@@ -67,6 +67,7 @@ import {
   fitAiConstellation,
   focusAiNodeCard,
   focusAiNode,
+  computeNodesBBox,
   nodeCardLayout,
   readingCardForNode,
   screenToWorld,
@@ -2262,7 +2263,7 @@ export default function App() {
     }
     const nodes = aiNodesRef.current.filter((n) => ids.includes(n.id));
     const t = nodes
-      .map((n) => n.expandedText || n.preview || n.label)
+      .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label)
       .filter(Boolean)
       .join("  ·  ");
     return t.slice(0, 180) || `${ids.length} node${ids.length > 1 ? "s" : ""}`;
@@ -2328,7 +2329,8 @@ export default function App() {
     if (!nodes.length) return;
     let yOffset = 0;
     for (const node of nodes) {
-      let text = node.expandedText || node.preview || "";
+      const fragment = node.goldenFragment?.trim();
+      let text = fragment || node.expandedText || node.preview || "";
       if (!text?.trim() && node.sourceIds?.length) {
         text = itemsRef.current
           .filter((it) => node.sourceIds.includes(it.id))
@@ -2343,10 +2345,14 @@ export default function App() {
           aiNodeId: node.id,
           sourceIds: node.sourceIds,
         });
+        if (fragment) {
+          updateAiNode(node.id, { goldenFragment: null });
+        }
         yOffset += 72;
       }
     }
     setSelectedAiNodeIds([]);
+    showToast("moved to paper");
   }
 
   function handleAiNodeSelect(idOrIds, opts = {}) {
@@ -3121,7 +3127,7 @@ export default function App() {
       interpretSketchBundle(sketchBundle, world, opts);
       return;
     }
-    if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient });
+    if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient, quiet: true });
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -4842,6 +4848,7 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
+  /** Landing glow on new nodes — pan only, never zoom in on transfer. */
   function launchPaperToAiTransfer({ nodeIds = [] }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
@@ -4856,16 +4863,29 @@ export default function App() {
         return next;
       });
       const el = aiViewportRef.current;
-      const focusId = nodeIds[nodeIds.length - 1];
-      const focusNode = aiNodesRef.current.find((n) => n.id === focusId);
-      if (focusNode) {
-        setAiFocusedNodeId(focusId);
-        focusAiNodeContent(focusNode);
-        zoomAiToNode(focusNode, 620);
-      } else if (el && aiNodesRef.current.length) {
-        animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight, { maxScale: 0.55 }), 425);
+      const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+      if (!el || !landed.length) return;
+
+      const bb = computeNodesBBox(landed);
+      if (!bb) return;
+
+      const cam = aiCamRef.current;
+      const scale = cam.scale;
+      const vpW = el.clientWidth;
+      const vpH = el.clientHeight;
+      const sx = bb.cx * scale + cam.x;
+      const sy = bb.cy * scale + cam.y;
+      const margin = 72;
+      let x = cam.x;
+      let y = cam.y;
+      if (sx < margin) x += margin - sx;
+      if (sx > vpW - margin) x -= sx - (vpW - margin);
+      if (sy < margin) y += margin - sy;
+      if (sy > vpH - margin) y -= sy - (vpH - margin);
+      if (x !== cam.x || y !== cam.y) {
+        animateAiCameraTo({ scale, x, y }, 320);
       }
-    }, 960);
+    }, 420);
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -6109,9 +6129,7 @@ export default function App() {
       aiNodeId: sourceNode.id,
       opName: opts.opLabel || op.name,
     });
-    if (!opts.quiet) {
-      launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
-    }
+    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -6188,7 +6206,11 @@ export default function App() {
       (opts.clientX != null && opts.clientY != null
         ? clientToWorld(opts.clientX, opts.clientY)
         : paperViewportCenterWorld());
-    spawnTextAtWorld(fragment, atWorld, { silent: true, fromAi: true });
+    const id = spawnTextAtWorld(fragment, atWorld, { silent: true, fromAi: true });
+    if (id) {
+      const r = vpRect();
+      animateCameraTo(atWorld, Math.min(camRef.current.scale, 1.1));
+    }
   };
   transferFragmentReplaceRef.current = (fragment) => {
     emitTourEvent("fragment-highlight");
@@ -6210,7 +6232,7 @@ export default function App() {
         interpretSketchBundle(sketchBundle, world, { fromClient });
       } else {
         const expandIds = transformableDragIds(ids);
-        if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient });
+        if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
       }
     } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
       emitTourEvent("transfer-to-paper");
@@ -7180,11 +7202,13 @@ export default function App() {
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           tool={tool}
-          onSpaceTransferStart={(e) =>
-            startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current, {
+          onSpaceTransferStart={(e, nodeIds) => {
+            const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
+            if (!ids.length) return;
+            startPendingSpaceTransfer(e, "ai", ids, {
               kind: toolRef.current === "highlight" ? "highlight" : null,
-            })
-          }
+            });
+          }}
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
           onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
           isPaperDestination={(x, y) => isOverPaperColumn(x, y)}

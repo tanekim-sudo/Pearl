@@ -48,9 +48,15 @@ export function extractTextRangeFromHighlightStroke(el, clientPoints, strokeWidt
         const range = document.createRange();
         range.setStart(textNode, i);
         range.setEnd(textNode, Math.min(i + 1, textNode.length));
-        const cr = range.getBoundingClientRect();
-        if (!cr.width && !cr.height) continue;
-        if (samples.some((s) => pointNearRect(s.x, s.y, cr, pad))) charHits.add(i);
+        const rects = range.getClientRects();
+        for (let r = 0; r < rects.length; r++) {
+          const cr = rects[r];
+          if (!cr.width && !cr.height) continue;
+          if (samples.some((s) => pointNearRect(s.x, s.y, cr, pad))) {
+            charHits.add(i);
+            break;
+          }
+        }
       } catch {
         /* skip bad range */
       }

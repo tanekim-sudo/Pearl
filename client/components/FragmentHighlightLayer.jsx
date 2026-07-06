@@ -12,6 +12,7 @@ const MIN_STROKE_PX = 4;
 export default function FragmentHighlightLayer({
   active,
   text,
+  fontSize,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -73,7 +74,7 @@ export default function FragmentHighlightLayer({
         return acc + Math.hypot(p.x - arr[i - 1].x, p.y - arr[i - 1].y);
       }, 0);
       if (len >= MIN_STROKE_PX) {
-        const toPaper = ev.shiftKey || isPaperDestination?.(ev.clientX, ev.clientY);
+        const toPaper = isPaperDestination?.(ev.clientX, ev.clientY);
         finishStroke(g.points, ev.clientX, ev.clientY, toPaper);
       }
     }
@@ -94,7 +95,11 @@ export default function FragmentHighlightLayer({
       className={"fragment-highlight-layer" + (className ? ` ${className}` : "")}
       onPointerDown={onPointerDown}
     >
-      <div className="fragment-highlight-text" aria-hidden="true">
+      <div
+        className="fragment-highlight-text"
+        style={fontSize ? { fontSize: `${fontSize}px`, lineHeight: 1.5 } : undefined}
+        aria-hidden="true"
+      >
         {text}
       </div>
       {draftPath && (

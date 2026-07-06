@@ -487,32 +487,58 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", onUp);
   }
 
+  function startHighlightTransfer(e, node) {
+    onSelect?.(node.id, { replace: true });
+    onSpaceTransferStart?.(e, [node.id]);
+  }
+
   function startNodeDrag(e, node) {
     if (e.button !== 0) return;
 
-    if (tool === "highlight" && selectedIds.includes(node.id) && selectedIds.length) {
+    if (tool === "highlight") {
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e);
+      onSelect?.(node.id, { replace: true });
+      const readable = node.expandedText?.trim() || node.preview?.trim();
+      if (!readable) {
+        const canExpand =
+          (node.nodeKind === "source" || node.nodeKind === "session") &&
+          node.sourceIds?.length &&
+          !node.loading;
+        if (canExpand && !node.expandedText) onExpandNode?.(node.id);
+        return;
+      }
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let armed = false;
+
+      function onMove(ev) {
+        if (armed) return;
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
+        armed = true;
+        cleanup();
+        startHighlightTransfer(e, node);
+      }
+
+      function onUp() {
+        cleanup();
+      }
+
+      function cleanup() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
       return;
     }
 
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
     if (constellationMode || node.loadedOpIds?.length) {
       startConstellationNodeGesture(e, node);
-      return;
-    }
-
-    if (e.button !== 0) return;
-    if (tool === "highlight") {
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.(node.id, { replace: true });
-      const canExpand =
-        (node.nodeKind === "source" || node.nodeKind === "session") &&
-        node.sourceIds?.length &&
-        !node.loading;
-      if (canExpand && !node.expandedText) onExpandNode?.(node.id);
       return;
     }
     if (e.shiftKey && tool === "select" && selectedIds.length) {
@@ -555,7 +581,7 @@ export default function AiNodeCanvas({
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) {
           onSelect?.(node.id, { replace: true });
-          if (cameraRef.current.scale > AI_STRAND_DRAG_MAX_SCALE) {
+          if (tool !== "highlight" && cameraRef.current.scale > AI_STRAND_DRAG_MAX_SCALE) {
             onExploreNode?.(node.id);
           }
         }
@@ -647,6 +673,11 @@ export default function AiNodeCanvas({
       return part;
     });
   }
+
+  const highlightReaderNode =
+    tool === "highlight" && selectedIds.length === 1
+      ? nodes.find((n) => n.id === selectedIds[0] && n.expandedText?.trim())
+      : null;
 
   return (
     <div
@@ -895,29 +926,30 @@ export default function AiNodeCanvas({
                 >
                   <div className="ai-node-content-card-head">{node.label}</div>
                   <div className="ai-node-content-card-body">{renderNodeText(node, detail)}</div>
+                  {tool === "highlight" &&
+                    node.expandedText?.trim() &&
+                    (isSelected || isFocused) &&
+                    nodeBlend > 0.12 && (
+                      <div
+                        className="ai-node-card-highlight"
+                        onPointerDown={(ev) => ev.stopPropagation()}
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        <FragmentHighlightLayer
+                          active
+                          text={node.expandedText}
+                          fontSize={card.fontSize}
+                          onFragmentReplace={onFragmentReplace}
+                          onFragmentToPaper={onFragmentToPaper}
+                          isPaperDestination={isPaperDestination}
+                          className="ai-node-card-fragment"
+                        />
+                      </div>
+                    )}
                 </div>
               )}
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
-              {tool === "highlight" &&
-                isSelected &&
-                node.expandedText?.trim() &&
-                !node.loading && (
-                  <div
-                    className="ai-node-fragment-panel"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FragmentHighlightLayer
-                      active
-                      text={node.expandedText}
-                      onFragmentReplace={onFragmentReplace}
-                      onFragmentToPaper={onFragmentToPaper}
-                      isPaperDestination={isPaperDestination}
-                      className="ai-node-fragment-highlight"
-                    />
-                  </div>
-                )}
             </div>
           );
         })}
@@ -945,6 +977,38 @@ export default function AiNodeCanvas({
           role="tooltip"
         >
           {strandTip.label}
+        </div>
+      )}
+
+      {highlightReaderNode && (
+        <div
+          className="ai-response-reader"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="ai-response-reader-head">
+            <span className="ai-response-reader-title">{highlightReaderNode.label}</span>
+            <button
+              type="button"
+              className="ai-response-reader-drag"
+              onPointerDown={(e) => startHighlightTransfer(e, highlightReaderNode)}
+            >
+              Drag to paper →
+            </button>
+          </div>
+          <div className="ai-response-reader-body">
+            <FragmentHighlightLayer
+              active
+              text={highlightReaderNode.expandedText}
+              fontSize={15}
+              onFragmentReplace={onFragmentReplace}
+              onFragmentToPaper={onFragmentToPaper}
+              isPaperDestination={isPaperDestination}
+              className="ai-response-reader-highlight"
+            />
+          </div>
+          <p className="ai-response-reader-hint">
+            Draw over words to highlight · release on paper to pull them across
+          </p>
         </div>
       )}
 

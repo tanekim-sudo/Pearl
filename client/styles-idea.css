@@ -3709,6 +3709,116 @@ html[data-theme="chalk"] body {
   max-height: 160px;
 }
 
+/* Readable AI response panel — highlight words without zooming */
+.ai-response-reader {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  max-height: min(42vh, 320px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: rgba(10, 12, 20, 0.94);
+  border: 1px solid rgba(255, 230, 140, 0.38);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.ai-response-reader-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-response-reader-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 240, 200, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-response-reader-drag {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 230, 140, 0.45);
+  background: rgba(255, 230, 140, 0.12);
+  color: rgba(255, 245, 210, 0.95);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: grab;
+}
+
+.ai-response-reader-drag:active {
+  cursor: grabbing;
+}
+
+.ai-response-reader-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px;
+}
+
+.ai-response-reader-highlight .fragment-highlight-layer {
+  position: relative;
+  min-height: 120px;
+  cursor: crosshair;
+}
+
+.ai-response-reader-highlight .fragment-highlight-text {
+  min-height: 100px;
+  max-height: none;
+  font-size: 15px;
+  line-height: 1.55;
+  color: transparent;
+  padding: 4px 0;
+}
+
+.ai-response-reader-hint {
+  margin: 0;
+  padding: 6px 12px 10px;
+  font-size: 10px;
+  color: rgba(200, 210, 230, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ai-node-content-card {
+  position: relative;
+}
+
+.ai-node-card-highlight {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.ai-node-card-highlight .fragment-highlight-layer {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.ai-node-card-highlight .fragment-highlight-text {
+  min-height: 100%;
+  max-height: none;
+  padding: 10px 12px;
+  color: transparent;
+}
+
+.ai-node-card-fragment.fragment-highlight-layer {
+  background: transparent;
+}
+
 .ai-result-section.ai-highlight-mode .ai-result-highlight-wrap {
   border-radius: 10px;
   border: 1px dashed rgba(255, 230, 120, 0.35);
@@ -3896,7 +4006,7 @@ html[data-theme="chalk"] body {
 }
 
 .ai-highlight-hint::after {
-  content: " · Shift+highlight → paper";
+  content: " · drag to paper";
   opacity: 0.7;
   font-size: 9px;
 }
