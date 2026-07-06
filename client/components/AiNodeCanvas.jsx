@@ -77,6 +77,7 @@ export default function AiNodeCanvas({
   const cameraRef = useRef(camera);
   cameraRef.current = camera;
   const [panning, setPanning] = useState(false);
+  const [shiftHeld, setShiftHeld] = useState(false);
   const [vpSize, setVpSize] = useState({ w: 320, h: 240 });
   const [lasso, setLasso] = useState(null);
   const [strandTip, setStrandTip] = useState(null);
@@ -84,6 +85,24 @@ export default function AiNodeCanvas({
   const [strandDrag, setStrandDrag] = useState(null);
   const strandDragRef = useRef(null);
   strandDragRef.current = strandDrag;
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Shift") setShiftHeld(true);
+    };
+    const onKeyUp = (e) => {
+      if (e.key === "Shift") setShiftHeld(false);
+    };
+    const onBlur = () => setShiftHeld(false);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -598,7 +617,7 @@ export default function AiNodeCanvas({
       className={
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
-        (e.shiftKey && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
+        (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
