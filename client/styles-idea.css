@@ -1388,56 +1388,62 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   opacity: calc(1 - var(--ai-node-blend, 0) * 0.98);
 }
 
-.ai-node.focus-target .ai-node-label {
+.ai-node.morphing .ai-node-label {
   opacity: calc(1 - var(--ai-node-blend, 0));
   transition: opacity 0.06s linear;
 }
 
-.ai-node-focus-bloom {
-  position: absolute;
-  z-index: 6;
-  pointer-events: auto;
-  border-radius: 18px;
-  background: rgba(8, 10, 18, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 14px 48px rgba(0, 0, 0, 0.6),
-    0 0 60px rgba(255, 255, 255, calc(var(--ai-content-blend, 0) * 0.18));
-  transform: scale(calc(0.3 + 0.7 * var(--ai-content-blend, 0)));
-  transform-origin: center center;
-  transition: opacity 0.1s ease-out, transform 0.1s ease-out, box-shadow 0.16s ease;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* While morphing, the circle chrome dissolves so only cell + card remain. */
+.ai-node.morphing {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
-.ai-node-focus-bloom-head {
+/* In-place morph: each node's content card fades in exactly where the circle was. */
+.ai-node-content-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(calc(0.5 + 0.5 * var(--ai-node-blend, 0)));
+  width: 270px;
+  max-height: 230px;
+  border-radius: 14px;
+  background: rgba(8, 10, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(255, 255, 255, calc(var(--ai-node-blend, 0) * 0.16));
+  overflow: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  z-index: 6;
+}
+
+.ai-node-content-card-head {
   flex-shrink: 0;
-  padding: 12px 16px 6px;
-  font-size: 10px;
+  padding: 9px 13px 4px;
+  font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(240, 195, 80, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ai-node-focus-bloom-body {
+.ai-node-content-card-body {
   flex: 1;
-  overflow: auto;
-  padding: 8px 16px 16px;
-  font-size: 14px;
-  line-height: 1.62;
+  padding: 2px 13px 12px;
+  font-size: 11px;
+  line-height: 1.55;
   color: rgba(245, 248, 255, 0.96);
   white-space: pre-wrap;
-  max-height: min(56vh, 460px);
-}
-
-.ai-node-focus-fragment-highlight {
-  padding: 0 10px 10px;
-}
-
-.ai-node-viewport.ai-zoom-full .ai-node:not(.focus-target) .ai-node-cell {
-  opacity: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
 }
 
 .ai-node-viewport.ai-text-dominant .ai-node-lines {
@@ -1597,7 +1603,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 1px 4px rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(14, 17, 28, 0.92);
-  transition: box-shadow 0.12s, border-color 0.12s;
+  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
   z-index: 3;
 }
 

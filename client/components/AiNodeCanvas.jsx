@@ -635,22 +635,16 @@ export default function AiNodeCanvas({
       : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
-  const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
-  // The morph target: the node dissolving into its content as you zoom.
-  // Falls back to the node nearest viewport center so zooming ALWAYS morphs.
-  const morphNode =
-    focusedNode ||
-    (contentBlend > 0.01
-      ? findNearestNodeToCenter(nodes, camera, vpSize.w, vpSize.h)
-      : null);
-  const morphDetail =
-    morphNode?.expandedText?.trim() ||
-    morphNode?.preview?.trim() ||
-    morphNode?.label?.trim() ||
-    null;
+  function nodeDetailText(node) {
+    return (
+      node?.expandedText?.trim() ||
+      node?.preview?.trim() ||
+      null
+    );
+  }
 
-  function renderFocusText(text) {
-    const golden = morphNode?.goldenFragment;
+  function renderNodeText(node, text) {
+    const golden = node?.goldenFragment;
     if (!golden || !text.includes("⟦") || !text.includes("⟧")) {
       return text;
     }
@@ -848,8 +842,9 @@ export default function AiNodeCanvas({
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
-          const isFocusTarget = morphNode?.id === node.id;
-          const nodeBlend = isFocusTarget ? contentBlend : 0;
+          // Every node with content morphs in place: circle dissolves, text fades in.
+          const detail = nodeDetailText(node);
+          const nodeBlend = detail ? contentBlend : 0;
           const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
@@ -859,7 +854,7 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
-                (isFocusTarget ? " focus-target" : "") +
+                (nodeBlend > 0.02 ? " morphing" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
@@ -875,7 +870,7 @@ export default function AiNodeCanvas({
                 "--ai-cell-weight": cellWeight,
                 "--ai-node-blend": nodeBlend,
               }}
-              title={constellationMode && !isFocusTarget ? node.preview || node.expandedText || node.label : undefined}
+              title={constellationMode ? node.preview || node.expandedText || node.label : undefined}
               onPointerDown={(e) => startNodeDrag(e, node)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
@@ -895,6 +890,12 @@ export default function AiNodeCanvas({
                   ? truncateLabel(node.label, 8)
                   : truncateLabel(node.label, 18)}
               </span>
+              {detail && nodeBlend > 0.02 && (
+                <div className="ai-node-content-card" style={{ opacity: nodeBlend }}>
+                  <div className="ai-node-content-card-head">{node.label}</div>
+                  <div className="ai-node-content-card-body">{renderNodeText(node, detail)}</div>
+                </div>
+              )}
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
               {tool === "highlight" &&
@@ -920,35 +921,6 @@ export default function AiNodeCanvas({
           );
         })}
 
-        {morphNode && morphDetail && contentBlend > 0.02 && (
-          <div
-            className="ai-node-focus-bloom"
-            style={{
-              left: morphNode.x,
-              top: morphNode.y,
-              width: 80 + contentBlend * 460,
-              marginLeft: -(40 + contentBlend * 230),
-              marginTop: -(40 + contentBlend * 170),
-              minHeight: 72 + contentBlend * 310,
-              opacity: contentBlend,
-              "--ai-content-blend": contentBlend,
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="ai-node-focus-bloom-head">{morphNode.label}</div>
-            <div className="ai-node-focus-bloom-body">{renderFocusText(morphDetail)}</div>
-            {tool === "highlight" && morphNode.expandedText?.trim() && !morphNode.loading && (
-              <FragmentHighlightLayer
-                active
-                text={morphNode.expandedText}
-                onFragmentReplace={onFragmentReplace}
-                onFragmentToPaper={onFragmentToPaper}
-                isPaperDestination={isPaperDestination}
-                className="ai-node-focus-fragment-highlight"
-              />
-            )}
-          </div>
-        )}
       </div>
 
       {lasso && (
