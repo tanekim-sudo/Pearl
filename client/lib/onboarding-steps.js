@@ -42,11 +42,19 @@ export function createTourContext() {
   return { events: new Set(), baseline: {}, enteredAt: Date.now() };
 }
 
+/** @param {unknown[]} items */
+function countInkStrokes(items) {
+  return items.filter(
+    (i) => /** @type {{type?: string, highlight?: boolean}} */ (i).type === "stroke" && !/** @type {{highlight?: boolean}} */ (i).highlight
+  ).length;
+}
+
 /** @param {TourContext} ctx @param {TourState} state */
 export function snapshotTourBaseline(ctx, state) {
+  const items = /** @type {unknown[]} */ (state.items || []);
   ctx.baseline = {
-    itemCount: /** @type {unknown[]} */ (state.items || []).length,
-    strokeCount: /** @type {unknown[]} */ (state.items || []).filter((i) => /** @type {{type?: string}} */ (i).type === "stroke").length,
+    itemCount: items.length,
+    strokeCount: countInkStrokes(items),
     aiNodeCount: /** @type {unknown[]} */ (state.aiNodes || []).length,
     cameraX: /** @type {{x?: number}} */ (state.camera || {}).x ?? 0,
     cameraY: /** @type {{y?: number}} */ (state.camera || {}).y ?? 0,
@@ -101,8 +109,8 @@ export const TOUR_STEPS = [
     demo: "draw-hint",
     verifyKind: "state",
     verify: (ctx, state) => {
-      const strokes = /** @type {unknown[]} */ (state.items || []).filter((i) => /** @type {{type?: string}} */ (i).type === "stroke");
-      return strokes.length > (ctx.baseline.strokeCount || 0);
+      const count = countInkStrokes(/** @type {unknown[]} */ (state.items || []));
+      return count > (ctx.baseline.strokeCount || 0);
     },
     onEnter: (_ctx, state) => {
       state.setTool?.("pen");

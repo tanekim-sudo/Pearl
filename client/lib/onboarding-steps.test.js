@@ -31,6 +31,17 @@ describe("onboarding-steps", () => {
     assert.equal(isStepComplete(step, ctx, state), true);
   });
 
+  it("pen draw stays complete after re-baseline at new count", () => {
+    const ctx = createTourContext();
+    const state = { items: [{ type: "stroke" }] };
+    snapshotTourBaseline(ctx, { items: [] });
+    const step = TOUR_STEPS.find((s) => s.id === "pen-draw");
+    assert.ok(step);
+    assert.equal(isStepComplete(step, ctx, state), true);
+    snapshotTourBaseline(ctx, state);
+    assert.equal(isStepComplete(step, ctx, state), false);
+  });
+
   it("records tour events", () => {
     const ctx = createTourContext();
     tourEvent(ctx, "tools-expanded");

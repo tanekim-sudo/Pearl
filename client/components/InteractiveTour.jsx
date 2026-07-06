@@ -144,14 +144,16 @@ export default function InteractiveTour({
   }, [step]);
 
   useEffect(() => {
+    const currentStep = TOUR_STEPS[stepIndex];
     setVerified(false);
     setEntered(false);
     setTypedLen(0);
     snapshotTourBaseline(tourContext, tourState);
-    step?.onEnter?.(tourContext, tourState);
+    currentStep?.onEnter?.(tourContext, tourState);
     const t = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(t);
-  }, [stepIndex, step, tourContext, tourState]);
+    // Only re-baseline on step change — tourState in deps reset strokeCount after each draw.
+  }, [stepIndex]);
 
   useEffect(() => {
     measureTargets();
