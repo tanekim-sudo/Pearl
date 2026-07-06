@@ -36,8 +36,14 @@ export default function CanvasColumn({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  expandToolsSignal = 0,
+  onToolsOpenChange,
+  onTourEvent,
   children,
 }) {
+  const secs = Math.floor((paperRecordMs || 0) / 1000);
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
   const [toolsOpen, setToolsOpen] = useState(() => {
     try {
       return localStorage.getItem(TOOLS_COLLAPSED_KEY) === "0";
@@ -55,6 +61,15 @@ export default function CanvasColumn({
     }
   }, [toolsOpen]);
 
+  useEffect(() => {
+    if (expandToolsSignal > 0) setToolsOpen(true);
+  }, [expandToolsSignal]);
+
+  useEffect(() => {
+    onToolsOpenChange?.(toolsOpen);
+    if (toolsOpen) onTourEvent?.("tools-expanded");
+  }, [toolsOpen, onToolsOpenChange, onTourEvent]);
+
   return (
     <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
       <div className="canvas-column-main">{children}</div>
@@ -66,8 +81,12 @@ export default function CanvasColumn({
           onSelectPage={onSelectPage}
           onAddPage={onAddPage}
           onRenamePage={onRenamePage}
+          dataTour="page-tabs"
         />
-        <div className={"canvas-tools-bar" + (toolsOpen ? " expanded" : " collapsed")}>
+        <div
+          className={"canvas-tools-bar" + (toolsOpen ? " expanded" : " collapsed")}
+          data-tour="canvas-tools"
+        >
           <button
             type="button"
             className="canvas-tools-toggle"
@@ -83,6 +102,7 @@ export default function CanvasColumn({
           <button
             type="button"
             className={"canvas-tools-record" + (paperRecording ? " recording" : "")}
+            data-tour="voice-record"
             title={paperRecording ? `Stop (${mm}:${ss})` : "Record voice + drawing"}
             aria-label={paperRecording ? "Stop recording" : "Record voice + drawing"}
             onClick={onTogglePaperRecord}
@@ -108,10 +128,21 @@ export default function CanvasColumn({
                     type="button"
                     className={"canvas-tool-btn" + (active ? " active" : "")}
                     title={t.label}
+                    data-tour={"tool-" + t.id}
                     onClick={() => {
-                      if (t.id === "image") onPickImage();
-                      else if (t.id === "sticky" || t.id === "text") onInsertBlock(t.id);
-                      else onSelectTool(t.id);
+                      if (t.id === "image") {
+                        onTourEvent?.("tool-image");
+                        onPickImage();
+                      } else if (t.id === "sticky") {
+                        onTourEvent?.("insert-sticky");
+                        onInsertBlock(t.id);
+                      } else if (t.id === "text") {
+                        onTourEvent?.("insert-text");
+                        onInsertBlock(t.id);
+                      } else {
+                        onTourEvent?.("tool-" + t.id);
+                        onSelectTool(t.id);
+                      }
                     }}
                   >
                     {t.icon}
@@ -132,7 +163,11 @@ export default function CanvasColumn({
 
       <div
         className={"canvas-edge-bottom" + (zoomOpen ? " open" : "")}
-        onMouseEnter={() => setZoomOpen(true)}
+        data-tour="paper-zoom"
+        onMouseEnter={() => {
+          setZoomOpen(true);
+          onTourEvent?.("zoom-control");
+        }}
         onMouseLeave={() => setZoomOpen(false)}
       >
         <button

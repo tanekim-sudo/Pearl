@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage, onRenamePage }) {
+export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage, onRenamePage, dataTour }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState("");
   const inputRef = useRef(null);
@@ -25,7 +25,7 @@ export default function PageTabs({ pages, activePageId, onSelectPage, onAddPage,
   }
 
   return (
-    <div className="page-tabs" role="tablist" aria-label="Pages">
+    <div className="page-tabs" role="tablist" aria-label="Pages" data-tour={dataTour}>
       {pages.map((page) => (
         <div key={page.id} className={"page-tab-wrap" + (page.id === activePageId ? " active" : "")}>
           {editingId === page.id ? (

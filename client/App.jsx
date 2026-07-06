@@ -46,6 +46,7 @@ import {
   shareDestinationLabel,
 } from "../shared/share-bundle.js";
 import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
+import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
@@ -107,6 +108,7 @@ import {
   maxTextWidth,
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
+import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
 import {
   highlightWorldWidth,
   highlightBrushHits as inkHighlightBrushHits,
@@ -349,6 +351,9 @@ function migrateOperators(ops) {
 
 const ONBOARDED_KEY = "lens.onboarded.v1";
 
+/** @type {{ current: ((name: string) => void) | null }} */
+const tourEmitRef = { current: null };
+
 const LENS_STORAGE_KEYS = [
   ITEMS_KEY,
   CAMERA_KEY,
@@ -362,6 +367,7 @@ const LENS_STORAGE_KEYS = [
   LENSES_KEY,
   ACTIVE_LENS_KEY,
   ONBOARDED_KEY,
+  TOUR_STORAGE_KEY,
 ];
 
 function freshOperators() {
@@ -1876,6 +1882,11 @@ export default function App() {
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
   const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
+  const tourContextRef = useRef(createTourContext());
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [expandToolsSignal, setExpandToolsSignal] = useState(0);
+  const [expandToolboxSignal, setExpandToolboxSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const [railPulse, setRailPulse] = useState(false);
@@ -2104,6 +2115,7 @@ export default function App() {
   function undo() {
     const { past, future } = historyRef.current;
     if (!past.length) return;
+    emitTourEvent("undo");
     future.push(JSON.stringify(itemsRef.current));
     setItems(JSON.parse(past.pop()));
     setCanUndo(past.length > 0);
@@ -2117,6 +2129,7 @@ export default function App() {
   function redo() {
     const { past, future } = historyRef.current;
     if (!future.length) return;
+    emitTourEvent("redo");
     past.push(JSON.stringify(itemsRef.current));
     setItems(JSON.parse(future.pop()));
     setCanUndo(true);
@@ -2305,6 +2318,7 @@ export default function App() {
   function returnAiToConstellation() {
     const el = aiViewportRef.current;
     if (!el) return;
+    emitTourEvent("return-constellation");
     setAiFocusedNodeId(null);
     animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight));
   }
@@ -2312,6 +2326,8 @@ export default function App() {
   function exploreAiNode(nodeId) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node) return;
+    emitTourEvent("explore-node");
+    emitTourEvent("ai-zoom-in");
 
     handleAiNodeSelect(nodeId, { replace: true });
     setAiFocusedNodeId(nodeId);
@@ -2512,6 +2528,10 @@ export default function App() {
       const cy = e.clientY;
 
       if (g.mode === "pan") {
+        if (!g.tourPanEmitted) {
+          g.tourPanEmitted = true;
+          emitTourEvent("paper-pan");
+        }
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
       } else if (g.mode === "pending-space-transfer") {
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -2601,6 +2621,10 @@ export default function App() {
           setSelection((sel) => sel.filter((id) => !g.deletedIds.has(id)));
         }
       } else if (g.mode === "clone") {
+        if (!g.tourCloneEmitted) {
+          g.tourCloneEmitted = true;
+          emitTourEvent("clone-drag");
+        }
         g.lastCx = cx;
         g.lastCy = cy;
         setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
@@ -2911,6 +2935,7 @@ export default function App() {
         const now = Date.now();
         if (now - lastSpaceUpRef.current < SPACE_DOUBLE_TAP_MS) {
           setTool((t) => (t === "highlight" ? "select" : "highlight"));
+          emitTourEvent("space-toggle-tool");
           lastSpaceUpRef.current = 0;
         } else {
           lastSpaceUpRef.current = now;
@@ -2983,11 +3008,13 @@ export default function App() {
     );
     setHighlightSelectionIds([]);
     setHighlightTouchIds([]);
+    emitTourEvent("highlight-delete");
     return true;
   }
 
   function transferHighlightSelectionToAi(ids, worldPos = null) {
     if (!ids?.length) return;
+    emitTourEvent("highlight-transfer");
     recordItemEvents(ids, "highlight-transfer", {});
     const sketchBundle = gatherSelectionSketchBundle(ids);
     const world = worldPos || getAiDropWorld();
@@ -3379,6 +3406,39 @@ export default function App() {
     setOnboard(null);
   }
 
+  function emitTourEvent(name) {
+    if (tourActive) tourEvent(tourContextRef.current, name);
+  }
+  tourEmitRef.current = emitTourEvent;
+
+  function startFeatureTour() {
+    tourContextRef.current = createTourContext();
+    setTourStepIndex(0);
+    setTourActive(true);
+    setOnboard(null);
+  }
+
+  function completeFeatureTour() {
+    try {
+      localStorage.setItem(TOUR_STORAGE_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setTourActive(false);
+  }
+
+  useEffect(() => {
+    if (onboard || pendingShareBundle) return;
+    try {
+      if (localStorage.getItem(TOUR_STORAGE_KEY)) return;
+    } catch {
+      /* ignore */
+    }
+    tourContextRef.current = createTourContext();
+    setTourStepIndex(0);
+    setTourActive(true);
+  }, [onboard, pendingShareBundle]);
+
   function confirmStartFresh() {
     setFreshConfirm(false);
     for (const key of LENS_STORAGE_KEYS) localStorage.removeItem(key);
@@ -3421,6 +3481,7 @@ export default function App() {
   }
 
   function openCreateFunction() {
+    emitTourEvent("open-function-editor");
     setOpEditor({ mode: "create" });
   }
 
@@ -3450,10 +3511,12 @@ export default function App() {
     };
     setOperators((arr) => [...arr, op]);
     setMoveDraft("");
+    emitTourEvent("create-move");
     showToast(`move · ${name}`);
   }
 
   function openEditFunction(op) {
+    emitTourEvent("open-function-editor");
     setOpEditor({ mode: "edit", op });
   }
 
@@ -3768,6 +3831,7 @@ export default function App() {
       return;
     }
     setSelection([itemId]);
+    emitTourEvent("history-replay");
     setHistoryReplay({ ...timeline, stepIndex: 0, playing: false });
   }
 
@@ -3949,6 +4013,7 @@ export default function App() {
     };
     setStructures((arr) => [struct, ...arr]);
     setRailTab("structures");
+    emitTourEvent("save-structure");
     showToast(extra.toast || "saved structure");
     return struct;
   }
@@ -4115,6 +4180,7 @@ export default function App() {
   function handleAiStrandCountChange(n) {
     const v = Math.max(1, Math.min(8, n));
     setAiStrandCount(v);
+    emitTourEvent("strand-count-change");
     try {
       localStorage.setItem(AI_STRAND_COUNT_KEY, String(v));
     } catch {
@@ -4137,6 +4203,7 @@ export default function App() {
   function handleStrandSelect(nodeId, choice) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node || !choice) return;
+    emitTourEvent("strand-select");
 
     handleAiNodeSelect(nodeId, { replace: true });
 
@@ -4882,6 +4949,7 @@ export default function App() {
             ? `session saved · "${session.transcript.slice(0, 48)}…"`
             : "voice + draw session saved"
         );
+        emitTourEvent("voice-stopped");
         for (const sid of sessionItemIds) {
           recordItemEvent(sid, "voice-session", {
             sessionId: session.id,
@@ -4901,6 +4969,7 @@ export default function App() {
       paperSessionRef.current = session;
       setPaperRecording(true);
       setPaperRecordMs(0);
+      emitTourEvent("voice-started");
       showToast("recording");
     } catch (err) {
       showToast(err.message || "microphone unavailable");
@@ -5363,6 +5432,7 @@ export default function App() {
     if (!file) return;
     pendingImageRef.current = null;
     setImageArmed(false);
+    emitTourEvent("insert-image");
     addImage(file, atWorld);
     setTool("select");
   }
@@ -5556,6 +5626,7 @@ export default function App() {
   }
 
   function switchPage(pageId, nextCamera) {
+    emitTourEvent("page-switch");
     setPages((ps) =>
       ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
     );
@@ -5569,6 +5640,7 @@ export default function App() {
   }
 
   function addPage() {
+    emitTourEvent("page-add");
     const id = uid();
     const num = pages.length + 1;
     const r = vpRect();
@@ -5783,6 +5855,7 @@ export default function App() {
   }
 
   async function expandInAi(ids, opts = {}) {
+    emitTourEvent("expand-ai");
     const op = opts.op || opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
     if (!op) {
       showToast("expand primitive not found");
@@ -5876,6 +5949,7 @@ export default function App() {
   };
   transferFragmentToPaperRef.current = (fragment, opts = {}) => {
     if (!fragment?.trim()) return;
+    emitTourEvent("fragment-paper");
     const atWorld =
       opts.atWorld ||
       (opts.clientX != null && opts.clientY != null
@@ -5891,10 +5965,12 @@ export default function App() {
     spawnTextAtWorld(fragment, atWorld, { silent: true });
   };
   transferFragmentReplaceRef.current = (fragment) => {
+    emitTourEvent("fragment-highlight");
     const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
     replaceFragmentInAiNode(nodeId, fragment);
   };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
+    emitTourEvent("transfer");
     if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
       const ids = g.ids;
       const sketchBundle = gatherSelectionSketchBundle(ids);
@@ -5950,6 +6026,7 @@ export default function App() {
   }
 
   function absorbTransferPayloadAt(e, worldPos, { autoExpand = false } = {}) {
+    emitTourEvent("transfer");
     const pos = getAiDropWorld(worldPos);
 
     const aiOut = e.dataTransfer.getData(AI_OUTPUT_MIME);
@@ -6112,9 +6189,13 @@ export default function App() {
   function handleMenuAction(action) {
     if (action === "undo") undo();
     else if (action === "redo") redo();
-    else if (action === "export-txt") exportSelection("txt");
-    else if (action === "export-md") exportSelection("md");
-    else if (action === "import-path") {
+    else if (action === "export-txt") {
+      emitTourEvent("export");
+      exportSelection("txt");
+    } else if (action === "export-md") {
+      emitTourEvent("export");
+      exportSelection("md");
+    } else if (action === "import-path") {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "application/json";
@@ -6130,12 +6211,17 @@ export default function App() {
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
     else if (action === "open-functions") setRailTab("functions");
-    else if (action === "open-structures") setRailTab("structures");
+    else if (action === "open-structures") {
+      setRailTab("structures");
+      emitTourEvent("structures-tab");
+    }
+    else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
   }
 
   function handleShareBoard() {
+    emitTourEvent("share");
     if (selection.length === 1 && selRef.current[0]) {
       shareJourneyLink(selRef.current[0]);
     } else {
@@ -6203,6 +6289,26 @@ export default function App() {
       })()
     : null;
 
+  const tourState = useMemo(
+    () => ({
+      items,
+      camera,
+      aiCamera,
+      aiNodes,
+      operators,
+      structures,
+      highlightSelection: highlightSelectionIds,
+      expandCanvasTools: () => setExpandToolsSignal((n) => n + 1),
+      setTool,
+      expandAiToolbox: () => setExpandToolboxSignal((n) => n + 1),
+      setToolboxTab: (tab) => {
+        setRailTab(tab);
+        if (tab === "structures") emitTourEvent("structures-tab");
+      },
+    }),
+    [items, camera, aiCamera, aiNodes, operators, structures, highlightSelectionIds]
+  );
+
   return (
     <div className={"idea-app theme-" + theme}>
       <TopToolbar
@@ -6225,11 +6331,14 @@ export default function App() {
           imageArmed={imageArmed}
           dropOver={canvasDropOver}
           boundaryMagnet={boundaryMagnetActive}
+          expandToolsSignal={expandToolsSignal}
+          onTourEvent={emitTourEvent}
           onSelectTool={(id) => {
             if (id !== "image") {
               pendingImageRef.current = null;
               setImageArmed(false);
             }
+            emitTourEvent("tool-" + id);
             setTool(id);
           }}
           onInsertBlock={insertBlockFromPalette}
@@ -6255,6 +6364,7 @@ export default function App() {
       <div
         ref={viewportRef}
         className={"viewport" + (historyReplay ? " history-replay-active" : "")}
+        data-tour="paper-canvas"
         onPointerDown={
           editing
             ? (e) => {
@@ -6752,6 +6862,9 @@ export default function App() {
           focusedNodeId={aiFocusedNodeId}
           strandCount={aiStrandCount}
           onStrandCountChange={handleAiStrandCountChange}
+          expandToolboxSignal={expandToolboxSignal}
+          onToolboxExpanded={() => emitTourEvent("toolbox-expanded")}
+          onTourEvent={emitTourEvent}
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
           onExpandNode={(nodeId) => exploreAiNode(nodeId)}
@@ -6855,16 +6968,27 @@ export default function App() {
               className={"board-rail ai-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
             >
               <div className="rail-tabs">
-                <button className={"rail-tab" + (railTab === "functions" ? " on" : "")} onClick={() => setRailTab("functions")}>
+                <button
+                  className={"rail-tab" + (railTab === "functions" ? " on" : "")}
+                  data-tour="structures-tab"
+                  onClick={() => setRailTab("functions")}
+                >
                   functions
                 </button>
-                <button className={"rail-tab" + (railTab === "structures" ? " on" : "")} onClick={() => setRailTab("structures")}>
+                <button
+                  className={"rail-tab" + (railTab === "structures" ? " on" : "")}
+                  data-tour="structures-tab"
+                  onClick={() => {
+                    setRailTab("structures");
+                    emitTourEvent("structures-tab");
+                  }}
+                >
                   structures {structures.length ? `(${structures.length})` : ""}
                 </button>
               </div>
               {railTab === "functions" ? (
                 <>
-                  <button className="rail-create" onClick={openCreateFunction}>+ function</button>
+                  <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
                   <div className="move-quick-add">
                     <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                     <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
@@ -6881,9 +7005,9 @@ export default function App() {
                   <div className="rail-scroll">
                     {lenses.length > 0 && (
                       <>
-                        <div className="rail-section">lenses · worlds</div>
+                        <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
                         {lenses.map((lens) => (
-                          <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => setActiveLensId(lens.id === activeLensId ? null : lens.id)} onEvolve={() => setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] })} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                          <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
                         ))}
                       </>
                     )}
@@ -6968,6 +7092,17 @@ export default function App() {
 
       {onboard && (
         <Onboarding state={onboard} onStart={runOnboarding} onSkip={skipOnboarding} onClose={() => setOnboard(null)} />
+      )}
+
+      {tourActive && (
+        <InteractiveTour
+          stepIndex={tourStepIndex}
+          tourContext={tourContextRef.current}
+          tourState={tourState}
+          onStepChange={setTourStepIndex}
+          onComplete={completeFeatureTour}
+          onSkipAll={completeFeatureTour}
+        />
       )}
 
       {opEditor && (
@@ -7231,6 +7366,7 @@ function SelectionCaptureChip({
   return (
     <div
       className="sel-capture-chip-row"
+      data-tour="capture-chip"
       style={{ left: cx, top: bbox.top - 34, transform: "translateX(-50%)" }}
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -7345,6 +7481,7 @@ function startOpDrag(e, op) {
   e.stopPropagation();
   e.dataTransfer.setData(OP_MIME, op.id);
   e.dataTransfer.effectAllowed = "copy";
+  tourEmitRef.current?.("drag-function");
 }
 
 function startStructDrag(e, struct) {

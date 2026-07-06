@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 
-function MenuDropdown({ label, items, onAction }) {
+function MenuDropdown({ label, items, onAction, dataTour }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={"menu-dropdown menu-dropdown-minimal" + (open ? " open" : "")}>
+    <div className={"menu-dropdown menu-dropdown-minimal" + (open ? " open" : "")} data-tour={dataTour}>
       <button type="button" className="menu-item menu-item-minimal" onClick={() => setOpen(!open)}>
         {label}
       </button>
@@ -62,6 +62,7 @@ export default function TopToolbar({
     { id: "insert-diagram", label: "Diagram" },
     { id: "open-functions", label: "Functions tab" },
     { id: "open-structures", label: "Structures tab" },
+    { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
     { id: "new-function", label: "Create function" },
   ];
@@ -77,7 +78,7 @@ export default function TopToolbar({
           placeholder="Untitled"
         />
 
-        <div className="toolbar-hover-actions">
+        <div className="toolbar-hover-actions" data-tour="toolbar-actions">
           <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo">
             ↩
           </button>
@@ -99,7 +100,7 @@ export default function TopToolbar({
 
         <div className="toolbar-spacer" />
 
-        <MenuDropdown label="···" items={allItems} onAction={onMenuAction} />
+        <MenuDropdown label="···" items={allItems} onAction={onMenuAction} dataTour="toolbar-menu" />
         <button type="button" className="share-btn share-btn-minimal" onClick={onShare} title="Share">
           ↗
         </button>

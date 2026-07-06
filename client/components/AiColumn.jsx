@@ -22,6 +22,9 @@ export default function AiColumn({
   focusedNodeId,
   strandCount = 4,
   onStrandCountChange,
+  expandToolboxSignal = 0,
+  onToolboxExpanded,
+  onTourEvent,
   getStrandChoices,
   onStrandSelect,
   dropOver,
@@ -48,6 +51,7 @@ export default function AiColumn({
   return (
     <aside
       className={"ai-column" + (dropOver ? " column-drop-over" : "")}
+      data-tour="ai-spacetime"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -58,6 +62,8 @@ export default function AiColumn({
           onDragOver={onLibraryDragOver}
           onDragLeave={onLibraryDragLeave}
           onDrop={onLibraryDrop}
+          expandSignal={expandToolboxSignal}
+          onExpandedChange={onToolboxExpanded}
         >
           {toolbox}
         </AiToolbox>
@@ -88,8 +94,9 @@ export default function AiColumn({
             onFragmentToPaper={onFragmentToPaper}
             isPaperDestination={isPaperDestination}
             viewportRef={viewportRef}
+            onTourEvent={onTourEvent}
           />
-          <div className="ai-strand-setting">
+          <div className="ai-strand-setting" data-tour="strand-count">
             <label className="ai-strand-setting-label" title="Strands per drag">
               <span className="ai-strand-setting-icon" aria-hidden="true">
                 ◎

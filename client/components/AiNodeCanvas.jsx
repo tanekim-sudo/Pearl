@@ -68,6 +68,7 @@ export default function AiNodeCanvas({
   onFragmentToPaper,
   isPaperDestination,
   viewportRef: externalViewportRef,
+  onTourEvent,
 }) {
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
@@ -137,10 +138,15 @@ export default function AiNodeCanvas({
       startX: e.clientX,
       startY: e.clientY,
       cam: { ...cameraRef.current },
+      tourEmitted: false,
     };
 
     function handlePanMove(ev) {
       if (!panRef.current) return;
+      if (!panRef.current.tourEmitted) {
+        panRef.current.tourEmitted = true;
+        onTourEvent?.("ai-pan");
+      }
       const dx = ev.clientX - panRef.current.startX;
       const dy = ev.clientY - panRef.current.startY;
       onCameraChange?.({
@@ -307,6 +313,7 @@ export default function AiNodeCanvas({
         pointerX: clientX,
         pointerY: clientY,
       };
+      if (!state.active) onTourEvent?.("strand-drag");
       strandDragRef.current = next;
       setStrandDrag(next);
     }
@@ -718,6 +725,7 @@ export default function AiNodeCanvas({
                 onPointerEnter={(e) => {
                   setHoveredEdgeId(id);
                   setStrandTip({ label, x: e.clientX, y: e.clientY });
+                  onTourEvent?.("edge-hover");
                 }}
                 onPointerMove={(e) => {
                   setStrandTip({ label, x: e.clientX, y: e.clientY });

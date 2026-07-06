@@ -19,6 +19,7 @@ export default function InterpretBoundary({
         (magnetActive ? " magnet" : "") +
         (loading ? " processing" : "")
       }
+      data-tour="interpret-boundary"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}

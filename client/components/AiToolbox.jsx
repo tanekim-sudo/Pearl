@@ -8,6 +8,8 @@ export default function AiToolbox({
   onDragLeave,
   onDrop,
   children,
+  expandSignal = 0,
+  onExpandedChange,
 }) {
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -27,9 +29,18 @@ export default function AiToolbox({
     }
   }, [collapsed]);
 
+  useEffect(() => {
+    if (expandSignal > 0) setCollapsed(false);
+  }, [expandSignal]);
+
+  useEffect(() => {
+    if (!collapsed) onExpandedChange?.(true);
+  }, [collapsed, onExpandedChange]);
+
   return (
     <section
       className={"ai-toolbox" + (collapsed ? " collapsed" : "") + (dropOver ? " drop-over" : "")}
+      data-tour="ai-toolbox"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -37,7 +48,11 @@ export default function AiToolbox({
       <button
         type="button"
         className="ai-toolbox-toggle"
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={() => setCollapsed((c) => {
+          const next = !c;
+          if (!next) onExpandedChange?.(true);
+          return next;
+        })}
         aria-expanded={!collapsed}
         title={collapsed ? "Expand toolbox" : "Collapse toolbox"}
       >
