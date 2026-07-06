@@ -1,5 +1,9 @@
 import { STICKY_COLORS } from "./worlds.js";
 
+export const TEXT_BOX_DEFAULT_W = 240;
+export const TEXT_BOX_MIN_W = 120;
+export const TEXT_BOX_MAX_W = 520;
+
 const TEXT_PAD_X = 30;
 const TEXT_PAD_Y = 18;
 const TEXT_LINE_HEIGHT = 24;
@@ -26,7 +30,7 @@ export function blockWidth(it) {
   if (it.type === "callout") return it.w || 280;
   if (it.type === "table") return it.w || 320;
   if (it.type === "code" || it.type === "math") return it.w || 300;
-  if (it.type === "text") return it.w || 360;
+  if (it.type === "text") return it.w || TEXT_BOX_DEFAULT_W;
   return 0;
 }
 
@@ -73,7 +77,7 @@ export function isMovableBlock(it) {
 
 export function defaultBlockContent(type) {
   const defaults = {
-    sticky: "New note",
+    sticky: "",
     callout: "Your observation…",
     text: "",
     code: "// your code here",
@@ -113,6 +117,28 @@ export function defaultBlockMeta(type) {
   if (type === "video") return { w: 280, h: 158, duration: "0:00" };
   if (type === "code") return { w: 300 };
   if (type === "math") return { w: 240 };
-  if (type === "text") return { w: 320 };
+  if (type === "text") return { w: TEXT_BOX_DEFAULT_W };
   return { w: 280 };
+}
+
+/** Top-left anchor at pointer — Google Slides / Docs style. */
+export function blockOriginAtPointer(type, atWorld) {
+  const meta = defaultBlockMeta(type);
+  const w = meta.w || 160;
+  if (type === "text" || type === "sticky" || type === "callout") {
+    return { x: Math.round(atWorld.x), y: Math.round(atWorld.y), w };
+  }
+  const h = meta.h || 80;
+  return { x: Math.round(atWorld.x - w / 2), y: Math.round(atWorld.y - h / 2), w };
+}
+
+/** Centered placement for toolbar / menu inserts without a pointer. */
+export function blockOriginAtViewportCenter(type, centerWorld) {
+  const meta = defaultBlockMeta(type);
+  const w = meta.w || 160;
+  return {
+    x: Math.round(centerWorld.x - w / 2),
+    y: Math.round(centerWorld.y - 48),
+    w,
+  };
 }

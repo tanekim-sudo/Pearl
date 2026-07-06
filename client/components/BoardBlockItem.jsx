@@ -1,35 +1,23 @@
 import React, { useEffect, useRef } from "react";
 import { stickyBackground } from "../lib/board-item-utils.js";
+import { focusEditableAtPoint } from "../lib/place-caret.js";
 
 function EditableBlock({ item, className, editing, editClickRef, onCommit, style, placeholder }) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
   useEffect(() => {
-    if (editing && ref.current) {
-      if (!seeded.current) {
-        ref.current.innerText = item.text || "";
-        seeded.current = true;
-      }
-      ref.current.focus();
-      const pt = editClickRef?.current;
-      if (pt) {
-        editClickRef.current = null;
-        try {
-          const range = document.caretRangeFromPoint?.(pt.cx, pt.cy);
-          if (range && ref.current.contains(range.startContainer)) {
-            const s = window.getSelection();
-            s.removeAllRanges();
-            s.addRange(range);
-            return;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+    if (!editing || !ref.current) return;
+    if (!seeded.current) {
+      ref.current.innerText = item.text || "";
+      seeded.current = true;
     }
-    if (!editing) seeded.current = false;
+    focusEditableAtPoint(ref.current, editClickRef);
   }, [editing, item.id, editClickRef]);
+
+  useEffect(() => {
+    if (!editing) seeded.current = false;
+  }, [editing]);
 
   if (editing) {
     return (

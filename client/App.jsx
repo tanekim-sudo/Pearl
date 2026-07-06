@@ -87,10 +87,15 @@ import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
   blockWidth,
   blockHeight,
+  blockOriginAtPointer,
+  blockOriginAtViewportCenter,
   defaultBlockContent,
   defaultBlockMeta,
   isTransformableBlock,
+  TEXT_BOX_MIN_W,
+  TEXT_BOX_MAX_W,
 } from "./lib/board-item-utils.js";
+import { focusEditableAtPoint } from "./lib/place-caret.js";
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
@@ -5316,9 +5321,26 @@ export default function App() {
         setGesturing(false);
         return;
       }
-      const id = insertBlock("text", { atWorld: w });
-      editingRef.current = id;
-      editClickRef.current = { cx, cy };
+      placeBlockAtClick("text", cx, cy);
+      setGesturing(false);
+      return;
+    }
+
+    if (t === "sticky") {
+      const editHit = itemAtPoint(cx, cy);
+      if (
+        editHit &&
+        isEditableBlock(editHit) &&
+        textClickRegion(editHit, cx, cy) === "interior"
+      ) {
+        setSelection([editHit.id]);
+        editingRef.current = editHit.id;
+        setEditing(editHit.id);
+        editClickRef.current = { cx, cy };
+        setGesturing(false);
+        return;
+      }
+      placeBlockAtClick("sticky", cx, cy);
       setGesturing(false);
       return;
     }
@@ -5639,15 +5661,18 @@ export default function App() {
 
   function insertBlock(type, opts = {}) {
     pushHistory();
-    const center = opts.atWorld || viewportCenterWorld();
     const meta = defaultBlockMeta(type);
+    const origin = opts.atWorld
+      ? blockOriginAtPointer(type, opts.atWorld)
+      : blockOriginAtViewportCenter(type, viewportCenterWorld());
     const id = uid();
     const item = tagRecordingItem(
       normalizeItem({
         id,
         type: type === "text" ? "text" : type,
-        x: center.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
-        y: center.y - 20 + (opts.offsetY || 0),
+        x: origin.x,
+        y: origin.y,
+        w: origin.w ?? meta.w,
         text: defaultBlockContent(type),
         pageId: activePageId,
         world: worldFilter || opts.world || null,
@@ -5671,7 +5696,21 @@ export default function App() {
       setEditing(id);
       editingRef.current = id;
     }
-    if (type !== "text") setTool("select");
+    if (type !== "text" && type !== "sticky") setTool("select");
+    return id;
+  }
+
+  function placeBlockAtClick(type, clientX, clientY, opts = {}) {
+    const atWorld = clientToWorld(clientX, clientY);
+    const id = insertBlock(type, { atWorld, ...opts });
+    if (type === "text") emitTourEvent("insert-text");
+    if (type === "sticky") emitTourEvent("insert-sticky");
+    editingRef.current = id;
+    editClickRef.current = {
+      cx: clientX,
+      cy: clientY,
+      selectAll: type === "sticky" && !defaultBlockContent(type),
+    };
     return id;
   }
 
@@ -5679,6 +5718,11 @@ export default function App() {
     if (type === "text") {
       toolRef.current = "text";
       setTool("text");
+      return;
+    }
+    if (type === "sticky") {
+      toolRef.current = "sticky";
+      setTool("sticky");
       return;
     }
     if (type === "pen") {
@@ -6357,7 +6401,7 @@ export default function App() {
   const cursorClass =
     panning
       ? "cur-grabbing"
-      : tool === "text"
+      : tool === "text" || tool === "sticky"
       ? "cur-text"
       : tool === "highlight" && highlightGrabHover
       ? "cur-grab"
@@ -6682,6 +6726,7 @@ export default function App() {
                     editing={editing === it.id}
                     editClickRef={editClickRef}
                     onCommit={(text) => commitEdit(it.id, text)}
+                    onResizeWidth={(w) => updateItem(it.id, { w })}
                   />
                 );
               }
@@ -7456,43 +7501,45 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
   );
 }
 
-function BoardText({ item, selected, highlightTouched, highlightSelected, highlightTransferring, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
+function BoardText({
+  item,
+  selected,
+  highlightTouched,
+  highlightSelected,
+  highlightTransferring,
+  dropTarget,
+  dropMagnetic,
+  editing,
+  editClickRef,
+  onCommit,
+  onResizeWidth,
+}) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
   useEffect(() => {
-    if (editing && ref.current) {
-      if (!seeded.current) {
-        ref.current.innerText = item.text || "";
-        seeded.current = true;
-      }
-      ref.current.focus();
-      const pt = editClickRef?.current;
-      if (pt) {
-        editClickRef.current = null;
-        try {
-          const range = document.caretRangeFromPoint?.(pt.cx, pt.cy);
-          if (range && ref.current.contains(range.startContainer)) {
-            const s = window.getSelection();
-            s.removeAllRanges();
-            s.addRange(range);
-            return;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const r = document.createRange();
-      r.selectNodeContents(ref.current);
-      r.collapse(false);
-      const s = window.getSelection();
-      s.removeAllRanges();
-      s.addRange(r);
+    if (!editing || !ref.current) return;
+    if (!seeded.current) {
+      ref.current.innerText = item.text || "";
+      seeded.current = true;
     }
-    if (!editing) seeded.current = false;
+    focusEditableAtPoint(ref.current, editClickRef);
   }, [editing, item.id, editClickRef]);
 
+  useEffect(() => {
+    if (!editing) seeded.current = false;
+  }, [editing]);
+
   const style = itemStyle(item);
+
+  const syncWidth = () => {
+    if (!ref.current || !onResizeWidth) return;
+    const needed = Math.min(
+      TEXT_BOX_MAX_W,
+      Math.max(TEXT_BOX_MIN_W, Math.ceil(ref.current.scrollWidth) + 12)
+    );
+    if (needed > (item.w || 0)) onResizeWidth(needed);
+  };
 
   if (editing) {
     return (
@@ -7504,6 +7551,7 @@ function BoardText({ item, selected, highlightTouched, highlightSelected, highli
         suppressContentEditableWarning
         style={style}
         onPointerDown={(e) => e.stopPropagation()}
+        onInput={syncWidth}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Escape") {

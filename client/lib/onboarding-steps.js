@@ -188,7 +188,8 @@ export const TOUR_STEPS = [
     id: "text-sticky",
     phase: "Paper",
     title: "Text & notes",
-    instruction: "Add **T Text** or **▢ Sticky** blocks from Tools. Click to edit. These are optional — paper stays ambiguous without them.",
+    instruction:
+      "Tap **T Text** or **▢ Sticky**, then click exactly where you want the box — top-left anchors at your cursor, like Google Slides. Start typing immediately.",
     target: '[data-tour="tool-text"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("insert-text") || ctx.events.has("insert-sticky"),

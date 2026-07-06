@@ -115,7 +115,8 @@ export default function CanvasColumn({
                 const active =
                   (t.id === "image" && imageArmed) ||
                   (t.id === "text" && tool === "text") ||
-                  (t.id !== "image" && t.id !== "text" && tool === t.id);
+                  (t.id === "sticky" && tool === "sticky") ||
+                  (t.id !== "image" && t.id !== "text" && t.id !== "sticky" && tool === t.id);
                 return (
                   <button
                     key={t.id}

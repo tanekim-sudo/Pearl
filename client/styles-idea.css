@@ -2754,20 +2754,28 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .idea-center .board-text.editing {
   background: #ffffff;
   color: var(--ink);
-  border: 1px dashed rgba(0, 0, 0, 0.18);
+  border: 1px dashed rgba(0, 0, 0, 0.22);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   outline: none;
-  min-width: 160px;
-  min-height: 32px;
-  padding: 6px 8px;
+  min-width: 120px;
+  min-height: 1.5em;
+  padding: 2px 6px;
   pointer-events: auto;
   z-index: 20;
+  box-sizing: border-box;
 }
 
 .canvas-column .board-text.editing:empty::before,
 .idea-center .board-text.editing:empty::before {
   content: "Type here";
   color: rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+}
+
+.canvas-column .board-sticky.editing:empty::before,
+.idea-center .board-sticky.editing:empty::before {
+  content: "Note…";
+  color: rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 
