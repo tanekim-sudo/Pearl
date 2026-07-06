@@ -45,6 +45,12 @@ function DemoAnimation({ kind }) {
         </>
       )}
       {kind === "transfer-hint" && <span className="tour-demo-streak" />}
+      {kind === "highlight-drag-hint" && (
+        <>
+          <span className="tour-demo-highlight-box" />
+          <span className="tour-demo-streak reverse" />
+        </>
+      )}
       {kind === "constellation-glow" && (
         <>
           <span className="tour-demo-cell" />

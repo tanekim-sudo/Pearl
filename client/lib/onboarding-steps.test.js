@@ -42,6 +42,14 @@ describe("onboarding-steps", () => {
     assert.equal(isStepComplete(step, ctx, state), false);
   });
 
+  it("ignores highlight strokes for pen-draw baseline", () => {
+    const ctx = createTourContext();
+    snapshotTourBaseline(ctx, { items: [{ type: "stroke", highlight: true }] });
+    const step = TOUR_STEPS.find((s) => s.id === "pen-draw");
+    const state = { items: [{ type: "stroke", highlight: true }, { type: "stroke" }] };
+    assert.equal(isStepComplete(step, ctx, state), true);
+  });
+
   it("records tour events", () => {
     const ctx = createTourContext();
     tourEvent(ctx, "tools-expanded");
@@ -59,5 +67,56 @@ describe("onboarding-steps", () => {
   it("getPhaseIndex returns valid indices", () => {
     assert.equal(getPhaseIndex("Welcome"), 0);
     assert.equal(getPhaseIndex("Extras"), TOUR_PHASES.length - 1);
+  });
+
+  it("highlight-select completes when highlightSelection is non-empty", () => {
+    const ctx = createTourContext();
+    const step = TOUR_STEPS.find((s) => s.id === "highlight-select");
+    assert.ok(step);
+    assert.equal(isStepComplete(step, ctx, { highlightSelection: ["a"] }), true);
+    assert.equal(isStepComplete(step, ctx, { highlightSelection: [] }), false);
+  });
+
+  it("highlight-delete accepts delete, transfer, or drag events", () => {
+    const ctx = createTourContext();
+    const step = TOUR_STEPS.find((s) => s.id === "highlight-delete");
+    assert.ok(step);
+    assert.equal(isStepComplete(step, ctx, {}), false);
+    tourEvent(ctx, "highlight-drag");
+    assert.equal(isStepComplete(step, ctx, {}), true);
+  });
+
+  it("highlight-to-ai accepts highlight-transfer and highlight-drag", () => {
+    const ctx = createTourContext();
+    const step = TOUR_STEPS.find((s) => s.id === "highlight-to-ai");
+    assert.ok(step);
+    tourEvent(ctx, "highlight-transfer");
+    assert.equal(isStepComplete(step, ctx, {}), true);
+
+    const ctx2 = createTourContext();
+    tourEvent(ctx2, "highlight-drag");
+    assert.equal(isStepComplete(step, ctx2, {}), true);
+  });
+
+  it("highlight-from-ai accepts transfer-to-paper and transfer", () => {
+    const ctx = createTourContext();
+    const step = TOUR_STEPS.find((s) => s.id === "highlight-from-ai");
+    assert.ok(step);
+    tourEvent(ctx, "transfer-to-paper");
+    assert.equal(isStepComplete(step, ctx, {}), true);
+
+    const ctx2 = createTourContext();
+    tourEvent(ctx2, "transfer");
+    assert.equal(isStepComplete(step, ctx2, {}), true);
+  });
+
+  it("shift-transfer step mentions select tool in title", () => {
+    const step = TOUR_STEPS.find((s) => s.id === "shift-transfer");
+    assert.ok(step?.title?.includes("Select"));
+  });
+
+  it("gestures-ref step documents highlight drag", () => {
+    const step = TOUR_STEPS.find((s) => s.id === "gestures-ref");
+    assert.ok(step?.instruction?.includes("Highlight drag"));
   });
 });

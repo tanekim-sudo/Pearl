@@ -991,10 +991,42 @@ body {
   cursor: grabbing;
 }
 
-.space-transfer-ghost {
+.space-transfer-ghost-wrap {
   position: fixed;
   z-index: 9999;
-  transform: translate(-50%, -120%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.space-transfer-ghost-preview {
+  border: 2px solid rgba(232, 185, 35, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 215, 0, 0.12);
+  box-shadow:
+    0 0 0 4px rgba(255, 215, 0, 0.1),
+    0 0 20px rgba(232, 185, 35, 0.45);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.space-transfer-ghost-preview.to-ai {
+  border-color: rgba(100, 150, 255, 0.75);
+  background: rgba(100, 150, 255, 0.1);
+  box-shadow:
+    0 0 0 4px rgba(100, 150, 255, 0.12),
+    0 0 20px rgba(100, 150, 255, 0.4);
+}
+
+.space-transfer-ghost-preview.to-paper {
+  border-color: rgba(245, 230, 163, 0.9);
+}
+
+.space-transfer-ghost {
+  position: relative;
+  transform: translateY(-8px);
   display: flex;
   align-items: center;
   gap: 8px;

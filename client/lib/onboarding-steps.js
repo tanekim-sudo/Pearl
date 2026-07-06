@@ -133,6 +133,7 @@ export const TOUR_STEPS = [
     title: "Precision highlighter",
     instruction:
       "Switch to **▬ Highlight** (default). Draw a closed loop around ink to select disconnected strokes and objects. **Shift+draw** adds to the selection.",
+    hint: "Re-hover the golden glow — cursor becomes a grab hand — to drag the whole selection.",
     target: '[data-tour="tool-highlight"]',
     demo: "loop-hint",
     verifyKind: "state",
@@ -145,11 +146,14 @@ export const TOUR_STEPS = [
   {
     id: "highlight-delete",
     phase: "Paper",
-    title: "Delete selection",
-    instruction: "With a highlight selection active, press **Delete** or **Backspace** to remove those fragments with precision.",
-    hint: "Or drag the selection toward the black side to send it as one AI node.",
+    title: "Delete or transfer",
+    instruction:
+      "With a highlight selection active, press **Delete** or **Backspace** to remove those fragments — or **drag** the golden selection across the boundary into AI.",
     verifyKind: "event",
-    verify: (ctx) => ctx.events.has("highlight-delete") || ctx.events.has("highlight-transfer"),
+    verify: (ctx) =>
+      ctx.events.has("highlight-delete") ||
+      ctx.events.has("highlight-transfer") ||
+      ctx.events.has("highlight-drag"),
     allowSkip: true,
   },
   {
@@ -157,11 +161,18 @@ export const TOUR_STEPS = [
     phase: "Paper",
     title: "Highlight → AI node",
     instruction:
-      "With ink highlighted, drag the selection across the center boundary into the black void. It becomes **one brain cell** you can operate on.",
+      "Re-hover the **golden selection** and drag across the center boundary. A preview frame follows your cursor through the glow — release on the black void to spawn **one brain cell**.",
     target: '[data-tour="interpret-boundary"]',
-    demo: "transfer-hint",
+    demo: "highlight-drag-hint",
     verifyKind: "event",
-    verify: (ctx) => ctx.events.has("highlight-transfer") || ctx.events.has("expand-ai"),
+    verify: (ctx) =>
+      ctx.events.has("highlight-transfer") ||
+      ctx.events.has("highlight-drag") ||
+      ctx.events.has("transfer") ||
+      ctx.events.has("expand-ai"),
+    onEnter: (_ctx, state) => {
+      state.setTool?.("highlight");
+    },
     allowSkip: true,
   },
   {
@@ -253,8 +264,9 @@ export const TOUR_STEPS = [
   {
     id: "shift-transfer",
     phase: "Select & transfer",
-    title: "Shift + drag transfer",
-    instruction: "Hold **Shift** and drag a selection toward the right column. Release on the glowing boundary or over AI spacetime.",
+    title: "Shift + drag (Select tool)",
+    instruction:
+      "With **↖ Select** active, hold **Shift** and drag a selection toward the other column. Highlight has its own drag — no Shift needed.",
     target: '[data-tour="interpret-boundary"]',
     demo: "transfer-hint",
     verifyKind: "event",
@@ -325,11 +337,30 @@ export const TOUR_STEPS = [
     allowSkip: true,
   },
   {
+    id: "highlight-from-ai",
+    phase: "AI void",
+    title: "Drag back to paper",
+    instruction:
+      "Keep **▬ Highlight** on. Tap a brain cell to select it, then drag across the boundary to paper — the golden preview crosses both sides. Works the same in reverse as paper → AI.",
+    target: '[data-tour="interpret-boundary"]',
+    demo: "highlight-drag-hint",
+    verifyKind: "event",
+    verify: (ctx) =>
+      ctx.events.has("transfer-to-paper") ||
+      ctx.events.has("fragment-paper") ||
+      ctx.events.has("highlight-drag") ||
+      ctx.events.has("transfer"),
+    onEnter: (_ctx, state) => {
+      state.setTool?.("highlight");
+    },
+    allowSkip: true,
+  },
+  {
     id: "fragment-highlight",
     phase: "AI void",
     title: "Fragment highlight",
     instruction:
-      "With Highlight tool active and a node explored, draw over AI text. Default release **replaces** a golden fragment in place. **Shift+release** or drop over paper **spawns** it left.",
+      "With Highlight active and a node explored, draw over AI text. Default release **replaces** a golden fragment in place. **Shift+release** or drag across the boundary **spawns** it on paper.",
     target: '[data-tour="ai-spacetime"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("fragment-highlight") || ctx.events.has("fragment-paper"),
@@ -455,7 +486,7 @@ export const TOUR_STEPS = [
     phase: "Extras",
     title: "Hidden gestures",
     instruction:
-      "**Space** = cycle Pen / Highlight / Select · **Shift+drag** = transfer to AI · **Shift+lasso** = area select · **Alt+drag** = pan · **⌘V** = paste",
+      "**Space** = cycle Pen / Highlight / Select · **Highlight drag** = bidirectional boundary transfer (grab golden selection) · **Shift+drag** = Select-tool transfer · **Shift+lasso** = area select · **Alt+drag** = pan · **⌘V** = paste",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("space-toggle-tool"),
     allowSkip: true,

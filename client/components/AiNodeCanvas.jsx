@@ -468,6 +468,15 @@ export default function AiNodeCanvas({
   }
 
   function startNodeDrag(e, node) {
+    if (e.button !== 0) return;
+
+    if (tool === "highlight" && selectedIds.includes(node.id) && selectedIds.length) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSpaceTransferStart?.(e);
+      return;
+    }
+
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
     if (constellationMode) {
       startConstellationNodeGesture(e, node);
@@ -559,6 +568,11 @@ export default function AiNodeCanvas({
       return;
     }
 
+    if (tool === "highlight" && selectedIds.length) {
+      onSpaceTransferStart?.(e);
+      return;
+    }
+
     if (e.button === 1 || e.altKey) {
       startPan(e);
       return;
@@ -626,6 +640,7 @@ export default function AiNodeCanvas({
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
         (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
+        (tool === "highlight" && selectedIds.length ? " highlight-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +

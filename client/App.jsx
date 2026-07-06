@@ -1915,6 +1915,7 @@ export default function App() {
   const [aiLandingNodeIds, setAiLandingNodeIds] = useState(() => new Set());
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
+  const [highlightGrabHover, setHighlightGrabHover] = useState(false);
   const [paperRecording, setPaperRecording] = useState(false);
   const [paperRecordLevel, setPaperRecordLevel] = useState(0);
   const [paperRecordMs, setPaperRecordMs] = useState(0);
@@ -2186,6 +2187,42 @@ export default function App() {
     return clientX >= r.right - BOUNDARY_MAGNET_PX;
   }
 
+  function isNearAiTransferBoundary(clientX) {
+    const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
+    const r = el?.getBoundingClientRect();
+    return !!(r && clientX <= r.left + BOUNDARY_MAGNET_PX);
+  }
+
+  function pointInHighlightBBox(clientX, clientY, ids) {
+    const bb = selectionWorldBBoxForIds(ids);
+    if (!bb) return false;
+    const tl = worldToClient(bb.minx, bb.miny);
+    const br = worldToClient(bb.maxx, bb.maxy);
+    const pad = 12;
+    return (
+      clientX >= tl.x - pad &&
+      clientX <= br.x + pad &&
+      clientY >= tl.y - pad &&
+      clientY <= br.y + pad
+    );
+  }
+
+  function computeTransferPreviewBox(origin, ids) {
+    if (origin === "paper" && ids?.length) {
+      const bb = selectionWorldBBoxForIds(ids);
+      if (!bb) return null;
+      const tl = worldToClient(bb.minx, bb.miny);
+      const br = worldToClient(bb.maxx, bb.maxy);
+      const pad = 10;
+      return {
+        width: Math.max(48, br.x - tl.x + pad * 2),
+        height: Math.max(36, br.y - tl.y + pad * 2),
+      };
+    }
+    if (origin === "ai") return { width: 72, height: 52 };
+    return null;
+  }
+
   function isOverPaperColumn(clientX, clientY) {
     const el = viewportRef.current?.closest?.(".canvas-column") || viewportRef.current;
     const r = el?.getBoundingClientRect();
@@ -2204,13 +2241,15 @@ export default function App() {
     return screenToWorld(aiCamRef.current, clientX - rect.left, clientY - rect.top);
   }
 
-  function startPendingSpaceTransfer(e, origin, ids) {
+  function startPendingSpaceTransfer(e, origin, ids, opts = {}) {
     if (!ids?.length) return;
     setGesturing(true);
     gesture.current = {
       mode: "pending-space-transfer",
       origin,
       ids: ids.slice(),
+      kind: opts.kind || null,
+      previewBox: opts.previewBox || computeTransferPreviewBox(origin, ids),
       cx: e.clientX,
       cy: e.clientY,
       lastCx: e.clientX,
@@ -2226,12 +2265,18 @@ export default function App() {
   function activateSpaceTransfer(g, cx, cy) {
     g.mode = "space-transfer";
     g.activated = true;
+    if (g.kind === "highlight" && !g.tourHighlightDragEmitted) {
+      g.tourHighlightDragEmitted = true;
+      emitTourEvent("highlight-drag");
+    }
+    if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
     setTransferDragActive(true);
     setSpaceTransferGhost({
       cx,
       cy,
       count: g.ids.length,
       target: null,
+      previewBox: g.previewBox,
     });
   }
 
@@ -2570,13 +2615,17 @@ export default function App() {
             : isOverAiColumn(cx, cy)
             ? "ai"
             : null;
-        setBoundaryMagnetActive(g.origin === "paper" && target === "ai");
+        const magnet =
+          (g.origin === "paper" && (isNearTransferBoundary(cx) || target === "ai")) ||
+          (g.origin === "ai" && (isNearAiTransferBoundary(cx) || target === "paper"));
+        setBoundaryMagnetActive(magnet);
         setTransferDragActive(true);
         setSpaceTransferGhost({
           cx,
           cy,
           count: g.ids.length,
           target,
+          previewBox: g.previewBox,
         });
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
@@ -2622,12 +2671,6 @@ export default function App() {
           g.tourCloneEmitted = true;
           emitTourEvent("clone-drag");
         }
-        g.lastCx = cx;
-        g.lastCy = cy;
-        setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
-        setBoundaryMagnetActive(isNearTransferBoundary(cx));
-        setTransferDragActive(isOverAiColumn(cx, cy) || isNearTransferBoundary(cx));
-      } else if (g.mode === "highlight-drag") {
         g.lastCx = cx;
         g.lastCy = cy;
         setCloneGhost({ cx, cy, ids: g.ids, count: g.ids.length });
@@ -2825,16 +2868,6 @@ export default function App() {
           if (dist > MOVE_DRAG_THRESHOLD) {
             duplicateItemsAt(g.ids, clientToWorld(cx, cy));
           }
-        }
-      } else if (g.mode === "highlight-drag") {
-        setCloneGhost(null);
-        setBoundaryMagnetActive(false);
-        setTransferDragActive(false);
-        const cx = g.lastCx ?? g.cx;
-        const cy = g.lastCy ?? g.cy;
-        const world = getAiDropWorldFromClient(cx, cy);
-        if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
-          transferHighlightSelectionToAi(g.ids, world);
         }
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
@@ -5202,7 +5235,7 @@ export default function App() {
       }
       const hlIds = highlightSelectionRef.current;
       if (hlIds.length > 0) {
-        startPendingSpaceTransfer(e, "paper", hlIds);
+        startPendingSpaceTransfer(e, "paper", hlIds, { kind: "highlight" });
         return;
       }
     }
@@ -5265,23 +5298,13 @@ export default function App() {
 
     if (t === "highlight") {
       const hlSel = highlightSelectionRef.current;
-      if (hlSel.length && hit && hlSel.includes(hit.id)) {
-        pushHistory();
-        gesture.current = {
-          mode: "highlight-drag",
-          cx,
-          cy,
-          lastCx: cx,
-          lastCy: cy,
-          ids: hlSel.slice(),
-        };
-        setCloneGhost({ cx, cy, ids: hlSel, count: hlSel.length });
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        } catch {
-          /* ignore */
+      if (hlSel.length) {
+        const inSel = hit && hlSel.includes(hit.id);
+        const inBBox = pointInHighlightBBox(cx, cy, hlSel);
+        if (inSel || inBBox) {
+          startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
+          return;
         }
-        return;
       }
       const hlW = highlightWorldWidth(camRef.current.scale);
       const strokeId = startDrawStroke(w, {
@@ -5994,15 +6017,20 @@ export default function App() {
     emitTourEvent("transfer");
     if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
       const ids = g.ids;
-      const sketchBundle = gatherSelectionSketchBundle(ids);
       const world = getAiDropWorldFromClient(cx, cy);
+      if (g.kind === "highlight") {
+        transferHighlightSelectionToAi(ids, world);
+        return;
+      }
+      const sketchBundle = gatherSelectionSketchBundle(ids);
       if (sketchBundle) {
         interpretSketchBundle(sketchBundle, world);
       } else {
         const expandIds = transformableDragIds(ids);
-        if (expandIds.length) expandInAi(expandIds);
+        if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
       }
     } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
+      emitTourEvent("transfer-to-paper");
       transferAiNodesToPaper(g.ids, clientToWorld(cx, cy));
     }
   };
@@ -6283,6 +6311,8 @@ export default function App() {
   const cursorClass =
     panning
       ? "cur-grabbing"
+      : tool === "highlight" && highlightGrabHover
+      ? "cur-grab"
       : tool === "highlight"
       ? "cur-highlight"
       : tool === "pen" || tool === "marker"
@@ -6706,7 +6736,18 @@ export default function App() {
             if (!paperRecording) setStrokeTooltip(null);
             return;
           }
-          const hit = itemAtPoint(e.clientX, e.clientY);
+          const cx = e.clientX;
+          const cy = e.clientY;
+          if (toolRef.current === "highlight" && highlightSelectionRef.current.length) {
+            const hlSel = highlightSelectionRef.current;
+            const hit = itemAtPoint(cx, cy);
+            const overHighlight =
+              pointInHighlightBBox(cx, cy, hlSel) || (hit && hlSel.includes(hit.id));
+            setHighlightGrabHover(overHighlight);
+          } else if (highlightGrabHover) {
+            setHighlightGrabHover(false);
+          }
+          const hit = itemAtPoint(cx, cy);
           if (hit?.type === "stroke" && (hit.instructionText || hit.paperSessionId)) {
             setStrokeTooltip({
               text: hit.instructionText || "Linked to voice recording",
@@ -6923,7 +6964,11 @@ export default function App() {
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           tool={tool}
-          onSpaceTransferStart={(e) => startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current)}
+          onSpaceTransferStart={(e) =>
+            startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current, {
+              kind: toolRef.current === "highlight" ? "highlight" : null,
+            })
+          }
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
           onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
           isPaperDestination={(x, y) => isOverPaperColumn(x, y)}
@@ -7218,17 +7263,34 @@ export default function App() {
 
       {spaceTransferGhost && (
         <div
-          className={
-            "space-transfer-ghost" +
-            (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
-            (spaceTransferGhost.target === "paper" ? " to-paper" : "")
-          }
+          className="space-transfer-ghost-wrap"
           style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
         >
-          <span className="space-transfer-ghost-count">{spaceTransferGhost.count}</span>
-          <span className="space-transfer-ghost-arrow">
-            {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
-          </span>
+          {spaceTransferGhost.previewBox && (
+            <div
+              className={
+                "space-transfer-ghost-preview" +
+                (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
+                (spaceTransferGhost.target === "paper" ? " to-paper" : "")
+              }
+              style={{
+                width: spaceTransferGhost.previewBox.width,
+                height: spaceTransferGhost.previewBox.height,
+              }}
+            />
+          )}
+          <div
+            className={
+              "space-transfer-ghost" +
+              (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
+              (spaceTransferGhost.target === "paper" ? " to-paper" : "")
+            }
+          >
+            <span className="space-transfer-ghost-count">{spaceTransferGhost.count}</span>
+            <span className="space-transfer-ghost-arrow">
+              {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
+            </span>
+          </div>
         </div>
       )}
 

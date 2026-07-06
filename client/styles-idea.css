@@ -1532,6 +1532,14 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   cursor: grabbing;
 }
 
+.ai-node-viewport.ai-highlight-mode.highlight-transfer-ready {
+  cursor: grab;
+}
+
+.ai-node-viewport.ai-highlight-mode.highlight-transfer-ready.ai-panning {
+  cursor: grabbing;
+}
+
 .ai-lasso {
   position: absolute;
   border: 2px dashed rgba(160, 200, 255, 0.75);
@@ -4135,4 +4143,50 @@ html[data-theme="chalk"] body {
 @keyframes tour-complete {
   0%, 100% { transform: scale(0.9); opacity: 0.7; }
   50% { transform: scale(1.15); opacity: 1; }
+}
+
+.tour-demo-highlight-drag-hint {
+  position: relative;
+  width: 100px;
+  height: 48px;
+}
+
+.tour-demo-highlight-box {
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 36px;
+  height: 28px;
+  border: 2px solid rgba(232, 185, 35, 0.85);
+  border-radius: 6px;
+  background: rgba(232, 185, 35, 0.2);
+  box-shadow: 0 0 12px rgba(232, 185, 35, 0.35);
+  animation: tour-highlight-box-drag 1.6s ease-in-out infinite;
+}
+
+.tour-demo-streak {
+  position: absolute;
+  left: 42px;
+  top: 22px;
+  width: 52px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(232, 185, 35, 0.2), rgba(232, 185, 35, 0.95));
+  animation: tour-streak-pulse 1.6s ease-in-out infinite;
+}
+
+.tour-demo-streak.reverse {
+  left: 8px;
+  background: linear-gradient(270deg, rgba(232, 185, 35, 0.2), rgba(232, 185, 35, 0.95));
+  animation-direction: reverse;
+}
+
+@keyframes tour-highlight-box-drag {
+  0%, 100% { transform: translateX(0); opacity: 0.85; }
+  50% { transform: translateX(52px); opacity: 1; }
+}
+
+@keyframes tour-streak-pulse {
+  0%, 100% { opacity: 0.45; transform: scaleX(0.85); }
+  50% { opacity: 1; transform: scaleX(1); }
 }
