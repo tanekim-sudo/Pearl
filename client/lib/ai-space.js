@@ -24,12 +24,43 @@ export function viewportCenterWorld(camera, vpWidth, vpHeight) {
 
 /** Default zoom for constellation view — tiny planet nodes, long strands. */
 export const DEFAULT_CONSTELLATION_SCALE = 0.25;
-export const EXPLORE_ZOOM_SCALE = 1.2;
-export const CONSTELLATION_ZOOM_THRESHOLD = 0.8;
+/** Double-click / deep explore — readable text inside the node. */
+export const EXPLORE_ZOOM_SCALE = 1.9;
+/** Below this scale, nodes are pure brain-cell circles. */
+export const AI_CELL_ZOOM_MAX = 0.72;
+/** Crossfade from circle → text begins here. */
+export const AI_BLEND_ZOOM_START = 0.82;
+/** Text fully readable above this scale. */
+export const AI_TEXT_ZOOM_FULL = 1.72;
+export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;
 /** Drag-out strand gestures only when zoomed out (brain-cell / constellation view). */
-export const AI_STRAND_DRAG_MAX_SCALE = CONSTELLATION_ZOOM_THRESHOLD;
+export const AI_STRAND_DRAG_MAX_SCALE = AI_CELL_ZOOM_MAX;
 /** Below this scale, nodes render as dots/planets with no label text. */
-export const AI_DOT_ONLY_THRESHOLD = 0.6;
+export const AI_DOT_ONLY_THRESHOLD = 0.55;
+
+/** Smooth 0→1 blend for circle-to-text transition (smoothstep). */
+export function zoomContentBlend(scale) {
+  if (scale <= AI_BLEND_ZOOM_START) return 0;
+  if (scale >= AI_TEXT_ZOOM_FULL) return 1;
+  const t = (scale - AI_BLEND_ZOOM_START) / (AI_TEXT_ZOOM_FULL - AI_BLEND_ZOOM_START);
+  return t * t * (3 - 2 * t);
+}
+
+/** Nearest node to viewport center in world space. */
+export function findNearestNodeToCenter(nodes, camera, vpWidth, vpHeight) {
+  if (!nodes?.length) return null;
+  const center = viewportCenterWorld(camera, vpWidth, vpHeight);
+  let best = null;
+  let bestD = Infinity;
+  for (const n of nodes) {
+    const d = (n.x - center.x) ** 2 + (n.y - center.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = n;
+    }
+  }
+  return best;
+}
 
 export function centerAiCamera(vpWidth, vpHeight, scale = DEFAULT_CONSTELLATION_SCALE) {
   return {

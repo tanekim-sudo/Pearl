@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 import {
   DEFAULT_CONSTELLATION_SCALE,
   EXPLORE_ZOOM_SCALE,
+  AI_BLEND_ZOOM_START,
+  AI_TEXT_ZOOM_FULL,
   computeNodesBBox,
   fitAiConstellation,
   focusAiNode,
+  zoomContentBlend,
 } from "./ai-space.js";
 
 describe("ai-space", () => {
@@ -43,5 +46,12 @@ describe("ai-space", () => {
     assert.equal(cam.scale, EXPLORE_ZOOM_SCALE);
     assert.equal(cam.x, 400 / 2 - 200 * EXPLORE_ZOOM_SCALE);
     assert.equal(cam.y, 300 / 2 - 150 * EXPLORE_ZOOM_SCALE);
+  });
+
+  it("zoomContentBlend is zero in constellation and one at text zoom", () => {
+    assert.equal(zoomContentBlend(AI_BLEND_ZOOM_START - 0.01), 0);
+    assert.equal(zoomContentBlend(AI_TEXT_ZOOM_FULL), 1);
+    const mid = zoomContentBlend((AI_BLEND_ZOOM_START + AI_TEXT_ZOOM_FULL) / 2);
+    assert.ok(mid > 0.4 && mid < 0.6);
   });
 });

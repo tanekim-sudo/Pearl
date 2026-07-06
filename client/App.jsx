@@ -2299,21 +2299,26 @@ export default function App() {
     aiCamAnimRef.current = requestAnimationFrame(tick);
   }
 
-  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE) {
+  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE, ms = 950) {
     const el = aiViewportRef.current;
     if (!el || !node) return;
-    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale));
+    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale), ms);
   }
 
-  function returnAiToConstellation() {
-    const el = aiViewportRef.current;
-    if (!el) return;
-    emitTourEvent("return-constellation");
-    setAiFocusedNodeId(null);
-    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight));
+  function focusAiNodeContent(node) {
+    if (!node) return;
+    setAiPanel((prev) => ({
+      ...(prev || {}),
+      expandedText: node.expandedText || node.preview || node.label || "",
+      activeNodeId: node.id,
+      loading: node.loading,
+      error: node.error,
+      sourceIds: node.sourceIds || prev?.sourceIds,
+    }));
   }
 
-  function exploreAiNode(nodeId) {
+  function exploreAiNode(nodeId, opts = {}) {
+    const { animate = true, runExpand = true } = opts;
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node) return;
     emitTourEvent("explore-node");
@@ -2321,7 +2326,18 @@ export default function App() {
 
     handleAiNodeSelect(nodeId, { replace: true });
     setAiFocusedNodeId(nodeId);
-    zoomAiToNode(node);
+    focusAiNodeContent(node);
+
+    if (animate) {
+      zoomAiToNode(node);
+    } else {
+      const el = aiViewportRef.current;
+      if (el) {
+        setAiCamera(focusAiNode(node, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
+      }
+    }
+
+    if (!runExpand) return;
 
     if (node.nodeKind === "move" && node.opId) {
       const linkId = node.sourceNodeIds?.[0] || node.parentId;
@@ -2342,13 +2358,7 @@ export default function App() {
         );
       }
       if (node.expandedText) {
-        setAiPanel((prev) => ({
-          ...(prev || {}),
-          expandedText: node.expandedText,
-          activeNodeId: node.id,
-          loading: node.loading,
-          error: node.error,
-        }));
+        focusAiNodeContent(node);
       }
       return;
     }
@@ -2360,7 +2370,12 @@ export default function App() {
       if (child) {
         setAiFocusedNodeId(child.id);
         handleAiNodeSelect(child.id, { replace: true });
-        zoomAiToNode(child);
+        focusAiNodeContent(child);
+        if (animate) zoomAiToNode(child);
+        else {
+          const el = aiViewportRef.current;
+          if (el) setAiCamera(focusAiNode(child, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
+        }
         if (!child.expandedText && !child.loading && aiPanel?.sketchBundle) {
           interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
         }
@@ -2376,6 +2391,18 @@ export default function App() {
         node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
       );
     }
+  }
+
+  function returnAiToConstellation() {
+    const el = aiViewportRef.current;
+    if (!el) return;
+    emitTourEvent("return-constellation");
+    setAiFocusedNodeId(null);
+    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 900);
+  }
+
+  function focusAiNodeFromZoom(nodeId) {
+    exploreAiNode(nodeId, { animate: false, runExpand: false });
   }
 
   function captureMoveStartPositions(ids) {
@@ -6906,6 +6933,7 @@ export default function App() {
           onCanvasDragLeave={() => setAiCanvasDropOver(false)}
           onCanvasDrop={handleAiCanvasDrop}
           onExploreNode={exploreAiNode}
+          onFocusFromZoom={focusAiNodeFromZoom}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
           expandToolboxSignal={expandToolboxSignal}

@@ -19,6 +19,7 @@ export default function AiColumn({
   onExpandNode,
   onExploreNode,
   onReturnToConstellation,
+  onFocusFromZoom,
   focusedNodeId,
   expandToolboxSignal = 0,
   onToolboxExpanded,
@@ -77,6 +78,7 @@ export default function AiColumn({
             onExpandNode={onExpandNode}
             onExploreNode={onExploreNode}
             onReturnToConstellation={onReturnToConstellation}
+            onFocusFromZoom={onFocusFromZoom}
             focusedNodeId={focusedNodeId}
             getStrandChoices={getStrandChoices}
             onStrandSelect={onStrandSelect}

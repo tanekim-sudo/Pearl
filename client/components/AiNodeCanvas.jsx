@@ -7,12 +7,15 @@ import {
   truncateLabel,
 } from "../lib/ai-nodes.js";
 import {
+  AI_CELL_ZOOM_MAX,
   AI_DOT_ONLY_THRESHOLD,
   AI_STRAND_DRAG_MAX_SCALE,
-  CONSTELLATION_ZOOM_THRESHOLD,
+  AI_BLEND_ZOOM_START,
+  findNearestNodeToCenter,
   screenToWorld,
   viewportCenterWorld,
   worldToScreen,
+  zoomContentBlend,
 } from "../lib/ai-space.js";
 import { attachCanvasWheel } from "../lib/canvas-navigation.js";
 import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
@@ -53,6 +56,7 @@ export default function AiNodeCanvas({
   onExpandNode,
   onExploreNode,
   onReturnToConstellation,
+  onFocusFromZoom,
   focusedNodeId,
   getStrandChoices,
   onStrandSelect,
@@ -137,15 +141,21 @@ export default function AiNodeCanvas({
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
       },
       (_prev, next) => {
-        if (
-          cameraRef.current.scale > CONSTELLATION_ZOOM_THRESHOLD &&
-          next.scale <= CONSTELLATION_ZOOM_THRESHOLD
-        ) {
+        const prevScale = cameraRef.current.scale;
+        if (prevScale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX) {
           onReturnToConstellation?.();
+          return;
+        }
+        if (prevScale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
+          const pickId =
+            selectedIds.length === 1
+              ? selectedIds[0]
+              : findNearestNodeToCenter(nodes, next, vpSize.w, vpSize.h)?.id;
+          if (pickId) onFocusFromZoom?.(pickId);
         }
       }
     );
-  }, [onCameraChange, onReturnToConstellation, viewportRef]);
+  }, [onCameraChange, onReturnToConstellation, onFocusFromZoom, viewportRef, nodes, selectedIds, vpSize.w, vpSize.h]);
 
   function startPan(e) {
     if (e.button !== 0 && e.button !== 1) return;
@@ -575,18 +585,21 @@ export default function AiNodeCanvas({
 
   const starOffsetX = ((camera.x * 0.02) % 1) * 100;
   const starOffsetY = ((camera.y * 0.02) % 1) * 100;
-  const explorationMode = camera.scale > CONSTELLATION_ZOOM_THRESHOLD;
-  const constellationMode = !explorationMode;
+  const contentBlend = zoomContentBlend(camera.scale);
+  const explorationMode = contentBlend > 0.04;
+  const constellationMode = camera.scale <= AI_STRAND_DRAG_MAX_SCALE;
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
-      : camera.scale < CONSTELLATION_ZOOM_THRESHOLD
+      : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
   const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
   const focusDetail =
     focusedNode?.expandedText?.trim() ||
-    (focusedNode?.preview?.trim() && focusedNode.nodeKind !== "expanded" ? focusedNode.preview : null);
+    focusedNode?.preview?.trim() ||
+    focusedNode?.label?.trim() ||
+    null;
 
   function renderFocusText(text) {
     const golden = focusedNode?.goldenFragment;
@@ -616,8 +629,10 @@ export default function AiNodeCanvas({
         (panning ? " ai-panning" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
-        (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
+        (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full") +
+        (contentBlend > 0.5 ? " ai-text-dominant" : "")
       }
+      style={{ "--ai-content-blend": contentBlend }}
       onPointerDown={handleViewportPointerDown}
       onDragOver={(e) => {
         onCanvasDragOver?.(e);
@@ -784,6 +799,8 @@ export default function AiNodeCanvas({
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
+          const isFocusTarget = focusedNodeId === node.id;
+          const nodeBlend = isFocusTarget ? contentBlend : 0;
           return (
             <div
               key={node.id}
@@ -792,6 +809,7 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
+                (isFocusTarget ? " focus-target" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
@@ -803,14 +821,13 @@ export default function AiNodeCanvas({
                 width: r * 2,
                 height: r * 2,
                 "--ai-cell-weight": cellWeight,
+                "--ai-node-blend": nodeBlend,
               }}
-              title={constellationMode ? undefined : node.preview || node.expandedText || node.label}
+              title={constellationMode && !isFocusTarget ? node.preview || node.expandedText || node.label : undefined}
               onPointerDown={(e) => startNodeDrag(e, node)}
               onDoubleClick={(e) => {
-                if (constellationMode) {
-                  e.stopPropagation();
-                  onExploreNode?.(node.id);
-                }
+                e.stopPropagation();
+                onExploreNode?.(node.id);
               }}
             >
               <span className="ai-node-cell" aria-hidden="true">
@@ -848,6 +865,35 @@ export default function AiNodeCanvas({
             </div>
           );
         })}
+
+        {focusedNode && focusDetail && contentBlend > 0.02 && (
+          <div
+            className="ai-node-focus-bloom"
+            style={{
+              left: focusedNode.x,
+              top: focusedNode.y,
+              width: 56 + contentBlend * 360,
+              marginLeft: -(28 + contentBlend * 180),
+              marginTop: -(28 + contentBlend * 140),
+              minHeight: 56 + contentBlend * 260,
+              opacity: contentBlend,
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="ai-node-focus-bloom-head">{focusedNode.label}</div>
+            <div className="ai-node-focus-bloom-body">{renderFocusText(focusDetail)}</div>
+            {tool === "highlight" && focusedNode.expandedText?.trim() && !focusedNode.loading && (
+              <FragmentHighlightLayer
+                active
+                text={focusedNode.expandedText}
+                onFragmentReplace={onFragmentReplace}
+                onFragmentToPaper={onFragmentToPaper}
+                isPaperDestination={isPaperDestination}
+                className="ai-node-focus-fragment-highlight"
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {lasso && (
@@ -919,32 +965,6 @@ export default function AiNodeCanvas({
             );
           })}
         </svg>
-      )}
-
-      {explorationMode && focusDetail && (
-        <div
-          className="ai-explore-overlay"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <div className="ai-explore-overlay-inner">
-            <div className="ai-explore-overlay-label">
-              {focusedNode?.label || "Expanded"}
-            </div>
-            <div className="ai-explore-overlay-text-wrap">
-              <div className="ai-explore-overlay-text">{renderFocusText(focusDetail)}</div>
-              {tool === "highlight" && focusedNode?.expandedText?.trim() && !focusedNode?.loading && (
-                <FragmentHighlightLayer
-                  active
-                  text={focusedNode.expandedText}
-                  onFragmentReplace={onFragmentReplace}
-                  onFragmentToPaper={onFragmentToPaper}
-                  isPaperDestination={isPaperDestination}
-                  className="ai-explore-fragment-highlight"
-                />
-              )}
-            </div>
-          </div>
-        </div>
       )}
 
     </div>
