@@ -1897,6 +1897,7 @@ export default function App() {
   const [railTab, setRailTab] = useState("functions"); // functions | structures
   const railTabRef = useRef("functions");
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
+  const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
@@ -1961,6 +1962,7 @@ export default function App() {
   const gesture = useRef(null);
   const camRef = useRef(camera);
   const itemsRef = useRef(items);
+  const structuresRef = useRef(structures);
   const toolRef = useRef(tool);
   const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
@@ -1977,6 +1979,7 @@ export default function App() {
   const pushHistoryRef = useRef(() => {});
   camRef.current = camera;
   itemsRef.current = items;
+  structuresRef.current = structures;
   toolRef.current = tool;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
@@ -2696,6 +2699,11 @@ export default function App() {
               target === "structures"));
         setBoundaryMagnetActive(magnet);
         setRailDropOver(target === "functions" || target === "structures");
+        if (target === "structures") {
+          setSymbolDropTargetId(structCardAtClient(cx, cy));
+        } else {
+          setSymbolDropTargetId(null);
+        }
         setTransferDragActive(true);
         setSpaceTransferGhost({
           cx,
@@ -2852,6 +2860,7 @@ export default function App() {
         setTransferDragActive(false);
         setBoundaryMagnetActive(false);
         setRailDropOver(false);
+        setSymbolDropTargetId(null);
         setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
@@ -3194,20 +3203,17 @@ export default function App() {
     captureMaterialWithReplay(ids);
   }
 
-  function transferHighlightSelectionToStructures(ids) {
+  function transferHighlightSelectionToStructures(ids, structId = null) {
     if (!ids?.length) return;
     emitTourEvent("highlight-to-structures");
-    setHighlightTransferringIds(ids);
-    window.setTimeout(() => {
-      setHighlightTransferringIds([]);
-      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
-      setHighlightTouchIds([]);
-    }, 920);
+    finishHighlightTransfer(ids);
     recordItemEvents(ids, "highlight-transfer", {
       targetLayer: "structures",
+      structId: structId || undefined,
+      merged: !!structId,
       inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
     });
-    saveMaterialAsSymbol(ids);
+    addMaterialToSymbol(ids, { structId });
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -4435,28 +4441,182 @@ export default function App() {
     reader.readAsText(file);
   }
 
-  // ---- saved idea structures ----
+  function structCardAtClient(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    const card = el?.closest?.("[data-struct-id]");
+    return card?.getAttribute("data-struct-id") || null;
+  }
+
+  function itemLocalBBox(it) {
+    if (!it) return null;
+    if (it.type === "stroke" && it.points?.length) {
+      const xs = it.points.map((p) => p.x);
+      const ys = it.points.map((p) => p.y);
+      return {
+        minx: Math.min(...xs),
+        miny: Math.min(...ys),
+        maxx: Math.max(...xs),
+        maxy: Math.max(...ys),
+      };
+    }
+    const w = it.w || (it.type === "image" ? 200 : 360);
+    const h = it.h || (it.type === "image" ? 150 : 120);
+    const x = it.x ?? 0;
+    const y = it.y ?? 0;
+    return { minx: x, miny: y, maxx: x + w, maxy: y + h };
+  }
+
+  function structureItemsBBox(structItems) {
+    const boxes = (structItems || []).map(itemLocalBBox).filter(Boolean);
+    if (!boxes.length) return { minx: 0, miny: 0, maxx: 0, maxy: 0 };
+    return {
+      minx: Math.min(...boxes.map((b) => b.minx)),
+      miny: Math.min(...boxes.map((b) => b.miny)),
+      maxx: Math.max(...boxes.map((b) => b.maxx)),
+      maxy: Math.max(...boxes.map((b) => b.maxy)),
+    };
+  }
+
+  function relativeItemsFromIds(ids, offset = { x: 0, y: 0 }) {
+    if (!ids?.length) return [];
+    const idSet = new Set(ids);
+    const sel = itemsRef.current.filter((it) => idSet.has(it.id));
+    if (!sel.length) return [];
+    const bb = selectionWorldBBoxForIds(ids);
+    const anchor = bb ? { x: bb.minx, y: bb.miny } : { x: 0, y: 0 };
+    return sel.map((it) => {
+      const base = { ...it, id: uid() };
+      if (it.type === "stroke") {
+        return {
+          ...base,
+          points: it.points.map((p) => ({
+            x: p.x - anchor.x + offset.x,
+            y: p.y - anchor.y + offset.y,
+          })),
+        };
+      }
+      return {
+        ...base,
+        x: it.x - anchor.x + offset.x,
+        y: it.y - anchor.y + offset.y,
+      };
+    });
+  }
+
+  function mergeTitle(struct, addedItems) {
+    const snippet = addedItems
+      .filter((it) => it.type === "text" && it.text?.trim())
+      .map((it) => it.text.trim().split("\n")[0].slice(0, 32))
+      .join(" · ");
+    if (!snippet) return struct.title;
+    const base = (struct.title || "symbol").trim();
+    if (base.includes(snippet)) return base;
+    return `${base} · ${snippet}`.slice(0, 72);
+  }
+
+  function mergeMaterialIntoSymbol(structId, ids) {
+    const struct = structuresRef.current.find((s) => s.id === structId);
+    if (!struct) return saveMaterialAsSymbol(ids);
+    const rawNew = relativeItemsFromIds(ids);
+    if (!rawNew.length) {
+      showToast("nothing to add");
+      return null;
+    }
+    const existingBb = structureItemsBBox(struct.items);
+    const newBb = structureItemsBBox(rawNew);
+    const offset = {
+      x: (existingBb.maxx || 0) + 36 - (newBb.minx || 0),
+      y: (existingBb.miny || 0) - (newBb.miny || 0),
+    };
+    const mergedItems = relativeItemsFromIds(ids, offset);
+    const nextTitle = mergeTitle(struct, mergedItems);
+    setStructures((arr) =>
+      arr.map((s) =>
+        s.id === structId
+          ? {
+              ...s,
+              kind: "symbol",
+              title: nextTitle,
+              items: [...(s.items || []), ...mergedItems],
+              savedAt: Date.now(),
+            }
+          : s
+      )
+    );
+    setRailTab("structures");
+    emitTourEvent("save-structure");
+    showToast(`added to · ${nextTitle}`);
+    if (!struct.symbolStroke) openSymbolDrawPrompt({ ...struct, title: nextTitle });
+    return struct;
+  }
+
+  function addMaterialToSymbol(ids, opts = {}) {
+    if (opts.structId) return mergeMaterialIntoSymbol(opts.structId, ids);
+    return saveMaterialAsSymbol(ids, opts);
+  }
+
+  function idsFromMaterialTransfer(e) {
+    const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME);
+    if (thoughtJson) {
+      try {
+        return JSON.parse(thoughtJson);
+      } catch {
+        /* ignore */
+      }
+    }
+    const bundleJson = e.dataTransfer.getData(SKETCH_BUNDLE_MIME);
+    if (bundleJson) {
+      try {
+        const bundle = JSON.parse(bundleJson);
+        return [...new Set([...(bundle.itemIds || []), ...(bundle.strokeIds || [])])];
+      } catch {
+        /* ignore */
+      }
+    }
+    const selJson = e.dataTransfer.getData(SEL_MIME);
+    if (selJson) {
+      try {
+        return JSON.parse(selJson);
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
+  }
+
+  function handleStructCardMaterialDrop(e, structId) {
+    e.preventDefault();
+    e.stopPropagation();
+    setRailDropOver(false);
+    setSymbolDropTargetId(null);
+    setTransferDragActive(false);
+    const ids = idsFromMaterialTransfer(e);
+    if (!ids?.length) return;
+    const hl = highlightSelectionRef.current;
+    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    addMaterialToSymbol(ids, { structId });
+  }
+
+  function finishHighlightTransfer(ids) {
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+  }
+
   function saveSelectionByIds(ids, extra = {}) {
     if (!ids?.length) {
       showToast("select material to save");
       return null;
     }
-    const idSet = new Set(ids);
-    const sel = itemsRef.current.filter((it) => idSet.has(it.id));
-    if (!sel.length) {
+    const relativeItems = relativeItemsFromIds(ids);
+    if (!relativeItems.length) {
       showToast("nothing to save");
       return null;
     }
-    const bb = selectionWorldBBoxForIds(ids);
-    const anchor = bb ? { x: bb.minx, y: bb.miny } : paperViewportCenterWorld();
-    const relativeItems = sel.map((it) => {
-      const base = { ...it, id: uid() };
-      if (it.type === "stroke") {
-        return { ...base, points: it.points.map((p) => ({ x: p.x - anchor.x, y: p.y - anchor.y })) };
-      }
-      return { ...base, x: it.x - anchor.x, y: it.y - anchor.y };
-    });
-    const titleFromText = sel
+    const titleFromText = relativeItems
       .filter((it) => it.type === "text" && it.text?.trim())
       .map((it) => it.text.trim().split("\n")[0].slice(0, 48))
       .join(" · ");
@@ -4503,7 +4663,7 @@ export default function App() {
     return struct;
   }
 
-  function saveAiNodesAsSymbol(nodeIds) {
+  function saveAiNodesAsSymbol(nodeIds, structId = null) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     const texts = nodes
       .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label || "")
@@ -4513,6 +4673,35 @@ export default function App() {
       return null;
     }
     const content = texts.join("\n\n");
+    if (structId) {
+      const struct = structuresRef.current.find((s) => s.id === structId);
+      if (!struct) return saveAiNodesAsSymbol(nodeIds);
+      const item = normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 });
+      const existingBb = structureItemsBBox(struct.items);
+      const placed = {
+        ...item,
+        id: uid(),
+        x: (existingBb.maxx || 0) + 36,
+        y: existingBb.miny || 0,
+      };
+      const nextTitle = mergeTitle(struct, [placed]);
+      setStructures((arr) =>
+        arr.map((s) =>
+          s.id === structId
+            ? {
+                ...s,
+                kind: "symbol",
+                title: nextTitle,
+                items: [...(s.items || []), placed],
+                savedAt: Date.now(),
+              }
+            : s
+        )
+      );
+      setRailTab("structures");
+      showToast(`added to · ${nextTitle}`);
+      return struct;
+    }
     const struct = {
       id: uid(),
       title: truncatePreview(texts[0], 48) || "idea",
@@ -4525,6 +4714,16 @@ export default function App() {
     openSymbolDrawPrompt(struct);
     emitTourEvent("save-symbol");
     return struct;
+  }
+
+  function applyLeftColumnMaterialDrop(ids, clientX, clientY) {
+    if (!ids?.length) return;
+    const dropTarget = resolveLeftColumnDropTarget(clientX, clientY);
+    const structId = dropTarget === "structures" ? structCardAtClient(clientX, clientY) : null;
+    const hl = highlightSelectionRef.current;
+    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    if (dropTarget === "structures") addMaterialToSymbol(ids, { structId });
+    else captureMaterialWithReplay(ids);
   }
 
   function captureSelectionAsStructure(extra = {}) {
@@ -6586,10 +6785,11 @@ export default function App() {
         captureMaterialWithReplay(g.ids);
       }
     } else if (g.origin === "paper" && target === "structures") {
+      const structId = structCardAtClient(cx, cy);
       if (g.kind === "highlight") {
-        transferHighlightSelectionToStructures(g.ids);
+        transferHighlightSelectionToStructures(g.ids, structId);
       } else {
-        saveMaterialAsSymbol(g.ids);
+        addMaterialToSymbol(g.ids, { structId });
       }
     } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
@@ -6597,7 +6797,7 @@ export default function App() {
     } else if (g.origin === "ai" && target === "functions") {
       captureAiNodesAsFunction(g.ids);
     } else if (g.origin === "ai" && target === "structures") {
-      saveAiNodesAsSymbol(g.ids);
+      saveAiNodesAsSymbol(g.ids, structCardAtClient(cx, cy));
     } else if (g.origin === "ai" && target === "ai") {
       const world = getAiDropWorldFromClient(cx, cy);
       for (const nodeId of g.ids) {
@@ -6997,51 +7197,27 @@ export default function App() {
               e.preventDefault();
               setRailDropOver(true);
               e.dataTransfer.dropEffect = "copy";
+              const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
+              if (dropTarget === "structures") {
+                setSymbolDropTargetId(structCardAtClient(e.clientX, e.clientY));
+              } else {
+                setSymbolDropTargetId(null);
+              }
             }
           }}
           onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setRailDropOver(false);
+              setSymbolDropTargetId(null);
+            }
           }}
           onDrop={(e) => {
             e.preventDefault();
             setRailDropOver(false);
-            const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
-            const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME);
-            if (thoughtJson) {
-              try {
-                const ids = JSON.parse(thoughtJson);
-                if (dropTarget === "structures") saveMaterialAsSymbol(ids);
-                else captureMaterialWithReplay(ids);
-              } catch {
-                /* ignore */
-              }
-              return;
-            }
-            const bundleJson = e.dataTransfer.getData(SKETCH_BUNDLE_MIME);
-            if (bundleJson) {
-              try {
-                const bundle = JSON.parse(bundleJson);
-                const ids = [
-                  ...new Set([...(bundle.itemIds || []), ...(bundle.strokeIds || [])]),
-                ];
-                if (ids.length) {
-                  if (dropTarget === "structures") saveMaterialAsSymbol(ids);
-                  else captureMaterialWithReplay(ids);
-                }
-              } catch {
-                /* ignore */
-              }
-              return;
-            }
-            const selJson = e.dataTransfer.getData(SEL_MIME);
-            if (selJson) {
-              try {
-                const ids = JSON.parse(selJson);
-                if (dropTarget === "structures") saveMaterialAsSymbol(ids);
-                else captureMaterialWithReplay(ids);
-              } catch {
-                /* ignore */
-              }
+            setSymbolDropTargetId(null);
+            const ids = idsFromMaterialTransfer(e);
+            if (ids?.length) {
+              applyLeftColumnMaterialDrop(ids, e.clientX, e.clientY);
               return;
             }
             const opId = e.dataTransfer.getData(OP_MIME);
@@ -7115,13 +7291,19 @@ export default function App() {
             ) : (
               <>
                 <p className="rail-structures-hint">
-                  Drag an idea here — save the thing itself, then draw a symbol for it.
+                  Highlight and drag here — onto a symbol to add to it, or empty space for a new one.
                 </p>
                 <div className="rail-scroll">
                   {structures.map((struct) => (
                     <StructureCard
                       key={struct.id}
                       struct={struct}
+                      dropTarget={symbolDropTargetId === struct.id}
+                      onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
+                      onMaterialDragLeave={() =>
+                        setSymbolDropTargetId((prev) => (prev === struct.id ? null : prev))
+                      }
+                      onMaterialDrop={handleStructCardMaterialDrop}
                       onDelete={() => deleteStructure(struct.id)}
                       onShare={() => shareSymbolStruct(struct)}
                       onEditSymbol={() => openSymbolDrawPrompt(struct)}
@@ -8840,7 +9022,16 @@ function LensComparePanel({ a, b, opMap, onClose }) {
   );
 }
 
-function StructureCard({ struct, onDelete, onShare, onEditSymbol }) {
+function StructureCard({
+  struct,
+  dropTarget,
+  onMaterialDragOver,
+  onMaterialDragLeave,
+  onMaterialDrop,
+  onDelete,
+  onShare,
+  onEditSymbol,
+}) {
   const preview = structurePreview(struct);
   const label =
     struct.kind === "symbol"
@@ -8850,13 +9041,32 @@ function StructureCard({ struct, onDelete, onShare, onEditSymbol }) {
         : struct.kind === "document"
           ? "document"
           : struct.kind || "idea";
+  const acceptsMaterial = (e) =>
+    e.dataTransfer.types.includes(THOUGHT_MIME) ||
+    e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
+    e.dataTransfer.types.includes(SEL_MIME);
   return (
     <div className="struct-card-wrap">
       <div
-        className="struct-card"
+        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "")}
+        data-struct-id={struct.id}
         draggable
         onDragStart={(e) => startStructDrag(e, struct)}
-        title="drag onto paper to plant"
+        onDragOver={(e) => {
+          if (!acceptsMaterial(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "copy";
+          onMaterialDragOver?.(struct.id);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) onMaterialDragLeave?.(struct.id);
+        }}
+        onDrop={(e) => {
+          if (!acceptsMaterial(e)) return;
+          onMaterialDrop?.(e, struct.id);
+        }}
+        title={dropTarget ? "release to add to this symbol" : "drag onto paper to plant"}
       >
         <div className="struct-card-row">
           <span className="op-drag-grip" title="Drag">
