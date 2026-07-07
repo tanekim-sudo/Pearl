@@ -412,6 +412,21 @@ const ROLES = [
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+function lensRootOpId(lens) {
+  if (!lens) return null;
+  return lens.opId || lens.moveIds?.[0] || null;
+}
+
+function lensStepNames(lens, opMap) {
+  const rootId = lensRootOpId(lens);
+  const root = rootId ? opMap[rootId] : null;
+  if (!root) return (lens.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  if (root.kind === "pipeline" && root.steps?.length) {
+    return root.steps.map((id) => opMap[id]?.name).filter(Boolean);
+  }
+  return [root.name];
+}
+
 /** Normalize persisted lenses toward git-for-perception metadata. */
 function normalizeLens(l) {
   if (!l || typeof l !== "object") return l;
@@ -1885,7 +1900,6 @@ export default function App() {
   // lenses: named sets of recurring moves — git for perception
   const [lenses, setLenses] = useState(() => load(LENSES_KEY, []).map(normalizeLens));
   const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
-  const [lensEditor, setLensEditor] = useState(null); // { id|null, name, moveIds }
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
 
   const [tool, setTool] = useState("select"); // select | highlight | pen | marker | eraser | image | text | sticky
@@ -3760,7 +3774,6 @@ export default function App() {
     setLenses([]);
     setActiveLensId(null);
     setWalking(null);
-    setLensEditor(null);
     setLensCompare(null);
     setTool("select");
     setMoveDraft("");
@@ -3782,9 +3795,82 @@ export default function App() {
     showToast("Fresh start");
   }
 
-  function openCreateFunction() {
+  function openCreateLens() {
     emitTourEvent("open-function-editor");
     setOpEditor({ mode: "create" });
+  }
+
+  function syncLensForOperator(rootId, rootOp, { isNew = false } = {}) {
+    if (!rootId || !rootOp) return;
+    const name = (rootOp.name || "").trim() || "unnamed lens";
+    const now = Date.now();
+    setLenses((ls) => {
+      const idx = ls.findIndex((l) => l.opId === rootId || l.id === rootId);
+      if (idx >= 0) {
+        const prev = ls[idx];
+        const next = ls.slice();
+        next[idx] = {
+          ...prev,
+          opId: rootId,
+          name,
+          moveIds: [rootId],
+          version: isNew ? prev.version || 1 : (prev.version || 1) + 1,
+          updatedAt: now,
+        };
+        return next;
+      }
+      const lens = normalizeLens({
+        id: rootId,
+        opId: rootId,
+        name,
+        moveIds: [rootId],
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return [lens, ...ls];
+    });
+    if (isNew) setActiveLensId(rootId);
+  }
+
+  function removeLensForOperator(rootId) {
+    if (!rootId) return;
+    setLenses((ls) => ls.filter((l) => lensRootOpId(l) !== rootId && l.id !== rootId));
+    setActiveLensId((id) => (id === rootId ? null : id));
+  }
+
+  function duplicateOperatorSubtree(rootId) {
+    const map = Object.fromEntries(operators.map((o) => [o.id, o]));
+    const root = map[rootId];
+    if (!root) return null;
+    const subtreeIds = [...collectSubtreeIds(rootId, map)];
+    const idMap = Object.fromEntries(subtreeIds.map((id) => [id, uid()]));
+    const newOps = subtreeIds.map((id) => {
+      const op = map[id];
+      const clone = { ...op, id: idMap[id] };
+      if (clone.kind === "pipeline" && clone.steps) {
+        clone.steps = clone.steps.map((sid) => idMap[sid] || sid);
+      }
+      if (id === rootId) clone.top = true;
+      return clone;
+    });
+    setOperators((prev) => [...prev, ...newOps]);
+    return idMap[rootId];
+  }
+
+  function openEditLens(op) {
+    emitTourEvent("open-function-editor");
+    setOpEditor({ mode: "edit", op });
+  }
+
+  /** @deprecated use openCreateLens */
+  function openCreateFunction() {
+    openCreateLens();
+  }
+
+  /** @deprecated use openEditLens */
+  function openEditFunction(op) {
+    openEditLens(op);
   }
 
   /** One line → a perceptual move you can drag, compound, and lens. */
@@ -3817,12 +3903,7 @@ export default function App() {
     showToast(`move · ${name}`);
   }
 
-  function openEditFunction(op) {
-    emitTourEvent("open-function-editor");
-    setOpEditor({ mode: "edit", op });
-  }
-
-  function saveFunctionTree(oldRootId, newOps) {
+  function saveLensTree(oldRootId, newOps) {
     setOperators((arr) => {
       let next = arr;
       const newRootId = newOps.length ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id : null;
@@ -3841,8 +3922,18 @@ export default function App() {
       }
       return [...next, ...newOps];
     });
+    const newRootId = newOps.length
+      ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id
+      : null;
+    const root = newOps.find((o) => o.id === newRootId);
+    if (root?.top) syncLensForOperator(newRootId, root, { isNew: !oldRootId });
     setOpEditor(null);
-    showToast(oldRootId ? "function updated" : "function created");
+    showToast(oldRootId ? "lens updated" : "lens created");
+  }
+
+  /** @deprecated alias */
+  function saveFunctionTree(oldRootId, newOps) {
+    saveLensTree(oldRootId, newOps);
   }
 
   function saveManualOp(op) {
@@ -3862,12 +3953,18 @@ export default function App() {
     showToast("saved");
   }
 
-  function deleteFunction(rootId) {
+  function deleteLens(rootId, opts = {}) {
     const map = Object.fromEntries(operators.map((o) => [o.id, o]));
     const removeIds = collectSubtreeIds(rootId, map);
     setOperators((arr) => arr.filter((o) => !removeIds.has(o.id)));
+    if (!opts.skipLensRemove) removeLensForOperator(rootId);
     setOpEditor(null);
-    showToast("function deleted");
+    showToast("lens deleted");
+  }
+
+  /** @deprecated alias */
+  function deleteFunction(rootId, opts) {
+    deleteLens(rootId, opts);
   }
 
   // ---- paths: every node already carries its journey ----
@@ -4181,10 +4278,12 @@ export default function App() {
       stepCount: steps.length,
     };
     const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
+    const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [...prev, ...ops]);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
     focusRailPane("functions");
     pulseFunctionsRail();
-    showToast(`saved function · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
+    showToast(`saved lens · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
     if (opts.sourceIds?.length) {
       recordItemEvents(opts.sourceIds, "saved-as-function", {
         opId: rootId,
@@ -4880,10 +4979,12 @@ export default function App() {
     }
     const tree = opToJsonTree(op, opMap);
     if (!tree) return;
-    const { ops } = treeToOperators(tree, { role: op.role || null, top: true });
+    const { ops, rootId } = treeToOperators(tree, { role: op.role || null, top: true });
+    const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [...prev, ...ops]);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
     focusRailPane("functions");
-    showToast(`saved · ${op.name}`);
+    showToast(`saved lens · ${op.name}`);
   }
 
   /** Merge: drop one operator onto another → a compound pipeline (A, then B). */
@@ -4898,12 +4999,14 @@ export default function App() {
       steps: [opToAbstractTree(a, opMap, operators), opToAbstractTree(b, opMap, operators)],
     };
     const { ops, rootId } = treeToOperators(tree, { top: true });
+    const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [
       ...prev,
       ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
     ]);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
     focusRailPane("functions");
-    showToast(`compound forged · ${a.name} → ${b.name}`);
+    showToast(`compound lens · ${a.name} → ${b.name}`);
   }
 
   function deleteStructure(id) {
@@ -4978,6 +5081,28 @@ export default function App() {
   }
 
   const topFunctions = operators.filter((o) => o.top && !o.move);
+  const displayLenses = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const lens of lenses) {
+      const key = lensRootOpId(lens) || lens.id;
+      if (key) seen.add(key);
+      out.push(lens);
+    }
+    for (const op of topFunctions) {
+      if (!seen.has(op.id)) {
+        out.push({
+          id: op.id,
+          opId: op.id,
+          name: op.name,
+          moveIds: [op.id],
+          version: 1,
+        });
+        seen.add(op.id);
+      }
+    }
+    return out;
+  }, [lenses, topFunctions]);
   const canonicalPrimitives = useMemo(() => {
     const byName = Object.fromEntries(
       operators.filter((o) => o.primitive && !o.role && !o.top).map((o) => [o.name, o])
@@ -4987,7 +5112,8 @@ export default function App() {
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
-  const activeLens = lenses.find((l) => l.id === activeLensId) || null;
+  const activeLens =
+    displayLenses.find((l) => l.id === activeLensId || lensRootOpId(l) === activeLensId) || null;
 
   function resolveNodeSourceIds(node) {
     if (node.sourceIds?.length) return { ids: node.sourceIds, sourceNode: node };
@@ -5056,42 +5182,19 @@ export default function App() {
     exploreAiNode(nodeId, { runExpand: true });
   }
 
-  // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
-  function saveLens(draft) {
-    const name = (draft.name || "").trim() || "unnamed lens";
-    const moveIds = [...new Set(draft.moveIds || [])];
-    if (!moveIds.length) {
-      showToast("a lens needs at least one move");
-      return;
-    }
-    if (draft.id) {
-      setLenses((ls) =>
-        ls.map((l) => {
-          if (l.id !== draft.id) return l;
-          const version = (l.version || 1) + 1;
-          return { ...l, name, moveIds, version, updatedAt: Date.now() };
-        })
-      );
-      const nextVersion = (lenses.find((l) => l.id === draft.id)?.version || 1) + 1;
-      showToast(`Evolved · ${name} · v${nextVersion}`);
-    } else {
-      const now = Date.now();
-      const lens = { id: uid(), name, moveIds, version: 1, createdAt: now, updatedAt: now };
-      setLenses((ls) => [lens, ...ls]);
-      setActiveLensId(lens.id);
-      showToast(`Created · ${name} — now active`);
-    }
-    setLensEditor(null);
-  }
-
+  // ---- lenses: branch, fork, merge, compare, upload — git for perception ----
   function branchLens(parentId) {
-    const parent = lenses.find((l) => l.id === parentId);
+    const parent = displayLenses.find((l) => l.id === parentId) || lenses.find((l) => l.id === parentId);
     if (!parent) return;
     const now = Date.now();
+    const parentOpId = lensRootOpId(parent);
+    let newOpId = null;
+    if (parentOpId) newOpId = duplicateOperatorSubtree(parentOpId);
     const lens = {
-      id: uid(),
+      id: newOpId || uid(),
+      opId: newOpId || undefined,
       name: `${parent.name} · branch`.slice(0, 60),
-      moveIds: [...(parent.moveIds || [])],
+      moveIds: newOpId ? [newOpId] : [...(parent.moveIds || [])],
       parentId,
       lineage: [...(parent.lineage || []), parentId],
       version: 1,
@@ -5104,13 +5207,17 @@ export default function App() {
   }
 
   function forkLens(sourceId) {
-    const source = lenses.find((l) => l.id === sourceId);
+    const source = displayLenses.find((l) => l.id === sourceId) || lenses.find((l) => l.id === sourceId);
     if (!source) return;
     const now = Date.now();
+    const sourceOpId = lensRootOpId(source);
+    let newOpId = null;
+    if (sourceOpId) newOpId = duplicateOperatorSubtree(sourceOpId);
     const lens = {
-      id: uid(),
+      id: newOpId || uid(),
+      opId: newOpId || undefined,
       name: `${source.name} · fork`.slice(0, 60),
-      moveIds: [...(source.moveIds || [])],
+      moveIds: newOpId ? [newOpId] : [...(source.moveIds || [])],
       forkedFrom: sourceId,
       version: 1,
       createdAt: now,
@@ -5141,9 +5248,14 @@ export default function App() {
     showToast(`Merged · ${lens.name}`);
   }
 
-  function deleteLens(id) {
+  function deleteLensRecord(id) {
+    const lens = lenses.find((l) => l.id === id) || displayLenses.find((l) => l.id === id);
+    const opId = lensRootOpId(lens);
+    if (opId) {
+      deleteLens(opId, { skipLensRemove: true });
+    }
     setLenses((ls) => ls.filter((l) => l.id !== id));
-    if (activeLensId === id) setActiveLensId(null);
+    if (activeLensId === id || activeLensId === opId) setActiveLensId(null);
     setLensCompare(null);
   }
 
@@ -7236,7 +7348,7 @@ export default function App() {
     else if (action === "open-structures") focusRailPane("structures");
     else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
-    else if (action === "new-function") openCreateFunction();
+    else if (action === "new-function") openCreateLens();
   }
 
   function handleShareBoard() {
@@ -7438,35 +7550,63 @@ export default function App() {
             data-tour="functions-toolbox"
           >
             <section ref={functionsSectionRef} className="rail-pane rail-functions-pane" data-tour="functions-section">
-              <h3 className="rail-pane-heading">functions</h3>
-              <p className="rail-functions-hint">Drag ideas here to save the perceptual steps.</p>
-              <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
+              <h3 className="rail-pane-heading">lenses</h3>
+              <p className="rail-functions-hint">Drag ideas here to save perceptual steps as a lens.</p>
+              <button className="rail-create" data-tour="create-function" onClick={openCreateLens}>+ lens</button>
               <div className="move-quick-add">
                 <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
               {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
                 <div className="sel-capture-panel">
-                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="lens name" />
                   <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
                 </div>
               )}
-              <div className="rail-lens-actions">
-                <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-              </div>
               <div className="rail-scroll">
-                {lenses.length > 0 && (
+                {displayLenses.length > 0 && (
                   <>
-                    <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
-                    {lenses.map((lens) => (
-                      <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                    <div className="rail-section" data-tour="lenses-section">your lenses</div>
+                    {displayLenses.map((lens) => (
+                      <LensCard
+                        key={lens.id}
+                        lens={lens}
+                        active={lens.id === activeLensId || lensRootOpId(lens) === activeLensId}
+                        opMap={opMap}
+                        lenses={displayLenses}
+                        comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)}
+                        comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId}
+                        onUse={() => {
+                          const id = lens.id;
+                          setActiveLensId(id === activeLensId ? null : id);
+                          emitTourEvent("lens-use");
+                        }}
+                        onEvolve={() => {
+                          emitTourEvent("lens-evolve");
+                          const opId = lensRootOpId(lens);
+                          const op = opId ? opMap[opId] : null;
+                          if (op) openEditLens(op);
+                          else showToast("open + lens to rebuild this palette");
+                        }}
+                        onBranch={() => branchLens(lens.id)}
+                        onFork={() => forkLens(lens.id)}
+                        onSend={() => exportLens(lens.id)}
+                        onCompare={() => {
+                          if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id });
+                          else {
+                            setLensCompare({ aId: lens.id });
+                            showToast("pick another lens to Compare");
+                          }
+                        }}
+                        onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
+                        onDelete={() => deleteLensRecord(lens.id)}
+                      />
                     ))}
                   </>
                 )}
-                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
               </div>
             </section>
             <section ref={symbolsSectionRef} className="rail-pane rail-symbols-pane" data-tour="structures-tab">
@@ -8257,24 +8397,9 @@ export default function App() {
           opMap={opMap}
           operators={operators}
           onClose={() => setOpEditor(null)}
-          onSaveTree={saveFunctionTree}
+          onSaveTree={saveLensTree}
           onSaveManual={saveManualOp}
-          onDelete={deleteFunction}
-        />
-      )}
-
-      {lensEditor && (
-        <LensEditor
-          draft={lensEditor}
-          groups={[
-            { label: "your moves", ops: moves },
-            { label: "primitives", ops: primitives },
-            { label: "yours", ops: topFunctions },
-            { label: "basics", ops: basics },
-          ]}
-          onChange={setLensEditor}
-          onSave={saveLens}
-          onClose={() => setLensEditor(null)}
+          onDelete={deleteLens}
         />
       )}
 
@@ -8971,7 +9096,7 @@ function LensCard({
   onDelete,
 }) {
   const [mergeOver, setMergeOver] = useState(false);
-  const moveNames = (lens.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  const moveNames = lensStepNames(lens, opMap);
   const metaLines = lensMetaLines(lens, lenses);
   return (
     <div
@@ -9035,7 +9160,7 @@ function LensCard({
         <button className={"lens-btn" + (active ? " on" : "")} onClick={onUse} title="activate this lens palette">
           {active ? "Active" : "Use"}
         </button>
-        <button className="lens-btn" onClick={onEvolve} title="Evolve — update moves in place">
+        <button className="lens-btn" onClick={onEvolve} title="Evolve — edit steps in the full lens builder">
           Evolve
         </button>
         <button className="lens-btn" onClick={onBranch} title="Branch — experiment, keep lineage">
@@ -9057,69 +9182,6 @@ function LensCard({
         <button className="lens-btn danger" onClick={onDelete} title="delete lens">
           ×
         </button>
-      </div>
-    </div>
-  );
-}
-
-function LensEditor({ draft, groups, onChange, onSave, onClose }) {
-  const selected = new Set(draft.moveIds || []);
-  const toggle = (id) =>
-    onChange((d) => {
-      const next = new Set(d.moveIds || []);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { ...d, moveIds: [...next] };
-    });
-  return (
-    <div className="onboard-scrim" onClick={onClose}>
-      <div className="lens-editor" onClick={(e) => e.stopPropagation()}>
-        <h3 className="lens-editor-title">{draft.id ? "evolve lens" : "new lens"}</h3>
-        <p className="lens-editor-sub">
-          Pick the moves you keep reaching for. This becomes your quick palette — your recognizable way
-          of transforming what you see.
-        </p>
-        <input
-          className="lens-editor-name"
-          autoFocus
-          placeholder="name it — e.g. everything is a garden"
-          value={draft.name}
-          onChange={(e) => {
-            const name = e.target.value;
-            onChange((d) => ({ ...d, name }));
-          }}
-          onKeyDown={(e) => e.key === "Enter" && onSave(draft)}
-        />
-        <div className="lens-editor-groups">
-          {groups
-            .filter((g) => g.ops.length)
-            .map((g) => (
-              <div key={g.label}>
-                <div className="rail-section">{g.label}</div>
-                <div className="lens-editor-chips">
-                  {g.ops.map((op) => (
-                    <button
-                      key={op.id}
-                      className={"lens-pick" + (selected.has(op.id) ? " on" : "")}
-                      title={op.description || op.name}
-                      onClick={() => toggle(op.id)}
-                    >
-                      {op.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-        </div>
-        <div className="lens-editor-foot">
-          <span className="lens-editor-count">{selected.size} move{selected.size === 1 ? "" : "s"}</span>
-          <button className="rec-btn" onClick={onClose}>
-            cancel
-          </button>
-          <button className="rec-btn primary" disabled={!selected.size} onClick={() => onSave(draft)}>
-            {draft.id ? "save evolution" : "create lens"}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -9509,7 +9571,7 @@ function FunctionEditor({ editor, opMap, operators, onClose, onSaveTree, onSaveM
       <div className="fn-editor fn-editor-fullscreen" onClick={(e) => e.stopPropagation()}>
         <div className="fn-head">
           <div>
-            <h3>{isCreate ? "create function" : "edit function"}</h3>
+            <h3>{isCreate ? "create lens" : "edit lens"}</h3>
             {rootDraft && (
               <p className="fn-head-sub">
                 Expand steps to edit details. Click a step to focus it for AI edits.
@@ -9538,7 +9600,7 @@ function FunctionEditor({ editor, opMap, operators, onClose, onSaveTree, onSaveM
             ) : (
               <div className="fn-create-panel">
                 <p className="fn-hint">
-                  Describe what this function should do below, or fill in the fields. Once generated, the
+                  Describe what this lens should do below, or fill in the fields. Once generated, the
                   full tree appears here with every prompt visible.
                 </p>
                 <label>name</label>
