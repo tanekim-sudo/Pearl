@@ -2225,6 +2225,8 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 0 22px rgba(251, 191, 36, 0.28),
     0 0 36px rgba(167, 139, 250, 0.18);
 }
+
+.struct-card-glyph {
   width: 32px;
   height: 32px;
   margin-right: 2px;
