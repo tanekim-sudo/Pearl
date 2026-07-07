@@ -1,45 +1,37 @@
 :root,
 html[data-theme="idea"],
 .theme-idea {
-  --paper: #faf6ff;
-  --paper-deep: #f3ecff;
-  --card: rgba(255, 252, 255, 0.82);
-  --card-edge: rgba(244, 236, 255, 0.65);
-  --ink: #1e1040;
-  --ink-stroke: #2a1858;
-  --ink-2: #4a3878;
-  --faint: #8b7cb0;
-  --line: rgba(124, 92, 246, 0.12);
-  --line-2: rgba(124, 92, 246, 0.2);
-  --notebook-line: rgba(139, 92, 246, 0.06);
-  --notebook-margin: rgba(167, 139, 250, 0.1);
-  --accent: #a78bfa;
-  --accent-soft: rgba(167, 139, 250, 0.2);
-  --accent-text: #7c3aed;
-  --magic-violet: #c4b5fd;
-  --magic-cyan: #67e8f9;
-  --magic-rose: #f9a8d4;
-  --magic-gold: #fcd34d;
-  --magic-glow: rgba(167, 139, 250, 0.35);
-  --void-deep: #06040f;
-  --void-mist: rgba(103, 232, 249, 0.08);
-  --chalk-yellow: #fde68a;
-  --chalk-yellow-deep: #fbbf24;
-  --chalk-yellow-muted: #d97706;
-  --chalk-yellow-text: #b45309;
-  --chalk-yellow-dark: #fef3c7;
+  --paper: #f4f4f5;
+  --paper-deep: #ececef;
+  --card: #ffffff;
+  --card-edge: #f8f8fa;
+  --ink: #101216;
+  --ink-stroke: #14161b;
+  --ink-2: #3a3f47;
+  --faint: #9ca3af;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-2: rgba(15, 23, 42, 0.12);
+  --notebook-line: rgba(15, 23, 42, 0.04);
+  --notebook-margin: rgba(15, 23, 42, 0.06);
+  --accent: #d4a83c;
+  --accent-soft: rgba(212, 168, 60, 0.12);
+  --accent-text: #92400e;
+  --chalk-yellow: #fef08a;
+  --chalk-yellow-deep: #eab308;
+  --chalk-yellow-muted: #a16207;
+  --chalk-yellow-text: #854d0e;
+  --chalk-yellow-dark: #fef9c3;
   --chalk-pink: #fbcfe8;
   --chalk-danger: #fca5a5;
-  --chalk-glow: rgba(167, 139, 250, 0.16);
-  --shadow-soft: rgba(76, 29, 149, 0.12);
-  --shadow-chalk: rgba(255, 255, 255, 0.65);
-  --highlight: #fbbf24;
+  --chalk-glow: rgba(212, 168, 60, 0.08);
+  --shadow-soft: rgba(15, 23, 42, 0.08);
+  --shadow-chalk: rgba(255, 255, 255, 0.8);
   --sidebar-w: 240px;
   --rail-w: 300px;
   --sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --hand: "Segoe Print", "Comic Sans MS", cursive;
-  --canvas-bg: #fffcff;
+  --canvas-bg: #ffffff;
 }
 
 html[data-theme="chalk"],
@@ -139,16 +131,9 @@ body {
   text-transform: lowercase;
 }
 .rail-tab.on {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 22%, var(--card)),
-    color-mix(in srgb, var(--magic-cyan) 12%, var(--card))
-  );
+  background: color-mix(in srgb, var(--ink) 10%, var(--card));
   color: var(--ink);
   font-weight: 500;
-  box-shadow:
-    0 0 16px color-mix(in srgb, var(--accent) 25%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .rail-tab:hover:not(.on) {
   color: var(--ink-2);
@@ -1029,18 +1014,17 @@ body {
   max-width: 260px;
   max-height: 120px;
   overflow: hidden;
-  background: linear-gradient(165deg, #fffcff 0%, #f8f2ff 100%);
-  color: #1e1040;
-  border-radius: 12px;
+  background: #ffffff;
+  color: #101216;
+  border-radius: 10px;
   padding: 10px 14px;
   font-size: 12.5px;
   line-height: 1.5;
-  border: 1.5px solid rgba(251, 191, 36, 0.88);
+  border: 1.5px solid rgba(212, 168, 60, 0.85);
   box-shadow:
-    0 0 0 3px rgba(167, 139, 250, 0.18),
-    0 0 28px rgba(255, 205, 85, 0.42),
-    0 0 48px rgba(167, 139, 250, 0.15),
-    0 12px 32px rgba(30, 16, 64, 0.22);
+    0 0 0 3px rgba(240, 195, 80, 0.2),
+    0 0 26px rgba(255, 205, 85, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.28);
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
@@ -1074,10 +1058,9 @@ body {
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.75) 0%,
-    rgba(196, 181, 253, 0.38) 35%,
-    rgba(103, 232, 249, 0.15) 55%,
-    transparent 72%
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(240, 210, 130, 0.3) 40%,
+    transparent 70%
   );
   animation: transfer-orb-breathe 1.4s ease-in-out infinite;
 }
@@ -1089,13 +1072,11 @@ body {
   background: radial-gradient(
     circle at 35% 30%,
     rgba(255, 255, 255, 1),
-    rgba(196, 181, 253, 0.75) 48%,
-    rgba(103, 232, 249, 0.25) 100%
+    rgba(240, 244, 255, 0.85) 55%,
+    rgba(210, 220, 255, 0.3) 100%
   );
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow:
-    0 0 24px rgba(255, 255, 255, 0.9),
-    0 0 40px rgba(167, 139, 250, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.85);
 }
 
 .transfer-morph-orb-count {
@@ -1903,20 +1884,18 @@ body {
 
 @keyframes paper-born-gold {
   0% {
-    color: #c4a028;
-    background: rgba(255, 214, 90, 0.2);
+    color: #a87b12;
+    background: rgba(255, 214, 90, 0.16);
     box-shadow:
-      0 0 0 2px rgba(255, 205, 80, 0.55),
-      0 0 32px rgba(255, 205, 85, 0.55),
-      0 0 48px rgba(167, 139, 250, 0.25);
+      0 0 0 2px rgba(255, 205, 80, 0.4),
+      0 0 28px rgba(255, 205, 85, 0.45);
   }
   55% {
-    color: #7c5e18;
-    background: rgba(255, 214, 90, 0.08);
+    color: #6a5310;
+    background: rgba(255, 214, 90, 0.07);
     box-shadow:
-      0 0 0 1px rgba(255, 205, 80, 0.28),
-      0 0 18px rgba(255, 205, 85, 0.28),
-      0 0 24px rgba(167, 139, 250, 0.12);
+      0 0 0 1px rgba(255, 205, 80, 0.2),
+      0 0 14px rgba(255, 205, 85, 0.2);
   }
   100% {
     color: var(--ink);
