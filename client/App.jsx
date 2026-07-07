@@ -2830,22 +2830,28 @@ export default function App() {
           if (isHighlight) {
             const pts = g.points.slice();
             if (g.strokeId) paperSessionRef.current?.cancelStroke?.();
-            const tapHit =
-              g.points.length <= 3
-                ? itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy)
-                : null;
+            const moved = Math.hypot((g.lastCx ?? g.cx) - g.cx, (g.lastCy ?? g.cy) - g.cy);
+            const isTap = pts.length <= 4 && moved <= 10;
+            const tapHit = isTap
+              ? itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy)
+              : null;
             let ideaIds = ideasFromHighlightGesture(
               pts,
               camRef.current.scale,
               itemsRef.current,
               worldToClient,
-              tapHit && isTransformableBlock(tapHit) ? tapHit.id : null
+              tapHit && isTransformableBlock(tapHit) ? tapHit.id : tapHit?.id
             );
             const merged = [...new Set([...ideaIds, ...brushedDuring])];
             if (merged.length) {
-              accumulateHighlightSelection(merged, g.additive);
-            } else if (!g.additive && g.points.length <= 3) {
-              setHighlightSelectionIds([]);
+              if (isTap && !g.additive && merged.length === 1) {
+                const id = merged[0];
+                setHighlightSelectionIds((prev) =>
+                  prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                );
+              } else {
+                accumulateHighlightSelection(merged, g.additive || isTap);
+              }
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -2963,12 +2969,11 @@ export default function App() {
           }
           return null;
         });
-        setHighlightSelectionIds([]);
-        setHighlightTouchIds([]);
+        clearHighlightSelection();
         pendingImageRef.current = null;
         setImageArmed(false);
       }
-      // Space: on AI side → highlight/select toggle; on paper → cycle utensils
+      // Space: clear highlight marks, then toggle utensil (AI) or cycle tools (paper)
       if (e.key === " " && !e.repeat) {
         const typing =
           e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
@@ -2977,6 +2982,7 @@ export default function App() {
         const onAi = lp ? isOverAiColumn(lp.cx, lp.cy) : false;
         if (!onAi && walkingRef.current) return;
         e.preventDefault();
+        clearHighlightSelection();
         if (onAi) {
           const next = toolRef.current === "highlight" ? "select" : "highlight";
           setTool(next);
@@ -3118,6 +3124,13 @@ export default function App() {
       const merged = addToExisting ? [...new Set([...prev, ...newIds])] : [...new Set(newIds)];
       return merged;
     });
+  }
+
+  function clearHighlightSelection() {
+    setHighlightSelectionIds([]);
+    setHighlightTouchIds([]);
+    setHighlightTransferringIds([]);
+    setHighlightGrabHover(false);
   }
 
   function deleteSelection() {

@@ -30,4 +30,12 @@ describe("highlight-ink selection", () => {
     });
     assert.ok(hits.includes("c"));
   });
+
+  it("tapItemId selects a stroke on a short tap", () => {
+    const hits = itemsFromHighlightGesture([{ x: 30, y: 10 }], 1, items, worldToClient, blockWidth, itemHeight, {
+      isTransformableBlock: (it) => it.type === "text",
+      tapItemId: "a",
+    });
+    assert.deepEqual(hits, ["a"]);
+  });
 });
