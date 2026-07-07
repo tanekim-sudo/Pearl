@@ -482,7 +482,9 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", onUp);
   }
 
-  function startHighlightTransfer(e, node) {
+  function startFragmentGrab(e, node) {
+    e.preventDefault();
+    e.stopPropagation();
     onSelect?.(node.id, { replace: true });
     onSpaceTransferStart?.(e, [node.id]);
   }
@@ -491,10 +493,15 @@ export default function AiNodeCanvas({
     if (e.button !== 0) return;
 
     if (tool === "highlight") {
+      const readable = node.expandedText?.trim() || node.preview?.trim();
+      const zoomedForText = contentBlend > 0.08;
+      if (readable && zoomedForText) {
+        onSelect?.(node.id, { replace: true });
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       onSelect?.(node.id, { replace: true });
-      const readable = node.expandedText?.trim() || node.preview?.trim();
       if (!readable) {
         const canExpand =
           (node.nodeKind === "source" || node.nodeKind === "session") &&
@@ -512,7 +519,7 @@ export default function AiNodeCanvas({
         if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
         armed = true;
         cleanup();
-        startHighlightTransfer(e, node);
+        startFragmentGrab(e, node);
       }
 
       function onUp() {
@@ -660,7 +667,13 @@ export default function AiNodeCanvas({
     return parts.map((part, i) => {
       if (part.startsWith("⟦") && part.endsWith("⟧")) {
         return (
-          <mark key={i} className="ai-golden-fragment">
+          <mark
+            key={i}
+            className="ai-golden-fragment"
+            onPointerDown={(ev) => {
+              if (tool === "highlight" || tool === "select") startFragmentGrab(ev, node);
+            }}
+          >
             {part.slice(1, -1)}
           </mark>
         );
@@ -670,9 +683,10 @@ export default function AiNodeCanvas({
   }
 
   const highlightReaderNode =
-    tool === "highlight" && selectedIds.length === 1 && contentBlend < 0.1
+    tool === "highlight" && selectedIds.length === 1
       ? nodes.find((n) => n.id === selectedIds[0] && n.expandedText?.trim())
       : null;
+  const showHighlightReader = highlightReaderNode && contentBlend < 0.42;
 
   return (
     <div
@@ -921,7 +935,7 @@ export default function AiNodeCanvas({
                   {tool === "highlight" &&
                     node.expandedText?.trim() &&
                     (isSelected || isFocused) &&
-                    nodeBlend > 0.06 && (
+                    nodeBlend > 0.04 && (
                       <div
                         className="ai-node-text-highlight"
                         onPointerDown={(ev) => ev.stopPropagation()}
@@ -931,6 +945,9 @@ export default function AiNodeCanvas({
                           active
                           text={node.expandedText}
                           fontSize={textLayout.fontSize}
+                          lineHeight={textLayout.lineHeight}
+                          width={textLayout.w}
+                          fontFamily="inherit"
                           onFragmentReplace={onFragmentReplace}
                           onFragmentToPaper={onFragmentToPaper}
                           isPaperDestination={isPaperDestination}
@@ -972,7 +989,7 @@ export default function AiNodeCanvas({
         </div>
       )}
 
-      {highlightReaderNode && (
+      {showHighlightReader && (
         <div
           className="ai-response-reader"
           onPointerDown={(e) => e.stopPropagation()}
@@ -982,7 +999,7 @@ export default function AiNodeCanvas({
             <button
               type="button"
               className="ai-response-reader-drag"
-              onPointerDown={(e) => startHighlightTransfer(e, highlightReaderNode)}
+              onPointerDown={(e) => startFragmentGrab(e, highlightReaderNode)}
             >
               Drag to paper →
             </button>
@@ -992,6 +1009,8 @@ export default function AiNodeCanvas({
               active
               text={highlightReaderNode.expandedText}
               fontSize={15}
+              lineHeight={1.5}
+              fontFamily="inherit"
               onFragmentReplace={onFragmentReplace}
               onFragmentToPaper={onFragmentToPaper}
               isPaperDestination={isPaperDestination}

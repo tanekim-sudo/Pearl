@@ -22,14 +22,14 @@ describe("operator direction", () => {
 
   it("classifies compression primitives", () => {
     assert.equal(getOperatorDirection({ id: "op-compress", name: "compress" }), "compress");
-    assert.equal(getOperatorDirection({ id: "op-merge", name: "merge" }), "compress");
-    assert.ok(isCompressionOperator(TRANSFORM_PRIMITIVES.find((p) => p.name === "reduce")));
+    assert.ok(isCompressionOperator(TRANSFORM_PRIMITIVES.find((p) => p.name === "compress")));
   });
 
   it("classifies expansion primitives", () => {
     assert.equal(getOperatorDirection({ id: "op-expand", name: "expand" }), "expand");
     assert.equal(getOperatorDirection({ id: "op-invert", name: "invert" }), "expand");
-    assert.ok(isExpansionOperator(TRANSFORM_PRIMITIVES.find((p) => p.name === "generalize")));
+    assert.ok(isExpansionOperator(TRANSFORM_PRIMITIVES.find((p) => p.name === "explore")));
+    assert.ok(isExpansionOperator(TRANSFORM_PRIMITIVES.find((p) => p.name === "research")));
   });
 
   it("respects explicit direction field", () => {

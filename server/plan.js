@@ -80,9 +80,6 @@ function compileWorkflowSteps(leaves) {
     .join("\n");
 }
 
-/**
- * Primitives and moves: one perceptual LLM call — no resolve/research orchestration.
- */
 function compileSimplePlan(op, material) {
   const prompt = (op.prompt || "").trim() || `Apply ${op.name} to the input.`;
   const phases = [
@@ -105,12 +102,54 @@ function compileSimplePlan(op, material) {
   };
 }
 
+/** Research primitive: web search then grounded synthesis. */
+function compileResearchPrimitivePlan(op, material) {
+  const researchLeafPrompt = (op.prompt || "").trim() || "Research and ground the subject.";
+  const synthPrompt =
+    `Using the research, ${researchLeafPrompt}\n\nINPUT:\n${(material || "").trim()}`.trim();
+  const phases = [
+    {
+      id: "research",
+      label: "research",
+      timeoutMs: PHASE_TIMEOUT.research,
+      maxTokens: 2048,
+      research: true,
+      maxSearchUses: 2,
+      system: RESEARCH_SYSTEM,
+      researchLeafPrompt,
+    },
+    {
+      id: "synthesize",
+      label: op.name,
+      timeoutMs: synthesizeTimeoutMs(op.estimatedMs, false),
+      maxTokens: op.maxTokens || 2048,
+      prompt: synthPrompt,
+      system: PRIMITIVE_SYSTEM,
+    },
+  ];
+  return {
+    functionName: op.name,
+    functionDescription: op.description || "",
+    phases,
+    fastPath: false,
+    research: { researchLeafPrompt, system: RESEARCH_SYSTEM },
+    synthesize: { prompt: synthPrompt, system: PRIMITIVE_SYSTEM },
+    parseResolve: parseResolveOutput,
+  };
+}
+
 /**
  * Compile a function tree into 1–3 phases (resolve / research / synthesize).
  * Research runs only when a leaf has research:true. Resolve only when sparse + resolve leaves exist.
  */
 export function compileExecutionPlan(op, opMap, material) {
-  if (isTransformPrimitive(op) || isSingleStepPrompt(op, opMap)) {
+  if (isTransformPrimitive(op)) {
+    if (primitiveNeedsResearch(op, material)) {
+      return compileResearchPrimitivePlan(op, material);
+    }
+    return compileSimplePlan(op, material);
+  }
+  if (isSingleStepPrompt(op, opMap)) {
     return compileSimplePlan(op, material);
   }
 

@@ -121,6 +121,8 @@ import { attachCanvasWheel } from "./lib/canvas-navigation.js";
 import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
 import { cyclePrimaryUtensil, UTENSIL_LABELS } from "./lib/primary-utensils.js";
 import {
+  HIGHLIGHT_INK,
+  HIGHLIGHT_W,
   highlightWorldWidth,
   highlightBrushHits as inkHighlightBrushHits,
   itemsFromHighlightGesture,
@@ -171,9 +173,7 @@ const TRANSFER_DRAG_THRESHOLD = 4; // px before boundary transfer activates
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
-const HIGHLIGHT_INK = "#E8B923";
-const HIGHLIGHT_W = 12;
-const HIGHLIGHT_OPACITY = 0.92;
+const HIGHLIGHT_OPACITY = 0.88;
 const MARKER_OPACITY = 0.72;
 
 /** Branch / link directions — include east for clean left→right transform arrows. */
@@ -3429,7 +3429,7 @@ export default function App() {
     }
     }
 
-    if (execOp.multi || execOp.name === "differentiate") {
+    if (execOp.multi) {
       const parts = out
         .split(/\n{2,}/)
         .map((p) => p.replace(/^\s*(?:\[[^\]]+\]|[-*•]|\d+[.)])\s*/m, "").trim())
@@ -3474,8 +3474,8 @@ export default function App() {
       showToast("drop onto an idea");
       return;
     }
-    if ((op.needsSelection >= 2 || op.name === "merge") && ids.length < 2) {
-      showToast("merge: select 2+ ideas, or highlight with another selected");
+    if ((op.needsSelection >= 2) && ids.length < 2) {
+      showToast("select 2+ ideas for this transform");
       return;
     }
     setSelection(ids);
@@ -5533,7 +5533,7 @@ export default function App() {
       if (it.type !== "text") continue;
       const bb = clientBoundsForItem(it, worldToClient);
       if (!bb) continue;
-      const pad = Math.max(14, HIGHLIGHT_W * camRef.current.scale * 0.52);
+      const pad = Math.max(5, HIGHLIGHT_W * camRef.current.scale * 0.38);
       if (cx >= bb.left - pad && cx <= bb.right + pad && cy >= bb.top - pad && cy <= bb.bottom + pad) {
         hits.push(it.id);
       }
@@ -5962,9 +5962,26 @@ export default function App() {
 
     if (t === "highlight") {
       const hlSel = highlightSelectionRef.current;
-      if (hlSel.length && hit && hlSel.includes(hit.id)) {
-        startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
-        return;
+      if (hlSel.length) {
+        const hlBb = selectionWorldBBoxForIds(hlSel);
+        if (hlBb) {
+          const tl = worldToClient(hlBb.minx, hlBb.miny);
+          const br = worldToClient(hlBb.maxx, hlBb.maxy);
+          const pad = 12;
+          if (
+            cx >= tl.x - pad &&
+            cx <= br.x + pad &&
+            cy >= tl.y - pad &&
+            cy <= br.y + pad
+          ) {
+            startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
+            return;
+          }
+        }
+        if (hit && hlSel.includes(hit.id)) {
+          startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
+          return;
+        }
       }
       const hlW = highlightWorldWidth(camRef.current.scale);
       const strokeId = startDrawStroke(w, {
@@ -6170,7 +6187,7 @@ export default function App() {
 
   async function combineItemsByDrag(draggedIds, targetIds) {
     const ids = [...new Set([...draggedIds, ...targetIds])];
-    const mergeOp = operators.find((o) => o.name === "merge" && o.primitive) || TRANSFORM_PRIMITIVES.find((o) => o.name === "merge");
+    const mergeOp = operators.find((o) => o.name === "merge") || TRANSFORM_PRIMITIVES.find((o) => o.name === "expand");
     runOperator(mergeOp, ids, {});
   }
   combineRef.current = combineItemsByDrag;

@@ -3865,15 +3865,22 @@ html[data-theme="chalk"] body {
 
 .fragment-highlight-text {
   width: 100%;
-  min-height: 200px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  font-family: var(--hand);
+  min-height: 100%;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-family: inherit;
   color: transparent;
   white-space: pre-wrap;
+  word-break: break-word;
   user-select: none;
   pointer-events: none;
+}
+
+.fragment-highlight-preview {
+  color: transparent;
+  background: rgba(232, 185, 35, 0.42);
+  border-radius: 2px;
 }
 
 .fragment-highlight-draft {
@@ -4200,6 +4207,7 @@ html[data-theme="chalk"] body {
   color: rgba(255, 252, 235, 0.98);
   border-radius: 3px;
   padding: 0 3px;
+  cursor: grab;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
