@@ -13,47 +13,56 @@ export function createShareMeta(name, extra = {}) {
 
 export function createOperatorBundle(opTree, meta = {}) {
   if (!opTree) throw new Error("operator tree required");
-  return {
+  const { cognitiveTransfer, ...restMeta } = meta;
+  const bundle = {
     v: SHARE_BUNDLE_VERSION,
     kind: "operator",
     operators: [opTree],
-    meta: createShareMeta(meta.name || opTree.name, meta),
+    meta: createShareMeta(meta.name || opTree.name, restMeta),
   };
+  if (cognitiveTransfer) bundle.meta.cognitiveTransfer = cognitiveTransfer;
+  return bundle;
 }
 
 export function createLensShareBundle(name, opTrees, meta = {}) {
-  const { version, parentName, forkedFromName, mergedFromNames, ...restMeta } = meta;
+  const { version, parentName, forkedFromName, mergedFromNames, cognitiveTransfer, ...restMeta } = meta;
   const lens = { name, opTrees };
   if (version != null) lens.version = version;
   if (parentName) lens.parentName = parentName;
   if (forkedFromName) lens.forkedFromName = forkedFromName;
   if (mergedFromNames?.length) lens.mergedFromNames = mergedFromNames;
+  if (cognitiveTransfer) lens.cognitiveTransfer = cognitiveTransfer;
   return {
     v: SHARE_BUNDLE_VERSION,
     kind: "lens",
     lens,
-    meta: createShareMeta(name, restMeta),
+    meta: createShareMeta(name, { ...restMeta, cognitiveTransfer: cognitiveTransfer || restMeta.cognitiveTransfer }),
   };
 }
 
 export function createSymbolBundle(struct, meta = {}) {
   if (!struct?.items?.length) throw new Error("symbol items required");
-  const { id: _id, savedAt: _savedAt, ...portable } = struct;
-  return {
+  const { id: _id, savedAt: _savedAt, cognitiveTransfer, ...portable } = struct;
+  const bundle = {
     v: SHARE_BUNDLE_VERSION,
     kind: "symbol",
     symbols: [portable],
     meta: createShareMeta(meta.name || struct.title, meta),
   };
+  if (cognitiveTransfer) {
+    bundle.meta.cognitiveTransfer = cognitiveTransfer;
+    bundle.symbols[0].cognitiveTransfer = cognitiveTransfer;
+  }
+  return bundle;
 }
 
 /** Abstract journey — move sequence via op trees, no source canvas required. */
-export function createJourneyBundle({ title, steps, opTrees, captureMeta, meta = {} }) {
+export function createJourneyBundle({ title, steps, opTrees, captureMeta, cognitiveTransfer, meta = {} }) {
   return {
     v: SHARE_BUNDLE_VERSION,
     kind: "journey",
-    journey: { title, steps, opTrees, captureMeta: captureMeta || null },
-    meta: createShareMeta(meta.name || title, meta),
+    journey: { title, steps, opTrees, captureMeta: captureMeta || null, cognitiveTransfer: cognitiveTransfer || null },
+    meta: createShareMeta(meta.name || title, { ...meta, cognitiveTransfer }),
   };
 }
 

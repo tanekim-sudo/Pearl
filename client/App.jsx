@@ -17,6 +17,18 @@ import {
   hydrateOperatorMap,
   opToAbstractTree,
 } from "../shared/operator-capture.js";
+import {
+  abstractOperatorToTransfer,
+  abstractSymbolToTransfer,
+  abstractJourneyToTransfer,
+  portableExportTree,
+  extractCognitiveMeta,
+  buildFidelityPipelineFallback,
+  inferDomainFromMaterial,
+  needsCognitiveInstantiation,
+  resolveTransferContext,
+} from "../shared/cognitive-transfer.js";
+import { enrichTransferWithLLM, instantiateTransfer } from "./lib/cognitive-transfer-runtime.js";
 import { scaleEta, ETA } from "../shared/eta.js";
 import { pipelineClientAbortMs, CLIENT_ABORT_MS, PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
 import { compileExecutionPlan } from "../server/plan.js";
@@ -3476,9 +3488,6 @@ export default function App() {
   }
 
   async function executeOperatorJob(jobId, op, targetIds, atClient, opts = {}, mapOverride = null) {
-    const rawMap = { ...opMap, ...(mapOverride || {}) };
-    const map = hydrateOperatorMap(rawMap, operators, op.id);
-    const execOp = map[op.id] || op;
     const idSet = new Set(targetIds);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
     patchJob(jobId, { step: "reading material…" });
@@ -3486,6 +3495,33 @@ export default function App() {
     let text = gathered.text;
     const { image } = gathered;
     if (!text?.trim() && !image) throw new Error("no readable content");
+
+    const transfer = resolveTransferContext(op, opts.lens);
+    if (transfer && text?.trim() && needsCognitiveInstantiation(transfer, text)) {
+      const targetDomain = inferDomainFromMaterial(text);
+      const original = transfer.fidelity?.originalDomain || transfer.domainAnchor?.label;
+      const cross = !!(original && targetDomain && original !== targetDomain);
+      patchJob(jobId, { step: cross ? "adapting across domains…" : "restoring cognitive transfer…" });
+      let pipelineTree;
+      if (!cross) {
+        pipelineTree = buildFidelityPipelineFallback(transfer);
+      } else {
+        pipelineTree = await instantiateTransfer(transfer, runClaude, {
+          targetMaterial: text,
+          targetDomain,
+          mode: "cross",
+        });
+      }
+      if (pipelineTree) {
+        const { ops, rootId } = treeToOperators(pipelineTree, { top: false });
+        mapOverride = { ...(mapOverride || {}), ...Object.fromEntries(ops.map((o) => [o.id, o])) };
+        op = ops.find((o) => o.id === rootId) || op;
+      }
+    }
+
+    const rawMap = { ...opMap, ...(mapOverride || {}) };
+    const map = hydrateOperatorMap(rawMap, operators, op.id);
+    const execOp = map[op.id] || op;
 
     if (opts.highlightQuote) {
       text = `HIGHLIGHTED:\n"""\n${opts.highlightQuote.trim()}\n"""\n\nFULL TEXT:\n"""\n${(opts.highlightContext || text).trim()}\n"""`;
@@ -3667,7 +3703,7 @@ export default function App() {
     }
     setDropTargetId(null);
     if (moveOps.length === 1) {
-      runOperator(moveOps[0], ids, { atClient });
+      runOperator(moveOps[0], ids, { atClient, lens });
       return;
     }
     const tree = {
@@ -3679,7 +3715,7 @@ export default function App() {
     const compound = ops.find((o) => o.id === rootId);
     if (!compound) return;
     const mergedMap = { ...opMap, ...Object.fromEntries(ops.map((o) => [o.id, o])) };
-    runOperator(compound, ids, { atClient, opMap: mergedMap });
+    runOperator(compound, ids, { atClient, opMap: mergedMap, lens });
   }
 
   // ---- saved idea structures ----
@@ -4319,7 +4355,21 @@ export default function App() {
     };
     const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
     const rootOp = ops.find((o) => o.id === rootId);
-    setOperators((prev) => [...prev, ...ops]);
+    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+    const cognitiveTransfer = rootOp
+      ? abstractOperatorToTransfer(rootOp, draftMap, [...operators, ...ops], {
+          captureMeta: meta,
+          domainLabel: opts.domainLabel || null,
+          materialSample: opts.materialSample || null,
+          kind: "function",
+        })
+      : null;
+    const opsWithMeta = ops.map((o) =>
+      o.id === rootId && cognitiveTransfer
+        ? { ...o, captureMeta: { ...(o.captureMeta || meta), cognitiveTransfer } }
+        : o
+    );
+    setOperators((prev) => [...prev, ...opsWithMeta]);
     if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
     focusRailPane("functions");
     pulseFunctionsRail();
@@ -5418,6 +5468,7 @@ export default function App() {
       parentName: payload.parentName || null,
       forkedFromName: payload.forkedFromName || null,
       mergedFromNames: payload.mergedFromNames || null,
+      cognitiveTransfer: payload.cognitiveTransfer || data.cognitiveTransfer || extractCognitiveMeta({ meta: data.meta || payload }) || null,
       uploaded: true,
       createdAt: now,
       updatedAt: now,
@@ -5613,17 +5664,27 @@ export default function App() {
   function shareOperator(opId) {
     const op = opMap[opId];
     if (!op) return;
-    const tree = opToJsonTree(op, opMap);
-    copyShareLink(createOperatorBundle(tree, { name: op.name }));
+    const { opTree, cognitiveTransfer } = portableExportTree(op, opMap, operators, { name: op.name });
+    copyShareLink(createOperatorBundle(opTree, { name: op.name, cognitiveTransfer }));
   }
 
   function shareLensLink(id) {
     const l = lenses.find((x) => x.id === id);
     if (!l) return;
-    const opTrees = (l.moveIds || [])
-      .map((oid) => opMap[oid])
-      .filter(Boolean)
-      .map((op) => opToJsonTree(op, opMap));
+    const opTrees = [];
+    let cognitiveTransfer = null;
+    for (const oid of l.moveIds || []) {
+      const op = opMap[oid];
+      if (!op) continue;
+      const exported = portableExportTree(op, opMap, operators, { name: l.name, kind: "lens" });
+      opTrees.push(exported.opTree);
+      cognitiveTransfer = exported.cognitiveTransfer;
+    }
+    if (!opTrees.length && l.opId && opMap[l.opId]) {
+      const exported = portableExportTree(opMap[l.opId], opMap, operators, { name: l.name, kind: "lens" });
+      opTrees.push(exported.opTree);
+      cognitiveTransfer = exported.cognitiveTransfer;
+    }
     const parent = l.parentId ? lenses.find((x) => x.id === l.parentId) : null;
     const forked = l.forkedFrom ? lenses.find((x) => x.id === l.forkedFrom) : null;
     const mergedFromNames =
@@ -5637,13 +5698,15 @@ export default function App() {
         parentName: parent?.name || l.parentName || undefined,
         forkedFromName: forked?.name || l.forkedFromName || undefined,
         mergedFromNames: mergedFromNames?.length === 2 ? mergedFromNames : undefined,
+        cognitiveTransfer,
       })
     );
   }
 
   function shareSymbolStruct(struct) {
     if (!struct) return;
-    copyShareLink(createSymbolBundle(struct, { name: struct.title }));
+    const cognitiveTransfer = abstractSymbolToTransfer(struct, { domainLabel: struct.title });
+    copyShareLink(createSymbolBundle(struct, { name: struct.title, cognitiveTransfer }));
   }
 
   function shareJourneyLink(nodeId, { fullPath = false } = {}) {
@@ -5672,12 +5735,20 @@ export default function App() {
       };
     });
     const opTrees = (info.vias || []).map((via) => abstractStepFromVia(via, opMap, operators));
+    const cognitiveTransfer = abstractJourneyToTransfer({
+      title: journey.title,
+      opTrees,
+      captureMeta: info.captureMeta,
+      opMap,
+      operators,
+    });
     copyShareLink(
       createJourneyBundle({
         title: journey.title,
         steps,
         opTrees,
         captureMeta: info.captureMeta,
+        cognitiveTransfer,
         meta: { name: journey.title },
       })
     );
