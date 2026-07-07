@@ -1926,13 +1926,10 @@ body {
     background 0.15s ease;
 }
 .board-text.sel {
-  background: rgba(245, 230, 163, 0.18);
-  border-color: rgba(245, 230, 163, 0.75);
-  box-shadow:
-    0 0 0 3px rgba(245, 230, 163, 0.45),
-    0 0 18px rgba(245, 230, 163, 0.28);
-  outline: 2px solid rgba(245, 230, 163, 0.55);
-  outline-offset: 2px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
 }
 .board-text.hl-touch:not(.sel) {
   background: rgba(245, 230, 163, 0.12);

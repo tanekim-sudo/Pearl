@@ -249,9 +249,9 @@ export const TOUR_STEPS = [
   {
     id: "select-clone",
     phase: "Select & transfer",
-    title: "Select, clone, move",
+    title: "Select and move",
     instruction:
-      "Switch to **↖ Select**. Drag the **dashed edge** to move the original. Drag **inside** the box to clone — a ghost copy follows you.",
+      "With **↖ Select**, click a shape to select it and **drag from anywhere** on it to move. **Double-click** text to edit. Hold **Alt** while dragging to duplicate.",
     target: '[data-tour="tool-select"]',
     demo: "clone-hint",
     verifyKind: "event",

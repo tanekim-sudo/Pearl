@@ -313,7 +313,7 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag to move · marquee on empty · double-click for text · Alt+drag to pan",
+    hint: "Click to select · drag anywhere to move · double-click text to edit · Alt+drag to duplicate",
   },
   image: {
     id: "image",
@@ -1901,6 +1901,7 @@ export default function App() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const functionsSectionRef = useRef(null);
+  const pendingGoldBornRef = useRef(new Set());
   const symbolsSectionRef = useRef(null);
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
   const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
@@ -2835,9 +2836,7 @@ export default function App() {
           })
         );
       } else if (g.mode === "pending") {
-        if (g.intent === "edit") {
-          /* wait for click-up to edit */
-        } else if (g.intent === "clone") {
+        if (g.intent === "clone") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
           if (dist > MOVE_DRAG_THRESHOLD) {
             g.mode = "clone";
@@ -2981,18 +2980,7 @@ export default function App() {
       } else if (g.mode === "edit-click") {
         placeEditCaret(g.hitId, g.cx, g.cy);
       } else if (g.mode === "pending") {
-        if (g.intent === "edit" && g.ids?.length === 1) {
-          const hit = itemsRef.current.find((i) => i.id === g.hitId);
-          if (hit?.type === "text") {
-            if (editingRef.current === hit.id) {
-              placeEditCaret(hit.id, g.cx, g.cy);
-            } else {
-              editClickRef.current = { cx: g.cx, cy: g.cy };
-              editingRef.current = hit.id;
-              setEditing(hit.id);
-            }
-          }
-        }
+        /* tap without drag — selection only */
       } else if (g.mode === "clone") {
         setCloneGhost(null);
         setBoundaryMagnetActive(false);
@@ -5499,6 +5487,31 @@ export default function App() {
     return [it.id];
   }
 
+  function selectedAtPoint(cx, cy) {
+    const sel = selRef.current;
+    if (!sel.length || toolRef.current !== "select" || editingRef.current) return null;
+    const PAD = 8;
+    let minL = Infinity;
+    let minT = Infinity;
+    let maxR = -Infinity;
+    let maxB = -Infinity;
+    let count = 0;
+    const { pageId, world } = pageFilterRef.current;
+    for (const id of sel) {
+      const it = itemsRef.current.find((i) => i.id === id);
+      if (!it || !itemVisibleOnPage(it, pageId, world)) continue;
+      const bb = itemScreenBBox(it);
+      minL = Math.min(minL, bb.left);
+      minT = Math.min(minT, bb.top);
+      maxR = Math.max(maxR, bb.right);
+      maxB = Math.max(maxB, bb.bottom);
+      count++;
+    }
+    if (!count) return null;
+    if (cx >= minL - PAD && cx <= maxR + PAD && cy >= minT - PAD && cy <= maxB + PAD) return sel;
+    return null;
+  }
+
   function itemAtPoint(cx, cy, excludeIds = null) {
     const { pageId, world } = pageFilterRef.current;
     const list = itemsRef.current;
@@ -6080,12 +6093,21 @@ export default function App() {
         ? selRef.current
         : [hit.id];
       setSelection(nextSel);
-      const clickRegion = textClickRegion(hit, cx, cy);
-      let intent = clickRegion === "interior" ? "clone" : "move";
-      if (isEditableBlock(hit) && nextSel.length === 1 && clickRegion === "interior") {
-        intent = "edit";
+      if (toolRef.current === "select") {
+        clearHighlightSelection();
       }
+      const intent = e.altKey ? "clone" : "move";
       gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
+    } else if (t === "select") {
+      const selHit = selectedAtPoint(cx, cy);
+      if (selHit) {
+        const intent = e.altKey ? "clone" : "move";
+        gesture.current = { mode: "pending", cx, cy, ids: selHit, hitId: selHit[0], intent };
+      } else {
+        if (!e.shiftKey) setSelection([]);
+        gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
+        setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
+      }
     } else {
       if (!e.shiftKey) setSelection([]);
       gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
@@ -6137,8 +6159,13 @@ export default function App() {
     const clean = (text || "").replace(/\u00a0/g, " ");
     if (!clean.trim()) {
       setItems((arr) => arr.filter((it) => it.id !== id));
+      pendingGoldBornRef.current.delete(id);
     } else {
       updateItem(id, { text: clean });
+      if (pendingGoldBornRef.current.has(id)) {
+        pendingGoldBornRef.current.delete(id);
+        markGoldBorn(id);
+      }
     }
     editingRef.current = null;
     setEditing(null);
@@ -6196,13 +6223,22 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click object: replay history · blank paper: new text box
+  // double-click object: replay history · blank paper: new text box · text: edit
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
     if (hit && isReplayableItem(hit)) {
       e.preventDefault();
       startHistoryReplay(hit.id);
+      return;
+    }
+    if (hit && isEditableBlock(hit)) {
+      e.preventDefault();
+      setSelection([hit.id]);
+      clearHighlightSelection();
+      editingRef.current = hit.id;
+      setEditing(hit.id);
+      editClickRef.current = { cx: e.clientX, cy: e.clientY };
       return;
     }
     if (hit) return;
@@ -6349,6 +6385,7 @@ export default function App() {
     if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
       setEditing(id);
       editingRef.current = id;
+      pendingGoldBornRef.current.add(id);
     }
     if (type !== "text" && type !== "sticky") setTool("select");
     return id;
@@ -7677,7 +7714,7 @@ export default function App() {
             </svg>
           )}
 
-          {/* selection boundary — edge = move original, interior = clone */}
+          {/* selection handles */}
           {selection.length > 1 && (
             <div
               className="sel-box"
@@ -7857,7 +7894,7 @@ export default function App() {
 
       {/* screen-space selection boundary + transform handles */}
       {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
-        <SelectionBoundary bbox={selectionScreenBox} onEdgePointerDown={startSelectionEdgeMove} />
+        <SelectionBoundary bbox={selectionScreenBox} onFramePointerDown={startSelectionEdgeMove} />
       )}
 
       {canTransform && !editing && !historyReplay && (

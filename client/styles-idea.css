@@ -3198,11 +3198,9 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .board-sticky.sel {
-  outline: 3px solid var(--gold-ring, rgba(245, 200, 66, 0.95));
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 6px var(--gold-fill, rgba(255, 215, 0, 0.45)),
-    0 0 20px rgba(255, 215, 0, 0.35);
+  outline: 1px solid #1a73e8;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
   background: color-mix(in srgb, var(--gold, #ffd700) 18%, white);
 }
 
@@ -3346,13 +3344,10 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .idea-center .board-text.sel,
 .canvas-column .board-text.sel {
-  background: var(--gold-fill, rgba(255, 215, 0, 0.45));
-  border-color: var(--gold-deep, #f5c842);
-  box-shadow:
-    0 0 0 3px var(--gold-ring, rgba(245, 200, 66, 0.95)),
-    0 0 16px rgba(255, 215, 0, 0.4);
-  outline: 3px solid var(--gold-stroke, #e8b923);
-  outline-offset: 2px;
+  outline: none;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .canvas-column .board-img.sel,
@@ -3364,11 +3359,9 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .canvas-column .board-code.sel,
 .canvas-column .board-math.sel,
 .canvas-column .board-video.sel {
-  outline: 3px solid var(--gold-ring, rgba(245, 200, 66, 0.95));
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 6px var(--gold-fill, rgba(255, 215, 0, 0.45)),
-    0 0 20px rgba(255, 215, 0, 0.35);
+  outline: 1px solid #1a73e8;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
 }
 
 .canvas-column .ink-layer polyline.hl-stroke {
@@ -4168,7 +4161,7 @@ html[data-theme="chalk"] body {
   display: none;
 }
 
-/* ── Paper selection boundary (edge = move, interior = clone) ── */
+/* ── Paper selection handles (Google Slides style) ── */
 .selection-boundary-layer {
   position: absolute;
   inset: 0;
@@ -4176,31 +4169,26 @@ html[data-theme="chalk"] body {
   z-index: 12;
 }
 
-.selection-boundary-outer {
+.selection-boundary-frame {
   position: absolute;
-  border: 2px dashed rgba(232, 185, 35, 0.85);
-  border-radius: 6px;
+  border: 1px solid #1a73e8;
+  border-radius: 2px;
   pointer-events: none;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 0 18px rgba(232, 185, 35, 0.18);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
 }
 
-.selection-boundary-inner {
-  position: absolute;
-  border: 1.5px solid rgba(26, 26, 26, 0.35);
-  border-radius: 4px;
-  pointer-events: none;
-}
-
-.selection-boundary-edge {
+.selection-boundary-handle {
   position: absolute;
   pointer-events: auto;
+  background: #ffffff;
+  border: 1px solid #1a73e8;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
   cursor: grab;
   z-index: 13;
 }
 
-.selection-boundary-edge:active {
+.selection-boundary-handle:active {
   cursor: grabbing;
 }
 
