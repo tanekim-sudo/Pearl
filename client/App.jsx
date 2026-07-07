@@ -2446,58 +2446,14 @@ export default function App() {
 
     if (!runExpand) return;
 
-    if (node.nodeKind === "move" && node.opId) {
-      const linkId = node.sourceNodeIds?.[0] || node.parentId;
-      const source = aiNodesRef.current.find((n) => n.id === linkId);
-      const ids = source?.sourceIds;
-      const op = opMap[node.opId];
-      if (ids?.length && op) {
-        expandInAi(ids, { op, opLabel: op.name, sourceNode: source });
-      }
+    if (node.nodeKind === "expanded" && node.expandedText) {
+      focusAiNodeContent(node);
       return;
     }
 
-    if (node.nodeKind === "expanded") {
-      if (node.expandedText) {
-        focusAiNodeContent(node);
-        return;
-      }
-      if (node.sourceIds?.length && !node.loading) {
-        expandInAi(
-          node.sourceIds,
-          node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
-        );
-      }
-      return;
-    }
-
-    if (node.nodeKind === "session") {
-      const child = aiNodesRef.current.find(
-        (n) => n.parentId === node.id && n.nodeKind === "expanded"
-      );
-      if (child) {
-        setAiFocusedNodeId(child.id);
-        handleAiNodeSelect(child.id, { replace: true });
-        focusAiNodeContent(child);
-        if (animate) zoomAiToNode(child);
-        else {
-          const el = aiViewportRef.current;
-          if (el) setAiCamera(aiCardCameraFor(child, el));
-        }
-        if (!child.expandedText && !child.loading && aiPanel?.sketchBundle) {
-          interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-        }
-      } else if (aiPanel?.sketchBundle) {
-        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-      }
-      return;
-    }
-
-    if (node.sourceIds?.length && !node.loading && !node.expandedText) {
-      expandInAi(
-        node.sourceIds,
-        node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
-      );
+    const { ids, sourceNode } = resolveNodeSourceIds(node);
+    if (ids?.length && !node.loading) {
+      expandInAi(ids, { sourceNode: sourceNode || node });
     }
   }
 
@@ -4337,25 +4293,14 @@ export default function App() {
   }
 
   function getStrandChoicesForNode(node) {
-    if (node?.loadedOpIds?.length) {
-      const loaded = node.loadedOpIds
-        .map((id) => opMap[id])
-        .filter(Boolean)
-        .map((op) => ({ id: `loaded-${op.id}`, label: op.name, kind: "loaded", op }));
-      if (loaded.length) return loaded;
-    }
-    const lensMoves = activeLens?.moveIds?.length
-      ? moves.filter((m) => activeLens.moveIds.includes(m.id))
-      : moves;
     return collectStrandChoices(node, aiNodesRef.current, {
       expansionPrimitives: primitives.filter(isExpansionOperator),
-      topFunctions,
-      moves: lensMoves.length ? lensMoves : moves,
+      exploreOnly: true,
       opMap,
     });
   }
 
-  /** Press a function in the rail: run it on the highlighted material (or selected node) — forms a new node in AI space. */
+  /** Functions run on paper/highlight — AI only receives material to explore and expand. */
   function runFunctionFromRail(op) {
     if (!op) return;
     const hlIds = highlightSelectionRef.current;
@@ -4374,17 +4319,6 @@ export default function App() {
       setHighlightTouchIds([]);
       return;
     }
-    const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
-    if (nodeId) {
-      const node = aiNodesRef.current.find((n) => n.id === nodeId);
-      if (node) {
-        const { ids, sourceNode } = resolveNodeSourceIds(node);
-        if (ids?.length) {
-          expandInAi(ids, { op, opLabel: op.name, sourceNode: sourceNode || node });
-          return;
-        }
-      }
-    }
     if (selRef.current.length) {
       const expandIds = transformableDragIds(selRef.current);
       if (expandIds.length) {
@@ -4392,63 +4326,17 @@ export default function App() {
         return;
       }
     }
-    showToast("highlight something first, then press a function");
+    showToast("highlight something on paper first, then press a function");
   }
 
-  function handleStrandSelect(nodeId, choice, info = {}) {
+  function handleStrandSelect(nodeId, choice) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node || !choice) return;
     emitTourEvent("strand-select");
-
     handleAiNodeSelect(nodeId, { replace: true });
 
-    const loadedChoices = (info.choices || []).filter((c) => c.kind === "loaded" && c.op);
-    if (loadedChoices.length) {
+    if (choice.kind === "expand" && choice.op) {
       const { ids, sourceNode } = resolveNodeSourceIds(node);
-      const src = sourceNode || node;
-      if (!ids?.length) {
-        showToast("this node has no source material to run functions on");
-        return;
-      }
-      const angles = info.angles || [];
-      const distWorld = (node.radius || 20) * 3 + 150;
-      loadedChoices.forEach((c, i) => {
-        const angle = angles[i] ?? info.baseAngle ?? 0;
-        expandInAi(ids, {
-          op: c.op,
-          opLabel: c.op.name,
-          sourceNode: src,
-          expandedAt: {
-            x: node.x + Math.cos(angle) * distWorld,
-            y: node.y + Math.sin(angle) * distWorld,
-          },
-          quiet: true,
-        });
-      });
-      showToast(`exploring ${loadedChoices.length} function${loadedChoices.length > 1 ? "s" : ""}…`);
-      return;
-    }
-
-    if (choice.kind === "explore") {
-      exploreAiNode(nodeId, { runExpand: false });
-      return;
-    }
-
-    if (choice.kind === "interpret") {
-      if (aiPanel?.sketchBundle) {
-        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-      } else {
-        exploreAiNode(nodeId, { runExpand: false });
-      }
-      return;
-    }
-
-    if (choice.op) {
-      const { ids, sourceNode } = resolveNodeSourceIds(node);
-      if (choice.kind === "move") {
-        createMoveNode(choice.op, null, sourceNode || node);
-        return;
-      }
       if (ids?.length) {
         expandInAi(ids, {
           op: choice.op,
@@ -4459,7 +4347,7 @@ export default function App() {
       }
     }
 
-    exploreAiNode(nodeId, { runExpand: false });
+    exploreAiNode(nodeId, { runExpand: true });
   }
 
   // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
@@ -6321,11 +6209,7 @@ export default function App() {
 
     const lensId = e.dataTransfer.getData(LENS_MIME);
     if (lensId) {
-      const lens = lenses.find((l) => l.id === lensId);
-      if (lens) {
-        const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
-        createLensNode(lens, pos, linkTo);
-      }
+      showToast("apply lenses from the functions column onto paper material");
       return true;
     }
 
@@ -6366,38 +6250,7 @@ export default function App() {
 
     const opId = e.dataTransfer.getData(OP_MIME);
     if (opId) {
-      const op = opMap[opId];
-      if (!op) return true;
-      const hitNode = aiNodeAtWorld(pos.x, pos.y);
-      if (hitNode) {
-        const loaded = [...new Set([...(hitNode.loadedOpIds || []), op.id])];
-        updateAiNode(hitNode.id, { loadedOpIds: loaded });
-        setSelectedAiNodeIds([hitNode.id]);
-        showToast(
-          `${op.name} loaded — drag out to run ${loaded.length} function${loaded.length > 1 ? "s" : ""}`
-        );
-        return true;
-      }
-      if (isCompressionOperator(op)) {
-        return true;
-      }
-      const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
-      createMoveNode(op, pos, linkTo);
-      if (!ids?.length) {
-        setAiPanel((prev) => ({
-          ...(prev || {}),
-          opLabel: op.name,
-          opId: op.id,
-        }));
-        return true;
-      }
-      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
-      expandInAi(ids, {
-        op,
-        opLabel: op.name,
-        sourceNode,
-        expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
-      });
+      showToast("use functions on paper — send results across to explore in AI");
       return true;
     }
 
@@ -6450,6 +6303,10 @@ export default function App() {
     e.preventDefault();
     setAiDropOver(false);
     setTransferDragActive(false);
+    if (e.dataTransfer.types.includes(OP_MIME) || e.dataTransfer.types.includes(LENS_MIME)) {
+      absorbTransferPayloadAt(e, null, { autoExpand: false });
+      return;
+    }
     absorbTransferPayload(e, { autoExpand: true });
   }
 
@@ -6457,11 +6314,9 @@ export default function App() {
     if (
       e.dataTransfer.types.includes(THOUGHT_MIME) ||
       e.dataTransfer.types.includes(SEL_MIME) ||
-      e.dataTransfer.types.includes(OP_MIME) ||
       e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
       e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
-      e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
-      e.dataTransfer.types.includes(LENS_MIME)
+      e.dataTransfer.types.includes(AI_OUTPUT_MIME)
     ) {
       e.preventDefault();
       e.stopPropagation();
@@ -6642,6 +6497,120 @@ export default function App() {
       />
 
       <div className={"three-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
+        <FunctionsColumn
+          columnRef={functionsColumnRef}
+          dropOver={railDropOver}
+          onPointerTrack={(cx, cy) => {
+            lastPointerRef.current = { cx, cy };
+          }}
+          onDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(STRUCT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME)
+            ) {
+              e.preventDefault();
+              setRailDropOver(true);
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setRailDropOver(false);
+            const selJson = e.dataTransfer.getData(SEL_MIME);
+            if (selJson) {
+              try {
+                saveSelectionByIds(JSON.parse(selJson));
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
+            const opId = e.dataTransfer.getData(OP_MIME);
+            if (opId) {
+              pinOpToToolbox(opId);
+              return;
+            }
+            const structId = e.dataTransfer.getData(STRUCT_MIME);
+            if (structId) {
+              setRailTab("structures");
+              showToast("already saved");
+            }
+          }}
+        >
+          <aside
+            ref={railRef}
+            className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+            data-tour="functions-toolbox"
+          >
+            <div className="rail-tabs">
+              <button
+                className={"rail-tab" + (railTab === "functions" ? " on" : "")}
+                data-tour="structures-tab"
+                onClick={() => setRailTab("functions")}
+              >
+                functions
+              </button>
+              <button
+                className={"rail-tab" + (railTab === "structures" ? " on" : "")}
+                data-tour="structures-tab"
+                onClick={() => {
+                  setRailTab("structures");
+                  emitTourEvent("structures-tab");
+                }}
+              >
+                structures {structures.length ? `(${structures.length})` : ""}
+              </button>
+            </div>
+            {railTab === "functions" ? (
+              <>
+                <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
+                <div className="move-quick-add">
+                  <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                  <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+                </div>
+                {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                  <div className="sel-capture-panel">
+                    <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                    <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
+                  </div>
+                )}
+                <div className="rail-lens-actions">
+                  <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
+                </div>
+                <div className="rail-scroll">
+                  {lenses.length > 0 && (
+                    <>
+                      <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
+                      {lenses.map((lens) => (
+                        <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                      ))}
+                    </>
+                  )}
+                  {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                  {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
+                  {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                  {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                </div>
+              </>
+            ) : (
+              <>
+                <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
+                <div className="rail-scroll">
+                  {structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+                </div>
+              </>
+            )}
+            <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
+            <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
+          </aside>
+        </FunctionsColumn>
+
+        <InterpretBoundary variant="tools-paper" />
+
         <CanvasColumn
           tool={tool}
           imageArmed={imageArmed}
@@ -7255,11 +7224,9 @@ export default function App() {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
               e.dataTransfer.types.includes(SEL_MIME) ||
-              e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
               e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
-              e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
-              e.dataTransfer.types.includes(LENS_MIME)
+              e.dataTransfer.types.includes(AI_OUTPUT_MIME)
             ) {
               e.preventDefault();
               setAiDropOver(true);
@@ -7275,120 +7242,6 @@ export default function App() {
           }}
           onDrop={handleAiDrop}
         />
-
-        <InterpretBoundary variant="ai-tools" />
-
-        <FunctionsColumn
-          columnRef={functionsColumnRef}
-          dropOver={railDropOver}
-          onPointerTrack={(cx, cy) => {
-            lastPointerRef.current = { cx, cy };
-          }}
-          onDragOver={(e) => {
-            if (
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME)
-            ) {
-              e.preventDefault();
-              setRailDropOver(true);
-              e.dataTransfer.dropEffect = "copy";
-            }
-          }}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setRailDropOver(false);
-            const selJson = e.dataTransfer.getData(SEL_MIME);
-            if (selJson) {
-              try {
-                saveSelectionByIds(JSON.parse(selJson));
-              } catch {
-                /* ignore */
-              }
-              return;
-            }
-            const opId = e.dataTransfer.getData(OP_MIME);
-            if (opId) {
-              pinOpToToolbox(opId);
-              return;
-            }
-            const structId = e.dataTransfer.getData(STRUCT_MIME);
-            if (structId) {
-              setRailTab("structures");
-              showToast("already saved");
-            }
-          }}
-        >
-          <aside
-            ref={railRef}
-            className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
-            data-tour="functions-toolbox"
-          >
-              <div className="rail-tabs">
-                <button
-                  className={"rail-tab" + (railTab === "functions" ? " on" : "")}
-                  data-tour="structures-tab"
-                  onClick={() => setRailTab("functions")}
-                >
-                  functions
-                </button>
-                <button
-                  className={"rail-tab" + (railTab === "structures" ? " on" : "")}
-                  data-tour="structures-tab"
-                  onClick={() => {
-                    setRailTab("structures");
-                    emitTourEvent("structures-tab");
-                  }}
-                >
-                  structures {structures.length ? `(${structures.length})` : ""}
-                </button>
-              </div>
-              {railTab === "functions" ? (
-                <>
-                  <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
-                  <div className="move-quick-add">
-                    <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                    <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
-                  </div>
-                  {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                    <div className="sel-capture-panel">
-                      <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
-                      <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
-                    </div>
-                  )}
-                  <div className="rail-lens-actions">
-                    <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-                  </div>
-                  <div className="rail-scroll">
-                    {lenses.length > 0 && (
-                      <>
-                        <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
-                        {lenses.map((lens) => (
-                          <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
-                        ))}
-                      </>
-                    )}
-                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
-                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
-                  <div className="rail-scroll">
-                    {structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
-                  </div>
-                </>
-              )}
-              <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
-              <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
-            </aside>
-        </FunctionsColumn>
       </div>
 
       {walking && walkStep && (

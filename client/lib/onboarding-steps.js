@@ -307,9 +307,9 @@ export const TOUR_STEPS = [
   {
     id: "strand-drag",
     phase: "AI void",
-    title: "Drag out operations",
+    title: "Expand outward",
     instruction:
-      "When brain cells are visible, **drag outward from a cell**. One strand fans per function loaded on that node — from your toolbox and any moves already linked. Release on a strand to run it.",
+      "When brain cells are visible, **drag outward from a cell** to branch deeper — expand, research, explore. Release on a strand to grow that thread. Functions live in the left column; AI only explores what you send across.",
     hint: "Tap without dragging to select. Double-click to explore.",
     target: '[data-tour="ai-spacetime"]',
     demo: "strand-fan",

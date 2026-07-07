@@ -374,17 +374,6 @@ export default function AiNodeCanvas({
       const rectNow = viewportRef.current?.getBoundingClientRect();
       if (!rectNow) return;
 
-      // Loaded functions: releasing the drag runs ALL of them, one child per strand.
-      if (state.choices.some((c) => c.kind === "loaded")) {
-        onStrandSelect?.(state.nodeId, state.choices[0], {
-          choices: state.choices,
-          angles:
-            state.angles || fanStrandAngles(state.choices.length, state.baseAngle),
-          baseAngle: state.baseAngle,
-        });
-        return;
-      }
-
       let pickIdx = state.hoverIdx;
       if (pickIdx < 0 && state.angles?.length) {
         pickIdx = pickStrandIndex(state.baseAngle, state.angles);
@@ -537,7 +526,7 @@ export default function AiNodeCanvas({
     }
 
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
-    if (constellationMode || node.loadedOpIds?.length) {
+    if (constellationMode) {
       startConstellationNodeGesture(e, node);
       return;
     }
@@ -867,7 +856,6 @@ export default function AiNodeCanvas({
           const detail = nodeDetailText(node);
           const nodeBlend = detail ? contentBlend : 0;
           const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
-          const fnCount = node.loadedOpIds?.length || 0;
           return (
             <div
               key={node.id}
@@ -882,8 +870,7 @@ export default function AiNodeCanvas({
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
                 (isLanding ? " landing" : "") +
-                (bornIds.has(node.id) ? " born-gold" : "") +
-                (fnCount ? " fn-loaded" : "")
+                (bornIds.has(node.id) ? " born-gold" : "")
               }
               style={{
                 left: node.x - r,
@@ -906,7 +893,6 @@ export default function AiNodeCanvas({
                 <span className="ai-node-cell-nucleus" />
               </span>
               {bornIds.has(node.id) && <span className="ai-node-born-ring" aria-hidden="true" />}
-              {fnCount > 0 && <span className="ai-node-fn-count">{fnCount}</span>}
               <span className="ai-node-starburst" aria-hidden="true" />
               <span className="ai-node-label">
                 {zoomTier === "short"

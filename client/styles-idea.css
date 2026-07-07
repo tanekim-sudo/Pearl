@@ -10,7 +10,7 @@
   background: #ffffff;
 }
 
-/* Three columns + golden seams: paper | AI void | functions library */
+/* Three columns + golden seams: functions | paper | AI void */
 .three-column-grid {
   flex: 1;
   display: grid;
@@ -92,13 +92,13 @@
   overscroll-behavior: contain;
 }
 
-/* Seam between AI void and functions library */
-.interpret-boundary.ai-tools {
+/* Seam between functions library and paper */
+.interpret-boundary.tools-paper {
   background: linear-gradient(
     90deg,
-    rgba(5, 6, 11, 0.95) 0%,
+    color-mix(in srgb, #ebe6dc 88%, transparent) 0%,
     rgba(212, 168, 60, 0.06) 50%,
-    color-mix(in srgb, #ebe6dc 88%, transparent) 100%
+    color-mix(in srgb, var(--paper-deep) 88%, transparent) 100%
   );
 }
 

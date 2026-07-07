@@ -12,7 +12,7 @@ export default function InterpretBoundary({
   onDragLeave,
   onDrop,
 }) {
-  const isToolsSeam = variant === "ai-tools";
+  const isToolsSeam = variant === "tools-paper";
   return (
     <div
       className={
@@ -30,7 +30,7 @@ export default function InterpretBoundary({
       <div
         className={
           "interpret-boundary" +
-          (isToolsSeam ? " ai-tools" : "") +
+          (isToolsSeam ? " tools-paper" : "") +
           (dropOver ? " drop-over" : "") +
           (magnetActive ? " magnet" : "") +
           (loading ? " processing" : "")

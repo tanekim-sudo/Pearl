@@ -276,7 +276,7 @@ export function pickStrandIndex(pointerAngle, angles) {
 export function collectStrandChoices(
   node,
   allNodes = [],
-  { expansionPrimitives = [], topFunctions = [], moves = [], opMap = {} } = {}
+  { expansionPrimitives = [], topFunctions = [], moves = [], opMap = {}, exploreOnly = false } = {}
 ) {
   if (!node) return [];
   const choices = [];
@@ -287,15 +287,17 @@ export function collectStrandChoices(
     choices.push(choice);
   };
 
-  for (const child of allNodes) {
-    if (child.nodeKind !== "move" || !child.opId) continue;
-    if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
-    const op = opMap[child.opId];
-    if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
-  }
+  if (!exploreOnly) {
+    for (const child of allNodes) {
+      if (child.nodeKind !== "move" || !child.opId) continue;
+      if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
+      const op = opMap[child.opId];
+      if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
+    }
 
-  if (node.nodeKind === "session") {
-    push({ id: "interpret", label: "interpret", kind: "interpret" });
+    if (node.nodeKind === "session") {
+      push({ id: "interpret", label: "interpret", kind: "interpret" });
+    }
   }
 
   const canExpand =
@@ -310,12 +312,14 @@ export function collectStrandChoices(
     }
   }
 
-  for (const op of topFunctions) {
-    push({ id: op.id, label: op.name, kind: "function", op });
-  }
+  if (!exploreOnly) {
+    for (const op of topFunctions) {
+      push({ id: op.id, label: op.name, kind: "function", op });
+    }
 
-  for (const op of moves) {
-    push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+    for (const op of moves) {
+      push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+    }
   }
 
   return choices;
