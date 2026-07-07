@@ -427,8 +427,8 @@ export const TOUR_STEPS = [
   {
     id: "edit-function",
     phase: "Lenses",
-    title: "Edit lenses",
-    instruction: "Click **Evolve** on a lens card (or **⚙** on a move) to edit its steps in plain language. Save to refine how it behaves.",
+    title: "Program the lens",
+    instruction: "In the lens editor: **drag** blocks to reorder or nest steps, **⌘C/⌘V** to copy/paste subtrees, **⌘D** to fork, **⌘⇧M** to merge with the next step. Arrows show execution order.",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("open-function-editor"),
     allowSkip: true,

@@ -50,6 +50,7 @@ import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import LensTreeEditor from "./components/LensTreeEditor.jsx";
 import FunctionsColumn from "./components/FunctionsColumn.jsx";
 import {
   makeAiNode,
@@ -8392,14 +8393,21 @@ export default function App() {
       )}
 
       {opEditor && (
-        <FunctionEditor
+        <LensTreeEditor
           editor={opEditor}
           opMap={opMap}
           operators={operators}
+          paletteGroups={[
+            { label: "your moves", ops: moves },
+            { label: "primitives", ops: primitives },
+            { label: "basics", ops: basics },
+          ]}
           onClose={() => setOpEditor(null)}
           onSaveTree={saveLensTree}
-          onSaveManual={saveManualOp}
           onDelete={deleteLens}
+          createFromProse={createFunctionFromProse}
+          editFromProse={editFunctionWithProse}
+          treeToOperators={treeToOperators}
         />
       )}
 
@@ -9470,326 +9478,6 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function FunctionEditor({ editor, opMap, operators, onClose, onSaveTree, onSaveManual, onDelete }) {
-  const isCreate = editor.mode === "create";
-  const sourceRoot = editor.op || null;
-
-  const [draftOps, setDraftOps] = useState(() => (isCreate ? [] : collectDraftOps(sourceRoot, opMap)));
-  const [rootId, setRootId] = useState(() => sourceRoot?.id || null);
-  const [focusId, setFocusId] = useState(null);
-  const [createName, setCreateName] = useState("");
-  const [createDesc, setCreateDesc] = useState("");
-  const [createPrompt, setCreatePrompt] = useState("");
-  const [prose, setProse] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const [treeExpanded, setTreeExpanded] = useState(() => new Set(sourceRoot?.id ? [sourceRoot.id] : []));
-
-  const draftMap = useMemo(() => Object.fromEntries(draftOps.map((o) => [o.id, o])), [draftOps]);
-  const rootDraft = rootId ? draftMap[rootId] : null;
-
-  useEffect(() => {
-    if (rootId) setTreeExpanded((prev) => new Set([...prev, rootId]));
-  }, [rootId]);
-
-  function toggleTreeNode(id) {
-    setTreeExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function patchOp(id, patch) {
-    setDraftOps((ops) => ops.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-  }
-
-  async function runProse() {
-    const instruction = prose.trim();
-    if (!instruction) return;
-    setBusy(true);
-    setError(null);
-    try {
-      let tree;
-      if (isCreate && !rootDraft) {
-        tree = await createFunctionFromProse(instruction, operators, opMap);
-      } else {
-        const target = (focusId && draftMap[focusId]) || rootDraft;
-        tree = await editFunctionWithProse(target, draftMap, instruction, operators);
-      }
-      const { rootId: rid, ops } = treeToOperators(tree, {
-        role: rootDraft?.role || sourceRoot?.role || null,
-        top: isCreate ? true : !!sourceRoot?.top,
-      });
-      setDraftOps(ops);
-      setRootId(rid);
-      setFocusId(null);
-      setProse("");
-    } catch (err) {
-      setError(err.message || "Could not apply changes.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function saveAll() {
-    let ops = draftOps;
-    let rid = rootId;
-    if (!rid && createName.trim() && createPrompt.trim()) {
-      rid = uid();
-      ops = [
-        {
-          id: rid,
-          kind: "prompt",
-          name: createName.trim(),
-          description: createDesc.trim(),
-          prompt: createPrompt.trim(),
-          top: true,
-        },
-      ];
-    }
-    const root = ops.find((o) => o.id === rid);
-    if (!rid || !root?.name?.trim()) return;
-    if (root.kind === "prompt" && !root.prompt?.trim()) return;
-    onSaveTree(isCreate ? null : sourceRoot?.id, ops);
-  }
-
-  const canSave =
-    !!rootDraft ||
-    (createName.trim() && createPrompt.trim()) ||
-    (rootId && draftOps.some((o) => o.id === rootId && o.name?.trim()));
-
-  const focusLabel = focusId && draftMap[focusId] ? draftMap[focusId].name : rootDraft?.name;
-
-  return (
-    <div className="modal-scrim fn-scrim-full" onClick={onClose}>
-      <div className="fn-editor fn-editor-fullscreen" onClick={(e) => e.stopPropagation()}>
-        <div className="fn-head">
-          <div>
-            <h3>{isCreate ? "create lens" : "edit lens"}</h3>
-            {rootDraft && (
-              <p className="fn-head-sub">
-                Expand steps to edit details. Click a step to focus it for AI edits.
-              </p>
-            )}
-          </div>
-          <button className="fn-close" onClick={onClose} type="button">
-            ×
-          </button>
-        </div>
-
-        <div className="fn-editor-body">
-          <div className="fn-tree-scroll">
-            {rootDraft ? (
-              <FunctionTreeNode
-                op={rootDraft}
-                draftMap={draftMap}
-                depth={0}
-                focusId={focusId}
-                onFocus={setFocusId}
-                onPatch={patchOp}
-                pathLabels={[]}
-                treeExpanded={treeExpanded}
-                onToggleExpand={toggleTreeNode}
-              />
-            ) : (
-              <div className="fn-create-panel">
-                <p className="fn-hint">
-                  Describe what this lens should do below, or fill in the fields. Once generated, the
-                  full tree appears here with every prompt visible.
-                </p>
-                <label>name</label>
-                <input
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="e.g. Build Full Investment Thesis"
-                />
-                <label>description</label>
-                <input
-                  value={createDesc}
-                  onChange={(e) => setCreateDesc(e.target.value)}
-                  placeholder="what goes in, what comes out"
-                />
-                <label>prompt</label>
-                <textarea
-                  rows={6}
-                  value={createPrompt}
-                  onChange={(e) => setCreatePrompt(e.target.value)}
-                  placeholder="Or skip and describe with AI below."
-                />
-              </div>
-            )}
-          </div>
-
-          <aside className="fn-editor-side">
-            <label>{rootDraft ? "revise with words" : "describe with words"}</label>
-            {focusLabel && rootDraft && (
-              <p className="fn-focus-hint">
-                AI edits <strong>{focusLabel}</strong>
-                {focusId && focusId !== rootId ? " and its subtree" : ""}. Click another step to switch.
-              </p>
-            )}
-            <textarea
-              className="fn-prose"
-              rows={5}
-              placeholder={
-                isCreate
-                  ? 'e.g. "Extract action items, owners, and deadlines from messy meeting notes"'
-                  : 'e.g. "Add a step that checks for contradictions" or "Make every leaf prompt more specific"'
-              }
-              value={prose}
-              onChange={(e) => setProse(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runProse();
-              }}
-            />
-            {error && <div className="fn-error">{error}</div>}
-            <button className="fn-generate" type="button" disabled={busy || !prose.trim()} onClick={runProse}>
-              {busy ? (
-                <>
-                  <span className="spinner" /> building…
-                </>
-              ) : rootDraft ? (
-                "apply with AI"
-              ) : (
-                "generate with AI"
-              )}
-            </button>
-          </aside>
-        </div>
-
-        <div className="fn-foot">
-          {!isCreate && sourceRoot && (
-            <button className="fn-del" type="button" onClick={() => onDelete(sourceRoot.id)}>
-              delete
-            </button>
-          )}
-          <span style={{ flex: 1 }} />
-          <button className="fn-secondary" type="button" onClick={onClose}>
-            cancel
-          </button>
-          <button className="fn-primary" type="button" disabled={!canSave} onClick={saveAll}>
-            save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FunctionTreeNode({ op, draftMap, depth, focusId, onFocus, onPatch, pathLabels, treeExpanded, onToggleExpand }) {
-  const cardRef = useRef(null);
-  const isPipeline = op.kind === "pipeline";
-  const steps =
-    isPipeline && op.steps ? op.steps.map((id) => draftMap[id]).filter(Boolean) : [];
-  const isFocused = focusId === op.id;
-  const isOpen = treeExpanded.has(op.id);
-  const hasBody = isPipeline || !!(op.description || op.prompt);
-  const promptRows = Math.min(14, Math.max(5, ((op.prompt || "").split("\n").length || 0) + 2));
-
-  useEffect(() => {
-    if (isFocused && cardRef.current) {
-      cardRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [isFocused]);
-
-  return (
-    <div
-      ref={cardRef}
-      className={"fn-tree-card" + (isFocused ? " focused" : "") + (isPipeline ? " pipeline" : " leaf") + (isOpen ? " open" : " collapsed")}
-      style={{ marginLeft: depth * 16 }}
-    >
-      <div className="fn-tree-card-head">
-        <button
-          type="button"
-          className={"fn-tree-toggle" + (hasBody || steps.length ? "" : " hidden")}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(op.id);
-          }}
-          aria-expanded={isOpen}
-          title={isOpen ? "collapse" : "expand"}
-        >
-          {isOpen ? "▾" : "▸"}
-        </button>
-        <button
-          type="button"
-          className="fn-tree-summary"
-          onClick={() => onFocus(op.id)}
-        >
-          <span className={"fn-tree-badge" + (isPipeline ? " pipeline" : " leaf")}>
-            {isPipeline ? `${steps.length} step${steps.length === 1 ? "" : "s"}` : "leaf"}
-          </span>
-          <span className="fn-tree-name-preview">{op.name || "unnamed step"}</span>
-          {!isOpen && op.description && (
-            <span className="fn-tree-desc-preview">{op.description}</span>
-          )}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="fn-tree-body" onClick={() => onFocus(op.id)}>
-          {pathLabels.length > 0 && (
-            <span className="fn-tree-path">{pathLabels.join(" → ")}</span>
-          )}
-
-          <label className="fn-tree-label">name</label>
-          <input
-            className="fn-tree-input"
-            value={op.name || ""}
-            onChange={(e) => onPatch(op.id, { name: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            placeholder="descriptive step name"
-          />
-
-          <label className="fn-tree-label">description</label>
-          <input
-            className="fn-tree-input"
-            value={op.description || ""}
-            onChange={(e) => onPatch(op.id, { description: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            placeholder="what goes in, what comes out"
-          />
-
-          {!isPipeline && (
-            <>
-              <label className="fn-tree-label">prompt</label>
-              <textarea
-                className="fn-tree-prompt-input"
-                rows={promptRows}
-                value={op.prompt || ""}
-                onChange={(e) => onPatch(op.id, { prompt: e.target.value })}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="GOAL, INPUT, PROCESS, OUTPUT FORMAT, QUALITY BAR…"
-              />
-            </>
-          )}
-
-          {steps.length > 0 && (
-            <div className="fn-tree-children">
-              {steps.map((step, i) => (
-                <FunctionTreeNode
-                  key={step.id}
-                  op={step}
-                  draftMap={draftMap}
-                  depth={depth + 1}
-                  focusId={focusId}
-                  onFocus={onFocus}
-                  onPatch={onPatch}
-                  pathLabels={[...pathLabels, step.name || `step ${i + 1}`]}
-                  treeExpanded={treeExpanded}
-                  onToggleExpand={onToggleExpand}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
