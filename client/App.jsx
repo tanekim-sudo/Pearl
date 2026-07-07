@@ -117,6 +117,7 @@ import {
   fitPaperInView,
   maxTextWidth,
 } from "./lib/paper.js";
+import { attachCanvasWheel } from "./lib/canvas-navigation.js";
 import {
   loadColumnLayout,
   saveColumnLayout,
