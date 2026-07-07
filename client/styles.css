@@ -1557,11 +1557,81 @@ body {
   color: var(--chalk-yellow-muted);
   white-space: nowrap;
 }
-.lens-card-moves {
+.lens-card-moves,
+.lens-card-flow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
   margin: 7px 0 5px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.lens-flow-arrow {
+  font-size: 11px;
+  color: var(--faint);
+  flex-shrink: 0;
+}
+.rail-scroll-horizontal {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  align-items: stretch;
+}
+.rail-scroll-horizontal .lens-card,
+.rail-scroll-horizontal .struct-card-wrap {
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 280px;
+  margin: 0;
+}
+.rail-lenses-scroll .lens-card {
+  min-width: 240px;
+}
+.struct-card-horizontal .struct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+}
+.struct-meaning {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  line-height: 1.35;
+  display: block;
+  margin-top: 2px;
+}
+.struct-meaning.pending {
+  font-style: italic;
+  opacity: 0.65;
+}
+.struct-view-lens {
+  font-size: 10.5px;
+  color: var(--chalk-yellow-muted);
+  display: block;
+  margin-top: 4px;
+}
+.struct-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.struct-card-view-lens {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 7px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.struct-card-view-lens:hover {
+  border-color: var(--chalk-yellow-deep);
 }
 .lens-move-chip {
   font-size: 11px;
