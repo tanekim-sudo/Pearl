@@ -830,35 +830,9 @@ export default function AiNodeCanvas({
                 />
                 <path
                   d={pathD}
-                  className="ai-node-line ai-node-line-glow ai-strand-aura"
-                  fill="none"
-                  filter="url(#ai-strand-glow)"
-                />
-                <path
-                  d={pathD}
-                  className="ai-node-line ai-node-line-glow"
-                  fill="none"
-                  filter="url(#ai-edge-glow)"
-                />
-                <path
-                  d={pathD}
                   className={`ai-node-line ai-node-line-${kind}`}
                   fill="none"
                   markerEnd={constellationMode ? undefined : marker}
-                />
-                <circle
-                  cx={geom.x1}
-                  cy={geom.y1}
-                  r={3.2}
-                  className={`ai-synapse ai-synapse-${kind}`}
-                  vectorEffect="non-scaling-stroke"
-                />
-                <circle
-                  cx={geom.x2}
-                  cy={geom.y2}
-                  r={2.6}
-                  className={`ai-synapse ai-synapse-${kind} ai-synapse-terminal`}
-                  vectorEffect="non-scaling-stroke"
                 />
               </g>
             );
@@ -907,19 +881,9 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
-              <span className="ai-node-cell" aria-hidden="true">
-                <span className="ai-node-cell-glow" />
-                <span className="ai-node-cell-membrane" />
-                <span className="ai-node-cell-nucleus" />
-              </span>
-              {bornIds.has(node.id) && <span className="ai-node-born-ring" aria-hidden="true" />}
-              <span className="ai-node-starburst" aria-hidden="true" />
-              <span className="ai-node-label">
-                {zoomTier === "short"
-                  ? truncateLabel(node.label, 8)
-                  : truncateLabel(node.label, 18)}
-              </span>
-              {detail && nodeBlend > 0.02 && textLayout && (
+              {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
+              {node.error && <span className="ai-node-error-dot" title={node.error} />}
+              {detail && nodeBlend > 0.55 && textLayout && (
                 <div
                   className="ai-node-content-text"
                   style={{

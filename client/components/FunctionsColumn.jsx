@@ -8,6 +8,7 @@ export default function FunctionsColumn({
   onDrop,
   onPointerTrack,
   columnRef,
+  collapsed,
   children,
 }) {
   return (
@@ -15,6 +16,7 @@ export default function FunctionsColumn({
       ref={columnRef}
       className={
         "functions-column" +
+        (collapsed ? " col-collapsed" : "") +
         (dropOver ? " column-drop-over" : "") +
         (captureReplay ? " capture-replay" : "")
       }

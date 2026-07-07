@@ -39,6 +39,7 @@ export default function CanvasColumn({
   expandToolsSignal = 0,
   onToolsOpenChange,
   onTourEvent,
+  collapsed,
   children,
 }) {
   const secs = Math.floor((paperRecordMs || 0) / 1000);
@@ -71,7 +72,14 @@ export default function CanvasColumn({
   }, [toolsOpen, onToolsOpenChange, onTourEvent]);
 
   return (
-    <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
+    <div
+      className={
+        "canvas-column" +
+        (collapsed ? " col-collapsed" : "") +
+        (dropOver ? " column-drop-over" : "") +
+        (boundaryMagnet ? " boundary-magnet" : "")
+      }
+    >
       <div className="canvas-column-main">{children}</div>
 
       <div className={"canvas-edge-top" + (toolsOpen ? " open" : "")}>

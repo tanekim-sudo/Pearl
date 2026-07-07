@@ -1911,6 +1911,7 @@ export default function App() {
   const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
   const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
   const [columnResizing, setColumnResizing] = useState(null);
+  const [colGridWidth, setColGridWidth] = useState(0);
   const columnLayoutRef = useRef(columnLayout);
   const threeColumnGridRef = useRef(null);
   columnLayoutRef.current = columnLayout;
@@ -2822,6 +2823,9 @@ export default function App() {
         g.cx = cx;
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
+        const overAi = isOverAiColumn(cx, cy) || isNearTransferBoundary(cx);
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        setTransferDragActive(overAi);
         const ids = new Set(g.ids);
         setItems((arr) =>
           arr.map((it) => {
@@ -3004,9 +3008,24 @@ export default function App() {
         }
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
+        setTransferDragActive(false);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
-        if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
+        if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
+          restoreMovePositions(g.startPositions);
+          const world = getAiDropWorldFromClient(cx, cy);
+          const sketchBundle = gatherSelectionSketchBundle(g.ids);
+          if (sketchBundle) {
+            interpretSketchBundle(sketchBundle, world, { fromClient: { x: cx, y: cy } });
+          } else {
+            const expandIds = transformableDragIds(g.ids);
+            if (expandIds.length) {
+              expandInAi(expandIds, { expandedAt: world, fromClient: { x: cx, y: cy }, quiet: true });
+            } else {
+              showToast("Nothing here can transfer to AI");
+            }
+          }
+        } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
           const target = itemAtPoint(cx, cy, exclude);
           if (target) combineRef.current?.(g.ids, [target.id]);
@@ -3022,6 +3041,15 @@ export default function App() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
+  }, []);
+
+  useEffect(() => {
+    const el = threeColumnGridRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setColGridWidth(el.clientWidth));
+    ro.observe(el);
+    setColGridWidth(el.clientWidth);
+    return () => ro.disconnect();
   }, []);
 
   // wheel: pinch / ctrl+scroll zooms at cursor; two-finger scroll pans
@@ -3539,7 +3567,18 @@ export default function App() {
     if (isExpansionOperator(op)) {
       const ids = resolveTargetIds(atClient);
       if (ids.length) {
-        expandInAi(ids, { op, opLabel: op.name });
+        let expandedAt;
+        if (isOverAiColumn(atClient.x, atClient.y)) {
+          expandedAt = getAiDropWorldFromClient(atClient.x, atClient.y);
+        } else {
+          const el = aiViewportRef.current;
+          expandedAt = el
+            ? aiViewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight)
+            : undefined;
+        }
+        expandInAi(ids, { op, opLabel: op.name, expandedAt, fromClient: atClient });
+      } else {
+        showToast("drop onto text, image, or drawing");
       }
       return;
     }
@@ -4584,7 +4623,6 @@ export default function App() {
     focusRailPane("structures");
     emitTourEvent("save-structure");
     showToast(`added to · ${nextTitle}`);
-    if (!struct.symbolStroke) openSymbolDrawPrompt({ ...struct, title: nextTitle });
     return struct;
   }
 
@@ -4697,7 +4735,7 @@ export default function App() {
       ...extra,
     });
     if (!struct) return null;
-    openSymbolDrawPrompt(struct);
+    showToast(`saved · ${struct.title}`);
     return struct;
   }
 
@@ -4749,7 +4787,7 @@ export default function App() {
       savedAt: Date.now(),
     };
     setStructures((arr) => [struct, ...arr]);
-    openSymbolDrawPrompt(struct);
+    showToast(`saved · ${struct.title}`);
     emitTourEvent("save-symbol");
     return struct;
   }
@@ -7027,7 +7065,24 @@ export default function App() {
 
     const opId = e.dataTransfer.getData(OP_MIME);
     if (opId) {
-      showToast("use functions on paper — send results across to explore in AI");
+      const op = opMap[opId];
+      if (!op) return true;
+      const targetNode = aiNodeAtWorld(pos.x, pos.y);
+      if (!targetNode) {
+        showToast("drop function onto a concept node");
+        return true;
+      }
+      const { ids, sourceNode } = resolveNodeSourceIds(targetNode);
+      if (!ids?.length) {
+        showToast("nothing to apply function to");
+        return true;
+      }
+      expandInAi(ids, {
+        op,
+        opLabel: op.name,
+        sourceNode: sourceNode || targetNode,
+        expandedAt: pos,
+      });
       return true;
     }
 
@@ -7085,10 +7140,6 @@ export default function App() {
     e.preventDefault();
     setAiDropOver(false);
     setTransferDragActive(false);
-    if (e.dataTransfer.types.includes(OP_MIME) || e.dataTransfer.types.includes(LENS_MIME)) {
-      absorbTransferPayloadAt(e, null, { autoExpand: false });
-      return;
-    }
     absorbTransferPayload(e, { autoExpand: true });
   }
 
@@ -7096,6 +7147,7 @@ export default function App() {
     if (
       e.dataTransfer.types.includes(THOUGHT_MIME) ||
       e.dataTransfer.types.includes(SEL_MIME) ||
+      e.dataTransfer.types.includes(OP_MIME) ||
       e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
       e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
       e.dataTransfer.types.includes(AI_OUTPUT_MIME)
@@ -7258,6 +7310,11 @@ export default function App() {
     [items, camera, aiCamera, aiNodes, operators, structures, highlightSelectionIds]
   );
 
+  const paperColWidth = Math.max(0, colGridWidth - columnLayout.left - columnLayout.right - 24);
+  const leftColCollapsed = columnLayout.left <= 0;
+  const rightColCollapsed = columnLayout.right <= 0;
+  const paperColCollapsed = colGridWidth > 0 && paperColWidth <= 0;
+
   return (
     <div className={"idea-app theme-" + theme}>
       <TopToolbar
@@ -7284,6 +7341,7 @@ export default function App() {
       >
         <FunctionsColumn
           columnRef={functionsColumnRef}
+          collapsed={leftColCollapsed}
           dropOver={railDropOver}
           captureReplay={functionsCaptureReplay}
           onPointerTrack={(cx, cy) => {
@@ -7410,6 +7468,7 @@ export default function App() {
         />
 
         <CanvasColumn
+          collapsed={paperColCollapsed}
           tool={tool}
           imageArmed={imageArmed}
           dropOver={canvasDropOver}
@@ -8005,6 +8064,7 @@ export default function App() {
         />
 
         <AiColumn
+          collapsed={rightColCollapsed}
           nodes={aiNodes}
           camera={aiCamera}
           onCameraChange={setAiCamera}
@@ -8044,6 +8104,7 @@ export default function App() {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
               e.dataTransfer.types.includes(SEL_MIME) ||
+              e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
               e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
               e.dataTransfer.types.includes(AI_OUTPUT_MIME)

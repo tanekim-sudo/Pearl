@@ -17,7 +17,7 @@
   grid-template-columns:
     var(--col-left-w, 280px)
     12px
-    minmax(220px, 1fr)
+    minmax(0, 1fr)
     12px
     var(--col-right-w, 340px);
   min-height: 0;
@@ -45,8 +45,19 @@
   transition: box-shadow 0.15s, background 0.15s;
 }
 
-.canvas-column {
-  border-right: none;
+.functions-column.col-collapsed,
+.ai-column.col-collapsed {
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  min-width: 0 !important;
+}
+
+.canvas-column.col-collapsed {
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  min-width: 0 !important;
 }
 
 .ai-column {
@@ -1455,33 +1466,22 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node-line {
-  stroke-width: 1.25;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1px;
   fill: none;
   vector-effect: non-scaling-stroke;
 }
 
 .ai-node-line-glow {
-  stroke: rgba(255, 255, 255, 0.22);
-  stroke-width: 5;
-  opacity: 0.85;
+  display: none;
 }
 
-.ai-node-line-expand {
-  stroke: rgba(255, 255, 255, 0.62);
-}
-
-.ai-node-line-interpret {
-  stroke: rgba(240, 245, 255, 0.58);
-}
-
-.ai-node-line-move {
-  stroke: rgba(220, 240, 255, 0.55);
-  stroke-dasharray: 5 8;
-}
-
+.ai-node-line-expand,
+.ai-node-line-interpret,
+.ai-node-line-move,
 .ai-node-line-link,
 .ai-node-line-branch {
-  stroke: rgba(230, 240, 255, 0.48);
+  stroke: rgba(255, 255, 255, 0.45);
 }
 
 /* ── Brain-cell constellation nodes ── */
@@ -1764,15 +1764,13 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2px;
+  padding: 0;
   cursor: grab;
   user-select: none;
-  box-shadow:
-    0 0 12px rgba(235, 240, 255, 0.28),
-    0 1px 4px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(14, 17, 28, 0.92);
-  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
+  border: 1.5px solid rgba(255, 255, 255, 0.82);
+  background: transparent;
+  box-shadow: none;
+  transition: border-color 0.12s, transform 0.12s;
   z-index: 3;
 }
 
@@ -1781,19 +1779,41 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node.selected {
-  border-color: rgba(255, 255, 255, 0.95);
-  transform: scale(1.08);
+  border-color: #ffffff;
+  border-width: 2px;
+  transform: scale(1.06);
   z-index: 4;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.4),
-    0 0 30px rgba(255, 255, 255, 0.5),
-    0 0 60px rgba(235, 240, 255, 0.22);
 }
 
 .ai-node.multi-selected {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.5),
-    0 0 26px rgba(255, 255, 255, 0.42);
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node,
+.ai-node-viewport.ai-zoom-dot .ai-node,
+.ai-node-viewport.ai-zoom-short .ai-node {
+  border: 1.5px solid rgba(255, 255, 255, 0.82);
+  background: transparent;
+  box-shadow: none;
+}
+
+.ai-node-source,
+.ai-node-expanded,
+.ai-node-session,
+.ai-node-lens,
+.ai-node-move {
+  background: transparent;
+  border-style: solid;
+}
+
+.ai-node-cell,
+.ai-node-starburst,
+.ai-node-born-ring {
+  display: none !important;
+}
+
+.ai-node-label {
+  display: none;
 }
 
 .ai-node-viewport.shift-transfer-ready {
@@ -1842,13 +1862,13 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node.loading {
-  border-color: rgba(140, 180, 255, 0.6);
-  animation: ai-node-shimmer 1.4s ease-in-out infinite;
+  border-color: rgba(255, 255, 255, 0.55);
+  animation: ai-node-pulse 1.2s ease-in-out infinite;
 }
 
-@keyframes ai-node-shimmer {
-  0%, 100% { box-shadow: 0 0 8px rgba(100, 150, 255, 0.2); }
-  50% { box-shadow: 0 0 18px rgba(100, 150, 255, 0.45); }
+@keyframes ai-node-pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
 }
 
 .ai-node.error {

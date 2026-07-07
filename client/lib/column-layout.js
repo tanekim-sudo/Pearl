@@ -2,9 +2,16 @@ export const COLUMN_LAYOUT_KEY = "lens.column-layout.v1";
 
 export const DEFAULT_COLUMN_LAYOUT = { left: 280, right: 340 };
 
-export const MIN_COLUMN_W = 180;
-export const MIN_PAPER_W = 220;
+export const MIN_COLUMN_W = 0;
+export const MIN_PAPER_W = 0;
+export const SNAP_COLLAPSE_W = 44;
 export const BOUNDARY_W = 12;
+
+export function snapColumnWidth(w) {
+  if (w <= 0) return 0;
+  if (w < SNAP_COLLAPSE_W) return 0;
+  return w;
+}
 
 export function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n));
@@ -13,19 +20,19 @@ export function clamp(n, min, max) {
 /** @param {number} gridWidth viewport width of the three-column grid */
 export function clampColumnLayout(layout, gridWidth) {
   const seams = BOUNDARY_W * 2;
-  const maxSide = Math.max(MIN_COLUMN_W, gridWidth - MIN_PAPER_W - seams);
-  const left = clamp(layout.left, MIN_COLUMN_W, maxSide);
-  const right = clamp(layout.right, MIN_COLUMN_W, maxSide);
-  const paper = gridWidth - left - right - seams;
-  if (paper >= MIN_PAPER_W) {
-    return { left, right };
+  const maxSpan = Math.max(0, gridWidth - seams);
+  let left = snapColumnWidth(clamp(layout.left, 0, maxSpan));
+  let right = snapColumnWidth(clamp(layout.right, 0, maxSpan));
+  let paper = gridWidth - left - right - seams;
+  if (paper < 0) {
+    const overflow = -paper;
+    const total = left + right || 1;
+    left = Math.max(0, left - Math.round(overflow * (left / total)));
+    right = Math.max(0, right - Math.round(overflow * (right / total)));
+    left = snapColumnWidth(left);
+    right = snapColumnWidth(right);
   }
-  const deficit = MIN_PAPER_W - paper;
-  const leftShare = left / (left + right || 1);
-  return {
-    left: clamp(left - Math.round(deficit * leftShare), MIN_COLUMN_W, maxSide),
-    right: clamp(right - Math.round(deficit * (1 - leftShare)), MIN_COLUMN_W, maxSide),
-  };
+  return { left, right };
 }
 
 export function loadColumnLayout() {
@@ -35,8 +42,8 @@ export function loadColumnLayout() {
     const parsed = JSON.parse(raw);
     if (typeof parsed?.left === "number" && typeof parsed?.right === "number") {
       return {
-        left: clamp(parsed.left, MIN_COLUMN_W, 720),
-        right: clamp(parsed.right, MIN_COLUMN_W, 720),
+        left: snapColumnWidth(clamp(parsed.left, 0, 720)),
+        right: snapColumnWidth(clamp(parsed.right, 0, 720)),
       };
     }
   } catch {

@@ -46,18 +46,17 @@ export default function SymbolDrawOverlay({ title, onComplete, onCancel }) {
 
   const localFromEvent = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = VIEW / rect.width;
+    const scaleY = VIEW / rect.height;
     return {
-      x: Math.max(0, Math.min(VIEW, e.clientX - rect.left)),
-      y: Math.max(0, Math.min(VIEW, e.clientY - rect.top)),
+      x: Math.max(0, Math.min(VIEW, (e.clientX - rect.left) * scaleX)),
+      y: Math.max(0, Math.min(VIEW, (e.clientY - rect.top) * scaleY)),
     };
   };
 
   const finish = () => {
     const pts = pointsRef.current;
-    if (pts.length < 4) {
-      onCancel?.();
-      return;
-    }
+    if (pts.length < 2) return;
     onComplete?.({
       viewSize: VIEW,
       points: normalizePoints(pts, VIEW, VIEW),
@@ -96,7 +95,7 @@ export default function SymbolDrawOverlay({ title, onComplete, onCancel }) {
             } catch {
               /* ignore */
             }
-            if (pointsRef.current.length >= 4) finish();
+            if (pointsRef.current.length >= 2) finish();
           }}
         />
         <div className="symbol-draw-actions">
@@ -106,7 +105,7 @@ export default function SymbolDrawOverlay({ title, onComplete, onCancel }) {
           <button
             type="button"
             className="symbol-draw-save"
-            disabled={!hasStroke}
+            disabled={!hasStroke || pointsRef.current.length < 2}
             onClick={finish}
           >
             save symbol

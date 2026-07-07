@@ -39,10 +39,11 @@ export default function AiColumn({
   viewportRef,
   landingNodeIds,
   onPointerTrack,
+  collapsed,
 }) {
   return (
     <aside
-      className={"ai-column" + (dropOver ? " column-drop-over" : "")}
+      className={"ai-column" + (collapsed ? " col-collapsed" : "") + (dropOver ? " column-drop-over" : "")}
       data-tour="ai-spacetime"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
