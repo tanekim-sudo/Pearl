@@ -642,8 +642,12 @@ export default function AiNodeCanvas({
   const bundleOffsets = edgeBundleOffsets(edges);
 
   const contentBlend = zoomContentBlend(camera.scale);
-  const explorationMode = contentBlend > 0.04;
   const constellationMode = camera.scale <= AI_STRAND_DRAG_MAX_SCALE;
+  const invScale = 1 / Math.max(0.08, camera.scale);
+  const screenStroke = constellationMode ? 4.2 : 2.6;
+  const edgeStroke = screenStroke * invScale;
+  const markerSize = Math.min(32, Math.max(12, 14 * invScale));
+  const explorationMode = contentBlend > 0.04;
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
@@ -702,7 +706,7 @@ export default function AiNodeCanvas({
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full") +
         (contentBlend > 0.5 ? " ai-text-dominant" : "")
       }
-      style={{ "--ai-content-blend": contentBlend }}
+      style={{ "--ai-content-blend": contentBlend, "--ai-inv-scale": invScale }}
       onPointerDown={handleViewportPointerDown}
       onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
       onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
@@ -734,44 +738,44 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 210, 100, 0.55)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.92)" />
             </marker>
             <marker
               id="ai-edge-arrow-interpret"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(200, 180, 255, 0.6)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.88)" />
             </marker>
             <marker
               id="ai-edge-arrow-move"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(80, 220, 255, 0.55)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.85)" />
             </marker>
             <marker
               id="ai-edge-arrow-default"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(220, 230, 255, 0.45)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.9)" />
             </marker>
             <filter id="ai-edge-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2" result="blur" />
@@ -832,7 +836,9 @@ export default function AiNodeCanvas({
                   d={pathD}
                   className={`ai-node-line ai-node-line-${kind}`}
                   fill="none"
-                  markerEnd={constellationMode ? undefined : marker}
+                  strokeWidth={edgeStroke}
+                  vectorEffect="non-scaling-stroke"
+                  markerEnd={marker}
                 />
               </g>
             );
@@ -858,8 +864,8 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
-                (nodeBlend > 0.02 ? " morphing" : "") +
-                (nodeBlend > 0.55 ? " text-visible" : "") +
+                (nodeBlend > 0.01 ? " morphing" : "") +
+                (nodeBlend > 0.82 ? " text-visible" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
@@ -873,6 +879,7 @@ export default function AiNodeCanvas({
                 height: r * 2,
                 "--ai-cell-weight": cellWeight,
                 "--ai-node-blend": nodeBlend,
+                "--ai-ring-stroke": `${Math.max(2.5, 3.8 * invScale)}px`,
               }}
               title={constellationMode ? node.preview || node.expandedText || node.label : undefined}
               onPointerDown={(e) => startNodeDrag(e, node)}
@@ -881,13 +888,15 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
+              <span className="ai-node-ring" aria-hidden="true" />
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
-              {detail && nodeBlend > 0.55 && textLayout && (
+              {detail && nodeBlend > 0.01 && textLayout && (
                 <div
                   className="ai-node-content-text"
                   style={{
                     opacity: nodeBlend,
+                    transform: `translateX(-50%) scale(${0.88 + nodeBlend * 0.12})`,
                     width: textLayout.w,
                     fontSize: textLayout.fontSize,
                     lineHeight: textLayout.lineHeight,

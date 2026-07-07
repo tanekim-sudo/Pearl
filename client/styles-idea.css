@@ -1186,7 +1186,7 @@ body.ai-strand-dragging * {
 
 .ai-edge-hit {
   stroke: transparent;
-  stroke-width: 14;
+  stroke-width: calc(18px * var(--ai-inv-scale, 1));
   pointer-events: stroke;
   cursor: crosshair;
 }
@@ -1466,14 +1466,19 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node-line {
-  stroke: rgba(255, 255, 255, 0.45);
-  stroke-width: 1px;
+  stroke: rgba(255, 255, 255, 0.72);
   fill: none;
   vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.45));
 }
 
 .ai-node-line-glow {
   display: none;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-line {
+  stroke: rgba(255, 255, 255, 0.88);
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.55));
 }
 
 .ai-node-line-expand,
@@ -1481,7 +1486,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .ai-node-line-move,
 .ai-node-line-link,
 .ai-node-line-branch {
-  stroke: rgba(255, 255, 255, 0.45);
+  stroke: rgba(255, 255, 255, 0.78);
 }
 
 /* ── Brain-cell constellation nodes ── */
@@ -1565,19 +1570,17 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   transition: opacity 0.06s linear;
 }
 
-/* While morphing, the circle chrome dissolves so only cell + card remain. */
+/* While morphing, the radiant ring dissolves as text blooms in. */
 .ai-node.morphing {
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
 }
 
-/* In-place morph: circle dissolves into borderless text, top-anchored at the cell rim. */
 .ai-node-content-text {
   position: absolute;
   left: 50%;
   top: 0;
-  transform: translateX(-50%);
+  transform-origin: top center;
   background: none;
   border: none;
   box-shadow: none;
@@ -1585,10 +1588,12 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   pointer-events: none;
   text-align: left;
   z-index: 6;
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
 }
 
 .ai-node-content-text-body {
-  color: rgba(245, 248, 255, 0.96);
+  color: rgba(255, 255, 255, 0.97);
+  text-shadow: 0 0 calc(12px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.35);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: inherit;
@@ -1613,6 +1618,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 /* Once text is showing, fully remove circle chrome (glow reads through at high zoom). */
+.ai-node.text-visible .ai-node-ring,
 .ai-node.text-visible .ai-node-cell,
 .ai-node.text-visible .ai-node-starburst,
 .ai-node.text-visible .ai-node-label,
@@ -1767,11 +1773,33 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   padding: 0;
   cursor: grab;
   user-select: none;
-  border: 1.5px solid rgba(255, 255, 255, 0.82);
+  border: none;
   background: transparent;
   box-shadow: none;
-  transition: border-color 0.12s, transform 0.12s;
   z-index: 3;
+}
+
+.ai-node-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: var(--ai-ring-stroke, 3px) solid rgba(255, 255, 255, calc(0.96 * (1 - var(--ai-node-blend, 0))));
+  box-shadow:
+    0 0 calc(10px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.65),
+    0 0 calc(26px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.28),
+    inset 0 0 calc(8px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  transition:
+    border-color 0.14s ease-out,
+    box-shadow 0.14s ease-out,
+    opacity 0.14s ease-out;
+}
+
+.ai-node.selected .ai-node-ring {
+  border-color: rgba(255, 255, 255, calc(1 * (1 - var(--ai-node-blend, 0))));
+  box-shadow:
+    0 0 calc(14px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.85),
+    0 0 calc(34px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.38);
 }
 
 .ai-node:active {
@@ -1779,22 +1807,27 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node.selected {
-  border-color: #ffffff;
-  border-width: 2px;
-  transform: scale(1.06);
+  transform: scale(1.04);
   z-index: 4;
 }
 
-.ai-node.multi-selected {
-  border-color: rgba(255, 255, 255, 0.95);
+.ai-node.multi-selected .ai-node-ring {
+  border-color: rgba(255, 255, 255, calc(0.98 * (1 - var(--ai-node-blend, 0))));
 }
 
 .ai-node-viewport.ai-constellation-mode .ai-node,
 .ai-node-viewport.ai-zoom-dot .ai-node,
 .ai-node-viewport.ai-zoom-short .ai-node {
-  border: 1.5px solid rgba(255, 255, 255, 0.82);
+  border: none;
   background: transparent;
   box-shadow: none;
+}
+
+.ai-node-viewport.ai-constellation-mode .ai-node-ring {
+  border-width: calc(var(--ai-ring-stroke, 3px) * 1.15);
+  box-shadow:
+    0 0 calc(14px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.75),
+    0 0 calc(32px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.35);
 }
 
 .ai-node-source,
@@ -1861,18 +1894,17 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   }
 }
 
-.ai-node.loading {
-  border-color: rgba(255, 255, 255, 0.55);
+.ai-node.loading .ai-node-ring {
   animation: ai-node-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes ai-node-pulse {
-  0%, 100% { opacity: 0.65; }
+  0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
 
-.ai-node.error {
-  border-color: #e85d6a;
+.ai-node.error .ai-node-ring {
+  border-color: rgba(255, 120, 130, calc(0.95 * (1 - var(--ai-node-blend, 0))));
 }
 
 .ai-node-source,

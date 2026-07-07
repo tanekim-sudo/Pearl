@@ -28,10 +28,10 @@ export const DEFAULT_CONSTELLATION_SCALE = 0.25;
 export const EXPLORE_ZOOM_SCALE = 1.9;
 /** Below this scale, nodes are pure brain-cell circles. */
 export const AI_CELL_ZOOM_MAX = 0.72;
-/** Crossfade from circle → text begins here. */
-export const AI_BLEND_ZOOM_START = 0.76;
+/** Crossfade from circle → text begins here (wider band = longer morph). */
+export const AI_BLEND_ZOOM_START = 0.52;
 /** Text fully readable above this scale. */
-export const AI_TEXT_ZOOM_FULL = 1.72;
+export const AI_TEXT_ZOOM_FULL = 1.88;
 /** Click-to-read zoom — card fills viewport with ~15px screen font. */
 export const AI_READING_ZOOM = 2.35;
 export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;
