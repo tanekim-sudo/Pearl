@@ -117,7 +117,12 @@ import {
   fitPaperInView,
   maxTextWidth,
 } from "./lib/paper.js";
-import { attachCanvasWheel } from "./lib/canvas-navigation.js";
+import {
+  loadColumnLayout,
+  saveColumnLayout,
+  clampColumnLayout,
+  layoutAfterResizeDrag,
+} from "./lib/column-layout.js";
 import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
 import { cyclePrimaryUtensil, UTENSIL_LABELS } from "./lib/primary-utensils.js";
 import {
@@ -1902,6 +1907,11 @@ export default function App() {
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
   const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
+  const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
+  const [columnResizing, setColumnResizing] = useState(null);
+  const columnLayoutRef = useRef(columnLayout);
+  const threeColumnGridRef = useRef(null);
+  columnLayoutRef.current = columnLayout;
   const tourContextRef = useRef(createTourContext());
   const [tourActive, setTourActive] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
@@ -2016,6 +2026,15 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(THEME_KEY, JSON.stringify(theme));
   }, [theme]);
+  useEffect(() => {
+    function onResize() {
+      const gridW = threeColumnGridRef.current?.clientWidth;
+      if (!gridW) return;
+      setColumnLayout((prev) => clampColumnLayout(prev, gridW));
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   useEffect(() => {
     setSavedIndicator(false);
     const t = setTimeout(() => setSavedIndicator(true), 400);
@@ -2255,6 +2274,33 @@ export default function App() {
     const el = pane === "structures" ? symbolsSectionRef.current : functionsSectionRef.current;
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     if (pane === "structures") emitTourEvent("structures-tab");
+  }
+
+  function startColumnBoundaryResize(e, edge) {
+    const gridW = threeColumnGridRef.current?.clientWidth || window.innerWidth;
+    const startLayout = { ...columnLayoutRef.current };
+    const startX = e.clientX;
+    setColumnResizing(edge);
+    document.body.classList.add("column-boundary-resizing");
+
+    function onMove(ev) {
+      const raw = layoutAfterResizeDrag(edge, startX, ev.clientX, startLayout);
+      const width = threeColumnGridRef.current?.clientWidth || gridW;
+      setColumnLayout(clampColumnLayout(raw, width));
+    }
+
+    function onUp() {
+      setColumnResizing(null);
+      document.body.classList.remove("column-boundary-resizing");
+      saveColumnLayout(columnLayoutRef.current);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }
 
   function resolveLeftColumnDropTarget(clientX, clientY) {
@@ -7190,7 +7236,14 @@ export default function App() {
         onShare={handleShareBoard}
       />
 
-      <div className={"three-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
+      <div
+        ref={threeColumnGridRef}
+        className={"three-column-grid" + (transferDragActive ? " transfer-drag" : "")}
+        style={{
+          "--col-left-w": `${columnLayout.left}px`,
+          "--col-right-w": `${columnLayout.right}px`,
+        }}
+      >
         <FunctionsColumn
           columnRef={functionsColumnRef}
           dropOver={railDropOver}
@@ -7311,7 +7364,12 @@ export default function App() {
           </aside>
         </FunctionsColumn>
 
-        <InterpretBoundary variant="tools-paper" />
+        <InterpretBoundary
+          variant="tools-paper"
+          resizeEdge="left"
+          onResizeStart={startColumnBoundaryResize}
+          resizing={columnResizing === "left"}
+        />
 
         <CanvasColumn
           tool={tool}
@@ -7895,6 +7953,9 @@ export default function App() {
           dropOver={boundaryDropOver}
           magnetActive={boundaryMagnetActive || transferDragActive}
           loading={!!aiPanel?.loading}
+          resizeEdge="right"
+          onResizeStart={startColumnBoundaryResize}
+          resizing={columnResizing === "right"}
           onDragOver={handleBoundaryDragOver}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) {

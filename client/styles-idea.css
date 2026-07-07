@@ -14,7 +14,12 @@
 .three-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr;
+  grid-template-columns:
+    var(--col-left-w, 280px)
+    12px
+    minmax(220px, 1fr)
+    12px
+    var(--col-right-w, 340px);
   min-height: 0;
   gap: 0;
 }
@@ -140,6 +145,46 @@
   min-width: 12px;
   z-index: 20;
   cursor: default;
+  touch-action: none;
+}
+
+.interpret-boundary-hit.resizable {
+  cursor: col-resize;
+}
+
+.interpret-boundary-hit.resizable:hover,
+.interpret-boundary-hit.resizable.resizing {
+  width: 14px;
+  min-width: 14px;
+}
+
+.interpret-boundary-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(240, 195, 80, 0.35);
+  box-shadow: 0 0 8px rgba(240, 195, 80, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s, height 0.15s, background 0.15s;
+  z-index: 2;
+}
+
+.interpret-boundary-hit.resizable:hover .interpret-boundary-grip,
+.interpret-boundary-hit.resizable.resizing .interpret-boundary-grip {
+  opacity: 1;
+  height: 56px;
+  background: rgba(255, 216, 110, 0.75);
+}
+
+body.column-boundary-resizing,
+body.column-boundary-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .interpret-boundary-hit::before {
