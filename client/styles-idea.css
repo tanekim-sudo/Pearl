@@ -22,6 +22,11 @@
     var(--col-right-w, 340px);
   min-height: 0;
   gap: 0;
+  transition: grid-template-columns 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.three-column-grid.column-resizing {
+  transition: none;
 }
 
 /* legacy alias */
@@ -1576,6 +1581,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   box-shadow: none;
 }
 
+/* In-place morph: circle dissolves into borderless text, top-anchored at the cell rim. */
 .ai-node-content-text {
   position: absolute;
   left: 50%;
@@ -1588,7 +1594,6 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   pointer-events: none;
   text-align: left;
   z-index: 6;
-  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
 }
 
 .ai-node-content-text-body {
@@ -1789,10 +1794,24 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
     0 0 calc(26px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.28),
     inset 0 0 calc(8px * var(--ai-inv-scale, 1)) rgba(255, 255, 255, 0.12);
   pointer-events: none;
+}
+
+.ai-node-viewport.ai-wheel-zooming .ai-node-ring,
+.ai-node-viewport.ai-wheel-zooming .ai-node-content-text,
+.ai-node-viewport.ai-panning .ai-node-ring,
+.ai-node-viewport.ai-panning .ai-node-content-text {
+  transition: none !important;
+}
+
+.ai-node-viewport:not(.ai-wheel-zooming):not(.ai-panning) .ai-node-ring {
   transition:
-    border-color 0.14s ease-out,
-    box-shadow 0.14s ease-out,
-    opacity 0.14s ease-out;
+    border-color 0.2s ease-out,
+    box-shadow 0.2s ease-out,
+    opacity 0.2s ease-out;
+}
+
+.ai-node-viewport:not(.ai-wheel-zooming):not(.ai-panning) .ai-node-content-text {
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
 
 .ai-node.selected .ai-node-ring {

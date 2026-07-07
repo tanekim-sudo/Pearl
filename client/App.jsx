@@ -64,6 +64,7 @@ import {
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
   DEFAULT_CONSTELLATION_SCALE,
+  EXPLORE_ZOOM_SCALE,
   centerAiCamera,
   findNearestSourceNode,
   fitAiConstellation,
@@ -118,6 +119,11 @@ import {
   maxTextWidth,
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
+import {
+  animateCameraState,
+  compensateCameraForViewportResize,
+  easeInOutCubic,
+} from "./lib/camera-motion.js";
 import {
   loadColumnLayout,
   saveColumnLayout,
@@ -2008,7 +2014,7 @@ export default function App() {
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
   const functionsColumnRef = useRef(null);
-  const aiCamAnimRef = useRef(null);
+  const aiCamAnimCancelRef = useRef(null);
   const prevAiNodeCountRef = useRef(0);
   aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
@@ -2081,7 +2087,7 @@ export default function App() {
     }
 
     if (count - prev >= 3 && aiCamRef.current.scale <= CONSTELLATION_ZOOM_THRESHOLD) {
-      setAiCamera(fitAiConstellation(aiNodes, w, h));
+      animateAiCameraTo(fitAiConstellation(aiNodes, w, h), 520);
     }
   }, [aiNodes]);
 
@@ -2479,24 +2485,16 @@ export default function App() {
     }
   }
 
-  function animateAiCameraTo(targetCamera, ms = 350) {
-    if (aiCamAnimRef.current) cancelAnimationFrame(aiCamAnimRef.current);
-    const from = { ...aiCamRef.current };
-    const to = targetCamera;
-    const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
-    const tick = (now) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const k = ease(t);
-      setAiCamera({
-        x: from.x + (to.x - from.x) * k,
-        y: from.y + (to.y - from.y) * k,
-        scale: from.scale + (to.scale - from.scale) * k,
-      });
-      if (t < 1) aiCamAnimRef.current = requestAnimationFrame(tick);
-      else aiCamAnimRef.current = null;
-    };
-    aiCamAnimRef.current = requestAnimationFrame(tick);
+  function animateAiCameraTo(targetCamera, ms = 420) {
+    if (aiCamAnimCancelRef.current) aiCamAnimCancelRef.current();
+    aiCamAnimCancelRef.current = animateCameraState(aiCamRef.current, targetCamera, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setAiCamera,
+      onDone: () => {
+        aiCamAnimCancelRef.current = null;
+      },
+    });
   }
 
   /** Zoom so borderless node text fills the view, anchored from the top. */
@@ -2506,7 +2504,7 @@ export default function App() {
     return focusAiNodeRead(node, layout, el.clientWidth, el.clientHeight);
   }
 
-  function zoomAiToNode(node, ms = 560) {
+  function zoomAiToNode(node, ms = 580) {
     const el = aiViewportRef.current;
     if (!el || !node) return;
     animateAiCameraTo(aiCardCameraFor(node, el), ms);
@@ -2562,7 +2560,7 @@ export default function App() {
     if (!el) return;
     emitTourEvent("return-constellation");
     setAiFocusedNodeId(null);
-    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 450);
+    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 520);
   }
 
   function focusAiNodeFromZoom(nodeId) {
@@ -2571,6 +2569,10 @@ export default function App() {
     setAiFocusedNodeId(nodeId);
     handleAiNodeSelect(nodeId, { replace: true });
     focusAiNodeContent(node);
+    const el = aiViewportRef.current;
+    if (!el) return;
+    const midScale = Math.min(EXPLORE_ZOOM_SCALE, Math.max(aiCamRef.current.scale, 1.05));
+    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, midScale), 480);
   }
 
   function captureMoveStartPositions(ids) {
@@ -3051,6 +3053,32 @@ export default function App() {
     setColGridWidth(el.clientWidth);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (columnResizing) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const prev = paperVpSizeRef.current;
+    if (prev.w > 0 && (prev.w !== w || prev.h !== h)) {
+      setCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
+    }
+    paperVpSizeRef.current = { w, h };
+  }, [columnLayout, colGridWidth, columnResizing]);
+
+  useEffect(() => {
+    if (columnResizing) return;
+    const el = aiViewportRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const prev = aiVpSizeRef.current;
+    if (prev.w > 0 && (prev.w !== w || prev.h !== h)) {
+      setAiCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
+    }
+    aiVpSizeRef.current = { w, h };
+  }, [columnLayout, colGridWidth, columnResizing]);
 
   // wheel: pinch / ctrl+scroll zooms at cursor; two-finger scroll pans
   useEffect(() => {
@@ -3855,7 +3883,9 @@ export default function App() {
   itemHistoryLogRef.current = itemHistoryLog;
   const historyPlayTimerRef = useRef(null);
   const historyCaptureCallbackRef = useRef(null);
-  const camAnimRef = useRef(null);
+  const camAnimCancelRef = useRef(null);
+  const paperVpSizeRef = useRef({ w: 0, h: 0 });
+  const aiVpSizeRef = useRef({ w: 0, h: 0 });
 
   useEffect(() => saveItemHistoryLog(itemHistoryLog), [itemHistoryLog]);
 
@@ -3876,8 +3906,8 @@ export default function App() {
     for (const id of itemIds || []) recordItemEvent(id, kind, meta);
   }
 
-  function animateCameraTo(targetWorld, targetScale, ms = 425) {
-    if (camAnimRef.current) cancelAnimationFrame(camAnimRef.current);
+  function animateCameraTo(targetWorld, targetScale, ms = 480) {
+    if (camAnimCancelRef.current) camAnimCancelRef.current();
     const r = vpRect();
     const from = { ...camRef.current };
     const scale = clampScale(targetScale ?? from.scale);
@@ -3886,20 +3916,26 @@ export default function App() {
       x: r.width / 2 - targetWorld.x * scale,
       y: r.height / 2 - targetWorld.y * scale,
     };
-    const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
-    const tick = (now) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const k = ease(t);
-      setCamera({
-        x: from.x + (to.x - from.x) * k,
-        y: from.y + (to.y - from.y) * k,
-        scale: from.scale + (to.scale - from.scale) * k,
-      });
-      if (t < 1) camAnimRef.current = requestAnimationFrame(tick);
-      else camAnimRef.current = null;
-    };
-    camAnimRef.current = requestAnimationFrame(tick);
+    camAnimCancelRef.current = animateCameraState(from, to, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setCamera,
+      onDone: () => {
+        camAnimCancelRef.current = null;
+      },
+    });
+  }
+
+  function animateCameraDirect(targetCamera, ms = 480) {
+    if (camAnimCancelRef.current) camAnimCancelRef.current();
+    camAnimCancelRef.current = animateCameraState(camRef.current, targetCamera, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setCamera,
+      onDone: () => {
+        camAnimCancelRef.current = null;
+      },
+    });
   }
 
   function stepFocusCenter(step) {
@@ -5457,9 +5493,9 @@ export default function App() {
       if (sy < margin) y += margin - sy;
       if (sy > vpH - margin) y -= sy - (vpH - margin);
       if (x !== cam.x || y !== cam.y) {
-        animateAiCameraTo({ scale, x, y }, 320);
+        animateAiCameraTo({ scale, x, y }, 480);
       }
-    }, 420);
+    }, 680);
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -6289,7 +6325,7 @@ export default function App() {
     const hit = itemAtPoint(e.clientX, e.clientY);
     if (hit) return;
     const r = vpRect();
-    setCamera(fitPaperInView(r.width, r.height));
+    animateCameraDirect(fitPaperInView(r.width, r.height), 520);
   }
 
   // ---- export / object helpers ----
@@ -6476,16 +6512,12 @@ export default function App() {
     const r = vpRect();
     const cx = (bb.minx + bb.maxx) / 2;
     const cy = (bb.miny + bb.maxy) / 2;
-    const scale = camRef.current.scale;
-    setCamera({
-      scale,
-      x: r.width / 2 - cx * scale,
-      y: r.height / 2 - cy * scale,
-    });
+    animateCameraTo({ x: cx, y: cy }, camRef.current.scale, 480);
   }
 
   function switchPage(pageId, nextCamera) {
     emitTourEvent("page-switch");
+    const targetPage = pages.find((p) => p.id === pageId);
     setPages((ps) =>
       ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
     );
@@ -6494,7 +6526,8 @@ export default function App() {
     setEditing(null);
     requestAnimationFrame(() => {
       const r = vpRect();
-      setCamera(nextCamera || fitPaperInView(r.width, r.height));
+      const targetCam = nextCamera || targetPage?.camera || fitPaperInView(r.width, r.height);
+      animateCameraDirect(targetCam, 520);
     });
   }
 
@@ -6628,6 +6661,12 @@ export default function App() {
     });
     appendAiNodes(sessionNode, expandedNode);
     setSelectedAiNodeIds([expandedNode.id]);
+    if (worldPos) {
+      launchPaperToAiTransfer({
+        nodeIds: [sessionNode.id, expandedNode.id],
+        focusWorld: worldPos,
+      });
+    }
     return { sessionNode, expandedNode, prompt };
   }
 
@@ -7333,7 +7372,7 @@ export default function App() {
 
       <div
         ref={threeColumnGridRef}
-        className={"three-column-grid" + (transferDragActive ? " transfer-drag" : "")}
+        className={"three-column-grid" + (columnResizing ? " column-resizing" : "") + (transferDragActive ? " transfer-drag" : "")}
         style={{
           "--col-left-w": `${columnLayout.left}px`,
           "--col-right-w": `${columnLayout.right}px`,
@@ -7491,11 +7530,25 @@ export default function App() {
           onSelectPage={switchPage}
           onAddPage={addPage}
           onRenamePage={renamePage}
-          onZoomIn={() => setCamera((c) => zoomCamera(c, ZOOM_STEP))}
-          onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP))}
+          onZoomIn={() => {
+            const r = vpRect();
+            const c = camRef.current;
+            const next = zoomCamera(c, ZOOM_STEP);
+            const local = { x: r.width / 2, y: r.height / 2 };
+            const world = screenToWorld(c, local.x, local.y);
+            animateCameraTo(world, next.scale, 320);
+          }}
+          onZoomOut={() => {
+            const r = vpRect();
+            const c = camRef.current;
+            const next = zoomCamera(c, 1 / ZOOM_STEP);
+            const local = { x: r.width / 2, y: r.height / 2 };
+            const world = screenToWorld(c, local.x, local.y);
+            animateCameraTo(world, next.scale, 320);
+          }}
           onZoomReset={() => {
             const r = vpRect();
-            setCamera(fitPaperInView(r.width, r.height));
+            animateCameraDirect(fitPaperInView(r.width, r.height), 520);
           }}
           paperRecording={paperRecording}
           paperRecordLevel={paperRecordLevel}

@@ -31,6 +31,8 @@ export function applyWheelToCamera(e, camera, localX, localY) {
 /** Minimum pointer movement before object drag/clone activates. */
 export const PAN_DRAG_THRESHOLD = 8;
 
+const WHEEL_IDLE_MS = 140;
+
 /**
  * Attach non-passive wheel handler for canvas pan/zoom.
  * @param {HTMLElement} el
@@ -38,10 +40,20 @@ export const PAN_DRAG_THRESHOLD = 8;
  * @param {(next: object) => void} setCamera
  * @param {(e: WheelEvent) => { x: number, y: number }} getLocalPoint
  * @param {(prev: object, next: object, e: WheelEvent) => void} [onAfterZoom]
+ * @param {{ onWheelActive?: () => void, onWheelIdle?: () => void }} [opts]
  */
-export function attachCanvasWheel(el, getCamera, setCamera, getLocalPoint, onAfterZoom) {
+export function attachCanvasWheel(el, getCamera, setCamera, getLocalPoint, onAfterZoom, opts = {}) {
+  let wheelEndTimer = null;
+
   function onWheel(e) {
     e.preventDefault();
+    opts.onWheelActive?.();
+    if (wheelEndTimer) clearTimeout(wheelEndTimer);
+    wheelEndTimer = setTimeout(() => {
+      wheelEndTimer = null;
+      opts.onWheelIdle?.();
+    }, WHEEL_IDLE_MS);
+
     const camera = getCamera();
     const local = getLocalPoint(e);
     const prevScale = camera.scale;
@@ -54,5 +66,8 @@ export function attachCanvasWheel(el, getCamera, setCamera, getLocalPoint, onAft
   }
 
   el.addEventListener("wheel", onWheel, { passive: false });
-  return () => el.removeEventListener("wheel", onWheel);
+  return () => {
+    if (wheelEndTimer) clearTimeout(wheelEndTimer);
+    el.removeEventListener("wheel", onWheel);
+  };
 }

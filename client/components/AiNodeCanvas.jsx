@@ -74,7 +74,8 @@ export default function AiNodeCanvas({
   const strandDragRef = useRef(null);
   strandDragRef.current = strandDrag;
   const knownNodeIdsRef = useRef(null);
-  const [bornIds, setBornIds] = useState(() => new Set());
+  const [wheelZooming, setWheelZooming] = useState(false);
+  const constellationReturnRef = useRef(0);
 
   // New nodes glow gold, then fade to stardust white over ~5s.
   useEffect(() => {
@@ -145,19 +146,26 @@ export default function AiNodeCanvas({
         const rect = el.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
       },
-      (_prev, next) => {
-        const prevScale = cameraRef.current.scale;
-        if (prevScale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX) {
-          onReturnToConstellation?.();
+      (prev, next) => {
+        if (prev.scale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX - 0.06) {
+          const now = Date.now();
+          if (now - constellationReturnRef.current > 450) {
+            constellationReturnRef.current = now;
+            onReturnToConstellation?.();
+          }
           return;
         }
-        if (prevScale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
+        if (prev.scale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
           const pickId =
             selectedIds.length === 1
               ? selectedIds[0]
               : findNearestNodeToCenter(nodes, next, vpSize.w, vpSize.h)?.id;
           if (pickId) onFocusFromZoom?.(pickId);
         }
+      },
+      {
+        onWheelActive: () => setWheelZooming(true),
+        onWheelIdle: () => setWheelZooming(false),
       }
     );
   }, [onCameraChange, onReturnToConstellation, onFocusFromZoom, viewportRef, nodes, selectedIds, vpSize.w, vpSize.h]);
@@ -701,6 +709,7 @@ export default function AiNodeCanvas({
         (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
         (tool === "highlight" && selectedIds.length ? " highlight-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
+        (wheelZooming ? " ai-wheel-zooming" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full") +
