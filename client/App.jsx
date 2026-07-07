@@ -3930,6 +3930,50 @@ export default function App() {
     setOpEditor({ mode: "edit", op });
   }
 
+  /** Resolve a lens record to an editable operator tree (fixes multi-move lenses). */
+  function openEditLensFromLens(lens) {
+    if (!lens) return;
+    emitTourEvent("lens-evolve");
+    const opId = lensRootOpId(lens);
+    let op = opId ? opMap[opId] : null;
+    const moveIds = lens.moveIds || [];
+
+    if (!op && moveIds.length) {
+      op = opMap[moveIds[0]];
+    }
+
+    if (op && moveIds.length > 1 && op.kind !== "pipeline") {
+      const stepTrees = moveIds
+        .map((id) => opMap[id])
+        .filter(Boolean)
+        .map((o) => opToJsonTree(o, opMap));
+      if (!stepTrees.length) {
+        showToast("Can't edit — steps are missing. Try + lens to rebuild.");
+        return;
+      }
+      const tree = { name: lens.name, description: `Lens: ${lens.name}`, steps: stepTrees };
+      const { ops, rootId } = treeToOperators(tree, { top: true });
+      const newRoot = ops.find((o) => o.id === rootId);
+      setOperators((prev) => [...prev, ...ops]);
+      setLenses((ls) =>
+        ls.some((l) => l.id === lens.id)
+          ? ls.map((l) =>
+              l.id === lens.id ? normalizeLens({ ...l, opId: rootId, moveIds: [rootId], name: lens.name }) : l
+            )
+          : ls
+      );
+      openEditLens(newRoot);
+      return;
+    }
+
+    if (op) {
+      openEditLens(op);
+      return;
+    }
+
+    showToast("Can't edit — use + lens to create one");
+  }
+
   /** @deprecated use openCreateLens */
   function openCreateFunction() {
     openCreateLens();
@@ -4004,7 +4048,7 @@ export default function App() {
       });
     }
     setOpEditor(null);
-    showToast(oldRootId ? "committed · lens evolved" : "committed · lens created");
+    showToast(oldRootId ? "saved · lens updated" : "saved · lens created");
   }
 
   /** @deprecated alias */
@@ -5222,13 +5266,7 @@ export default function App() {
           setActiveLensId(id === activeLensId ? null : id);
           emitTourEvent("lens-use");
         }}
-        onEvolve={() => {
-          emitTourEvent("lens-evolve");
-          const opId = lensRootOpId(lens);
-          const op = opId ? opMap[opId] : null;
-          if (op) openEditLens(op);
-          else showToast("open + lens to rebuild this palette");
-        }}
+        onEvolve={() => openEditLensFromLens(lens)}
         onBranch={() => setPendingBranch({ kind: "branch", sourceId: lens.id, sourceName: lens.name })}
         onFork={() => setPendingBranch({ kind: "fork", sourceId: lens.id, sourceName: lens.name })}
         onHistory={() => setLensHistoryId(lens.id)}
@@ -5262,33 +5300,35 @@ export default function App() {
     });
   }
 
-  /** Functions run on paper/highlight — AI only receives material to explore and expand. */
+  /** Apply a move/lens to highlighted or selected paper content. */
   function runFunctionFromRail(op) {
     if (!op) return;
     const hlIds = highlightSelectionRef.current;
-    if (hlIds.length) {
-      const sketchBundle = gatherSelectionSketchBundle(hlIds);
-      const expandIds = transformableDragIds(hlIds);
-      if (expandIds.length) {
-        expandInAi(expandIds, { op, opLabel: op.name });
-      } else if (sketchBundle) {
-        interpretSketchBundle(sketchBundle);
-      } else {
-        showToast("highlighted items can't be transformed");
-        return;
-      }
+    const selIds = selRef.current;
+    const rawIds = hlIds.length ? hlIds : selIds;
+    if (!rawIds.length) {
+      showToast("select or highlight something on paper first");
+      return;
+    }
+    const sketchBundle = gatherSelectionSketchBundle(rawIds);
+    const targetIds = transformableDragIds(rawIds);
+    if (!targetIds.length && sketchBundle) {
+      interpretSketchBundle(sketchBundle);
       setHighlightSelectionIds([]);
       setHighlightTouchIds([]);
       return;
     }
-    if (selRef.current.length) {
-      const expandIds = transformableDragIds(selRef.current);
-      if (expandIds.length) {
-        expandInAi(expandIds, { op, opLabel: op.name });
-        return;
-      }
+    if (!targetIds.length) {
+      showToast("this selection can't be transformed");
+      return;
     }
-    showToast("highlight something on paper first, then press a function");
+    if (isExpansionOperator(op)) {
+      expandInAi(targetIds, { op, opLabel: op.name });
+    } else {
+      runOperator(op, targetIds);
+    }
+    setHighlightSelectionIds([]);
+    setHighlightTouchIds([]);
   }
 
   function handleStrandSelect(nodeId, choice, info = {}) {
@@ -7572,6 +7612,10 @@ export default function App() {
     selItem && isTransformableBlock(selItem) ? getNodeThreadCapture(selItem.id, items) : null;
   const captureName = (captureNameOverride ?? selCaptureInfo?.defaultName ?? "").slice(0, 72);
   const boardLinks = visibleItems.filter((it) => it.type === "link");
+  const paperContentItems = visibleItems.filter(
+    (it) => it.type !== "link" && !(it.type === "stroke" && it.highlight)
+  );
+  const paperIsEmpty = paperContentItems.length === 0 && !walking && !historyReplay;
   const activePageHasSession =
     (pages.find((p) => p.id === activePageId)?.sessions?.length || 0) > 0;
   const walkStep = walking?.steps?.[walking.stepIndex] || null;
@@ -7753,21 +7797,21 @@ export default function App() {
                 lensCount={displayLenses.length}
                 onNewLens={openCreateLens}
               />
-              <p className="rail-functions-hint">Checkout a lens · branch experiments · merge ways of seeing · commit evolves.</p>
+              <p className="rail-functions-hint">Drag a lens onto paper to transform · click a lens to edit it</p>
               <div className="move-quick-add">
-                <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
               {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
                 <div className="sel-capture-panel">
                   <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="lens name" />
-                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
+                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>Save as lens</button>
                 </div>
               )}
               <div className="rail-scroll">
                 {lensRepos.length > 0 && (
                   <>
-                    <div className="rail-section" data-tour="lenses-section">repositories</div>
+                    <div className="rail-section" data-tour="lenses-section">Lenses</div>
                     {lensRepos.map((repo) => (
                       <div key={repo.root.id} className="git-repo-group">
                         {renderLensCard(repo.root, { depth: 0 })}
@@ -7777,9 +7821,9 @@ export default function App() {
                     ))}
                   </>
                 )}
-                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
               </div>
             </section>
             <section ref={symbolsSectionRef} className="rail-pane rail-symbols-pane" data-tour="structures-tab">
@@ -7787,7 +7831,7 @@ export default function App() {
                 symbols {structures.length ? `(${structures.length})` : ""}
               </h3>
               <p className="rail-structures-hint">
-                Highlight and drag here — onto a symbol to add to it, or empty space for a new one.
+                Drag highlighted material here to save as a symbol · click ✎ to draw its glyph
               </p>
               <div className="rail-scroll">
                 {structures.map((struct) => (
@@ -7881,6 +7925,18 @@ export default function App() {
             : undefined
         }
       >
+        {paperIsEmpty && (
+          <div className="paper-empty-hint" aria-hidden="true">
+            <p className="paper-empty-title">Your ideas live here</p>
+            <p className="paper-empty-steps">
+              1. Write or draw with <strong>Tools</strong> above
+              <br />
+              2. Drag a <strong>lens</strong> from the left onto your note
+              <br />
+              3. Highlight text and drag <strong>→ AI</strong> to explore
+            </p>
+          </div>
+        )}
         <div
           className="world"
           style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}
@@ -8896,7 +8952,7 @@ function SelectionCaptureChip({
           onDragStart={dragPayload}
           onDragEnd={() => onTransferDragEnd?.()}
         >
-          → AI
+          → Explore
         </button>
       )}
       {onSaveToFunctions && aiDragIds?.length && (
@@ -8910,9 +8966,9 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveToFunctions();
           }}
-          title="Save perceptual steps as function"
+          title="Save as a reusable lens"
         >
-          → steps
+          Save lens
         </button>
       )}
       {onSaveToStructures && aiDragIds?.length && (
@@ -8926,9 +8982,9 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveToStructures();
           }}
-          title="Save idea and draw a symbol"
+          title="Save as a symbol template"
         >
-          → symbol
+          Save symbol
         </button>
       )}
       {onSaveDocument && (
@@ -9180,9 +9236,6 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
     <div className="op-card-wrap">
       <div
         className={"op-card" + (composeOver ? " compose-over" : "") + (starlike ? " starlike-op" : "")}
-        draggable
-        onClick={() => onRun?.(op)}
-        onDragStart={(e) => startOpDrag(e, op)}
         onDragOver={(e) => {
           if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
             e.preventDefault();
@@ -9201,10 +9254,18 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title={op.name}
+        title="Drag ⠿ onto paper to transform"
       >
         <div className="op-card-row">
-          <span className="op-drag-grip" title="Drag">
+          <span
+            className="op-drag-grip"
+            title="Drag onto paper"
+            draggable
+            onDragStart={(e) => {
+              startOpDrag(e, op);
+              e.stopPropagation();
+            }}
+          >
             ⠿
           </span>
           <div className="op-card-label">
@@ -9232,9 +9293,9 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
               e.stopPropagation();
               onEdit(op);
             }}
-            title="edit"
+            title="Edit"
           >
-            ⚙
+            Edit
           </button>
           {onShare && (
             <button
@@ -9243,7 +9304,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
                 e.stopPropagation();
                 onShare(op);
               }}
-              title="copy share link"
+              title="Copy share link"
             >
               ↗
             </button>
@@ -9312,6 +9373,7 @@ function LensCard({
   onDelete,
 }) {
   const [mergeOver, setMergeOver] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const moveNames = lensStepNames(lens, opMap);
   const metaLines = lensMetaLines(lens, lenses);
   const refKind = gitRefLabel(lens);
@@ -9328,10 +9390,9 @@ function LensCard({
         (depth > 0 ? " git-child" : "")
       }
       style={depth > 0 ? { marginLeft: depth * 14 } : undefined}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData(LENS_MIME, lens.id);
-        e.dataTransfer.effectAllowed = "copyMove";
+      onClick={(e) => {
+        if (e.target.closest(".op-drag-grip, .lens-card-actions, .lens-menu, button")) return;
+        onEvolve();
       }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(LENS_MIME)) {
@@ -9350,17 +9411,25 @@ function LensCard({
           onMergeDrop(draggedId);
         }
       }}
-      title="drag onto paper · drop another lens here to merge (sequential pipeline)"
+      title="Click to edit · drag ⠿ onto paper to transform"
     >
       <div className="lens-card-top">
-        <span className="op-drag-grip" title="Drag">
+        <span
+          className="op-drag-grip"
+          title="Drag onto paper"
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData(LENS_MIME, lens.id);
+            e.dataTransfer.effectAllowed = "copyMove";
+            e.stopPropagation();
+          }}
+        >
           ⠿
         </span>
         <span className={"git-ref-badge " + refKind}>{refKind}</span>
         <span className="lens-card-name">{lens.name}</span>
         <span className="lens-card-badges">
           {commits > 0 && <span className="lens-badge">{commits}◦</span>}
-          {active && <span className="lens-card-live">checkout</span>}
         </span>
       </div>
       {crumbs.length > 1 && depth > 0 && (
@@ -9381,38 +9450,52 @@ function LensCard({
           ))}
         </div>
       )}
-      {mergeOver && <div className="lens-merge-hint">merge pipeline here</div>}
+      {mergeOver && <div className="lens-merge-hint">drop here to combine pipelines</div>}
       <div className="lens-card-actions">
-        <button className={"lens-btn" + (active ? " on" : "")} onClick={onUse} title="checkout — activate this lens">
-          {active ? "Checked out" : "Checkout"}
-        </button>
-        <button className="lens-btn" onClick={onEvolve} title="commit — open editor and evolve">
-          Commit
-        </button>
-        <button className="lens-btn" onClick={onBranch} title="branch — experiment on lineage">
-          Branch
-        </button>
-        <button className="lens-btn" onClick={onFork} title="fork — independent copy">
-          Fork
+        <button
+          className="lens-btn primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEvolve();
+          }}
+          title="Edit this lens"
+        >
+          Edit
         </button>
         <button
-          className={"lens-btn" + (comparing || comparePick ? " on" : "")}
-          onClick={onCompare}
-          title="compare — diff two lenses"
+          className="lens-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSend();
+          }}
+          title="Copy share link"
         >
-          Diff
-        </button>
-        {onHistory && (
-          <button className="lens-btn" onClick={onHistory} title="history — commit log">
-            Log
-          </button>
-        )}
-        <button className="lens-btn" onClick={onSend} title="share — copy link">
           Share
         </button>
-        <button className="lens-btn danger" onClick={onDelete} title="delete lens">
-          ×
+        <button
+          className="lens-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((o) => !o);
+          }}
+          title="More actions"
+        >
+          ⋯
         </button>
+        {menuOpen && (
+          <div className="lens-menu" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => { onUse(); setMenuOpen(false); }}>
+              {active ? "Deselect" : "Select"}
+            </button>
+            <button type="button" onClick={() => { onBranch(); setMenuOpen(false); }}>Branch</button>
+            <button type="button" onClick={() => { onFork(); setMenuOpen(false); }}>Fork</button>
+            <button type="button" onClick={() => { onCompare(); setMenuOpen(false); }}>Compare</button>
+            {onHistory && (
+              <button type="button" onClick={() => { onHistory(); setMenuOpen(false); }}>History</button>
+            )}
+            <button type="button" className="danger" onClick={() => { onDelete(); setMenuOpen(false); }}>Delete</button>
+          </div>
+        )}
       </div>
     </div>
   );

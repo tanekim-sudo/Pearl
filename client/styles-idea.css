@@ -998,13 +998,23 @@ body.ai-node-dragging * {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px;
   text-align: center;
-  color: rgba(180, 190, 220, 0.55);
+  color: rgba(180, 190, 220, 0.65);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   pointer-events: none;
   z-index: 2;
+  gap: 6px;
+}
+.ai-empty-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(200, 210, 240, 0.8);
+  margin: 0 0 4px;
+}
+.ai-node-empty p {
+  margin: 0;
 }
 
 .ai-zoom-hint {

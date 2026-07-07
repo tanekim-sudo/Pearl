@@ -47,9 +47,11 @@ export default function CanvasColumn({
   const ss = String(secs % 60).padStart(2, "0");
   const [toolsOpen, setToolsOpen] = useState(() => {
     try {
-      return localStorage.getItem(TOOLS_COLLAPSED_KEY) === "0";
+      const v = localStorage.getItem(TOOLS_COLLAPSED_KEY);
+      if (v === null) return true;
+      return v === "0";
     } catch {
-      return false;
+      return true;
     }
   });
   const [zoomOpen, setZoomOpen] = useState(false);
@@ -102,7 +104,7 @@ export default function CanvasColumn({
             aria-label={toolsOpen ? "Collapse drawing tools" : "Expand drawing tools"}
             onClick={() => setToolsOpen((o) => !o)}
           >
-            <span className="canvas-tools-label">Tools</span>
+            <span className="canvas-tools-label">{toolsOpen ? "Tools" : CANVAS_TOOLS.find((t) => t.id === tool)?.icon || "Tools"}</span>
             <span className="canvas-tools-chevron" aria-hidden="true">
               {toolsOpen ? "▲" : "▼"}
             </span>

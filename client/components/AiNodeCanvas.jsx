@@ -959,7 +959,13 @@ export default function AiNodeCanvas({
         />
       )}
 
-      {nodes.length === 0 && <div className="ai-node-empty" aria-hidden="true" />}
+      {nodes.length === 0 && (
+        <div className="ai-node-empty">
+          <p className="ai-empty-title">AI spacetime</p>
+          <p>Highlight text on paper and drag <strong>→ Explore</strong> here</p>
+          <p>Or drop a lens onto a brain cell to expand it</p>
+        </div>
+      )}
 
       {strandTip && (
         <div

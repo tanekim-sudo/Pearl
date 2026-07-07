@@ -394,11 +394,11 @@ export const TOUR_STEPS = [
     id: "functions-rail",
     phase: "Lenses",
     title: "Lenses toolbox",
-    instruction: "Expand **Tools** on the right rail. The **lenses** tab holds your lenses, moves, and AI operations — drag any card onto paper or AI.",
+    instruction: "On the **left**, your lenses and moves live in the rail. Drag any card onto paper to transform, or into AI to explore.",
     target: '[data-tour="functions-toolbox"]',
     demo: "pulse",
     verifyKind: "event",
-    verify: (ctx) => ctx.events.has("toolbox-expanded"),
+    verify: (ctx) => ctx.events.has("toolbox-expanded") || ctx.events.has("lens-evolve"),
     onEnter: (_ctx, state) => {
       state.expandAiToolbox?.();
       state.setToolboxTab?.("functions");
@@ -408,7 +408,7 @@ export const TOUR_STEPS = [
     id: "create-function",
     phase: "Lenses",
     title: "Create a lens",
-    instruction: "Tap **+ lens** to describe a new perceptual pipeline in plain language. **Evolve** opens the full editor; compose by dragging one move onto another.",
+    instruction: "Tap **+ lens** to describe a new transformation. **Click any lens card** to edit it; drag ⠿ onto paper to apply.",
     target: '[data-tour="create-function"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("open-function-editor") || ctx.events.has("create-move"),

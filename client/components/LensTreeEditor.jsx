@@ -1,6 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import LensCommitDialog from "./LensCommitDialog.jsx";
-import { collectPipelineStepNames } from "../lib/cognition-git.js";
 import {
   FN_PALETTE_MIME,
   FN_STEP_MIME,
@@ -63,7 +61,6 @@ export default function LensTreeEditor({
   const [treeExpanded, setTreeExpanded] = useState(() => new Set(sourceRoot?.id ? [sourceRoot.id] : []));
   const [dropTarget, setDropTarget] = useState(null);
   const [toast, setToast] = useState(null);
-  const [commitDraft, setCommitDraft] = useState(null);
   const clipboardRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -323,20 +320,8 @@ export default function LensTreeEditor({
     const root = ops.find((o) => o.id === rid);
     if (!rid || !root?.name?.trim()) return;
     if (root.kind === "prompt" && !root.prompt?.trim()) return;
-    const draftMap = buildDraftMap(ops);
-    const stepPreview = collectPipelineStepNames(rid, draftMap);
-    setCommitDraft({
-      oldRootId: isCreate ? null : sourceRoot?.id,
-      ops,
-      stepPreview,
-      defaultMessage: isCreate ? `initial commit · ${root.name}` : `evolve · ${root.name}`,
-    });
-  }
-
-  function confirmCommit(message) {
-    if (!commitDraft) return;
-    onSaveTree(commitDraft.oldRootId, commitDraft.ops, { commitMessage: message });
-    setCommitDraft(null);
+    const message = isCreate ? `created · ${root.name}` : `updated · ${root.name}`;
+    onSaveTree(isCreate ? null : sourceRoot?.id, ops, { commitMessage: message });
   }
 
   const canSave =
@@ -356,9 +341,9 @@ export default function LensTreeEditor({
       >
         <div className="fn-head">
           <div>
-            <h3>{isCreate ? "create lens" : "edit lens"}</h3>
+            <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
             <p className="fn-head-sub">
-              cognition git — drag · ⌘C ⌘V · ⌘D fork step · ⌘⇧M merge · save commits to history
+              Build a sequence of steps · drag to reorder · describe changes with AI on the right
             </p>
           </div>
           <div className="fn-head-actions">
@@ -549,20 +534,10 @@ export default function LensTreeEditor({
             cancel
           </button>
           <button className="fn-primary" type="button" disabled={!canSave} onClick={saveAll}>
-            commit
+            Save
           </button>
         </div>
       </div>
-
-      {commitDraft && (
-        <LensCommitDialog
-          title={isCreate ? "initial commit" : "commit evolve"}
-          stepPreview={commitDraft.stepPreview}
-          defaultMessage={commitDraft.defaultMessage}
-          onConfirm={confirmCommit}
-          onCancel={() => setCommitDraft(null)}
-        />
-      )}
     </div>
   );
 }

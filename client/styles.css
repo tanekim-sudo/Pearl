@@ -1497,7 +1497,11 @@ body {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card);
-  cursor: grab;
+  cursor: pointer;
+  position: relative;
+}
+.lens-card:hover {
+  border-color: color-mix(in srgb, var(--chalk-yellow-deep) 50%, var(--line));
 }
 .lens-card.active {
   border-color: var(--chalk-yellow-deep);
@@ -1590,6 +1594,75 @@ body {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
+  position: relative;
+}
+.lens-btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  font-weight: 500;
+}
+.lens-btn.primary:hover {
+  opacity: 0.9;
+}
+.lens-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.lens-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.lens-menu button:hover {
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper));
+}
+.lens-menu button.danger {
+  color: #b33;
+}
+.paper-empty-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  pointer-events: none;
+  z-index: 0;
+  color: var(--ink-2);
+}
+.paper-empty-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+.paper-empty-steps {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 320px;
+}
+.op-card-edit {
+  font-size: 11px;
+  padding: 3px 8px;
+  min-width: auto;
 }
 .lens-btn {
   border: 1px solid var(--line-2);
