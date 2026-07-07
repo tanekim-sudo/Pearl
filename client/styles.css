@@ -1272,6 +1272,225 @@ body {
 }
 
 /* ---- lenses: git for perception ---- */
+.cognition-git-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 10px;
+  margin: -4px -4px 8px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 94%, var(--paper));
+  border-radius: 10px 10px 0 0;
+}
+.cognition-git-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cognition-git-icon {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+}
+.cognition-git-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cognition-git-tagline {
+  font-size: 11px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+.cognition-git-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.cognition-git-checkout {
+  font-weight: 500;
+  color: var(--ink);
+}
+.cognition-git-commits {
+  font-size: 11px;
+  color: var(--faint);
+}
+.cognition-git-idle {
+  font-size: 12px;
+  color: var(--faint);
+}
+.cognition-git-new {
+  align-self: flex-start;
+}
+.git-ref-badge {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 5px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+.git-ref-badge.main {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.git-ref-badge.branch {
+  border-color: color-mix(in srgb, var(--chalk-yellow-deep) 60%, var(--line));
+  color: var(--chalk-yellow-deep);
+}
+.git-ref-badge.fork {
+  border-style: dashed;
+}
+.git-ref-badge.merge {
+  border-color: color-mix(in srgb, var(--ink) 40%, var(--line));
+}
+.git-ref-badge.checkout {
+  background: color-mix(in srgb, var(--chalk-yellow-deep) 12%, transparent);
+}
+.git-repo-group {
+  margin-bottom: 4px;
+}
+.lens-card.git-child {
+  border-style: dashed;
+  opacity: 0.96;
+}
+.lens-card-crumb {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin: 0 0 4px 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.git-commit-dialog {
+  width: min(480px, 92vw);
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 16px 48px var(--shadow-soft);
+}
+.git-commit-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 500;
+}
+.git-commit-sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.git-commit-preview {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.git-commit-preview-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+.git-commit-seq {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.git-commit-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 6px;
+}
+.git-commit-input {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.git-commit-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.git-history-panel {
+  width: min(520px, 94vw);
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--line-2);
+}
+.git-history-crumb {
+  font-size: 12px;
+  color: var(--faint);
+  margin: 0 0 14px;
+}
+.git-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.git-history-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--paper);
+}
+.git-history-item.head {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.git-history-item-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.git-history-msg {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.git-history-time {
+  font-size: 11px;
+  color: var(--faint);
+}
+.git-history-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.lens-move-chip.sm {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+.git-history-empty {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 0;
+}
 .lens-card {
   margin: 6px 10px;
   padding: 10px 12px;

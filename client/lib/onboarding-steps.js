@@ -436,9 +436,9 @@ export const TOUR_STEPS = [
   {
     id: "lenses",
     phase: "Lenses",
-    title: "Lens worlds",
-    instruction: "Each **lens** is a saved way of seeing. Activate with **Use** to filter strand choices. Branch, fork, or compare lenses in the rail.",
-    target: '[data-tour="lenses-section"]',
+    title: "Cognition git",
+    instruction: "The functions column is **cognition git** — checkout lenses, **branch** experiments, **commit** evolves, **diff** and **merge** pipelines. Each lens is a repo for a way of seeing.",
+    target: '[data-tour="cognition-git"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("lens-use") || ctx.events.has("lens-evolve"),
     allowSkip: true,
