@@ -128,6 +128,7 @@ import {
 import {
   appendItemHistory,
   buildItemTimeline,
+  buildPerceptualCaptureFromItem,
   createHistoryEvent,
   isReplayableItem,
   itemSnapshot,
@@ -1904,6 +1905,7 @@ export default function App() {
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const [railPulse, setRailPulse] = useState(false);
+  const [functionsCaptureReplay, setFunctionsCaptureReplay] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
   const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
   const [pages, setPages] = useState(() => {
@@ -2241,6 +2243,19 @@ export default function App() {
     const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
     const r = el?.getBoundingClientRect();
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
+  function resolveSpaceTransferTarget(origin, clientX, clientY) {
+    if (origin === "paper") {
+      if (isOverAiColumn(clientX, clientY)) return "ai";
+      if (isOverFunctionsColumn(clientX, clientY)) return "functions";
+      if (isOverPaperColumn(clientX, clientY)) return "paper";
+      return null;
+    }
+    if (isOverPaperColumn(clientX, clientY)) return "paper";
+    if (isOverFunctionsColumn(clientX, clientY)) return "functions";
+    if (isOverAiColumn(clientX, clientY)) return "ai";
+    return null;
   }
 
   function getAiDropWorldFromClient(clientX, clientY) {
@@ -2645,22 +2660,14 @@ export default function App() {
       } else if (g.mode === "space-transfer") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const target =
-          g.origin === "paper"
-            ? isOverAiColumn(cx, cy)
-              ? "ai"
-              : isOverPaperColumn(cx, cy)
-              ? "paper"
-              : null
-            : isOverPaperColumn(cx, cy)
-            ? "paper"
-            : isOverAiColumn(cx, cy)
-            ? "ai"
-            : null;
+        const target = resolveSpaceTransferTarget(g.origin, cx, cy);
         const magnet =
-          (g.origin === "paper" && (isNearTransferBoundary(cx) || target === "ai")) ||
-          (g.origin === "ai" && (isNearAiTransferBoundary(cx) || target === "paper"));
+          (g.origin === "paper" &&
+            (isNearTransferBoundary(cx) || target === "ai" || target === "functions")) ||
+          (g.origin === "ai" &&
+            (isNearAiTransferBoundary(cx) || target === "paper" || target === "functions"));
         setBoundaryMagnetActive(magnet);
+        setRailDropOver(target === "functions");
         setTransferDragActive(true);
         setSpaceTransferGhost({
           cx,
@@ -2816,6 +2823,7 @@ export default function App() {
       } else if (g.mode === "space-transfer") {
         setTransferDragActive(false);
         setBoundaryMagnetActive(false);
+        setRailDropOver(false);
         setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
@@ -3110,12 +3118,52 @@ export default function App() {
       setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
       setHighlightTouchIds([]);
     }, 920);
-    recordItemEvents(ids, "highlight-transfer", {});
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "ai",
+      aiNodeId: null,
+      opName: "highlight explore",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
     if (sketchBundle) {
       interpretSketchBundle(sketchBundle, world, opts);
       return;
     }
-    if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient, quiet: true });
+    if (expandIds.length) {
+      expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient, quiet: true });
+    }
+  }
+
+  function transferHighlightSelectionToPaper(ids, atWorld) {
+    if (!ids?.length || !atWorld) return;
+    emitTourEvent("highlight-to-paper");
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "paper",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    duplicateItemsAt(ids, atWorld);
+    showToast("placed on paper");
+  }
+
+  function transferHighlightSelectionToFunctions(ids) {
+    if (!ids?.length) return;
+    emitTourEvent("highlight-to-functions");
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "functions",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    captureMaterialWithReplay(ids);
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -3679,6 +3727,7 @@ export default function App() {
   const itemHistoryLogRef = useRef(itemHistoryLog);
   itemHistoryLogRef.current = itemHistoryLog;
   const historyPlayTimerRef = useRef(null);
+  const historyCaptureCallbackRef = useRef(null);
   const camAnimRef = useRef(null);
 
   useEffect(() => saveItemHistoryLog(itemHistoryLog), [itemHistoryLog]);
@@ -3914,10 +3963,231 @@ export default function App() {
   function saveSelectionAsFunction() {
     const id = selRef.current[0];
     if (!id) return;
-    const info = getNodeThreadCapture(id);
-    const name = (captureNameOverride ?? info.defaultName ?? "").trim();
-    captureThreadAsOperator(id, name ? { name } : {});
+    const name = (captureNameOverride ?? getNodeThreadCapture(id).defaultName ?? "").trim();
+    captureMaterialWithReplay([id], name ? { name } : {});
     setCaptureNameOverride(null);
+  }
+
+  function pickPrimaryCaptureId(ids) {
+    const items = (ids || [])
+      .map((id) => itemsRef.current.find((it) => it.id === id))
+      .filter((it) => it && isReplayableItem(it));
+    if (!items.length) return ids?.[0] || null;
+    const withVia = items.find((it) => it.via?.name);
+    if (withVia) return withVia.id;
+    let best = items[0].id;
+    let bestLen = 0;
+    for (const it of items) {
+      const len =
+        (itemHistoryLogRef.current[it.id] || []).length + (it.history || []).length;
+      if (len > bestLen) {
+        bestLen = len;
+        best = it.id;
+      }
+    }
+    return best;
+  }
+
+  function historyCaptureContext() {
+    return {
+      allItems: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      pages,
+      historyLog: itemHistoryLogRef.current,
+    };
+  }
+
+  function pulseFunctionsRail() {
+    setRailPulse(true);
+    window.setTimeout(() => setRailPulse(false), 1200);
+  }
+
+  function captureStepsAsOperator(steps, captureMeta, opts = {}) {
+    if (!steps?.length) return null;
+    const moveNames = steps.map((s) => s.name);
+    const chainLabel = moveNames.join(" → ");
+    const name = (opts.name || `thread: ${chainLabel}`).slice(0, 72);
+    const tree = {
+      name,
+      description: `Captured perceptual sequence (${steps.length} steps): ${chainLabel}. Reapplies to any similar material.`,
+      steps,
+    };
+    const meta = {
+      ...(captureMeta || {}),
+      provenance: captureMeta?.provenance || "history-capture",
+      stepCount: steps.length,
+    };
+    const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
+    setOperators((prev) => [...prev, ...ops]);
+    setRailTab("functions");
+    pulseFunctionsRail();
+    showToast(`saved function · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
+    if (opts.sourceIds?.length) {
+      recordItemEvents(opts.sourceIds, "saved-as-function", {
+        opId: rootId,
+        functionName: name,
+        stepCount: steps.length,
+      });
+    }
+    return rootId;
+  }
+
+  function collectAiLineageSteps(node) {
+    if (!node) return [];
+    const steps = [];
+    const seen = new Set();
+    const { ids: sourceIds } = resolveNodeSourceIds(node);
+    if (sourceIds?.length) {
+      const primaryId = pickPrimaryCaptureId(sourceIds);
+      const item = itemsRef.current.find((it) => it.id === primaryId);
+      const threadInfo = primaryId ? getNodeThreadCapture(primaryId) : null;
+      if (threadInfo?.canCapture) {
+        for (const via of threadInfo.vias) {
+          const step = abstractStepFromVia(via, opMap, operators);
+          const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            steps.push(step);
+          }
+        }
+      } else if (item) {
+        const perceptual = buildPerceptualCaptureFromItem(primaryId, {
+          item,
+          ...historyCaptureContext(),
+        });
+        if (perceptual.canCapture) {
+          for (const step of perceptual.steps) {
+            const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              steps.push(step);
+            }
+          }
+        }
+      }
+    }
+    let cur = node;
+    const nodeSeen = new Set();
+    while (cur && !nodeSeen.has(cur.id)) {
+      nodeSeen.add(cur.id);
+      if (cur.opLabel) {
+        const via = {
+          name: cur.opLabel,
+          opId: cur.opId,
+          moveRef: cur.opId
+            ? { kind: "function", id: cur.opId, name: cur.opLabel }
+            : { kind: "primitive", name: cur.opLabel },
+        };
+        const step = abstractStepFromVia(via, opMap, operators);
+        const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          steps.push(step);
+        }
+      }
+      const parentId = cur.parentId || cur.sourceNodeIds?.[0];
+      cur = parentId ? aiNodesRef.current.find((n) => n.id === parentId) : null;
+    }
+    return steps;
+  }
+
+  function captureAiNodesAsFunction(nodeIds, opts = {}) {
+    const node = aiNodesRef.current.find((n) => nodeIds.includes(n.id));
+    if (!node) return null;
+    const steps = collectAiLineageSteps(node);
+    if (!steps.length) {
+      showToast("no perceptual moves on this thread yet — expand it first");
+      return null;
+    }
+    const label =
+      node.expandedText || node.preview || node.label || node.goldenFragment || "AI thread";
+    const defaultName = `${truncatePreview(label, 32)}: ${steps.map((s) => s.name).slice(0, 3).join(" → ")}`.slice(
+      0,
+      72
+    );
+    return captureStepsAsOperator(
+      steps,
+      { provenance: "ai-lineage-capture", sourceNodeId: node.id },
+      { name: opts.name || defaultName, sourceIds: node.sourceIds || [] }
+    );
+  }
+
+  function captureMaterialAsFunction(ids, opts = {}) {
+    if (!ids?.length) return null;
+    for (const id of ids) {
+      const info = getNodeThreadCapture(id);
+      if (info.canCapture) {
+        const rootId = captureThreadAsOperator(id, opts);
+        if (rootId) {
+          recordItemEvents(ids, "saved-as-function", {
+            opId: rootId,
+            functionName: opts.name || info.defaultName,
+            stepCount: info.moveCount,
+          });
+          pulseFunctionsRail();
+        }
+        return rootId;
+      }
+    }
+    const paperIds = ids.filter((id) => {
+      const it = itemsRef.current.find((x) => x.id === id);
+      return it && isReplayableItem(it);
+    });
+    if (paperIds.length) {
+      const primaryId = pickPrimaryCaptureId(paperIds);
+      const item = itemsRef.current.find((it) => it.id === primaryId);
+      const perceptual = buildPerceptualCaptureFromItem(primaryId, {
+        item,
+        ...historyCaptureContext(),
+      });
+      if (perceptual.canCapture) {
+        return captureStepsAsOperator(perceptual.steps, perceptual.captureMeta, {
+          name: opts.name || perceptual.defaultName,
+          sourceIds: ids,
+        });
+      }
+    }
+    const aiIds = ids.filter((id) => aiNodesRef.current.some((n) => n.id === id));
+    if (aiIds.length) return captureAiNodesAsFunction(aiIds, opts);
+    showToast("no perceptual moves to capture yet — explore or transform first");
+    return null;
+  }
+
+  function playCaptureHistoryReplay(itemId, onComplete) {
+    const item = itemsRef.current.find((it) => it.id === itemId);
+    if (!item || !isReplayableItem(item)) {
+      onComplete?.();
+      return false;
+    }
+    const timeline = buildItemTimeline(itemId, { item, ...historyCaptureContext() });
+    if (!timeline?.steps?.length || timeline.steps.length < 2) {
+      onComplete?.();
+      return false;
+    }
+    finishEditing();
+    setWalking(null);
+    historyCaptureCallbackRef.current = onComplete;
+    setFunctionsCaptureReplay(true);
+    emitTourEvent("history-replay");
+    setHistoryReplay({ ...timeline, stepIndex: 0, playing: true });
+    return true;
+  }
+
+  function captureMaterialWithReplay(ids, opts = {}) {
+    const paperIds = ids.filter((id) => {
+      const it = itemsRef.current.find((x) => x.id === id);
+      return it && isReplayableItem(it);
+    });
+    const primaryId = paperIds.length ? pickPrimaryCaptureId(paperIds) : null;
+    if (primaryId) {
+      const played = playCaptureHistoryReplay(primaryId, () => {
+        setFunctionsCaptureReplay(false);
+        endHistoryReplay();
+        captureMaterialAsFunction(ids, opts);
+      });
+      if (played) return;
+    }
+    captureMaterialAsFunction(ids, opts);
   }
 
   // leave the walk holding the current thought — tendrils are ready, continuing is branching
@@ -3967,6 +4237,8 @@ export default function App() {
       clearTimeout(historyPlayTimerRef.current);
       historyPlayTimerRef.current = null;
     }
+    historyCaptureCallbackRef.current = null;
+    setFunctionsCaptureReplay(false);
     setHistoryReplay(null);
   }
 
@@ -4019,6 +4291,11 @@ export default function App() {
       if (!cur?.playing) return;
       if (cur.stepIndex >= cur.steps.length - 1) {
         setHistoryReplay({ ...cur, playing: false });
+        const cb = historyCaptureCallbackRef.current;
+        if (cb) {
+          historyCaptureCallbackRef.current = null;
+          window.setTimeout(cb, 480);
+        }
         return;
       }
       historyReplayTo(cur.stepIndex + 1);
@@ -6080,10 +6357,20 @@ export default function App() {
       dropWorld || undefined,
       { dropPinned }
     );
-    recordItemEvents(ids, "transfer-to-ai", {
-      aiNodeId: sourceNode.id,
-      opName: opts.opLabel || op.name,
-    });
+      recordItemEvents(ids, "transfer-to-ai", {
+        aiNodeId: sourceNode.id,
+        opName: opts.opLabel || op.name,
+        opId: op.id,
+        moveRef: viaFromOp(op, ids).moveRef,
+        inputPreview: truncatePreview(
+          itemsRef.current
+            .filter((it) => ids.includes(it.id))
+            .map((it) => it.text || it.preview || "")
+            .join(" ")
+            .trim(),
+          120
+        ),
+      });
     launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id], focusWorld: dropWorld });
     setAiPanel((prev) => ({
       ...(prev || {}),
@@ -6127,6 +6414,9 @@ export default function App() {
       recordItemEvents(ids, "expand", {
         aiNodeId: expandedNode.id,
         opName: opts.opLabel || op.name,
+        opId: op.id,
+        moveRef: viaFromOp(op, ids).moveRef,
+        inputPreview: truncatePreview(gathered?.preview || "", 80),
         outputPreview: truncatePreview(text, 120),
       });
       setAiPanel((prev) => ({
@@ -6175,7 +6465,9 @@ export default function App() {
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     emitTourEvent("transfer");
     const fromClient = { x: cx, y: cy };
-    if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
+    const target = resolveSpaceTransferTarget(g.origin, cx, cy);
+
+    if (g.origin === "paper" && target === "ai") {
       const ids = g.ids;
       const world = getAiDropWorldFromClient(cx, cy);
       if (g.kind === "highlight") {
@@ -6189,9 +6481,41 @@ export default function App() {
         const expandIds = transformableDragIds(ids);
         if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
       }
-    } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
+    } else if (g.origin === "paper" && target === "paper" && g.kind === "highlight") {
+      transferHighlightSelectionToPaper(g.ids, clientToWorld(cx, cy));
+    } else if (g.origin === "paper" && target === "functions") {
+      if (g.kind === "highlight") {
+        transferHighlightSelectionToFunctions(g.ids);
+      } else {
+        captureMaterialWithReplay(g.ids);
+      }
+    } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
       transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
+    } else if (g.origin === "ai" && target === "functions") {
+      captureAiNodesAsFunction(g.ids);
+    } else if (g.origin === "ai" && target === "ai") {
+      const world = getAiDropWorldFromClient(cx, cy);
+      for (const nodeId of g.ids) {
+        const node = aiNodesRef.current.find((n) => n.id === nodeId);
+        if (!node) continue;
+        const { ids, sourceNode } = resolveNodeSourceIds(node);
+        if (ids?.length) {
+          expandInAi(ids, {
+            sourceNode: sourceNode || node,
+            expandedAt: world,
+            fromClient,
+            quiet: true,
+          });
+        } else {
+          const text = (node.goldenFragment || node.expandedText || node.preview || "").trim();
+          if (text) {
+            const atWorld = clientToWorld(cx, cy);
+            const spawnedId = spawnTextAtWorld(text, atWorld, { silent: true, fromAi: true });
+            if (spawnedId) expandInAi([spawnedId], { expandedAt: world, fromClient, quiet: true });
+          }
+        }
+      }
     }
   };
 
@@ -6554,6 +6878,7 @@ export default function App() {
         <FunctionsColumn
           columnRef={functionsColumnRef}
           dropOver={railDropOver}
+          captureReplay={functionsCaptureReplay}
           onPointerTrack={(cx, cy) => {
             lastPointerRef.current = { cx, cy };
           }}
@@ -6561,7 +6886,9 @@ export default function App() {
             if (
               e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME)
+              e.dataTransfer.types.includes(SEL_MIME) ||
+              e.dataTransfer.types.includes(THOUGHT_MIME) ||
+              e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME)
             ) {
               e.preventDefault();
               setRailDropOver(true);
@@ -6574,6 +6901,28 @@ export default function App() {
           onDrop={(e) => {
             e.preventDefault();
             setRailDropOver(false);
+            const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME);
+            if (thoughtJson) {
+              try {
+                captureMaterialWithReplay(JSON.parse(thoughtJson));
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
+            const bundleJson = e.dataTransfer.getData(SKETCH_BUNDLE_MIME);
+            if (bundleJson) {
+              try {
+                const bundle = JSON.parse(bundleJson);
+                const ids = [
+                  ...new Set([...(bundle.itemIds || []), ...(bundle.strokeIds || [])]),
+                ];
+                if (ids.length) captureMaterialWithReplay(ids);
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
             const selJson = e.dataTransfer.getData(SEL_MIME);
             if (selJson) {
               try {
@@ -7177,6 +7526,7 @@ export default function App() {
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           onSave={saveSelectionAsFunction}
+          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
           aiDragIds={[selItem.id]}
@@ -7190,6 +7540,7 @@ export default function App() {
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
+          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7204,6 +7555,7 @@ export default function App() {
         <SelectionCaptureChip
           bbox={highlightScreenBox}
           aiDragIds={highlightSelectionIds}
+          onSaveToFunctions={() => transferHighlightSelectionToFunctions(highlightSelectionIds)}
           sketchBundle={highlightSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7214,6 +7566,7 @@ export default function App() {
         <SelectionCaptureChip
           bbox={selectionScreenBox}
           aiDragIds={selection}
+          onSaveToFunctions={() => captureMaterialWithReplay(selection)}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7415,7 +7768,9 @@ export default function App() {
               ? " over-ai"
               : spaceTransferGhost.target === "paper"
                 ? " over-paper"
-                : " over-boundary")
+                : spaceTransferGhost.target === "functions"
+                  ? " over-functions"
+                  : " over-boundary")
           }
           style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
         >
@@ -7640,6 +7995,7 @@ function BoardText({
 function SelectionCaptureChip({
   bbox,
   onSave,
+  onSaveToFunctions,
   onSaveDocument,
   onShareJourney,
   aiDragIds,
@@ -7648,6 +8004,14 @@ function SelectionCaptureChip({
   onTransferDragEnd,
 }) {
   const cx = (bbox.left + bbox.right) / 2;
+  const dragPayload = (e) => {
+    if (sketchBundle) {
+      e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
+    }
+    e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
+    e.dataTransfer.effectAllowed = "copy";
+    onTransferDragStart?.();
+  };
   return (
     <div
       className="sel-capture-chip-row"
@@ -7660,17 +8024,26 @@ function SelectionCaptureChip({
           type="button"
           className="sel-capture-chip ai"
           draggable
-          onDragStart={(e) => {
-            if (sketchBundle) {
-              e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
-            }
-            e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
-            e.dataTransfer.effectAllowed = "copy";
-            onTransferDragStart?.();
-          }}
+          onDragStart={dragPayload}
           onDragEnd={() => onTransferDragEnd?.()}
         >
           → AI
+        </button>
+      )}
+      {onSaveToFunctions && aiDragIds?.length && (
+        <button
+          type="button"
+          className="sel-capture-chip functions"
+          draggable
+          onDragStart={dragPayload}
+          onDragEnd={() => onTransferDragEnd?.()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSaveToFunctions();
+          }}
+          title="Save perceptual history as function"
+        >
+          → functions
         </button>
       )}
       {onSaveDocument && (

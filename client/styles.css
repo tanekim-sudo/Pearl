@@ -1129,6 +1129,20 @@ body {
   opacity: 0.65;
   transform: scale(0.85);
 }
+.space-transfer-ghost-wrap.over-functions .transfer-morph-card {
+  opacity: 0.92;
+  transform: scale(0.96);
+  border-color: rgba(186, 148, 255, 0.88);
+  box-shadow:
+    0 0 0 3px rgba(200, 160, 255, 0.22),
+    0 0 28px rgba(190, 150, 255, 0.38),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+}
+.space-transfer-ghost-wrap.over-functions .transfer-morph-orb {
+  opacity: 0.88;
+  transform: scale(0.95);
+  filter: hue-rotate(52deg) saturate(1.12);
+}
 
 .world {
   position: absolute;

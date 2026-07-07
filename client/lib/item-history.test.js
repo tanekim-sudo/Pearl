@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import {
   appendItemHistory,
   buildItemTimeline,
+  buildPerceptualCaptureFromItem,
   createHistoryEvent,
+  historyEventToPerceptualStep,
   isReplayableItem,
   itemSnapshot,
   replayStepDuration,
+  timelineToPerceptualSteps,
   truncatePreview,
 } from "./item-history.js";
 
@@ -57,5 +60,42 @@ describe("item-history", () => {
 
   it("truncatePreview shortens long strings", () => {
     assert.ok(truncatePreview("a".repeat(200), 40).endsWith("…"));
+  });
+
+  it("historyEventToPerceptualStep maps expand events", () => {
+    const step = historyEventToPerceptualStep({ kind: "expand", opName: "expand" });
+    assert.equal(step.name, "expand");
+    assert.equal(step.moveRef.name, "expand");
+  });
+
+  it("timelineToPerceptualSteps skips birth-only threads", () => {
+    const timeline = buildItemTimeline("t1", {
+      item: { id: "t1", type: "text", side: "paper", text: "Hello", bornAt: 1000 },
+      allItems: [],
+      aiNodes: [],
+      pages: [],
+      historyLog: {},
+    });
+    assert.equal(timelineToPerceptualSteps(timeline).length, 0);
+  });
+
+  it("buildPerceptualCaptureFromItem captures expand lineage", () => {
+    const item = { id: "t1", type: "text", side: "paper", text: "Hello", bornAt: 1000 };
+    const log = {
+      t1: [
+        createHistoryEvent("born", { itemSnapshot: itemSnapshot(item) }),
+        createHistoryEvent("expand", { opName: "expand", outputPreview: "Hello world" }),
+      ],
+    };
+    const cap = buildPerceptualCaptureFromItem("t1", {
+      item,
+      allItems: [item],
+      aiNodes: [],
+      pages: [],
+      historyLog: log,
+    });
+    assert.equal(cap.canCapture, true);
+    assert.equal(cap.steps.length, 1);
+    assert.equal(cap.steps[0].name, "expand");
   });
 });
