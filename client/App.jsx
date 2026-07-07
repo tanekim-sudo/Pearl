@@ -139,6 +139,7 @@ import {
   truncatePreview,
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
+import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.jsx";
 import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
@@ -1894,6 +1895,8 @@ export default function App() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [railTab, setRailTab] = useState("functions"); // functions | structures
+  const railTabRef = useRef("functions");
+  const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
   const [railDropOver, setRailDropOver] = useState(false);
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
@@ -2070,6 +2073,9 @@ export default function App() {
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
+  useEffect(() => {
+    railTabRef.current = railTab;
+  }, [railTab]);
   useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
 
   const shareImportedRef = useRef(false);
@@ -2245,15 +2251,31 @@ export default function App() {
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
   }
 
+  function resolveLeftColumnDropTarget(clientX, clientY) {
+    const el = functionsColumnRef.current;
+    if (!el) return railTabRef.current === "structures" ? "structures" : "functions";
+    const tabs = el.querySelector(".rail-tabs");
+    if (tabs) {
+      const r = tabs.getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom && clientX >= r.left && clientX <= r.right) {
+        const mid = r.left + r.width / 2;
+        const target = clientX < mid ? "functions" : "structures";
+        if (target !== railTabRef.current) setRailTab(target);
+        return target;
+      }
+    }
+    return railTabRef.current === "structures" ? "structures" : "functions";
+  }
+
   function resolveSpaceTransferTarget(origin, clientX, clientY) {
     if (origin === "paper") {
       if (isOverAiColumn(clientX, clientY)) return "ai";
-      if (isOverFunctionsColumn(clientX, clientY)) return "functions";
+      if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
       if (isOverPaperColumn(clientX, clientY)) return "paper";
       return null;
     }
     if (isOverPaperColumn(clientX, clientY)) return "paper";
-    if (isOverFunctionsColumn(clientX, clientY)) return "functions";
+    if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
     if (isOverAiColumn(clientX, clientY)) return "ai";
     return null;
   }
@@ -2663,11 +2685,17 @@ export default function App() {
         const target = resolveSpaceTransferTarget(g.origin, cx, cy);
         const magnet =
           (g.origin === "paper" &&
-            (isNearTransferBoundary(cx) || target === "ai" || target === "functions")) ||
+            (isNearTransferBoundary(cx) ||
+              target === "ai" ||
+              target === "functions" ||
+              target === "structures")) ||
           (g.origin === "ai" &&
-            (isNearAiTransferBoundary(cx) || target === "paper" || target === "functions"));
+            (isNearAiTransferBoundary(cx) ||
+              target === "paper" ||
+              target === "functions" ||
+              target === "structures"));
         setBoundaryMagnetActive(magnet);
-        setRailDropOver(target === "functions");
+        setRailDropOver(target === "functions" || target === "structures");
         setTransferDragActive(true);
         setSpaceTransferGhost({
           cx,
@@ -3164,6 +3192,22 @@ export default function App() {
       inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
     });
     captureMaterialWithReplay(ids);
+  }
+
+  function transferHighlightSelectionToStructures(ids) {
+    if (!ids?.length) return;
+    emitTourEvent("highlight-to-structures");
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "structures",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    saveMaterialAsSymbol(ids);
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -4422,17 +4466,69 @@ export default function App() {
       kind: extra.kind || "idea",
       structNum: extra.structNum || null,
       items: relativeItems,
+      symbolStroke: extra.symbolStroke || null,
       savedAt: Date.now(),
     };
     setStructures((arr) => [struct, ...arr]);
     setRailTab("structures");
     emitTourEvent("save-structure");
-    showToast(extra.toast || "saved structure");
+    if (!extra.skipToast) showToast(extra.toast || "saved structure");
+    return struct;
+  }
+
+  function openSymbolDrawPrompt(struct) {
+    if (!struct?.id) return;
+    setSymbolDrawPrompt({ structId: struct.id, title: struct.title || "idea" });
+    setRailTab("structures");
+  }
+
+  function completeSymbolDraw(structId, symbolStroke) {
+    if (!structId) return;
+    setStructures((arr) =>
+      arr.map((s) => (s.id === structId ? { ...s, symbolStroke: symbolStroke || null } : s))
+    );
+    setSymbolDrawPrompt(null);
+    showToast("symbol saved");
+    emitTourEvent("save-symbol");
+  }
+
+  function saveMaterialAsSymbol(ids, extra = {}) {
+    const struct = saveSelectionByIds(ids, {
+      kind: "symbol",
+      skipToast: true,
+      ...extra,
+    });
+    if (!struct) return null;
+    openSymbolDrawPrompt(struct);
+    return struct;
+  }
+
+  function saveAiNodesAsSymbol(nodeIds) {
+    const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+    const texts = nodes
+      .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label || "")
+      .filter((t) => t?.trim());
+    if (!texts.length) {
+      showToast("nothing to save as symbol");
+      return null;
+    }
+    const content = texts.join("\n\n");
+    const struct = {
+      id: uid(),
+      title: truncatePreview(texts[0], 48) || "idea",
+      kind: "symbol",
+      items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 })],
+      symbolStroke: null,
+      savedAt: Date.now(),
+    };
+    setStructures((arr) => [struct, ...arr]);
+    openSymbolDrawPrompt(struct);
+    emitTourEvent("save-symbol");
     return struct;
   }
 
   function captureSelectionAsStructure(extra = {}) {
-    return saveSelectionByIds(selRef.current, extra);
+    return saveMaterialAsSymbol(selRef.current, extra);
   }
 
   function saveSelectedAsDocument() {
@@ -6489,11 +6585,19 @@ export default function App() {
       } else {
         captureMaterialWithReplay(g.ids);
       }
+    } else if (g.origin === "paper" && target === "structures") {
+      if (g.kind === "highlight") {
+        transferHighlightSelectionToStructures(g.ids);
+      } else {
+        saveMaterialAsSymbol(g.ids);
+      }
     } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
       transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
     } else if (g.origin === "ai" && target === "functions") {
       captureAiNodesAsFunction(g.ids);
+    } else if (g.origin === "ai" && target === "structures") {
+      saveAiNodesAsSymbol(g.ids);
     } else if (g.origin === "ai" && target === "ai") {
       const world = getAiDropWorldFromClient(cx, cy);
       for (const nodeId of g.ids) {
@@ -6901,10 +7005,13 @@ export default function App() {
           onDrop={(e) => {
             e.preventDefault();
             setRailDropOver(false);
+            const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
             const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME);
             if (thoughtJson) {
               try {
-                captureMaterialWithReplay(JSON.parse(thoughtJson));
+                const ids = JSON.parse(thoughtJson);
+                if (dropTarget === "structures") saveMaterialAsSymbol(ids);
+                else captureMaterialWithReplay(ids);
               } catch {
                 /* ignore */
               }
@@ -6917,7 +7024,10 @@ export default function App() {
                 const ids = [
                   ...new Set([...(bundle.itemIds || []), ...(bundle.strokeIds || [])]),
                 ];
-                if (ids.length) captureMaterialWithReplay(ids);
+                if (ids.length) {
+                  if (dropTarget === "structures") saveMaterialAsSymbol(ids);
+                  else captureMaterialWithReplay(ids);
+                }
               } catch {
                 /* ignore */
               }
@@ -6926,7 +7036,9 @@ export default function App() {
             const selJson = e.dataTransfer.getData(SEL_MIME);
             if (selJson) {
               try {
-                saveSelectionByIds(JSON.parse(selJson));
+                const ids = JSON.parse(selJson);
+                if (dropTarget === "structures") saveMaterialAsSymbol(ids);
+                else captureMaterialWithReplay(ids);
               } catch {
                 /* ignore */
               }
@@ -6965,11 +7077,12 @@ export default function App() {
                   emitTourEvent("structures-tab");
                 }}
               >
-                structures {structures.length ? `(${structures.length})` : ""}
+                symbols {structures.length ? `(${structures.length})` : ""}
               </button>
             </div>
             {railTab === "functions" ? (
               <>
+                <p className="rail-functions-hint">Drag ideas here to save the perceptual steps.</p>
                 <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
                 <div className="move-quick-add">
                   <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
@@ -7001,9 +7114,19 @@ export default function App() {
               </>
             ) : (
               <>
-                <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
+                <p className="rail-structures-hint">
+                  Drag an idea here — save the thing itself, then draw a symbol for it.
+                </p>
                 <div className="rail-scroll">
-                  {structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
+                  {structures.map((struct) => (
+                    <StructureCard
+                      key={struct.id}
+                      struct={struct}
+                      onDelete={() => deleteStructure(struct.id)}
+                      onShare={() => shareSymbolStruct(struct)}
+                      onEditSymbol={() => openSymbolDrawPrompt(struct)}
+                    />
+                  ))}
                 </div>
               </>
             )}
@@ -7486,6 +7609,17 @@ export default function App() {
         />
       )}
 
+      {symbolDrawPrompt && (
+        <SymbolDrawOverlay
+          title={symbolDrawPrompt.title}
+          onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
+          onCancel={() => {
+            setSymbolDrawPrompt(null);
+            showToast("symbol skipped — idea saved");
+          }}
+        />
+      )}
+
       {/* screen-space selection boundary + transform handles */}
       {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
         <SelectionBoundary bbox={selectionScreenBox} onEdgePointerDown={startSelectionEdgeMove} />
@@ -7527,6 +7661,7 @@ export default function App() {
           bbox={itemScreenBBox(selItem)}
           onSave={saveSelectionAsFunction}
           onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
+          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
           aiDragIds={[selItem.id]}
@@ -7541,6 +7676,7 @@ export default function App() {
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
           onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
+          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7556,6 +7692,7 @@ export default function App() {
           bbox={highlightScreenBox}
           aiDragIds={highlightSelectionIds}
           onSaveToFunctions={() => transferHighlightSelectionToFunctions(highlightSelectionIds)}
+          onSaveToStructures={() => transferHighlightSelectionToStructures(highlightSelectionIds)}
           sketchBundle={highlightSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7567,6 +7704,7 @@ export default function App() {
           bbox={selectionScreenBox}
           aiDragIds={selection}
           onSaveToFunctions={() => captureMaterialWithReplay(selection)}
+          onSaveToStructures={() => saveMaterialAsSymbol(selection)}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -7770,7 +7908,9 @@ export default function App() {
                 ? " over-paper"
                 : spaceTransferGhost.target === "functions"
                   ? " over-functions"
-                  : " over-boundary")
+                  : spaceTransferGhost.target === "structures"
+                    ? " over-structures"
+                    : " over-boundary")
           }
           style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
         >
@@ -7996,6 +8136,7 @@ function SelectionCaptureChip({
   bbox,
   onSave,
   onSaveToFunctions,
+  onSaveToStructures,
   onSaveDocument,
   onShareJourney,
   aiDragIds,
@@ -8041,9 +8182,25 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveToFunctions();
           }}
-          title="Save perceptual history as function"
+          title="Save perceptual steps as function"
         >
-          → functions
+          → steps
+        </button>
+      )}
+      {onSaveToStructures && aiDragIds?.length && (
+        <button
+          type="button"
+          className="sel-capture-chip structures"
+          draggable
+          onDragStart={dragPayload}
+          onDragEnd={() => onTransferDragEnd?.()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSaveToStructures();
+          }}
+          title="Save idea and draw a symbol"
+        >
+          → symbol
         </button>
       )}
       {onSaveDocument && (
@@ -8683,10 +8840,16 @@ function LensComparePanel({ a, b, opMap, onClose }) {
   );
 }
 
-function StructureCard({ struct, onDelete, onShare }) {
+function StructureCard({ struct, onDelete, onShare, onEditSymbol }) {
   const preview = structurePreview(struct);
   const label =
-    struct.structNum ? `#${struct.structNum}` : struct.kind === "document" ? "document" : struct.kind || "idea";
+    struct.kind === "symbol"
+      ? "symbol"
+      : struct.structNum
+        ? `#${struct.structNum}`
+        : struct.kind === "document"
+          ? "document"
+          : struct.kind || "idea";
   return (
     <div className="struct-card-wrap">
       <div
@@ -8699,11 +8862,24 @@ function StructureCard({ struct, onDelete, onShare }) {
           <span className="op-drag-grip" title="Drag">
             ⠿
           </span>
+          <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />
           <div className="struct-card-body">
             <span className="struct-kind">{label}</span>
             <span className="struct-title">{struct.title || preview}</span>
             <span className="struct-preview">{preview}</span>
           </div>
+          {onEditSymbol && (
+            <button
+              className="struct-card-edit-symbol"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSymbol(struct);
+              }}
+              title="redraw symbol"
+            >
+              ✎
+            </button>
+          )}
           {onShare && (
             <button
               className="struct-card-share"

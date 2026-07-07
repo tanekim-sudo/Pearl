@@ -257,7 +257,9 @@ function stepCaption(ev) {
       return "voice session";
     case "highlight-transfer":
       return ev.targetLayer === "functions"
-        ? "highlighted → functions"
+        ? "highlighted → steps"
+        : ev.targetLayer === "structures"
+          ? "highlighted → symbol"
         : ev.targetLayer === "paper"
           ? "highlighted → paper"
           : "highlighted → AI";

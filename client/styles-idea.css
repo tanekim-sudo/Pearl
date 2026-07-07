@@ -2041,6 +2041,127 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   cursor: grab;
 }
 
+.sel-capture-chip.structures {
+  background: rgba(212, 168, 60, 0.16);
+  color: #e8c86a;
+  border-color: rgba(212, 168, 60, 0.5);
+  cursor: grab;
+}
+
+.rail-functions-hint,
+.rail-structures-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--faint);
+  padding: 4px 2px 10px;
+  margin: 0;
+}
+
+.symbol-draw-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10100;
+  background: rgba(8, 10, 14, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.symbol-draw-panel {
+  background: var(--card);
+  border: 1px solid rgba(212, 168, 60, 0.45);
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+  width: min(320px, 92vw);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.symbol-draw-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.symbol-draw-title {
+  margin: 6px 0 4px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.symbol-draw-hint {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.4;
+}
+
+.symbol-draw-canvas {
+  display: block;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(212, 168, 60, 0.55);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.symbol-draw-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.symbol-draw-skip,
+.symbol-draw-save {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.symbol-draw-save {
+  background: rgba(212, 168, 60, 0.18);
+  border-color: rgba(212, 168, 60, 0.55);
+}
+
+.symbol-draw-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.symbol-glyph {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--text);
+}
+
+.struct-card-glyph {
+  width: 32px;
+  height: 32px;
+  margin-right: 2px;
+}
+
+.struct-card-edit-symbol {
+  background: none;
+  border: none;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.struct-card-edit-symbol:hover {
+  color: var(--text);
+}
+
 .functions-column.capture-replay {
   animation: functionsCaptureReplay 1.8s ease;
 }
