@@ -1,5 +1,5 @@
-/** @type {readonly ["pen", "highlight", "select", "text"]} */
-export const PRIMARY_UTENSILS = ["pen", "highlight", "select", "text"];
+/** @type {readonly ["select", "pen", "highlight", "text"]} */
+export const PRIMARY_UTENSILS = ["select", "pen", "highlight", "text"];
 
 /** @param {string} tool */
 export function cyclePrimaryUtensil(tool) {

@@ -179,7 +179,7 @@ export const TOUR_STEPS = [
     id: "space-cycle-tools",
     phase: "Paper",
     title: "Cycle utensils",
-    instruction: "Press **Space** to cycle **✎ Pen** → **▬ Highlight** → **↖ Select**. Each mode is a primary way to work on paper.",
+    instruction: "Press **Space** to cycle **↖ Select** → **✎ Pen** → **▬ Highlight** → **T Text**. Select is the default — drag objects, marquee on empty, double-click for a text box.",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("space-toggle-tool"),
     allowSkip: true,

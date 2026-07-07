@@ -307,7 +307,7 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag objects to move · clone inside · edge to move original · Space cycles tools",
+    hint: "Drag to move · marquee on empty · double-click for text · Alt+drag to pan",
   },
   image: {
     id: "image",
@@ -1876,7 +1876,7 @@ export default function App() {
   const [lensEditor, setLensEditor] = useState(null); // { id|null, name, moveIds }
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
 
-  const [tool, setTool] = useState("highlight"); // highlight | select | pen | marker | eraser | image
+  const [tool, setTool] = useState("select"); // select | highlight | pen | marker | eraser | image | text | sticky
   const [panning, setPanning] = useState(false);
   const [moveDraft, setMoveDraft] = useState("");
   const [selection, setSelection] = useState([]);
@@ -3032,7 +3032,7 @@ export default function App() {
         e.preventDefault();
         clearHighlightSelection();
         if (onAi) {
-          const next = toolRef.current === "highlight" ? "select" : "highlight";
+          const next = toolRef.current === "select" ? "highlight" : "select";
           setTool(next);
           toolRef.current = next;
           emitTourEvent("space-toggle-tool");
@@ -3660,7 +3660,7 @@ export default function App() {
     setWalking(null);
     setLensEditor(null);
     setLensCompare(null);
-    setTool("highlight");
+    setTool("select");
     setMoveDraft("");
     setSelection([]);
     setDraft(null);
@@ -6041,13 +6041,8 @@ export default function App() {
       gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
     } else {
       if (!e.shiftKey) setSelection([]);
-      if (e.shiftKey) {
-        gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
-        setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
-      } else {
-        setPanning(true);
-        gesture.current = { mode: "pan", cx, cy, cam: { ...camRef.current } };
-      }
+      gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
+      setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
     }
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -6154,7 +6149,7 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click object: replay history · blank paper: reset zoom
+  // double-click object: replay history · blank paper: new text box
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
@@ -6164,8 +6159,9 @@ export default function App() {
       return;
     }
     if (hit) return;
-    const r = vpRect();
-    setCamera(fitPaperInView(r.width, r.height));
+    e.preventDefault();
+    placeBlockAtClick("text", e.clientX, e.clientY);
+    setTool("select");
   }
 
   function onViewportDoubleClick(e) {
