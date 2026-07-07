@@ -398,7 +398,13 @@ export default function AiNodeCanvas({
 
       const choice = state.choices[pickIdx];
       if (choice) {
-        onStrandSelect?.(state.nodeId, choice);
+        const cam = cameraRef.current;
+        const tipIdx = pickIdx >= 0 ? pickIdx : 0;
+        const angle = state.angles?.[tipIdx] ?? state.baseAngle ?? 0;
+        const tipScreenX = state.originX + Math.cos(angle) * state.length;
+        const tipScreenY = state.originY + Math.sin(angle) * state.length;
+        const worldPos = screenToWorld(cam, tipScreenX, tipScreenY);
+        onStrandSelect?.(state.nodeId, choice, { worldPos });
       }
     }
 

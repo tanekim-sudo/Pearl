@@ -59,6 +59,7 @@ import {
   truncateLabel,
   layoutAfterAppend,
   collectStrandChoices,
+  AI_SPAWN_MIN_DIST,
 } from "./lib/ai-nodes.js";
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
@@ -922,8 +923,15 @@ function load(key, fallback) {
 }
 
 function spawnPositionForBox(x, y, boxW, boxH) {
-  const { dx, dy } = bboxClampOffset({ minx: x, miny: y, maxx: x + boxW, maxy: y + boxH });
-  return { x: x + dx, y: y + dy };
+  const anchorX = x - boxW / 2;
+  const anchorY = y - Math.min(boxH * 0.2, 28);
+  const { dx, dy } = bboxClampOffset({
+    minx: anchorX,
+    miny: anchorY,
+    maxx: anchorX + boxW,
+    maxy: anchorY + boxH,
+  });
+  return { x: anchorX + dx, y: anchorY + dy };
 }
 
 function stripMd(s) {
@@ -4329,7 +4337,7 @@ export default function App() {
     showToast("highlight something on paper first, then press a function");
   }
 
-  function handleStrandSelect(nodeId, choice) {
+  function handleStrandSelect(nodeId, choice, info = {}) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node || !choice) return;
     emitTourEvent("strand-select");
@@ -4342,6 +4350,7 @@ export default function App() {
           op: choice.op,
           opLabel: choice.op.name,
           sourceNode: sourceNode || node,
+          expandedAt: info.worldPos,
         });
         return;
       }
@@ -4754,8 +4763,8 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  /** Landing glow on new nodes — pan only, never zoom in on transfer. */
-  function launchPaperToAiTransfer({ nodeIds = [] }) {
+  /** Pan camera so drop-pinned nodes stay under the pointer after landing. */
+  function launchPaperToAiTransfer({ nodeIds = [], focusWorld = null }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
       const next = new Set(prev);
@@ -4772,15 +4781,13 @@ export default function App() {
       const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
       if (!el || !landed.length) return;
 
-      const bb = computeNodesBBox(landed);
-      if (!bb) return;
-
       const cam = aiCamRef.current;
       const scale = cam.scale;
       const vpW = el.clientWidth;
       const vpH = el.clientHeight;
-      const sx = bb.cx * scale + cam.x;
-      const sy = bb.cy * scale + cam.y;
+      const anchor = focusWorld || { x: landed[0].x, y: landed[0].y };
+      const sx = anchor.x * scale + cam.x;
+      const sy = anchor.y * scale + cam.y;
       const margin = 72;
       let x = cam.x;
       let y = cam.y;
@@ -5087,7 +5094,10 @@ export default function App() {
       aiNodeId: expandedNode.id,
       inputPreview: truncatePreview(bundle.transcript || label, 120),
     });
-    launchPaperToAiTransfer({ nodeIds: [sessionNode.id, expandedNode.id] });
+    launchPaperToAiTransfer({
+      nodeIds: [sessionNode.id, expandedNode.id],
+      focusWorld: worldPos || undefined,
+    });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
       sourcePreview: bundle.transcript?.slice(0, 200) || label,
@@ -5811,7 +5821,7 @@ export default function App() {
     );
   }
 
-  function ensureSourceNode(ids, preview, label, worldPos) {
+  function ensureSourceNode(ids, preview, label, worldPos, opts = {}) {
     const existing = findSourceNodeForIds(ids);
     if (existing) return existing;
     const pos = nodePositionAt(aiNodesRef.current, "source", worldPos);
@@ -5824,13 +5834,19 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(opts.dropPinned && worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
     return node;
   }
 
-  function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}, worldPos) {
+  function createExpandedChild(
+    sourceNode,
+    { opLabel, opId, loading = true, label = "Expanded" } = {},
+    worldPos,
+    opts = {}
+  ) {
     const existing = aiNodesRef.current;
     const pos = worldPos || childNodePosition(sourceNode, "expanded", existing);
     const node = makeAiNode({
@@ -5845,6 +5861,7 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(opts.dropPinned && worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
@@ -5853,17 +5870,26 @@ export default function App() {
 
   function createSessionNodes(session, prompt, worldPos, labelOverride) {
     const existing = aiNodesRef.current;
-    const pos = nodePositionAt(existing, "session", worldPos);
+    const sessionPos = worldPos
+      ? {
+          x: worldPos.x - AI_SPAWN_MIN_DIST * 0.32,
+          y: worldPos.y,
+          radius: nodePositionAt(existing, "session").radius,
+        }
+      : nodePositionAt(existing, "session", worldPos);
     const sessionNode = makeAiNode({
       nodeKind: "session",
       label: truncateLabel(labelOverride || session.transcript?.slice(0, 24) || "Session"),
       preview: session.transcript?.slice(0, 200) || "Paper session",
       sourceIds: [],
-      x: pos.x,
-      y: pos.y,
-      radius: pos.radius,
+      x: sessionPos.x,
+      y: sessionPos.y,
+      radius: sessionPos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
-    const expandedPos = childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
+    const expandedPos = worldPos
+      ? { x: worldPos.x, y: worldPos.y, radius: nodePositionAt(existing, "expanded").radius }
+      : childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
     const expandedNode = makeAiNode({
       nodeKind: "expanded",
       label: "···",
@@ -5875,6 +5901,7 @@ export default function App() {
       x: expandedPos.x,
       y: expandedPos.y,
       radius: expandedPos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(sessionNode, expandedNode);
     setSelectedAiNodeIds([expandedNode.id]);
@@ -5932,11 +5959,12 @@ export default function App() {
   function createOutputNode(text, worldPos, linkTo = null) {
     const existing = aiNodesRef.current;
     let pos;
-    if (linkTo) {
+    if (worldPos) {
+      pos = { ...nodePositionAt(existing, "expanded", worldPos), x: worldPos.x, y: worldPos.y };
+    } else if (linkTo) {
       pos = childNodePosition(linkTo, "expanded", existing);
-      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
     } else {
-      pos = nodePositionAt(existing, "expanded", worldPos);
+      pos = nodePositionAt(existing, "expanded", null);
     }
     const clean = String(text || "").trim();
     const node = makeAiNode({
@@ -5948,6 +5976,7 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
@@ -6018,10 +6047,16 @@ export default function App() {
       return;
     }
     const dropWorld = opts.expandedAt ?? opts.atWorld;
-    const sourceNode =
-      opts.sourceNode ||
-      findSourceNodeForIds(ids) ||
-      ensureSourceNode(ids, null, "Source", dropWorld);
+    let sourceNode = opts.sourceNode || findSourceNodeForIds(ids);
+    const dropPinned = !!dropWorld;
+
+    if (!sourceNode) {
+      const sourceAt = dropWorld
+        ? { x: dropWorld.x - AI_SPAWN_MIN_DIST * 0.32, y: dropWorld.y }
+        : null;
+      sourceNode = ensureSourceNode(ids, null, "Source", sourceAt, { dropPinned: !!sourceAt });
+    }
+
     const expandedNode = createExpandedChild(
       sourceNode,
       {
@@ -6029,13 +6064,14 @@ export default function App() {
         opId: op.id,
         loading: true,
       },
-      dropWorld
+      dropWorld || undefined,
+      { dropPinned }
     );
     recordItemEvents(ids, "transfer-to-ai", {
       aiNodeId: sourceNode.id,
       opName: opts.opLabel || op.name,
     });
-    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
+    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id], focusWorld: dropWorld });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -6259,11 +6295,11 @@ export default function App() {
         interpretSketchBundle(sketchBundle, pos);
         return true;
       }
-      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
+      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos, { dropPinned: true });
       if (autoExpand) {
         expandInAi(ids, {
           sourceNode,
-          expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
+          expandedAt: pos,
         });
       } else {
         syncAiSource(ids, { keepExpanded: false, skipNode: true });
@@ -6273,8 +6309,13 @@ export default function App() {
     return false;
   }
 
-  function absorbTransferPayload(e, opts) {
-    return absorbTransferPayloadAt(e, null, opts);
+  function absorbTransferPayload(e, opts = {}) {
+    const world =
+      opts.worldPos ??
+      (e.clientX != null && e.clientY != null
+        ? getAiDropWorldFromClient(e.clientX, e.clientY)
+        : null);
+    return absorbTransferPayloadAt(e, world, opts);
   }
 
   function handleBoundaryDragOver(e) {

@@ -103,11 +103,16 @@ export function suggestChildPosition(parent, nodes, kind = "expanded", opts = {}
 
   if (opts.preferWorld && opts.preferWorld.x != null && opts.preferWorld.y != null) {
     const pw = opts.preferWorld;
-    const pd = Math.hypot(pw.x - parent.x, pw.y - parent.y);
-    if (pd > AI_SPAWN_MIN_DIST * 0.55 && pd < AI_SPAWN_MIN_DIST * 2.4) {
-      const blend = 0.72;
-      x = pw.x * blend + x * (1 - blend);
-      y = pw.y * blend + y * (1 - blend);
+    if (opts.exactWorld) {
+      x = pw.x;
+      y = pw.y;
+    } else {
+      const pd = Math.hypot(pw.x - parent.x, pw.y - parent.y);
+      if (pd > AI_SPAWN_MIN_DIST * 0.55 && pd < AI_SPAWN_MIN_DIST * 2.4) {
+        const blend = 0.72;
+        x = pw.x * blend + x * (1 - blend);
+        y = pw.y * blend + y * (1 - blend);
+      }
     }
   }
 
@@ -270,6 +275,15 @@ function layoutAfterAppendInner(nodes, newNodes) {
     if (!n) continue;
     const pool = combined.filter((x) => x.id !== n.id);
 
+    if (raw._dropPinned && raw.x != null && raw.y != null) {
+      const radius = n.radius || AI_NODE_RADIUS[n.nodeKind] || AI_NODE_RADIUS.source;
+      const nudged = nudgeFromCollisions(raw.x, raw.y, radius, pool);
+      n.x = nudged.x;
+      n.y = nudged.y;
+      n.radius = radius;
+      continue;
+    }
+
     if (n.parentId && byId.has(n.parentId)) {
       const parent = byId.get(n.parentId);
       const siblings = pool.filter((x) => x.parentId === parent.id);
@@ -311,10 +325,11 @@ function layoutAfterAppendInner(nodes, newNodes) {
     }
   }
 
-  combined = layoutAiGraph(combined, { relaxIds: [...relaxIds], iterations: 110 });
+  const pinnedIds = newNodes.filter((n) => n._dropPinned).map((n) => n.id);
+  combined = layoutAiGraph(combined, { relaxIds: [...relaxIds], iterations: 110, pinnedIds });
 
   return combined.map((n) => {
-    const { _hintAngle, ...clean } = n;
+    const { _hintAngle, _dropPinned, ...clean } = n;
     return clean;
   });
 }

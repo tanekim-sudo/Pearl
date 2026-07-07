@@ -100,6 +100,24 @@ describe("ai-layout spatial reasoning", () => {
     assert.ok(endDist > 28 && endDist < 35);
   });
 
+  it("layoutAfterAppend keeps drop-pinned nodes at the release point", () => {
+    const parent = { id: "p", x: 0, y: 0, radius: 34, parentId: null, nodeKind: "source" };
+    const child = {
+      id: "c",
+      parentId: "p",
+      sourceNodeIds: ["p"],
+      nodeKind: "expanded",
+      x: 900,
+      y: 120,
+      radius: 30,
+      _dropPinned: true,
+    };
+    const laid = layoutAfterAppend([parent], [child]);
+    const placed = laid.find((n) => n.id === "c");
+    assert.ok(Math.abs(placed.x - 900) < 80);
+    assert.ok(Math.abs(placed.y - 120) < 80);
+  });
+
   it("collectAiEdges and layout produce connected graph body", () => {
     const parent = { id: "p", x: 200, y: 200, radius: 34, parentId: null, nodeKind: "source" };
     const child = {
