@@ -50,6 +50,7 @@ import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import FunctionsColumn from "./components/FunctionsColumn.jsx";
 import {
   makeAiNode,
   nextAiNodePosition,
@@ -1892,7 +1893,6 @@ export default function App() {
   const [tourActive, setTourActive] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
   const [expandToolsSignal, setExpandToolsSignal] = useState(0);
-  const [expandToolboxSignal, setExpandToolboxSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const [railPulse, setRailPulse] = useState(false);
@@ -1978,6 +1978,7 @@ export default function App() {
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
+  const functionsColumnRef = useRef(null);
   const aiCamAnimRef = useRef(null);
   const prevAiNodeCountRef = useRef(0);
   aiCamRef.current = aiCamera;
@@ -2218,6 +2219,13 @@ export default function App() {
   function isOverPaperColumn(clientX, clientY) {
     const el = viewportRef.current?.closest?.(".canvas-column") || viewportRef.current;
     const r = el?.getBoundingClientRect();
+    return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
+  function isOverFunctionsColumn(clientX, clientY) {
+    const el = functionsColumnRef.current;
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
   }
 
@@ -6605,7 +6613,10 @@ export default function App() {
       highlightSelection: highlightSelectionIds,
       expandCanvasTools: () => setExpandToolsSignal((n) => n + 1),
       setTool,
-      expandAiToolbox: () => setExpandToolboxSignal((n) => n + 1),
+      expandAiToolbox: () => {
+        setRailPulse(true);
+        window.setTimeout(() => setRailPulse(false), 1200);
+      },
       setToolboxTab: (tab) => {
         setRailTab(tab);
         if (tab === "structures") emitTourEvent("structures-tab");
@@ -6630,7 +6641,7 @@ export default function App() {
         onShare={handleShareBoard}
       />
 
-      <div className={"two-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
+      <div className={"three-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
         <CanvasColumn
           tool={tool}
           imageArmed={imageArmed}
@@ -7231,8 +7242,6 @@ export default function App() {
           onFocusFromZoom={focusAiNodeFromZoom}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
-          expandToolboxSignal={expandToolboxSignal}
-          onToolboxExpanded={() => emitTourEvent("toolbox-expanded")}
           onTourEvent={emitTourEvent}
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
@@ -7241,9 +7250,7 @@ export default function App() {
             lastPointerRef.current = { cx, cy };
           }}
           landingNodeIds={aiLandingNodeIds}
-          panel={aiPanel}
           dropOver={aiDropOver}
-          libraryDropOver={railDropOver}
           onDragOver={(e) => {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
@@ -7267,7 +7274,17 @@ export default function App() {
             }
           }}
           onDrop={handleAiDrop}
-          onLibraryDragOver={(e) => {
+        />
+
+        <InterpretBoundary variant="ai-tools" />
+
+        <FunctionsColumn
+          columnRef={functionsColumnRef}
+          dropOver={railDropOver}
+          onPointerTrack={(cx, cy) => {
+            lastPointerRef.current = { cx, cy };
+          }}
+          onDragOver={(e) => {
             if (
               e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(STRUCT_MIME) ||
@@ -7278,10 +7295,10 @@ export default function App() {
               e.dataTransfer.dropEffect = "copy";
             }
           }}
-          onLibraryDragLeave={(e) => {
+          onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
           }}
-          onLibraryDrop={(e) => {
+          onDrop={(e) => {
             e.preventDefault();
             setRailDropOver(false);
             const selJson = e.dataTransfer.getData(SEL_MIME);
@@ -7304,42 +7321,12 @@ export default function App() {
               showToast("already saved");
             }
           }}
-          onExpand={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            const ids = node?.sourceIds?.length ? node.sourceIds : aiPanel?.sourceIds || selection;
-            if (!ids?.length) {
-              showToast("select or drop a thought first");
-              return;
-            }
-            const op = aiPanel?.opId ? opMap[aiPanel.opId] : null;
-            expandInAi(ids, op ? { op, opLabel: op.name } : {});
-          }}
-          onEditExpanded={(text, nodeId) => {
-            const targetId = nodeId || selectedAiNodeId || aiPanel?.activeNodeId;
-            if (targetId) updateAiNode(targetId, { expandedText: text });
-            setAiPanel((prev) => ({ ...prev, expandedText: text }));
-          }}
-          onCopy={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            const text = node?.expandedText || aiPanel?.expandedText;
-            if (text) {
-              navigator.clipboard?.writeText(text);
-              showToast("copied");
-            }
-          }}
-          onClear={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            if (node?.nodeKind === "expanded") {
-              setAiNodes((nodes) => nodes.filter((n) => n.id !== node.id));
-              setSelectedAiNodeIds([]);
-            }
-            setAiPanel(null);
-          }}
-          toolbox={
-            <aside
-              ref={railRef}
-              className={"board-rail ai-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
-            >
+        >
+          <aside
+            ref={railRef}
+            className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+            data-tour="functions-toolbox"
+          >
               <div className="rail-tabs">
                 <button
                   className={"rail-tab" + (railTab === "functions" ? " on" : "")}
@@ -7401,8 +7388,7 @@ export default function App() {
               <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
               <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
             </aside>
-          }
-        />
+        </FunctionsColumn>
       </div>
 
       {walking && walkStep && (

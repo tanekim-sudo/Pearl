@@ -1668,7 +1668,7 @@ body {
 }
 .history-replay-bar {
   position: fixed;
-  left: 25%;
+  left: 16.67%;
   bottom: 22px;
   transform: translateX(-50%);
   z-index: 61;

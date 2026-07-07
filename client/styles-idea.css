@@ -10,17 +10,27 @@
   background: #ffffff;
 }
 
-/* Two halves + interpretation boundary: paper | seam | AI */
+/* Three columns + golden seams: paper | AI void | functions library */
+.three-column-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  min-height: 0;
+  gap: 0;
+}
+
+/* legacy alias */
 .two-column-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
   min-height: 0;
   gap: 0;
 }
 
 .canvas-column,
-.ai-column {
+.ai-column,
+.functions-column {
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -39,13 +49,62 @@
   background: #08080c;
 }
 
-/* legacy alias — same layout */
-.three-column-grid {
+.functions-column {
+  --paper-ink: #000000;
+  --ink: #1a1a1a;
+  --ink-2: #2a2a2a;
+  --card: #f4f0e8;
+  --card-edge: #ebe6dc;
+  --line: rgba(0, 0, 0, 0.08);
+  --line-2: rgba(0, 0, 0, 0.12);
+  --faint: rgba(0, 0, 0, 0.42);
+  background: var(--card-edge);
+  color: var(--ink);
+  border-left: none;
+}
+
+.functions-column-body {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
   min-height: 0;
-  gap: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.functions-board-rail {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-right: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+}
+
+.functions-board-rail .rail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Seam between AI void and functions library */
+.interpret-boundary.ai-tools {
+  background: linear-gradient(
+    90deg,
+    rgba(5, 6, 11, 0.95) 0%,
+    rgba(212, 168, 60, 0.06) 50%,
+    color-mix(in srgb, #ebe6dc 88%, transparent) 100%
+  );
+}
+
+/* legacy alias — same layout */
+.three-column-grid.legacy-two {
+  grid-template-columns: 1fr auto 1fr;
 }
 
 /* Interpretation boundary — paper | seam | AI */
@@ -2890,7 +2949,8 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .board-main.transfer-drag .interpret-boundary-hit::before,
-.two-column-grid.transfer-drag .ai-column {
+.three-column-grid.transfer-drag .ai-column,
+.three-column-grid.transfer-drag .functions-column {
   background: color-mix(in srgb, var(--accent) 6%, var(--card));
 }
 
@@ -3445,46 +3505,18 @@ html[data-theme="chalk"] body {
   color: var(--ai-faint);
 }
 
-.ai-column .board-rail {
-  background: transparent;
-  color: var(--ai-ink);
-}
-
-.ai-column .rail-tab {
-  color: var(--ai-faint);
-}
-
-.ai-column .rail-tab.on {
-  color: #ffffff;
-  border-color: var(--ai-line);
-}
-
-.ai-column .rail-section {
-  color: var(--ai-faint);
-}
-
-.ai-column .op-card {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--ai-line);
-  color: var(--ai-ink);
-}
-
-.ai-column .op-card-name {
-  color: #ffffff;
-}
-
-.ai-column .op-card.starlike-op {
-  border-color: rgba(140, 180, 255, 0.25);
+.functions-column .op-card.starlike-op {
+  border-color: rgba(212, 168, 60, 0.35);
   box-shadow:
-    0 0 10px rgba(100, 150, 255, 0.12),
-    inset 0 0 12px rgba(100, 150, 255, 0.04);
+    0 0 10px rgba(212, 168, 60, 0.12),
+    inset 0 0 12px rgba(212, 168, 60, 0.04);
 }
 
-.ai-column .op-card.starlike-op:hover {
-  border-color: rgba(160, 200, 255, 0.45);
+.functions-column .op-card.starlike-op:hover {
+  border-color: rgba(212, 168, 60, 0.55);
   box-shadow:
-    0 0 16px rgba(100, 150, 255, 0.22),
-    inset 0 0 16px rgba(100, 150, 255, 0.06);
+    0 0 16px rgba(212, 168, 60, 0.2),
+    inset 0 0 16px rgba(212, 168, 60, 0.06);
 }
 
 /* ── Starlike AI nodes ── */

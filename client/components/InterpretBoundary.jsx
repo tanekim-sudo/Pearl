@@ -7,19 +7,22 @@ export default function InterpretBoundary({
   dropOver,
   magnetActive,
   loading,
+  variant = "paper-ai",
   onDragOver,
   onDragLeave,
   onDrop,
 }) {
+  const isToolsSeam = variant === "ai-tools";
   return (
     <div
       className={
         "interpret-boundary-hit" +
+        (isToolsSeam ? " tools-seam-hit" : "") +
         (dropOver ? " drop-over" : "") +
         (magnetActive ? " magnet" : "") +
         (loading ? " processing" : "")
       }
-      data-tour="interpret-boundary"
+      data-tour={isToolsSeam ? "tools-boundary" : "interpret-boundary"}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -27,6 +30,7 @@ export default function InterpretBoundary({
       <div
         className={
           "interpret-boundary" +
+          (isToolsSeam ? " ai-tools" : "") +
           (dropOver ? " drop-over" : "") +
           (magnetActive ? " magnet" : "") +
           (loading ? " processing" : "")
