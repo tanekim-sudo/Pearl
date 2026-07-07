@@ -92,6 +92,32 @@
   overscroll-behavior: contain;
 }
 
+.functions-board-rail .rail-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.functions-board-rail .rail-functions-pane {
+  flex: 1.15 1 0;
+}
+
+.functions-board-rail .rail-symbols-pane {
+  flex: 0.85 1 0;
+  border-top: 1px solid var(--line);
+}
+
+.rail-pane-heading {
+  margin: 0;
+  padding: 10px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  color: var(--faint);
+}
+
 /* Seam between functions library and paper */
 .interpret-boundary.tools-paper {
   background: linear-gradient(

@@ -447,7 +447,7 @@ export const TOUR_STEPS = [
     id: "structures",
     phase: "Functions",
     title: "Structures",
-    instruction: "Switch to **Structures** tab. Save a paper selection as a reusable structure. Drag structures back onto the canvas anytime.",
+    instruction: "The **symbols** section below functions holds saved ideas. Drag highlighted material there, or onto a symbol card to merge.",
     target: '[data-tour="structures-tab"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("structures-tab") || ctx.events.has("save-structure"),

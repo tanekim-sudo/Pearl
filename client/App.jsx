@@ -1894,8 +1894,8 @@ export default function App() {
   const [imageArmed, setImageArmed] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [railTab, setRailTab] = useState("functions"); // functions | structures
-  const railTabRef = useRef("functions");
+  const functionsSectionRef = useRef(null);
+  const symbolsSectionRef = useRef(null);
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
   const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
@@ -2076,9 +2076,6 @@ export default function App() {
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
-  useEffect(() => {
-    railTabRef.current = railTab;
-  }, [railTab]);
   useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
 
   const shareImportedRef = useRef(false);
@@ -2254,20 +2251,26 @@ export default function App() {
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
   }
 
+  function focusRailPane(pane) {
+    const el = pane === "structures" ? symbolsSectionRef.current : functionsSectionRef.current;
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (pane === "structures") emitTourEvent("structures-tab");
+  }
+
   function resolveLeftColumnDropTarget(clientX, clientY) {
-    const el = functionsColumnRef.current;
-    if (!el) return railTabRef.current === "structures" ? "structures" : "functions";
-    const tabs = el.querySelector(".rail-tabs");
-    if (tabs) {
-      const r = tabs.getBoundingClientRect();
-      if (clientY >= r.top && clientY <= r.bottom && clientX >= r.left && clientX <= r.right) {
-        const mid = r.left + r.width / 2;
-        const target = clientX < mid ? "functions" : "structures";
-        if (target !== railTabRef.current) setRailTab(target);
-        return target;
+    const symbolsEl = symbolsSectionRef.current;
+    if (symbolsEl) {
+      const r = symbolsEl.getBoundingClientRect();
+      if (
+        clientY >= r.top &&
+        clientY <= r.bottom &&
+        clientX >= r.left &&
+        clientX <= r.right
+      ) {
+        return "structures";
       }
     }
-    return railTabRef.current === "structures" ? "structures" : "functions";
+    return "functions";
   }
 
   function resolveSpaceTransferTarget(origin, clientX, clientY) {
@@ -3670,7 +3673,7 @@ export default function App() {
     setHighlight(null);
     setGesturing(false);
     setImageArmed(false);
-    setRailTab("functions");
+    focusRailPane("functions");
     setRailDropOver(false);
     setCaptureNameOverride(null);
     setOnboard({ step: "role" });
@@ -4005,7 +4008,7 @@ export default function App() {
     };
     const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(`saved function · ${moveCount} move${moveCount === 1 ? "" : "s"}`);
     return rootId;
   }
@@ -4069,7 +4072,7 @@ export default function App() {
     };
     const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     pulseFunctionsRail();
     showToast(`saved function · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
     if (opts.sourceIds?.length) {
@@ -4543,7 +4546,7 @@ export default function App() {
           : s
       )
     );
-    setRailTab("structures");
+    focusRailPane("structures");
     emitTourEvent("save-structure");
     showToast(`added to · ${nextTitle}`);
     if (!struct.symbolStroke) openSymbolDrawPrompt({ ...struct, title: nextTitle });
@@ -4630,7 +4633,7 @@ export default function App() {
       savedAt: Date.now(),
     };
     setStructures((arr) => [struct, ...arr]);
-    setRailTab("structures");
+    focusRailPane("structures");
     emitTourEvent("save-structure");
     if (!extra.skipToast) showToast(extra.toast || "saved structure");
     return struct;
@@ -4639,7 +4642,7 @@ export default function App() {
   function openSymbolDrawPrompt(struct) {
     if (!struct?.id) return;
     setSymbolDrawPrompt({ structId: struct.id, title: struct.title || "idea" });
-    setRailTab("structures");
+    focusRailPane("structures");
   }
 
   function completeSymbolDraw(structId, symbolStroke) {
@@ -4698,7 +4701,7 @@ export default function App() {
             : s
         )
       );
-      setRailTab("structures");
+      focusRailPane("structures");
       showToast(`added to · ${nextTitle}`);
       return struct;
     }
@@ -4754,7 +4757,7 @@ export default function App() {
       items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: item.w || 320 })],
     };
     setStructures((arr) => [struct, ...arr]);
-    setRailTab("structures");
+    focusRailPane("structures");
     showToast("Saved as document");
     return struct;
   }
@@ -4770,7 +4773,7 @@ export default function App() {
     if (!tree) return;
     const { ops } = treeToOperators(tree, { role: op.role || null, top: true });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(`saved · ${op.name}`);
   }
 
@@ -4790,7 +4793,7 @@ export default function App() {
       ...prev,
       ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
     ]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(`compound forged · ${a.name} → ${b.name}`);
   }
 
@@ -4856,7 +4859,7 @@ export default function App() {
         savedAt: Date.now(),
       };
       setStructures((arr) => [struct, ...arr]);
-      setRailTab("structures");
+      focusRailPane("structures");
       finishJob(jobId, "done");
       showToast(`discovered · ${title}`);
     } catch (err) {
@@ -5073,7 +5076,7 @@ export default function App() {
     });
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
-    setRailTab("functions");
+    focusRailPane("functions");
     if (!opts.silent) showToast(`Uploaded · ${lens.name} — now looking through it`);
   }
 
@@ -5095,13 +5098,13 @@ export default function App() {
     if (!tree) throw new Error("missing operator");
     const existing = operators.find((o) => o.name === tree.name && !o.top && !tree.steps);
     if (existing && !opts.forceNew) {
-      setRailTab("functions");
+      focusRailPane("functions");
       showToast(`already have · ${existing.name}`);
       return existing.id;
     }
     const { ops, rootId } = treeToOperators(tree, { top: true, ...opts });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(opts.toast || `added · ${tree.name}`);
     return rootId;
   }
@@ -5159,7 +5162,7 @@ export default function App() {
     finishEditing();
     setSelection([]);
     setWalking({ nodeId: null, title: journey.title || "shared journey", steps, stepIndex: 0, imported: true });
-    setRailTab("functions");
+    focusRailPane("functions");
     if (!opts.silent) showToast("journey imported — walking it");
   }
 
@@ -5188,7 +5191,7 @@ export default function App() {
             shared: true,
           };
           setStructures((arr) => [struct, ...arr]);
-          setRailTab("structures");
+          focusRailPane("structures");
           showToast(fromWelcome ? "Added to structures" : `structure received · ${struct.title}`);
           break;
         }
@@ -7041,11 +7044,8 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") setRailTab("functions");
-    else if (action === "open-structures") {
-      setRailTab("structures");
-      emitTourEvent("structures-tab");
-    }
+    else if (action === "open-functions") focusRailPane("functions");
+    else if (action === "open-structures") focusRailPane("structures");
     else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateFunction();
@@ -7155,8 +7155,7 @@ export default function App() {
         window.setTimeout(() => setRailPulse(false), 1200);
       },
       setToolboxTab: (tab) => {
-        setRailTab(tab);
-        if (tab === "structures") emitTourEvent("structures-tab");
+        focusRailPane(tab);
       },
     }),
     [items, camera, aiCamera, aiNodes, operators, structures, highlightSelectionIds]
@@ -7227,7 +7226,7 @@ export default function App() {
             }
             const structId = e.dataTransfer.getData(STRUCT_MIME);
             if (structId) {
-              setRailTab("structures");
+              focusRailPane("structures");
               showToast("already saved");
             }
           }}
@@ -7237,81 +7236,63 @@ export default function App() {
             className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
             data-tour="functions-toolbox"
           >
-            <div className="rail-tabs">
-              <button
-                className={"rail-tab" + (railTab === "functions" ? " on" : "")}
-                data-tour="structures-tab"
-                onClick={() => setRailTab("functions")}
-              >
-                functions
-              </button>
-              <button
-                className={"rail-tab" + (railTab === "structures" ? " on" : "")}
-                data-tour="structures-tab"
-                onClick={() => {
-                  setRailTab("structures");
-                  emitTourEvent("structures-tab");
-                }}
-              >
-                symbols {structures.length ? `(${structures.length})` : ""}
-              </button>
-            </div>
-            {railTab === "functions" ? (
-              <>
-                <p className="rail-functions-hint">Drag ideas here to save the perceptual steps.</p>
-                <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
-                <div className="move-quick-add">
-                  <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                  <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+            <section ref={functionsSectionRef} className="rail-pane rail-functions-pane" data-tour="functions-section">
+              <h3 className="rail-pane-heading">functions</h3>
+              <p className="rail-functions-hint">Drag ideas here to save the perceptual steps.</p>
+              <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
+              <div className="move-quick-add">
+                <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+              </div>
+              {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                <div className="sel-capture-panel">
+                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
+                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
                 </div>
-                {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                  <div className="sel-capture-panel">
-                    <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
-                    <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
-                  </div>
+              )}
+              <div className="rail-lens-actions">
+                <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
+              </div>
+              <div className="rail-scroll">
+                {lenses.length > 0 && (
+                  <>
+                    <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
+                    {lenses.map((lens) => (
+                      <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
+                    ))}
+                  </>
                 )}
-                <div className="rail-lens-actions">
-                  <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-                </div>
-                <div className="rail-scroll">
-                  {lenses.length > 0 && (
-                    <>
-                      <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
-                      {lenses.map((lens) => (
-                        <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
-                      ))}
-                    </>
-                  )}
-                  {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                  {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
-                  {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                  {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="rail-structures-hint">
-                  Highlight and drag here — onto a symbol to add to it, or empty space for a new one.
-                </p>
-                <div className="rail-scroll">
-                  {structures.map((struct) => (
-                    <StructureCard
-                      key={struct.id}
-                      struct={struct}
-                      dropTarget={symbolDropTargetId === struct.id}
-                      onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
-                      onMaterialDragLeave={() =>
-                        setSymbolDropTargetId((prev) => (prev === struct.id ? null : prev))
-                      }
-                      onMaterialDrop={handleStructCardMaterialDrop}
-                      onDelete={() => deleteStructure(struct.id)}
-                      onShare={() => shareSymbolStruct(struct)}
-                      onEditSymbol={() => openSymbolDrawPrompt(struct)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+                {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} starlike />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+              </div>
+            </section>
+            <section ref={symbolsSectionRef} className="rail-pane rail-symbols-pane" data-tour="structures-tab">
+              <h3 className="rail-pane-heading">
+                symbols {structures.length ? `(${structures.length})` : ""}
+              </h3>
+              <p className="rail-structures-hint">
+                Highlight and drag here — onto a symbol to add to it, or empty space for a new one.
+              </p>
+              <div className="rail-scroll">
+                {structures.map((struct) => (
+                  <StructureCard
+                    key={struct.id}
+                    struct={struct}
+                    dropTarget={symbolDropTargetId === struct.id}
+                    onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
+                    onMaterialDragLeave={() =>
+                      setSymbolDropTargetId((prev) => (prev === struct.id ? null : prev))
+                    }
+                    onMaterialDrop={handleStructCardMaterialDrop}
+                    onDelete={() => deleteStructure(struct.id)}
+                    onShare={() => shareSymbolStruct(struct)}
+                    onEditSymbol={() => openSymbolDrawPrompt(struct)}
+                  />
+                ))}
+              </div>
+            </section>
             <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
             <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
           </aside>
