@@ -277,9 +277,8 @@ function layoutAfterAppendInner(nodes, newNodes) {
 
     if (raw._dropPinned && raw.x != null && raw.y != null) {
       const radius = n.radius || AI_NODE_RADIUS[n.nodeKind] || AI_NODE_RADIUS.source;
-      const nudged = nudgeFromCollisions(raw.x, raw.y, radius, pool);
-      n.x = nudged.x;
-      n.y = nudged.y;
+      n.x = raw.x;
+      n.y = raw.y;
       n.radius = radius;
       continue;
     }
@@ -326,6 +325,9 @@ function layoutAfterAppendInner(nodes, newNodes) {
   }
 
   const pinnedIds = newNodes.filter((n) => n._dropPinned).map((n) => n.id);
+  for (const n of newNodes) {
+    if (n._dropPinned && n.parentId) pinnedIds.push(n.parentId);
+  }
   combined = layoutAiGraph(combined, { relaxIds: [...relaxIds], iterations: 110, pinnedIds });
 
   return combined.map((n) => {

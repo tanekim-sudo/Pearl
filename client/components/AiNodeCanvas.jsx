@@ -76,6 +76,7 @@ export default function AiNodeCanvas({
   viewportRef: externalViewportRef,
   onTourEvent,
   landingNodeIds,
+  growingEdgeIds,
   onPointerTrack,
 }) {
   const localViewportRef = useRef(null);
@@ -922,10 +923,15 @@ export default function AiNodeCanvas({
                     ? "url(#ai-edge-arrow-move)"
                     : "url(#ai-edge-arrow-default)";
             const isHovered = hoveredEdgeId === id;
+            const isGrowing = growingEdgeIds?.has?.(id);
             return (
               <g
                 key={id}
-                className={`ai-edge ai-edge-${kind}${isHovered ? " hovered" : ""}`}
+                className={
+                  `ai-edge ai-edge-${kind}` +
+                  (isHovered ? " hovered" : "") +
+                  (isGrowing ? " growing" : "")
+                }
                 onPointerEnter={(e) => {
                   setHoveredEdgeId(id);
                   setStrandTip({ label, x: e.clientX, y: e.clientY });

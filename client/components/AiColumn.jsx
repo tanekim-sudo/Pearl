@@ -40,6 +40,7 @@ export default function AiColumn({
   shouldHandoffNodeDrag,
   viewportRef,
   landingNodeIds,
+  growingEdgeIds,
   onPointerTrack,
   collapsed,
 }) {
@@ -83,6 +84,7 @@ export default function AiColumn({
             viewportRef={viewportRef}
             onTourEvent={onTourEvent}
             landingNodeIds={landingNodeIds}
+            growingEdgeIds={growingEdgeIds}
             onPointerTrack={onPointerTrack}
           />
         </section>

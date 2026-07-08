@@ -2080,6 +2080,8 @@ export default function App() {
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
   const [toolboxApplyGhost, setToolboxApplyGhost] = useState(null);
+  const [growingAiEdgeIds, setGrowingAiEdgeIds] = useState(() => new Set());
+  const [ideaOrbFlight, setIdeaOrbFlight] = useState(null);
   const [highlightGrabHover, setHighlightGrabHover] = useState(false);
   const [paperRecording, setPaperRecording] = useState(false);
   const [paperRecordLevel, setPaperRecordLevel] = useState(0);
@@ -3297,7 +3299,7 @@ export default function App() {
             interpretSketchBundle(sketchBundle, world);
           } else {
             const expandIds = transformableDragIds(g.ids);
-            if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+            if (expandIds.length) expandInAi(expandIds, { expandedAt: world, stableCamera: true });
           }
         } else {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -3323,7 +3325,12 @@ export default function App() {
           } else {
             const expandIds = transformableDragIds(g.ids);
             if (expandIds.length) {
-              expandInAi(expandIds, { expandedAt: world, fromClient: { x: cx, y: cy }, quiet: true });
+              expandInAi(expandIds, {
+                expandedAt: world,
+                fromClient: { x: cx, y: cy },
+                quiet: true,
+                stableCamera: true,
+              });
             } else {
               showToast("Nothing here can transfer to AI");
             }
@@ -3932,19 +3939,30 @@ export default function App() {
     if (!op) return;
     if (isExpansionOperator(op)) {
       const ids = resolveTargetIds(atClient);
-      if (ids.length) {
-        let expandedAt;
-        if (isOverAiColumn(atClient.x, atClient.y)) {
-          expandedAt = getAiDropWorldFromClient(atClient.x, atClient.y);
-        } else {
-          const el = aiViewportRef.current;
-          expandedAt = el
-            ? aiViewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight)
-            : undefined;
-        }
-        expandInAi(ids, { op, opLabel: op.name, expandedAt, fromClient: atClient });
-      } else {
+      if (!ids.length) {
         showToast("drop onto text, image, or drawing");
+        return;
+      }
+      if (isOverAiColumn(atClient.x, atClient.y)) {
+        expandInAi(ids, {
+          op,
+          opLabel: op.name,
+          expandedAt: getAiDropWorldFromClient(atClient.x, atClient.y),
+          fromClient: atClient,
+          stableCamera: true,
+        });
+      } else {
+        presentCognitiveBridge(
+          ids,
+          atClient,
+          (bridgeOpts) =>
+            expandInAi(ids, {
+              op,
+              opLabel: op.name,
+              ...bridgeOpts,
+            }),
+          { label: op.name }
+        );
       }
       return;
     }
@@ -3988,8 +4006,28 @@ export default function App() {
 
   function applyTransformationLensDrop(lensId, atClient) {
     if (!atClient) return;
+    const lens = transformationRepos.find((l) => l.id === lensId);
+    if (!lens) return;
     const ids = resolveTargetIds(atClient);
-    runTransformationLensOnIds(lensId, ids, atClient);
+    if (!ids.length) {
+      showToast("drop onto an idea");
+      return;
+    }
+    const runLens = (bridgeOpts = {}) => {
+      expandInAi(ids, {
+        op: opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand"),
+        opLabel: lens.name,
+        bridgeOnly: true,
+        stableCamera: true,
+        ...bridgeOpts,
+      });
+      runTransformationLensOnIds(lensId, ids, atClient);
+    };
+    if (isOverPaperColumn(atClient.x, atClient.y) && !isOverAiColumn(atClient.x, atClient.y)) {
+      presentCognitiveBridge(ids, atClient, runLens, { label: lens.name });
+      return;
+    }
+    runLens();
   }
 
   function applyToolboxOperatorAt(opId, atClient) {
@@ -4016,6 +4054,7 @@ export default function App() {
           expandedAt: world,
           fromClient: atClient,
           sourceNode: sourceNode || node,
+          stableCamera: true,
         });
       } else {
         runOperator(op, ids, { atClient });
@@ -5789,6 +5828,7 @@ export default function App() {
           opLabel: choice.op.name,
           sourceNode: sourceNode || node,
           expandedAt: info.worldPos,
+          stableCamera: true,
         });
         return;
       }
@@ -6266,8 +6306,8 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  /** Pan camera so drop-pinned nodes stay under the pointer after landing. */
-  function launchPaperToAiTransfer({ nodeIds = [], focusWorld = null }) {
+  /** Soft landing pulse on new nodes — camera stays put. */
+  function launchPaperToAiTransfer({ nodeIds = [] }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
       const next = new Set(prev);
@@ -6280,28 +6320,84 @@ export default function App() {
         nodeIds.forEach((id) => next.delete(id));
         return next;
       });
-      const el = aiViewportRef.current;
-      const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
-      if (!el || !landed.length) return;
+    }, 620);
+  }
 
-      const cam = aiCamRef.current;
-      const scale = cam.scale;
-      const vpW = el.clientWidth;
-      const vpH = el.clientHeight;
-      const anchor = focusWorld || { x: landed[0].x, y: landed[0].y };
-      const sx = anchor.x * scale + cam.x;
-      const sy = anchor.y * scale + cam.y;
-      const margin = 72;
-      let x = cam.x;
-      let y = cam.y;
-      if (sx < margin) x += margin - sx;
-      if (sx > vpW - margin) x -= sx - (vpW - margin);
-      if (sy < margin) y += margin - sy;
-      if (sy > vpH - margin) y -= sy - (vpH - margin);
-      if (x !== cam.x || y !== cam.y) {
-        animateAiCameraTo({ scale, x, y }, 480);
+  function markGrowingAiEdge(fromId, toId) {
+    if (!fromId || !toId) return;
+    const edgeId = `${fromId}-${toId}`;
+    setGrowingAiEdgeIds((prev) => new Set([...prev, edgeId]));
+    window.setTimeout(() => {
+      setGrowingAiEdgeIds((prev) => {
+        if (!prev.has(edgeId)) return prev;
+        const next = new Set(prev);
+        next.delete(edgeId);
+        return next;
+      });
+    }, 560);
+  }
+
+  /** Pick a visible AI world point aligned with a paper drop (left territory, same row). */
+  function aiPlacementFromPaperClient(atClient) {
+    const el = aiViewportRef.current;
+    if (!el) return getAiDropWorldFromClient(atClient.x, atClient.y);
+    const rect = el.getBoundingClientRect();
+    const sx = Math.min(rect.width * 0.28, 140);
+    const sy = Math.min(rect.height - 72, Math.max(72, atClient.y - rect.top));
+    return screenToWorld(aiCamRef.current, sx, sy);
+  }
+
+  function startIdeaToAiOrbAnimation({ startClient, endWorld, label, onComplete }) {
+    const el = aiViewportRef.current;
+    if (!el || !startClient) {
+      onComplete?.();
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const endScreen = worldToScreen(aiCamRef.current, endWorld.x, endWorld.y);
+    const endX = rect.left + endScreen.x;
+    const endY = rect.top + endScreen.y;
+    const startX = startClient.x;
+    const startY = startClient.y;
+    const flight = { startX, startY, endX, endY, label: label || "expand", cx: startX, cy: startY };
+    setIdeaOrbFlight(flight);
+    const t0 = performance.now();
+    const duration = 700;
+    function tick(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const eased = t * t * (3 - 2 * t);
+      setIdeaOrbFlight({
+        ...flight,
+        cx: startX + (endX - startX) * eased,
+        cy: startY + (endY - startY) * eased,
+      });
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        setIdeaOrbFlight(null);
+        onComplete?.();
       }
-    }, 280);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function presentCognitiveBridge(ids, atClient, run, { label, endWorld } = {}) {
+    if (!atClient || !isOverPaperColumn(atClient.x, atClient.y)) {
+      run();
+      return;
+    }
+    const targetWorld = endWorld || aiPlacementFromPaperClient(atClient);
+    startIdeaToAiOrbAnimation({
+      startClient: atClient,
+      endWorld: targetWorld,
+      label,
+      onComplete: () =>
+        run({
+          expandedAt: targetWorld,
+          stableCamera: true,
+          fromClient: atClient,
+        }),
+    });
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -7435,7 +7531,13 @@ export default function App() {
     opts = {}
   ) {
     const existing = aiNodesRef.current;
-    const pos = worldPos || childNodePosition(sourceNode, "expanded", existing);
+    const pos = worldPos
+      ? {
+          x: worldPos.x,
+          y: worldPos.y,
+          radius: worldPos.radius || nodePositionAt(existing, "expanded").radius,
+        }
+      : childNodePosition(sourceNode, "expanded", existing);
     const node = makeAiNode({
       nodeKind: "expanded",
       label: truncateLabel(opLabel || label),
@@ -7448,7 +7550,12 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
-      ...(opts.dropPinned && worldPos ? { _dropPinned: true } : {}),
+      ...(opts.dropPinned && worldPos
+        ? {
+            _dropPinned: true,
+            _hintAngle: Math.atan2(pos.y - sourceNode.y, pos.x - sourceNode.x),
+          }
+        : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
@@ -7495,7 +7602,6 @@ export default function App() {
     if (worldPos) {
       launchPaperToAiTransfer({
         nodeIds: [sessionNode.id, expandedNode.id],
-        focusWorld: worldPos,
       });
     }
     return { sessionNode, expandedNode, prompt };
@@ -7655,26 +7761,35 @@ export default function App() {
       {
         opLabel: opts.opLabel || op.name,
         opId: op.id,
-        loading: true,
+        loading: !opts.bridgeOnly,
       },
       dropWorld || undefined,
       { dropPinned }
     );
-      recordItemEvents(ids, "transfer-to-ai", {
-        aiNodeId: sourceNode.id,
-        opName: opts.opLabel || op.name,
-        opId: op.id,
-        moveRef: viaFromOp(op, ids).moveRef,
-        inputPreview: truncatePreview(
-          itemsRef.current
-            .filter((it) => ids.includes(it.id))
-            .map((it) => it.text || it.preview || "")
-            .join(" ")
-            .trim(),
-          120
-        ),
+    markGrowingAiEdge(sourceNode.id, expandedNode.id);
+    recordItemEvents(ids, "transfer-to-ai", {
+      aiNodeId: sourceNode.id,
+      opName: opts.opLabel || op.name,
+      opId: op.id,
+      moveRef: viaFromOp(op, ids).moveRef,
+      inputPreview: truncatePreview(
+        itemsRef.current
+          .filter((it) => ids.includes(it.id))
+          .map((it) => it.text || it.preview || "")
+          .join(" ")
+          .trim(),
+        120
+      ),
+    });
+    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
+    if (opts.bridgeOnly) {
+      updateAiNode(expandedNode.id, {
+        loading: false,
+        label: truncateLabel(opts.opLabel || op.name || "Expanded"),
+        preview: "…",
       });
-    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id], focusWorld: dropWorld });
+      return;
+    }
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -7783,7 +7898,7 @@ export default function App() {
       } else {
         const expandIds = transformableDragIds(ids);
         if (expandIds.length) {
-          expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
+          expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true, stableCamera: true });
         } else {
           showToast("Nothing here can transfer to AI");
         }
@@ -8886,6 +9001,7 @@ export default function App() {
             lastPointerRef.current = { cx, cy };
           }}
           landingNodeIds={aiLandingNodeIds}
+          growingEdgeIds={growingAiEdgeIds}
           dropOver={aiDropOver}
           onDragOver={(e) => {
             if (
@@ -9163,6 +9279,17 @@ export default function App() {
           style={{ left: cloneGhost.cx, top: cloneGhost.cy }}
         >
           <span className="clone-drag-ghost-badge">{cloneGhost.count}</span>
+        </div>
+      )}
+
+      {ideaOrbFlight && (
+        <div
+          className="idea-orb-flight"
+          style={{ left: ideaOrbFlight.cx, top: ideaOrbFlight.cy }}
+        >
+          <div className="idea-orb-flight-core">
+            <span className="idea-orb-flight-label">{ideaOrbFlight.label}</span>
+          </div>
         </div>
       )}
 
