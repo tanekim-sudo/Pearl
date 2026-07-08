@@ -18,6 +18,11 @@ import {
   zoomContentBlend,
 } from "../lib/ai-space.js";
 import { attachCanvasWheel } from "../lib/canvas-navigation.js";
+import {
+  aiNodeHighlightDraggable,
+  aiNodeHighlightMarkable,
+  HIGHLIGHT_DRAG_THRESHOLD,
+} from "../lib/highlight-tool.js";
 import FragmentHighlightLayer from "./FragmentHighlightLayer.jsx";
 
 const AI_OUTPUT_MIME = "application/lens-ai-output";
@@ -63,6 +68,7 @@ export default function AiNodeCanvas({
   canvasDropOver,
   tool = "select",
   onSpaceTransferStart,
+  onHighlightTransferStart,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -496,11 +502,16 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", onUp);
   }
 
+  function startHighlightTransfer(e, node, opts = {}) {
+    const fragment = opts.fragment || node.goldenFragment?.trim() || null;
+    onHighlightTransferStart?.(e, [node.id], { immediate: true, fragment });
+  }
+
   function startFragmentGrab(e, node) {
     e.preventDefault();
     e.stopPropagation();
     onSelect?.(node.id, { replace: true });
-    onSpaceTransferStart?.(e, [node.id], { immediate: true });
+    startHighlightTransfer(e, node);
   }
 
   function startNodePositionDrag(e, node) {
@@ -587,52 +598,57 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleDragEnd);
   }
 
+  function startHighlightNodeDrag(e, node) {
+    if (e.target.closest(".fragment-highlight-layer")) return;
+
+    onSelect?.(node.id, { replace: true });
+
+    if (!aiNodeHighlightDraggable(node)) {
+      e.preventDefault();
+      e.stopPropagation();
+      const canExpand =
+        (node.nodeKind === "source" || node.nodeKind === "session") &&
+        node.sourceIds?.length &&
+        !node.loading;
+      if (canExpand && !node.expandedText) onExpandNode?.(node.id);
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    const golden = node.goldenFragment?.trim() || null;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let armed = false;
+
+    function onMove(ev) {
+      if (armed) return;
+      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= HIGHLIGHT_DRAG_THRESHOLD) return;
+      armed = true;
+      cleanup();
+      startHighlightTransfer(ev, node, { fragment: golden });
+    }
+
+    function onUp() {
+      cleanup();
+    }
+
+    function cleanup() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
   function startNodeDrag(e, node) {
     if (e.button !== 0) return;
 
     if (tool === "highlight") {
-      const readable = node.expandedText?.trim() || node.preview?.trim();
-      const zoomedForText = contentBlend > 0.45;
-      if (readable && zoomedForText) {
-        onSelect?.(node.id, { replace: true });
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.(node.id, { replace: true });
-      if (!readable) {
-        const canExpand =
-          (node.nodeKind === "source" || node.nodeKind === "session") &&
-          node.sourceIds?.length &&
-          !node.loading;
-        if (canExpand && !node.expandedText) onExpandNode?.(node.id);
-        return;
-      }
-      const startX = e.clientX;
-      const startY = e.clientY;
-      let armed = false;
-
-      function onMove(ev) {
-        if (armed) return;
-        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
-        armed = true;
-        cleanup();
-        startFragmentGrab(e, node);
-      }
-
-      function onUp() {
-        cleanup();
-      }
-
-      function cleanup() {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        window.removeEventListener("pointercancel", onUp);
-      }
-
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-      window.addEventListener("pointercancel", onUp);
+      startHighlightNodeDrag(e, node);
       return;
     }
 
@@ -664,6 +680,11 @@ export default function AiNodeCanvas({
     }
 
     if (e.button !== 0) return;
+
+    if (tool === "highlight" && selectedIds.length) {
+      onHighlightTransferStart?.(e, selectedIds, { immediate: false });
+      return;
+    }
 
     if (tool === "select" && e.shiftKey) {
       startLasso(e);
@@ -699,7 +720,11 @@ export default function AiNodeCanvas({
     const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
     const strandChoices = getStrandChoices?.(node) || [];
     e.currentTarget.style.cursor =
-      tool === "select" && hit.onEdge && strandChoices.length ? "crosshair" : "grab";
+      tool === "highlight"
+        ? "grab"
+        : tool === "select" && hit.onEdge && strandChoices.length
+          ? "crosshair"
+          : "grab";
   }
 
   function nodeDetailText(node) {
@@ -775,7 +800,7 @@ export default function AiNodeCanvas({
         "ai-node-viewport" +
         (canvasDropOver ? " drop-over" : "") +
         (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
-        (tool === "highlight" && selectedIds.length ? " highlight-transfer-ready" : "") +
+        (tool === "highlight" ? " highlight-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
         (wheelZooming ? " ai-wheel-zooming" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
@@ -939,6 +964,8 @@ export default function AiNodeCanvas({
           const detail = nodeDetailText(node);
           const nodeBlend = detail ? contentBlend : 0;
           const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend, detail) : null;
+          const markable = aiNodeHighlightMarkable(node, contentBlend);
+          const golden = node.goldenFragment?.trim();
           return (
             <div
               key={node.id}
@@ -947,6 +974,7 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
+                (golden ? " hl-marked" : "") +
                 (detail ? " morphing" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
@@ -1006,8 +1034,8 @@ export default function AiNodeCanvas({
                   </div>
                   {tool === "highlight" &&
                     node.expandedText?.trim() &&
-                    (isSelected || isFocused) &&
-                    nodeBlend > 0.55 && (
+                    markable &&
+                    (isSelected || isFocused) && (
                       <div
                         className="ai-node-text-highlight"
                         onPointerDown={(ev) => ev.stopPropagation()}
@@ -1016,12 +1044,19 @@ export default function AiNodeCanvas({
                         <FragmentHighlightLayer
                           active
                           text={node.expandedText}
+                          lockedQuote={golden || null}
                           fontSize={textLayout.fontSize}
                           lineHeight={textLayout.lineHeight}
                           width={textLayout.w}
                           fontFamily="inherit"
                           onFragmentReplace={onFragmentReplace}
                           onFragmentToPaper={onFragmentToPaper}
+                          onTransferStart={(ev, quote) =>
+                            onHighlightTransferStart?.(ev, [node.id], {
+                              immediate: true,
+                              fragment: quote,
+                            })
+                          }
                           isPaperDestination={isPaperDestination}
                           className="ai-node-text-fragment"
                         />

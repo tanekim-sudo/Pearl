@@ -1593,9 +1593,31 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   max-height: 100%;
 }
 
-.ai-node-viewport.ai-highlight-mode .ai-node.selected .ai-node-content-text,
-.ai-node-viewport.ai-highlight-mode .ai-node.focused .ai-node-content-text {
+.ai-node-viewport.ai-highlight-mode .ai-node-content-text {
   pointer-events: auto;
+}
+
+.ai-node.hl-marked .ai-node-ring {
+  border-color: var(--gold-stroke, #e8b923);
+  box-shadow:
+    0 0 0 5px var(--gold-fill, rgba(255, 215, 0, 0.38)),
+    0 0 18px rgba(232, 185, 35, 0.45);
+}
+
+.ai-node.hl-marked.selected .ai-node-ring {
+  border-color: rgba(255, 230, 120, 1);
+}
+
+.fragment-highlight-layer.fragment-highlight-locked {
+  cursor: grab;
+}
+
+.fragment-highlight-layer.fragment-highlight-locked:active {
+  cursor: grabbing;
+}
+
+.ai-node-viewport.ai-highlight-mode .ai-node.hl-marked {
+  cursor: grab;
 }
 
 .ai-node-viewport.ai-text-dominant .ai-node-lines {

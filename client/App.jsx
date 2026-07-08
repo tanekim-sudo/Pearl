@@ -2542,8 +2542,8 @@ export default function App() {
     return " over-boundary";
   }
 
-  function buildSpaceTransferGhost(origin, ids, clientX, clientY, target = null) {
-    const preview = transferPreviewText(origin, ids);
+  function buildSpaceTransferGhost(origin, ids, clientX, clientY, target = null, previewOverride = null) {
+    const preview = previewOverride || transferPreviewText(origin, ids);
     const anchor = transferGhostAnchor(origin, ids, clientX, clientY);
     return {
       cx: anchor.cx,
@@ -2609,7 +2609,7 @@ export default function App() {
     } else {
       setSymbolDropTargetId(null);
     }
-    setSpaceTransferGhost(buildSpaceTransferGhost("paper", g.ids, cx, cy, target));
+    setSpaceTransferGhost(buildSpaceTransferGhost("paper", g.ids, cx, cy, target, g.preview));
   }
 
   function getAiDropWorldFromClient(clientX, clientY) {
@@ -2653,10 +2653,26 @@ export default function App() {
     return t.slice(0, 180) || `${ids.length} node${ids.length > 1 ? "s" : ""}`;
   }
 
+  function startAiHighlightTransfer(e, nodeIds, opts = {}) {
+    if (!nodeIds?.length) return;
+    const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+    const fragment =
+      opts.fragment?.trim() ||
+      nodes.map((n) => n.goldenFragment?.trim()).find(Boolean) ||
+      null;
+    const preview = fragment || transferPreviewText("ai", nodeIds);
+    startPendingSpaceTransfer(e, "ai", nodeIds, {
+      kind: "highlight",
+      immediate: opts.immediate,
+      fragment,
+      preview,
+    });
+  }
+
   function startPendingSpaceTransfer(e, origin, ids, opts = {}) {
     if (!ids?.length) return;
     const previewBox = opts.previewBox || computeTransferPreviewBox(origin, ids);
-    const preview = transferPreviewText(origin, ids);
+    const preview = opts.preview || transferPreviewText(origin, ids);
     setGesturing(true);
     const immediate = !!opts.immediate;
     gesture.current = {
@@ -2664,6 +2680,7 @@ export default function App() {
       origin,
       ids: ids.slice(),
       kind: opts.kind || null,
+      fragment: opts.fragment || null,
       previewBox,
       preview,
       activated: immediate,
@@ -2675,7 +2692,7 @@ export default function App() {
     setTransferDragActive(true);
     const target = immediate ? resolveSpaceTransferTarget(origin, e.clientX, e.clientY) : null;
     setSpaceTransferGhost(
-      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, target)
+      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, target, preview)
     );
     if (immediate) {
       setBoundaryMagnetActive(true);
@@ -2697,7 +2714,7 @@ export default function App() {
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
     if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
-    setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, null));
+    setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, null, g.preview));
   }
 
   function transferAiNodesToPaper(nodeIds, atWorld) {
@@ -2986,7 +3003,7 @@ export default function App() {
         g.lastCx = cx;
         g.lastCy = cy;
         const target = resolveSpaceTransferTarget(g.origin, cx, cy);
-        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target));
+        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
         if (dist > TRANSFER_DRAG_THRESHOLD) {
           activateSpaceTransfer(g, cx, cy);
@@ -3015,7 +3032,7 @@ export default function App() {
           setSymbolDropTargetId(null);
         }
         setTransferDragActive(true);
-        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target));
+        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
         if (g.highlight) {
@@ -7591,7 +7608,25 @@ export default function App() {
       launchToolboxTransfer(RAIL_LENSES);
     } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
-      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
+      const atWorld = clientToWorld(cx, cy);
+      if (g.fragment?.trim()) {
+        emitTourEvent("highlight-to-paper");
+        const id = spawnTextAtWorld(g.fragment, atWorld, { silent: true, fromAi: true });
+        if (id) {
+          for (const nodeId of g.ids || []) {
+            updateAiNode(nodeId, { goldenFragment: null });
+            recordItemEvent(id, "highlight-transfer", {
+              targetLayer: "paper",
+              aiNodeId: nodeId,
+              inputPreview: truncatePreview(g.fragment, 120),
+            });
+          }
+          setSelectedAiNodeIds([]);
+          showToast("placed on paper");
+        }
+      } else {
+        transferAiNodesToPaper(g.ids, atWorld, { fromClient });
+      }
     } else if (g.origin === "ai" && target === RAIL_TRANSFORMATIONS) {
       captureAiNodesAsFunction(g.ids);
       launchToolboxTransfer(RAIL_TRANSFORMATIONS);
@@ -8583,12 +8618,16 @@ export default function App() {
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           tool={tool}
+          onHighlightTransferStart={(e, nodeIds, opts = {}) => {
+            startAiHighlightTransfer(e, nodeIds, opts);
+          }}
           onSpaceTransferStart={(e, nodeIds, opts = {}) => {
             const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
             if (!ids.length) return;
             startPendingSpaceTransfer(e, "ai", ids, {
               kind: opts.kind ?? (toolRef.current === "highlight" ? "highlight" : null),
               immediate: opts.immediate,
+              fragment: opts.fragment || null,
             });
           }}
           shouldHandoffNodeDrag={shouldHandoffAiNodeDrag}

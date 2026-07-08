@@ -33,6 +33,7 @@ export default function AiColumn({
   onCanvasDragLeave,
   tool,
   onSpaceTransferStart,
+  onHighlightTransferStart,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -74,6 +75,7 @@ export default function AiColumn({
             canvasDropOver={canvasDropOver}
             tool={tool}
             onSpaceTransferStart={onSpaceTransferStart}
+            onHighlightTransferStart={onHighlightTransferStart}
             onFragmentReplace={onFragmentReplace}
             onFragmentToPaper={onFragmentToPaper}
             isPaperDestination={isPaperDestination}
