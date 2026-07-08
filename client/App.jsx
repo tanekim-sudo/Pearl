@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { jsonrepair } from "jsonrepair";
 import {
   TRANSFORM_PRIMITIVES,
@@ -78,8 +78,13 @@ import ShareWelcomeOverlay from "./ShareWelcomeOverlay.jsx";
 import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import AuthOverlay from "./components/AuthOverlay.jsx";
+import PlansOverlay from "./components/PlansOverlay.jsx";
 import { useSupabaseSession } from "./lib/auth-session.js";
 import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
+import { planBadgeLabel } from "./lib/plans.js";
+import { useUserPlan } from "./lib/use-user-plan.js";
+import { useBoardCloudSync } from "./lib/board-sync.js";
+import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
 import LensTreeEditor from "./components/LensTreeEditor.jsx";
@@ -1844,7 +1849,7 @@ async function runExecutionOnServer({ op, opMap, operators, material, image, onP
   try {
     const res = await fetch("/api/execute", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         op,
         opMap: subset,
@@ -1884,7 +1889,7 @@ async function runClaude(prompt, text, opts = {}) {
   try {
     const res = await fetch("/api/run", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         prompt,
         text,
@@ -2051,6 +2056,11 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(
     () => isSupabaseConfigured() && Boolean(supaAuth.bootAuthError)
   );
+  const [plansOpen, setPlansOpen] = useState(false);
+  const userPlan = useUserPlan({
+    session: supaAuth.session,
+    sessionResolved: supaAuth.sessionResolved,
+  });
   const prevSessionRef = useRef("unresolved");
   const [railPulse, setRailPulse] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
@@ -2243,6 +2253,7 @@ export default function App() {
 
   const shareImportedRef = useRef(false);
   useEffect(() => {
+    if (!supaAuth.sessionResolved) return;
     if (shareImportedRef.current) return;
     const parsed = parseShareFromLocation(window.location);
     if (!parsed) return;
@@ -2256,7 +2267,7 @@ export default function App() {
     window.history.replaceState({}, "", clean);
     setTimeout(() => setPendingShareBundle(decoded.bundle), 80);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supaAuth.sessionResolved]);
   useEffect(() => localStorage.setItem(ACTIVE_TRANSFORMATION_KEY, JSON.stringify(activeTransformationId)), [activeTransformationId]);
 
   useEffect(() => {
@@ -2282,6 +2293,67 @@ export default function App() {
   showToastRef.current = showToast;
 
   const [authBootError, setAuthBootError] = useState(supaAuth.bootAuthError);
+
+  useEffect(() => {
+    setApiAccessTokenGetter(() => supaAuth.session?.access_token || null);
+  }, [supaAuth.session]);
+
+  const hydrateBoardFromCloud = useCallback((parsed) => {
+    if (Array.isArray(parsed.items)) {
+      setItems(parsed.items.map(normalizeItem).filter(Boolean));
+    }
+    if (Array.isArray(parsed.pages) && parsed.pages.length) {
+      setPages(
+        parsed.pages.map((p, i) => ({
+          ...p,
+          name: migratePageName(p.name, i),
+          sessions: p.sessions || [],
+        }))
+      );
+      setActivePageId(parsed.pages[0]?.id || DEFAULT_PAGE_ID);
+    }
+    if (parsed.docTitle != null) setDocTitle(parsed.docTitle);
+    setDocStarred(!!parsed.docStarred);
+    if (parsed.theme) setTheme(parsed.theme);
+    if (parsed.camera) setCamera(parsed.camera);
+    if (parsed.operators) {
+      const store = migrateOperatorStore(parsed.operators);
+      setOperators(migrateOperators(store).filter((o) => o && o.id));
+    }
+    if (Array.isArray(parsed.lenses)) {
+      setLenses(parsed.lenses.map((s) => normalizeSymbolRecord(s)).filter(Boolean));
+    }
+    if (Array.isArray(parsed.transformationRepos)) {
+      setTransformationRepos(
+        parsed.transformationRepos.map(normalizeLens).filter((l) => l?.id)
+      );
+    }
+    setActiveTransformationId(parsed.activeTransformationId || null);
+    historyRef.current = { past: [], future: [] };
+    setCanUndo(false);
+    setCanRedo(false);
+    showToastRef.current?.("board synced from cloud");
+  }, []);
+
+  useBoardCloudSync({
+    session: supaAuth.session,
+    sessionResolved: supaAuth.sessionResolved,
+    onHydrate: hydrateBoardFromCloud,
+    onSynced: () => setSavedIndicator(true),
+    dirtyToken: [
+      items,
+      pages,
+      docTitle,
+      docStarred,
+      theme,
+      camera,
+      operators,
+      lenses,
+      transformationRepos,
+      activeTransformationId,
+    ],
+  });
+
   useEffect(() => {
     if (!supaAuth.sessionResolved) return;
     if (prevSessionRef.current === "unresolved") {
@@ -2307,6 +2379,7 @@ export default function App() {
 
   function handleAccountAction(action) {
     if (action === "sign-in") setAuthOpen(true);
+    if (action === "plans") setPlansOpen(true);
     if (action === "sign-out") {
       // Local scope: signing out here leaves the user's other devices alone.
       getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
@@ -8247,6 +8320,7 @@ export default function App() {
     else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateLens();
+    else if (action === "open-plans") setPlansOpen(true);
   }
 
   function handleShareBoard() {
@@ -8371,6 +8445,12 @@ export default function App() {
               : { email: null }
             : null
         }
+        planBadge={
+          supaAuth.session && !userPlan.loading && !userPlan.error
+            ? planBadgeLabel(userPlan.effective)
+            : null
+        }
+        showPlans={isSupabaseConfigured() && supaAuth.sessionResolved}
         onAccountAction={handleAccountAction}
       />
 
@@ -9161,6 +9241,13 @@ export default function App() {
             setAuthBootError(null);
             showToast("password updated");
           }}
+        />
+      )}
+
+      {plansOpen && !supaAuth.passwordRecovery && (
+        <PlansOverlay
+          session={supaAuth.session}
+          onClose={() => setPlansOpen(false)}
         />
       )}
 

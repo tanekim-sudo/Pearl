@@ -45,6 +45,8 @@ export default function TopToolbar({
   onRedo,
   onShare,
   account,
+  planBadge,
+  showPlans,
   onAccountAction,
 }) {
   const allItems = [
@@ -68,6 +70,7 @@ export default function TopToolbar({
     { id: "setup-role", label: "Set up for role" },
     { id: "new-function", label: "Create transformation" },
   ];
+  if (showPlans) allItems.push({ id: "open-plans", label: "Plans" });
 
   return (
     <header className="idea-toolbar idea-toolbar-minimal">
@@ -105,8 +108,16 @@ export default function TopToolbar({
         {account &&
           (account.email ? (
             <MenuDropdown
-              label={account.email}
-              items={[{ id: "sign-out", label: "Sign out" }]}
+              label={
+                <>
+                  {account.email}
+                  {planBadge ? <span className="plan-badge">{planBadge}</span> : null}
+                </>
+              }
+              items={[
+                { id: "plans", label: "Plans" },
+                { id: "sign-out", label: "Sign out" },
+              ]}
               onAction={onAccountAction}
               dataTour="account-menu"
             />

@@ -1,11 +1,13 @@
 import { compileExecutionPlan } from "../server/plan.js";
 import { runPhase } from "../server/executor.js";
+import { guardAiRequest } from "../server/api-guard.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+  if (!(await guardAiRequest(req, res))) return;
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
     const { phaseId, plan: clientPlan, op, opMap, operators, context, image } = body;

@@ -15,6 +15,8 @@ import {
   buildShareUrl,
   SHARE_BUNDLE_VERSION,
 } from "../shared/share-bundle.js";
+import { attachLensUser } from "./supabase-auth.js";
+import { guardAiRequest } from "./api-guard.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -28,12 +30,14 @@ if (!hasKey()) {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "16mb" }));
+app.use(attachLensUser);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL });
 });
 
 app.post("/api/run", async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
   try {
     const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact } =
       req.body ?? {};
@@ -69,6 +73,7 @@ app.post("/api/plan", async (req, res) => {
 });
 
 app.post("/api/phase", async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
   try {
     const { phaseId, plan, op, opMap, operators, context, image } = req.body ?? {};
     if (!phaseId) return res.status(400).json({ error: "phaseId is required" });
@@ -82,6 +87,7 @@ app.post("/api/phase", async (req, res) => {
 });
 
 app.post("/api/execute", async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
   try {
     const { op, opMap, operators, material, image } = req.body ?? {};
     if (!op) return res.status(400).json({ error: "op is required" });
@@ -100,6 +106,7 @@ app.post("/api/execute", async (req, res) => {
 });
 
 app.post("/api/pipeline", async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
   try {
     const { op, opMap, operators, material, image } = req.body ?? {};
     const steps = [];
