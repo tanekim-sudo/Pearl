@@ -231,6 +231,7 @@ const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI or toolbox columns
 const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
 const TRANSFER_DRAG_THRESHOLD = 4; // px before boundary transfer activates
+const TOOLBOX_DRAG_THRESHOLD = 3; // px before rail-to-canvas apply counts as a drop
 
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
@@ -423,6 +424,9 @@ const tourEmitRef = { current: null };
 
 /** @type {{ current: ((e: PointerEvent, payload: object) => void) | null }} */
 const toolboxApplyDragRef = { current: null };
+
+/** @type {{ current: boolean }} */
+const toolboxDidDragRef = { current: false };
 
 const LENS_STORAGE_KEYS = [
   ITEMS_KEY,
@@ -2134,6 +2138,7 @@ export default function App() {
   const transferFragmentReplaceRef = useRef(() => {});
   const spaceTransferCompleteRef = useRef(() => {});
   const toolboxApplyCompleteRef = useRef(() => {});
+  const toolboxDragEnvRef = useRef({});
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
@@ -3042,28 +3047,6 @@ export default function App() {
         }
         setTransferDragActive(true);
         setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
-      } else if (g.mode === "toolbox-apply-drag") {
-        g.lastCx = cx;
-        g.lastCy = cy;
-        setToolboxApplyGhost({
-          cx,
-          cy,
-          label: g.payload.label,
-          kind: g.payload.kind,
-        });
-        if (isOverPaperColumn(cx, cy)) {
-          setDropReady(true);
-          setCanvasDropOver(true);
-          const hit = itemAtPointForDrop(cx, cy);
-          const sel = selRef.current;
-          if (hit) setDropTargetId(hit.id);
-          else if (sel.length === 1) setDropTargetId(sel[0]);
-          else setDropTargetId(null);
-        } else {
-          setDropReady(false);
-          setDropTargetId(null);
-          setCanvasDropOver(false);
-        }
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
         if (g.highlight) {
@@ -3221,14 +3204,6 @@ export default function App() {
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
         if (g.activated) spaceTransferCompleteRef.current(g, cx, cy);
-      } else if (g.mode === "toolbox-apply-drag") {
-        setToolboxApplyGhost(null);
-        setDropReady(false);
-        setDropTargetId(null);
-        setCanvasDropOver(false);
-        const cx = g.lastCx ?? g.cx;
-        const cy = g.lastCy ?? g.cy;
-        toolboxApplyCompleteRef.current(g, cx, cy);
       }
 
       if (g.mode === "draw") {
@@ -3982,15 +3957,13 @@ export default function App() {
     runOperator(op, ids, { atClient });
   }
 
-  function applyTransformationLensDrop(lensId, atClient) {
-    if (!atClient) return;
-    const lens = transformationRepos.find((l) => l.id === lensId);
-    if (!lens) return;
-    const ids = resolveTargetIds(atClient);
-    if (!ids.length) {
+  function runTransformationLensOnIds(lensId, ids, atClient) {
+    if (!ids?.length) {
       showToast("drop onto an idea");
       return;
     }
+    const lens = transformationRepos.find((l) => l.id === lensId);
+    if (!lens) return;
     const moveOps = (lens.moveIds || []).map((id) => opMap[id]).filter(Boolean);
     if (!moveOps.length) {
       showToast("lens has no moves");
@@ -4011,6 +3984,62 @@ export default function App() {
     if (!compound) return;
     const mergedMap = { ...opMap, ...Object.fromEntries(ops.map((o) => [o.id, o])) };
     runOperator(compound, ids, { atClient, opMap: mergedMap, lens });
+  }
+
+  function applyTransformationLensDrop(lensId, atClient) {
+    if (!atClient) return;
+    const ids = resolveTargetIds(atClient);
+    runTransformationLensOnIds(lensId, ids, atClient);
+  }
+
+  function applyToolboxOperatorAt(opId, atClient) {
+    if (!atClient) return;
+    const op = opMap[opId];
+    if (!op) return;
+    const env = toolboxDragEnvRef.current;
+    if (env.isOverAiColumn?.(atClient.x, atClient.y)) {
+      const world = env.getAiDropWorldFromClient(atClient.x, atClient.y);
+      const node = env.aiNodeAtWorld?.(world.x, world.y);
+      if (!node) {
+        showToast("drop onto a concept node");
+        return;
+      }
+      const { ids, sourceNode } = resolveNodeSourceIds(node);
+      if (!ids?.length) {
+        showToast("nothing to apply to on this node");
+        return;
+      }
+      if (isExpansionOperator(op)) {
+        expandInAi(ids, {
+          op,
+          opLabel: op.name,
+          expandedAt: world,
+          fromClient: atClient,
+          sourceNode: sourceNode || node,
+        });
+      } else {
+        runOperator(op, ids, { atClient });
+      }
+      return;
+    }
+    applyOpDrop(opId, atClient);
+  }
+
+  function applyToolboxTransformationLensAt(lensId, atClient) {
+    if (!atClient) return;
+    const env = toolboxDragEnvRef.current;
+    if (env.isOverAiColumn?.(atClient.x, atClient.y)) {
+      const world = env.getAiDropWorldFromClient(atClient.x, atClient.y);
+      const node = env.aiNodeAtWorld?.(world.x, world.y);
+      if (!node) {
+        showToast("drop onto a concept node");
+        return;
+      }
+      const { ids } = resolveNodeSourceIds(node);
+      runTransformationLensOnIds(lensId, ids, atClient);
+      return;
+    }
+    applyTransformationLensDrop(lensId, atClient);
   }
 
   // ---- lenses (ways of seeing) ----
@@ -5516,23 +5545,76 @@ export default function App() {
     e.preventDefault();
     e.stopPropagation();
     if (editingRef.current) finishEditing();
+
     const label = payload.label || "apply";
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let lastX = startX;
+    let lastY = startY;
+
     setGesturing(true);
-    gesture.current = {
-      mode: "toolbox-apply-drag",
-      payload,
-      cx: e.clientX,
-      cy: e.clientY,
-      lastCx: e.clientX,
-      lastCy: e.clientY,
-    };
-    setToolboxApplyGhost({ cx: e.clientX, cy: e.clientY, label, kind: payload.kind });
+    document.body.classList.add("toolbox-dragging");
+    setToolboxApplyGhost({ cx: startX, cy: startY, label, kind: payload.kind });
     emitTourEvent("drag-function");
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+
+    function syncDropTargets(cx, cy) {
+      const env = toolboxDragEnvRef.current;
+      if (env.isOverPaperColumn?.(cx, cy)) {
+        setDropReady(true);
+        setCanvasDropOver(true);
+        const hit = env.itemAtPointForDrop?.(cx, cy);
+        const sel = selRef.current;
+        if (hit) setDropTargetId(hit.id);
+        else if (sel.length === 1) setDropTargetId(sel[0]);
+        else setDropTargetId(null);
+      } else {
+        setDropReady(false);
+        setDropTargetId(null);
+        setCanvasDropOver(false);
+      }
+      if (env.isOverAiColumn?.(cx, cy)) {
+        setAiCanvasDropOver(true);
+        setTransferDragActive(true);
+      } else {
+        setAiCanvasDropOver(false);
+      }
     }
+
+    function onMove(ev) {
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      setToolboxApplyGhost({ cx: lastX, cy: lastY, label, kind: payload.kind });
+      syncDropTargets(lastX, lastY);
+    }
+
+    function finish(ev) {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      setGesturing(false);
+      document.body.classList.remove("toolbox-dragging");
+      setToolboxApplyGhost(null);
+      setDropReady(false);
+      setDropTargetId(null);
+      setCanvasDropOver(false);
+      setAiCanvasDropOver(false);
+      setTransferDragActive(false);
+
+      const cx = ev?.clientX ?? lastX;
+      const cy = ev?.clientY ?? lastY;
+      const moved = Math.hypot(cx - startX, cy - startY) > TOOLBOX_DRAG_THRESHOLD;
+      if (moved) toolboxDidDragRef.current = true;
+      toolboxApplyCompleteRef.current(
+        { payload, cx: startX, cy: startY, moved },
+        cx,
+        cy
+      );
+    }
+
+    syncDropTargets(startX, startY);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
   }
 
   toolboxApplyDragRef.current = startToolboxApplyDrag;
@@ -7777,19 +7859,24 @@ export default function App() {
     }
   };
   toolboxApplyCompleteRef.current = (g, cx, cy) => {
+    if (!g.moved) return;
     const atClient = { x: cx, y: cy };
-    const moved = Math.hypot(cx - g.cx, cy - g.cy) > MOVE_DRAG_THRESHOLD;
-    if (isOverPaperColumn(cx, cy) && moved) {
+    const env = toolboxDragEnvRef.current;
+    if (env.isOverPaperColumn?.(cx, cy) || env.isOverAiColumn?.(cx, cy)) {
       if (g.payload.kind === "operator") {
-        applyOpDrop(g.payload.opId, atClient);
+        applyToolboxOperatorAt(g.payload.opId, atClient);
       } else if (g.payload.kind === "transformation-lens") {
-        applyTransformationLensDrop(g.payload.lensId, atClient);
+        applyToolboxTransformationLensAt(g.payload.lensId, atClient);
       } else if (g.payload.kind === "pattern-lens") {
-        applyPatternLensDrop(g.payload.structId, atClient);
+        if (env.isOverAiColumn?.(cx, cy)) {
+          showToast("pattern lenses apply on paper — drag to the whiteboard");
+        } else {
+          applyPatternLensDrop(g.payload.structId, atClient);
+        }
       }
       return;
     }
-    if (moved && isOverFunctionsColumn(cx, cy)) {
+    if (env.isOverFunctionsColumn?.(cx, cy)) {
       if (g.payload.kind === "operator") {
         const targetId = opCardAtClient(cx, cy);
         if (targetId && targetId !== g.payload.opId) composeOperators(g.payload.opId, targetId);
@@ -7798,6 +7885,14 @@ export default function App() {
         if (targetId && targetId !== g.payload.lensId) mergeLenses(g.payload.lensId, targetId);
       }
     }
+  };
+  toolboxDragEnvRef.current = {
+    isOverPaperColumn,
+    isOverAiColumn,
+    isOverFunctionsColumn,
+    itemAtPointForDrop,
+    getAiDropWorldFromClient,
+    aiNodeAtWorld,
   };
 
   function spawnTextAtWorld(text, atWorld, opts = {}) {
@@ -9075,7 +9170,11 @@ export default function App() {
         <div
           className={
             "toolbox-apply-ghost" +
-            (isOverPaperColumn(toolboxApplyGhost.cx, toolboxApplyGhost.cy) ? " over-paper" : "")
+            (isOverPaperColumn(toolboxApplyGhost.cx, toolboxApplyGhost.cy)
+              ? " over-paper"
+              : isOverAiColumn(toolboxApplyGhost.cx, toolboxApplyGhost.cy)
+                ? " over-ai"
+                : "")
           }
           style={{ left: toolboxApplyGhost.cx, top: toolboxApplyGhost.cy }}
         >
@@ -9299,10 +9398,12 @@ function startOpDrag(e, op) {
 }
 
 function startToolboxOperatorDrag(e, op) {
+  if (e.target.closest?.("button, input, textarea, a")) return;
   toolboxApplyDragRef.current?.(e, { kind: "operator", opId: op.id, label: op.name });
 }
 
 function startToolboxTransformationLensDrag(e, lens) {
+  if (e.target.closest?.("button, input, textarea, a, .lens-menu")) return;
   toolboxApplyDragRef.current?.(e, {
     kind: "transformation-lens",
     lensId: lens.id,
@@ -9311,6 +9412,7 @@ function startToolboxTransformationLensDrag(e, lens) {
 }
 
 function startToolboxPatternLensDrag(e, struct) {
+  if (e.target.closest?.("button, input, textarea, a, .struct-card-actions")) return;
   toolboxApplyDragRef.current?.(e, {
     kind: "pattern-lens",
     structId: struct.id,
@@ -9491,12 +9593,11 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
           }
         }}
       >
-        <div className="op-card-row">
-          <span
-            className="op-drag-grip"
-            title="Drag onto paper"
-            onPointerDown={(e) => startToolboxOperatorDrag(e, op)}
-          >
+        <div
+          className="op-card-row toolbox-drag-row"
+          onPointerDown={(e) => startToolboxOperatorDrag(e, op)}
+        >
+          <span className="op-drag-grip" title="Drag onto paper or AI">
             ⠿
           </span>
           <div className="op-card-label">
@@ -9635,6 +9736,10 @@ function LensCard({
       data-transformation-lens-id={lens.id}
       style={depth > 0 ? { marginLeft: depth * 14 } : undefined}
       onClick={(e) => {
+        if (toolboxDidDragRef.current) {
+          toolboxDidDragRef.current = false;
+          return;
+        }
         if (e.target.closest(".op-drag-grip, .lens-card-actions, .lens-menu, button")) return;
         onUse();
       }}
@@ -9656,12 +9761,11 @@ function LensCard({
         }
       }}
     >
-      <div className="lens-card-top">
-        <span
-          className="op-drag-grip"
-          title="Drag onto paper"
-          onPointerDown={(e) => startToolboxTransformationLensDrag(e, lens)}
-        >
+      <div
+        className="lens-card-top toolbox-drag-row"
+        onPointerDown={(e) => startToolboxTransformationLensDrag(e, lens)}
+      >
+        <span className="op-drag-grip" title="Drag onto paper or AI">
           ⠿
         </span>
         <span className={"git-ref-badge " + refKind}>{refKind}</span>
@@ -9883,12 +9987,11 @@ function PatternLensCard({
         className={"struct-card" + (dropTarget ? " drop-target merge-target" : "")}
         data-struct-id={struct.id}
       >
-        <div className="struct-card-row">
-          <span
-            className="op-drag-grip"
-            title="Drag onto paper"
-            onPointerDown={(e) => startToolboxPatternLensDrag(e, struct)}
-          >
+        <div
+          className="struct-card-row toolbox-drag-row"
+          onPointerDown={(e) => startToolboxPatternLensDrag(e, struct)}
+        >
+          <span className="op-drag-grip" title="Drag onto paper">
             ⠿
           </span>
           <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />

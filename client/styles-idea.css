@@ -4267,6 +4267,41 @@ html[data-theme="chalk"] body {
   white-space: nowrap;
 }
 
+.toolbox-apply-ghost.over-ai {
+  border-color: #e8b923;
+  background: rgba(12, 12, 18, 0.92);
+  box-shadow:
+    0 0 0 4px rgba(232, 185, 35, 0.18),
+    0 10px 32px rgba(0, 0, 0, 0.35);
+}
+
+.toolbox-apply-ghost.over-ai .toolbox-apply-ghost-badge {
+  background: rgba(232, 185, 35, 0.16);
+  color: #e8b923;
+}
+
+.toolbox-apply-ghost.over-ai .toolbox-apply-ghost-label {
+  color: rgba(255, 250, 235, 0.92);
+}
+
+body.toolbox-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.toolbox-dragging .toolbox-drag-row {
+  cursor: grabbing;
+}
+
+.toolbox-drag-row {
+  cursor: grab;
+  touch-action: none;
+}
+
+.toolbox-drag-row .op-drag-grip {
+  cursor: inherit;
+}
+
 /* ── Golden fragment highlight in explore overlay ── */
 .ai-golden-fragment {
   background: linear-gradient(180deg, rgba(232, 185, 35, 0.45), rgba(232, 185, 35, 0.28));
