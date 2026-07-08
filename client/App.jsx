@@ -189,6 +189,10 @@ import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.j
 import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
+function uid() {
+  return "s-" + Math.random().toString(36).slice(2, 9);
+}
+
 const ITEMS_KEY = "lens.board.items.v1";
 const PAGES_KEY = "lens.board.pages.v1";
 const DOC_TITLE_KEY = "lens.doc.title.v1";
