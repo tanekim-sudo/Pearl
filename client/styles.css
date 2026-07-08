@@ -2535,6 +2535,8 @@ body {
   padding: 8px 14px 10px 16px;
   border-radius: 3px;
   cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
   background: transparent;
   box-shadow: none;
   border: 1px solid transparent;
@@ -2544,10 +2546,14 @@ body {
     background 0.15s ease;
 }
 .board-text.sel {
+  cursor: grab;
   background: transparent;
   border-color: transparent;
   box-shadow: none;
   outline: none;
+}
+.board-main:not(.editing-text) .board-text.sel:active {
+  cursor: grabbing;
 }
 .board-text.hl-touch:not(.sel) {
   background: rgba(245, 230, 163, 0.12);

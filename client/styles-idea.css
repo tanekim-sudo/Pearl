@@ -3454,11 +3454,17 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .idea-center .board-text.sel,
 .canvas-column .board-text.sel {
+  cursor: grab;
   outline: 1px solid #1a73e8;
   outline-offset: -1px;
   box-shadow: none;
   background: transparent;
   border-color: transparent;
+}
+
+.board-main:not(.editing-text) .idea-center .board-text.sel:active,
+.board-main:not(.editing-text) .canvas-column .board-text.sel:active {
+  cursor: grabbing;
 }
 
 .canvas-column .board-img.sel,

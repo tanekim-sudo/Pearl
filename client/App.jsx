@@ -2249,6 +2249,10 @@ export default function App() {
 
   useEffect(() => {
     if (!["select", "highlight"].includes(tool)) setHighlight(null);
+    // Leaving the text/sticky utensil should exit edit so select can drag again.
+    if (tool !== "text" && tool !== "sticky" && editingRef.current) {
+      finishEditing();
+    }
   }, [tool]);
 
   useEffect(() => {
@@ -3124,6 +3128,7 @@ export default function App() {
         } else {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
           if (dist > MOVE_DRAG_THRESHOLD) {
+            if (editingRef.current) finishEditing();
             pushHistoryRef.current();
             g.mode = "move";
             g.moved = 0;
@@ -3255,7 +3260,20 @@ export default function App() {
       } else if (g.mode === "edit-click") {
         placeEditCaret(g.hitId, g.cx, g.cy);
       } else if (g.mode === "pending") {
-        /* tap without drag — selection only */
+        // Google Slides: second click on an already-selected text box enters edit.
+        if (
+          g.intent !== "clone" &&
+          g.alreadySelected &&
+          g.hitId &&
+          toolRef.current === "select"
+        ) {
+          const it = itemsRef.current.find((i) => i.id === g.hitId);
+          if (it && isEditableBlock(it) && textClickRegion(it, g.cx, g.cy) === "interior") {
+            editingRef.current = it.id;
+            setEditing(it.id);
+            editClickRef.current = { cx: g.cx, cy: g.cy };
+          }
+        }
       } else if (g.mode === "clone") {
         setCloneGhost(null);
         setBoundaryMagnetActive(false);
@@ -6819,14 +6837,39 @@ export default function App() {
       if (toolRef.current === "select") {
         clearHighlightSelection();
       }
+      // Drag always wins over typing — exit any leftover edit session.
+      if (editingRef.current && editingRef.current !== hit.id) {
+        finishEditing();
+      } else if (editingRef.current && toolRef.current === "select") {
+        // Select utensil: pointer-down on objects is for drag/select, not type-in-place.
+        finishEditing();
+      }
       const intent = e.altKey ? "clone" : "move";
-      gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
+      gesture.current = {
+        mode: "pending",
+        cx,
+        cy,
+        ids: nextSel,
+        hitId: hit.id,
+        intent,
+        alreadySelected: already && !e.shiftKey,
+      };
     } else if (t === "select") {
       const selHit = selectedAtPoint(cx, cy);
       if (selHit) {
+        if (editingRef.current) finishEditing();
         const intent = e.altKey ? "clone" : "move";
-        gesture.current = { mode: "pending", cx, cy, ids: selHit, hitId: selHit[0], intent };
+        gesture.current = {
+          mode: "pending",
+          cx,
+          cy,
+          ids: selHit,
+          hitId: selHit[0],
+          intent,
+          alreadySelected: true,
+        };
       } else {
+        if (editingRef.current) finishEditing();
         if (!e.shiftKey) setSelection([]);
         gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
         setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
