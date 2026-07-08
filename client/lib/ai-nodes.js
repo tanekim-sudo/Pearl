@@ -180,32 +180,6 @@ export function nodeVisualRadius(node, opts = {}) {
   return r + ring * 0.55;
 }
 
-/** Ray exit from axis-aligned rect; returns nearest intersection in the forward direction. */
-function rayRectExit(ox, oy, ux, uy, left, top, right, bottom) {
-  const hits = [];
-  if (Math.abs(ux) > 1e-9) {
-    for (const x of [left, right]) {
-      const t = (x - ox) / ux;
-      if (t > 0.001) {
-        const y = oy + uy * t;
-        if (y >= top - 0.5 && y <= bottom + 0.5) hits.push({ t, x, y });
-      }
-    }
-  }
-  if (Math.abs(uy) > 1e-9) {
-    for (const y of [top, bottom]) {
-      const t = (y - oy) / uy;
-      if (t > 0.001) {
-        const x = ox + ux * t;
-        if (x >= left - 0.5 && x <= right + 0.5) hits.push({ t, x, y });
-      }
-    }
-  }
-  if (!hits.length) return null;
-  hits.sort((a, b) => a.t - b.t);
-  return hits[0];
-}
-
 /**
  * Point on the visible node boundary where a strand should attach,
  * on the ray from node center toward (targetX, targetY).
@@ -223,22 +197,8 @@ export function attachPointOnNode(node, targetX, targetY, opts = {}) {
   }
   const ux = dx / len;
   const uy = dy / len;
-  const pad = opts.edgePad ?? 1.5;
-  const blend = opts.contentBlend ?? 0;
-  const layout = opts.textLayout;
-
-  if (blend > 0.35 && layout?.w > 0 && layout?.h > 0) {
-    const sw = layout.w;
-    const sh = layout.h;
-    const top = cy - sh / 2;
-    const left = cx - sw / 2;
-    const right = cx + sw / 2;
-    const bottom = cy + sh / 2;
-    const hit = rayRectExit(cx, cy, ux, uy, left, top, right, bottom);
-    if (hit) {
-      return { x: hit.x + ux * pad, y: hit.y + uy * pad, ux, uy };
-    }
-  }
+  const ringStroke = Math.max(1.5, (opts.invScale ?? 1) * 2.8);
+  const pad = opts.edgePad ?? ringStroke * 0.55 + 1.5;
 
   const radius = nodeVisualRadius(node, opts);
   return {
@@ -297,8 +257,8 @@ export function edgeGeometry(from, to, opts = {}) {
   const curve = Math.min(segLen * 0.44, chordLen * 0.24, 148) * (opts.curveSign ?? 1);
   const cx1 = x1 + start.ux * curve * 0.55;
   const cy1 = y1 + start.uy * curve * 0.55;
-  const cx2 = x2 - end.ux * curve * 0.55;
-  const cy2 = y2 - end.uy * curve * 0.55;
+  const cx2 = x2 + end.ux * curve * 0.55;
+  const cy2 = y2 + end.uy * curve * 0.55;
 
   return {
     x1,

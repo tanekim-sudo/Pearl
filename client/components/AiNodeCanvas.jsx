@@ -711,7 +711,7 @@ export default function AiNodeCanvas({
       invScale,
       cellWeight: 1 + Math.min(childCount * 0.14, 0.5),
       contentBlend: blend,
-      textLayout: detail ? nodeTextLayoutAtBlend(r, detail.length, blend) : null,
+      textLayout: detail ? nodeTextLayoutAtBlend(r, detail.length, blend, detail) : null,
     };
   }
 
@@ -912,7 +912,7 @@ export default function AiNodeCanvas({
           const detail = nodeDetailText(node);
           const showInCircleText = detail && contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND;
           const nodeBlend = showInCircleText ? contentBlend : 0;
-          const textLayout = showInCircleText ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
+          const textLayout = showInCircleText ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend, detail) : null;
           return (
             <div
               key={node.id}
@@ -963,8 +963,8 @@ export default function AiNodeCanvas({
                   className="ai-node-content-text"
                   style={{
                     opacity: nodeBlend,
-                    width: textLayout.w,
-                    height: textLayout.h,
+                    width: r * 2,
+                    height: r * 2,
                     fontSize: textLayout.fontSize,
                     lineHeight: textLayout.lineHeight,
                     padding: textLayout.pad,

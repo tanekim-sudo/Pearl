@@ -150,6 +150,32 @@ describe("ai-nodes layout", () => {
     assert.ok(dist < 42, `edge should stay near ring, got ${dist}`);
   });
 
+  it("edgeGeometry end control curves into the child node", () => {
+    const from = { x: 0, y: 0, radius: 30 };
+    const to = { x: 500, y: 0, radius: 30 };
+    const geom = edgeGeometry(from, to);
+    const end = attachPointOnNode(to, from.x, from.y);
+    const match = geom.path.match(/C [\d.-]+ [\d.-]+, ([\d.-]+) ([\d.-]+), ([\d.-]+) ([\d.-]+)/);
+    assert.ok(match, "expected cubic path");
+    const cx2 = parseFloat(match[1]);
+    const x2 = parseFloat(match[3]);
+    assert.ok(
+      (end.ux < 0 && cx2 < x2) || (end.ux > 0 && cx2 > x2),
+      `control point should trail outside child, cx2=${cx2} x2=${x2} ux=${end.ux}`
+    );
+  });
+
+  it("attachPointOnNode stays on circle edge when text layout is present", () => {
+    const node = { x: 100, y: 100, radius: 30 };
+    const layout = { w: 28, h: 80, fontSize: 4, lineHeight: 1.28, pad: 6 };
+    const pt = attachPointOnNode(node, 0, 100, {
+      contentBlend: 1,
+      textLayout: layout,
+    });
+    const dist = Math.hypot(pt.x - 100, pt.y - 100);
+    assert.ok(dist > 28, `expected circle edge attach, got dist=${dist}`);
+  });
+
   it("edgeGeometry skips degenerate coincident nodes", () => {
     const node = { x: 50, y: 50, radius: 30 };
     const geom = edgeGeometry(node, { ...node, id: "b" });

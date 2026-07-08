@@ -69,6 +69,15 @@ describe("ai-space", () => {
     assert.ok(small.w >= 20);
   });
 
+  it("nodeTextLayout fits long wrapped text inside the circle", () => {
+    const text =
+      "Gimlet Labs, a pioneering research facility focused on developing advanced cognitive systems.";
+    const layout = nodeTextLayout(30, text.length, text);
+    assert.ok(layout.fontSize <= 30 * 0.28);
+    assert.ok(layout.h <= 60 - layout.pad * 2 + 0.01);
+    assert.ok(layout.lineCount >= 4);
+  });
+
   it("fitTextFontSize shrinks for longer responses within bounds", () => {
     const short = fitTextFontSize(148, 60, 20);
     const long = fitTextFontSize(148, 5000, 20);

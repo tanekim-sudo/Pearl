@@ -141,36 +141,64 @@ export function focusAiNode(node, vpWidth, vpHeight, targetScale = EXPLORE_ZOOM_
   };
 }
 
+/** Word-wrap text to an approximate character width per line. */
+function wrapTextLines(text, maxCharsPerLine) {
+  const words = String(text || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  if (!words.length) return [""];
+
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const trial = line ? `${line} ${word}` : word;
+    if (trial.length > maxCharsPerLine && line) {
+      lines.push(line);
+      line = word;
+      while (line.length > maxCharsPerLine) {
+        lines.push(line.slice(0, maxCharsPerLine));
+        line = line.slice(maxCharsPerLine);
+      }
+    } else {
+      line = trial;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 /**
  * Text laid out to fit inside the node circle — scales font down for long responses.
  */
-export function nodeTextLayout(radius = 20, textLen = 0) {
+export function nodeTextLayout(radius = 20, textLen = 0, text = "") {
   const d = radius * 2;
-  const pad = radius * 0.16;
+  const pad = radius * 0.22;
   const maxW = d - pad * 2;
   const maxH = d - pad * 2;
-  const lineHeight = 1.32;
-  const charW = 0.52;
+  const lineHeight = 1.28;
+  const charW = 0.54;
+  const sample = text || (textLen ? "x".repeat(textLen) : "");
 
-  if (!textLen) {
+  if (!textLen && !sample) {
     return { w: maxW, h: maxH, fontSize: radius * 0.22, lineHeight, pad };
   }
 
-  let fontSize = Math.min(radius * 0.3, maxH / 2.8);
-  for (let i = 0; i < 48; i++) {
-    const charsPerLine = Math.max(4, Math.floor(maxW / (fontSize * charW)));
-    const lines = Math.max(1, Math.ceil(textLen / charsPerLine));
-    const h = lines * fontSize * lineHeight;
+  let fontSize = Math.min(radius * 0.28, maxH / 2.6);
+  let lines = [""];
+  for (let i = 0; i < 64; i++) {
+    const charsPerLine = Math.max(3, Math.floor(maxW / (fontSize * charW)));
+    lines = wrapTextLines(sample, charsPerLine);
+    const h = lines.length * fontSize * lineHeight;
     if (h <= maxH) break;
-    fontSize *= 0.9;
-    if (fontSize < 3.2) break;
+    fontSize *= 0.88;
+    if (fontSize < 2.4) break;
   }
 
-  const charsPerLine = Math.max(4, Math.floor(maxW / (fontSize * charW)));
-  const lines = Math.max(1, Math.ceil(textLen / charsPerLine));
-  const h = Math.min(maxH, lines * fontSize * lineHeight);
+  const h = Math.min(maxH, lines.length * fontSize * lineHeight);
 
-  return { w: maxW, h, fontSize, lineHeight, pad };
+  return { w: maxW, h, fontSize, lineHeight, pad, lineCount: lines.length };
 }
 
 /** @deprecated Use nodeTextLayout */
@@ -197,8 +225,8 @@ export function fitCardFontSize(w, _h, textLen) {
 }
 
 /** Layout is fixed inside the circle; zoom only drives opacity crossfade in the view. */
-export function nodeTextLayoutAtBlend(radius, textLen, _blend) {
-  return nodeTextLayout(radius, textLen);
+export function nodeTextLayoutAtBlend(radius, textLen, _blend, text = "") {
+  return nodeTextLayout(radius, textLen, text);
 }
 
 /**
