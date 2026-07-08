@@ -74,6 +74,7 @@ export default function AiNodeCanvas({
   const strandDragRef = useRef(null);
   strandDragRef.current = strandDrag;
   const knownNodeIdsRef = useRef(null);
+  const [bornIds, setBornIds] = useState(() => new Set());
   const [wheelZooming, setWheelZooming] = useState(false);
   const constellationReturnRef = useRef(0);
 
@@ -897,6 +898,9 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
+              <span className="ai-node-cell-glow" aria-hidden="true" />
+              <span className="ai-node-cell-membrane" aria-hidden="true" />
+              <span className="ai-node-cell-nucleus" aria-hidden="true" />
               <span className="ai-node-ring" aria-hidden="true" />
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
@@ -939,8 +943,6 @@ export default function AiNodeCanvas({
                     )}
                 </div>
               )}
-              {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
-              {node.error && <span className="ai-node-error-dot" title={node.error} />}
             </div>
           );
         })}

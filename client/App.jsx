@@ -186,7 +186,6 @@ import {
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
 import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.jsx";
-import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 function uid() {
@@ -2239,6 +2238,21 @@ export default function App() {
     }
   }, [selection]);
 
+  const prevSelectionRef = useRef([]);
+  useEffect(() => {
+    if (gesturing || editing || walking || historyReplay) return;
+    if (selection.length !== 1) {
+      prevSelectionRef.current = selection;
+      return;
+    }
+    const [id] = selection;
+    if (prevSelectionRef.current.length === 1 && prevSelectionRef.current[0] === id) return;
+    prevSelectionRef.current = selection;
+    const item = itemsRef.current.find((it) => it.id === id);
+    if (item) centerCameraOnItem(item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, gesturing, editing, walking, historyReplay]);
+
   function showToast(msg) {
     setToast(msg);
     setTimeout(() => setToast((t) => (t === msg ? null : t)), 3200);
@@ -2465,12 +2479,12 @@ export default function App() {
 
   function resolveSpaceTransferTarget(origin, clientX, clientY) {
     if (origin === "paper") {
-      if (isOverAiColumn(clientX, clientY)) return "ai";
+      if (isOverAiColumn(clientX, clientY) || isNearTransferBoundary(clientX)) return "ai";
       if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
       if (isOverPaperColumn(clientX, clientY)) return "paper";
       return null;
     }
-    if (isOverPaperColumn(clientX, clientY)) return "paper";
+    if (isOverPaperColumn(clientX, clientY) || isNearAiTransferBoundary(clientX)) return "paper";
     if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
     if (isOverAiColumn(clientX, clientY)) return "ai";
     return null;
@@ -2858,11 +2872,12 @@ export default function App() {
       } else if (g.mode === "pending-space-transfer") {
         g.lastCx = cx;
         g.lastCy = cy;
+        const target = resolveSpaceTransferTarget(g.origin, cx, cy);
         setSpaceTransferGhost({
           cx,
           cy,
           count: g.ids.length,
-          target: null,
+          target,
           origin: g.origin,
           preview: g.preview,
           previewBox: g.previewBox,
@@ -2955,14 +2970,28 @@ export default function App() {
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
+        const overAi = isOverAiColumn(cx, cy) || isNearTransferBoundary(cx);
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        setTransferDragActive(overAi);
+        if (overAi) {
+          restoreMovePositions(g.startPositions);
+          setSpaceTransferGhost({
+            cx,
+            cy,
+            count: g.ids.length,
+            target: "ai",
+            origin: "paper",
+            preview: transferPreviewText("paper", g.ids),
+            previewBox: computeTransferPreviewBox("paper", g.ids),
+          });
+          return;
+        }
+        setSpaceTransferGhost(null);
         const dx = (cx - g.cx) / camRef.current.scale;
         const dy = (cy - g.cy) / camRef.current.scale;
         g.cx = cx;
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
-        const overAi = isOverAiColumn(cx, cy) || isNearTransferBoundary(cx);
-        setBoundaryMagnetActive(isNearTransferBoundary(cx));
-        setTransferDragActive(overAi);
         const ids = new Set(g.ids);
         setItems((arr) =>
           arr.map((it) => {
@@ -3146,6 +3175,7 @@ export default function App() {
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
         setTransferDragActive(false);
+        setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
         if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
@@ -4212,6 +4242,14 @@ export default function App() {
 
   function recordItemEvents(itemIds, kind, meta = {}) {
     for (const id of itemIds || []) recordItemEvent(id, kind, meta);
+  }
+
+  function centerCameraOnItem(item) {
+    const bb = itemWorldBBoxMeasured(item) || itemWorldBBox(item);
+    if (!bb) return;
+    const cx = (bb.minx + bb.maxx) / 2;
+    const cy = (bb.miny + bb.maxy) / 2;
+    animateCameraTo({ x: cx, y: cy }, camRef.current.scale, 420);
   }
 
   function animateCameraTo(targetWorld, targetScale, ms = 480) {
@@ -5991,7 +6029,7 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  /** Pan camera so drop-pinned nodes stay under the pointer after landing. */
+  /** Pan + zoom AI camera so transferred nodes land in view and can morph to text. */
   function launchPaperToAiTransfer({ nodeIds = [], focusWorld = null }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
@@ -6009,24 +6047,16 @@ export default function App() {
       const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
       if (!el || !landed.length) return;
 
-      const cam = aiCamRef.current;
-      const scale = cam.scale;
-      const vpW = el.clientWidth;
-      const vpH = el.clientHeight;
-      const anchor = focusWorld || { x: landed[0].x, y: landed[0].y };
-      const sx = anchor.x * scale + cam.x;
-      const sy = anchor.y * scale + cam.y;
-      const margin = 72;
-      let x = cam.x;
-      let y = cam.y;
-      if (sx < margin) x += margin - sx;
-      if (sx > vpW - margin) x -= sx - (vpW - margin);
-      if (sy < margin) y += margin - sy;
-      if (sy > vpH - margin) y -= sy - (vpH - margin);
-      if (x !== cam.x || y !== cam.y) {
-        animateAiCameraTo({ scale, x, y }, 480);
-      }
-    }, 680);
+      const expanded =
+        landed.find((n) => n.nodeKind === "expanded") || landed[landed.length - 1];
+      const focusNode = focusWorld
+        ? { ...expanded, x: focusWorld.x, y: focusWorld.y }
+        : expanded;
+      animateAiCameraTo(
+        focusAiNode(focusNode, el.clientWidth, el.clientHeight, 1.05),
+        620
+      );
+    }, 280);
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -6162,20 +6192,36 @@ export default function App() {
     return [];
   }
 
+  function itemWorldBBoxMeasured(it) {
+    const el = document.querySelector(`[data-item="${it.id}"]`);
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const tl = clientToWorld(r.left, r.top);
+      const br = clientToWorld(r.right, r.bottom);
+      return {
+        minx: Math.min(tl.x, br.x),
+        miny: Math.min(tl.y, br.y),
+        maxx: Math.max(tl.x, br.x),
+        maxy: Math.max(tl.y, br.y),
+      };
+    }
+    return itemWorldBBox(it);
+  }
+
   function selectionWorldBBoxForIds(itemIds) {
     const ids = new Set(itemIds || []);
     const sel = itemsRef.current.filter((it) => ids.has(it.id));
     if (!sel.length) return null;
     let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
     for (const it of sel) {
-      const bb = itemScreenBBox(it);
-      const a = clientToWorld(bb.left, bb.top);
-      const b = clientToWorld(bb.right, bb.bottom);
-      minx = Math.min(minx, a.x);
-      miny = Math.min(miny, a.y);
-      maxx = Math.max(maxx, b.x);
-      maxy = Math.max(maxy, b.y);
+      const bb = itemWorldBBoxMeasured(it);
+      if (!bb) continue;
+      minx = Math.min(minx, bb.minx);
+      miny = Math.min(miny, bb.miny);
+      maxx = Math.max(maxx, bb.maxx);
+      maxy = Math.max(maxy, bb.maxy);
     }
+    if (!Number.isFinite(minx)) return null;
     return { minx, miny, maxx, maxy };
   }
 
@@ -6737,28 +6783,6 @@ export default function App() {
     }
   }
 
-  function startSelectionEdgeMove(e) {
-    const ids = selRef.current;
-    if (!ids.length) return;
-    setGesturing(true);
-    pushHistory();
-    gesture.current = {
-      mode: "move",
-      cx: e.clientX,
-      cy: e.clientY,
-      ids: ids.slice(),
-      moved: 0,
-      lastCx: e.clientX,
-      lastCy: e.clientY,
-      startPositions: captureMoveStartPositions(ids),
-    };
-    try {
-      (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  }
-
   // ---- text editing ----
   function commitEdit(id, text) {
     const clean = (text || "").replace(/\u00a0/g, " ");
@@ -7049,12 +7073,7 @@ export default function App() {
       switchPage(item.pageId || DEFAULT_PAGE_ID);
     }
     setSelection([item.id]);
-    const bb = itemWorldBBox(item);
-    if (!bb) return;
-    const r = vpRect();
-    const cx = (bb.minx + bb.maxx) / 2;
-    const cy = (bb.miny + bb.maxy) / 2;
-    animateCameraTo({ x: cx, y: cy }, camRef.current.scale, 480);
+    requestAnimationFrame(() => centerCameraOnItem(item));
   }
 
   function switchPage(pageId, nextCamera) {
@@ -7439,6 +7458,14 @@ export default function App() {
         loading: false,
         error: null,
       }));
+      const el = aiViewportRef.current;
+      const landed = aiNodesRef.current.find((n) => n.id === expandedNode.id);
+      if (el && landed) {
+        animateAiCameraTo(
+          focusAiNode(landed, el.clientWidth, el.clientHeight, 1.35),
+          520
+        );
+      }
     } catch (err) {
       updateAiNode(expandedNode.id, {
         loading: false,
@@ -7493,7 +7520,11 @@ export default function App() {
         interpretSketchBundle(sketchBundle, world, { fromClient });
       } else {
         const expandIds = transformableDragIds(ids);
-        if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
+        if (expandIds.length) {
+          expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
+        } else {
+          showToast("Nothing here can transfer to AI");
+        }
       }
     } else if (g.origin === "paper" && target === "paper" && g.kind === "highlight") {
       transferHighlightSelectionToPaper(g.ids, clientToWorld(cx, cy));
@@ -7539,6 +7570,8 @@ export default function App() {
           }
         }
       }
+    } else if (g.activated) {
+      showToast("Drop on a column to transfer");
     }
   };
 
@@ -7797,12 +7830,7 @@ export default function App() {
   const highlightSelectionSet = useMemo(() => new Set(highlightSelectionIds), [highlightSelectionIds]);
   const highlightTransferringSet = useMemo(() => new Set(highlightTransferringIds), [highlightTransferringIds]);
   const selBBox = selection.length ? selectionWorldBBox() : null;
-  const highlightBBox = highlightSelectionIds.length ? selectionWorldBBoxForIds(highlightSelectionIds) : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
-  const canTransform = selItem && isTransformableBlock(selItem);
-  const selCaptureInfo =
-    selItem && isTransformableBlock(selItem) ? getNodeThreadCapture(selItem.id, items) : null;
-  const captureName = (captureNameOverride ?? selCaptureInfo?.defaultName ?? "").slice(0, 72);
   const boardLinks = visibleItems.filter((it) => it.type === "link");
   const paperContentItems = visibleItems.filter(
     (it) => it.type !== "link" && !(it.type === "stroke" && it.highlight)
@@ -7851,26 +7879,6 @@ export default function App() {
     const h = itemHeight(it) * (it.scale ?? 1);
     return { x: it.x + w / 2, y: it.y + h / 2 };
   }
-
-  const selectionSketchBundle =
-    selection.length > 0 ? gatherSelectionSketchBundle(selection) : null;
-  const selectionHasSketch = !!selectionSketchBundle;
-  const selectionScreenBox = selBBox
-    ? (() => {
-        const tl = worldToClient(selBBox.minx, selBBox.miny);
-        const br = worldToClient(selBBox.maxx, selBBox.maxy);
-        return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
-      })()
-    : null;
-  const highlightScreenBox = highlightBBox
-    ? (() => {
-        const tl = worldToClient(highlightBBox.minx, highlightBBox.miny);
-        const br = worldToClient(highlightBBox.maxx, highlightBBox.maxy);
-        return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
-      })()
-    : null;
-  const highlightSketchBundle =
-    highlightSelectionIds.length > 0 ? gatherSelectionSketchBundle(highlightSelectionIds) : null;
 
   const tourState = useMemo(
     () => ({
@@ -8000,12 +8008,6 @@ export default function App() {
                 <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
-              {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                <div className="sel-capture-panel">
-                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="lens name" />
-                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>Save as lens</button>
-                </div>
-              )}
               <div className="rail-scroll">
                 {lensRepos.length > 0 &&
                   lensRepos.map((repo) => (
@@ -8558,97 +8560,6 @@ export default function App() {
         />
       )}
 
-      {/* screen-space selection boundary + transform handles */}
-      {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
-        <SelectionBoundary bbox={selectionScreenBox} onFramePointerDown={startSelectionEdgeMove} />
-      )}
-
-      {canTransform && selItem && !isEmptyDraftBlock(selItem) && !editing && !historyReplay && (
-        <ScreenTransformHandles
-          bbox={itemScreenBBox(selItem)}
-          onRotateStart={(e) => {
-            const c = itemCenter(selItem);
-            const sc = worldToClient(c.x, c.y);
-            startHandleGesture(e, "rotate", {
-              id: selItem.id,
-              cx0: c.x,
-              cy0: c.y,
-              startRot: selItem.rotation || 0,
-              startAngle: Math.atan2(e.clientY - sc.y, e.clientX - sc.x),
-            });
-          }}
-          onResizeStart={(e, corner) => {
-            startHandleGesture(e, "resize", {
-              id: selItem.id,
-              corner,
-              startW: itemWidth(selItem),
-              startH: itemHeight(selItem),
-              startX: selItem.x,
-              startY: selItem.y,
-              aspect: selItem.type === "image",
-            });
-          }}
-          onScaleStart={(e) => {
-            startHandleGesture(e, "scale", { id: selItem.id, startScale: selItem.scale ?? 1 });
-          }}
-        />
-      )}
-
-      {selCaptureInfo?.canCapture && !walking && !historyReplay && selItem && (
-        <SelectionCaptureChip
-          bbox={itemScreenBBox(selItem)}
-          onSave={saveSelectionAsFunction}
-          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
-          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
-          onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
-          onShareJourney={() => shareJourneyLink(selItem.id)}
-          aiDragIds={[selItem.id]}
-          sketchBundle={selectionSketchBundle}
-          onTransferDragStart={() => setTransferDragActive(true)}
-          onTransferDragEnd={() => setTransferDragActive(false)}
-        />
-      )}
-
-      {canTransform && !selCaptureInfo?.canCapture && !walking && !historyReplay && selItem && (
-        <SelectionCaptureChip
-          bbox={itemScreenBBox(selItem)}
-          aiDragIds={[selItem.id]}
-          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
-          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
-          sketchBundle={selectionSketchBundle}
-          onTransferDragStart={() => setTransferDragActive(true)}
-          onTransferDragEnd={() => setTransferDragActive(false)}
-        />
-      )}
-
-      {highlightSelectionIds.length >= 1 &&
-        highlightScreenBox &&
-        tool === "highlight" &&
-        !walking &&
-        !historyReplay && (
-        <SelectionCaptureChip
-          bbox={highlightScreenBox}
-          aiDragIds={highlightSelectionIds}
-          onSaveToFunctions={() => transferHighlightSelectionToFunctions(highlightSelectionIds)}
-          onSaveToStructures={() => transferHighlightSelectionToStructures(highlightSelectionIds)}
-          sketchBundle={highlightSketchBundle}
-          onTransferDragStart={() => setTransferDragActive(true)}
-          onTransferDragEnd={() => setTransferDragActive(false)}
-        />
-      )}
-
-      {selectionHasSketch && !canTransform && !walking && !historyReplay && selectionScreenBox && (
-        <SelectionCaptureChip
-          bbox={selectionScreenBox}
-          aiDragIds={selection}
-          onSaveToFunctions={() => captureMaterialWithReplay(selection)}
-          onSaveToStructures={() => saveMaterialAsSymbol(selection)}
-          sketchBundle={selectionSketchBundle}
-          onTransferDragStart={() => setTransferDragActive(true)}
-          onTransferDragEnd={() => setTransferDragActive(false)}
-        />
-      )}
-
       {/* brand moved to rail — canvas stays clean */}
       </div>
         </CanvasColumn>
@@ -9116,155 +9027,6 @@ function BoardText({
     >
       {item.text}
     </div>
-  );
-}
-
-function SelectionCaptureChip({
-  bbox,
-  onSave,
-  onSaveToFunctions,
-  onSaveToStructures,
-  onSaveDocument,
-  onShareJourney,
-  aiDragIds,
-  sketchBundle,
-  onTransferDragStart,
-  onTransferDragEnd,
-}) {
-  const cx = (bbox.left + bbox.right) / 2;
-  const dragPayload = (e) => {
-    if (sketchBundle) {
-      e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
-    }
-    e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
-    e.dataTransfer.effectAllowed = "copy";
-    onTransferDragStart?.();
-  };
-  return (
-    <div
-      className="sel-capture-chip-row"
-      data-tour="capture-chip"
-      style={{ left: cx, top: bbox.top - 34, transform: "translateX(-50%)" }}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      {aiDragIds?.length && (
-        <button
-          type="button"
-          className="sel-capture-chip ai"
-          draggable
-          onDragStart={dragPayload}
-          onDragEnd={() => onTransferDragEnd?.()}
-        >
-          → Explore
-        </button>
-      )}
-      {onSaveToFunctions && aiDragIds?.length && (
-        <button
-          type="button"
-          className="sel-capture-chip functions"
-          draggable
-          onDragStart={dragPayload}
-          onDragEnd={() => onTransferDragEnd?.()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSaveToFunctions();
-          }}
-        >
-          Save lens
-        </button>
-      )}
-      {onSaveToStructures && aiDragIds?.length && (
-        <button
-          type="button"
-          className="sel-capture-chip structures"
-          draggable
-          onDragStart={dragPayload}
-          onDragEnd={() => onTransferDragEnd?.()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSaveToStructures();
-          }}
-        >
-          Save symbol
-        </button>
-      )}
-      {onSaveDocument && (
-        <button
-          type="button"
-          className="sel-capture-chip doc"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSaveDocument();
-          }}
-        >
-          Save as document
-        </button>
-      )}
-      {onSave && (
-      <button
-        type="button"
-        className="sel-capture-chip"
-        onClick={(e) => {
-          e.stopPropagation();
-          onSave();
-        }}
-      >
-        Save
-      </button>
-      )}
-      {onShareJourney && (
-        <button
-          type="button"
-          className="sel-capture-chip share"
-          onClick={(e) => {
-            e.stopPropagation();
-            onShareJourney();
-          }}
-        >
-          ↗ share
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ScreenTransformHandles({ bbox, onRotateStart, onResizeStart, onScaleStart }) {
-  const w = bbox.right - bbox.left;
-  const h = bbox.bottom - bbox.top;
-  const cx = (bbox.left + bbox.right) / 2;
-  const handles = [
-    ["nw", bbox.left, bbox.top],
-    ["ne", bbox.right, bbox.top],
-    ["se", bbox.right, bbox.bottom],
-    ["sw", bbox.left, bbox.bottom],
-  ];
-  return (
-    <>
-      <div
-        className="xform-outline-screen"
-        style={{ left: bbox.left, top: bbox.top, width: w, height: h }}
-      />
-      {handles.map(([corner, x, y]) => (
-        <div
-          key={corner}
-          className="xform-handle corner"
-          style={{ left: x - 5, top: y - 5 }}
-          onPointerDown={(e) => onResizeStart(e, corner)}
-        />
-      ))}
-      <div
-        className="xform-handle rotate"
-        style={{ left: cx - 6, top: bbox.top - 30 }}
-        onPointerDown={onRotateStart}
-        title="rotate"
-      />
-      <div
-        className="xform-handle scale"
-        style={{ left: bbox.right + 6, top: bbox.top + h / 2 - 5 }}
-        onPointerDown={onScaleStart}
-        title="scale"
-      />
-    </>
   );
 }
 
