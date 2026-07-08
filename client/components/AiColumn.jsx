@@ -36,6 +36,7 @@ export default function AiColumn({
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
+  shouldHandoffNodeDrag,
   viewportRef,
   landingNodeIds,
   onPointerTrack,
@@ -76,6 +77,7 @@ export default function AiColumn({
             onFragmentReplace={onFragmentReplace}
             onFragmentToPaper={onFragmentToPaper}
             isPaperDestination={isPaperDestination}
+            shouldHandoffNodeDrag={shouldHandoffNodeDrag}
             viewportRef={viewportRef}
             onTourEvent={onTourEvent}
             landingNodeIds={landingNodeIds}

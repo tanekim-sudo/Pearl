@@ -54,6 +54,7 @@ export default function AiNodeCanvas({
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
+  shouldHandoffNodeDrag,
   viewportRef: externalViewportRef,
   onTourEvent,
   landingNodeIds,
@@ -504,7 +505,7 @@ export default function AiNodeCanvas({
     e.preventDefault();
     e.stopPropagation();
     onSelect?.(node.id, { replace: true });
-    onSpaceTransferStart?.(e, [node.id]);
+    onSpaceTransferStart?.(e, [node.id], { immediate: true });
   }
 
   function startNodeDrag(e, node) {
@@ -570,10 +571,9 @@ export default function AiNodeCanvas({
     e.stopPropagation();
     const startX = e.clientX;
     const startY = e.clientY;
-    const origX = node.x;
-    const origY = node.y;
-    const pending = { nodeId: node.id, startX, startY, origX, origY, scale: camera.scale };
+    const pending = { nodeId: node.id, startX, startY, scale: camera.scale };
     let dragging = false;
+    let handoff = false;
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -581,7 +581,14 @@ export default function AiNodeCanvas({
       /* ignore */
     }
 
+    function cleanupDragListeners() {
+      window.removeEventListener("pointermove", handleDragMove);
+      window.removeEventListener("pointerup", handleDragEnd);
+      window.removeEventListener("pointercancel", handleDragEnd);
+    }
+
     function handleDragMove(ev) {
+      if (handoff) return;
       if (!dragging) {
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) return;
@@ -591,12 +598,29 @@ export default function AiNodeCanvas({
         ev.preventDefault();
       }
       if (!dragRef.current) return;
-      const dx = (ev.clientX - dragRef.current.startX) / dragRef.current.scale;
-      const dy = (ev.clientY - dragRef.current.startY) / dragRef.current.scale;
-      onMove?.(dragRef.current.nodeId, dragRef.current.origX + dx, dragRef.current.origY + dy);
+
+      if (shouldHandoffNodeDrag?.(ev.clientX, ev.clientY)) {
+        handoff = true;
+        dragRef.current = null;
+        document.body.classList.remove("ai-node-dragging");
+        cleanupDragListeners();
+        try {
+          e.currentTarget.releasePointerCapture(ev.pointerId);
+        } catch {
+          /* ignore */
+        }
+        onSpaceTransferStart?.(ev, [node.id], { immediate: true });
+        return;
+      }
+
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const world = screenToWorld(cameraRef.current, ev.clientX - rect.left, ev.clientY - rect.top);
+      onMove?.(dragRef.current.nodeId, world.x, world.y);
     }
 
     function handleDragEnd(ev) {
+      if (handoff) return;
       if (!dragging) {
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) {
@@ -613,9 +637,7 @@ export default function AiNodeCanvas({
       } catch {
         /* ignore */
       }
-      window.removeEventListener("pointermove", handleDragMove);
-      window.removeEventListener("pointerup", handleDragEnd);
-      window.removeEventListener("pointercancel", handleDragEnd);
+      cleanupDragListeners();
     }
 
     window.addEventListener("pointermove", handleDragMove);

@@ -2558,46 +2558,58 @@ export default function App() {
     };
   }
 
-  function syncPaperDragTransferUI(ids, clientX, clientY) {
-    const target = resolveTransferDropTarget("paper", clientX, clientY);
-    const overToolbox = target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES;
-    const overAi = target === "ai";
-    const nearLeft = isNearLeftTransferBoundary(clientX);
-    const nearRight = isNearTransferBoundary(clientX);
-    const inTransferZone = overAi || overToolbox || nearLeft || nearRight;
-
-    setBoundaryMagnetActive(inTransferZone);
-    setTransferDragActive(inTransferZone);
-    setRailDropOver(overToolbox);
-    if (target === RAIL_LENSES) {
-      setSymbolDropTargetId(structCardAtClient(clientX, clientY));
-    } else {
-      setSymbolDropTargetId(null);
-    }
-
-    if (!inTransferZone) {
-      setSpaceTransferGhost(null);
-      return null;
-    }
-    setSpaceTransferGhost(buildSpaceTransferGhost("paper", ids, clientX, clientY, target));
-    return target;
-  }
-
   function launchToolboxTransfer(target) {
     focusRailPane(target === RAIL_LENSES ? RAIL_LENSES : RAIL_TRANSFORMATIONS);
     pulseFunctionsRail();
   }
 
-  function transferGhostAnchor(origin, ids, clientX, clientY) {
-    if (origin === "paper" && ids?.length) {
-      const bb = selectionWorldBBoxForIds(ids);
-      if (bb) {
-        const tl = worldToClient(bb.minx, bb.miny);
-        const br = worldToClient(bb.maxx, bb.maxy);
-        return { cx: (tl.x + br.x) / 2, cy: tl.y - 8 };
-      }
-    }
+  function transferGhostAnchor(_origin, _ids, clientX, clientY) {
     return { cx: clientX, cy: clientY };
+  }
+
+  function isPaperDragTransferZone(clientX, clientY) {
+    const target = resolveTransferDropTarget("paper", clientX, clientY);
+    return (
+      (target && target !== "paper") ||
+      isNearLeftTransferBoundary(clientX) ||
+      isNearTransferBoundary(clientX)
+    );
+  }
+
+  function shouldHandoffAiNodeDrag(clientX, clientY) {
+    return (
+      isOverPaperColumn(clientX, clientY) ||
+      isNearAiTransferBoundary(clientX) ||
+      isOverFunctionsColumn(clientX, clientY)
+    );
+  }
+
+  function handoffPaperMoveToSpaceTransfer(g, cx, cy) {
+    const next = {
+      mode: "space-transfer",
+      origin: "paper",
+      ids: g.ids.slice(),
+      kind: g.kind || null,
+      activated: true,
+      cx: g.cx,
+      cy: g.cy,
+      lastCx: cx,
+      lastCy: cy,
+      previewBox: computeTransferPreviewBox("paper", g.ids),
+      preview: transferPreviewText("paper", g.ids),
+    };
+    gesture.current = next;
+    activateSpaceTransfer(next, cx, cy);
+    const target = resolveSpaceTransferTarget("paper", cx, cy);
+    setBoundaryMagnetActive(true);
+    setTransferDragActive(true);
+    setRailDropOver(target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES);
+    if (target === RAIL_LENSES) {
+      setSymbolDropTargetId(structCardAtClient(cx, cy));
+    } else {
+      setSymbolDropTargetId(null);
+    }
+    setSpaceTransferGhost(buildSpaceTransferGhost("paper", g.ids, cx, cy, target));
   }
 
   function getAiDropWorldFromClient(clientX, clientY) {
@@ -2646,22 +2658,28 @@ export default function App() {
     const previewBox = opts.previewBox || computeTransferPreviewBox(origin, ids);
     const preview = transferPreviewText(origin, ids);
     setGesturing(true);
+    const immediate = !!opts.immediate;
     gesture.current = {
-      mode: "pending-space-transfer",
+      mode: immediate ? "space-transfer" : "pending-space-transfer",
       origin,
       ids: ids.slice(),
       kind: opts.kind || null,
       previewBox,
       preview,
+      activated: immediate,
       cx: e.clientX,
       cy: e.clientY,
       lastCx: e.clientX,
       lastCy: e.clientY,
     };
     setTransferDragActive(true);
+    const target = immediate ? resolveSpaceTransferTarget(origin, e.clientX, e.clientY) : null;
     setSpaceTransferGhost(
-      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, null)
+      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, target)
     );
+    if (immediate) {
+      setBoundaryMagnetActive(true);
+    }
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
@@ -3050,27 +3068,31 @@ export default function App() {
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const transferTarget = syncPaperDragTransferUI(g.ids, cx, cy);
+        if (isPaperDragTransferZone(cx, cy)) {
+          handoffPaperMoveToSpaceTransfer(g, cx, cy);
+          return;
+        }
+        setBoundaryMagnetActive(false);
+        setTransferDragActive(false);
+        setSpaceTransferGhost(null);
         const dx = (cx - g.cx) / camRef.current.scale;
         const dy = (cy - g.cy) / camRef.current.scale;
         g.cx = cx;
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
-        if (!transferTarget) {
-          const ids = new Set(g.ids);
-          setItems((arr) =>
-            arr.map((it) => {
-              if (!ids.has(it.id)) return it;
-              if (it.type === "stroke") {
-                return clampItemToPaper(
-                  { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
-                  itemWorldBBox
-                );
-              }
-              return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
-            })
-          );
-        }
+        const ids = new Set(g.ids);
+        setItems((arr) =>
+          arr.map((it) => {
+            if (!ids.has(it.id)) return it;
+            if (it.type === "stroke") {
+              return clampItemToPaper(
+                { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
+                itemWorldBBox
+              );
+            }
+            return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
+          })
+        );
       } else if (g.mode === "pending") {
         if (g.intent === "clone") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -8561,13 +8583,15 @@ export default function App() {
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           tool={tool}
-          onSpaceTransferStart={(e, nodeIds) => {
+          onSpaceTransferStart={(e, nodeIds, opts = {}) => {
             const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
             if (!ids.length) return;
             startPendingSpaceTransfer(e, "ai", ids, {
-              kind: toolRef.current === "highlight" ? "highlight" : null,
+              kind: opts.kind ?? (toolRef.current === "highlight" ? "highlight" : null),
+              immediate: opts.immediate,
             });
           }}
+          shouldHandoffNodeDrag={shouldHandoffAiNodeDrag}
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
           onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
           isPaperDestination={(x, y) => isOverPaperColumn(x, y)}

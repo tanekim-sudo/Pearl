@@ -998,7 +998,6 @@ body {
   z-index: 10050;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: left 0.12s ease-out, top 0.12s ease-out;
 }
 
 .transfer-morph {
@@ -1026,7 +1025,7 @@ body {
     0 0 0 3px rgba(240, 195, 80, 0.2),
     0 0 26px rgba(255, 205, 85, 0.35),
     0 12px 32px rgba(0, 0, 0, 0.28);
-  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
 }
 
 .transfer-morph-count {
@@ -1050,7 +1049,7 @@ body {
   position: absolute;
   width: 52px;
   height: 52px;
-  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
 }
 
 .transfer-morph-orb-glow {
@@ -1117,7 +1116,7 @@ body {
     0 10px 28px rgba(0, 0, 0, 0.22);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
 }
 
 .transfer-morph-function-badge {
@@ -1154,7 +1153,7 @@ body {
   transform: translate(-50%, -50%) scale(0.35);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
 }
 
 .transfer-morph-symbol-ring {
