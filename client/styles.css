@@ -1557,41 +1557,11 @@ body {
   color: var(--chalk-yellow-muted);
   white-space: nowrap;
 }
-.lens-card-moves,
-.lens-card-flow {
+.lens-card-moves {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   margin: 7px 0 5px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 2px;
-}
-.lens-flow-arrow {
-  font-size: 11px;
-  color: var(--faint);
-  flex-shrink: 0;
-}
-.rail-scroll-horizontal {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 6px;
-  align-items: stretch;
-}
-.rail-scroll-horizontal .lens-card,
-.rail-scroll-horizontal .struct-card-wrap {
-  flex: 0 0 auto;
-  min-width: 220px;
-  max-width: 280px;
-  margin: 0;
-}
-.rail-lenses-scroll .lens-card {
-  min-width: 240px;
 }
 .struct-card-horizontal .struct-card {
   display: flex;
@@ -3378,6 +3348,62 @@ body {
   grid-template-columns: 1fr min(340px, 32vw);
   gap: 0;
   border-top: 1px solid var(--line);
+}
+.fn-editor-body-vertical {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: unset;
+  min-height: 0;
+}
+.fn-editor-body-vertical .fn-palette-strip {
+  flex-shrink: 0;
+  border-right: none;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 16px;
+  overflow: visible;
+}
+.fn-editor-body-vertical .fn-palette-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+}
+.fn-editor-body-vertical .fn-palette-group-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0;
+  margin-right: 12px;
+}
+.fn-editor-body-vertical .fn-palette-group-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fn-editor-body-vertical .fn-palette-group-label {
+  margin-bottom: 0;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.fn-editor-body-vertical .fn-palette-block {
+  width: auto;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.fn-editor-body-vertical .fn-tree-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.fn-editor-body-vertical .fn-editor-side-bottom {
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  border-left: none;
+  padding: 14px 20px 18px;
+  max-height: min(240px, 28vh);
+  overflow-y: auto;
 }
 .fn-editor-body-3col {
   grid-template-columns: min(200px, 22vw) 1fr min(300px, 30vw);

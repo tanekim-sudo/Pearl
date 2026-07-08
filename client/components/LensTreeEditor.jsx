@@ -343,7 +343,7 @@ export default function LensTreeEditor({
           <div>
             <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
             <p className="fn-head-sub">
-              Build a sequence of steps · drag to reorder · describe changes with AI on the right
+              Steps flow top to bottom · drag to reorder · describe changes with AI below
             </p>
           </div>
           <div className="fn-head-actions">
@@ -363,10 +363,10 @@ export default function LensTreeEditor({
           </div>
         </div>
 
-        <div className="fn-editor-body fn-editor-body-3col">
-          <aside className="fn-palette">
-            <div className="fn-palette-title">blocks</div>
-            <p className="fn-palette-hint">Drag onto a sequence to add a step</p>
+        <div className="fn-editor-body fn-editor-body-vertical">
+          <aside className="fn-palette fn-palette-strip">
+            <div className="fn-palette-title">Add blocks</div>
+            <div className="fn-palette-blocks">
             <button
               type="button"
               className="fn-palette-block"
@@ -395,8 +395,9 @@ export default function LensTreeEditor({
             {paletteGroups
               .filter((g) => g.ops?.length)
               .map((g) => (
-                <div key={g.label} className="fn-palette-group">
+                <div key={g.label} className="fn-palette-group fn-palette-group-inline">
                   <div className="fn-palette-group-label">{g.label}</div>
+                  <div className="fn-palette-group-blocks">
                   {g.ops.map((op) => (
                     <button
                       key={op.id}
@@ -412,8 +413,10 @@ export default function LensTreeEditor({
                       {op.name}
                     </button>
                   ))}
+                  </div>
                 </div>
               ))}
+            </div>
           </aside>
 
           <div className="fn-tree-scroll">
@@ -441,7 +444,7 @@ export default function LensTreeEditor({
             ) : (
               <div className="fn-create-panel">
                 <p className="fn-hint">
-                  Describe what this lens should do, drag blocks from the left, or fill in the fields below.
+                  Describe what this lens should do, drag blocks from above, or fill in the fields below.
                 </p>
                 <label>name</label>
                 <input
@@ -466,7 +469,7 @@ export default function LensTreeEditor({
             )}
           </div>
 
-          <aside className="fn-editor-side">
+          <aside className="fn-editor-side fn-editor-side-bottom">
             <label>{rootDraft ? "revise with words" : "describe with words"}</label>
             {focusLabel && rootDraft && (
               <p className="fn-focus-hint">

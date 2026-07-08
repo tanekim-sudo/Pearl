@@ -7959,7 +7959,7 @@ export default function App() {
                   <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>Save as lens</button>
                 </div>
               )}
-              <div className="rail-scroll rail-scroll-horizontal rail-lenses-scroll">
+              <div className="rail-scroll">
                 {lensRepos.length > 0 && (
                   <>
                     <div className="rail-section" data-tour="lenses-section">Lenses</div>
@@ -7984,7 +7984,7 @@ export default function App() {
               <p className="rail-structures-hint">
                 AI reads each symbol’s meaning · edit its viewing lens · drag onto paper to apply
               </p>
-              <div className="rail-scroll rail-scroll-horizontal">
+              <div className="rail-scroll">
                 {structures.map((struct) => (
                   <StructureCard
                     key={struct.id}
@@ -9605,14 +9605,13 @@ function LensCard({
       {crumbs.length > 1 && depth > 0 && (
         <div className="lens-card-crumb">{crumbs.slice(0, -1).join(" → ")}</div>
       )}
-      <div className="lens-card-flow">
-        {moveNames.slice(0, 8).map((n, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <span className="lens-flow-arrow" aria-hidden>→</span>}
-            <span className="lens-move-chip">{n}</span>
-          </React.Fragment>
+      <div className="lens-card-moves">
+        {moveNames.slice(0, 6).map((n, i) => (
+          <span key={i} className="lens-move-chip">
+            {n}
+          </span>
         ))}
-        {moveNames.length > 8 && <span className="lens-move-chip more">+{moveNames.length - 8}</span>}
+        {moveNames.length > 6 && <span className="lens-move-chip more">+{moveNames.length - 6}</span>}
       </div>
       {metaLines.length > 0 && (
         <div className="lens-card-meta">
