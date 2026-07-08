@@ -2238,20 +2238,18 @@ export default function App() {
     }
   }, [selection]);
 
-  const prevSelectionRef = useRef([]);
   useEffect(() => {
-    if (gesturing || editing || walking || historyReplay) return;
-    if (selection.length !== 1) {
-      prevSelectionRef.current = selection;
-      return;
+    setSpaceTransferGhost(null);
+    setTransferDragActive(false);
+    setBoundaryMagnetActive(false);
+    setSymbolDropTargetId(null);
+    if (historyReplayRef.current?.itemId && selection.length) {
+      if (!selection.includes(historyReplayRef.current.itemId)) {
+        endHistoryReplay();
+      }
     }
-    const [id] = selection;
-    if (prevSelectionRef.current.length === 1 && prevSelectionRef.current[0] === id) return;
-    prevSelectionRef.current = selection;
-    const item = itemsRef.current.find((it) => it.id === id);
-    if (item) centerCameraOnItem(item);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection, gesturing, editing, walking, historyReplay]);
+  }, [selection]);
 
   function showToast(msg) {
     setToast(msg);
@@ -2479,7 +2477,7 @@ export default function App() {
 
   function resolveSpaceTransferTarget(origin, clientX, clientY) {
     if (origin === "paper") {
-      if (isOverAiColumn(clientX, clientY) || isNearTransferBoundary(clientX)) return "ai";
+      if (isOverAiColumn(clientX, clientY)) return "ai";
       if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
       if (isOverPaperColumn(clientX, clientY)) return "paper";
       return null;
@@ -2488,6 +2486,27 @@ export default function App() {
     if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
     if (isOverAiColumn(clientX, clientY)) return "ai";
     return null;
+  }
+
+  function resolveTransferDropTarget(origin, clientX, clientY) {
+    const target = resolveSpaceTransferTarget(origin, clientX, clientY);
+    if (origin === "paper" && !target && (isOverAiColumn(clientX, clientY) || isNearTransferBoundary(clientX))) {
+      return "ai";
+    }
+    if (origin === "ai" && !target && isNearAiTransferBoundary(clientX)) return "paper";
+    return target;
+  }
+
+  function transferGhostAnchor(origin, ids, clientX, clientY) {
+    if (origin === "paper" && ids?.length) {
+      const bb = selectionWorldBBoxForIds(ids);
+      if (bb) {
+        const tl = worldToClient(bb.minx, bb.miny);
+        const br = worldToClient(bb.maxx, bb.maxy);
+        return { cx: (tl.x + br.x) / 2, cy: tl.y - 8 };
+      }
+    }
+    return { cx: clientX, cy: clientY };
   }
 
   function getAiDropWorldFromClient(clientX, clientY) {
@@ -2549,9 +2568,10 @@ export default function App() {
       lastCy: e.clientY,
     };
     setTransferDragActive(true);
+    const anchor = transferGhostAnchor(origin, ids, e.clientX, e.clientY);
     setSpaceTransferGhost({
-      cx: e.clientX,
-      cy: e.clientY,
+      cx: anchor.cx,
+      cy: anchor.cy,
       count: ids.length,
       target: null,
       origin,
@@ -2575,9 +2595,10 @@ export default function App() {
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
     if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
+    const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
     setSpaceTransferGhost({
-      cx,
-      cy,
+      cx: anchor.cx,
+      cy: anchor.cy,
       count: g.ids.length,
       target: null,
       origin: g.origin,
@@ -2873,9 +2894,10 @@ export default function App() {
         g.lastCx = cx;
         g.lastCy = cy;
         const target = resolveSpaceTransferTarget(g.origin, cx, cy);
+        const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
         setSpaceTransferGhost({
-          cx,
-          cy,
+          cx: anchor.cx,
+          cy: anchor.cy,
           count: g.ids.length,
           target,
           origin: g.origin,
@@ -2909,9 +2931,10 @@ export default function App() {
           setSymbolDropTargetId(null);
         }
         setTransferDragActive(true);
+        const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
         setSpaceTransferGhost({
-          cx,
-          cy,
+          cx: anchor.cx,
+          cy: anchor.cy,
           count: g.ids.length,
           target,
           origin: g.origin,
@@ -2970,22 +2993,9 @@ export default function App() {
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const overAi = isOverAiColumn(cx, cy) || isNearTransferBoundary(cx);
-        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        const overAi = isOverAiColumn(cx, cy);
+        setBoundaryMagnetActive(isNearTransferBoundary(cx) && !overAi);
         setTransferDragActive(overAi);
-        if (overAi) {
-          restoreMovePositions(g.startPositions);
-          setSpaceTransferGhost({
-            cx,
-            cy,
-            count: g.ids.length,
-            target: "ai",
-            origin: "paper",
-            preview: transferPreviewText("paper", g.ids),
-            previewBox: computeTransferPreviewBox("paper", g.ids),
-          });
-          return;
-        }
         setSpaceTransferGhost(null);
         const dx = (cx - g.cx) / camRef.current.scale;
         const dy = (cy - g.cy) / camRef.current.scale;
@@ -6864,15 +6874,10 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click object: replay history · blank paper: new text box · text: edit
+  // double-click object: edit text · blank paper: new text box · ◷ for history replay
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
-    if (hit && isReplayableItem(hit)) {
-      e.preventDefault();
-      startHistoryReplay(hit.id);
-      return;
-    }
     if (hit && isEditableBlock(hit)) {
       e.preventDefault();
       setSelection([hit.id]);
@@ -7506,7 +7511,7 @@ export default function App() {
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     emitTourEvent("transfer");
     const fromClient = { x: cx, y: cy };
-    const target = resolveSpaceTransferTarget(g.origin, cx, cy);
+    const target = resolveTransferDropTarget(g.origin, cx, cy);
 
     if (g.origin === "paper" && target === "ai") {
       const ids = g.ids;

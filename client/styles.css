@@ -2132,7 +2132,12 @@ body {
   font-size: 15px;
   line-height: 1.45;
 }
-.viewport.history-replay-active .world {
+.viewport.history-replay-active .ink-layer,
+.viewport.history-replay-active .board-text,
+.viewport.history-replay-active .board-img,
+.viewport.history-replay-active .board-sticky,
+.viewport.history-replay-active .board-callout,
+.viewport.history-replay-active .board-block {
   pointer-events: none;
 }
 
