@@ -173,18 +173,15 @@ import {
 } from "./lib/highlight-ink.js";
 import {
   appendItemHistory,
-  buildItemTimeline,
   buildPerceptualCaptureFromItem,
   createHistoryEvent,
   isReplayableItem,
   itemSnapshot,
   loadItemHistoryLog,
-  replayStepDuration,
   saveItemHistoryLog,
   snapshotWorldBBox,
   truncatePreview,
 } from "./lib/item-history.js";
-import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
 import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
@@ -1957,8 +1954,6 @@ export default function App() {
   });
   // walking: { nodeId, title, steps: [...], stepIndex } — derived from a node's history on demand
   const [walking, setWalking] = useState(null);
-  // historyReplay: paper object timeline — { itemId, title, steps, stepIndex, playing }
-  const [historyReplay, setHistoryReplay] = useState(null);
   const [itemHistoryLog, setItemHistoryLog] = useState(() => loadItemHistoryLog());
   // lenses: named sets of recurring moves — git for perception
   const [lenses, setLenses] = useState(() => {
@@ -2024,7 +2019,6 @@ export default function App() {
   );
   const prevSessionRef = useRef("unresolved");
   const [railPulse, setRailPulse] = useState(false);
-  const [functionsCaptureReplay, setFunctionsCaptureReplay] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
   const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
   const [pages, setPages] = useState(() => {
@@ -2236,19 +2230,6 @@ export default function App() {
       captureSelRef.current = id;
       setCaptureNameOverride(null);
     }
-  }, [selection]);
-
-  useEffect(() => {
-    setSpaceTransferGhost(null);
-    setTransferDragActive(false);
-    setBoundaryMagnetActive(false);
-    setSymbolDropTargetId(null);
-    if (historyReplayRef.current?.itemId && selection.length) {
-      if (!selection.includes(historyReplayRef.current.itemId)) {
-        endHistoryReplay();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection]);
 
   function showToast(msg) {
@@ -4225,12 +4206,8 @@ export default function App() {
 
   const walkingRef = useRef(walking);
   walkingRef.current = walking;
-  const historyReplayRef = useRef(historyReplay);
-  historyReplayRef.current = historyReplay;
   const itemHistoryLogRef = useRef(itemHistoryLog);
   itemHistoryLogRef.current = itemHistoryLog;
-  const historyPlayTimerRef = useRef(null);
-  const historyCaptureCallbackRef = useRef(null);
   const camAnimCancelRef = useRef(null);
   const paperVpSizeRef = useRef({ w: 0, h: 0 });
   const aiVpSizeRef = useRef({ w: 0, h: 0 });
@@ -4323,14 +4300,6 @@ export default function App() {
       };
     }
     return step.fallbackCenter || null;
-  }
-
-  function snapshotScreenBBox(snap) {
-    const bb = snapshotWorldBBox(snap);
-    if (!bb) return null;
-    const tl = worldToClient(bb.minx, bb.miny);
-    const br = worldToClient(bb.maxx, bb.maxy);
-    return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
   }
 
   function stepFocusScale(focus) {
@@ -4688,40 +4657,7 @@ export default function App() {
     return null;
   }
 
-  function playCaptureHistoryReplay(itemId, onComplete) {
-    const item = itemsRef.current.find((it) => it.id === itemId);
-    if (!item || !isReplayableItem(item)) {
-      onComplete?.();
-      return false;
-    }
-    const timeline = buildItemTimeline(itemId, { item, ...historyCaptureContext() });
-    if (!timeline?.steps?.length || timeline.steps.length < 2) {
-      onComplete?.();
-      return false;
-    }
-    finishEditing();
-    setWalking(null);
-    historyCaptureCallbackRef.current = onComplete;
-    setFunctionsCaptureReplay(true);
-    emitTourEvent("history-replay");
-    setHistoryReplay({ ...timeline, stepIndex: 0, playing: true });
-    return true;
-  }
-
   function captureMaterialWithReplay(ids, opts = {}) {
-    const paperIds = ids.filter((id) => {
-      const it = itemsRef.current.find((x) => x.id === id);
-      return it && isReplayableItem(it);
-    });
-    const primaryId = paperIds.length ? pickPrimaryCaptureId(paperIds) : null;
-    if (primaryId) {
-      const played = playCaptureHistoryReplay(primaryId, () => {
-        setFunctionsCaptureReplay(false);
-        endHistoryReplay();
-        captureMaterialAsFunction(ids, opts);
-      });
-      if (played) return;
-    }
     captureMaterialAsFunction(ids, opts);
   }
 
@@ -4737,139 +4673,6 @@ export default function App() {
     }
   }
 
-  function startHistoryReplay(itemId) {
-    const item = itemsRef.current.find((it) => it.id === itemId);
-    if (!item || !isReplayableItem(item)) {
-      showToast("nothing to replay yet");
-      return;
-    }
-    finishEditing();
-    setWalking(null);
-    const timeline = buildItemTimeline(itemId, {
-      item,
-      allItems: itemsRef.current,
-      aiNodes: aiNodesRef.current,
-      pages,
-      historyLog: itemHistoryLogRef.current,
-    });
-    if (!timeline?.steps?.length) {
-      showToast("nothing to replay yet");
-      return;
-    }
-    setSelection([itemId]);
-    emitTourEvent("history-replay");
-    setHistoryReplay({ ...timeline, stepIndex: 0, playing: false });
-  }
-
-  function historyReplayTo(stepIndex) {
-    const r = historyReplayRef.current;
-    if (!r) return;
-    setHistoryReplay({ ...r, stepIndex: clamp(stepIndex, 0, r.steps.length - 1) });
-  }
-
-  function endHistoryReplay() {
-    if (historyPlayTimerRef.current) {
-      clearTimeout(historyPlayTimerRef.current);
-      historyPlayTimerRef.current = null;
-    }
-    historyCaptureCallbackRef.current = null;
-    setFunctionsCaptureReplay(false);
-    setHistoryReplay(null);
-  }
-
-  function toggleHistoryReplayPlay() {
-    const r = historyReplayRef.current;
-    if (!r) return;
-    setHistoryReplay({ ...r, playing: !r.playing });
-  }
-
-  // camera follows history replay
-  useEffect(() => {
-    if (!historyReplay) return;
-    const step = historyReplay.steps?.[historyReplay.stepIndex];
-    if (!step) return;
-    const focus = stepFocusCenter(step);
-    if (focus) animateCameraTo(focus, stepFocusScale(focus));
-
-    if (step.aiNodeId) {
-      const node = aiNodesRef.current.find((n) => n.id === step.aiNodeId);
-      const el = aiViewportRef.current;
-      if (node && el) {
-        if (step.kind === "expand" && (node.expandedText || node.preview)) {
-          animateAiCameraTo(aiCardCameraFor(node, el), 520);
-        } else {
-          animateAiCameraTo(
-            focusAiNode(node, el.clientWidth, el.clientHeight, 0.42),
-            520
-          );
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyReplay?.itemId, historyReplay?.stepIndex]);
-
-  // auto-advance while playing
-  useEffect(() => {
-    if (!historyReplay?.playing) {
-      if (historyPlayTimerRef.current) {
-        clearTimeout(historyPlayTimerRef.current);
-        historyPlayTimerRef.current = null;
-      }
-      return;
-    }
-    const r = historyReplayRef.current;
-    if (!r) return;
-    const step = r.steps[r.stepIndex];
-    const ms = replayStepDuration(step?.kind);
-    historyPlayTimerRef.current = window.setTimeout(() => {
-      const cur = historyReplayRef.current;
-      if (!cur?.playing) return;
-      if (cur.stepIndex >= cur.steps.length - 1) {
-        setHistoryReplay({ ...cur, playing: false });
-        const cb = historyCaptureCallbackRef.current;
-        if (cb) {
-          historyCaptureCallbackRef.current = null;
-          window.setTimeout(cb, 480);
-        }
-        return;
-      }
-      historyReplayTo(cur.stepIndex + 1);
-    }, ms);
-    return () => {
-      if (historyPlayTimerRef.current) {
-        clearTimeout(historyPlayTimerRef.current);
-        historyPlayTimerRef.current = null;
-      }
-    };
-  }, [historyReplay?.playing, historyReplay?.stepIndex, historyReplay?.itemId]);
-
-  // keyboard + click-outside while replaying
-  useEffect(() => {
-    if (!historyReplay) return;
-    function onKey(e) {
-      const typing = e.target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target.tagName || "");
-      if (typing) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        endHistoryReplay();
-      } else if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        toggleHistoryReplayPlay();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        const r = historyReplayRef.current;
-        if (r && r.stepIndex < r.steps.length - 1) historyReplayTo(r.stepIndex + 1);
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        historyReplayTo((historyReplayRef.current?.stepIndex ?? 0) - 1);
-      }
-    }
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () => {
-      window.removeEventListener("keydown", onKey, { capture: true });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!historyReplay]);
   useEffect(() => {
     if (!walking) return;
     const step = walking.steps?.[walking.stepIndex];
@@ -6039,7 +5842,7 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  /** Pan + zoom AI camera so transferred nodes land in view and can morph to text. */
+  /** Pan camera so drop-pinned nodes stay under the pointer after landing. */
   function launchPaperToAiTransfer({ nodeIds = [], focusWorld = null }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
@@ -6057,15 +5860,23 @@ export default function App() {
       const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
       if (!el || !landed.length) return;
 
-      const expanded =
-        landed.find((n) => n.nodeKind === "expanded") || landed[landed.length - 1];
-      const focusNode = focusWorld
-        ? { ...expanded, x: focusWorld.x, y: focusWorld.y }
-        : expanded;
-      animateAiCameraTo(
-        focusAiNode(focusNode, el.clientWidth, el.clientHeight, 1.05),
-        620
-      );
+      const cam = aiCamRef.current;
+      const scale = cam.scale;
+      const vpW = el.clientWidth;
+      const vpH = el.clientHeight;
+      const anchor = focusWorld || { x: landed[0].x, y: landed[0].y };
+      const sx = anchor.x * scale + cam.x;
+      const sy = anchor.y * scale + cam.y;
+      const margin = 72;
+      let x = cam.x;
+      let y = cam.y;
+      if (sx < margin) x += margin - sx;
+      if (sx > vpW - margin) x -= sx - (vpW - margin);
+      if (sy < margin) y += margin - sy;
+      if (sy > vpH - margin) y -= sy - (vpH - margin);
+      if (x !== cam.x || y !== cam.y) {
+        animateAiCameraTo({ scale, x, y }, 480);
+      }
     }, 280);
   }
 
@@ -7463,14 +7274,6 @@ export default function App() {
         loading: false,
         error: null,
       }));
-      const el = aiViewportRef.current;
-      const landed = aiNodesRef.current.find((n) => n.id === expandedNode.id);
-      if (el && landed) {
-        animateAiCameraTo(
-          focusAiNode(landed, el.clientWidth, el.clientHeight, 1.35),
-          520
-        );
-      }
     } catch (err) {
       updateAiNode(expandedNode.id, {
         loading: false,
@@ -7849,21 +7652,6 @@ export default function App() {
         .filter(Boolean)
         .map((it) => itemScreenBBox(it))
     : [];
-  const historyReplayStep = historyReplay?.steps?.[historyReplay.stepIndex] || null;
-  const historyReplayFocusRects = historyReplayStep
-    ? historyReplayStep.itemIds
-        .map((id) => {
-          const it = items.find((i) => i.id === id);
-          if (it) {
-            const bb = itemScreenBBox(it);
-            if (bb.right > bb.left && bb.bottom > bb.top) return bb;
-          }
-          const snap =
-            historyReplayStep.itemSnapshot?.id === id ? historyReplayStep.itemSnapshot : null;
-          return snap ? snapshotScreenBBox(snap) : null;
-        })
-        .filter(Boolean)
-    : [];
   const cursorClass =
     panning
       ? "cur-grabbing"
@@ -7948,7 +7736,6 @@ export default function App() {
           columnRef={functionsColumnRef}
           collapsed={leftColCollapsed}
           dropOver={railDropOver}
-          captureReplay={functionsCaptureReplay}
           onPointerTrack={(cx, cy) => {
             lastPointerRef.current = { cx, cy };
           }}
@@ -8114,7 +7901,7 @@ export default function App() {
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
       <div
         ref={viewportRef}
-        className={"viewport" + (historyReplay ? " history-replay-active" : "")}
+        className="viewport"
         data-tour="paper-canvas"
         onPointerDown={
           editing
@@ -8263,39 +8050,6 @@ export default function App() {
               </>
             )}
           </svg>
-
-          {historyReplay && historyReplayStep?.priorSnapshot && (
-            <>
-              {historyReplayStep.priorSnapshot.type === "stroke" && historyReplayStep.priorSnapshot.points && (
-                <svg className="ink-layer history-replay-ghost-layer">
-                  <polyline
-                    points={historyReplayStep.priorSnapshot.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                    fill="none"
-                    stroke={historyReplayStep.priorSnapshot.color || PAPER_INK}
-                    strokeWidth={historyReplayStep.priorSnapshot.width || PEN_W}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="history-replay-ghost-stroke"
-                  />
-                </svg>
-              )}
-              {(historyReplayStep.priorSnapshot.type === "text" ||
-                historyReplayStep.priorSnapshot.type === "sticky" ||
-                historyReplayStep.priorSnapshot.type === "callout") &&
-                historyReplayStep.priorSnapshot.text && (
-                  <div
-                    className="history-replay-ghost-text board-text"
-                    style={{
-                      left: historyReplayStep.priorSnapshot.x,
-                      top: historyReplayStep.priorSnapshot.y,
-                      width: historyReplayStep.priorSnapshot.w || 360,
-                    }}
-                  >
-                    {historyReplayStep.priorSnapshot.text}
-                  </div>
-                )}
-            </>
-          )}
 
           {/* text + images */}
           {visibleItems
@@ -8516,38 +8270,6 @@ export default function App() {
           }
         }}
       />
-
-      {selItem && isReplayableItem(selItem) && !walking && !historyReplay && (
-        <button
-          type="button"
-          className="history-replay-trigger"
-          style={{
-            left: itemScreenBBox(selItem).right - 6,
-            top: itemScreenBBox(selItem).top - 6,
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            startHistoryReplay(selItem.id);
-          }}
-          title="Replay history"
-        >
-          ◷
-        </button>
-      )}
-
-      {historyReplay && historyReplayStep && (
-        <HistoryReplayOverlay
-          replay={historyReplay}
-          stepIndex={historyReplay.stepIndex}
-          step={historyReplayStep}
-          rects={historyReplayFocusRects}
-          playing={!!historyReplay.playing}
-          onScrub={historyReplayTo}
-          onPlayPause={toggleHistoryReplayPlay}
-          onExit={endHistoryReplay}
-          onBackdropClick={endHistoryReplay}
-        />
-      )}
 
       {symbolDrawPrompt && (
         <SymbolDrawOverlay
@@ -8799,40 +8521,6 @@ export default function App() {
           }}
           onCancel={() => setPendingBranch(null)}
         />
-      )}
-
-      {spaceTransferGhost && (
-        <div
-          className={
-            "space-transfer-ghost-wrap" +
-            (spaceTransferGhost.target === "ai"
-              ? " over-ai"
-              : spaceTransferGhost.target === "paper"
-                ? " over-paper"
-                : spaceTransferGhost.target === "functions"
-                  ? " over-functions"
-                  : spaceTransferGhost.target === "structures"
-                    ? " over-structures"
-                    : " over-boundary")
-          }
-          style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
-        >
-          <div className="transfer-morph">
-            <div className="transfer-morph-card">
-              {spaceTransferGhost.preview}
-              {spaceTransferGhost.count > 1 && (
-                <span className="transfer-morph-count">{spaceTransferGhost.count}</span>
-              )}
-            </div>
-            <div className="transfer-morph-orb">
-              <span className="transfer-morph-orb-glow" />
-              <span className="transfer-morph-orb-core" />
-              {spaceTransferGhost.count > 1 && (
-                <span className="transfer-morph-orb-count">{spaceTransferGhost.count}</span>
-              )}
-            </div>
-          </div>
-        </div>
       )}
 
       {cloneGhost && (
@@ -9355,7 +9043,7 @@ function LensCard({
       style={depth > 0 ? { marginLeft: depth * 14 } : undefined}
       onClick={(e) => {
         if (e.target.closest(".op-drag-grip, .lens-card-actions, .lens-menu, button")) return;
-        onEvolve();
+        onUse();
       }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(LENS_MIME)) {

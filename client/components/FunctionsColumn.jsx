@@ -2,7 +2,6 @@ import React from "react";
 
 export default function FunctionsColumn({
   dropOver,
-  captureReplay,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -17,8 +16,7 @@ export default function FunctionsColumn({
       className={
         "functions-column" +
         (collapsed ? " col-collapsed" : "") +
-        (dropOver ? " column-drop-over" : "") +
-        (captureReplay ? " capture-replay" : "")
+        (dropOver ? " column-drop-over" : "")
       }
       data-tour="functions-column"
       onDragOver={onDragOver}

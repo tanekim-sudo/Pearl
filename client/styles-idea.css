@@ -3270,8 +3270,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .board-main.transfer-drag .interpret-boundary-hit::before,
-.three-column-grid.transfer-drag .ai-column,
-.three-column-grid.transfer-drag .functions-column {
+.three-column-grid.transfer-drag .ai-column {
   background: color-mix(in srgb, var(--accent) 6%, var(--card));
 }
 
@@ -3439,10 +3438,11 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .idea-center .board-text.sel,
 .canvas-column .board-text.sel {
-  outline: none;
+  outline: 1px solid #1a73e8;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
   background: transparent;
   border-color: transparent;
-  box-shadow: none;
 }
 
 .canvas-column .board-img.sel,
