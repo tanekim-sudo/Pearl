@@ -707,7 +707,7 @@ export default function AiNodeCanvas({
   const contentBlend = zoomContentBlend(camera.scale);
   const invScale = 1 / Math.max(0.08, camera.scale);
   const edgeStroke = 2.6 * invScale;
-  const markerSize = Math.min(32, Math.max(12, 14 * invScale));
+  const markerSize = Math.min(14 * invScale, Math.max(7 * invScale, 5 * invScale));
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
@@ -838,6 +838,7 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
+              markerUnits="userSpaceOnUse"
               markerWidth={markerSize}
               markerHeight={markerSize}
               orient="auto"
@@ -849,6 +850,7 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
+              markerUnits="userSpaceOnUse"
               markerWidth={markerSize}
               markerHeight={markerSize}
               orient="auto"
@@ -860,6 +862,7 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
+              markerUnits="userSpaceOnUse"
               markerWidth={markerSize}
               markerHeight={markerSize}
               orient="auto"
@@ -871,6 +874,7 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
+              markerUnits="userSpaceOnUse"
               markerWidth={markerSize}
               markerHeight={markerSize}
               orient="auto"

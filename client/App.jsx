@@ -5621,7 +5621,8 @@ export default function App() {
       }
     }
 
-    exploreAiNode(nodeId, { runExpand: true });
+    // Keep camera and source node stable for strand gestures.
+    showToast("No expandable source attached to this strand");
   }
 
   // ---- lenses: branch, fork, merge, compare, upload — git for perception ----

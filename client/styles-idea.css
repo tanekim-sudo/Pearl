@@ -1399,28 +1399,17 @@ body.ai-strand-dragging * {
 }
 
 .ai-strand-drag-strand {
-  opacity: 0;
-  animation: ai-strand-fan-in 0.22s ease-out forwards;
-  animation-delay: calc(var(--strand-i, 0) * 0.04s);
-}
-
-@keyframes ai-strand-fan-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-    transform-origin: var(--strand-origin-x, 50%) var(--strand-origin-y, 50%);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  opacity: 1;
 }
 
 .ai-strand-drag-path {
   fill: none;
-  stroke-width: 2.5;
+  stroke-width: 2.35;
   stroke-linecap: round;
   stroke: rgba(180, 210, 255, 0.55);
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: ai-strand-draw 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   transition: stroke 0.12s ease, stroke-width 0.12s ease;
 }
 
