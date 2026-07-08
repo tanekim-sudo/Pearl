@@ -2780,13 +2780,15 @@ export default function App() {
       lastCx: e.clientX,
       lastCy: e.clientY,
     };
-    setTransferDragActive(true);
-    const target = immediate ? resolveSpaceTransferTarget(origin, e.clientX, e.clientY) : null;
-    setSpaceTransferGhost(
-      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, target, preview)
-    );
+    setTransferDragActive(immediate);
     if (immediate) {
+      const target = resolveSpaceTransferTarget(origin, e.clientX, e.clientY);
+      setSpaceTransferGhost(
+        buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, target, preview)
+      );
       setBoundaryMagnetActive(true);
+    } else {
+      setSpaceTransferGhost(null);
     }
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
@@ -2920,8 +2922,12 @@ export default function App() {
     }
 
     const { ids, sourceNode } = resolveNodeSourceIds(node);
-    if (ids?.length && !node.loading) {
-      expandInAi(ids, { sourceNode: sourceNode || node });
+    const { aiMaterial } = resolveAiOperatorInput(node);
+    if ((ids?.length || aiMaterial) && !node.loading) {
+      expandInAi(ids || [], {
+        sourceNode: sourceNode || node,
+        aiMaterial: aiMaterial || null,
+      });
     }
   }
 
@@ -3093,11 +3099,13 @@ export default function App() {
       } else if (g.mode === "pending-space-transfer") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const target = resolveSpaceTransferTarget(g.origin, cx, cy);
-        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
         if (dist > TRANSFER_DRAG_THRESHOLD) {
           activateSpaceTransfer(g, cx, cy);
+        }
+        if (g.mode === "space-transfer" || dist > TRANSFER_DRAG_THRESHOLD) {
+          const target = resolveSpaceTransferTarget(g.origin, cx, cy);
+          setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
         }
       } else if (g.mode === "space-transfer") {
         g.lastCx = cx;
@@ -4117,23 +4125,7 @@ export default function App() {
         showToast("drop onto a concept node");
         return;
       }
-      const { ids, sourceNode } = resolveNodeSourceIds(node);
-      if (!ids?.length) {
-        showToast("nothing to apply to on this node");
-        return;
-      }
-      if (isExpansionOperator(op)) {
-        expandInAi(ids, {
-          op,
-          opLabel: op.name,
-          expandedAt: world,
-          fromClient: atClient,
-          sourceNode: sourceNode || node,
-          stableCamera: true,
-        });
-      } else {
-        runOperator(op, ids, { atClient });
-      }
+      applyOperatorToAiNode(node, op, atClient);
       return;
     }
     applyOpDrop(opId, atClient);
@@ -4149,8 +4141,11 @@ export default function App() {
         showToast("drop onto a concept node");
         return;
       }
-      const { ids } = resolveNodeSourceIds(node);
-      runTransformationLensOnIds(lensId, ids, atClient);
+      const lens =
+        transformationRepos.find((l) => l.id === lensId) ||
+        displayTransformations.find((l) => l.id === lensId);
+      if (!lens) return;
+      applyTransformationLensToAiNode(node, lens, atClient);
       return;
     }
     applyTransformationLensDrop(lensId, atClient);
@@ -5873,12 +5868,116 @@ export default function App() {
     );
   }
 
-  function resolveNodeSourceIds(node) {
-    if (node.sourceIds?.length) return { ids: node.sourceIds, sourceNode: node };
-    const linkId = node.sourceNodeIds?.[0] || node.parentId;
+  /** Input material for an operator dropped onto an AI node (paper ids and/or node text). */
+  function resolveAiOperatorInput(node) {
+    if (!node) return { inputNode: null, ids: null, aiMaterial: null };
+
+    const fragment = node.goldenFragment?.trim() || "";
+    const expanded = node.expandedText?.trim() || "";
+    const preview = node.preview?.trim() || "";
+    const aiMaterial = fragment || expanded || (node.nodeKind === "source" ? "" : preview);
+
+    // Expanded/session nodes: prefer this node's AI text over inherited paper ids.
+    if (aiMaterial && node.nodeKind !== "source") {
+      return { inputNode: node, ids: null, aiMaterial };
+    }
+
+    if (node.sourceIds?.length) {
+      return { inputNode: node, ids: node.sourceIds, aiMaterial: null };
+    }
+
+    if (aiMaterial) {
+      return { inputNode: node, ids: null, aiMaterial };
+    }
+
+    const linkId = node.parentId || node.sourceNodeIds?.[0];
     const linked = linkId ? aiNodesRef.current.find((n) => n.id === linkId) : null;
-    if (linked?.sourceIds?.length) return { ids: linked.sourceIds, sourceNode: linked };
-    return { ids: null, sourceNode: node };
+    if (linked) {
+      const fromParent = resolveAiOperatorInput(linked);
+      if (fromParent.inputNode) return fromParent;
+    }
+
+    return { inputNode: node, ids: null, aiMaterial: null };
+  }
+
+  function resolveExpandedDropWorld(sourceNode, dropWorld) {
+    if (!dropWorld || !sourceNode) return dropWorld;
+    const existing = aiNodesRef.current;
+    const overlap = Math.hypot(dropWorld.x - sourceNode.x, dropWorld.y - sourceNode.y);
+    const childRadius = nodePositionAt(existing, "expanded").radius || 20;
+    const minSep = (sourceNode.radius || 20) + childRadius + 12;
+    if (overlap < minSep * 0.9) {
+      return childNodePosition(sourceNode, "expanded", existing);
+    }
+    return dropWorld;
+  }
+
+  function applyOperatorToAiNode(targetNode, op, atClient, extraOpts = {}) {
+    const { inputNode, ids, aiMaterial } = resolveAiOperatorInput(targetNode);
+    if (!inputNode) {
+      showToast("drop onto a concept node");
+      return;
+    }
+    if (!ids?.length && !aiMaterial?.trim()) {
+      showToast("nothing to apply to on this node");
+      return;
+    }
+    const world =
+      extraOpts.expandedAt ??
+      (atClient ? getAiDropWorldFromClient(atClient.x, atClient.y) : null);
+    expandInAi(ids || [], {
+      op,
+      opLabel: op.name,
+      sourceNode: inputNode,
+      expandedAt: world,
+      fromClient: atClient,
+      stableCamera: true,
+      aiMaterial: aiMaterial?.trim() || null,
+      ...extraOpts,
+    });
+  }
+
+  function applyTransformationLensToAiNode(targetNode, lens, atClient) {
+    const moveOps = (lens.moveIds || []).map((id) => opMap[id]).filter(Boolean);
+    if (!moveOps.length) {
+      showToast("lens has no moves");
+      return;
+    }
+    const { inputNode, ids, aiMaterial } = resolveAiOperatorInput(targetNode);
+    if (!inputNode || (!ids?.length && !aiMaterial?.trim())) {
+      showToast("nothing to apply to on this node");
+      return;
+    }
+    if (moveOps.length === 1) {
+      applyOperatorToAiNode(targetNode, moveOps[0], atClient, { lens });
+      return;
+    }
+    const tree = {
+      name: lens.name,
+      description: `Lens: ${lens.name}`,
+      steps: moveOps.map((op) => opToJsonTree(op, opMap)),
+    };
+    const { ops, rootId } = treeToOperators(tree, { top: false });
+    const compound = ops.find((o) => o.id === rootId);
+    if (!compound) return;
+    const mergedMap = { ...opMap, ...Object.fromEntries(ops.map((o) => [o.id, o])) };
+    const world = getAiDropWorldFromClient(atClient.x, atClient.y);
+    expandInAi(ids || [], {
+      op: compound,
+      opLabel: lens.name,
+      sourceNode: inputNode,
+      expandedAt: world,
+      fromClient: atClient,
+      stableCamera: true,
+      aiMaterial: aiMaterial?.trim() || null,
+      opMap: mergedMap,
+      lens,
+    });
+  }
+
+  function resolveNodeSourceIds(node) {
+    const { inputNode, ids } = resolveAiOperatorInput(node);
+    return { ids: ids?.length ? ids : null, sourceNode: inputNode || node };
   }
 
   function getStrandChoicesForNode(node) {
@@ -5927,17 +6026,12 @@ export default function App() {
     handleAiNodeSelect(nodeId, { replace: true });
 
     if (choice.kind === "expand" && choice.op) {
-      const { ids, sourceNode } = resolveNodeSourceIds(node);
-      if (ids?.length) {
-        expandInAi(ids, {
-          op: choice.op,
-          opLabel: choice.op.name,
-          sourceNode: sourceNode || node,
-          expandedAt: info.worldPos,
-          stableCamera: true,
-        });
-        return;
-      }
+      const atClient = lastPointerRef.current || { x: 0, y: 0 };
+      applyOperatorToAiNode(node, choice.op, atClient, {
+        expandedAt: info.worldPos,
+        stableCamera: true,
+      });
+      return;
     }
 
     // Keep camera and source node stable for strand gestures.
@@ -7707,7 +7801,7 @@ export default function App() {
     setSelectedAiNodeIds([expandedNode.id]);
     if (worldPos) {
       launchPaperToAiTransfer({
-        nodeIds: [sessionNode.id, expandedNode.id],
+        nodeIds: [expandedNode.id],
       });
     }
     return { sessionNode, expandedNode, prompt };
@@ -7815,11 +7909,15 @@ export default function App() {
     const idSet = new Set(ids);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
     const gathered = await gatherMaterialFromItems(itemList);
-    const text = gathered.text;
-    const { image } = gathered;
-    if (!text?.trim() && !image) throw new Error("no readable content");
+    return runOpForAiMaterial(op, gathered.text, { image: gathered.image });
+  }
 
-    const map = hydrateOperatorMap(opMap, operators, op.id);
+  async function runOpForAiMaterial(op, material, opts = {}) {
+    const text = String(material || "").trim();
+    const { image } = opts;
+    if (!text && !image) throw new Error("no readable content");
+
+    const map = opts.opMap || hydrateOperatorMap(opMap, operators, op.id);
     const execOp = map[op.id] || op;
     const plan = compileExecutionPlan(execOp, map, text);
 
@@ -7852,17 +7950,24 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
+    const idList = Array.isArray(ids) ? ids.filter(Boolean) : [];
+    const aiMaterial = opts.aiMaterial?.trim() || "";
     const dropWorld = opts.expandedAt ?? opts.atWorld;
-    let sourceNode = opts.sourceNode || findSourceNodeForIds(ids);
+    let sourceNode = opts.sourceNode || (idList.length ? findSourceNodeForIds(idList) : null);
     const dropPinned = !!dropWorld;
 
-    if (!sourceNode) {
+    if (!sourceNode && idList.length) {
       const sourceAt = dropWorld
         ? { x: dropWorld.x - AI_SPAWN_MIN_DIST * 0.32, y: dropWorld.y }
         : null;
-      sourceNode = ensureSourceNode(ids, null, "Source", sourceAt, { dropPinned: !!sourceAt });
+      sourceNode = ensureSourceNode(idList, null, "Source", sourceAt, { dropPinned: !!sourceAt });
+    }
+    if (!sourceNode) {
+      showToast("no source node for this operation");
+      return;
     }
 
+    const childWorld = resolveExpandedDropWorld(sourceNode, dropWorld);
     const expandedNode = createExpandedChild(
       sourceNode,
       {
@@ -7870,25 +7975,31 @@ export default function App() {
         opId: op.id,
         loading: !opts.bridgeOnly,
       },
-      dropWorld || undefined,
-      { dropPinned }
+      childWorld || undefined,
+      { dropPinned: dropPinned || !!childWorld }
     );
     markGrowingAiEdge(sourceNode.id, expandedNode.id);
-    recordItemEvents(ids, "transfer-to-ai", {
-      aiNodeId: sourceNode.id,
-      opName: opts.opLabel || op.name,
-      opId: op.id,
-      moveRef: viaFromOp(op, ids).moveRef,
-      inputPreview: truncatePreview(
-        itemsRef.current
-          .filter((it) => ids.includes(it.id))
-          .map((it) => it.text || it.preview || "")
-          .join(" ")
-          .trim(),
-        120
-      ),
-    });
-    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id] });
+    const inputPreview = aiMaterial
+      ? truncatePreview(aiMaterial, 120)
+      : truncatePreview(
+          itemsRef.current
+            .filter((it) => idList.includes(it.id))
+            .map((it) => it.text || it.preview || "")
+            .join(" ")
+            .trim(),
+          120
+        );
+    if (idList.length) {
+      recordItemEvents(idList, "transfer-to-ai", {
+        aiNodeId: sourceNode.id,
+        opName: opts.opLabel || op.name,
+        opId: op.id,
+        moveRef: viaFromOp(op, idList).moveRef,
+        inputPreview,
+      });
+    }
+    launchPaperToAiTransfer({ nodeIds: [expandedNode.id] });
+    setSelectedAiNodeIds([expandedNode.id]);
     if (opts.bridgeOnly) {
       updateAiNode(expandedNode.id, {
         loading: false,
@@ -7899,7 +8010,7 @@ export default function App() {
     }
     setAiPanel((prev) => ({
       ...(prev || {}),
-      sourceIds: ids,
+      sourceIds: idList.length ? idList : prev?.sourceIds,
       loading: true,
       error: null,
       opLabel: opts.opLabel || op.name,
@@ -7907,27 +8018,40 @@ export default function App() {
       activeNodeId: expandedNode.id,
     }));
     try {
-      const gathered = await syncAiSource(ids, {
-        keepExpanded: false,
-        opLabel: op.name,
-        opId: op.id,
-        skipNode: true,
-      });
-      if (gathered) {
-        updateAiNode(sourceNode.id, {
-          preview: gathered.preview,
-          label: truncateLabel(gathered.preview || "Source"),
-          loading: false,
+      let gathered = null;
+      if (aiMaterial) {
+        updateAiNode(sourceNode.id, { loading: false });
+      } else if (idList.length) {
+        gathered = await syncAiSource(idList, {
+          keepExpanded: false,
+          opLabel: op.name,
+          opId: op.id,
+          skipNode: true,
         });
+        if (gathered) {
+          updateAiNode(sourceNode.id, {
+            preview: gathered.preview,
+            label: truncateLabel(gathered.preview || "Source"),
+            loading: false,
+          });
+        }
+      } else {
+        throw new Error("no readable content");
       }
-      let out = await runOpForAi(op, ids);
+
+      const execMap = opts.opMap || opMap;
+      let out = aiMaterial
+        ? await runOpForAiMaterial(op, aiMaterial, { opMap: execMap })
+        : await runOpForAi(op, idList);
       if (isTransformPrimitive(op)) {
         out = sanitizePrimitiveOutput(out);
         if (!out?.trim() || isPrimitiveMetaOutput(out)) {
           throw new Error("got commentary instead of transformed text — try again");
         }
       } else {
-        out = await polishDeliverable(out, op, itemsRef.current.filter((it) => ids.includes(it.id)).map((it) => it.text).join("\n"));
+        const polishSource = aiMaterial
+          || itemsRef.current.filter((it) => idList.includes(it.id)).map((it) => it.text).join("\n");
+        out = await polishDeliverable(out, op, polishSource);
       }
       const text = out.trim();
       updateAiNode(expandedNode.id, {
@@ -7936,14 +8060,16 @@ export default function App() {
         error: null,
         label: truncateLabel(opts.opLabel || op.name || "Expanded"),
       });
-      recordItemEvents(ids, "expand", {
-        aiNodeId: expandedNode.id,
-        opName: opts.opLabel || op.name,
-        opId: op.id,
-        moveRef: viaFromOp(op, ids).moveRef,
-        inputPreview: truncatePreview(gathered?.preview || "", 80),
-        outputPreview: truncatePreview(text, 120),
-      });
+      if (idList.length) {
+        recordItemEvents(idList, "expand", {
+          aiNodeId: expandedNode.id,
+          opName: opts.opLabel || op.name,
+          opId: op.id,
+          moveRef: viaFromOp(op, idList).moveRef,
+          inputPreview: truncatePreview(gathered?.preview || inputPreview, 80),
+          outputPreview: truncatePreview(text, 120),
+        });
+      }
       setAiPanel((prev) => ({
         ...prev,
         expandedText: text,
@@ -8059,22 +8185,16 @@ export default function App() {
       for (const nodeId of g.ids) {
         const node = aiNodesRef.current.find((n) => n.id === nodeId);
         if (!node) continue;
-        const { ids, sourceNode } = resolveNodeSourceIds(node);
-        if (ids?.length) {
-          expandInAi(ids, {
-            sourceNode: sourceNode || node,
-            expandedAt: world,
-            fromClient,
-            quiet: true,
-          });
-        } else {
-          const text = (node.goldenFragment || node.expandedText || node.preview || "").trim();
-          if (text) {
-            const atWorld = clientToWorld(cx, cy);
-            const spawnedId = spawnTextAtWorld(text, atWorld, { silent: true, fromAi: true });
-            if (spawnedId) expandInAi([spawnedId], { expandedAt: world, fromClient, quiet: true });
-          }
-        }
+        const { inputNode, ids, aiMaterial } = resolveAiOperatorInput(node);
+        if (!inputNode || (!ids?.length && !aiMaterial?.trim())) continue;
+        expandInAi(ids || [], {
+          sourceNode: inputNode,
+          expandedAt: world,
+          fromClient,
+          quiet: true,
+          stableCamera: true,
+          aiMaterial: aiMaterial?.trim() || null,
+        });
       }
     } else if (g.activated) {
       showToast("Drop on a column to transfer");
@@ -8228,17 +8348,7 @@ export default function App() {
         showToast("drop function onto a concept node");
         return true;
       }
-      const { ids, sourceNode } = resolveNodeSourceIds(targetNode);
-      if (!ids?.length) {
-        showToast("nothing to apply function to");
-        return true;
-      }
-      expandInAi(ids, {
-        op,
-        opLabel: op.name,
-        sourceNode: sourceNode || targetNode,
-        expandedAt: pos,
-      });
+      applyOperatorToAiNode(targetNode, op, null, { expandedAt: pos, stableCamera: true });
       return true;
     }
 

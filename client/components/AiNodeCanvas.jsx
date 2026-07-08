@@ -317,7 +317,7 @@ export default function AiNodeCanvas({
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e);
+      onSpaceTransferStart?.(e, [node.id]);
       return;
     }
     e.stopPropagation();
@@ -547,18 +547,20 @@ export default function AiNodeCanvas({
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e);
+      onSpaceTransferStart?.(e, [node.id]);
       return;
     }
     e.stopPropagation();
+    const captureEl = e.currentTarget;
     const startX = e.clientX;
     const startY = e.clientY;
     const pending = { nodeId: node.id, startX, startY, scale: camera.scale };
     let dragging = false;
     let handoff = false;
+    let finished = false;
 
     try {
-      e.currentTarget.setPointerCapture(e.pointerId);
+      captureEl.setPointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
@@ -569,8 +571,31 @@ export default function AiNodeCanvas({
       window.removeEventListener("pointercancel", handleDragEnd);
     }
 
-    function handleDragMove(ev) {
+    function finishDrag(ev) {
+      if (finished) return;
+      finished = true;
       if (handoff) return;
+      if (!dragging) {
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (dist <= NODE_DRAG_THRESHOLD) {
+          onSelect?.(node.id, { replace: true });
+          if (tool !== "highlight") {
+            onExploreNode?.(node.id);
+          }
+        }
+      }
+      dragRef.current = null;
+      document.body.classList.remove("ai-node-dragging");
+      try {
+        captureEl.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
+      cleanupDragListeners();
+    }
+
+    function handleDragMove(ev) {
+      if (handoff || finished) return;
       if (!dragging) {
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) return;
@@ -585,9 +610,10 @@ export default function AiNodeCanvas({
         handoff = true;
         dragRef.current = null;
         document.body.classList.remove("ai-node-dragging");
+        finished = true;
         cleanupDragListeners();
         try {
-          e.currentTarget.releasePointerCapture(ev.pointerId);
+          captureEl.releasePointerCapture(ev.pointerId);
         } catch {
           /* ignore */
         }
@@ -602,24 +628,7 @@ export default function AiNodeCanvas({
     }
 
     function handleDragEnd(ev) {
-      if (handoff) return;
-      if (!dragging) {
-        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
-        if (dist <= NODE_DRAG_THRESHOLD) {
-          onSelect?.(node.id, { replace: true });
-          if (tool !== "highlight") {
-            onExploreNode?.(node.id);
-          }
-        }
-      }
-      dragRef.current = null;
-      document.body.classList.remove("ai-node-dragging");
-      try {
-        e.currentTarget.releasePointerCapture(ev.pointerId);
-      } catch {
-        /* ignore */
-      }
-      cleanupDragListeners();
+      finishDrag(ev);
     }
 
     window.addEventListener("pointermove", handleDragMove);
@@ -699,7 +708,7 @@ export default function AiNodeCanvas({
     if (e.target.closest?.(".ai-node-fragment-panel")) return;
 
     if (e.shiftKey && tool === "select" && selectedIds.length) {
-      onSpaceTransferStart?.(e);
+      onSpaceTransferStart?.(e, selectedIds);
       return;
     }
 
