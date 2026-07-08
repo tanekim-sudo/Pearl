@@ -2,9 +2,19 @@ import React, { useEffect, useRef } from "react";
 import { stickyBackground } from "../lib/board-item-utils.js";
 import { focusEditableAtPoint } from "../lib/place-caret.js";
 
-function EditableBlock({ item, className, editing, editClickRef, onCommit, style, placeholder }) {
+function EditableBlock({ item, className, editing, editClickRef, onCommit, onResizeWidth, style, placeholder }) {
   const ref = useRef(null);
   const seeded = useRef(false);
+
+  const measureAndSyncWidth = () => {
+    if (!ref.current || !onResizeWidth) return;
+    const el = ref.current;
+    const prev = el.style.width;
+    el.style.width = "max-content";
+    const needed = Math.min(520, Math.max(72, Math.ceil(el.scrollWidth)));
+    el.style.width = prev;
+    if (Math.abs(needed - (item.w || 0)) > 1) onResizeWidth(needed);
+  };
 
   useEffect(() => {
     if (!editing || !ref.current) return;
@@ -29,6 +39,7 @@ function EditableBlock({ item, className, editing, editClickRef, onCommit, style
         suppressContentEditableWarning
         style={style}
         onPointerDown={(e) => e.stopPropagation()}
+        onInput={onResizeWidth ? measureAndSyncWidth : undefined}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) {
@@ -163,6 +174,7 @@ export default function BoardBlockItem({
   editing,
   editClickRef,
   onCommit,
+  onResizeWidth,
   itemStyle,
 }) {
   const style = itemStyle(item);
@@ -183,6 +195,7 @@ export default function BoardBlockItem({
         editing={editing}
         editClickRef={editClickRef}
         onCommit={onCommit}
+        onResizeWidth={onResizeWidth}
         style={{ ...style, background: stickyBackground(item.color) }}
         placeholder="Note…"
       />
@@ -197,6 +210,7 @@ export default function BoardBlockItem({
         editing={editing}
         editClickRef={editClickRef}
         onCommit={onCommit}
+        onResizeWidth={onResizeWidth}
         style={style}
         placeholder="…"
       />
@@ -216,6 +230,7 @@ export default function BoardBlockItem({
         editing={editing}
         editClickRef={editClickRef}
         onCommit={onCommit}
+        onResizeWidth={onResizeWidth}
         style={style}
         placeholder="// code"
       />
@@ -230,6 +245,7 @@ export default function BoardBlockItem({
         editing={editing}
         editClickRef={editClickRef}
         onCommit={onCommit}
+        onResizeWidth={onResizeWidth}
         style={style}
         placeholder="E = mc²"
       />

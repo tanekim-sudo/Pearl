@@ -3220,10 +3220,10 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .canvas-column .board-text {
   color: var(--ink);
   font-family: var(--sans);
-  overflow: visible;
-  max-width: none;
+  overflow: hidden;
   word-break: break-word;
   background: transparent;
+  box-sizing: border-box;
 }
 
 .canvas-column .board-text.editing,
@@ -3439,8 +3439,8 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 .idea-center .board-text.sel,
 .canvas-column .board-text.sel {
   outline: 1px solid #1a73e8;
-  outline-offset: 0;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+  outline-offset: -1px;
+  box-shadow: none;
   background: transparent;
   border-color: transparent;
 }

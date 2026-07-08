@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { jsonrepair } from "jsonrepair";
 import {
   TRANSFORM_PRIMITIVES,
@@ -131,6 +131,8 @@ import {
   isTransformableBlock,
   TEXT_BOX_MIN_W,
   TEXT_BOX_MAX_W,
+  fitTextBoxWidth,
+  fitTextItemWidth,
 } from "./lib/board-item-utils.js";
 import { focusEditableAtPoint } from "./lib/place-caret.js";
 import {
@@ -1026,7 +1028,14 @@ function normalizeItem(it) {
   if (it.type === "stroke" && it.highlight) return null;
   const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, side: "paper", ...it };
   if (!base.bornAt) base.bornAt = Date.now();
-  if (base.type === "text") base.w = clampTextWidth(base.w || 360);
+  if (base.type === "text") {
+    base.w = base.text?.trim()
+      ? fitTextBoxWidth(base.text, { maxW: maxTextWidth() })
+      : clampTextWidth(base.w || TEXT_BOX_MIN_W);
+  }
+  if (base.type === "sticky" || base.type === "callout" || base.type === "code" || base.type === "math") {
+    if (base.text?.trim()) base.w = fitTextItemWidth(base);
+  }
   if (base.type === "image" && !base.h && base.w) base.h = Math.round(base.w * 0.75);
   if (base.type === "sticky" && !base.color) base.color = "yellow";
   if (base.type === "callout" && !base.variant) base.variant = "observation";
@@ -1239,7 +1248,6 @@ function itemStyle(it) {
   if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math" || it.type === "table" || it.type === "diagram" || it.type === "voice" || it.type === "video") {
     const w = blockWidth(it) || it.w;
     style.width = w;
-    if (it.type === "text") style.maxWidth = maxTextWidth();
   }
   const rot = it.rotation || 0;
   const sc = it.scale ?? 1;
@@ -1495,8 +1503,7 @@ function spawnAnchorBox(parentIds, items, fallbackWorld, viewportCenter) {
 }
 
 function estimateSpawnWidth(text) {
-  const clean = (text || "").trim();
-  return Math.min(560, Math.max(260, Math.round(clean.length * 0.5 + 200)));
+  return fitTextBoxWidth(text, { maxW: 560 });
 }
 
 /** Preferred right, then below; row-scan outward until bbox is clear. */
@@ -3350,7 +3357,7 @@ export default function App() {
         e.preventDefault();
         const center = paperViewportCenterWorld();
         const id = uid();
-        setItems((arr) => [...arr, normalizeItem({ id, type: "text", x: center.x, y: center.y, text, w: 360 })]);
+        setItems((arr) => [...arr, normalizeItem({ id, type: "text", x: center.x, y: center.y, text, w: fitTextBoxWidth(text, { maxW: maxTextWidth() }) })]);
         setSelection([id]);
       }
     }
@@ -6612,7 +6619,12 @@ export default function App() {
       setSelection((sel) => sel.filter((sid) => sid !== id));
       pendingGoldBornRef.current.delete(id);
     } else {
-      updateItem(id, { text: clean });
+      const prev = itemsRef.current.find((it) => it.id === id);
+      const patch = { text: clean };
+      if (prev && ["text", "sticky", "callout", "code", "math"].includes(prev.type)) {
+        patch.w = fitTextItemWidth({ ...prev, text: clean });
+      }
+      updateItem(id, patch);
       if (pendingGoldBornRef.current.has(id)) {
         pendingGoldBornRef.current.delete(id);
         markGoldBorn(id);
@@ -7387,7 +7399,7 @@ export default function App() {
     const clean = stripMd(text).trim();
     if (!clean) return;
     pushHistory();
-    const w = clampTextWidth(Math.min(480, Math.max(240, Math.round(clean.length * 0.45 + 180))));
+    const w = fitTextBoxWidth(clean, { maxW: maxTextWidth() });
     const h = measureTextHeight(w, clean);
     const pos = spawnPositionForBox(atWorld.x, atWorld.y, w, h);
     const id = uid();
@@ -8100,6 +8112,7 @@ export default function App() {
                   editing={editing === it.id}
                   editClickRef={editClickRef}
                   onCommit={(text) => commitEdit(it.id, text)}
+                  onResizeWidth={(w) => updateItem(it.id, { w })}
                   itemStyle={itemStyle}
                 />
               );
@@ -8653,6 +8666,19 @@ function BoardText({
   const ref = useRef(null);
   const seeded = useRef(false);
 
+  const measureAndSyncWidth = () => {
+    if (!ref.current || !onResizeWidth) return;
+    const el = ref.current;
+    const prev = el.style.width;
+    el.style.width = "max-content";
+    const needed = Math.min(
+      TEXT_BOX_MAX_W,
+      Math.max(TEXT_BOX_MIN_W, Math.ceil(el.scrollWidth))
+    );
+    el.style.width = prev;
+    if (Math.abs(needed - (item.w || 0)) > 1) onResizeWidth(needed);
+  };
+
   useEffect(() => {
     if (!editing || !ref.current) return;
     if (!seeded.current) {
@@ -8666,16 +8692,13 @@ function BoardText({
     if (!editing) seeded.current = false;
   }, [editing]);
 
-  const style = itemStyle(item);
+  useLayoutEffect(() => {
+    if (editing) return;
+    measureAndSyncWidth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.text, item.w, editing]);
 
-  const syncWidth = () => {
-    if (!ref.current || !onResizeWidth) return;
-    const needed = Math.min(
-      TEXT_BOX_MAX_W,
-      Math.max(TEXT_BOX_MIN_W, Math.ceil(ref.current.scrollWidth) + 12)
-    );
-    if (needed > (item.w || 0)) onResizeWidth(needed);
-  };
+  const style = itemStyle(item);
 
   if (editing) {
     return (
@@ -8687,7 +8710,7 @@ function BoardText({
         suppressContentEditableWarning
         style={style}
         onPointerDown={(e) => e.stopPropagation()}
-        onInput={syncWidth}
+        onInput={measureAndSyncWidth}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Escape") {
@@ -8704,6 +8727,7 @@ function BoardText({
   }
   return (
     <div
+      ref={ref}
       className={
         "board-text" +
         (selected ? " sel" : "") +
