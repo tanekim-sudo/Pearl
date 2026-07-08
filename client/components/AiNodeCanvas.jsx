@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  attachPointOnNode,
   collectAiEdges,
   edgeBundleOffsets,
   edgeGeometry,
@@ -297,9 +298,15 @@ export default function AiNodeCanvas({
 
     const startX = seedX;
     const startY = seedY;
-    const nodeScreen = worldToScreen(cameraRef.current, node.x, node.y);
-    const originX = nodeScreen.x;
-    const originY = nodeScreen.y;
+
+    const towardWorld = screenToWorld(cameraRef.current, startX - rect.left, startY - rect.top);
+    const attach = attachPointOnNode(node, towardWorld.x, towardWorld.y, {
+      invScale,
+      cellWeight: 1 + Math.min(nodes.filter((n) => n.parentId === node.id).length, 3) * 0.14,
+    });
+    const attachScreen = worldToScreen(cameraRef.current, attach.x, attach.y);
+    const originX = attachScreen.x;
+    const originY = attachScreen.y;
 
     const dragState = {
       nodeId: node.id,
@@ -663,12 +670,26 @@ export default function AiNodeCanvas({
       : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
+
   function nodeDetailText(node) {
     return (
       node?.expandedText?.trim() ||
       node?.preview?.trim() ||
       null
     );
+  }
+
+  function nodeEdgeView(node) {
+    const r = node.radius || 20;
+    const childCount = nodes.filter((n) => n.parentId === node.id).length;
+    const detail = nodeDetailText(node);
+    const blend = detail ? contentBlend : 0;
+    return {
+      invScale,
+      cellWeight: 1 + Math.min(childCount * 0.14, 0.5),
+      contentBlend: blend,
+      textLayout: detail ? nodeTextLayoutAtBlend(r, detail.length, blend) : null,
+    };
   }
 
   function renderNodeText(node, text) {
@@ -750,7 +771,7 @@ export default function AiNodeCanvas({
               refY="5"
               markerWidth={markerSize}
               markerHeight={markerSize}
-              orient="auto-start-reverse"
+              orient="auto"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.92)" />
             </marker>
@@ -761,7 +782,7 @@ export default function AiNodeCanvas({
               refY="5"
               markerWidth={markerSize}
               markerHeight={markerSize}
-              orient="auto-start-reverse"
+              orient="auto"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.88)" />
             </marker>
@@ -772,7 +793,7 @@ export default function AiNodeCanvas({
               refY="5"
               markerWidth={markerSize}
               markerHeight={markerSize}
-              orient="auto-start-reverse"
+              orient="auto"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.85)" />
             </marker>
@@ -783,7 +804,7 @@ export default function AiNodeCanvas({
               refY="5"
               markerWidth={markerSize}
               markerHeight={markerSize}
-              orient="auto-start-reverse"
+              orient="auto"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.9)" />
             </marker>
@@ -804,11 +825,20 @@ export default function AiNodeCanvas({
           </defs>
           {edges.map(({ id, from, to, kind, label }, edgeIdx) => {
             if (!from || !to) return null;
+            const fromView = nodeEdgeView(from);
+            const toView = nodeEdgeView(to);
             const geom = edgeGeometry(from, to, {
               bundleOffset: bundleOffsets.get(id) || 0,
               curveSign: edgeIdx % 2 === 0 ? 1 : -1,
+              invScale,
+              fromCellWeight: fromView.cellWeight,
+              toCellWeight: toView.cellWeight,
+              fromBlend: fromView.contentBlend,
+              toBlend: toView.contentBlend,
+              fromTextLayout: fromView.textLayout,
+              toTextLayout: toView.textLayout,
             });
-            if (!geom?.path) return null;
+            if (!geom?.path || geom.tooShort) return null;
             const pathD = geom.path;
             const marker =
               kind === "expand"

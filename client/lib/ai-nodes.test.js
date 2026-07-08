@@ -4,6 +4,8 @@ import {
   AI_NODE_RADIUS,
   AI_SPAWN_MIN_DIST,
   AI_NODE_MIN_GAP,
+  attachPointOnNode,
+  edgeGeometry,
   spawnChildPositions,
   layoutChildren,
   resolveOverlaps,
@@ -138,5 +140,19 @@ describe("ai-nodes layout", () => {
     });
     assert.equal(choices.length, 1);
     assert.equal(choices[0].label, "reframe");
+  });
+
+  it("attachPointOnNode uses visual radius beyond node.radius", () => {
+    const node = { x: 0, y: 0, radius: 30 };
+    const pt = attachPointOnNode(node, 0, 100);
+    const dist = Math.hypot(pt.x, pt.y);
+    assert.ok(dist > 35, `edge should be outside core radius, got ${dist}`);
+    assert.ok(dist < 65, `edge should stay near membrane, got ${dist}`);
+  });
+
+  it("edgeGeometry skips degenerate coincident nodes", () => {
+    const node = { x: 50, y: 50, radius: 30 };
+    const geom = edgeGeometry(node, { ...node, id: "b" });
+    assert.ok(geom.tooShort || geom.path.includes("L"));
   });
 });

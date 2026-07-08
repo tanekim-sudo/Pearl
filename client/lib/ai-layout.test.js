@@ -10,7 +10,7 @@ import {
   suggestChildPosition,
   suggestRootPosition,
 } from "./ai-layout.js";
-import { AI_SPAWN_MIN_DIST, edgeGeometry, collectAiEdges } from "./ai-nodes.js";
+import { AI_SPAWN_MIN_DIST, edgeGeometry, collectAiEdges, attachPointOnNode } from "./ai-nodes.js";
 
 describe("ai-layout spatial reasoning", () => {
   it("goldenSpiralPosition spreads roots apart", () => {
@@ -95,9 +95,17 @@ describe("ai-layout spatial reasoning", () => {
     assert.ok(geom.path.startsWith("M "));
     assert.ok(geom.path.includes("C"));
     const startDist = Math.hypot(geom.x1, geom.y1);
-    assert.ok(startDist > 28 && startDist < 35);
+    assert.ok(startDist > 40 && startDist < 70, `startDist ${startDist}`);
     const endDist = Math.hypot(geom.x2 - 500, geom.y2);
-    assert.ok(endDist > 28 && endDist < 35);
+    assert.ok(endDist > 40 && endDist < 70, `endDist ${endDist}`);
+  });
+
+  it("attachPointOnNode exits on the nearest visible edge, not the center", () => {
+    const node = { x: 100, y: 100, radius: 30 };
+    const up = attachPointOnNode(node, 100, 0);
+    assert.ok(up.y < 100 - 25, `expected upward edge, got y=${up.y}`);
+    const down = attachPointOnNode(node, 100, 200);
+    assert.ok(down.y > 100 + 25, `expected downward edge, got y=${down.y}`);
   });
 
   it("layoutAfterAppend keeps drop-pinned nodes at the release point", () => {

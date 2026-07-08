@@ -173,47 +173,150 @@ export function edgeBundleOffsets(edges) {
   return offsets;
 }
 
-/** Synaptic strand geometry — membrane to membrane with smooth cubic curve. */
-export function edgeGeometry(from, to, opts = {}) {
-  if (!from || !to) {
-    return { x1: 0, y1: 0, x2: 0, y2: 0, cx: 0, cy: 0, len: 0, path: "M 0 0 L 0 0" };
+/** Visible membrane radius in world units — matches CSS glow + ring, not just node.radius. */
+export function nodeVisualRadius(node, opts = {}) {
+  const r = node?.radius || 20;
+  const weight = opts.cellWeight ?? 1.14;
+  const invScale = opts.invScale ?? 1;
+  const glow = r * 0.34 * weight;
+  const ring = 3.8 * invScale * 0.65 + 6;
+  return r + glow + ring;
+}
+
+/** Ray exit from axis-aligned rect; returns nearest intersection in the forward direction. */
+function rayRectExit(ox, oy, ux, uy, left, top, right, bottom) {
+  const hits = [];
+  if (Math.abs(ux) > 1e-9) {
+    for (const x of [left, right]) {
+      const t = (x - ox) / ux;
+      if (t > 0.001) {
+        const y = oy + uy * t;
+        if (y >= top - 0.5 && y <= bottom + 0.5) hits.push({ t, x, y });
+      }
+    }
   }
-  const fr = from.radius || 20;
-  const tr = to.radius || 20;
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const len = Math.hypot(dx, dy) || 1;
+  if (Math.abs(uy) > 1e-9) {
+    for (const y of [top, bottom]) {
+      const t = (y - oy) / uy;
+      if (t > 0.001) {
+        const x = ox + ux * t;
+        if (x >= left - 0.5 && x <= right + 0.5) hits.push({ t, x, y });
+      }
+    }
+  }
+  if (!hits.length) return null;
+  hits.sort((a, b) => a.t - b.t);
+  return hits[0];
+}
+
+/**
+ * Point on the visible node boundary where a strand should attach,
+ * on the ray from node center toward (targetX, targetY).
+ */
+export function attachPointOnNode(node, targetX, targetY, opts = {}) {
+  const cx = node.x;
+  const cy = node.y;
+  let dx = targetX - cx;
+  let dy = targetY - cy;
+  let len = Math.hypot(dx, dy);
+  if (len < 1e-6) {
+    dx = 0;
+    dy = 1;
+    len = 1;
+  }
   const ux = dx / len;
   const uy = dy / len;
+  const pad = opts.edgePad ?? 1.5;
+  const blend = opts.contentBlend ?? 0;
+  const layout = opts.textLayout;
+
+  if (blend > 0.12 && layout?.w > 0 && layout?.h > 0) {
+    const nr = node.radius || 20;
+    const scale = 0.88 + blend * 0.12;
+    const sw = layout.w * scale;
+    const sh = layout.h * scale;
+    const top = cy - nr;
+    const left = cx - sw / 2;
+    const right = cx + sw / 2;
+    const bottom = top + sh;
+    const hit = rayRectExit(cx, cy, ux, uy, left, top, right, bottom);
+    if (hit) {
+      return { x: hit.x + ux * pad, y: hit.y + uy * pad, ux, uy };
+    }
+  }
+
+  const radius = nodeVisualRadius(node, opts);
+  return {
+    x: cx + ux * (radius + pad),
+    y: cy + uy * (radius + pad),
+    ux,
+    uy,
+  };
+}
+
+/** Synaptic strand geometry — attaches at visible node edges with smooth cubic curve. */
+export function edgeGeometry(from, to, opts = {}) {
+  if (!from || !to) {
+    return { x1: 0, y1: 0, x2: 0, y2: 0, path: "M 0 0 L 0 0", len: 0, tooShort: true };
+  }
+
+  const fromOpts = {
+    ...opts,
+    cellWeight: opts.fromCellWeight,
+    contentBlend: opts.fromBlend,
+    textLayout: opts.fromTextLayout,
+  };
+  const toOpts = {
+    ...opts,
+    cellWeight: opts.toCellWeight,
+    contentBlend: opts.toBlend,
+    textLayout: opts.toTextLayout,
+  };
+
+  const start = attachPointOnNode(from, to.x, to.y, fromOpts);
+  const end = attachPointOnNode(to, from.x, from.y, toOpts);
+
+  const chordLen = Math.hypot(to.x - from.x, to.y - from.y) || 0;
   const bundle = opts.bundleOffset || 0;
-  const px = -uy * bundle;
-  const py = ux * bundle;
+  const px = -start.uy * bundle;
+  const py = start.ux * bundle;
 
-  const x1 = from.x + ux * (fr + 2) + px;
-  const y1 = from.y + uy * (fr + 2) + py;
-  const x2 = to.x - ux * (tr + 2) + px;
-  const y2 = to.y - uy * (tr + 2) + py;
+  const x1 = start.x + px;
+  const y1 = start.y + py;
+  const x2 = end.x + px;
+  const y2 = end.y + py;
 
-  const curve = Math.min(len * 0.14, 96) * (opts.curveSign ?? 1);
-  const cx1 = x1 + ux * curve * 0.45;
-  const cy1 = y1 + uy * curve * 0.45;
-  const cx2 = x2 - ux * curve * 0.45;
-  const cy2 = y2 - uy * curve * 0.45;
-  const midX = (x1 + x2) / 2 + px * 0.5;
-  const midY = (y1 + y2) / 2 + py * 0.5;
+  const segLen = Math.hypot(x2 - x1, y2 - y1) || 1;
+  if (segLen < 6) {
+    return {
+      x1,
+      y1,
+      x2,
+      y2,
+      len: chordLen,
+      tooShort: true,
+      path: `M ${x1} ${y1} L ${x2} ${y2}`,
+    };
+  }
+
+  const curve = Math.min(segLen * 0.28, chordLen * 0.14, 96) * (opts.curveSign ?? 1);
+  const cx1 = x1 + start.ux * curve * 0.5;
+  const cy1 = y1 + start.uy * curve * 0.5;
+  const cx2 = x2 - end.ux * curve * 0.5;
+  const cy2 = y2 - end.uy * curve * 0.5;
 
   return {
     x1,
     y1,
     x2,
     y2,
-    cx: midX,
-    cy: midY,
+    cx: (x1 + x2) / 2,
+    cy: (y1 + y2) / 2,
     cx1,
     cy1,
     cx2,
     cy2,
-    len,
+    len: chordLen,
     path: `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`,
   };
 }
