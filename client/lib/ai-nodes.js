@@ -1,16 +1,13 @@
-export const AI_NODE_RADIUS = {
-  source: 22,
-  expanded: 20,
-  move: 18,
-  lens: 20,
-  session: 22,
-};
+import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-constants.js";
+import {
+  layoutAfterAppend,
+  relayoutAiConstellation,
+  suggestChildPosition,
+  suggestRootPosition,
+} from "./ai-layout.js";
 
-/** Minimum center-to-center distance from parent when spawning children. */
-export const AI_SPAWN_MIN_DIST = 240;
-
-/** Minimum gap between node edges during overlap resolution. */
-export const AI_NODE_MIN_GAP = 120;
+export { AI_NODE_RADIUS, AI_SPAWN_MIN_DIST, AI_NODE_MIN_GAP };
+export { layoutAfterAppend, relayoutAiConstellation, suggestChildPosition, suggestRootPosition };
 
 export function nodePositionAt(existing, kind = "source", worldPos) {
   const radius = AI_NODE_RADIUS[kind] || 20;
@@ -21,36 +18,21 @@ export function nodePositionAt(existing, kind = "source", worldPos) {
 }
 
 export function nextAiNodePosition(existing, kind = "source") {
-  const idx = existing.length;
-  const cols = 3;
-  const spacingX = 280;
-  const spacingY = 240;
-  const col = idx % cols;
-  const row = Math.floor(idx / cols);
-  const radius = AI_NODE_RADIUS[kind] || 20;
-  return {
-    x: 80 + col * spacingX + radius,
-    y: 80 + row * spacingY + radius,
-    radius,
-  };
+  return suggestRootPosition(existing, kind);
 }
 
-/** Fan child positions around parent at AI_SPAWN_MIN_DIST. */
+/** Fan child positions around parent along the outward thread. */
 export function spawnChildPositions(parent, existing, kind = "expanded", count = 1) {
-  const radius = AI_NODE_RADIUS[kind] || 20;
-  const minDist = AI_SPAWN_MIN_DIST;
   const siblings = existing.filter((n) => n.parentId === parent.id);
-  const totalCount = siblings.length + count;
+  const total = siblings.length + count;
   const positions = [];
-
   for (let j = 0; j < count; j++) {
-    const idx = siblings.length + j;
-    const angle = -Math.PI / 2 + (2 * Math.PI * idx) / Math.max(totalCount, 1);
-    positions.push({
-      x: parent.x + Math.cos(angle) * minDist,
-      y: parent.y + Math.sin(angle) * minDist,
-      radius,
-    });
+    positions.push(
+      suggestChildPosition(parent, existing, kind, {
+        slotIndex: siblings.length + j,
+        totalSlots: total,
+      })
+    );
   }
   return positions;
 }
@@ -60,24 +42,24 @@ export function childNodePosition(parent, kind = "expanded", existing = []) {
   return pos;
 }
 
-/** Re-fan all siblings of a parent into an evenly spaced arc. */
+/** Re-fan all siblings of a parent into evenly spaced outward slots. */
 export function layoutChildren(nodes, parentId) {
   const parent = nodes.find((n) => n.id === parentId);
   if (!parent) return nodes;
   const children = nodes.filter((n) => n.parentId === parentId);
   if (children.length <= 1) return nodes;
 
-  const minDist = AI_SPAWN_MIN_DIST;
   const n = children.length;
   return nodes.map((node) => {
     if (node.parentId !== parentId) return node;
     const idx = children.findIndex((c) => c.id === node.id);
-    const angle = -Math.PI / 2 + (2 * Math.PI * idx) / n;
-    return {
-      ...node,
-      x: parent.x + Math.cos(angle) * minDist,
-      y: parent.y + Math.sin(angle) * minDist,
-    };
+    const pos = suggestChildPosition(
+      parent,
+      nodes.filter((x) => x.id !== node.id),
+      node.nodeKind || "expanded",
+      { slotIndex: idx, totalSlots: n }
+    );
+    return { ...node, x: pos.x, y: pos.y };
   });
 }
 
@@ -174,22 +156,66 @@ export function collectAiEdges(nodes) {
   return edges;
 }
 
-/** World-space line endpoints trimmed to node radii, with optional curve control point. */
-export function edgeGeometry(from, to, curve = 0.06) {
+/** Perpendicular bundle offset so sibling strands don't stack on top of each other. */
+export function edgeBundleOffsets(edges) {
+  const byFrom = new Map();
+  for (const e of edges) {
+    if (!byFrom.has(e.fromId)) byFrom.set(e.fromId, []);
+    byFrom.get(e.fromId).push(e.id);
+  }
+  const offsets = new Map();
+  for (const ids of byFrom.values()) {
+    const n = ids.length;
+    ids.forEach((id, i) => {
+      offsets.set(id, (i - (n - 1) / 2) * 14);
+    });
+  }
+  return offsets;
+}
+
+/** Synaptic strand geometry — membrane to membrane with smooth cubic curve. */
+export function edgeGeometry(from, to, opts = {}) {
+  if (!from || !to) {
+    return { x1: 0, y1: 0, x2: 0, y2: 0, cx: 0, cy: 0, len: 0, path: "M 0 0 L 0 0" };
+  }
   const fr = from.radius || 20;
   const tr = to.radius || 20;
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len;
   const uy = dy / len;
-  const x1 = from.x + ux * fr;
-  const y1 = from.y + uy * fr;
-  const x2 = to.x - ux * tr;
-  const y2 = to.y - uy * tr;
-  const cx = (x1 + x2) / 2 + uy * len * curve;
-  const cy = (y1 + y2) / 2 - ux * len * curve;
-  return { x1, y1, x2, y2, cx, cy, len };
+  const bundle = opts.bundleOffset || 0;
+  const px = -uy * bundle;
+  const py = ux * bundle;
+
+  const x1 = from.x + ux * (fr + 2) + px;
+  const y1 = from.y + uy * (fr + 2) + py;
+  const x2 = to.x - ux * (tr + 2) + px;
+  const y2 = to.y - uy * (tr + 2) + py;
+
+  const curve = Math.min(len * 0.14, 96) * (opts.curveSign ?? 1);
+  const cx1 = x1 + ux * curve * 0.45;
+  const cy1 = y1 + uy * curve * 0.45;
+  const cx2 = x2 - ux * curve * 0.45;
+  const cy2 = y2 - uy * curve * 0.45;
+  const midX = (x1 + x2) / 2 + px * 0.5;
+  const midY = (y1 + y2) / 2 + py * 0.5;
+
+  return {
+    x1,
+    y1,
+    x2,
+    y2,
+    cx: midX,
+    cy: midY,
+    cx1,
+    cy1,
+    cx2,
+    cy2,
+    len,
+    path: `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`,
+  };
 }
 
 export function makeAiNode({ nodeKind, label, id, ...rest }) {
@@ -250,7 +276,7 @@ export function pickStrandIndex(pointerAngle, angles) {
 export function collectStrandChoices(
   node,
   allNodes = [],
-  { expansionPrimitives = [], topFunctions = [], moves = [], opMap = {} } = {}
+  { expansionPrimitives = [], topFunctions = [], moves = [], opMap = {}, exploreOnly = false } = {}
 ) {
   if (!node) return [];
   const choices = [];
@@ -261,15 +287,17 @@ export function collectStrandChoices(
     choices.push(choice);
   };
 
-  for (const child of allNodes) {
-    if (child.nodeKind !== "move" || !child.opId) continue;
-    if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
-    const op = opMap[child.opId];
-    if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
-  }
+  if (!exploreOnly) {
+    for (const child of allNodes) {
+      if (child.nodeKind !== "move" || !child.opId) continue;
+      if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
+      const op = opMap[child.opId];
+      if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
+    }
 
-  if (node.nodeKind === "session") {
-    push({ id: "interpret", label: "interpret", kind: "interpret" });
+    if (node.nodeKind === "session") {
+      push({ id: "interpret", label: "interpret", kind: "interpret" });
+    }
   }
 
   const canExpand =
@@ -284,23 +312,16 @@ export function collectStrandChoices(
     }
   }
 
-  for (const op of topFunctions) {
-    push({ id: op.id, label: op.name, kind: "function", op });
-  }
+  if (!exploreOnly) {
+    for (const op of topFunctions) {
+      push({ id: op.id, label: op.name, kind: "function", op });
+    }
 
-  for (const op of moves) {
-    push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+    for (const op of moves) {
+      push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+    }
   }
 
   return choices;
 }
 
-/** Apply layout after adding nodes: fan siblings + resolve overlaps. */
-export function layoutAfterAppend(nodes, newNodes) {
-  let updated = [...nodes, ...newNodes];
-  const parentIds = new Set(newNodes.map((n) => n.parentId).filter(Boolean));
-  for (const pid of parentIds) {
-    updated = layoutChildren(updated, pid);
-  }
-  return resolveOverlaps(updated);
-}

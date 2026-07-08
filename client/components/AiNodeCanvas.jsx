@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   collectAiEdges,
+  edgeBundleOffsets,
   edgeGeometry,
   fanStrandAngles,
   pickStrandIndex,
@@ -12,6 +13,7 @@ import {
   AI_STRAND_DRAG_MAX_SCALE,
   AI_BLEND_ZOOM_START,
   findNearestNodeToCenter,
+  nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
   worldToScreen,
@@ -26,25 +28,6 @@ const STRAND_DRAG_THRESHOLD = 4;
 const STRAND_MIN_LENGTH = 52;
 const STRAND_MAX_LENGTH = 148;
 const STRAND_TIP_HIT = 36;
-
-const STAR_COUNT = 120;
-
-function makeStars(seed = 1) {
-  const stars = [];
-  let s = seed;
-  for (let i = 0; i < STAR_COUNT; i++) {
-    s = (s * 16807 + 0) % 2147483647;
-    stars.push({
-      x: (s % 10000) / 10000,
-      y: ((s * 7) % 10000) / 10000,
-      r: 0.4 + ((s * 3) % 100) / 100,
-      a: 0.15 + ((s * 11) % 100) / 200,
-    });
-  }
-  return stars;
-}
-
-const STARS = makeStars(42);
 
 export default function AiNodeCanvas({
   nodes,
@@ -72,6 +55,7 @@ export default function AiNodeCanvas({
   viewportRef: externalViewportRef,
   onTourEvent,
   landingNodeIds,
+  onPointerTrack,
 }) {
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
@@ -89,6 +73,28 @@ export default function AiNodeCanvas({
   const [strandDrag, setStrandDrag] = useState(null);
   const strandDragRef = useRef(null);
   strandDragRef.current = strandDrag;
+  const knownNodeIdsRef = useRef(null);
+  const [wheelZooming, setWheelZooming] = useState(false);
+  const constellationReturnRef = useRef(0);
+
+  // New nodes glow gold, then fade to stardust white over ~5s.
+  useEffect(() => {
+    if (!knownNodeIdsRef.current) {
+      knownNodeIdsRef.current = new Set(nodes.map((n) => n.id));
+      return;
+    }
+    const fresh = nodes.filter((n) => !knownNodeIdsRef.current.has(n.id)).map((n) => n.id);
+    if (!fresh.length) return;
+    fresh.forEach((id) => knownNodeIdsRef.current.add(id));
+    setBornIds((prev) => new Set([...prev, ...fresh]));
+    window.setTimeout(() => {
+      setBornIds((prev) => {
+        const next = new Set(prev);
+        fresh.forEach((id) => next.delete(id));
+        return next;
+      });
+    }, 5200);
+  }, [nodes]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -140,19 +146,26 @@ export default function AiNodeCanvas({
         const rect = el.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
       },
-      (_prev, next) => {
-        const prevScale = cameraRef.current.scale;
-        if (prevScale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX) {
-          onReturnToConstellation?.();
+      (prev, next) => {
+        if (prev.scale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX - 0.06) {
+          const now = Date.now();
+          if (now - constellationReturnRef.current > 450) {
+            constellationReturnRef.current = now;
+            onReturnToConstellation?.();
+          }
           return;
         }
-        if (prevScale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
+        if (prev.scale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
           const pickId =
             selectedIds.length === 1
               ? selectedIds[0]
               : findNearestNodeToCenter(nodes, next, vpSize.w, vpSize.h)?.id;
           if (pickId) onFocusFromZoom?.(pickId);
         }
+      },
+      {
+        onWheelActive: () => setWheelZooming(true),
+        onWheelIdle: () => setWheelZooming(false),
       }
     );
   }, [onCameraChange, onReturnToConstellation, onFocusFromZoom, viewportRef, nodes, selectedIds, vpSize.w, vpSize.h]);
@@ -393,7 +406,13 @@ export default function AiNodeCanvas({
 
       const choice = state.choices[pickIdx];
       if (choice) {
-        onStrandSelect?.(state.nodeId, choice);
+        const cam = cameraRef.current;
+        const tipIdx = pickIdx >= 0 ? pickIdx : 0;
+        const angle = state.angles?.[tipIdx] ?? state.baseAngle ?? 0;
+        const tipScreenX = state.originX + Math.cos(angle) * state.length;
+        const tipScreenY = state.originY + Math.sin(angle) * state.length;
+        const worldPos = screenToWorld(cam, tipScreenX, tipScreenY);
+        onStrandSelect?.(state.nodeId, choice, { worldPos });
       }
     }
 
@@ -453,7 +472,11 @@ export default function AiNodeCanvas({
 
     function onUp() {
       cleanup();
-      if (!activated) onSelect?.(node.id, { replace: true });
+      if (!activated) {
+        onSelect?.(node.id, { replace: true });
+        // Click opens the node like a chat message: zoom to its content card.
+        onExploreNode?.(node.id);
+      }
     }
 
     function cleanup() {
@@ -467,32 +490,65 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", onUp);
   }
 
+  function startFragmentGrab(e, node) {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.(node.id, { replace: true });
+    onSpaceTransferStart?.(e, [node.id]);
+  }
+
   function startNodeDrag(e, node) {
     if (e.button !== 0) return;
 
-    if (tool === "highlight" && selectedIds.includes(node.id) && selectedIds.length) {
+    if (tool === "highlight") {
+      const readable = node.expandedText?.trim() || node.preview?.trim();
+      const zoomedForText = contentBlend > 0.08;
+      if (readable && zoomedForText) {
+        onSelect?.(node.id, { replace: true });
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e);
+      onSelect?.(node.id, { replace: true });
+      if (!readable) {
+        const canExpand =
+          (node.nodeKind === "source" || node.nodeKind === "session") &&
+          node.sourceIds?.length &&
+          !node.loading;
+        if (canExpand && !node.expandedText) onExpandNode?.(node.id);
+        return;
+      }
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let armed = false;
+
+      function onMove(ev) {
+        if (armed) return;
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
+        armed = true;
+        cleanup();
+        startFragmentGrab(e, node);
+      }
+
+      function onUp() {
+        cleanup();
+      }
+
+      function cleanup() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
       return;
     }
 
     const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
     if (constellationMode) {
       startConstellationNodeGesture(e, node);
-      return;
-    }
-
-    if (e.button !== 0) return;
-    if (tool === "highlight") {
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.(node.id, { replace: true });
-      const canExpand =
-        (node.nodeKind === "source" || node.nodeKind === "session") &&
-        node.sourceIds?.length &&
-        !node.loading;
-      if (canExpand && !node.expandedText) onExpandNode?.(node.id);
       return;
     }
     if (e.shiftKey && tool === "select" && selectedIds.length) {
@@ -535,7 +591,7 @@ export default function AiNodeCanvas({
         const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
         if (dist <= NODE_DRAG_THRESHOLD) {
           onSelect?.(node.id, { replace: true });
-          if (cameraRef.current.scale > AI_STRAND_DRAG_MAX_SCALE) {
+          if (tool !== "highlight") {
             onExploreNode?.(node.id);
           }
         }
@@ -568,11 +624,6 @@ export default function AiNodeCanvas({
       return;
     }
 
-    if (tool === "highlight" && selectedIds.length) {
-      onSpaceTransferStart?.(e);
-      return;
-    }
-
     if (e.button === 1 || e.altKey) {
       startPan(e);
       return;
@@ -596,27 +647,31 @@ export default function AiNodeCanvas({
       to: nodeById.get(edge.toId),
     }))
     .filter((e) => e.from && e.to);
+  const bundleOffsets = edgeBundleOffsets(edges);
 
-  const starOffsetX = ((camera.x * 0.02) % 1) * 100;
-  const starOffsetY = ((camera.y * 0.02) % 1) * 100;
   const contentBlend = zoomContentBlend(camera.scale);
-  const explorationMode = contentBlend > 0.04;
   const constellationMode = camera.scale <= AI_STRAND_DRAG_MAX_SCALE;
+  const invScale = 1 / Math.max(0.08, camera.scale);
+  const screenStroke = constellationMode ? 4.2 : 2.6;
+  const edgeStroke = screenStroke * invScale;
+  const markerSize = Math.min(32, Math.max(12, 14 * invScale));
+  const explorationMode = contentBlend > 0.04;
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
       : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
-  const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
-  const focusDetail =
-    focusedNode?.expandedText?.trim() ||
-    focusedNode?.preview?.trim() ||
-    focusedNode?.label?.trim() ||
-    null;
+  function nodeDetailText(node) {
+    return (
+      node?.expandedText?.trim() ||
+      node?.preview?.trim() ||
+      null
+    );
+  }
 
-  function renderFocusText(text) {
-    const golden = focusedNode?.goldenFragment;
+  function renderNodeText(node, text) {
+    const golden = node?.goldenFragment;
     if (!golden || !text.includes("⟦") || !text.includes("⟧")) {
       return text;
     }
@@ -624,7 +679,13 @@ export default function AiNodeCanvas({
     return parts.map((part, i) => {
       if (part.startsWith("⟦") && part.endsWith("⟧")) {
         return (
-          <mark key={i} className="ai-golden-fragment">
+          <mark
+            key={i}
+            className="ai-golden-fragment"
+            onPointerDown={(ev) => {
+              if (tool === "highlight" || tool === "select") startFragmentGrab(ev, node);
+            }}
+          >
             {part.slice(1, -1)}
           </mark>
         );
@@ -632,6 +693,12 @@ export default function AiNodeCanvas({
       return part;
     });
   }
+
+  const highlightReaderNode =
+    tool === "highlight" && selectedIds.length === 1
+      ? nodes.find((n) => n.id === selectedIds[0] && n.expandedText?.trim())
+      : null;
+  const showHighlightReader = highlightReaderNode && contentBlend < 0.42;
 
   return (
     <div
@@ -642,13 +709,16 @@ export default function AiNodeCanvas({
         (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
         (tool === "highlight" && selectedIds.length ? " highlight-transfer-ready" : "") +
         (panning ? " ai-panning" : "") +
+        (wheelZooming ? " ai-wheel-zooming" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
         (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full") +
         (contentBlend > 0.5 ? " ai-text-dominant" : "")
       }
-      style={{ "--ai-content-blend": contentBlend }}
+      style={{ "--ai-content-blend": contentBlend, "--ai-inv-scale": invScale }}
       onPointerDown={handleViewportPointerDown}
+      onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
+      onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
       onDragOver={(e) => {
         onCanvasDragOver?.(e);
       }}
@@ -662,25 +732,7 @@ export default function AiNodeCanvas({
         onCanvasDrop?.(e, world);
       }}
     >
-      <div
-        className="ai-void-bg"
-        aria-hidden="true"
-        style={{
-          transform: `translate(${-starOffsetX}px, ${-starOffsetY}px)`,
-        }}
-      >
-        <svg className="ai-starfield" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {STARS.map((star, i) => (
-            <circle
-              key={i}
-              cx={star.x * 100}
-              cy={star.y * 100}
-              r={star.r * 0.15}
-              fill={`rgba(200,210,255,${star.a})`}
-            />
-          ))}
-        </svg>
-      </div>
+      <div className="ai-void-bg" aria-hidden="true" />
 
       <div
         className="ai-world-layer"
@@ -695,44 +747,44 @@ export default function AiNodeCanvas({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 210, 100, 0.55)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.92)" />
             </marker>
             <marker
               id="ai-edge-arrow-interpret"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(200, 180, 255, 0.6)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.88)" />
             </marker>
             <marker
               id="ai-edge-arrow-move"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(80, 220, 255, 0.55)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.85)" />
             </marker>
             <marker
               id="ai-edge-arrow-default"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="5"
-              markerHeight="5"
+              markerWidth={markerSize}
+              markerHeight={markerSize}
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(220, 230, 255, 0.45)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.9)" />
             </marker>
             <filter id="ai-edge-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2" result="blur" />
@@ -749,9 +801,14 @@ export default function AiNodeCanvas({
               </feMerge>
             </filter>
           </defs>
-          {edges.map(({ id, from, to, kind, label }) => {
-            const geom = edgeGeometry(from, to, kind === "move" ? 0.04 : 0.07);
-            const pathD = `M ${geom.x1} ${geom.y1} Q ${geom.cx} ${geom.cy} ${geom.x2} ${geom.y2}`;
+          {edges.map(({ id, from, to, kind, label }, edgeIdx) => {
+            if (!from || !to) return null;
+            const geom = edgeGeometry(from, to, {
+              bundleOffset: bundleOffsets.get(id) || 0,
+              curveSign: edgeIdx % 2 === 0 ? 1 : -1,
+            });
+            if (!geom?.path) return null;
+            const pathD = geom.path;
             const marker =
               kind === "expand"
                 ? "url(#ai-edge-arrow-expand)"
@@ -786,21 +843,11 @@ export default function AiNodeCanvas({
                 />
                 <path
                   d={pathD}
-                  className="ai-node-line ai-node-line-glow ai-strand-aura"
-                  fill="none"
-                  filter="url(#ai-strand-glow)"
-                />
-                <path
-                  d={pathD}
-                  className="ai-node-line ai-node-line-glow"
-                  fill="none"
-                  filter="url(#ai-edge-glow)"
-                />
-                <path
-                  d={pathD}
                   className={`ai-node-line ai-node-line-${kind}`}
                   fill="none"
-                  markerEnd={constellationMode ? undefined : marker}
+                  strokeWidth={edgeStroke}
+                  vectorEffect="non-scaling-stroke"
+                  markerEnd={marker}
                 />
               </g>
             );
@@ -814,8 +861,10 @@ export default function AiNodeCanvas({
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
-          const isFocusTarget = focusedNodeId === node.id;
-          const nodeBlend = isFocusTarget ? contentBlend : 0;
+          // Every node with content morphs in place: circle dissolves, text fades in.
+          const detail = nodeDetailText(node);
+          const nodeBlend = detail ? contentBlend : 0;
+          const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
           return (
             <div
               key={node.id}
@@ -824,11 +873,13 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
-                (isFocusTarget ? " focus-target" : "") +
+                (nodeBlend > 0.01 ? " morphing" : "") +
+                (nodeBlend > 0.82 ? " text-visible" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
-                (isLanding ? " landing" : "")
+                (isLanding ? " landing" : "") +
+                (bornIds.has(node.id) ? " born-gold" : "")
               }
               style={{
                 left: node.x - r,
@@ -837,78 +888,63 @@ export default function AiNodeCanvas({
                 height: r * 2,
                 "--ai-cell-weight": cellWeight,
                 "--ai-node-blend": nodeBlend,
+                "--ai-ring-stroke": `${Math.max(2.5, 3.8 * invScale)}px`,
               }}
-              title={constellationMode && !isFocusTarget ? node.preview || node.expandedText || node.label : undefined}
+              title={constellationMode ? node.preview || node.expandedText || node.label : undefined}
               onPointerDown={(e) => startNodeDrag(e, node)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 onExploreNode?.(node.id);
               }}
             >
-              <span className="ai-node-cell" aria-hidden="true">
-                <span className="ai-node-cell-glow" />
-                <span className="ai-node-cell-membrane" />
-                <span className="ai-node-cell-nucleus" />
-              </span>
-              <span className="ai-node-starburst" aria-hidden="true" />
-              <span className="ai-node-label">
-                {zoomTier === "short"
-                  ? truncateLabel(node.label, 8)
-                  : truncateLabel(node.label, 18)}
-              </span>
+              <span className="ai-node-ring" aria-hidden="true" />
               {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
-              {tool === "highlight" &&
-                isSelected &&
-                node.expandedText?.trim() &&
-                !node.loading && (
-                  <div
-                    className="ai-node-fragment-panel"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FragmentHighlightLayer
-                      active
-                      text={node.expandedText}
-                      onFragmentReplace={onFragmentReplace}
-                      onFragmentToPaper={onFragmentToPaper}
-                      isPaperDestination={isPaperDestination}
-                      className="ai-node-fragment-highlight"
-                    />
+              {detail && nodeBlend > 0.01 && textLayout && (
+                <div
+                  className="ai-node-content-text"
+                  style={{
+                    opacity: nodeBlend,
+                    transform: `translateX(-50%) scale(${0.88 + nodeBlend * 0.12})`,
+                    width: textLayout.w,
+                    fontSize: textLayout.fontSize,
+                    lineHeight: textLayout.lineHeight,
+                  }}
+                >
+                  <div className="ai-node-content-text-body" aria-label={node.label}>
+                    {renderNodeText(node, detail)}
                   </div>
-                )}
+                  {tool === "highlight" &&
+                    node.expandedText?.trim() &&
+                    (isSelected || isFocused) &&
+                    nodeBlend > 0.04 && (
+                      <div
+                        className="ai-node-text-highlight"
+                        onPointerDown={(ev) => ev.stopPropagation()}
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        <FragmentHighlightLayer
+                          active
+                          text={node.expandedText}
+                          fontSize={textLayout.fontSize}
+                          lineHeight={textLayout.lineHeight}
+                          width={textLayout.w}
+                          fontFamily="inherit"
+                          onFragmentReplace={onFragmentReplace}
+                          onFragmentToPaper={onFragmentToPaper}
+                          isPaperDestination={isPaperDestination}
+                          className="ai-node-text-fragment"
+                        />
+                      </div>
+                    )}
+                </div>
+              )}
+              {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
+              {node.error && <span className="ai-node-error-dot" title={node.error} />}
             </div>
           );
         })}
 
-        {focusedNode && focusDetail && contentBlend > 0.02 && (
-          <div
-            className="ai-node-focus-bloom"
-            style={{
-              left: focusedNode.x,
-              top: focusedNode.y,
-              width: 56 + contentBlend * 360,
-              marginLeft: -(28 + contentBlend * 180),
-              marginTop: -(28 + contentBlend * 140),
-              minHeight: 56 + contentBlend * 260,
-              opacity: contentBlend,
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="ai-node-focus-bloom-head">{focusedNode.label}</div>
-            <div className="ai-node-focus-bloom-body">{renderFocusText(focusDetail)}</div>
-            {tool === "highlight" && focusedNode.expandedText?.trim() && !focusedNode.loading && (
-              <FragmentHighlightLayer
-                active
-                text={focusedNode.expandedText}
-                onFragmentReplace={onFragmentReplace}
-                onFragmentToPaper={onFragmentToPaper}
-                isPaperDestination={isPaperDestination}
-                className="ai-node-focus-fragment-highlight"
-              />
-            )}
-          </div>
-        )}
       </div>
 
       {lasso && (
@@ -923,7 +959,13 @@ export default function AiNodeCanvas({
         />
       )}
 
-      {nodes.length === 0 && <div className="ai-node-empty" aria-hidden="true" />}
+      {nodes.length === 0 && (
+        <div className="ai-node-empty">
+          <p className="ai-empty-title">AI spacetime</p>
+          <p>Highlight text on paper and drag <strong>→ Explore</strong> here</p>
+          <p>Or drop a lens onto a brain cell to expand it</p>
+        </div>
+      )}
 
       {strandTip && (
         <div
@@ -932,6 +974,40 @@ export default function AiNodeCanvas({
           role="tooltip"
         >
           {strandTip.label}
+        </div>
+      )}
+
+      {showHighlightReader && (
+        <div
+          className="ai-response-reader"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="ai-response-reader-head">
+            <span className="ai-response-reader-title">{highlightReaderNode.label}</span>
+            <button
+              type="button"
+              className="ai-response-reader-drag"
+              onPointerDown={(e) => startFragmentGrab(e, highlightReaderNode)}
+            >
+              Drag to paper →
+            </button>
+          </div>
+          <div className="ai-response-reader-body">
+            <FragmentHighlightLayer
+              active
+              text={highlightReaderNode.expandedText}
+              fontSize={15}
+              lineHeight={1.5}
+              fontFamily="inherit"
+              onFragmentReplace={onFragmentReplace}
+              onFragmentToPaper={onFragmentToPaper}
+              isPaperDestination={isPaperDestination}
+              className="ai-response-reader-highlight"
+            />
+          </div>
+          <p className="ai-response-reader-hint">
+            Draw over words to highlight · release on paper to pull them across
+          </p>
         </div>
       )}
 

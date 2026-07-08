@@ -3,7 +3,8 @@
 import { sampleStrokePoints } from "./highlight-text.js";
 
 export const HIGHLIGHT_INK = "#E8B923";
-export const HIGHLIGHT_W = 20;
+/** Screen-space highlight brush width (px) — keep thin for precise selection. */
+export const HIGHLIGHT_W = 5;
 
 export function highlightWorldWidth(scale) {
   return HIGHLIGHT_W / Math.max(scale, 0.12);
@@ -95,7 +96,7 @@ export function highlightBrushHits(
   blockWidth,
   itemHeight
 ) {
-  const brush = Math.max(14, HIGHLIGHT_W * scale * 0.52);
+  const brush = Math.max(5, HIGHLIGHT_W * scale * 0.38);
   const hits = [];
   for (const it of items) {
     if (skipIds?.has(it.id)) continue;

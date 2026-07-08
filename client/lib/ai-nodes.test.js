@@ -18,9 +18,9 @@ import {
 
 describe("ai-nodes layout", () => {
   it("uses planet-scale radius constants", () => {
-    assert.ok(AI_NODE_RADIUS.source <= 24);
-    assert.ok(AI_SPAWN_MIN_DIST >= 200);
-    assert.ok(AI_NODE_MIN_GAP >= 100);
+    assert.ok(AI_NODE_RADIUS.source >= 30);
+    assert.ok(AI_SPAWN_MIN_DIST >= 400);
+    assert.ok(AI_NODE_MIN_GAP >= 200);
   });
 
   it("fans multiple children without overlap at spawn distance", () => {

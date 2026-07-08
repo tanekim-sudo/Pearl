@@ -1,39 +1,33 @@
 import React from "react";
-import ThoughtsSidebar from "./ThoughtsSidebar.jsx";
 
 export default function FunctionsColumn({
-  items,
-  activePageId,
-  worldFilter,
-  onSelectThought,
-  onNewThought,
-  onSelectWorld,
-  onClearWorld,
   dropOver,
+  captureReplay,
   onDragOver,
   onDragLeave,
   onDrop,
+  onPointerTrack,
+  columnRef,
+  collapsed,
   children,
 }) {
   return (
     <aside
-      className={"functions-column" + (dropOver ? " column-drop-over" : "")}
+      ref={columnRef}
+      className={
+        "functions-column" +
+        (collapsed ? " col-collapsed" : "") +
+        (dropOver ? " column-drop-over" : "") +
+        (captureReplay ? " capture-replay" : "")
+      }
+      data-tour="functions-column"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
+      onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
     >
-      <div className="functions-column-ideas">
-        <ThoughtsSidebar
-          items={items}
-          activePageId={activePageId}
-          worldFilter={worldFilter}
-          onSelectThought={onSelectThought}
-          onNewThought={onNewThought}
-          onSelectWorld={onSelectWorld}
-          onClearWorld={onClearWorld}
-        />
-      </div>
-      <div className="functions-column-rail">{children}</div>
+      <div className="functions-column-body">{children}</div>
     </aside>
   );
 }

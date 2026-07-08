@@ -4,10 +4,15 @@ import {
   DEFAULT_CONSTELLATION_SCALE,
   EXPLORE_ZOOM_SCALE,
   AI_BLEND_ZOOM_START,
+  AI_READING_ZOOM,
   AI_TEXT_ZOOM_FULL,
   computeNodesBBox,
   fitAiConstellation,
+  fitTextFontSize,
   focusAiNode,
+  focusAiNodeRead,
+  nodeTextLayout,
+  nodeTextLayoutAtBlend,
   zoomContentBlend,
 } from "./ai-space.js";
 
@@ -53,5 +58,43 @@ describe("ai-space", () => {
     assert.equal(zoomContentBlend(AI_TEXT_ZOOM_FULL), 1);
     const mid = zoomContentBlend((AI_BLEND_ZOOM_START + AI_TEXT_ZOOM_FULL) / 2);
     assert.ok(mid > 0.4 && mid < 0.6);
+  });
+
+  it("nodeTextLayout scales with node radius and text length", () => {
+    const small = nodeTextLayout(20, 300);
+    const big = nodeTextLayout(40, 300);
+    assert.ok(big.w > small.w);
+    assert.ok(big.h >= small.h);
+    assert.ok(small.w >= 148);
+    assert.equal(small.anchorY, -20);
+  });
+
+  it("fitTextFontSize shrinks for longer responses within bounds", () => {
+    const short = fitTextFontSize(148, 60, 20);
+    const long = fitTextFontSize(148, 5000, 20);
+    assert.ok(short > long);
+    assert.ok(long >= 4.6);
+    assert.ok(short <= 9.5);
+  });
+
+  it("nodeTextLayoutAtBlend grows from inside the circle to full layout", () => {
+    const inner = nodeTextLayoutAtBlend(20, 400, 0);
+    const full = nodeTextLayoutAtBlend(20, 400, 1);
+    assert.ok(full.w > inner.w);
+    assert.ok(full.h > inner.h);
+    assert.ok(full.fontSize > inner.fontSize);
+  });
+
+  it("focusAiNodeRead frames full text from the top", () => {
+    const node = { x: 100, y: 50, radius: 30 };
+    const layout = nodeTextLayout(30, 300);
+    const cam = focusAiNodeRead(node, layout, 800, 600);
+    assert.ok(Math.abs(node.x * cam.scale + cam.x - 400) < 1);
+    const topY = (node.y + layout.anchorY) * cam.scale + cam.y;
+    assert.ok(Math.abs(topY - 44) < 1);
+    assert.ok(cam.scale <= AI_READING_ZOOM);
+    const screenH = layout.h * cam.scale;
+    assert.ok(screenH <= 600 * 0.92 + 1);
+    assert.equal(zoomContentBlend(cam.scale), 1);
   });
 });

@@ -5,17 +5,17 @@ html[data-theme="idea"],
   --paper-deep: #ececef;
   --card: #ffffff;
   --card-edge: #f8f8fa;
-  --ink: #1f2937;
-  --ink-stroke: #374151;
-  --ink-2: #4b5563;
+  --ink: #101216;
+  --ink-stroke: #14161b;
+  --ink-2: #3a3f47;
   --faint: #9ca3af;
   --line: rgba(15, 23, 42, 0.08);
   --line-2: rgba(15, 23, 42, 0.12);
   --notebook-line: rgba(15, 23, 42, 0.04);
   --notebook-margin: rgba(15, 23, 42, 0.06);
-  --accent: #7c3aed;
-  --accent-soft: rgba(124, 58, 237, 0.12);
-  --accent-text: #6d28d9;
+  --accent: #d4a83c;
+  --accent-soft: rgba(212, 168, 60, 0.12);
+  --accent-text: #92400e;
   --chalk-yellow: #fef08a;
   --chalk-yellow-deep: #eab308;
   --chalk-yellow-muted: #a16207;
@@ -23,7 +23,7 @@ html[data-theme="idea"],
   --chalk-yellow-dark: #fef9c3;
   --chalk-pink: #fbcfe8;
   --chalk-danger: #fca5a5;
-  --chalk-glow: rgba(124, 58, 237, 0.08);
+  --chalk-glow: rgba(212, 168, 60, 0.08);
   --shadow-soft: rgba(15, 23, 42, 0.08);
   --shadow-chalk: rgba(255, 255, 255, 0.8);
   --sidebar-w: 240px;
@@ -964,6 +964,7 @@ body {
   background: transparent;
 }
 .board-main.editing-text .canvas-input-layer {
+  pointer-events: none;
   cursor: default;
 }
 .cur-select {
@@ -991,77 +992,170 @@ body {
   cursor: grabbing;
 }
 
+/* ── Drag-morph ghost: text card on paper ↔ glowing orb in the void ── */
 .space-transfer-ghost-wrap {
   position: fixed;
-  z-index: 9999;
+  z-index: 10050;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  transition: left 0.12s ease-out, top 0.12s ease-out;
 }
 
-.space-transfer-ghost-preview {
-  border: 2px solid rgba(232, 185, 35, 0.85);
-  border-radius: 8px;
-  background: rgba(255, 215, 0, 0.12);
-  box-shadow:
-    0 0 0 4px rgba(255, 215, 0, 0.1),
-    0 0 20px rgba(232, 185, 35, 0.45);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-.space-transfer-ghost-preview.to-ai {
-  border-color: rgba(100, 150, 255, 0.75);
-  background: rgba(100, 150, 255, 0.1);
-  box-shadow:
-    0 0 0 4px rgba(100, 150, 255, 0.12),
-    0 0 20px rgba(100, 150, 255, 0.4);
-}
-
-.space-transfer-ghost-preview.to-paper {
-  border-color: rgba(245, 230, 163, 0.9);
-}
-
-.space-transfer-ghost {
+.transfer-morph {
   position: relative;
-  transform: translateY(-8px);
+  width: 260px;
+  height: 130px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(18, 22, 38, 0.92);
-  border: 2px solid rgba(245, 230, 163, 0.55);
+  justify-content: center;
+}
+
+.transfer-morph-card {
+  position: absolute;
+  max-width: 260px;
+  max-height: 120px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #101216;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  border: 1.5px solid rgba(212, 168, 60, 0.85);
   box-shadow:
-    0 0 0 4px rgba(245, 230, 163, 0.15),
-    0 8px 24px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(245, 230, 163, 0.95);
-  letter-spacing: 0.03em;
+    0 0 0 3px rgba(240, 195, 80, 0.2),
+    0 0 26px rgba(255, 205, 85, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
 }
-.space-transfer-ghost.to-ai {
-  border-color: rgba(100, 150, 255, 0.7);
-  color: rgba(180, 210, 255, 0.95);
-}
-.space-transfer-ghost.to-paper {
-  border-color: rgba(245, 230, 163, 0.85);
-}
-.space-transfer-ghost-count {
+
+.transfer-morph-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(245, 230, 163, 0.2);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(212, 168, 60, 0.95);
 }
-.space-transfer-ghost.to-ai .space-transfer-ghost-count {
-  background: rgba(100, 150, 255, 0.25);
+
+.transfer-morph-orb {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  transition: opacity 0.28s ease-in-out, transform 0.28s ease-in-out;
+}
+
+.transfer-morph-orb-glow {
+  position: absolute;
+  inset: -60%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(240, 210, 130, 0.3) 40%,
+    transparent 70%
+  );
+  animation: transfer-orb-breathe 1.4s ease-in-out infinite;
+}
+
+.transfer-morph-orb-core {
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255, 255, 255, 1),
+    rgba(240, 244, 255, 0.85) 55%,
+    rgba(210, 220, 255, 0.3) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.85);
+}
+
+.transfer-morph-orb-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0a0c14;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 2;
+}
+
+@keyframes transfer-orb-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Over paper: it's a text card. Over the void: it's a node. Mid-boundary: caught mid-morph. */
+.space-transfer-ghost-wrap.over-paper .transfer-morph-card {
+  opacity: 1;
+  transform: scale(1);
+}
+.space-transfer-ghost-wrap.over-paper .transfer-morph-orb {
+  opacity: 0;
+  transform: scale(0.3);
+}
+.space-transfer-ghost-wrap.over-ai .transfer-morph-card {
+  opacity: 0;
+  transform: scale(0.35);
+  border-radius: 50%;
+}
+.space-transfer-ghost-wrap.over-ai .transfer-morph-orb {
+  opacity: 1;
+  transform: scale(1);
+}
+.space-transfer-ghost-wrap.over-boundary .transfer-morph-card {
+  opacity: 0.5;
+  transform: scale(0.68);
+  border-radius: 26px;
+}
+.space-transfer-ghost-wrap.over-boundary .transfer-morph-orb {
+  opacity: 0.65;
+  transform: scale(0.85);
+}
+.space-transfer-ghost-wrap.over-functions .transfer-morph-card {
+  opacity: 0.92;
+  transform: scale(0.96);
+  border-color: rgba(186, 148, 255, 0.88);
+  box-shadow:
+    0 0 0 3px rgba(200, 160, 255, 0.22),
+    0 0 28px rgba(190, 150, 255, 0.38),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+}
+.space-transfer-ghost-wrap.over-functions .transfer-morph-orb {
+  opacity: 0.88;
+  transform: scale(0.95);
+  filter: hue-rotate(52deg) saturate(1.12);
+}
+.space-transfer-ghost-wrap.over-structures .transfer-morph-card {
+  opacity: 0.94;
+  transform: scale(0.97);
+  border-color: rgba(212, 168, 60, 0.92);
+  box-shadow:
+    0 0 0 3px rgba(240, 195, 80, 0.24),
+    0 0 30px rgba(255, 205, 85, 0.42),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+}
+.space-transfer-ghost-wrap.over-structures .transfer-morph-orb {
+  opacity: 0.5;
+  transform: scale(0.7);
 }
 
 .world {
@@ -1178,13 +1272,236 @@ body {
 }
 
 /* ---- lenses: git for perception ---- */
+.cognition-git-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 10px;
+  margin: -4px -4px 8px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 94%, var(--paper));
+  border-radius: 10px 10px 0 0;
+}
+.cognition-git-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cognition-git-icon {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+}
+.cognition-git-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cognition-git-tagline {
+  font-size: 11px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+.cognition-git-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.cognition-git-checkout {
+  font-weight: 500;
+  color: var(--ink);
+}
+.cognition-git-commits {
+  font-size: 11px;
+  color: var(--faint);
+}
+.cognition-git-idle {
+  font-size: 12px;
+  color: var(--faint);
+}
+.cognition-git-new {
+  align-self: flex-start;
+}
+.git-ref-badge {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 5px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+.git-ref-badge.main {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.git-ref-badge.branch {
+  border-color: color-mix(in srgb, var(--chalk-yellow-deep) 60%, var(--line));
+  color: var(--chalk-yellow-deep);
+}
+.git-ref-badge.fork {
+  border-style: dashed;
+}
+.git-ref-badge.merge {
+  border-color: color-mix(in srgb, var(--ink) 40%, var(--line));
+}
+.git-ref-badge.checkout {
+  background: color-mix(in srgb, var(--chalk-yellow-deep) 12%, transparent);
+}
+.git-repo-group {
+  margin-bottom: 4px;
+}
+.lens-card.git-child {
+  border-style: dashed;
+  opacity: 0.96;
+}
+.lens-card-crumb {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin: 0 0 4px 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.git-commit-dialog {
+  width: min(480px, 92vw);
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 16px 48px var(--shadow-soft);
+}
+.git-commit-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 500;
+}
+.git-commit-sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.git-commit-preview {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.git-commit-preview-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+.git-commit-seq {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.git-commit-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 6px;
+}
+.git-commit-input {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.git-commit-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.git-history-panel {
+  width: min(520px, 94vw);
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--line-2);
+}
+.git-history-crumb {
+  font-size: 12px;
+  color: var(--faint);
+  margin: 0 0 14px;
+}
+.git-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.git-history-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--paper);
+}
+.git-history-item.head {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.git-history-item-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.git-history-msg {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.git-history-time {
+  font-size: 11px;
+  color: var(--faint);
+}
+.git-history-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.lens-move-chip.sm {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+.git-history-empty {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 0;
+}
 .lens-card {
   margin: 6px 10px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card);
-  cursor: grab;
+  cursor: pointer;
+  position: relative;
+}
+.lens-card:hover {
+  border-color: color-mix(in srgb, var(--chalk-yellow-deep) 50%, var(--line));
 }
 .lens-card.active {
   border-color: var(--chalk-yellow-deep);
@@ -1240,11 +1557,81 @@ body {
   color: var(--chalk-yellow-muted);
   white-space: nowrap;
 }
-.lens-card-moves {
+.lens-card-moves,
+.lens-card-flow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
   margin: 7px 0 5px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.lens-flow-arrow {
+  font-size: 11px;
+  color: var(--faint);
+  flex-shrink: 0;
+}
+.rail-scroll-horizontal {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  align-items: stretch;
+}
+.rail-scroll-horizontal .lens-card,
+.rail-scroll-horizontal .struct-card-wrap {
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 280px;
+  margin: 0;
+}
+.rail-lenses-scroll .lens-card {
+  min-width: 240px;
+}
+.struct-card-horizontal .struct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+}
+.struct-meaning {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  line-height: 1.35;
+  display: block;
+  margin-top: 2px;
+}
+.struct-meaning.pending {
+  font-style: italic;
+  opacity: 0.65;
+}
+.struct-view-lens {
+  font-size: 10.5px;
+  color: var(--chalk-yellow-muted);
+  display: block;
+  margin-top: 4px;
+}
+.struct-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.struct-card-view-lens {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 7px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.struct-card-view-lens:hover {
+  border-color: var(--chalk-yellow-deep);
 }
 .lens-move-chip {
   font-size: 11px;
@@ -1277,6 +1664,75 @@ body {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
+  position: relative;
+}
+.lens-btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  font-weight: 500;
+}
+.lens-btn.primary:hover {
+  opacity: 0.9;
+}
+.lens-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.lens-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.lens-menu button:hover {
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper));
+}
+.lens-menu button.danger {
+  color: #b33;
+}
+.paper-empty-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  pointer-events: none;
+  z-index: 0;
+  color: var(--ink-2);
+}
+.paper-empty-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+.paper-empty-steps {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 320px;
+}
+.op-card-edit {
+  font-size: 11px;
+  padding: 3px 8px;
+  min-width: auto;
 }
 .lens-btn {
   border: 1px solid var(--line-2);
@@ -1602,11 +2058,11 @@ body {
 }
 .history-replay-bar {
   position: fixed;
-  left: calc((100vw - var(--rail-w)) / 4);
+  left: 50%;
   bottom: 22px;
   transform: translateX(-50%);
   z-index: 61;
-  width: min(420px, calc((100vw - var(--rail-w)) / 2 - 40px));
+  width: min(440px, 42vw);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1630,6 +2086,15 @@ body {
 }
 .history-replay-btn:hover {
   background: var(--line-1);
+}
+.history-replay-caption {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .history-replay-btn.ghost {
   color: var(--faint);
@@ -1772,6 +2237,36 @@ body {
 }
 
 /* text written straight onto the board */
+/* Fresh arrivals from across the boundary glow gold, then settle to ink over 5s. */
+.board-text.born-gold,
+.board-sticky.born-gold,
+.board-callout.born-gold,
+.board-block.born-gold {
+  animation: paper-born-gold 5s ease-out forwards;
+}
+
+@keyframes paper-born-gold {
+  0% {
+    color: #a87b12;
+    background: rgba(255, 214, 90, 0.16);
+    box-shadow:
+      0 0 0 2px rgba(255, 205, 80, 0.4),
+      0 0 28px rgba(255, 205, 85, 0.45);
+  }
+  55% {
+    color: #6a5310;
+    background: rgba(255, 214, 90, 0.07);
+    box-shadow:
+      0 0 0 1px rgba(255, 205, 80, 0.2),
+      0 0 14px rgba(255, 205, 85, 0.2);
+  }
+  100% {
+    color: var(--ink);
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
 .board-text {
   position: absolute;
   font-family: var(--sans);
@@ -1794,13 +2289,10 @@ body {
     background 0.15s ease;
 }
 .board-text.sel {
-  background: rgba(245, 230, 163, 0.18);
-  border-color: rgba(245, 230, 163, 0.75);
-  box-shadow:
-    0 0 0 3px rgba(245, 230, 163, 0.45),
-    0 0 18px rgba(245, 230, 163, 0.28);
-  outline: 2px solid rgba(245, 230, 163, 0.55);
-  outline-offset: 2px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
 }
 .board-text.hl-touch:not(.sel) {
   background: rgba(245, 230, 163, 0.12);
@@ -2886,6 +3378,202 @@ body {
   grid-template-columns: 1fr min(340px, 32vw);
   gap: 0;
   border-top: 1px solid var(--line);
+}
+.fn-editor-body-3col {
+  grid-template-columns: min(200px, 22vw) 1fr min(300px, 30vw);
+}
+.fn-editor-programmable .fn-head {
+  align-items: flex-start;
+}
+.fn-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.fn-head-btn {
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.fn-head-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.fn-palette {
+  border-right: 1px solid var(--line);
+  padding: 14px 12px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--card) 92%, var(--paper));
+}
+.fn-palette-title {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+.fn-palette-hint {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+.fn-palette-group {
+  margin-top: 14px;
+}
+.fn-palette-group-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 6px;
+}
+.fn-palette-block {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--line-2);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: grab;
+}
+.fn-palette-block.pipeline {
+  border-style: solid;
+}
+.fn-palette-block:hover {
+  border-color: var(--ink);
+}
+.fn-palette-block:active {
+  cursor: grabbing;
+}
+.fn-drag-grip {
+  flex-shrink: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  cursor: grab;
+  border-right: 1px solid var(--line);
+  font-size: 12px;
+}
+.fn-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+}
+.fn-inline-actions button {
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.fn-inline-actions button:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 50%, transparent);
+}
+.fn-seq-list {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+  margin-left: 14px;
+}
+.fn-seq-arrow-row {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+}
+.fn-seq-arrow {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.fn-drop-slot {
+  min-height: 6px;
+  margin: 2px 0;
+  border-radius: 6px;
+  transition: min-height 0.12s, background 0.12s;
+}
+.fn-drop-slot.active {
+  min-height: 28px;
+  background: color-mix(in srgb, var(--ink) 8%, var(--paper));
+  border: 1px dashed var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fn-drop-label {
+  font-size: 11px;
+  color: var(--ink-2);
+  letter-spacing: 0.04em;
+}
+.fn-seq-empty {
+  font-size: 12px;
+  color: var(--faint);
+  padding: 12px;
+  margin-left: 14px;
+  border: 1px dashed var(--line-2);
+  border-radius: 8px;
+}
+.fn-seq-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.fn-seq-toolbar button {
+  border: 1px solid var(--line-2);
+  background: var(--paper);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.fn-seq-toolbar button:hover {
+  border-color: var(--ink);
+}
+.fn-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.fn-step-action {
+  border: 1px solid var(--line-2);
+  background: var(--paper);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.fn-step-action.danger {
+  color: #a33;
+}
+.fn-step-action:hover {
+  border-color: var(--ink);
+}
+.fn-toast {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-right: 12px;
+}
+.fn-tree-node-wrap {
+  position: relative;
 }
 .fn-tree-scroll {
   overflow-y: auto;

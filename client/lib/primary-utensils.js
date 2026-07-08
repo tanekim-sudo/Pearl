@@ -1,5 +1,5 @@
-/** @type {readonly ["pen", "highlight", "select"]} */
-export const PRIMARY_UTENSILS = ["pen", "highlight", "select"];
+/** @type {readonly ["select", "pen", "highlight", "text"]} */
+export const PRIMARY_UTENSILS = ["select", "pen", "highlight", "text"];
 
 /** @param {string} tool */
 export function cyclePrimaryUtensil(tool) {
@@ -12,4 +12,5 @@ export const UTENSIL_LABELS = {
   pen: "✎ Pen",
   highlight: "▬ Highlight",
   select: "↖ Select",
+  text: "T Text",
 };

@@ -17,6 +17,20 @@ import {
   hydrateOperatorMap,
   opToAbstractTree,
 } from "../shared/operator-capture.js";
+import {
+  abstractOperatorToTransfer,
+  abstractSymbolToTransfer,
+  abstractJourneyToTransfer,
+  portableExportTree,
+  extractCognitiveMeta,
+  buildFidelityPipelineFallback,
+  inferDomainFromMaterial,
+  needsCognitiveInstantiation,
+  resolveTransferContext,
+} from "../shared/cognitive-transfer.js";
+import { enrichTransferWithLLM, instantiateTransfer } from "./lib/cognitive-transfer-runtime.js";
+import { interpretSymbolWithLLM } from "./lib/symbol-runtime.js";
+import { viewingLensTreeFromSymbol } from "../shared/symbol-lens.js";
 import { scaleEta, ETA } from "../shared/eta.js";
 import { pipelineClientAbortMs, CLIENT_ABORT_MS, PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
 import { compileExecutionPlan } from "../server/plan.js";
@@ -53,6 +67,22 @@ import { useSupabaseSession } from "./lib/auth-session.js";
 import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import LensTreeEditor from "./components/LensTreeEditor.jsx";
+import CognitionGitHeader from "./components/CognitionGitHeader.jsx";
+import LensHistoryPanel from "./components/LensHistoryPanel.jsx";
+import LensCommitDialog from "./components/LensCommitDialog.jsx";
+import {
+  appendCommit,
+  collectPipelineStepNames,
+  diffStepSequences,
+  formatGitTime,
+  gitRefLabel,
+  groupLensesByRepo,
+  lineageBreadcrumb,
+  makeCommit,
+  commitCount,
+} from "./lib/cognition-git.js";
+import FunctionsColumn from "./components/FunctionsColumn.jsx";
 import {
   makeAiNode,
   nextAiNodePosition,
@@ -61,6 +91,7 @@ import {
   truncateLabel,
   layoutAfterAppend,
   collectStrandChoices,
+  AI_SPAWN_MIN_DIST,
 } from "./lib/ai-nodes.js";
 import {
   CONSTELLATION_ZOOM_THRESHOLD,
@@ -69,9 +100,12 @@ import {
   centerAiCamera,
   findNearestSourceNode,
   fitAiConstellation,
+  focusAiNodeRead,
   focusAiNode,
+  computeNodesBBox,
+  nodeTextLayout,
   screenToWorld,
-  viewportCenterWorld,
+  viewportCenterWorld as aiViewportCenterWorld,
   worldToScreen,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
@@ -90,10 +124,15 @@ import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
   blockWidth,
   blockHeight,
+  blockOriginAtPointer,
+  blockOriginAtViewportCenter,
   defaultBlockContent,
   defaultBlockMeta,
   isTransformableBlock,
+  TEXT_BOX_MIN_W,
+  TEXT_BOX_MAX_W,
 } from "./lib/board-item-utils.js";
+import { focusEditableAtPoint } from "./lib/place-caret.js";
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
@@ -112,9 +151,22 @@ import {
   maxTextWidth,
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
+import {
+  animateCameraState,
+  compensateCameraForViewportResize,
+  easeInOutCubic,
+} from "./lib/camera-motion.js";
+import {
+  loadColumnLayout,
+  saveColumnLayout,
+  clampColumnLayout,
+  layoutAfterResizeDrag,
+} from "./lib/column-layout.js";
 import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
 import { cyclePrimaryUtensil, UTENSIL_LABELS } from "./lib/primary-utensils.js";
 import {
+  HIGHLIGHT_INK,
+  HIGHLIGHT_W,
   highlightWorldWidth,
   highlightBrushHits as inkHighlightBrushHits,
   itemsFromHighlightGesture,
@@ -122,16 +174,18 @@ import {
 import {
   appendItemHistory,
   buildItemTimeline,
+  buildPerceptualCaptureFromItem,
   createHistoryEvent,
   isReplayableItem,
   itemSnapshot,
   loadItemHistoryLog,
   replayStepDuration,
   saveItemHistoryLog,
+  snapshotWorldBBox,
   truncatePreview,
 } from "./lib/item-history.js";
 import HistoryReplayOverlay from "./components/HistoryReplayOverlay.jsx";
-import TransferAnimation from "./components/TransferAnimation.jsx";
+import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.jsx";
 import SelectionBoundary from "./components/SelectionBoundary.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
@@ -158,14 +212,12 @@ const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
 const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
-const TRANSFER_DRAG_THRESHOLD = 8; // px before boundary transfer activates
+const TRANSFER_DRAG_THRESHOLD = 4; // px before boundary transfer activates
 
 const INK = PAPER_INK;
 const PEN_W = 2.4; // world units
 const MARKER_W = 16;
-const HIGHLIGHT_INK = "#E8B923";
-const HIGHLIGHT_W = 20;
-const HIGHLIGHT_OPACITY = 0.92;
+const HIGHLIGHT_OPACITY = 0.88;
 const MARKER_OPACITY = 0.72;
 
 /** Branch / link directions — include east for clean left→right transform arrows. */
@@ -299,7 +351,7 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Drag objects to move · clone inside · edge to move original · Space cycles tools",
+    hint: "Click to select · drag anywhere to move · double-click text to edit · Alt+drag to duplicate",
   },
   image: {
     id: "image",
@@ -390,7 +442,30 @@ const ROLES = [
   "strategist",
 ];
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+function isEmptyDraftBlock(it) {
+  if (!it) return false;
+  if (it.type !== "text" && it.type !== "sticky") return false;
+  return !(it.text || "").replace(/\u00a0/g, " ").trim();
+}
+
+function purgeEmptyDraftBlocks(arr, keepId = null) {
+  return arr.filter((it) => !isEmptyDraftBlock(it) || it.id === keepId);
+}
+
+function lensRootOpId(lens) {
+  if (!lens) return null;
+  return lens.opId || lens.moveIds?.[0] || null;
+}
+
+function lensStepNames(lens, opMap) {
+  const rootId = lensRootOpId(lens);
+  const root = rootId ? opMap[rootId] : null;
+  if (!root) return (lens.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  if (root.kind === "pipeline" && root.steps?.length) {
+    return root.steps.map((id) => opMap[id]?.name).filter(Boolean);
+  }
+  return [root.name];
+}
 
 /** Normalize persisted lenses toward git-for-perception metadata. */
 function normalizeLens(l) {
@@ -398,7 +473,8 @@ function normalizeLens(l) {
   const createdAt = l.createdAt || l.evolvedAt || Date.now();
   return {
     ...l,
-    version: l.version || (l.evolvedAt ? 2 : 1),
+    version: l.commits?.length || l.version || (l.evolvedAt ? 2 : 1),
+    commits: Array.isArray(l.commits) ? l.commits : [],
     createdAt,
     updatedAt: l.updatedAt || l.evolvedAt || createdAt,
     uploaded: !!(l.uploaded || l.inherited),
@@ -917,8 +993,15 @@ function load(key, fallback) {
 }
 
 function spawnPositionForBox(x, y, boxW, boxH) {
-  const { dx, dy } = bboxClampOffset({ minx: x, miny: y, maxx: x + boxW, maxy: y + boxH });
-  return { x: x + dx, y: y + dy };
+  const anchorX = x - boxW / 2;
+  const anchorY = y - Math.min(boxH * 0.2, 28);
+  const { dx, dy } = bboxClampOffset({
+    minx: anchorX,
+    miny: anchorY,
+    maxx: anchorX + boxW,
+    maxy: anchorY + boxH,
+  });
+  return { x: anchorX + dx, y: anchorY + dy };
 }
 
 function stripMd(s) {
@@ -1858,10 +1941,11 @@ export default function App() {
   // lenses: named sets of recurring moves — git for perception
   const [lenses, setLenses] = useState(() => load(LENSES_KEY, []).map(normalizeLens));
   const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
-  const [lensEditor, setLensEditor] = useState(null); // { id|null, name, moveIds }
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
+  const [lensHistoryId, setLensHistoryId] = useState(null);
+  const [pendingBranch, setPendingBranch] = useState(null); // { kind: 'branch'|'fork', sourceId }
 
-  const [tool, setTool] = useState("highlight"); // highlight | select | pen | marker | eraser | image
+  const [tool, setTool] = useState("select"); // select | highlight | pen | marker | eraser | image | text | sticky
   const [panning, setPanning] = useState(false);
   const [moveDraft, setMoveDraft] = useState("");
   const [selection, setSelection] = useState([]);
@@ -1879,16 +1963,25 @@ export default function App() {
   const [imageArmed, setImageArmed] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [railTab, setRailTab] = useState("functions"); // functions | structures
+  const functionsSectionRef = useRef(null);
+  const pendingGoldBornRef = useRef(new Set());
+  const symbolsSectionRef = useRef(null);
+  const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
+  const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
   const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
+  const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
+  const [columnResizing, setColumnResizing] = useState(null);
+  const [colGridWidth, setColGridWidth] = useState(0);
+  const columnLayoutRef = useRef(columnLayout);
+  const threeColumnGridRef = useRef(null);
+  columnLayoutRef.current = columnLayout;
   const tourContextRef = useRef(createTourContext());
   const [tourActive, setTourActive] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
   const [expandToolsSignal, setExpandToolsSignal] = useState(0);
-  const [expandToolboxSignal, setExpandToolboxSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const supaAuth = useSupabaseSession();
@@ -1897,6 +1990,7 @@ export default function App() {
   );
   const prevSessionRef = useRef("unresolved");
   const [railPulse, setRailPulse] = useState(false);
+  const [functionsCaptureReplay, setFunctionsCaptureReplay] = useState(false);
   const [docTitle, setDocTitle] = useState(() => load(DOC_TITLE_KEY, "Untitled Idea"));
   const [docStarred, setDocStarred] = useState(() => !!load(DOC_STAR_KEY, false));
   const [pages, setPages] = useState(() => {
@@ -1938,9 +2032,8 @@ export default function App() {
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
   const [transferDragActive, setTransferDragActive] = useState(false);
   const [canvasDropOver, setCanvasDropOver] = useState(false);
-  const [transferAnim, setTransferAnim] = useState(null);
+  const [goldBornIds, setGoldBornIds] = useState(() => new Set());
 
-  const transferAnimKeyRef = useRef(0);
   const viewportRef = useRef(null);
   const paperSessionRef = useRef(null);
   const paperStrokeIdRef = useRef(null);
@@ -1950,11 +2043,13 @@ export default function App() {
   const gesture = useRef(null);
   const camRef = useRef(camera);
   const itemsRef = useRef(items);
+  const structuresRef = useRef(structures);
   const toolRef = useRef(tool);
   const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
   const highlightSelectionRef = useRef(highlightSelectionIds);
   const editingRef = useRef(editing);
+  const symbolViewLensSaveRef = useRef(null);
   const combineRef = useRef(null);
   const showToastRef = useRef(() => {});
   const pendingImageRef = useRef(null);
@@ -1966,6 +2061,7 @@ export default function App() {
   const pushHistoryRef = useRef(() => {});
   camRef.current = camera;
   itemsRef.current = items;
+  structuresRef.current = structures;
   toolRef.current = tool;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
@@ -1980,7 +2076,8 @@ export default function App() {
   const aiNodesRef = useRef([]);
   const aiCamRef = useRef(aiCamera);
   const aiViewportRef = useRef(null);
-  const aiCamAnimRef = useRef(null);
+  const functionsColumnRef = useRef(null);
+  const aiCamAnimCancelRef = useRef(null);
   const prevAiNodeCountRef = useRef(0);
   aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
@@ -2001,6 +2098,15 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(THEME_KEY, JSON.stringify(theme));
   }, [theme]);
+  useEffect(() => {
+    function onResize() {
+      const gridW = threeColumnGridRef.current?.clientWidth;
+      if (!gridW) return;
+      setColumnLayout((prev) => clampColumnLayout(prev, gridW));
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   useEffect(() => {
     setSavedIndicator(false);
     const t = setTimeout(() => setSavedIndicator(true), 400);
@@ -2044,7 +2150,7 @@ export default function App() {
     }
 
     if (count - prev >= 3 && aiCamRef.current.scale <= CONSTELLATION_ZOOM_THRESHOLD) {
-      setAiCamera(fitAiConstellation(aiNodes, w, h));
+      animateAiCameraTo(fitAiConstellation(aiNodes, w, h), 520);
     }
   }, [aiNodes]);
 
@@ -2061,6 +2167,10 @@ export default function App() {
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
+
+  useEffect(() => {
+    cleanupEmptyDrafts();
+  }, [selection, editing]);
   useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
 
   const shareImportedRef = useRef(false);
@@ -2217,7 +2327,7 @@ export default function App() {
     return { x: l.x + r.left, y: l.y + r.top };
   }
 
-  function viewportCenterWorld() {
+  function paperViewportCenterWorld() {
     const r = vpRect();
     return clientToWorld(r.left + r.width / 2, r.top + r.height / 2);
   }
@@ -2231,20 +2341,6 @@ export default function App() {
     const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
     const r = el?.getBoundingClientRect();
     return !!(r && clientX <= r.left + BOUNDARY_MAGNET_PX);
-  }
-
-  function pointInHighlightBBox(clientX, clientY, ids) {
-    const bb = selectionWorldBBoxForIds(ids);
-    if (!bb) return false;
-    const tl = worldToClient(bb.minx, bb.miny);
-    const br = worldToClient(bb.maxx, bb.maxy);
-    const pad = 12;
-    return (
-      clientX >= tl.x - pad &&
-      clientX <= br.x + pad &&
-      clientY >= tl.y - pad &&
-      clientY <= br.y + pad
-    );
   }
 
   function computeTransferPreviewBox(origin, ids) {
@@ -2269,10 +2365,79 @@ export default function App() {
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
   }
 
+  function isOverFunctionsColumn(clientX, clientY) {
+    const el = functionsColumnRef.current;
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
   function isOverAiColumn(clientX, clientY) {
     const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
     const r = el?.getBoundingClientRect();
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+  }
+
+  function focusRailPane(pane) {
+    const el = pane === "structures" ? symbolsSectionRef.current : functionsSectionRef.current;
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (pane === "structures") emitTourEvent("structures-tab");
+  }
+
+  function startColumnBoundaryResize(e, edge) {
+    const gridW = threeColumnGridRef.current?.clientWidth || window.innerWidth;
+    const startLayout = { ...columnLayoutRef.current };
+    const startX = e.clientX;
+    setColumnResizing(edge);
+    document.body.classList.add("column-boundary-resizing");
+
+    function onMove(ev) {
+      const raw = layoutAfterResizeDrag(edge, startX, ev.clientX, startLayout);
+      const width = threeColumnGridRef.current?.clientWidth || gridW;
+      setColumnLayout(clampColumnLayout(raw, width));
+    }
+
+    function onUp() {
+      setColumnResizing(null);
+      document.body.classList.remove("column-boundary-resizing");
+      saveColumnLayout(columnLayoutRef.current);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
+  function resolveLeftColumnDropTarget(clientX, clientY) {
+    const symbolsEl = symbolsSectionRef.current;
+    if (symbolsEl) {
+      const r = symbolsEl.getBoundingClientRect();
+      if (
+        clientY >= r.top &&
+        clientY <= r.bottom &&
+        clientX >= r.left &&
+        clientX <= r.right
+      ) {
+        return "structures";
+      }
+    }
+    return "functions";
+  }
+
+  function resolveSpaceTransferTarget(origin, clientX, clientY) {
+    if (origin === "paper") {
+      if (isOverAiColumn(clientX, clientY)) return "ai";
+      if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
+      if (isOverPaperColumn(clientX, clientY)) return "paper";
+      return null;
+    }
+    if (isOverPaperColumn(clientX, clientY)) return "paper";
+    if (isOverFunctionsColumn(clientX, clientY)) return resolveLeftColumnDropTarget(clientX, clientY);
+    if (isOverAiColumn(clientX, clientY)) return "ai";
+    return null;
   }
 
   function getAiDropWorldFromClient(clientX, clientY) {
@@ -2281,20 +2446,68 @@ export default function App() {
     return screenToWorld(aiCamRef.current, clientX - rect.left, clientY - rect.top);
   }
 
+  function markGoldBorn(id) {
+    setGoldBornIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    window.setTimeout(() => {
+      setGoldBornIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 5200);
+  }
+
+  function transferPreviewText(origin, ids) {
+    if (origin === "paper") {
+      const picked = itemsRef.current.filter((it) => ids.includes(it.id));
+      const texts = picked
+        .map((it) => (typeof it.text === "string" ? it.text.trim() : ""))
+        .filter(Boolean);
+      if (texts.length) return texts.join("  ·  ").slice(0, 180);
+      const strokes = picked.filter((it) => it.type === "stroke").length;
+      if (strokes) return `${strokes} ink stroke${strokes > 1 ? "s" : ""}`;
+      return `${ids.length} item${ids.length > 1 ? "s" : ""}`;
+    }
+    const nodes = aiNodesRef.current.filter((n) => ids.includes(n.id));
+    const t = nodes
+      .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label)
+      .filter(Boolean)
+      .join("  ·  ");
+    return t.slice(0, 180) || `${ids.length} node${ids.length > 1 ? "s" : ""}`;
+  }
+
   function startPendingSpaceTransfer(e, origin, ids, opts = {}) {
     if (!ids?.length) return;
+    const previewBox = opts.previewBox || computeTransferPreviewBox(origin, ids);
+    const preview = transferPreviewText(origin, ids);
     setGesturing(true);
     gesture.current = {
       mode: "pending-space-transfer",
       origin,
       ids: ids.slice(),
       kind: opts.kind || null,
-      previewBox: opts.previewBox || computeTransferPreviewBox(origin, ids),
+      previewBox,
+      preview,
       cx: e.clientX,
       cy: e.clientY,
       lastCx: e.clientX,
       lastCy: e.clientY,
     };
+    setTransferDragActive(true);
+    setSpaceTransferGhost({
+      cx: e.clientX,
+      cy: e.clientY,
+      count: ids.length,
+      target: null,
+      origin,
+      preview,
+      previewBox,
+    });
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
@@ -2310,12 +2523,15 @@ export default function App() {
       emitTourEvent("highlight-drag");
     }
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
+    if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
     setSpaceTransferGhost({
       cx,
       cy,
       count: g.ids.length,
       target: null,
+      origin: g.origin,
+      preview: g.preview,
       previewBox: g.previewBox,
     });
   }
@@ -2323,10 +2539,10 @@ export default function App() {
   function transferAiNodesToPaper(nodeIds, atWorld) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     if (!nodes.length) return;
-    triggerTransferAnimation("to-paper", { atWorld });
     let yOffset = 0;
     for (const node of nodes) {
-      let text = node.expandedText || node.preview || "";
+      const fragment = node.goldenFragment?.trim();
+      let text = fragment || node.expandedText || node.preview || "";
       if (!text?.trim() && node.sourceIds?.length) {
         text = itemsRef.current
           .filter((it) => node.sourceIds.includes(it.id))
@@ -2341,10 +2557,14 @@ export default function App() {
           aiNodeId: node.id,
           sourceIds: node.sourceIds,
         });
+        if (fragment) {
+          updateAiNode(node.id, { goldenFragment: null });
+        }
         yOffset += 72;
       }
     }
     setSelectedAiNodeIds([]);
+    showToast("moved to paper");
   }
 
   function handleAiNodeSelect(idOrIds, opts = {}) {
@@ -2364,30 +2584,29 @@ export default function App() {
     }
   }
 
-  function animateAiCameraTo(targetCamera, ms = 700) {
-    if (aiCamAnimRef.current) cancelAnimationFrame(aiCamAnimRef.current);
-    const from = { ...aiCamRef.current };
-    const to = targetCamera;
-    const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
-    const tick = (now) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const k = ease(t);
-      setAiCamera({
-        x: from.x + (to.x - from.x) * k,
-        y: from.y + (to.y - from.y) * k,
-        scale: from.scale + (to.scale - from.scale) * k,
-      });
-      if (t < 1) aiCamAnimRef.current = requestAnimationFrame(tick);
-      else aiCamAnimRef.current = null;
-    };
-    aiCamAnimRef.current = requestAnimationFrame(tick);
+  function animateAiCameraTo(targetCamera, ms = 420) {
+    if (aiCamAnimCancelRef.current) aiCamAnimCancelRef.current();
+    aiCamAnimCancelRef.current = animateCameraState(aiCamRef.current, targetCamera, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setAiCamera,
+      onDone: () => {
+        aiCamAnimCancelRef.current = null;
+      },
+    });
   }
 
-  function zoomAiToNode(node, scale = EXPLORE_ZOOM_SCALE, ms = 950) {
+  /** Zoom so borderless node text fills the view, anchored from the top. */
+  function aiCardCameraFor(node, el) {
+    const detail = node.expandedText || node.preview || node.label || "";
+    const layout = nodeTextLayout(node.radius || 20, detail.length);
+    return focusAiNodeRead(node, layout, el.clientWidth, el.clientHeight);
+  }
+
+  function zoomAiToNode(node, ms = 580) {
     const el = aiViewportRef.current;
     if (!el || !node) return;
-    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, scale), ms);
+    animateAiCameraTo(aiCardCameraFor(node, el), ms);
   }
 
   function focusAiNodeContent(node) {
@@ -2403,7 +2622,7 @@ export default function App() {
   }
 
   function exploreAiNode(nodeId, opts = {}) {
-    const { animate = true, runExpand = true } = opts;
+    const { animate = true, runExpand = false } = opts;
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node) return;
     emitTourEvent("explore-node");
@@ -2418,63 +2637,20 @@ export default function App() {
     } else {
       const el = aiViewportRef.current;
       if (el) {
-        setAiCamera(focusAiNode(node, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
+        setAiCamera(aiCardCameraFor(node, el));
       }
     }
 
     if (!runExpand) return;
 
-    if (node.nodeKind === "move" && node.opId) {
-      const linkId = node.sourceNodeIds?.[0] || node.parentId;
-      const source = aiNodesRef.current.find((n) => n.id === linkId);
-      const ids = source?.sourceIds;
-      const op = opMap[node.opId];
-      if (ids?.length && op) {
-        expandInAi(ids, { op, opLabel: op.name, sourceNode: source });
-      }
+    if (node.nodeKind === "expanded" && node.expandedText) {
+      focusAiNodeContent(node);
       return;
     }
 
-    if (node.nodeKind === "expanded") {
-      if (node.sourceIds?.length && !node.loading) {
-        expandInAi(
-          node.sourceIds,
-          node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
-        );
-      }
-      if (node.expandedText) {
-        focusAiNodeContent(node);
-      }
-      return;
-    }
-
-    if (node.nodeKind === "session") {
-      const child = aiNodesRef.current.find(
-        (n) => n.parentId === node.id && n.nodeKind === "expanded"
-      );
-      if (child) {
-        setAiFocusedNodeId(child.id);
-        handleAiNodeSelect(child.id, { replace: true });
-        focusAiNodeContent(child);
-        if (animate) zoomAiToNode(child);
-        else {
-          const el = aiViewportRef.current;
-          if (el) setAiCamera(focusAiNode(child, el.clientWidth, el.clientHeight, EXPLORE_ZOOM_SCALE));
-        }
-        if (!child.expandedText && !child.loading && aiPanel?.sketchBundle) {
-          interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-        }
-      } else if (aiPanel?.sketchBundle) {
-        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-      }
-      return;
-    }
-
-    if (node.sourceIds?.length && !node.loading) {
-      expandInAi(
-        node.sourceIds,
-        node.opId ? { op: opMap[node.opId], opLabel: opMap[node.opId]?.name } : {}
-      );
+    const { ids, sourceNode } = resolveNodeSourceIds(node);
+    if (ids?.length && !node.loading) {
+      expandInAi(ids, { sourceNode: sourceNode || node });
     }
   }
 
@@ -2483,11 +2659,19 @@ export default function App() {
     if (!el) return;
     emitTourEvent("return-constellation");
     setAiFocusedNodeId(null);
-    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 900);
+    animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 520);
   }
 
   function focusAiNodeFromZoom(nodeId) {
-    exploreAiNode(nodeId, { animate: false, runExpand: false });
+    const node = aiNodesRef.current.find((n) => n.id === nodeId);
+    if (!node) return;
+    setAiFocusedNodeId(nodeId);
+    handleAiNodeSelect(nodeId, { replace: true });
+    focusAiNodeContent(node);
+    const el = aiViewportRef.current;
+    if (!el) return;
+    const midScale = Math.min(EXPLORE_ZOOM_SCALE, Math.max(aiCamRef.current.scale, 1.05));
+    animateAiCameraTo(focusAiNode(node, el.clientWidth, el.clientHeight, midScale), 480);
   }
 
   function captureMoveStartPositions(ids) {
@@ -2636,6 +2820,17 @@ export default function App() {
         }
         setCamera({ ...g.cam, x: g.cam.x + (cx - g.cx), y: g.cam.y + (cy - g.cy) });
       } else if (g.mode === "pending-space-transfer") {
+        g.lastCx = cx;
+        g.lastCy = cy;
+        setSpaceTransferGhost({
+          cx,
+          cy,
+          count: g.ids.length,
+          target: null,
+          origin: g.origin,
+          preview: g.preview,
+          previewBox: g.previewBox,
+        });
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
         if (dist > TRANSFER_DRAG_THRESHOLD) {
           activateSpaceTransfer(g, cx, cy);
@@ -2643,28 +2838,33 @@ export default function App() {
       } else if (g.mode === "space-transfer") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const target =
-          g.origin === "paper"
-            ? isOverAiColumn(cx, cy)
-              ? "ai"
-              : isOverPaperColumn(cx, cy)
-              ? "paper"
-              : null
-            : isOverPaperColumn(cx, cy)
-            ? "paper"
-            : isOverAiColumn(cx, cy)
-            ? "ai"
-            : null;
+        const target = resolveSpaceTransferTarget(g.origin, cx, cy);
         const magnet =
-          (g.origin === "paper" && (isNearTransferBoundary(cx) || target === "ai")) ||
-          (g.origin === "ai" && (isNearAiTransferBoundary(cx) || target === "paper"));
+          (g.origin === "paper" &&
+            (isNearTransferBoundary(cx) ||
+              target === "ai" ||
+              target === "functions" ||
+              target === "structures")) ||
+          (g.origin === "ai" &&
+            (isNearAiTransferBoundary(cx) ||
+              target === "paper" ||
+              target === "functions" ||
+              target === "structures"));
         setBoundaryMagnetActive(magnet);
+        setRailDropOver(target === "functions" || target === "structures");
+        if (target === "structures") {
+          setSymbolDropTargetId(structCardAtClient(cx, cy));
+        } else {
+          setSymbolDropTargetId(null);
+        }
         setTransferDragActive(true);
         setSpaceTransferGhost({
           cx,
           cy,
           count: g.ids.length,
           target,
+          origin: g.origin,
+          preview: g.preview,
           previewBox: g.previewBox,
         });
       } else if (g.mode === "draw") {
@@ -2724,6 +2924,9 @@ export default function App() {
         g.cx = cx;
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
+        const overAi = isOverAiColumn(cx, cy) || isNearTransferBoundary(cx);
+        setBoundaryMagnetActive(isNearTransferBoundary(cx));
+        setTransferDragActive(overAi);
         const ids = new Set(g.ids);
         setItems((arr) =>
           arr.map((it) => {
@@ -2738,9 +2941,7 @@ export default function App() {
           })
         );
       } else if (g.mode === "pending") {
-        if (g.intent === "edit") {
-          /* wait for click-up to edit */
-        } else if (g.intent === "clone") {
+        if (g.intent === "clone") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
           if (dist > MOVE_DRAG_THRESHOLD) {
             g.mode = "clone";
@@ -2812,6 +3013,8 @@ export default function App() {
       } else if (g.mode === "space-transfer") {
         setTransferDragActive(false);
         setBoundaryMagnetActive(false);
+        setRailDropOver(false);
+        setSymbolDropTargetId(null);
         setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
@@ -2826,22 +3029,28 @@ export default function App() {
           if (isHighlight) {
             const pts = g.points.slice();
             if (g.strokeId) paperSessionRef.current?.cancelStroke?.();
-            const tapHit =
-              g.points.length <= 3
-                ? itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy)
-                : null;
+            const moved = Math.hypot((g.lastCx ?? g.cx) - g.cx, (g.lastCy ?? g.cy) - g.cy);
+            const isTap = pts.length <= 4 && moved <= 10;
+            const tapHit = isTap
+              ? itemAtPointRef.current?.(g.lastCx ?? g.cx, g.lastCy ?? g.cy)
+              : null;
             let ideaIds = ideasFromHighlightGesture(
               pts,
               camRef.current.scale,
               itemsRef.current,
               worldToClient,
-              tapHit && isTransformableBlock(tapHit) ? tapHit.id : null
+              tapHit && isTransformableBlock(tapHit) ? tapHit.id : tapHit?.id
             );
             const merged = [...new Set([...ideaIds, ...brushedDuring])];
             if (merged.length) {
-              accumulateHighlightSelection(merged, g.additive);
-            } else if (!g.additive && g.points.length <= 3) {
-              setHighlightSelectionIds([]);
+              if (isTap && !g.additive && merged.length === 1) {
+                const id = merged[0];
+                setHighlightSelectionIds((prev) =>
+                  prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                );
+              } else {
+                accumulateHighlightSelection(merged, g.additive || isTap);
+              }
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -2876,18 +3085,7 @@ export default function App() {
       } else if (g.mode === "edit-click") {
         placeEditCaret(g.hitId, g.cx, g.cy);
       } else if (g.mode === "pending") {
-        if (g.intent === "edit" && g.ids?.length === 1) {
-          const hit = itemsRef.current.find((i) => i.id === g.hitId);
-          if (hit?.type === "text") {
-            if (editingRef.current === hit.id) {
-              placeEditCaret(hit.id, g.cx, g.cy);
-            } else {
-              editClickRef.current = { cx: g.cx, cy: g.cy };
-              editingRef.current = hit.id;
-              setEditing(hit.id);
-            }
-          }
-        }
+        /* tap without drag — selection only */
       } else if (g.mode === "clone") {
         setCloneGhost(null);
         setBoundaryMagnetActive(false);
@@ -2911,9 +3109,24 @@ export default function App() {
         }
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
+        setTransferDragActive(false);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
-        if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
+        if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
+          restoreMovePositions(g.startPositions);
+          const world = getAiDropWorldFromClient(cx, cy);
+          const sketchBundle = gatherSelectionSketchBundle(g.ids);
+          if (sketchBundle) {
+            interpretSketchBundle(sketchBundle, world, { fromClient: { x: cx, y: cy } });
+          } else {
+            const expandIds = transformableDragIds(g.ids);
+            if (expandIds.length) {
+              expandInAi(expandIds, { expandedAt: world, fromClient: { x: cx, y: cy }, quiet: true });
+            } else {
+              showToast("Nothing here can transfer to AI");
+            }
+          }
+        } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
           const target = itemAtPoint(cx, cy, exclude);
           if (target) combineRef.current?.(g.ids, [target.id]);
@@ -2930,6 +3143,41 @@ export default function App() {
       window.removeEventListener("pointercancel", onUp);
     };
   }, []);
+
+  useEffect(() => {
+    const el = threeColumnGridRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setColGridWidth(el.clientWidth));
+    ro.observe(el);
+    setColGridWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (columnResizing) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const prev = paperVpSizeRef.current;
+    if (prev.w > 0 && (prev.w !== w || prev.h !== h)) {
+      setCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
+    }
+    paperVpSizeRef.current = { w, h };
+  }, [columnLayout, colGridWidth, columnResizing]);
+
+  useEffect(() => {
+    if (columnResizing) return;
+    const el = aiViewportRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const prev = aiVpSizeRef.current;
+    if (prev.w > 0 && (prev.w !== w || prev.h !== h)) {
+      setAiCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
+    }
+    aiVpSizeRef.current = { w, h };
+  }, [columnLayout, colGridWidth, columnResizing]);
 
   // wheel: pinch / ctrl+scroll zooms at cursor; two-finger scroll pans
   useEffect(() => {
@@ -2959,23 +3207,35 @@ export default function App() {
           }
           return null;
         });
-        setHighlightSelectionIds([]);
-        setHighlightTouchIds([]);
+        clearHighlightSelection();
         pendingImageRef.current = null;
         setImageArmed(false);
       }
-      // Space cycles primary utensils: pen → highlight → select
-      if (e.key === " " && !e.repeat && !walkingRef.current) {
+      // Space: clear highlight marks, then toggle utensil (AI) or cycle tools (paper)
+      if (e.key === " " && !e.repeat) {
         const typing =
           e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
         if (typing) return;
+        const lp = lastPointerRef.current;
+        const onAi = lp ? isOverAiColumn(lp.cx, lp.cy) : false;
+        if (!onAi && walkingRef.current) return;
         e.preventDefault();
-        setTool((t) => {
-          const next = cyclePrimaryUtensil(t);
+        clearHighlightSelection();
+        if (onAi) {
+          const next = toolRef.current === "select" ? "highlight" : "select";
+          setTool(next);
+          toolRef.current = next;
           emitTourEvent("space-toggle-tool");
           showToast(UTENSIL_LABELS[next] || next);
-          return next;
-        });
+        } else {
+          setTool((t) => {
+            const next = cyclePrimaryUtensil(t);
+            toolRef.current = next;
+            emitTourEvent("space-toggle-tool");
+            showToast(UTENSIL_LABELS[next] || next);
+            return next;
+          });
+        }
         pendingImageRef.current = null;
         setImageArmed(false);
         return;
@@ -3031,7 +3291,7 @@ export default function App() {
       const text = e.clipboardData?.getData("text/plain")?.trim();
       if (text) {
         e.preventDefault();
-        const center = viewportCenterWorld();
+        const center = paperViewportCenterWorld();
         const id = uid();
         setItems((arr) => [...arr, normalizeItem({ id, type: "text", x: center.x, y: center.y, text, w: 360 })]);
         setSelection([id]);
@@ -3072,24 +3332,81 @@ export default function App() {
     return true;
   }
 
-  function transferHighlightSelectionToAi(ids, worldPos = null) {
+  function transferHighlightSelectionToAi(ids, worldPos = null, opts = {}) {
     if (!ids?.length) return;
     emitTourEvent("highlight-transfer");
+    const sketchBundle = gatherSelectionSketchBundle(ids);
+    const world = worldPos || getAiDropWorld();
+    const expandIds = transformableDragIds(ids);
+    if (!sketchBundle && !expandIds.length) {
+      showToast("Nothing here can transfer to AI");
+      return;
+    }
     setHighlightTransferringIds(ids);
     window.setTimeout(() => {
       setHighlightTransferringIds([]);
       setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
       setHighlightTouchIds([]);
     }, 920);
-    recordItemEvents(ids, "highlight-transfer", {});
-    const sketchBundle = gatherSelectionSketchBundle(ids);
-    const world = worldPos || getAiDropWorld();
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "ai",
+      aiNodeId: null,
+      opName: "highlight explore",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
     if (sketchBundle) {
-      interpretSketchBundle(sketchBundle, world);
+      interpretSketchBundle(sketchBundle, world, opts);
       return;
     }
-    const expandIds = transformableDragIds(ids);
-    if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+    if (expandIds.length) {
+      expandInAi(expandIds, { expandedAt: world, fromClient: opts.fromClient, quiet: true });
+    }
+  }
+
+  function transferHighlightSelectionToPaper(ids, atWorld) {
+    if (!ids?.length || !atWorld) return;
+    emitTourEvent("highlight-to-paper");
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "paper",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    duplicateItemsAt(ids, atWorld);
+    showToast("placed on paper");
+  }
+
+  function transferHighlightSelectionToFunctions(ids) {
+    if (!ids?.length) return;
+    emitTourEvent("highlight-to-functions");
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "functions",
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    captureMaterialWithReplay(ids);
+  }
+
+  function transferHighlightSelectionToStructures(ids, structId = null) {
+    if (!ids?.length) return;
+    emitTourEvent("highlight-to-structures");
+    finishHighlightTransfer(ids);
+    recordItemEvents(ids, "highlight-transfer", {
+      targetLayer: "structures",
+      structId: structId || undefined,
+      merged: !!structId,
+      inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
+    });
+    addMaterialToSymbol(ids, { structId });
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -3098,6 +3415,13 @@ export default function App() {
       const merged = addToExisting ? [...new Set([...prev, ...newIds])] : [...new Set(newIds)];
       return merged;
     });
+  }
+
+  function clearHighlightSelection() {
+    setHighlightSelectionIds([]);
+    setHighlightTouchIds([]);
+    setHighlightTransferringIds([]);
+    setHighlightGrabHover(false);
   }
 
   function deleteSelection() {
@@ -3134,7 +3458,7 @@ export default function App() {
 
     setItems((arr) => {
       const placedSoFar = [];
-      let anchor = opts.anchorBox || spawnAnchorBox(parentIds, arr, fallbackWorld, viewportCenterWorld);
+      let anchor = opts.anchorBox || spawnAnchorBox(parentIds, arr, fallbackWorld, paperViewportCenterWorld);
       let linkFrom = parentIds || [];
       const newItems = [];
       const newLinks = [];
@@ -3219,9 +3543,6 @@ export default function App() {
   }
 
   async function executeOperatorJob(jobId, op, targetIds, atClient, opts = {}, mapOverride = null) {
-    const rawMap = { ...opMap, ...(mapOverride || {}) };
-    const map = hydrateOperatorMap(rawMap, operators, op.id);
-    const execOp = map[op.id] || op;
     const idSet = new Set(targetIds);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
     patchJob(jobId, { step: "reading material…" });
@@ -3229,6 +3550,33 @@ export default function App() {
     let text = gathered.text;
     const { image } = gathered;
     if (!text?.trim() && !image) throw new Error("no readable content");
+
+    const transfer = resolveTransferContext(op, opts.lens);
+    if (transfer && text?.trim() && needsCognitiveInstantiation(transfer, text)) {
+      const targetDomain = inferDomainFromMaterial(text);
+      const original = transfer.fidelity?.originalDomain || transfer.domainAnchor?.label;
+      const cross = !!(original && targetDomain && original !== targetDomain);
+      patchJob(jobId, { step: cross ? "adapting across domains…" : "restoring cognitive transfer…" });
+      let pipelineTree;
+      if (!cross) {
+        pipelineTree = buildFidelityPipelineFallback(transfer);
+      } else {
+        pipelineTree = await instantiateTransfer(transfer, runClaude, {
+          targetMaterial: text,
+          targetDomain,
+          mode: "cross",
+        });
+      }
+      if (pipelineTree) {
+        const { ops, rootId } = treeToOperators(pipelineTree, { top: false });
+        mapOverride = { ...(mapOverride || {}), ...Object.fromEntries(ops.map((o) => [o.id, o])) };
+        op = ops.find((o) => o.id === rootId) || op;
+      }
+    }
+
+    const rawMap = { ...opMap, ...(mapOverride || {}) };
+    const map = hydrateOperatorMap(rawMap, operators, op.id);
+    const execOp = map[op.id] || op;
 
     if (opts.highlightQuote) {
       text = `HIGHLIGHTED:\n"""\n${opts.highlightQuote.trim()}\n"""\n\nFULL TEXT:\n"""\n${(opts.highlightContext || text).trim()}\n"""`;
@@ -3295,7 +3643,7 @@ export default function App() {
     }
     }
 
-    if (execOp.multi || execOp.name === "differentiate") {
+    if (execOp.multi) {
       const parts = out
         .split(/\n{2,}/)
         .map((p) => p.replace(/^\s*(?:\[[^\]]+\]|[-*•]|\d+[.)])\s*/m, "").trim())
@@ -3340,8 +3688,8 @@ export default function App() {
       showToast("drop onto an idea");
       return;
     }
-    if ((op.needsSelection >= 2 || op.name === "merge") && ids.length < 2) {
-      showToast("merge: select 2+ ideas, or highlight with another selected");
+    if ((op.needsSelection >= 2) && ids.length < 2) {
+      showToast("select 2+ ideas for this transform");
       return;
     }
     setSelection(ids);
@@ -3370,7 +3718,18 @@ export default function App() {
     if (isExpansionOperator(op)) {
       const ids = resolveTargetIds(atClient);
       if (ids.length) {
-        expandInAi(ids, { op, opLabel: op.name });
+        let expandedAt;
+        if (isOverAiColumn(atClient.x, atClient.y)) {
+          expandedAt = getAiDropWorldFromClient(atClient.x, atClient.y);
+        } else {
+          const el = aiViewportRef.current;
+          expandedAt = el
+            ? aiViewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight)
+            : undefined;
+        }
+        expandInAi(ids, { op, opLabel: op.name, expandedAt, fromClient: atClient });
+      } else {
+        showToast("drop onto text, image, or drawing");
       }
       return;
     }
@@ -3399,7 +3758,7 @@ export default function App() {
     }
     setDropTargetId(null);
     if (moveOps.length === 1) {
-      runOperator(moveOps[0], ids, { atClient });
+      runOperator(moveOps[0], ids, { atClient, lens });
       return;
     }
     const tree = {
@@ -3411,7 +3770,7 @@ export default function App() {
     const compound = ops.find((o) => o.id === rootId);
     if (!compound) return;
     const mergedMap = { ...opMap, ...Object.fromEntries(ops.map((o) => [o.id, o])) };
-    runOperator(compound, ids, { atClient, opMap: mergedMap });
+    runOperator(compound, ids, { atClient, opMap: mergedMap, lens });
   }
 
   // ---- saved idea structures ----
@@ -3524,9 +3883,8 @@ export default function App() {
     setLenses([]);
     setActiveLensId(null);
     setWalking(null);
-    setLensEditor(null);
     setLensCompare(null);
-    setTool("highlight");
+    setTool("select");
     setMoveDraft("");
     setSelection([]);
     setDraft(null);
@@ -3539,16 +3897,146 @@ export default function App() {
     setHighlight(null);
     setGesturing(false);
     setImageArmed(false);
-    setRailTab("functions");
+    focusRailPane("functions");
     setRailDropOver(false);
     setCaptureNameOverride(null);
     setOnboard({ step: "role" });
     showToast("Fresh start");
   }
 
-  function openCreateFunction() {
+  function openCreateLens() {
     emitTourEvent("open-function-editor");
     setOpEditor({ mode: "create" });
+  }
+
+  function syncLensForOperator(rootId, rootOp, { isNew = false, stepNames = [], commitMessage = "", commitKind = "commit" } = {}) {
+    if (!rootId || !rootOp) return;
+    const name = (rootOp.name || "").trim() || "unnamed lens";
+    const now = Date.now();
+    const names = stepNames.length ? stepNames : [name];
+    setLenses((ls) => {
+      const idx = ls.findIndex((l) => l.opId === rootId || l.id === rootId);
+      if (idx >= 0) {
+        const prev = ls[idx];
+        const commit = makeCommit(
+          { message: commitMessage, stepNames: names, parentId: prev.headCommitId, kind: commitKind },
+          uid
+        );
+        const next = ls.slice();
+        next[idx] = appendCommit(
+          {
+            ...prev,
+            opId: rootId,
+            name,
+            moveIds: [rootId],
+          },
+          commit
+        );
+        return next;
+      }
+      const commit = makeCommit(
+        { message: commitMessage, stepNames: names, kind: isNew ? "init" : commitKind },
+        uid
+      );
+      const lens = appendCommit(
+        normalizeLens({
+          id: rootId,
+          opId: rootId,
+          name,
+          moveIds: [rootId],
+          defaultBranch: true,
+          createdAt: now,
+          updatedAt: now,
+        }),
+        commit
+      );
+      return [lens, ...ls];
+    });
+    if (isNew) setActiveLensId(rootId);
+  }
+
+  function removeLensForOperator(rootId) {
+    if (!rootId) return;
+    setLenses((ls) => ls.filter((l) => lensRootOpId(l) !== rootId && l.id !== rootId));
+    setActiveLensId((id) => (id === rootId ? null : id));
+  }
+
+  function duplicateOperatorSubtree(rootId) {
+    const map = Object.fromEntries(operators.map((o) => [o.id, o]));
+    const root = map[rootId];
+    if (!root) return null;
+    const subtreeIds = [...collectSubtreeIds(rootId, map)];
+    const idMap = Object.fromEntries(subtreeIds.map((id) => [id, uid()]));
+    const newOps = subtreeIds.map((id) => {
+      const op = map[id];
+      const clone = { ...op, id: idMap[id] };
+      if (clone.kind === "pipeline" && clone.steps) {
+        clone.steps = clone.steps.map((sid) => idMap[sid] || sid);
+      }
+      if (id === rootId) clone.top = true;
+      return clone;
+    });
+    setOperators((prev) => [...prev, ...newOps]);
+    return idMap[rootId];
+  }
+
+  function openEditLens(op) {
+    emitTourEvent("open-function-editor");
+    setOpEditor({ mode: "edit", op });
+  }
+
+  /** Resolve a lens record to an editable operator tree (fixes multi-move lenses). */
+  function openEditLensFromLens(lens) {
+    if (!lens) return;
+    emitTourEvent("lens-evolve");
+    const opId = lensRootOpId(lens);
+    let op = opId ? opMap[opId] : null;
+    const moveIds = lens.moveIds || [];
+
+    if (!op && moveIds.length) {
+      op = opMap[moveIds[0]];
+    }
+
+    if (op && moveIds.length > 1 && op.kind !== "pipeline") {
+      const stepTrees = moveIds
+        .map((id) => opMap[id])
+        .filter(Boolean)
+        .map((o) => opToJsonTree(o, opMap));
+      if (!stepTrees.length) {
+        showToast("Can't edit — steps are missing. Try + lens to rebuild.");
+        return;
+      }
+      const tree = { name: lens.name, description: `Lens: ${lens.name}`, steps: stepTrees };
+      const { ops, rootId } = treeToOperators(tree, { top: true });
+      const newRoot = ops.find((o) => o.id === rootId);
+      setOperators((prev) => [...prev, ...ops]);
+      setLenses((ls) =>
+        ls.some((l) => l.id === lens.id)
+          ? ls.map((l) =>
+              l.id === lens.id ? normalizeLens({ ...l, opId: rootId, moveIds: [rootId], name: lens.name }) : l
+            )
+          : ls
+      );
+      openEditLens(newRoot);
+      return;
+    }
+
+    if (op) {
+      openEditLens(op);
+      return;
+    }
+
+    showToast("Can't edit — use + lens to create one");
+  }
+
+  /** @deprecated use openCreateLens */
+  function openCreateFunction() {
+    openCreateLens();
+  }
+
+  /** @deprecated use openEditLens */
+  function openEditFunction(op) {
+    openEditLens(op);
   }
 
   /** One line → a perceptual move you can drag, compound, and lens. */
@@ -3581,12 +4069,7 @@ export default function App() {
     showToast(`move · ${name}`);
   }
 
-  function openEditFunction(op) {
-    emitTourEvent("open-function-editor");
-    setOpEditor({ mode: "edit", op });
-  }
-
-  function saveFunctionTree(oldRootId, newOps) {
+  function saveLensTree(oldRootId, newOps, { commitMessage = "" } = {}) {
     setOperators((arr) => {
       let next = arr;
       const newRootId = newOps.length ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id : null;
@@ -3605,8 +4088,27 @@ export default function App() {
       }
       return [...next, ...newOps];
     });
+    const newRootId = newOps.length
+      ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id
+      : null;
+    const root = newOps.find((o) => o.id === newRootId);
+    const draftMap = Object.fromEntries(newOps.map((o) => [o.id, o]));
+    const stepNames = collectPipelineStepNames(newRootId, draftMap);
+    if (root?.top) {
+      syncLensForOperator(newRootId, root, {
+        isNew: !oldRootId,
+        stepNames,
+        commitMessage,
+        commitKind: oldRootId ? "commit" : "init",
+      });
+    }
     setOpEditor(null);
-    showToast(oldRootId ? "function updated" : "function created");
+    showToast(oldRootId ? "saved · lens updated" : "saved · lens created");
+  }
+
+  /** @deprecated alias */
+  function saveFunctionTree(oldRootId, newOps) {
+    saveLensTree(oldRootId, newOps);
   }
 
   function saveManualOp(op) {
@@ -3626,12 +4128,18 @@ export default function App() {
     showToast("saved");
   }
 
-  function deleteFunction(rootId) {
+  function deleteLens(rootId, opts = {}) {
     const map = Object.fromEntries(operators.map((o) => [o.id, o]));
     const removeIds = collectSubtreeIds(rootId, map);
     setOperators((arr) => arr.filter((o) => !removeIds.has(o.id)));
+    if (!opts.skipLensRemove) removeLensForOperator(rootId);
     setOpEditor(null);
-    showToast("function deleted");
+    showToast("lens deleted");
+  }
+
+  /** @deprecated alias */
+  function deleteFunction(rootId, opts) {
+    deleteLens(rootId, opts);
   }
 
   // ---- paths: every node already carries its journey ----
@@ -3646,7 +4154,10 @@ export default function App() {
   const itemHistoryLogRef = useRef(itemHistoryLog);
   itemHistoryLogRef.current = itemHistoryLog;
   const historyPlayTimerRef = useRef(null);
-  const camAnimRef = useRef(null);
+  const historyCaptureCallbackRef = useRef(null);
+  const camAnimCancelRef = useRef(null);
+  const paperVpSizeRef = useRef({ w: 0, h: 0 });
+  const aiVpSizeRef = useRef({ w: 0, h: 0 });
 
   useEffect(() => saveItemHistoryLog(itemHistoryLog), [itemHistoryLog]);
 
@@ -3667,8 +4178,8 @@ export default function App() {
     for (const id of itemIds || []) recordItemEvent(id, kind, meta);
   }
 
-  function animateCameraTo(targetWorld, targetScale, ms = 850) {
-    if (camAnimRef.current) cancelAnimationFrame(camAnimRef.current);
+  function animateCameraTo(targetWorld, targetScale, ms = 480) {
+    if (camAnimCancelRef.current) camAnimCancelRef.current();
     const r = vpRect();
     const from = { ...camRef.current };
     const scale = clampScale(targetScale ?? from.scale);
@@ -3677,27 +4188,35 @@ export default function App() {
       x: r.width / 2 - targetWorld.x * scale,
       y: r.height / 2 - targetWorld.y * scale,
     };
-    const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
-    const tick = (now) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const k = ease(t);
-      setCamera({
-        x: from.x + (to.x - from.x) * k,
-        y: from.y + (to.y - from.y) * k,
-        scale: from.scale + (to.scale - from.scale) * k,
-      });
-      if (t < 1) camAnimRef.current = requestAnimationFrame(tick);
-      else camAnimRef.current = null;
-    };
-    camAnimRef.current = requestAnimationFrame(tick);
+    camAnimCancelRef.current = animateCameraState(from, to, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setCamera,
+      onDone: () => {
+        camAnimCancelRef.current = null;
+      },
+    });
+  }
+
+  function animateCameraDirect(targetCamera, ms = 480) {
+    if (camAnimCancelRef.current) camAnimCancelRef.current();
+    camAnimCancelRef.current = animateCameraState(camRef.current, targetCamera, {
+      duration: ms,
+      ease: easeInOutCubic,
+      onUpdate: setCamera,
+      onDone: () => {
+        camAnimCancelRef.current = null;
+      },
+    });
   }
 
   function stepFocusCenter(step) {
     const ids = new Set(step.itemIds || []);
     const targets = itemsRef.current.filter((it) => ids.has(it.id));
-    if (!targets.length) return step.fallbackCenter || null;
-    let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+    let minx = Infinity,
+      miny = Infinity,
+      maxx = -Infinity,
+      maxy = -Infinity;
     for (const it of targets) {
       const bb = itemWorldBBox(it);
       if (!bb) continue;
@@ -3706,8 +4225,28 @@ export default function App() {
       maxx = Math.max(maxx, bb.maxx);
       maxy = Math.max(maxy, bb.maxy);
     }
-    if (minx === Infinity) return step.fallbackCenter || null;
-    return { x: (minx + maxx) / 2, y: (miny + maxy) / 2, w: maxx - minx, h: maxy - miny };
+    if (minx !== Infinity) {
+      return { x: (minx + maxx) / 2, y: (miny + maxy) / 2, w: maxx - minx, h: maxy - miny };
+    }
+    const snap = step.itemSnapshot;
+    const sbb = snapshotWorldBBox(snap);
+    if (sbb) {
+      return {
+        x: (sbb.minx + sbb.maxx) / 2,
+        y: (sbb.miny + sbb.maxy) / 2,
+        w: sbb.maxx - sbb.minx,
+        h: sbb.maxy - sbb.miny,
+      };
+    }
+    return step.fallbackCenter || null;
+  }
+
+  function snapshotScreenBBox(snap) {
+    const bb = snapshotWorldBBox(snap);
+    if (!bb) return null;
+    const tl = worldToClient(bb.minx, bb.miny);
+    const br = worldToClient(bb.maxx, bb.maxy);
+    return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
   }
 
   function stepFocusScale(focus) {
@@ -3851,7 +4390,7 @@ export default function App() {
     };
     const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(`saved function · ${moveCount} move${moveCount === 1 ? "" : "s"}`);
     return rootId;
   }
@@ -3859,10 +4398,247 @@ export default function App() {
   function saveSelectionAsFunction() {
     const id = selRef.current[0];
     if (!id) return;
-    const info = getNodeThreadCapture(id);
-    const name = (captureNameOverride ?? info.defaultName ?? "").trim();
-    captureThreadAsOperator(id, name ? { name } : {});
+    const name = (captureNameOverride ?? getNodeThreadCapture(id).defaultName ?? "").trim();
+    captureMaterialWithReplay([id], name ? { name } : {});
     setCaptureNameOverride(null);
+  }
+
+  function pickPrimaryCaptureId(ids) {
+    const items = (ids || [])
+      .map((id) => itemsRef.current.find((it) => it.id === id))
+      .filter((it) => it && isReplayableItem(it));
+    if (!items.length) return ids?.[0] || null;
+    const withVia = items.find((it) => it.via?.name);
+    if (withVia) return withVia.id;
+    let best = items[0].id;
+    let bestLen = 0;
+    for (const it of items) {
+      const len =
+        (itemHistoryLogRef.current[it.id] || []).length + (it.history || []).length;
+      if (len > bestLen) {
+        bestLen = len;
+        best = it.id;
+      }
+    }
+    return best;
+  }
+
+  function historyCaptureContext() {
+    return {
+      allItems: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      pages,
+      historyLog: itemHistoryLogRef.current,
+    };
+  }
+
+  function pulseFunctionsRail() {
+    setRailPulse(true);
+    window.setTimeout(() => setRailPulse(false), 1200);
+  }
+
+  function captureStepsAsOperator(steps, captureMeta, opts = {}) {
+    if (!steps?.length) return null;
+    const moveNames = steps.map((s) => s.name);
+    const chainLabel = moveNames.join(" → ");
+    const name = (opts.name || `thread: ${chainLabel}`).slice(0, 72);
+    const tree = {
+      name,
+      description: `Captured perceptual sequence (${steps.length} steps): ${chainLabel}. Reapplies to any similar material.`,
+      steps,
+    };
+    const meta = {
+      ...(captureMeta || {}),
+      provenance: captureMeta?.provenance || "history-capture",
+      stepCount: steps.length,
+    };
+    const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
+    const rootOp = ops.find((o) => o.id === rootId);
+    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+    const cognitiveTransfer = rootOp
+      ? abstractOperatorToTransfer(rootOp, draftMap, [...operators, ...ops], {
+          captureMeta: meta,
+          domainLabel: opts.domainLabel || null,
+          materialSample: opts.materialSample || null,
+          kind: "function",
+        })
+      : null;
+    const opsWithMeta = ops.map((o) =>
+      o.id === rootId && cognitiveTransfer
+        ? { ...o, captureMeta: { ...(o.captureMeta || meta), cognitiveTransfer } }
+        : o
+    );
+    setOperators((prev) => [...prev, ...opsWithMeta]);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
+    focusRailPane("functions");
+    pulseFunctionsRail();
+    showToast(`saved lens · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
+    if (opts.sourceIds?.length) {
+      recordItemEvents(opts.sourceIds, "saved-as-function", {
+        opId: rootId,
+        functionName: name,
+        stepCount: steps.length,
+      });
+    }
+    return rootId;
+  }
+
+  function collectAiLineageSteps(node) {
+    if (!node) return [];
+    const steps = [];
+    const seen = new Set();
+    const { ids: sourceIds } = resolveNodeSourceIds(node);
+    if (sourceIds?.length) {
+      const primaryId = pickPrimaryCaptureId(sourceIds);
+      const item = itemsRef.current.find((it) => it.id === primaryId);
+      const threadInfo = primaryId ? getNodeThreadCapture(primaryId) : null;
+      if (threadInfo?.canCapture) {
+        for (const via of threadInfo.vias) {
+          const step = abstractStepFromVia(via, opMap, operators);
+          const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            steps.push(step);
+          }
+        }
+      } else if (item) {
+        const perceptual = buildPerceptualCaptureFromItem(primaryId, {
+          item,
+          ...historyCaptureContext(),
+        });
+        if (perceptual.canCapture) {
+          for (const step of perceptual.steps) {
+            const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              steps.push(step);
+            }
+          }
+        }
+      }
+    }
+    let cur = node;
+    const nodeSeen = new Set();
+    while (cur && !nodeSeen.has(cur.id)) {
+      nodeSeen.add(cur.id);
+      if (cur.opLabel) {
+        const via = {
+          name: cur.opLabel,
+          opId: cur.opId,
+          moveRef: cur.opId
+            ? { kind: "function", id: cur.opId, name: cur.opLabel }
+            : { kind: "primitive", name: cur.opLabel },
+        };
+        const step = abstractStepFromVia(via, opMap, operators);
+        const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          steps.push(step);
+        }
+      }
+      const parentId = cur.parentId || cur.sourceNodeIds?.[0];
+      cur = parentId ? aiNodesRef.current.find((n) => n.id === parentId) : null;
+    }
+    return steps;
+  }
+
+  function captureAiNodesAsFunction(nodeIds, opts = {}) {
+    const node = aiNodesRef.current.find((n) => nodeIds.includes(n.id));
+    if (!node) return null;
+    const steps = collectAiLineageSteps(node);
+    if (!steps.length) {
+      showToast("no perceptual moves on this thread yet — expand it first");
+      return null;
+    }
+    const label =
+      node.expandedText || node.preview || node.label || node.goldenFragment || "AI thread";
+    const defaultName = `${truncatePreview(label, 32)}: ${steps.map((s) => s.name).slice(0, 3).join(" → ")}`.slice(
+      0,
+      72
+    );
+    return captureStepsAsOperator(
+      steps,
+      { provenance: "ai-lineage-capture", sourceNodeId: node.id },
+      { name: opts.name || defaultName, sourceIds: node.sourceIds || [] }
+    );
+  }
+
+  function captureMaterialAsFunction(ids, opts = {}) {
+    if (!ids?.length) return null;
+    for (const id of ids) {
+      const info = getNodeThreadCapture(id);
+      if (info.canCapture) {
+        const rootId = captureThreadAsOperator(id, opts);
+        if (rootId) {
+          recordItemEvents(ids, "saved-as-function", {
+            opId: rootId,
+            functionName: opts.name || info.defaultName,
+            stepCount: info.moveCount,
+          });
+          pulseFunctionsRail();
+        }
+        return rootId;
+      }
+    }
+    const paperIds = ids.filter((id) => {
+      const it = itemsRef.current.find((x) => x.id === id);
+      return it && isReplayableItem(it);
+    });
+    if (paperIds.length) {
+      const primaryId = pickPrimaryCaptureId(paperIds);
+      const item = itemsRef.current.find((it) => it.id === primaryId);
+      const perceptual = buildPerceptualCaptureFromItem(primaryId, {
+        item,
+        ...historyCaptureContext(),
+      });
+      if (perceptual.canCapture) {
+        return captureStepsAsOperator(perceptual.steps, perceptual.captureMeta, {
+          name: opts.name || perceptual.defaultName,
+          sourceIds: ids,
+        });
+      }
+    }
+    const aiIds = ids.filter((id) => aiNodesRef.current.some((n) => n.id === id));
+    if (aiIds.length) return captureAiNodesAsFunction(aiIds, opts);
+    showToast("no perceptual moves to capture yet — explore or transform first");
+    return null;
+  }
+
+  function playCaptureHistoryReplay(itemId, onComplete) {
+    const item = itemsRef.current.find((it) => it.id === itemId);
+    if (!item || !isReplayableItem(item)) {
+      onComplete?.();
+      return false;
+    }
+    const timeline = buildItemTimeline(itemId, { item, ...historyCaptureContext() });
+    if (!timeline?.steps?.length || timeline.steps.length < 2) {
+      onComplete?.();
+      return false;
+    }
+    finishEditing();
+    setWalking(null);
+    historyCaptureCallbackRef.current = onComplete;
+    setFunctionsCaptureReplay(true);
+    emitTourEvent("history-replay");
+    setHistoryReplay({ ...timeline, stepIndex: 0, playing: true });
+    return true;
+  }
+
+  function captureMaterialWithReplay(ids, opts = {}) {
+    const paperIds = ids.filter((id) => {
+      const it = itemsRef.current.find((x) => x.id === id);
+      return it && isReplayableItem(it);
+    });
+    const primaryId = paperIds.length ? pickPrimaryCaptureId(paperIds) : null;
+    if (primaryId) {
+      const played = playCaptureHistoryReplay(primaryId, () => {
+        setFunctionsCaptureReplay(false);
+        endHistoryReplay();
+        captureMaterialAsFunction(ids, opts);
+      });
+      if (played) return;
+    }
+    captureMaterialAsFunction(ids, opts);
   }
 
   // leave the walk holding the current thought — tendrils are ready, continuing is branching
@@ -3912,6 +4688,8 @@ export default function App() {
       clearTimeout(historyPlayTimerRef.current);
       historyPlayTimerRef.current = null;
     }
+    historyCaptureCallbackRef.current = null;
+    setFunctionsCaptureReplay(false);
     setHistoryReplay(null);
   }
 
@@ -3928,6 +4706,21 @@ export default function App() {
     if (!step) return;
     const focus = stepFocusCenter(step);
     if (focus) animateCameraTo(focus, stepFocusScale(focus));
+
+    if (step.aiNodeId) {
+      const node = aiNodesRef.current.find((n) => n.id === step.aiNodeId);
+      const el = aiViewportRef.current;
+      if (node && el) {
+        if (step.kind === "expand" && (node.expandedText || node.preview)) {
+          animateAiCameraTo(aiCardCameraFor(node, el), 520);
+        } else {
+          animateAiCameraTo(
+            focusAiNode(node, el.clientWidth, el.clientHeight, 0.42),
+            520
+          );
+        }
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyReplay?.itemId, historyReplay?.stepIndex]);
 
@@ -3949,6 +4742,11 @@ export default function App() {
       if (!cur?.playing) return;
       if (cur.stepIndex >= cur.steps.length - 1) {
         setHistoryReplay({ ...cur, playing: false });
+        const cb = historyCaptureCallbackRef.current;
+        if (cb) {
+          historyCaptureCallbackRef.current = null;
+          window.setTimeout(cb, 480);
+        }
         return;
       }
       historyReplayTo(cur.stepIndex + 1);
@@ -4044,28 +4842,181 @@ export default function App() {
     reader.readAsText(file);
   }
 
-  // ---- saved idea structures ----
+  function structCardAtClient(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    const card = el?.closest?.("[data-struct-id]");
+    return card?.getAttribute("data-struct-id") || null;
+  }
+
+  function itemLocalBBox(it) {
+    if (!it) return null;
+    if (it.type === "stroke" && it.points?.length) {
+      const xs = it.points.map((p) => p.x);
+      const ys = it.points.map((p) => p.y);
+      return {
+        minx: Math.min(...xs),
+        miny: Math.min(...ys),
+        maxx: Math.max(...xs),
+        maxy: Math.max(...ys),
+      };
+    }
+    const w = it.w || (it.type === "image" ? 200 : 360);
+    const h = it.h || (it.type === "image" ? 150 : 120);
+    const x = it.x ?? 0;
+    const y = it.y ?? 0;
+    return { minx: x, miny: y, maxx: x + w, maxy: y + h };
+  }
+
+  function structureItemsBBox(structItems) {
+    const boxes = (structItems || []).map(itemLocalBBox).filter(Boolean);
+    if (!boxes.length) return { minx: 0, miny: 0, maxx: 0, maxy: 0 };
+    return {
+      minx: Math.min(...boxes.map((b) => b.minx)),
+      miny: Math.min(...boxes.map((b) => b.miny)),
+      maxx: Math.max(...boxes.map((b) => b.maxx)),
+      maxy: Math.max(...boxes.map((b) => b.maxy)),
+    };
+  }
+
+  function relativeItemsFromIds(ids, offset = { x: 0, y: 0 }) {
+    if (!ids?.length) return [];
+    const idSet = new Set(ids);
+    const sel = itemsRef.current.filter((it) => idSet.has(it.id));
+    if (!sel.length) return [];
+    const bb = selectionWorldBBoxForIds(ids);
+    const anchor = bb ? { x: bb.minx, y: bb.miny } : { x: 0, y: 0 };
+    return sel.map((it) => {
+      const base = { ...it, id: uid() };
+      if (it.type === "stroke") {
+        return {
+          ...base,
+          points: it.points.map((p) => ({
+            x: p.x - anchor.x + offset.x,
+            y: p.y - anchor.y + offset.y,
+          })),
+        };
+      }
+      return {
+        ...base,
+        x: it.x - anchor.x + offset.x,
+        y: it.y - anchor.y + offset.y,
+      };
+    });
+  }
+
+  function mergeTitle(struct, addedItems) {
+    const snippet = addedItems
+      .filter((it) => it.type === "text" && it.text?.trim())
+      .map((it) => it.text.trim().split("\n")[0].slice(0, 32))
+      .join(" · ");
+    if (!snippet) return struct.title;
+    const base = (struct.title || "symbol").trim();
+    if (base.includes(snippet)) return base;
+    return `${base} · ${snippet}`.slice(0, 72);
+  }
+
+  function mergeMaterialIntoSymbol(structId, ids) {
+    const struct = structuresRef.current.find((s) => s.id === structId);
+    if (!struct) return saveMaterialAsSymbol(ids);
+    const rawNew = relativeItemsFromIds(ids);
+    if (!rawNew.length) {
+      showToast("nothing to add");
+      return null;
+    }
+    const existingBb = structureItemsBBox(struct.items);
+    const newBb = structureItemsBBox(rawNew);
+    const offset = {
+      x: (existingBb.maxx || 0) + 36 - (newBb.minx || 0),
+      y: (existingBb.miny || 0) - (newBb.miny || 0),
+    };
+    const mergedItems = relativeItemsFromIds(ids, offset);
+    const nextTitle = mergeTitle(struct, mergedItems);
+    setStructures((arr) =>
+      arr.map((s) =>
+        s.id === structId
+          ? {
+              ...s,
+              kind: "symbol",
+              title: nextTitle,
+              items: [...(s.items || []), ...mergedItems],
+              savedAt: Date.now(),
+            }
+          : s
+      )
+    );
+    focusRailPane("structures");
+    emitTourEvent("save-structure");
+    showToast(`added to · ${nextTitle}`);
+    return struct;
+  }
+
+  function addMaterialToSymbol(ids, opts = {}) {
+    if (opts.structId) return mergeMaterialIntoSymbol(opts.structId, ids);
+    return saveMaterialAsSymbol(ids, opts);
+  }
+
+  function idsFromMaterialTransfer(e) {
+    const thoughtJson = e.dataTransfer.getData(THOUGHT_MIME);
+    if (thoughtJson) {
+      try {
+        return JSON.parse(thoughtJson);
+      } catch {
+        /* ignore */
+      }
+    }
+    const bundleJson = e.dataTransfer.getData(SKETCH_BUNDLE_MIME);
+    if (bundleJson) {
+      try {
+        const bundle = JSON.parse(bundleJson);
+        return [...new Set([...(bundle.itemIds || []), ...(bundle.strokeIds || [])])];
+      } catch {
+        /* ignore */
+      }
+    }
+    const selJson = e.dataTransfer.getData(SEL_MIME);
+    if (selJson) {
+      try {
+        return JSON.parse(selJson);
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
+  }
+
+  function handleStructCardMaterialDrop(e, structId) {
+    e.preventDefault();
+    e.stopPropagation();
+    setRailDropOver(false);
+    setSymbolDropTargetId(null);
+    setTransferDragActive(false);
+    const ids = idsFromMaterialTransfer(e);
+    if (!ids?.length) return;
+    const hl = highlightSelectionRef.current;
+    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    addMaterialToSymbol(ids, { structId });
+  }
+
+  function finishHighlightTransfer(ids) {
+    setHighlightTransferringIds(ids);
+    window.setTimeout(() => {
+      setHighlightTransferringIds([]);
+      setHighlightSelectionIds((prev) => prev.filter((id) => !ids.includes(id)));
+      setHighlightTouchIds([]);
+    }, 920);
+  }
+
   function saveSelectionByIds(ids, extra = {}) {
     if (!ids?.length) {
       showToast("select material to save");
       return null;
     }
-    const idSet = new Set(ids);
-    const sel = itemsRef.current.filter((it) => idSet.has(it.id));
-    if (!sel.length) {
+    const relativeItems = relativeItemsFromIds(ids);
+    if (!relativeItems.length) {
       showToast("nothing to save");
       return null;
     }
-    const bb = selectionWorldBBoxForIds(ids);
-    const anchor = bb ? { x: bb.minx, y: bb.miny } : viewportCenterWorld();
-    const relativeItems = sel.map((it) => {
-      const base = { ...it, id: uid() };
-      if (it.type === "stroke") {
-        return { ...base, points: it.points.map((p) => ({ x: p.x - anchor.x, y: p.y - anchor.y })) };
-      }
-      return { ...base, x: it.x - anchor.x, y: it.y - anchor.y };
-    });
-    const titleFromText = sel
+    const titleFromText = relativeItems
       .filter((it) => it.type === "text" && it.text?.trim())
       .map((it) => it.text.trim().split("\n")[0].slice(0, 48))
       .join(" · ");
@@ -4075,17 +5026,173 @@ export default function App() {
       kind: extra.kind || "idea",
       structNum: extra.structNum || null,
       items: relativeItems,
+      symbolStroke: extra.symbolStroke || null,
       savedAt: Date.now(),
     };
     setStructures((arr) => [struct, ...arr]);
-    setRailTab("structures");
+    focusRailPane("structures");
     emitTourEvent("save-structure");
-    showToast(extra.toast || "saved structure");
+    if (!extra.skipToast) showToast(extra.toast || "saved structure");
     return struct;
   }
 
+  function openSymbolDrawPrompt(struct) {
+    if (!struct?.id) return;
+    setSymbolDrawPrompt({ structId: struct.id, title: struct.title || "idea" });
+    focusRailPane("structures");
+  }
+
+  function completeSymbolDraw(structId, symbolStroke) {
+    if (!structId) return;
+    setStructures((arr) =>
+      arr.map((s) => (s.id === structId ? { ...s, symbolStroke: symbolStroke || null } : s))
+    );
+    setSymbolDrawPrompt(null);
+    showToast("symbol saved");
+    emitTourEvent("save-symbol");
+  }
+
+  async function enrichSymbolRecord(structId) {
+    const struct = structuresRef.current.find((s) => s.id === structId);
+    if (!struct) return;
+    const jobId = pushJob({
+      id: uid(),
+      label: `reading · ${struct.title}`,
+      type: "symbol-interpret",
+      status: "running",
+      step: "interpreting symbol…",
+      startedAt: Date.now(),
+      estimatedMs: ETA.default,
+    });
+    try {
+      const { interpretation, viewLens } = await interpretSymbolWithLLM(struct, runClaude);
+      const cognitiveTransfer = abstractSymbolToTransfer(
+        { ...struct, interpretation },
+        { domainLabel: struct.title }
+      );
+      setStructures((arr) =>
+        arr.map((s) =>
+          s.id === structId
+            ? { ...s, interpretation, viewLens, cognitiveTransfer, interpretedAt: Date.now() }
+            : s
+        )
+      );
+      finishJob(jobId, "done", interpretation.meaning?.slice(0, 48) || "symbol read");
+    } catch (err) {
+      finishJob(jobId, "error", err.message || "failed");
+    }
+  }
+
+  function openEditSymbolViewLens(struct) {
+    if (!struct) return;
+    const tree = struct.viewLens || viewingLensTreeFromSymbol(struct);
+    const { ops, rootId } = treeToOperators(tree, { top: true });
+    setOperators((prev) => [...prev, ...ops]);
+    const root = ops.find((o) => o.id === rootId);
+    openEditLens(root);
+    symbolViewLensSaveRef.current = struct.id;
+  }
+
+  function handleSaveLensTree(oldRootId, newOps, opts) {
+    if (symbolViewLensSaveRef.current) {
+      saveSymbolViewLens(oldRootId, newOps, opts);
+      return;
+    }
+    saveLensTree(oldRootId, newOps, opts);
+  }
+
+  function saveSymbolViewLens(oldRootId, newOps, opts = {}) {
+    const structId = symbolViewLensSaveRef.current;
+    const newRootId = newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id;
+    const root = newOps.find((o) => o.id === newRootId);
+    const draftMap = Object.fromEntries(newOps.map((o) => [o.id, o]));
+    if (structId && root) {
+      const viewLens = opToJsonTree(root, draftMap);
+      setStructures((arr) =>
+        arr.map((s) => (s.id === structId ? { ...s, viewLens, viewLensOpId: newRootId } : s))
+      );
+      symbolViewLensSaveRef.current = null;
+    }
+    saveLensTree(oldRootId, newOps, opts);
+  }
+
+  function saveMaterialAsSymbol(ids, extra = {}) {
+    const struct = saveSelectionByIds(ids, {
+      kind: "symbol",
+      skipToast: true,
+      ...extra,
+    });
+    if (!struct) return null;
+    enrichSymbolRecord(struct.id);
+    showToast(`saved · ${struct.title}`);
+    return struct;
+  }
+
+  function saveAiNodesAsSymbol(nodeIds, structId = null) {
+    const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+    const texts = nodes
+      .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label || "")
+      .filter((t) => t?.trim());
+    if (!texts.length) {
+      showToast("nothing to save as symbol");
+      return null;
+    }
+    const content = texts.join("\n\n");
+    if (structId) {
+      const struct = structuresRef.current.find((s) => s.id === structId);
+      if (!struct) return saveAiNodesAsSymbol(nodeIds);
+      const item = normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 });
+      const existingBb = structureItemsBBox(struct.items);
+      const placed = {
+        ...item,
+        id: uid(),
+        x: (existingBb.maxx || 0) + 36,
+        y: existingBb.miny || 0,
+      };
+      const nextTitle = mergeTitle(struct, [placed]);
+      setStructures((arr) =>
+        arr.map((s) =>
+          s.id === structId
+            ? {
+                ...s,
+                kind: "symbol",
+                title: nextTitle,
+                items: [...(s.items || []), placed],
+                savedAt: Date.now(),
+              }
+            : s
+        )
+      );
+      focusRailPane("structures");
+      showToast(`added to · ${nextTitle}`);
+      return struct;
+    }
+    const struct = {
+      id: uid(),
+      title: truncatePreview(texts[0], 48) || "idea",
+      kind: "symbol",
+      items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 })],
+      symbolStroke: null,
+      savedAt: Date.now(),
+    };
+    setStructures((arr) => [struct, ...arr]);
+    showToast(`saved · ${struct.title}`);
+    emitTourEvent("save-symbol");
+    return struct;
+  }
+
+  function applyLeftColumnMaterialDrop(ids, clientX, clientY) {
+    if (!ids?.length) return;
+    const dropTarget = resolveLeftColumnDropTarget(clientX, clientY);
+    const structId = dropTarget === "structures" ? structCardAtClient(clientX, clientY) : null;
+    const hl = highlightSelectionRef.current;
+    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    if (dropTarget === "structures") addMaterialToSymbol(ids, { structId });
+    else captureMaterialWithReplay(ids);
+  }
+
   function captureSelectionAsStructure(extra = {}) {
-    return saveSelectionByIds(selRef.current, extra);
+    return saveMaterialAsSymbol(selRef.current, extra);
   }
 
   function saveSelectedAsDocument() {
@@ -4112,7 +5219,7 @@ export default function App() {
       items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: item.w || 320 })],
     };
     setStructures((arr) => [struct, ...arr]);
-    setRailTab("structures");
+    focusRailPane("structures");
     showToast("Saved as document");
     return struct;
   }
@@ -4126,10 +5233,12 @@ export default function App() {
     }
     const tree = opToJsonTree(op, opMap);
     if (!tree) return;
-    const { ops } = treeToOperators(tree, { role: op.role || null, top: true });
+    const { ops, rootId } = treeToOperators(tree, { role: op.role || null, top: true });
+    const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
-    showToast(`saved · ${op.name}`);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
+    focusRailPane("functions");
+    showToast(`saved lens · ${op.name}`);
   }
 
   /** Merge: drop one operator onto another → a compound pipeline (A, then B). */
@@ -4144,21 +5253,23 @@ export default function App() {
       steps: [opToAbstractTree(a, opMap, operators), opToAbstractTree(b, opMap, operators)],
     };
     const { ops, rootId } = treeToOperators(tree, { top: true });
+    const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [
       ...prev,
       ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
     ]);
-    setRailTab("functions");
-    showToast(`compound forged · ${a.name} → ${b.name}`);
+    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
+    focusRailPane("functions");
+    showToast(`compound lens · ${a.name} → ${b.name}`);
   }
 
   function deleteStructure(id) {
     setStructures((arr) => arr.filter((s) => s.id !== id));
   }
 
-  function plantStructure(struct, atWorld) {
+  function plantStructure(struct, atWorld, { applyViewLens = true } = {}) {
     if (!struct?.items?.length) return;
-    const center = atWorld || viewportCenterWorld();
+    const center = atWorld || paperViewportCenterWorld();
     const newIds = [];
     const newItems = struct.items.map((it) => {
       const id = uid();
@@ -4174,13 +5285,25 @@ export default function App() {
     });
     setItems((arr) => [...arr, ...newItems]);
     setSelection(newIds);
-    showToast(`planted · ${struct.title || "structure"}`);
+    showToast(`planted · ${struct.title || "symbol"}`);
+    if (applyViewLens && struct.viewLens) {
+      const { ops, rootId } = treeToOperators(struct.viewLens, { top: true });
+      const root = ops.find((o) => o.id === rootId);
+      if (root) {
+        setOperators((prev) => [...prev, ...ops]);
+        const textIds = newIds.filter((id) => {
+          const it = newItems.find((x) => x.id === id);
+          return it && (it.type === "text" || it.type === "sticky") && it.text?.trim();
+        });
+        if (textIds.length) runOperator(root, textIds);
+      }
+    }
   }
 
   function applyStructureDrop(structId, atClient) {
     const struct = structures.find((s) => s.id === structId);
     if (!struct) return;
-    const at = atClient ? clientToWorld(atClient.x, atClient.y) : viewportCenterWorld();
+    const at = atClient ? clientToWorld(atClient.x, atClient.y) : paperViewportCenterWorld();
     plantStructure(struct, at);
   }
 
@@ -4202,7 +5325,7 @@ export default function App() {
       const parsed = parseSameness(out);
       const num = nextStructNumber();
       const title = `#${num} · ${parsed.name}`;
-      const center = viewportCenterWorld();
+      const center = paperViewportCenterWorld();
       const body = `${parsed.name.toUpperCase()}\n\n${parsed.body}`;
       spawnNewObject(body, nodes.map((n) => n.id), center, { name: "sameness" });
       const struct = {
@@ -4214,7 +5337,7 @@ export default function App() {
         savedAt: Date.now(),
       };
       setStructures((arr) => [struct, ...arr]);
-      setRailTab("structures");
+      focusRailPane("structures");
       finishJob(jobId, "done");
       showToast(`discovered · ${title}`);
     } catch (err) {
@@ -4224,6 +5347,28 @@ export default function App() {
   }
 
   const topFunctions = operators.filter((o) => o.top && !o.move);
+  const displayLenses = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const lens of lenses) {
+      const key = lensRootOpId(lens) || lens.id;
+      if (key) seen.add(key);
+      out.push(lens);
+    }
+    for (const op of topFunctions) {
+      if (!seen.has(op.id)) {
+        out.push({
+          id: op.id,
+          opId: op.id,
+          name: op.name,
+          moveIds: [op.id],
+          version: 1,
+        });
+        seen.add(op.id);
+      }
+    }
+    return out;
+  }, [lenses, topFunctions]);
   const canonicalPrimitives = useMemo(() => {
     const byName = Object.fromEntries(
       operators.filter((o) => o.primitive && !o.role && !o.top).map((o) => [o.name, o])
@@ -4233,7 +5378,43 @@ export default function App() {
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
-  const activeLens = lenses.find((l) => l.id === activeLensId) || null;
+  const activeLens =
+    displayLenses.find((l) => l.id === activeLensId || lensRootOpId(l) === activeLensId) || null;
+  const lensRepos = useMemo(() => groupLensesByRepo(displayLenses), [displayLenses]);
+
+  function renderLensCard(lens, { depth = 0 } = {}) {
+    return (
+      <LensCard
+        key={lens.id}
+        lens={lens}
+        depth={depth}
+        active={lens.id === activeLensId || lensRootOpId(lens) === activeLensId}
+        opMap={opMap}
+        lenses={displayLenses}
+        comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)}
+        comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId}
+        onUse={() => {
+          const id = lens.id;
+          setActiveLensId(id === activeLensId ? null : id);
+          emitTourEvent("lens-use");
+        }}
+        onEvolve={() => openEditLensFromLens(lens)}
+        onBranch={() => setPendingBranch({ kind: "branch", sourceId: lens.id, sourceName: lens.name })}
+        onFork={() => setPendingBranch({ kind: "fork", sourceId: lens.id, sourceName: lens.name })}
+        onHistory={() => setLensHistoryId(lens.id)}
+        onSend={() => exportLens(lens.id)}
+        onCompare={() => {
+          if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id });
+          else {
+            setLensCompare({ aId: lens.id });
+            showToast("pick another lens to compare");
+          }
+        }}
+        onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
+        onDelete={() => deleteLensRecord(lens.id)}
+      />
+    );
+  }
 
   function resolveNodeSourceIds(node) {
     if (node.sourceIds?.length) return { ids: node.sourceIds, sourceNode: node };
@@ -4244,117 +5425,121 @@ export default function App() {
   }
 
   function getStrandChoicesForNode(node) {
-    const lensMoves = activeLens?.moveIds?.length
-      ? moves.filter((m) => activeLens.moveIds.includes(m.id))
-      : moves;
     return collectStrandChoices(node, aiNodesRef.current, {
       expansionPrimitives: primitives.filter(isExpansionOperator),
-      topFunctions,
-      moves: lensMoves.length ? lensMoves : moves,
+      exploreOnly: true,
       opMap,
     });
   }
 
-  function handleStrandSelect(nodeId, choice) {
+  /** Apply a move/lens to highlighted or selected paper content. */
+  function runFunctionFromRail(op) {
+    if (!op) return;
+    const hlIds = highlightSelectionRef.current;
+    const selIds = selRef.current;
+    const rawIds = hlIds.length ? hlIds : selIds;
+    if (!rawIds.length) {
+      showToast("select or highlight something on paper first");
+      return;
+    }
+    const sketchBundle = gatherSelectionSketchBundle(rawIds);
+    const targetIds = transformableDragIds(rawIds);
+    if (!targetIds.length && sketchBundle) {
+      interpretSketchBundle(sketchBundle);
+      setHighlightSelectionIds([]);
+      setHighlightTouchIds([]);
+      return;
+    }
+    if (!targetIds.length) {
+      showToast("this selection can't be transformed");
+      return;
+    }
+    if (isExpansionOperator(op)) {
+      expandInAi(targetIds, { op, opLabel: op.name });
+    } else {
+      runOperator(op, targetIds);
+    }
+    setHighlightSelectionIds([]);
+    setHighlightTouchIds([]);
+  }
+
+  function handleStrandSelect(nodeId, choice, info = {}) {
     const node = aiNodesRef.current.find((n) => n.id === nodeId);
     if (!node || !choice) return;
     emitTourEvent("strand-select");
-
     handleAiNodeSelect(nodeId, { replace: true });
 
-    if (choice.kind === "explore") {
-      exploreAiNode(nodeId);
-      return;
-    }
-
-    if (choice.kind === "interpret") {
-      if (aiPanel?.sketchBundle) {
-        interpretSketchBundle(aiPanel.sketchBundle, { x: node.x, y: node.y });
-      } else {
-        exploreAiNode(nodeId);
-      }
-      return;
-    }
-
-    if (choice.op) {
+    if (choice.kind === "expand" && choice.op) {
       const { ids, sourceNode } = resolveNodeSourceIds(node);
-      if (choice.kind === "move") {
-        createMoveNode(choice.op, null, sourceNode || node);
-        return;
-      }
       if (ids?.length) {
         expandInAi(ids, {
           op: choice.op,
           opLabel: choice.op.name,
           sourceNode: sourceNode || node,
+          expandedAt: info.worldPos,
         });
         return;
       }
     }
 
-    exploreAiNode(nodeId);
+    exploreAiNode(nodeId, { runExpand: true });
   }
 
-  // ---- lenses: create, evolve, merge, compare, upload — git for perception ----
-  function saveLens(draft) {
-    const name = (draft.name || "").trim() || "unnamed lens";
-    const moveIds = [...new Set(draft.moveIds || [])];
-    if (!moveIds.length) {
-      showToast("a lens needs at least one move");
-      return;
-    }
-    if (draft.id) {
-      setLenses((ls) =>
-        ls.map((l) => {
-          if (l.id !== draft.id) return l;
-          const version = (l.version || 1) + 1;
-          return { ...l, name, moveIds, version, updatedAt: Date.now() };
-        })
-      );
-      const nextVersion = (lenses.find((l) => l.id === draft.id)?.version || 1) + 1;
-      showToast(`Evolved · ${name} · v${nextVersion}`);
-    } else {
-      const now = Date.now();
-      const lens = { id: uid(), name, moveIds, version: 1, createdAt: now, updatedAt: now };
-      setLenses((ls) => [lens, ...ls]);
-      setActiveLensId(lens.id);
-      showToast(`Created · ${name} — now active`);
-    }
-    setLensEditor(null);
-  }
-
-  function branchLens(parentId) {
-    const parent = lenses.find((l) => l.id === parentId);
+  // ---- lenses: branch, fork, merge, compare, upload — git for perception ----
+  function branchLens(parentId, commitMessage = "") {
+    const parent = displayLenses.find((l) => l.id === parentId) || lenses.find((l) => l.id === parentId);
     if (!parent) return;
     const now = Date.now();
-    const lens = {
-      id: uid(),
-      name: `${parent.name} · branch`.slice(0, 60),
-      moveIds: [...(parent.moveIds || [])],
-      parentId,
-      lineage: [...(parent.lineage || []), parentId],
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const parentOpId = lensRootOpId(parent);
+    let newOpId = null;
+    if (parentOpId) newOpId = duplicateOperatorSubtree(parentOpId);
+    const stepNames = lensStepNames(parent, opMap);
+    const commit = makeCommit(
+      { message: commitMessage || `branch from ${parent.name}`, stepNames, kind: "branch" },
+      uid
+    );
+    const lens = appendCommit(
+      normalizeLens({
+        id: newOpId || uid(),
+        opId: newOpId || undefined,
+        name: `${parent.name} · branch`.slice(0, 60),
+        moveIds: newOpId ? [newOpId] : [...(parent.moveIds || [])],
+        parentId,
+        lineage: [...(parent.lineage || []), parentId],
+        createdAt: now,
+        updatedAt: now,
+      }),
+      commit
+    );
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
     showToast(`Branched · ${lens.name}`);
   }
 
-  function forkLens(sourceId) {
-    const source = lenses.find((l) => l.id === sourceId);
+  function forkLens(sourceId, commitMessage = "") {
+    const source = displayLenses.find((l) => l.id === sourceId) || lenses.find((l) => l.id === sourceId);
     if (!source) return;
     const now = Date.now();
-    const lens = {
-      id: uid(),
-      name: `${source.name} · fork`.slice(0, 60),
-      moveIds: [...(source.moveIds || [])],
-      forkedFrom: sourceId,
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const sourceOpId = lensRootOpId(source);
+    let newOpId = null;
+    if (sourceOpId) newOpId = duplicateOperatorSubtree(sourceOpId);
+    const stepNames = lensStepNames(source, opMap);
+    const commit = makeCommit(
+      { message: commitMessage || `fork from ${source.name}`, stepNames, kind: "fork" },
+      uid
+    );
+    const lens = appendCommit(
+      normalizeLens({
+        id: newOpId || uid(),
+        opId: newOpId || undefined,
+        name: `${source.name} · fork`.slice(0, 60),
+        moveIds: newOpId ? [newOpId] : [...(source.moveIds || [])],
+        forkedFrom: sourceId,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      commit
+    );
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
     showToast(`Forked · ${lens.name}`);
@@ -4362,27 +5547,64 @@ export default function App() {
 
   function mergeLenses(aId, bId) {
     if (!aId || aId === bId) return;
-    const a = lenses.find((x) => x.id === aId);
-    const b = lenses.find((x) => x.id === bId);
+    const a = lenses.find((x) => x.id === aId) || displayLenses.find((x) => x.id === aId);
+    const b = lenses.find((x) => x.id === bId) || displayLenses.find((x) => x.id === bId);
     if (!a || !b) return;
     const now = Date.now();
-    const lens = {
-      id: uid(),
-      name: `${a.name} ⚭ ${b.name}`.slice(0, 60),
-      moveIds: [...new Set([...(a.moveIds || []), ...(b.moveIds || [])])],
-      mergedFrom: [a.id, b.id],
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const aOpId = lensRootOpId(a);
+    const bOpId = lensRootOpId(b);
+    let lensId = uid();
+    let moveIds = [...new Set([...(a.moveIds || []), ...(b.moveIds || [])])];
+    let newOpId = null;
+    let stepNames = [...lensStepNames(a, opMap), ...lensStepNames(b, opMap)];
+
+    if (aOpId && bOpId && opMap[aOpId] && opMap[bOpId]) {
+      const tree = {
+        name: `${a.name} ⚭ ${b.name}`.slice(0, 72),
+        description: `Merged pipeline: ${a.name}, then ${b.name}.`,
+        steps: [opToAbstractTree(opMap[aOpId], opMap, operators), opToAbstractTree(opMap[bOpId], opMap, operators)],
+      };
+      const { ops, rootId } = treeToOperators(tree, { top: true });
+      newOpId = rootId;
+      lensId = rootId;
+      moveIds = [rootId];
+      const mergedMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+      stepNames = collectPipelineStepNames(rootId, mergedMap);
+      setOperators((prev) => [
+        ...prev,
+        ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [aOpId, bOpId] } : o)),
+      ]);
+    }
+
+    const commit = makeCommit(
+      { message: `merge ${a.name} + ${b.name}`, stepNames, kind: "merge" },
+      uid
+    );
+    const lens = appendCommit(
+      normalizeLens({
+        id: lensId,
+        opId: newOpId || undefined,
+        name: `${a.name} ⚭ ${b.name}`.slice(0, 60),
+        moveIds,
+        mergedFrom: [a.id, b.id],
+        createdAt: now,
+        updatedAt: now,
+      }),
+      commit
+    );
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
     showToast(`Merged · ${lens.name}`);
   }
 
-  function deleteLens(id) {
+  function deleteLensRecord(id) {
+    const lens = lenses.find((l) => l.id === id) || displayLenses.find((l) => l.id === id);
+    const opId = lensRootOpId(lens);
+    if (opId) {
+      deleteLens(opId, { skipLensRemove: true });
+    }
     setLenses((ls) => ls.filter((l) => l.id !== id));
-    if (activeLensId === id) setActiveLensId(null);
+    if (activeLensId === id || activeLensId === opId) setActiveLensId(null);
     setLensCompare(null);
   }
 
@@ -4418,13 +5640,14 @@ export default function App() {
       parentName: payload.parentName || null,
       forkedFromName: payload.forkedFromName || null,
       mergedFromNames: payload.mergedFromNames || null,
+      cognitiveTransfer: payload.cognitiveTransfer || data.cognitiveTransfer || extractCognitiveMeta({ meta: data.meta || payload }) || null,
       uploaded: true,
       createdAt: now,
       updatedAt: now,
     });
     setLenses((ls) => [lens, ...ls]);
     setActiveLensId(lens.id);
-    setRailTab("functions");
+    focusRailPane("functions");
     if (!opts.silent) showToast(`Uploaded · ${lens.name} — now looking through it`);
   }
 
@@ -4446,13 +5669,13 @@ export default function App() {
     if (!tree) throw new Error("missing operator");
     const existing = operators.find((o) => o.name === tree.name && !o.top && !tree.steps);
     if (existing && !opts.forceNew) {
-      setRailTab("functions");
+      focusRailPane("functions");
       showToast(`already have · ${existing.name}`);
       return existing.id;
     }
     const { ops, rootId } = treeToOperators(tree, { top: true, ...opts });
     setOperators((prev) => [...prev, ...ops]);
-    setRailTab("functions");
+    focusRailPane("functions");
     showToast(opts.toast || `added · ${tree.name}`);
     return rootId;
   }
@@ -4466,7 +5689,7 @@ export default function App() {
     const notes = items.filter((it) => it.type !== "link" && it.type !== "stroke");
     const cx = notes.length ? notes.reduce((s, it) => s + (it.x || 0), 0) / notes.length : 0;
     const cy = notes.length ? notes.reduce((s, it) => s + (it.y || 0), 0) / notes.length : 0;
-    const center = viewportCenterWorld();
+    const center = paperViewportCenterWorld();
     const dx = center.x - cx;
     const dy = center.y - cy;
     const newItems = items.map((it) => {
@@ -4510,7 +5733,7 @@ export default function App() {
     finishEditing();
     setSelection([]);
     setWalking({ nodeId: null, title: journey.title || "shared journey", steps, stepIndex: 0, imported: true });
-    setRailTab("functions");
+    focusRailPane("functions");
     if (!opts.silent) showToast("journey imported — walking it");
   }
 
@@ -4539,7 +5762,7 @@ export default function App() {
             shared: true,
           };
           setStructures((arr) => [struct, ...arr]);
-          setRailTab("structures");
+          focusRailPane("structures");
           showToast(fromWelcome ? "Added to structures" : `structure received · ${struct.title}`);
           break;
         }
@@ -4613,17 +5836,27 @@ export default function App() {
   function shareOperator(opId) {
     const op = opMap[opId];
     if (!op) return;
-    const tree = opToJsonTree(op, opMap);
-    copyShareLink(createOperatorBundle(tree, { name: op.name }));
+    const { opTree, cognitiveTransfer } = portableExportTree(op, opMap, operators, { name: op.name });
+    copyShareLink(createOperatorBundle(opTree, { name: op.name, cognitiveTransfer }));
   }
 
   function shareLensLink(id) {
     const l = lenses.find((x) => x.id === id);
     if (!l) return;
-    const opTrees = (l.moveIds || [])
-      .map((oid) => opMap[oid])
-      .filter(Boolean)
-      .map((op) => opToJsonTree(op, opMap));
+    const opTrees = [];
+    let cognitiveTransfer = null;
+    for (const oid of l.moveIds || []) {
+      const op = opMap[oid];
+      if (!op) continue;
+      const exported = portableExportTree(op, opMap, operators, { name: l.name, kind: "lens" });
+      opTrees.push(exported.opTree);
+      cognitiveTransfer = exported.cognitiveTransfer;
+    }
+    if (!opTrees.length && l.opId && opMap[l.opId]) {
+      const exported = portableExportTree(opMap[l.opId], opMap, operators, { name: l.name, kind: "lens" });
+      opTrees.push(exported.opTree);
+      cognitiveTransfer = exported.cognitiveTransfer;
+    }
     const parent = l.parentId ? lenses.find((x) => x.id === l.parentId) : null;
     const forked = l.forkedFrom ? lenses.find((x) => x.id === l.forkedFrom) : null;
     const mergedFromNames =
@@ -4637,13 +5870,15 @@ export default function App() {
         parentName: parent?.name || l.parentName || undefined,
         forkedFromName: forked?.name || l.forkedFromName || undefined,
         mergedFromNames: mergedFromNames?.length === 2 ? mergedFromNames : undefined,
+        cognitiveTransfer,
       })
     );
   }
 
   function shareSymbolStruct(struct) {
     if (!struct) return;
-    copyShareLink(createSymbolBundle(struct, { name: struct.title }));
+    const cognitiveTransfer = abstractSymbolToTransfer(struct, { domainLabel: struct.title });
+    copyShareLink(createSymbolBundle(struct, { name: struct.title, cognitiveTransfer }));
   }
 
   function shareJourneyLink(nodeId, { fullPath = false } = {}) {
@@ -4672,12 +5907,20 @@ export default function App() {
       };
     });
     const opTrees = (info.vias || []).map((via) => abstractStepFromVia(via, opMap, operators));
+    const cognitiveTransfer = abstractJourneyToTransfer({
+      title: journey.title,
+      opTrees,
+      captureMeta: info.captureMeta,
+      opMap,
+      operators,
+    });
     copyShareLink(
       createJourneyBundle({
         title: journey.title,
         steps,
         opTrees,
         captureMeta: info.captureMeta,
+        cognitiveTransfer,
         meta: { name: journey.title },
       })
     );
@@ -4699,33 +5942,8 @@ export default function App() {
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
-  function boundaryCenterX() {
-    const el = document.querySelector(".interpret-boundary-hit");
-    const r = el?.getBoundingClientRect();
-    return r ? r.left + r.width / 2 : window.innerWidth / 2;
-  }
-
-  function centerOfRects(rects) {
-    if (!rects?.length) return null;
-    let sx = 0;
-    let sy = 0;
-    for (const r of rects) {
-      sx += (r.left + r.right) / 2;
-      sy += (r.top + r.bottom) / 2;
-    }
-    return { x: sx / rects.length, y: sy / rects.length };
-  }
-
-  function aiWorldToClient(wx, wy) {
-    const rect = aiViewportRef.current?.getBoundingClientRect();
-    const cam = aiCamRef.current;
-    if (!rect) return { x: window.innerWidth * 0.72, y: window.innerHeight / 2 };
-    const local = worldToScreen(cam, wx, wy);
-    return { x: rect.left + local.x, y: rect.top + local.y };
-  }
-
-  function launchPaperToAiTransfer({ itemIds = [], nodeIds = [], aiWorld }) {
-    triggerTransferAnimation("to-ai", { itemIds, aiWorld });
+  /** Pan camera so drop-pinned nodes stay under the pointer after landing. */
+  function launchPaperToAiTransfer({ nodeIds = [], focusWorld = null }) {
     if (!nodeIds.length) return;
     setAiLandingNodeIds((prev) => {
       const next = new Set(prev);
@@ -4739,67 +5957,27 @@ export default function App() {
         return next;
       });
       const el = aiViewportRef.current;
-      if (el && aiNodesRef.current.length) {
-        animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 850);
+      const landed = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
+      if (!el || !landed.length) return;
+
+      const cam = aiCamRef.current;
+      const scale = cam.scale;
+      const vpW = el.clientWidth;
+      const vpH = el.clientHeight;
+      const anchor = focusWorld || { x: landed[0].x, y: landed[0].y };
+      const sx = anchor.x * scale + cam.x;
+      const sy = anchor.y * scale + cam.y;
+      const margin = 72;
+      let x = cam.x;
+      let y = cam.y;
+      if (sx < margin) x += margin - sx;
+      if (sx > vpW - margin) x -= sx - (vpW - margin);
+      if (sy < margin) y += margin - sy;
+      if (sy > vpH - margin) y -= sy - (vpH - margin);
+      if (x !== cam.x || y !== cam.y) {
+        animateAiCameraTo({ scale, x, y }, 480);
       }
-    }, 920);
-  }
-
-  function triggerTransferAnimation(direction, opts = {}) {
-    const boundaryX = boundaryCenterX();
-    let fromX;
-    let fromY;
-    let toX;
-    let toY;
-
-    if (direction === "to-ai") {
-      const ids = opts.itemIds || [];
-      const rects = ids
-        .map((id) => itemsRef.current.find((i) => i.id === id))
-        .filter(Boolean)
-        .map((it) => itemScreenBBox(it));
-      const center = centerOfRects(rects) || opts.fromClient || {
-        x: boundaryX - 72,
-        y: window.innerHeight / 2,
-      };
-      fromX = center.x;
-      fromY = center.y;
-      if (opts.aiWorld) {
-        const dest = aiWorldToClient(opts.aiWorld.x, opts.aiWorld.y);
-        toX = dest.x;
-        toY = dest.y;
-      } else {
-        toX = boundaryX + 36;
-        toY = fromY;
-      }
-    } else {
-      const atWorld = opts.atWorld || viewportCenterWorld();
-      const dest = worldToClient(atWorld.x, atWorld.y);
-      toX = dest.x;
-      toY = dest.y;
-      fromX = boundaryX + 24;
-      fromY = toY;
-      if (opts.fromClient) {
-        fromX = opts.fromClient.x;
-        fromY = opts.fromClient.y;
-      }
-    }
-
-    transferAnimKeyRef.current += 1;
-    setTransferAnim({
-      key: transferAnimKeyRef.current,
-      direction,
-      fromX,
-      fromY,
-      boundaryX,
-      toX,
-      toY,
-      throughBoundary: direction === "to-ai" && !!opts.aiWorld,
-    });
-  }
-
-  function clearTransferAnimation(key) {
-    setTransferAnim((a) => (a?.key === key ? null : a));
+    }, 680);
   }
 
   function pointInExpandedRect(cx, cy, bb, pad) {
@@ -4863,6 +6041,31 @@ export default function App() {
       return itemsRef.current.filter((i) => i.groupId === it.groupId).map((i) => i.id);
     }
     return [it.id];
+  }
+
+  function selectedAtPoint(cx, cy) {
+    const sel = selRef.current;
+    if (!sel.length || toolRef.current !== "select" || editingRef.current) return null;
+    const PAD = 8;
+    let minL = Infinity;
+    let minT = Infinity;
+    let maxR = -Infinity;
+    let maxB = -Infinity;
+    let count = 0;
+    const { pageId, world } = pageFilterRef.current;
+    for (const id of sel) {
+      const it = itemsRef.current.find((i) => i.id === id);
+      if (!it || !itemVisibleOnPage(it, pageId, world)) continue;
+      const bb = itemScreenBBox(it);
+      minL = Math.min(minL, bb.left);
+      minT = Math.min(minT, bb.top);
+      maxR = Math.max(maxR, bb.right);
+      maxB = Math.max(maxB, bb.bottom);
+      count++;
+    }
+    if (!count) return null;
+    if (cx >= minL - PAD && cx <= maxR + PAD && cy >= minT - PAD && cy <= maxB + PAD) return sel;
+    return null;
   }
 
   function itemAtPoint(cx, cy, excludeIds = null) {
@@ -4946,7 +6149,7 @@ export default function App() {
       if (it.type !== "text") continue;
       const bb = clientBoundsForItem(it, worldToClient);
       if (!bb) continue;
-      const pad = Math.max(14, HIGHLIGHT_W * camRef.current.scale * 0.52);
+      const pad = Math.max(5, HIGHLIGHT_W * camRef.current.scale * 0.38);
       if (cx >= bb.left - pad && cx <= bb.right + pad && cy >= bb.top - pad && cy <= bb.bottom + pad) {
         hits.push(it.id);
       }
@@ -5067,7 +6270,7 @@ export default function App() {
     }
   }
 
-  async function interpretSketchBundle(bundle, worldPos = null) {
+  async function interpretSketchBundle(bundle, worldPos = null, opts = {}) {
     if (!bundle) {
       showToast("nothing to interpret");
       return;
@@ -5084,7 +6287,7 @@ export default function App() {
       bundleItems.length ? bundleItems : pageItems.filter((it) => it.type === "stroke" || it.type === "image")
     );
     const label = bundleLabel(bundle);
-    const { expandedNode } = createSessionNodes(
+    const { sessionNode, expandedNode } = createSessionNodes(
       { ...session, transcript: bundle.transcript || session?.transcript },
       prompt,
       worldPos,
@@ -5096,9 +6299,8 @@ export default function App() {
       inputPreview: truncatePreview(bundle.transcript || label, 120),
     });
     launchPaperToAiTransfer({
-      itemIds: bundleSourceIds,
       nodeIds: [sessionNode.id, expandedNode.id],
-      aiWorld: { x: expandedNode.x, y: expandedNode.y },
+      focusWorld: worldPos || undefined,
     });
     setAiPanel({
       sourceIds: [...(bundle.strokeIds || []), ...(bundle.itemIds || [])],
@@ -5319,6 +6521,44 @@ export default function App() {
       return;
     }
 
+    if (t === "text") {
+      const editHit = itemAtPoint(cx, cy);
+      if (
+        editHit &&
+        isEditableBlock(editHit) &&
+        textClickRegion(editHit, cx, cy) === "interior"
+      ) {
+        setSelection([editHit.id]);
+        editingRef.current = editHit.id;
+        setEditing(editHit.id);
+        editClickRef.current = { cx, cy };
+        setGesturing(false);
+        return;
+      }
+      placeBlockAtClick("text", cx, cy);
+      setGesturing(false);
+      return;
+    }
+
+    if (t === "sticky") {
+      const editHit = itemAtPoint(cx, cy);
+      if (
+        editHit &&
+        isEditableBlock(editHit) &&
+        textClickRegion(editHit, cx, cy) === "interior"
+      ) {
+        setSelection([editHit.id]);
+        editingRef.current = editHit.id;
+        setEditing(editHit.id);
+        editClickRef.current = { cx, cy };
+        setGesturing(false);
+        return;
+      }
+      placeBlockAtClick("sticky", cx, cy);
+      setGesturing(false);
+      return;
+    }
+
     if (t === "pen" || t === "marker" || t === "eraser") {
       pushHistory();
     }
@@ -5339,9 +6579,22 @@ export default function App() {
     if (t === "highlight") {
       const hlSel = highlightSelectionRef.current;
       if (hlSel.length) {
-        const inSel = hit && hlSel.includes(hit.id);
-        const inBBox = pointInHighlightBBox(cx, cy, hlSel);
-        if (inSel || inBBox) {
+        const hlBb = selectionWorldBBoxForIds(hlSel);
+        if (hlBb) {
+          const tl = worldToClient(hlBb.minx, hlBb.miny);
+          const br = worldToClient(hlBb.maxx, hlBb.maxy);
+          const pad = 12;
+          if (
+            cx >= tl.x - pad &&
+            cx <= br.x + pad &&
+            cy >= tl.y - pad &&
+            cy <= br.y + pad
+          ) {
+            startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
+            return;
+          }
+        }
+        if (hit && hlSel.includes(hit.id)) {
           startPendingSpaceTransfer(e, "paper", hlSel, { kind: "highlight" });
           return;
         }
@@ -5396,21 +6649,25 @@ export default function App() {
         ? selRef.current
         : [hit.id];
       setSelection(nextSel);
-      const clickRegion = textClickRegion(hit, cx, cy);
-      let intent = clickRegion === "interior" ? "clone" : "move";
-      if (isEditableBlock(hit) && nextSel.length === 1 && clickRegion === "interior") {
-        intent = "edit";
+      if (toolRef.current === "select") {
+        clearHighlightSelection();
       }
+      const intent = e.altKey ? "clone" : "move";
       gesture.current = { mode: "pending", cx, cy, ids: nextSel, hitId: hit.id, intent };
-    } else {
-      if (!e.shiftKey) setSelection([]);
-      if (e.shiftKey) {
+    } else if (t === "select") {
+      const selHit = selectedAtPoint(cx, cy);
+      if (selHit) {
+        const intent = e.altKey ? "clone" : "move";
+        gesture.current = { mode: "pending", cx, cy, ids: selHit, hitId: selHit[0], intent };
+      } else {
+        if (!e.shiftKey) setSelection([]);
         gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
         setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
-      } else {
-        setPanning(true);
-        gesture.current = { mode: "pan", cx, cy, cam: { ...camRef.current } };
       }
+    } else {
+      if (!e.shiftKey) setSelection([]);
+      gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
+      setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
     }
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -5458,11 +6715,28 @@ export default function App() {
     const clean = (text || "").replace(/\u00a0/g, " ");
     if (!clean.trim()) {
       setItems((arr) => arr.filter((it) => it.id !== id));
+      setSelection((sel) => sel.filter((sid) => sid !== id));
+      pendingGoldBornRef.current.delete(id);
     } else {
       updateItem(id, { text: clean });
+      if (pendingGoldBornRef.current.has(id)) {
+        pendingGoldBornRef.current.delete(id);
+        markGoldBorn(id);
+      }
     }
     editingRef.current = null;
     setEditing(null);
+  }
+
+  function cleanupEmptyDrafts(keepEditingId = editingRef.current) {
+    setItems((arr) => purgeEmptyDraftBlocks(arr, keepEditingId));
+    setSelection((sel) => {
+      const valid = sel.filter((id) => {
+        const it = itemsRef.current.find((x) => x.id === id);
+        return it && (!isEmptyDraftBlock(it) || id === keepEditingId);
+      });
+      return valid.length === sel.length ? sel : valid;
+    });
   }
 
   // ---- images ----
@@ -5470,7 +6744,7 @@ export default function App() {
     try {
       pushHistory();
       const { src, w, h } = await fileToImage(file);
-      const center = at || viewportCenterWorld();
+      const center = at || paperViewportCenterWorld();
       const scale = Math.min(1, 260 / w);
       const id = uid();
       const imgItem = tagRecordingItem(
@@ -5517,7 +6791,7 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click object: replay history · blank paper: reset zoom
+  // double-click object: replay history · blank paper: new text box · text: edit
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
@@ -5526,16 +6800,25 @@ export default function App() {
       startHistoryReplay(hit.id);
       return;
     }
+    if (hit && isEditableBlock(hit)) {
+      e.preventDefault();
+      setSelection([hit.id]);
+      clearHighlightSelection();
+      editingRef.current = hit.id;
+      setEditing(hit.id);
+      editClickRef.current = { cx: e.clientX, cy: e.clientY };
+      return;
+    }
     if (hit) return;
-    const r = vpRect();
-    setCamera(fitPaperInView(r.width, r.height));
+    e.preventDefault();
+    // Blank double-click pans/fits — text boxes only via Text tool (avoids phantom empty boxes).
   }
 
   function onViewportDoubleClick(e) {
     const hit = itemAtPoint(e.clientX, e.clientY);
     if (hit) return;
     const r = vpRect();
-    setCamera(fitPaperInView(r.width, r.height));
+    animateCameraDirect(fitPaperInView(r.width, r.height), 520);
   }
 
   // ---- export / object helpers ----
@@ -5550,7 +6833,7 @@ export default function App() {
 
   async function combineItemsByDrag(draggedIds, targetIds) {
     const ids = [...new Set([...draggedIds, ...targetIds])];
-    const mergeOp = operators.find((o) => o.name === "merge" && o.primitive) || TRANSFORM_PRIMITIVES.find((o) => o.name === "merge");
+    const mergeOp = operators.find((o) => o.name === "merge") || TRANSFORM_PRIMITIVES.find((o) => o.name === "expand");
     runOperator(mergeOp, ids, {});
   }
   combineRef.current = combineItemsByDrag;
@@ -5635,15 +6918,18 @@ export default function App() {
 
   function insertBlock(type, opts = {}) {
     pushHistory();
-    const c = viewportCenterWorld();
     const meta = defaultBlockMeta(type);
+    const origin = opts.atWorld
+      ? blockOriginAtPointer(type, opts.atWorld)
+      : blockOriginAtViewportCenter(type, paperViewportCenterWorld());
     const id = uid();
     const item = tagRecordingItem(
       normalizeItem({
         id,
         type: type === "text" ? "text" : type,
-        x: c.x - (meta.w || 160) / 2 + (opts.offsetX || 0),
-        y: c.y - 40 + (opts.offsetY || 0),
+        x: origin.x,
+        y: origin.y,
+        w: origin.w ?? meta.w,
         text: defaultBlockContent(type),
         pageId: activePageId,
         world: worldFilter || opts.world || null,
@@ -5665,14 +6951,36 @@ export default function App() {
     recordItemEvent(id, "born", { itemSnapshot: itemSnapshot(item) });
     if (["text", "sticky", "callout", "code", "math"].includes(item.type)) {
       setEditing(id);
+      editingRef.current = id;
+      pendingGoldBornRef.current.add(id);
     }
-    setTool("select");
+    if (type !== "text" && type !== "sticky") setTool("select");
+    return id;
+  }
+
+  function placeBlockAtClick(type, clientX, clientY, opts = {}) {
+    const atWorld = clientToWorld(clientX, clientY);
+    const id = insertBlock(type, { atWorld, ...opts });
+    if (type === "text") emitTourEvent("insert-text");
+    if (type === "sticky") emitTourEvent("insert-sticky");
+    editingRef.current = id;
+    editClickRef.current = {
+      cx: clientX,
+      cy: clientY,
+      selectAll: type === "sticky" && !defaultBlockContent(type),
+    };
     return id;
   }
 
   function insertBlockFromPalette(type) {
     if (type === "text") {
-      insertBlock("text");
+      toolRef.current = "text";
+      setTool("text");
+      return;
+    }
+    if (type === "sticky") {
+      toolRef.current = "sticky";
+      setTool("sticky");
       return;
     }
     if (type === "pen") {
@@ -5697,16 +7005,12 @@ export default function App() {
     const r = vpRect();
     const cx = (bb.minx + bb.maxx) / 2;
     const cy = (bb.miny + bb.maxy) / 2;
-    const scale = camRef.current.scale;
-    setCamera({
-      scale,
-      x: r.width / 2 - cx * scale,
-      y: r.height / 2 - cy * scale,
-    });
+    animateCameraTo({ x: cx, y: cy }, camRef.current.scale, 480);
   }
 
   function switchPage(pageId, nextCamera) {
     emitTourEvent("page-switch");
+    const targetPage = pages.find((p) => p.id === pageId);
     setPages((ps) =>
       ps.map((p) => (p.id === activePageId ? { ...p, camera: { ...camRef.current } } : p))
     );
@@ -5715,7 +7019,8 @@ export default function App() {
     setEditing(null);
     requestAnimationFrame(() => {
       const r = vpRect();
-      setCamera(nextCamera || fitPaperInView(r.width, r.height));
+      const targetCam = nextCamera || targetPage?.camera || fitPaperInView(r.width, r.height);
+      animateCameraDirect(targetCam, 520);
     });
   }
 
@@ -5744,7 +7049,14 @@ export default function App() {
   }
 
   function appendAiNodes(...newNodes) {
-    setAiNodes((nodes) => layoutAfterAppend(nodes, newNodes));
+    setAiNodes((nodes) => {
+      try {
+        return layoutAfterAppend(nodes, newNodes);
+      } catch (err) {
+        console.error("appendAiNodes layout failed", err);
+        return [...nodes, ...newNodes];
+      }
+    });
     return newNodes;
   }
 
@@ -5758,7 +7070,7 @@ export default function App() {
     );
   }
 
-  function ensureSourceNode(ids, preview, label, worldPos) {
+  function ensureSourceNode(ids, preview, label, worldPos, opts = {}) {
     const existing = findSourceNodeForIds(ids);
     if (existing) return existing;
     const pos = nodePositionAt(aiNodesRef.current, "source", worldPos);
@@ -5771,13 +7083,19 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(opts.dropPinned && worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
     return node;
   }
 
-  function createExpandedChild(sourceNode, { opLabel, opId, loading = true, label = "Expanded" } = {}, worldPos) {
+  function createExpandedChild(
+    sourceNode,
+    { opLabel, opId, loading = true, label = "Expanded" } = {},
+    worldPos,
+    opts = {}
+  ) {
     const existing = aiNodesRef.current;
     const pos = worldPos || childNodePosition(sourceNode, "expanded", existing);
     const node = makeAiNode({
@@ -5792,6 +7110,7 @@ export default function App() {
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(opts.dropPinned && worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
@@ -5800,17 +7119,26 @@ export default function App() {
 
   function createSessionNodes(session, prompt, worldPos, labelOverride) {
     const existing = aiNodesRef.current;
-    const pos = nodePositionAt(existing, "session", worldPos);
+    const sessionPos = worldPos
+      ? {
+          x: worldPos.x - AI_SPAWN_MIN_DIST * 0.32,
+          y: worldPos.y,
+          radius: nodePositionAt(existing, "session").radius,
+        }
+      : nodePositionAt(existing, "session", worldPos);
     const sessionNode = makeAiNode({
       nodeKind: "session",
       label: truncateLabel(labelOverride || session.transcript?.slice(0, 24) || "Session"),
       preview: session.transcript?.slice(0, 200) || "Paper session",
       sourceIds: [],
-      x: pos.x,
-      y: pos.y,
-      radius: pos.radius,
+      x: sessionPos.x,
+      y: sessionPos.y,
+      radius: sessionPos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
-    const expandedPos = childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
+    const expandedPos = worldPos
+      ? { x: worldPos.x, y: worldPos.y, radius: nodePositionAt(existing, "expanded").radius }
+      : childNodePosition(sessionNode, "expanded", [...existing, sessionNode]);
     const expandedNode = makeAiNode({
       nodeKind: "expanded",
       label: "···",
@@ -5822,14 +7150,28 @@ export default function App() {
       x: expandedPos.x,
       y: expandedPos.y,
       radius: expandedPos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(sessionNode, expandedNode);
     setSelectedAiNodeIds([expandedNode.id]);
+    if (worldPos) {
+      launchPaperToAiTransfer({
+        nodeIds: [sessionNode.id, expandedNode.id],
+        focusWorld: worldPos,
+      });
+    }
     return { sessionNode, expandedNode, prompt };
   }
 
   function createMoveNode(op, worldPos, linkTo) {
-    const pos = nodePositionAt(aiNodesRef.current, "move", worldPos);
+    const existing = aiNodesRef.current;
+    let pos;
+    if (linkTo) {
+      pos = childNodePosition(linkTo, "move", existing);
+      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
+    } else {
+      pos = nodePositionAt(existing, "move", worldPos);
+    }
     const node = makeAiNode({
       nodeKind: "move",
       label: truncateLabel(op.name),
@@ -5846,7 +7188,14 @@ export default function App() {
   }
 
   function createLensNode(lens, worldPos, linkTo) {
-    const pos = nodePositionAt(aiNodesRef.current, "lens", worldPos);
+    const existing = aiNodesRef.current;
+    let pos;
+    if (linkTo) {
+      pos = childNodePosition(linkTo, "lens", existing);
+      if (worldPos) pos = { ...pos, x: worldPos.x, y: worldPos.y };
+    } else {
+      pos = nodePositionAt(existing, "lens", worldPos);
+    }
     const node = makeAiNode({
       nodeKind: "lens",
       label: truncateLabel(lens.name),
@@ -5862,16 +7211,27 @@ export default function App() {
     return node;
   }
 
-  function createOutputNode(text, worldPos) {
-    const pos = nodePositionAt(aiNodesRef.current, "expanded", worldPos);
+  function createOutputNode(text, worldPos, linkTo = null) {
+    const existing = aiNodesRef.current;
+    let pos;
+    if (worldPos) {
+      pos = { ...nodePositionAt(existing, "expanded", worldPos), x: worldPos.x, y: worldPos.y };
+    } else if (linkTo) {
+      pos = childNodePosition(linkTo, "expanded", existing);
+    } else {
+      pos = nodePositionAt(existing, "expanded", null);
+    }
     const clean = String(text || "").trim();
     const node = makeAiNode({
       nodeKind: "expanded",
       label: truncateLabel(clean.slice(0, 24) || "Output"),
       expandedText: clean,
+      parentId: linkTo?.id || null,
+      sourceNodeIds: linkTo ? [linkTo.id] : [],
       x: pos.x,
       y: pos.y,
       radius: pos.radius,
+      ...(worldPos ? { _dropPinned: true } : {}),
     });
     appendAiNodes(node);
     setSelectedAiNodeIds([node.id]);
@@ -5941,10 +7301,17 @@ export default function App() {
       showToast("expand primitive not found");
       return;
     }
-    const sourceNode =
-      opts.sourceNode ||
-      findSourceNodeForIds(ids) ||
-      ensureSourceNode(ids, null, "Source", opts.atWorld);
+    const dropWorld = opts.expandedAt ?? opts.atWorld;
+    let sourceNode = opts.sourceNode || findSourceNodeForIds(ids);
+    const dropPinned = !!dropWorld;
+
+    if (!sourceNode) {
+      const sourceAt = dropWorld
+        ? { x: dropWorld.x - AI_SPAWN_MIN_DIST * 0.32, y: dropWorld.y }
+        : null;
+      sourceNode = ensureSourceNode(ids, null, "Source", sourceAt, { dropPinned: !!sourceAt });
+    }
+
     const expandedNode = createExpandedChild(
       sourceNode,
       {
@@ -5952,17 +7319,24 @@ export default function App() {
         opId: op.id,
         loading: true,
       },
-      opts.expandedAt
+      dropWorld || undefined,
+      { dropPinned }
     );
-    recordItemEvents(ids, "transfer-to-ai", {
-      aiNodeId: sourceNode.id,
-      opName: opts.opLabel || op.name,
-    });
-    launchPaperToAiTransfer({
-      itemIds: ids,
-      nodeIds: [sourceNode.id, expandedNode.id],
-      aiWorld: { x: expandedNode.x, y: expandedNode.y },
-    });
+      recordItemEvents(ids, "transfer-to-ai", {
+        aiNodeId: sourceNode.id,
+        opName: opts.opLabel || op.name,
+        opId: op.id,
+        moveRef: viaFromOp(op, ids).moveRef,
+        inputPreview: truncatePreview(
+          itemsRef.current
+            .filter((it) => ids.includes(it.id))
+            .map((it) => it.text || it.preview || "")
+            .join(" ")
+            .trim(),
+          120
+        ),
+      });
+    launchPaperToAiTransfer({ nodeIds: [sourceNode.id, expandedNode.id], focusWorld: dropWorld });
     setAiPanel((prev) => ({
       ...(prev || {}),
       sourceIds: ids,
@@ -6005,6 +7379,9 @@ export default function App() {
       recordItemEvents(ids, "expand", {
         aiNodeId: expandedNode.id,
         opName: opts.opLabel || op.name,
+        opId: op.id,
+        moveRef: viaFromOp(op, ids).moveRef,
+        inputPreview: truncatePreview(gathered?.preview || "", 80),
         outputPreview: truncatePreview(text, 120),
       });
       setAiPanel((prev) => ({
@@ -6038,15 +7415,12 @@ export default function App() {
       opts.atWorld ||
       (opts.clientX != null && opts.clientY != null
         ? clientToWorld(opts.clientX, opts.clientY)
-        : viewportCenterWorld());
-    triggerTransferAnimation("to-paper", {
-      atWorld,
-      fromClient:
-        opts.clientX != null && opts.clientY != null
-          ? { x: opts.clientX, y: opts.clientY }
-          : undefined,
-    });
-    spawnTextAtWorld(fragment, atWorld, { silent: true });
+        : paperViewportCenterWorld());
+    const id = spawnTextAtWorld(fragment, atWorld, { silent: true, fromAi: true });
+    if (id) {
+      const r = vpRect();
+      animateCameraTo(atWorld, Math.min(camRef.current.scale, 1.1));
+    }
   };
   transferFragmentReplaceRef.current = (fragment) => {
     emitTourEvent("fragment-highlight");
@@ -6055,23 +7429,67 @@ export default function App() {
   };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     emitTourEvent("transfer");
-    if (g.origin === "paper" && isOverAiColumn(cx, cy)) {
+    const fromClient = { x: cx, y: cy };
+    const target = resolveSpaceTransferTarget(g.origin, cx, cy);
+
+    if (g.origin === "paper" && target === "ai") {
       const ids = g.ids;
       const world = getAiDropWorldFromClient(cx, cy);
       if (g.kind === "highlight") {
-        transferHighlightSelectionToAi(ids, world);
+        transferHighlightSelectionToAi(ids, world, { fromClient });
         return;
       }
       const sketchBundle = gatherSelectionSketchBundle(ids);
       if (sketchBundle) {
-        interpretSketchBundle(sketchBundle, world);
+        interpretSketchBundle(sketchBundle, world, { fromClient });
       } else {
         const expandIds = transformableDragIds(ids);
-        if (expandIds.length) expandInAi(expandIds, { expandedAt: world });
+        if (expandIds.length) expandInAi(expandIds, { expandedAt: world, fromClient, quiet: true });
       }
-    } else if (g.origin === "ai" && isOverPaperColumn(cx, cy)) {
+    } else if (g.origin === "paper" && target === "paper" && g.kind === "highlight") {
+      transferHighlightSelectionToPaper(g.ids, clientToWorld(cx, cy));
+    } else if (g.origin === "paper" && target === "functions") {
+      if (g.kind === "highlight") {
+        transferHighlightSelectionToFunctions(g.ids);
+      } else {
+        captureMaterialWithReplay(g.ids);
+      }
+    } else if (g.origin === "paper" && target === "structures") {
+      const structId = structCardAtClient(cx, cy);
+      if (g.kind === "highlight") {
+        transferHighlightSelectionToStructures(g.ids, structId);
+      } else {
+        addMaterialToSymbol(g.ids, { structId });
+      }
+    } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
-      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy));
+      transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
+    } else if (g.origin === "ai" && target === "functions") {
+      captureAiNodesAsFunction(g.ids);
+    } else if (g.origin === "ai" && target === "structures") {
+      saveAiNodesAsSymbol(g.ids, structCardAtClient(cx, cy));
+    } else if (g.origin === "ai" && target === "ai") {
+      const world = getAiDropWorldFromClient(cx, cy);
+      for (const nodeId of g.ids) {
+        const node = aiNodesRef.current.find((n) => n.id === nodeId);
+        if (!node) continue;
+        const { ids, sourceNode } = resolveNodeSourceIds(node);
+        if (ids?.length) {
+          expandInAi(ids, {
+            sourceNode: sourceNode || node,
+            expandedAt: world,
+            fromClient,
+            quiet: true,
+          });
+        } else {
+          const text = (node.goldenFragment || node.expandedText || node.preview || "").trim();
+          if (text) {
+            const atWorld = clientToWorld(cx, cy);
+            const spawnedId = spawnTextAtWorld(text, atWorld, { silent: true, fromAi: true });
+            if (spawnedId) expandInAi([spawnedId], { expandedAt: world, fromClient, quiet: true });
+          }
+        }
+      }
     }
   };
 
@@ -6096,6 +7514,7 @@ export default function App() {
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
+    if (opts.fromAi) markGoldBorn(id);
     recordItemEvent(id, opts.fromAi ? "transfer-to-paper" : "born", {
       itemSnapshot: itemSnapshot(item),
       textSnapshot: clean,
@@ -6103,13 +7522,24 @@ export default function App() {
       outputPreview: truncatePreview(clean, 120),
     });
     if (!opts.silent) showToast("added to paper");
+    return id;
+  }
+
+  function aiNodeAtWorld(wx, wy) {
+    const list = aiNodesRef.current;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const n = list[i];
+      const r = (n.radius || 20) + 28;
+      if ((n.x - wx) ** 2 + (n.y - wy) ** 2 <= r * r) return n;
+    }
+    return null;
   }
 
   function getAiDropWorld(fallbackWorld) {
     if (fallbackWorld) return fallbackWorld;
     const el = aiViewportRef.current;
     if (el) {
-      return viewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight);
+      return aiViewportCenterWorld(aiCamRef.current, el.clientWidth, el.clientHeight);
     }
     return { x: 0, y: 0 };
   }
@@ -6126,11 +7556,7 @@ export default function App() {
 
     const lensId = e.dataTransfer.getData(LENS_MIME);
     if (lensId) {
-      const lens = lenses.find((l) => l.id === lensId);
-      if (lens) {
-        const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
-        createLensNode(lens, pos, linkTo);
-      }
+      showToast("apply lenses from the functions column onto paper material");
       return true;
     }
 
@@ -6173,25 +7599,21 @@ export default function App() {
     if (opId) {
       const op = opMap[opId];
       if (!op) return true;
-      if (isCompressionOperator(op)) {
+      const targetNode = aiNodeAtWorld(pos.x, pos.y);
+      if (!targetNode) {
+        showToast("drop function onto a concept node");
         return true;
       }
-      const linkTo = findNearestSourceNode(aiNodesRef.current, pos.x, pos.y);
-      createMoveNode(op, pos, linkTo);
+      const { ids, sourceNode } = resolveNodeSourceIds(targetNode);
       if (!ids?.length) {
-        setAiPanel((prev) => ({
-          ...(prev || {}),
-          opLabel: op.name,
-          opId: op.id,
-        }));
+        showToast("nothing to apply function to");
         return true;
       }
-      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
       expandInAi(ids, {
         op,
         opLabel: op.name,
-        sourceNode,
-        expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
+        sourceNode: sourceNode || targetNode,
+        expandedAt: pos,
       });
       return true;
     }
@@ -6201,11 +7623,11 @@ export default function App() {
         interpretSketchBundle(sketchBundle, pos);
         return true;
       }
-      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos);
+      const sourceNode = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", pos, { dropPinned: true });
       if (autoExpand) {
         expandInAi(ids, {
           sourceNode,
-          expandedAt: childNodePosition(sourceNode, "expanded", aiNodesRef.current),
+          expandedAt: pos,
         });
       } else {
         syncAiSource(ids, { keepExpanded: false, skipNode: true });
@@ -6215,8 +7637,13 @@ export default function App() {
     return false;
   }
 
-  function absorbTransferPayload(e, opts) {
-    return absorbTransferPayloadAt(e, null, opts);
+  function absorbTransferPayload(e, opts = {}) {
+    const world =
+      opts.worldPos ??
+      (e.clientX != null && e.clientY != null
+        ? getAiDropWorldFromClient(e.clientX, e.clientY)
+        : null);
+    return absorbTransferPayloadAt(e, world, opts);
   }
 
   function handleBoundaryDragOver(e) {
@@ -6255,8 +7682,7 @@ export default function App() {
       e.dataTransfer.types.includes(OP_MIME) ||
       e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
       e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
-      e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
-      e.dataTransfer.types.includes(LENS_MIME)
+      e.dataTransfer.types.includes(AI_OUTPUT_MIME)
     ) {
       e.preventDefault();
       e.stopPropagation();
@@ -6299,14 +7725,11 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") setRailTab("functions");
-    else if (action === "open-structures") {
-      setRailTab("structures");
-      emitTourEvent("structures-tab");
-    }
+    else if (action === "open-functions") focusRailPane("functions");
+    else if (action === "open-structures") focusRailPane("structures");
     else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
-    else if (action === "new-function") openCreateFunction();
+    else if (action === "new-function") openCreateLens();
   }
 
   function handleShareBoard() {
@@ -6332,6 +7755,10 @@ export default function App() {
     selItem && isTransformableBlock(selItem) ? getNodeThreadCapture(selItem.id, items) : null;
   const captureName = (captureNameOverride ?? selCaptureInfo?.defaultName ?? "").slice(0, 72);
   const boardLinks = visibleItems.filter((it) => it.type === "link");
+  const paperContentItems = visibleItems.filter(
+    (it) => it.type !== "link" && !(it.type === "stroke" && it.highlight)
+  );
+  const paperIsEmpty = paperContentItems.length === 0 && !walking && !historyReplay;
   const activePageHasSession =
     (pages.find((p) => p.id === activePageId)?.sessions?.length || 0) > 0;
   const walkStep = walking?.steps?.[walking.stepIndex] || null;
@@ -6344,13 +7771,23 @@ export default function App() {
   const historyReplayStep = historyReplay?.steps?.[historyReplay.stepIndex] || null;
   const historyReplayFocusRects = historyReplayStep
     ? historyReplayStep.itemIds
-        .map((id) => items.find((it) => it.id === id))
+        .map((id) => {
+          const it = items.find((i) => i.id === id);
+          if (it) {
+            const bb = itemScreenBBox(it);
+            if (bb.right > bb.left && bb.bottom > bb.top) return bb;
+          }
+          const snap =
+            historyReplayStep.itemSnapshot?.id === id ? historyReplayStep.itemSnapshot : null;
+          return snap ? snapshotScreenBBox(snap) : null;
+        })
         .filter(Boolean)
-        .map((it) => itemScreenBBox(it))
     : [];
   const cursorClass =
     panning
       ? "cur-grabbing"
+      : tool === "text" || tool === "sticky"
+      ? "cur-text"
       : tool === "highlight" && highlightGrabHover
       ? "cur-grab"
       : tool === "highlight"
@@ -6398,14 +7835,21 @@ export default function App() {
       highlightSelection: highlightSelectionIds,
       expandCanvasTools: () => setExpandToolsSignal((n) => n + 1),
       setTool,
-      expandAiToolbox: () => setExpandToolboxSignal((n) => n + 1),
+      expandAiToolbox: () => {
+        setRailPulse(true);
+        window.setTimeout(() => setRailPulse(false), 1200);
+      },
       setToolboxTab: (tab) => {
-        setRailTab(tab);
-        if (tab === "structures") emitTourEvent("structures-tab");
+        focusRailPane(tab);
       },
     }),
     [items, camera, aiCamera, aiNodes, operators, structures, highlightSelectionIds]
   );
+
+  const paperColWidth = Math.max(0, colGridWidth - columnLayout.left - columnLayout.right - 24);
+  const leftColCollapsed = columnLayout.left <= 0;
+  const rightColCollapsed = columnLayout.right <= 0;
+  const paperColCollapsed = colGridWidth > 0 && paperColWidth <= 0;
 
   return (
     <div className={"idea-app theme-" + theme}>
@@ -6431,8 +7875,148 @@ export default function App() {
         onAccountAction={handleAccountAction}
       />
 
-      <div className={"two-column-grid" + (transferDragActive ? " transfer-drag" : "")}>
+      <div
+        ref={threeColumnGridRef}
+        className={"three-column-grid" + (columnResizing ? " column-resizing" : "") + (transferDragActive ? " transfer-drag" : "")}
+        style={{
+          "--col-left-w": `${columnLayout.left}px`,
+          "--col-right-w": `${columnLayout.right}px`,
+        }}
+      >
+        <FunctionsColumn
+          columnRef={functionsColumnRef}
+          collapsed={leftColCollapsed}
+          dropOver={railDropOver}
+          captureReplay={functionsCaptureReplay}
+          onPointerTrack={(cx, cy) => {
+            lastPointerRef.current = { cx, cy };
+          }}
+          onDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(OP_MIME) ||
+              e.dataTransfer.types.includes(STRUCT_MIME) ||
+              e.dataTransfer.types.includes(SEL_MIME) ||
+              e.dataTransfer.types.includes(THOUGHT_MIME) ||
+              e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME)
+            ) {
+              e.preventDefault();
+              setRailDropOver(true);
+              e.dataTransfer.dropEffect = "copy";
+              const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
+              if (dropTarget === "structures") {
+                setSymbolDropTargetId(structCardAtClient(e.clientX, e.clientY));
+              } else {
+                setSymbolDropTargetId(null);
+              }
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setRailDropOver(false);
+              setSymbolDropTargetId(null);
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setRailDropOver(false);
+            setSymbolDropTargetId(null);
+            const ids = idsFromMaterialTransfer(e);
+            if (ids?.length) {
+              applyLeftColumnMaterialDrop(ids, e.clientX, e.clientY);
+              return;
+            }
+            const opId = e.dataTransfer.getData(OP_MIME);
+            if (opId) {
+              pinOpToToolbox(opId);
+              return;
+            }
+            const structId = e.dataTransfer.getData(STRUCT_MIME);
+            if (structId) {
+              focusRailPane("structures");
+              showToast("already saved");
+            }
+          }}
+        >
+          <aside
+            ref={railRef}
+            className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+            data-tour="functions-toolbox"
+          >
+            <section ref={functionsSectionRef} className="rail-pane rail-functions-pane cognition-git-pane" data-tour="functions-section">
+              <CognitionGitHeader
+                activeLens={activeLens}
+                lensCount={displayLenses.length}
+                onNewLens={openCreateLens}
+              />
+              <p className="rail-functions-hint">Drag a lens onto paper to transform · click a lens to edit it</p>
+              <div className="move-quick-add">
+                <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+              </div>
+              {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
+                <div className="sel-capture-panel">
+                  <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="lens name" />
+                  <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>Save as lens</button>
+                </div>
+              )}
+              <div className="rail-scroll rail-scroll-horizontal rail-lenses-scroll">
+                {lensRepos.length > 0 && (
+                  <>
+                    <div className="rail-section" data-tour="lenses-section">Lenses</div>
+                    {lensRepos.map((repo) => (
+                      <div key={repo.root.id} className="git-repo-group">
+                        {renderLensCard(repo.root, { depth: 0 })}
+                        {repo.branches.map((lens) => renderLensCard(lens, { depth: 1 }))}
+                        {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+              </div>
+            </section>
+            <section ref={symbolsSectionRef} className="rail-pane rail-symbols-pane" data-tour="structures-tab">
+              <h3 className="rail-pane-heading">
+                symbols {structures.length ? `(${structures.length})` : ""}
+              </h3>
+              <p className="rail-structures-hint">
+                AI reads each symbol’s meaning · edit its viewing lens · drag onto paper to apply
+              </p>
+              <div className="rail-scroll rail-scroll-horizontal">
+                {structures.map((struct) => (
+                  <StructureCard
+                    key={struct.id}
+                    struct={struct}
+                    dropTarget={symbolDropTargetId === struct.id}
+                    onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
+                    onMaterialDragLeave={() =>
+                      setSymbolDropTargetId((prev) => (prev === struct.id ? null : prev))
+                    }
+                    onMaterialDrop={handleStructCardMaterialDrop}
+                    onDelete={() => deleteStructure(struct.id)}
+                    onShare={() => shareSymbolStruct(struct)}
+                    onEditSymbol={() => openSymbolDrawPrompt(struct)}
+                    onEditViewLens={() => openEditSymbolViewLens(struct)}
+                  />
+                ))}
+              </div>
+            </section>
+            <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
+            <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
+          </aside>
+        </FunctionsColumn>
+
+        <InterpretBoundary
+          variant="tools-paper"
+          resizeEdge="left"
+          onResizeStart={startColumnBoundaryResize}
+          resizing={columnResizing === "left"}
+        />
+
         <CanvasColumn
+          collapsed={paperColCollapsed}
           tool={tool}
           imageArmed={imageArmed}
           dropOver={canvasDropOver}
@@ -6455,11 +8039,25 @@ export default function App() {
           onSelectPage={switchPage}
           onAddPage={addPage}
           onRenamePage={renamePage}
-          onZoomIn={() => setCamera((c) => zoomCamera(c, ZOOM_STEP))}
-          onZoomOut={() => setCamera((c) => zoomCamera(c, 1 / ZOOM_STEP))}
+          onZoomIn={() => {
+            const r = vpRect();
+            const c = camRef.current;
+            const next = zoomCamera(c, ZOOM_STEP);
+            const local = { x: r.width / 2, y: r.height / 2 };
+            const world = screenToWorld(c, local.x, local.y);
+            animateCameraTo(world, next.scale, 320);
+          }}
+          onZoomOut={() => {
+            const r = vpRect();
+            const c = camRef.current;
+            const next = zoomCamera(c, 1 / ZOOM_STEP);
+            const local = { x: r.width / 2, y: r.height / 2 };
+            const world = screenToWorld(c, local.x, local.y);
+            animateCameraTo(world, next.scale, 320);
+          }}
           onZoomReset={() => {
             const r = vpRect();
-            setCamera(fitPaperInView(r.width, r.height));
+            animateCameraDirect(fitPaperInView(r.width, r.height), 520);
           }}
           paperRecording={paperRecording}
           paperRecordLevel={paperRecordLevel}
@@ -6479,6 +8077,18 @@ export default function App() {
             : undefined
         }
       >
+        {paperIsEmpty && (
+          <div className="paper-empty-hint" aria-hidden="true">
+            <p className="paper-empty-title">Your ideas live here</p>
+            <p className="paper-empty-steps">
+              1. Write or draw with <strong>Tools</strong> above
+              <br />
+              2. Drag a <strong>lens</strong> from the left onto your note
+              <br />
+              3. Highlight text and drag <strong>→ AI</strong> to explore
+            </p>
+          </div>
+        )}
         <div
           className="world"
           style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}
@@ -6674,6 +8284,7 @@ export default function App() {
                     key={it.id}
                     item={it}
                     selected={selection.includes(it.id)}
+                    bornGold={goldBornIds.has(it.id)}
                     highlightTouched={highlightTouchSet.has(it.id)}
                     highlightSelected={highlightSelectionSet.has(it.id)}
                     highlightTransferring={highlightTransferringSet.has(it.id)}
@@ -6682,6 +8293,7 @@ export default function App() {
                     editing={editing === it.id}
                     editClickRef={editClickRef}
                     onCommit={(text) => commitEdit(it.id, text)}
+                    onResizeWidth={(w) => updateItem(it.id, { w })}
                   />
                 );
               }
@@ -6690,6 +8302,7 @@ export default function App() {
                   key={it.id}
                   item={it}
                   selected={selection.includes(it.id)}
+                  bornGold={goldBornIds.has(it.id)}
                   highlightTouched={highlightTouchSet.has(it.id)}
                   highlightSelected={highlightSelectionSet.has(it.id)}
                   highlightTransferring={highlightTransferringSet.has(it.id)}
@@ -6734,7 +8347,7 @@ export default function App() {
             </svg>
           )}
 
-          {/* selection boundary — edge = move original, interior = clone */}
+          {/* selection handles */}
           {selection.length > 1 && (
             <div
               className="sel-box"
@@ -6789,9 +8402,7 @@ export default function App() {
           if (toolRef.current === "highlight" && highlightSelectionRef.current.length) {
             const hlSel = highlightSelectionRef.current;
             const hit = itemAtPoint(cx, cy);
-            const overHighlight =
-              pointInHighlightBBox(cx, cy, hlSel) || (hit && hlSel.includes(hit.id));
-            setHighlightGrabHover(overHighlight);
+            setHighlightGrabHover(!!(hit && hlSel.includes(hit.id)));
           } else if (highlightGrabHover) {
             setHighlightGrabHover(false);
           }
@@ -6903,12 +8514,23 @@ export default function App() {
         />
       )}
 
-      {/* screen-space selection boundary + transform handles */}
-      {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
-        <SelectionBoundary bbox={selectionScreenBox} onEdgePointerDown={startSelectionEdgeMove} />
+      {symbolDrawPrompt && (
+        <SymbolDrawOverlay
+          title={symbolDrawPrompt.title}
+          onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
+          onCancel={() => {
+            setSymbolDrawPrompt(null);
+            showToast("symbol skipped — idea saved");
+          }}
+        />
       )}
 
-      {canTransform && !editing && !historyReplay && (
+      {/* screen-space selection boundary + transform handles */}
+      {selection.length >= 1 && selBBox && !editing && !walking && !historyReplay && selectionScreenBox && (
+        <SelectionBoundary bbox={selectionScreenBox} onFramePointerDown={startSelectionEdgeMove} />
+      )}
+
+      {canTransform && selItem && !isEmptyDraftBlock(selItem) && !editing && !historyReplay && (
         <ScreenTransformHandles
           bbox={itemScreenBBox(selItem)}
           onRotateStart={(e) => {
@@ -6943,6 +8565,8 @@ export default function App() {
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           onSave={saveSelectionAsFunction}
+          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
+          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
           onSaveDocument={selItem.type === "text" ? saveSelectedAsDocument : null}
           onShareJourney={() => shareJourneyLink(selItem.id)}
           aiDragIds={[selItem.id]}
@@ -6956,6 +8580,8 @@ export default function App() {
         <SelectionCaptureChip
           bbox={itemScreenBBox(selItem)}
           aiDragIds={[selItem.id]}
+          onSaveToFunctions={() => captureMaterialWithReplay([selItem.id])}
+          onSaveToStructures={() => saveMaterialAsSymbol([selItem.id])}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -6970,6 +8596,8 @@ export default function App() {
         <SelectionCaptureChip
           bbox={highlightScreenBox}
           aiDragIds={highlightSelectionIds}
+          onSaveToFunctions={() => transferHighlightSelectionToFunctions(highlightSelectionIds)}
+          onSaveToStructures={() => transferHighlightSelectionToStructures(highlightSelectionIds)}
           sketchBundle={highlightSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -6980,6 +8608,8 @@ export default function App() {
         <SelectionCaptureChip
           bbox={selectionScreenBox}
           aiDragIds={selection}
+          onSaveToFunctions={() => captureMaterialWithReplay(selection)}
+          onSaveToStructures={() => saveMaterialAsSymbol(selection)}
           sketchBundle={selectionSketchBundle}
           onTransferDragStart={() => setTransferDragActive(true)}
           onTransferDragEnd={() => setTransferDragActive(false)}
@@ -6994,6 +8624,9 @@ export default function App() {
           dropOver={boundaryDropOver}
           magnetActive={boundaryMagnetActive || transferDragActive}
           loading={!!aiPanel?.loading}
+          resizeEdge="right"
+          onResizeStart={startColumnBoundaryResize}
+          resizing={columnResizing === "right"}
           onDragOver={handleBoundaryDragOver}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -7005,6 +8638,7 @@ export default function App() {
         />
 
         <AiColumn
+          collapsed={rightColCollapsed}
           nodes={aiNodes}
           camera={aiCamera}
           onCameraChange={setAiCamera}
@@ -7012,11 +8646,13 @@ export default function App() {
           onSelectNode={handleAiNodeSelect}
           onMoveNode={moveAiNode}
           tool={tool}
-          onSpaceTransferStart={(e) =>
-            startPendingSpaceTransfer(e, "ai", selectedAiNodeIdsRef.current, {
+          onSpaceTransferStart={(e, nodeIds) => {
+            const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
+            if (!ids.length) return;
+            startPendingSpaceTransfer(e, "ai", ids, {
               kind: toolRef.current === "highlight" ? "highlight" : null,
-            })
-          }
+            });
+          }}
           onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
           onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
           isPaperDestination={(x, y) => isOverPaperColumn(x, y)}
@@ -7025,20 +8661,19 @@ export default function App() {
           onCanvasDragOver={handleAiCanvasDragOver}
           onCanvasDragLeave={() => setAiCanvasDropOver(false)}
           onCanvasDrop={handleAiCanvasDrop}
-          onExploreNode={exploreAiNode}
+          onExploreNode={(nodeId) => exploreAiNode(nodeId, { runExpand: false })}
           onFocusFromZoom={focusAiNodeFromZoom}
           onReturnToConstellation={returnAiToConstellation}
           focusedNodeId={aiFocusedNodeId}
-          expandToolboxSignal={expandToolboxSignal}
-          onToolboxExpanded={() => emitTourEvent("toolbox-expanded")}
           onTourEvent={emitTourEvent}
           getStrandChoices={getStrandChoicesForNode}
           onStrandSelect={handleStrandSelect}
-          onExpandNode={(nodeId) => exploreAiNode(nodeId)}
+          onExpandNode={(nodeId) => exploreAiNode(nodeId, { runExpand: true })}
+          onPointerTrack={(cx, cy) => {
+            lastPointerRef.current = { cx, cy };
+          }}
           landingNodeIds={aiLandingNodeIds}
-          panel={aiPanel}
           dropOver={aiDropOver}
-          libraryDropOver={railDropOver}
           onDragOver={(e) => {
             if (
               e.dataTransfer.types.includes(THOUGHT_MIME) ||
@@ -7046,8 +8681,7 @@ export default function App() {
               e.dataTransfer.types.includes(OP_MIME) ||
               e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
               e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
-              e.dataTransfer.types.includes(AI_OUTPUT_MIME) ||
-              e.dataTransfer.types.includes(LENS_MIME)
+              e.dataTransfer.types.includes(AI_OUTPUT_MIME)
             ) {
               e.preventDefault();
               setAiDropOver(true);
@@ -7062,141 +8696,6 @@ export default function App() {
             }
           }}
           onDrop={handleAiDrop}
-          onLibraryDragOver={(e) => {
-            if (
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME)
-            ) {
-              e.preventDefault();
-              setRailDropOver(true);
-              e.dataTransfer.dropEffect = "copy";
-            }
-          }}
-          onLibraryDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setRailDropOver(false);
-          }}
-          onLibraryDrop={(e) => {
-            e.preventDefault();
-            setRailDropOver(false);
-            const selJson = e.dataTransfer.getData(SEL_MIME);
-            if (selJson) {
-              try {
-                saveSelectionByIds(JSON.parse(selJson));
-              } catch {
-                /* ignore */
-              }
-              return;
-            }
-            const opId = e.dataTransfer.getData(OP_MIME);
-            if (opId) {
-              pinOpToToolbox(opId);
-              return;
-            }
-            const structId = e.dataTransfer.getData(STRUCT_MIME);
-            if (structId) {
-              setRailTab("structures");
-              showToast("already saved");
-            }
-          }}
-          onExpand={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            const ids = node?.sourceIds?.length ? node.sourceIds : aiPanel?.sourceIds || selection;
-            if (!ids?.length) {
-              showToast("select or drop a thought first");
-              return;
-            }
-            const op = aiPanel?.opId ? opMap[aiPanel.opId] : null;
-            expandInAi(ids, op ? { op, opLabel: op.name } : {});
-          }}
-          onEditExpanded={(text, nodeId) => {
-            const targetId = nodeId || selectedAiNodeId || aiPanel?.activeNodeId;
-            if (targetId) updateAiNode(targetId, { expandedText: text });
-            setAiPanel((prev) => ({ ...prev, expandedText: text }));
-          }}
-          onCopy={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            const text = node?.expandedText || aiPanel?.expandedText;
-            if (text) {
-              navigator.clipboard?.writeText(text);
-              showToast("copied");
-            }
-          }}
-          onClear={() => {
-            const node = aiNodes.find((n) => n.id === selectedAiNodeId);
-            if (node?.nodeKind === "expanded") {
-              setAiNodes((nodes) => nodes.filter((n) => n.id !== node.id));
-              setSelectedAiNodeIds([]);
-            }
-            setAiPanel(null);
-          }}
-          toolbox={
-            <aside
-              ref={railRef}
-              className={"board-rail ai-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
-            >
-              <div className="rail-tabs">
-                <button
-                  className={"rail-tab" + (railTab === "functions" ? " on" : "")}
-                  data-tour="structures-tab"
-                  onClick={() => setRailTab("functions")}
-                >
-                  functions
-                </button>
-                <button
-                  className={"rail-tab" + (railTab === "structures" ? " on" : "")}
-                  data-tour="structures-tab"
-                  onClick={() => {
-                    setRailTab("structures");
-                    emitTourEvent("structures-tab");
-                  }}
-                >
-                  structures {structures.length ? `(${structures.length})` : ""}
-                </button>
-              </div>
-              {railTab === "functions" ? (
-                <>
-                  <button className="rail-create" data-tour="create-function" onClick={openCreateFunction}>+ function</button>
-                  <div className="move-quick-add">
-                    <input className="move-quick-input" placeholder="your move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                    <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
-                  </div>
-                  {selection.length === 1 && selItem && isTransformableBlock(selItem) && selCaptureInfo?.canCapture && (
-                    <div className="sel-capture-panel">
-                      <input className="sel-capture-name" value={captureName} onChange={(e) => setCaptureNameOverride(e.target.value.slice(0, 72))} placeholder="function name" />
-                      <button type="button" className="sel-capture-save" onClick={saveSelectionAsFunction}>◈ save creation process</button>
-                    </div>
-                  )}
-                  <div className="rail-lens-actions">
-                    <button className="rail-create ghost" onClick={() => setLensEditor({ id: null, name: "", moveIds: activeLens?.moveIds || [] })}>+ lens</button>
-                  </div>
-                  <div className="rail-scroll">
-                    {lenses.length > 0 && (
-                      <>
-                        <div className="rail-section" data-tour="lenses-section">lenses · worlds</div>
-                        {lenses.map((lens) => (
-                          <LensCard key={lens.id} lens={lens} active={lens.id === activeLensId} opMap={opMap} lenses={lenses} comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)} comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId} onUse={() => { setActiveLensId(lens.id === activeLensId ? null : lens.id); emitTourEvent("lens-use"); }} onEvolve={() => { emitTourEvent("lens-evolve"); setLensEditor({ id: lens.id, name: lens.name, moveIds: lens.moveIds || [] }); }} onBranch={() => branchLens(lens.id)} onFork={() => forkLens(lens.id)} onSend={() => exportLens(lens.id)} onCompare={() => { if (lensCompare?.aId && lensCompare.aId !== lens.id) setLensCompare({ aId: lensCompare.aId, bId: lens.id }); else { setLensCompare({ aId: lens.id }); showToast("pick another lens to Compare"); } }} onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)} onDelete={() => deleteLens(lens.id)} />
-                        ))}
-                      </>
-                    )}
-                    {moves.length > 0 && (<><div className="rail-section">your moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {topFunctions.length > 0 && (<><div className="rail-section">yours</div>{topFunctions.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} starlike />))}</>)}
-                    {primitives.length > 0 && (<><div className="rail-section">primitives</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                    {basics.length > 0 && (<><div className="rail-section">basics</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditFunction} onCompose={composeOperators} onShare={() => shareOperator(op.id)} flat starlike />))}</>)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <button className="rail-create" disabled={!selection.length} onClick={() => captureSelectionAsStructure()}>+ save selection</button>
-                  <div className="rail-scroll">
-                    {structures.map((struct) => (<StructureCard key={struct.id} struct={struct} onDelete={() => deleteStructure(struct.id)} onShare={() => shareSymbolStruct(struct)} />))}
-                  </div>
-                </>
-              )}
-              <JobPanel jobs={jobs} onDismiss={(id) => setJobs((j) => j.filter((x) => x.id !== id))} />
-              <button type="button" className="rail-fresh" onClick={() => setFreshConfirm(true)}>Start fresh</button>
-            </aside>
-          }
         />
       </div>
 
@@ -7292,70 +8791,97 @@ export default function App() {
       )}
 
       {opEditor && (
-        <FunctionEditor
+        <LensTreeEditor
           editor={opEditor}
           opMap={opMap}
           operators={operators}
-          onClose={() => setOpEditor(null)}
-          onSaveTree={saveFunctionTree}
-          onSaveManual={saveManualOp}
-          onDelete={deleteFunction}
-        />
-      )}
-
-      {lensEditor && (
-        <LensEditor
-          draft={lensEditor}
-          groups={[
+          paletteGroups={[
             { label: "your moves", ops: moves },
             { label: "primitives", ops: primitives },
-            { label: "yours", ops: topFunctions },
             { label: "basics", ops: basics },
           ]}
-          onChange={setLensEditor}
-          onSave={saveLens}
-          onClose={() => setLensEditor(null)}
+          onClose={() => setOpEditor(null)}
+          onSaveTree={handleSaveLensTree}
+          onDelete={deleteLens}
+          createFromProse={createFunctionFromProse}
+          editFromProse={editFunctionWithProse}
+          treeToOperators={treeToOperators}
         />
       )}
 
       {lensCompare?.aId && lensCompare?.bId && (
         <LensComparePanel
-          a={lenses.find((l) => l.id === lensCompare.aId)}
-          b={lenses.find((l) => l.id === lensCompare.bId)}
+          a={lenses.find((l) => l.id === lensCompare.aId) || displayLenses.find((l) => l.id === lensCompare.aId)}
+          b={lenses.find((l) => l.id === lensCompare.bId) || displayLenses.find((l) => l.id === lensCompare.bId)}
           opMap={opMap}
           onClose={() => setLensCompare(null)}
+          onMerge={(aId, bId) => {
+            mergeLenses(aId, bId);
+            setLensCompare(null);
+          }}
+        />
+      )}
+
+      {lensHistoryId && (
+        <LensHistoryPanel
+          lens={displayLenses.find((l) => l.id === lensHistoryId) || lenses.find((l) => l.id === lensHistoryId)}
+          lenses={displayLenses}
+          onClose={() => setLensHistoryId(null)}
+          onCheckout={(id) => {
+            setActiveLensId(id);
+            setLensHistoryId(null);
+          }}
+        />
+      )}
+
+      {pendingBranch && (
+        <LensCommitDialog
+          title={pendingBranch.kind === "fork" ? "fork lens" : "branch lens"}
+          subtitle={`from “${pendingBranch.sourceName}”`}
+          defaultMessage={
+            pendingBranch.kind === "fork"
+              ? `fork from ${pendingBranch.sourceName}`
+              : `branch from ${pendingBranch.sourceName}`
+          }
+          onConfirm={(msg) => {
+            if (pendingBranch.kind === "fork") forkLens(pendingBranch.sourceId, msg);
+            else branchLens(pendingBranch.sourceId, msg);
+            setPendingBranch(null);
+          }}
+          onCancel={() => setPendingBranch(null)}
         />
       )}
 
       {spaceTransferGhost && (
         <div
-          className="space-transfer-ghost-wrap"
+          className={
+            "space-transfer-ghost-wrap" +
+            (spaceTransferGhost.target === "ai"
+              ? " over-ai"
+              : spaceTransferGhost.target === "paper"
+                ? " over-paper"
+                : spaceTransferGhost.target === "functions"
+                  ? " over-functions"
+                  : spaceTransferGhost.target === "structures"
+                    ? " over-structures"
+                    : " over-boundary")
+          }
           style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
         >
-          {spaceTransferGhost.previewBox && (
-            <div
-              className={
-                "space-transfer-ghost-preview" +
-                (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
-                (spaceTransferGhost.target === "paper" ? " to-paper" : "")
-              }
-              style={{
-                width: spaceTransferGhost.previewBox.width,
-                height: spaceTransferGhost.previewBox.height,
-              }}
-            />
-          )}
-          <div
-            className={
-              "space-transfer-ghost" +
-              (spaceTransferGhost.target === "ai" ? " to-ai" : "") +
-              (spaceTransferGhost.target === "paper" ? " to-paper" : "")
-            }
-          >
-            <span className="space-transfer-ghost-count">{spaceTransferGhost.count}</span>
-            <span className="space-transfer-ghost-arrow">
-              {spaceTransferGhost.target === "ai" ? "→ AI" : spaceTransferGhost.target === "paper" ? "→ Paper" : "⇄"}
-            </span>
+          <div className="transfer-morph">
+            <div className="transfer-morph-card">
+              {spaceTransferGhost.preview}
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
+            <div className="transfer-morph-orb">
+              <span className="transfer-morph-orb-glow" />
+              <span className="transfer-morph-orb-core" />
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-orb-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -7372,7 +8898,6 @@ export default function App() {
         </div>
       )}
 
-      <TransferAnimation anim={transferAnim} onComplete={clearTransferAnimation} />
     </div>
   );
 }
@@ -7474,43 +8999,46 @@ function WalkOverlay({ walk, stepIndex, step, rects, onPrev, onNext, onBranch, o
   );
 }
 
-function BoardText({ item, selected, highlightTouched, highlightSelected, highlightTransferring, dropTarget, dropMagnetic, editing, editClickRef, onCommit }) {
+function BoardText({
+  item,
+  selected,
+  bornGold,
+  highlightTouched,
+  highlightSelected,
+  highlightTransferring,
+  dropTarget,
+  dropMagnetic,
+  editing,
+  editClickRef,
+  onCommit,
+  onResizeWidth,
+}) {
   const ref = useRef(null);
   const seeded = useRef(false);
 
   useEffect(() => {
-    if (editing && ref.current) {
-      if (!seeded.current) {
-        ref.current.innerText = item.text || "";
-        seeded.current = true;
-      }
-      ref.current.focus();
-      const pt = editClickRef?.current;
-      if (pt) {
-        editClickRef.current = null;
-        try {
-          const range = document.caretRangeFromPoint?.(pt.cx, pt.cy);
-          if (range && ref.current.contains(range.startContainer)) {
-            const s = window.getSelection();
-            s.removeAllRanges();
-            s.addRange(range);
-            return;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const r = document.createRange();
-      r.selectNodeContents(ref.current);
-      r.collapse(false);
-      const s = window.getSelection();
-      s.removeAllRanges();
-      s.addRange(r);
+    if (!editing || !ref.current) return;
+    if (!seeded.current) {
+      ref.current.innerText = item.text || "";
+      seeded.current = true;
     }
-    if (!editing) seeded.current = false;
+    focusEditableAtPoint(ref.current, editClickRef);
   }, [editing, item.id, editClickRef]);
 
+  useEffect(() => {
+    if (!editing) seeded.current = false;
+  }, [editing]);
+
   const style = itemStyle(item);
+
+  const syncWidth = () => {
+    if (!ref.current || !onResizeWidth) return;
+    const needed = Math.min(
+      TEXT_BOX_MAX_W,
+      Math.max(TEXT_BOX_MIN_W, Math.ceil(ref.current.scrollWidth) + 12)
+    );
+    if (needed > (item.w || 0)) onResizeWidth(needed);
+  };
 
   if (editing) {
     return (
@@ -7522,6 +9050,7 @@ function BoardText({ item, selected, highlightTouched, highlightSelected, highli
         suppressContentEditableWarning
         style={style}
         onPointerDown={(e) => e.stopPropagation()}
+        onInput={syncWidth}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Escape") {
@@ -7541,6 +9070,7 @@ function BoardText({ item, selected, highlightTouched, highlightSelected, highli
       className={
         "board-text" +
         (selected ? " sel" : "") +
+        (bornGold ? " born-gold" : "") +
         (highlightSelected ? " hl-selected" : "") +
         (highlightTouched ? " hl-touch" : "") +
         (highlightTransferring ? " hl-transferring" : "") +
@@ -7559,6 +9089,8 @@ function BoardText({ item, selected, highlightTouched, highlightSelected, highli
 function SelectionCaptureChip({
   bbox,
   onSave,
+  onSaveToFunctions,
+  onSaveToStructures,
   onSaveDocument,
   onShareJourney,
   aiDragIds,
@@ -7567,6 +9099,14 @@ function SelectionCaptureChip({
   onTransferDragEnd,
 }) {
   const cx = (bbox.left + bbox.right) / 2;
+  const dragPayload = (e) => {
+    if (sketchBundle) {
+      e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
+    }
+    e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
+    e.dataTransfer.effectAllowed = "copy";
+    onTransferDragStart?.();
+  };
   return (
     <div
       className="sel-capture-chip-row"
@@ -7579,17 +9119,42 @@ function SelectionCaptureChip({
           type="button"
           className="sel-capture-chip ai"
           draggable
-          onDragStart={(e) => {
-            if (sketchBundle) {
-              e.dataTransfer.setData(SKETCH_BUNDLE_MIME, JSON.stringify(sketchBundle));
-            }
-            e.dataTransfer.setData(THOUGHT_MIME, JSON.stringify(aiDragIds));
-            e.dataTransfer.effectAllowed = "copy";
-            onTransferDragStart?.();
-          }}
+          onDragStart={dragPayload}
           onDragEnd={() => onTransferDragEnd?.()}
         >
-          → AI
+          → Explore
+        </button>
+      )}
+      {onSaveToFunctions && aiDragIds?.length && (
+        <button
+          type="button"
+          className="sel-capture-chip functions"
+          draggable
+          onDragStart={dragPayload}
+          onDragEnd={() => onTransferDragEnd?.()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSaveToFunctions();
+          }}
+          title="Save as a reusable lens"
+        >
+          Save lens
+        </button>
+      )}
+      {onSaveToStructures && aiDragIds?.length && (
+        <button
+          type="button"
+          className="sel-capture-chip structures"
+          draggable
+          onDragStart={dragPayload}
+          onDragEnd={() => onTransferDragEnd?.()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSaveToStructures();
+          }}
+          title="Save as a symbol template"
+        >
+          Save symbol
         </button>
       )}
       {onSaveDocument && (
@@ -7832,7 +9397,7 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, flat, starlike }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onRun, flat, starlike }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -7841,8 +9406,6 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
     <div className="op-card-wrap">
       <div
         className={"op-card" + (composeOver ? " compose-over" : "") + (starlike ? " starlike-op" : "")}
-        draggable
-        onDragStart={(e) => startOpDrag(e, op)}
         onDragOver={(e) => {
           if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
             e.preventDefault();
@@ -7861,10 +9424,18 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title={op.name}
+        title="Drag ⠿ onto paper to transform"
       >
         <div className="op-card-row">
-          <span className="op-drag-grip" title="Drag">
+          <span
+            className="op-drag-grip"
+            title="Drag onto paper"
+            draggable
+            onDragStart={(e) => {
+              startOpDrag(e, op);
+              e.stopPropagation();
+            }}
+          >
             ⠿
           </span>
           <div className="op-card-label">
@@ -7875,15 +9446,36 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             )}
           </div>
           {!flat && steps.length > 0 && (
-            <button className="op-card-toggle" onClick={() => onToggle(op.id)} title={`${steps.length} steps`}>
+            <button
+            className="op-card-toggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(op.id);
+            }}
+            title={`${steps.length} steps`}
+          >
               {open ? "▾" : "▸"}
             </button>
           )}
-          <button className="op-card-edit" onClick={() => onEdit(op)} title="edit">
-            ⚙
+          <button
+            className="op-card-edit"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(op);
+            }}
+            title="Edit"
+          >
+            Edit
           </button>
           {onShare && (
-            <button className="op-card-share" onClick={() => onShare(op)} title="copy share link">
+            <button
+              className="op-card-share"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(op);
+              }}
+              title="Copy share link"
+            >
               ↗
             </button>
           )}
@@ -7934,6 +9526,7 @@ function DraggableStep({ step, opMap, expanded, onToggle, onEdit, depth }) {
 
 function LensCard({
   lens,
+  depth = 0,
   active,
   opMap,
   lenses,
@@ -7943,26 +9536,33 @@ function LensCard({
   onEvolve,
   onBranch,
   onFork,
+  onHistory,
   onSend,
   onCompare,
   onMergeDrop,
   onDelete,
 }) {
   const [mergeOver, setMergeOver] = useState(false);
-  const moveNames = (lens.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const moveNames = lensStepNames(lens, opMap);
   const metaLines = lensMetaLines(lens, lenses);
+  const refKind = gitRefLabel(lens);
+  const commits = commitCount(lens);
+  const byId = Object.fromEntries((lenses || []).map((l) => [l.id, l]));
+  const crumbs = lineageBreadcrumb(lens, byId);
   return (
     <div
       className={
         "lens-card" +
         (active ? " active" : "") +
         (mergeOver ? " merge-over" : "") +
-        (comparing ? " comparing" : "")
+        (comparing ? " comparing" : "") +
+        (depth > 0 ? " git-child" : "")
       }
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData(LENS_MIME, lens.id);
-        e.dataTransfer.effectAllowed = "copyMove";
+      style={depth > 0 ? { marginLeft: depth * 14 } : undefined}
+      onClick={(e) => {
+        if (e.target.closest(".op-drag-grip, .lens-card-actions, .lens-menu, button")) return;
+        onEvolve();
       }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(LENS_MIME)) {
@@ -7981,25 +9581,38 @@ function LensCard({
           onMergeDrop(draggedId);
         }
       }}
-      title="drag onto paper · drop another lens here to Merge"
+      title="Click to edit · drag ⠿ onto paper to transform"
     >
       <div className="lens-card-top">
-        <span className="op-drag-grip" title="Drag">
+        <span
+          className="op-drag-grip"
+          title="Drag onto paper"
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData(LENS_MIME, lens.id);
+            e.dataTransfer.effectAllowed = "copyMove";
+            e.stopPropagation();
+          }}
+        >
           ⠿
         </span>
+        <span className={"git-ref-badge " + refKind}>{refKind}</span>
         <span className="lens-card-name">{lens.name}</span>
         <span className="lens-card-badges">
-          {(lens.version || 1) > 1 && <span className="lens-badge">v{lens.version}</span>}
-          {active && <span className="lens-card-live">active</span>}
+          {commits > 0 && <span className="lens-badge">{commits}◦</span>}
         </span>
       </div>
-      <div className="lens-card-moves">
-        {moveNames.slice(0, 6).map((n, i) => (
-          <span key={i} className="lens-move-chip">
-            {n}
-          </span>
+      {crumbs.length > 1 && depth > 0 && (
+        <div className="lens-card-crumb">{crumbs.slice(0, -1).join(" → ")}</div>
+      )}
+      <div className="lens-card-flow">
+        {moveNames.slice(0, 8).map((n, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <span className="lens-flow-arrow" aria-hidden>→</span>}
+            <span className="lens-move-chip">{n}</span>
+          </React.Fragment>
         ))}
-        {moveNames.length > 6 && <span className="lens-move-chip more">+{moveNames.length - 6}</span>}
+        {moveNames.length > 8 && <span className="lens-move-chip more">+{moveNames.length - 8}</span>}
       </div>
       {metaLines.length > 0 && (
         <div className="lens-card-meta">
@@ -8008,134 +9621,86 @@ function LensCard({
           ))}
         </div>
       )}
-      {mergeOver && <div className="lens-merge-hint">Merge here</div>}
+      {mergeOver && <div className="lens-merge-hint">drop here to combine pipelines</div>}
       <div className="lens-card-actions">
-        <button className={"lens-btn" + (active ? " on" : "")} onClick={onUse} title="activate this lens palette">
-          {active ? "Active" : "Use"}
-        </button>
-        <button className="lens-btn" onClick={onEvolve} title="Evolve — update moves in place">
-          Evolve
-        </button>
-        <button className="lens-btn" onClick={onBranch} title="Branch — experiment, keep lineage">
-          Branch
-        </button>
-        <button className="lens-btn" onClick={onFork} title="Fork — independent copy">
-          Fork
+        <button
+          className="lens-btn primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEvolve();
+          }}
+          title="Edit this lens"
+        >
+          Edit
         </button>
         <button
-          className={"lens-btn" + (comparing || comparePick ? " on" : "")}
-          onClick={onCompare}
-          title="Compare — diff two lenses"
+          className="lens-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSend();
+          }}
+          title="Copy share link"
         >
-          Compare
-        </button>
-        <button className="lens-btn" onClick={onSend} title="Share — copy link">
           Share
         </button>
-        <button className="lens-btn danger" onClick={onDelete} title="delete lens">
-          ×
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function LensEditor({ draft, groups, onChange, onSave, onClose }) {
-  const selected = new Set(draft.moveIds || []);
-  const toggle = (id) =>
-    onChange((d) => {
-      const next = new Set(d.moveIds || []);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { ...d, moveIds: [...next] };
-    });
-  return (
-    <div className="onboard-scrim" onClick={onClose}>
-      <div className="lens-editor" onClick={(e) => e.stopPropagation()}>
-        <h3 className="lens-editor-title">{draft.id ? "evolve lens" : "new lens"}</h3>
-        <p className="lens-editor-sub">
-          Pick the moves you keep reaching for. This becomes your quick palette — your recognizable way
-          of transforming what you see.
-        </p>
-        <input
-          className="lens-editor-name"
-          autoFocus
-          placeholder="name it — e.g. everything is a garden"
-          value={draft.name}
-          onChange={(e) => {
-            const name = e.target.value;
-            onChange((d) => ({ ...d, name }));
+        <button
+          className="lens-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((o) => !o);
           }}
-          onKeyDown={(e) => e.key === "Enter" && onSave(draft)}
-        />
-        <div className="lens-editor-groups">
-          {groups
-            .filter((g) => g.ops.length)
-            .map((g) => (
-              <div key={g.label}>
-                <div className="rail-section">{g.label}</div>
-                <div className="lens-editor-chips">
-                  {g.ops.map((op) => (
-                    <button
-                      key={op.id}
-                      className={"lens-pick" + (selected.has(op.id) ? " on" : "")}
-                      title={op.description || op.name}
-                      onClick={() => toggle(op.id)}
-                    >
-                      {op.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-        </div>
-        <div className="lens-editor-foot">
-          <span className="lens-editor-count">{selected.size} move{selected.size === 1 ? "" : "s"}</span>
-          <button className="rec-btn" onClick={onClose}>
-            cancel
-          </button>
-          <button className="rec-btn primary" disabled={!selected.size} onClick={() => onSave(draft)}>
-            {draft.id ? "save evolution" : "create lens"}
-          </button>
-        </div>
+          title="More actions"
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className="lens-menu" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => { onUse(); setMenuOpen(false); }}>
+              {active ? "Deselect" : "Select"}
+            </button>
+            <button type="button" onClick={() => { onBranch(); setMenuOpen(false); }}>Branch</button>
+            <button type="button" onClick={() => { onFork(); setMenuOpen(false); }}>Fork</button>
+            <button type="button" onClick={() => { onCompare(); setMenuOpen(false); }}>Compare</button>
+            {onHistory && (
+              <button type="button" onClick={() => { onHistory(); setMenuOpen(false); }}>History</button>
+            )}
+            <button type="button" className="danger" onClick={() => { onDelete(); setMenuOpen(false); }}>Delete</button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function LensComparePanel({ a, b, opMap, onClose }) {
+function LensComparePanel({ a, b, opMap, onClose, onMerge }) {
   if (!a || !b) return null;
-  const nameOf = (id) => opMap[id]?.name || "?";
-  const aOrder = a.moveIds || [];
-  const bOrder = b.moveIds || [];
-  const aSet = new Set(aOrder);
-  const bSet = new Set(bOrder);
-  const shared = [...aSet].filter((id) => bSet.has(id));
-  const onlyA = [...aSet].filter((id) => !bSet.has(id));
-  const onlyB = [...bSet].filter((id) => !aSet.has(id));
-  const chipClass = (id, side) => {
-    const inOther = side === "a" ? bSet.has(id) : aSet.has(id);
-    if (inOther) return "lens-move-chip shared";
+  const aRoot = lensRootOpId(a);
+  const bRoot = lensRootOpId(b);
+  const aNames = aRoot ? collectPipelineStepNames(aRoot, opMap) : (a.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  const bNames = bRoot ? collectPipelineStepNames(bRoot, opMap) : (b.moveIds || []).map((id) => opMap[id]?.name).filter(Boolean);
+  const { shared, onlyA, onlyB } = diffStepSequences(aNames, bNames);
+  const chipIn = (name, side) => {
+    if (shared.some((s) => s.name === name)) return "lens-move-chip shared";
     return "lens-move-chip unique";
   };
   return (
     <div className="onboard-scrim" onClick={onClose}>
-      <div className="lens-compare" onClick={(e) => e.stopPropagation()}>
+      <div className="lens-compare git-compare-panel" onClick={(e) => e.stopPropagation()}>
         <h3 className="lens-editor-title">
-          Compare · “{a.name}” ≍ “{b.name}”
+          diff · “{a.name}” ≍ “{b.name}”
         </h3>
         <p className="lens-editor-sub">
-          Move sequences side by side — shared moves in yellow, unique moves highlighted per lens.
+          Step sequences aligned — shared steps highlighted, unique steps per branch.
         </p>
         <div className="lens-compare-seq">
           <div className="lens-compare-seq-col">
             <div className="rail-section">{a.name}</div>
             <div className="lens-compare-seq-row">
-              {aOrder.length ? (
-                aOrder.map((id, i) => (
-                  <React.Fragment key={id + i}>
+              {aNames.length ? (
+                aNames.map((name, i) => (
+                  <React.Fragment key={name + i}>
                     {i > 0 && <span className="lens-seq-arrow">→</span>}
-                    <span className={chipClass(id, "a")}>{nameOf(id)}</span>
+                    <span className={chipIn(name, "a")}>{name}</span>
                   </React.Fragment>
                 ))
               ) : (
@@ -8146,11 +9711,11 @@ function LensComparePanel({ a, b, opMap, onClose }) {
           <div className="lens-compare-seq-col">
             <div className="rail-section">{b.name}</div>
             <div className="lens-compare-seq-row">
-              {bOrder.length ? (
-                bOrder.map((id, i) => (
-                  <React.Fragment key={id + i}>
+              {bNames.length ? (
+                bNames.map((name, i) => (
+                  <React.Fragment key={name + i}>
                     {i > 0 && <span className="lens-seq-arrow">→</span>}
-                    <span className={chipClass(id, "b")}>{nameOf(id)}</span>
+                    <span className={chipIn(name, "b")}>{name}</span>
                   </React.Fragment>
                 ))
               ) : (
@@ -8163,9 +9728,9 @@ function LensComparePanel({ a, b, opMap, onClose }) {
           <div className="lens-compare-col">
             <div className="rail-section">only “{a.name}”</div>
             {onlyA.length ? (
-              onlyA.map((id) => (
-                <span key={id} className="lens-move-chip unique">
-                  {nameOf(id)}
+              onlyA.map((x, i) => (
+                <span key={i} className="lens-move-chip unique">
+                  {x.name}
                 </span>
               ))
             ) : (
@@ -8175,9 +9740,9 @@ function LensComparePanel({ a, b, opMap, onClose }) {
           <div className="lens-compare-col shared">
             <div className="rail-section">shared</div>
             {shared.length ? (
-              shared.map((id) => (
-                <span key={id} className="lens-move-chip shared">
-                  {nameOf(id)}
+              shared.map((x, i) => (
+                <span key={i} className="lens-move-chip shared">
+                  {x.name}
                 </span>
               ))
             ) : (
@@ -8187,9 +9752,9 @@ function LensComparePanel({ a, b, opMap, onClose }) {
           <div className="lens-compare-col">
             <div className="rail-section">only “{b.name}”</div>
             {onlyB.length ? (
-              onlyB.map((id) => (
-                <span key={id} className="lens-move-chip unique">
-                  {nameOf(id)}
+              onlyB.map((x, i) => (
+                <span key={i} className="lens-move-chip unique">
+                  {x.name}
                 </span>
               ))
             ) : (
@@ -8198,6 +9763,12 @@ function LensComparePanel({ a, b, opMap, onClose }) {
           </div>
         </div>
         <div className="lens-editor-foot">
+          {onMerge && (
+            <button type="button" className="rec-btn primary" onClick={() => onMerge(a.id, b.id)}>
+              merge pipelines
+            </button>
+          )}
+          <span style={{ flex: 1 }} />
           <button className="rec-btn" onClick={onClose}>
             close
           </button>
@@ -8207,40 +9778,108 @@ function LensComparePanel({ a, b, opMap, onClose }) {
   );
 }
 
-function StructureCard({ struct, onDelete, onShare }) {
+function StructureCard({
+  struct,
+  dropTarget,
+  onMaterialDragOver,
+  onMaterialDragLeave,
+  onMaterialDrop,
+  onDelete,
+  onShare,
+  onEditSymbol,
+  onEditViewLens,
+}) {
   const preview = structurePreview(struct);
-  const label =
-    struct.structNum ? `#${struct.structNum}` : struct.kind === "document" ? "document" : struct.kind || "idea";
+  const meaning = struct.interpretation?.meaning;
+  const viewName = struct.viewLens?.name || (struct.interpretation ? "viewing lens" : null);
+  const acceptsMaterial = (e) =>
+    e.dataTransfer.types.includes(THOUGHT_MIME) ||
+    e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
+    e.dataTransfer.types.includes(SEL_MIME);
   return (
-    <div className="struct-card-wrap">
+    <div
+      className="struct-card-wrap struct-card-horizontal"
+      onDragOver={(e) => {
+        if (!acceptsMaterial(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        onMaterialDragOver?.(struct.id);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) onMaterialDragLeave?.(struct.id);
+      }}
+      onDrop={(e) => {
+        if (!acceptsMaterial(e)) return;
+        onMaterialDrop?.(e, struct.id);
+      }}
+    >
       <div
-        className="struct-card"
-        draggable
-        onDragStart={(e) => startStructDrag(e, struct)}
-        title="drag onto paper to plant"
+        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "")}
+        data-struct-id={struct.id}
+        title="Drag ⠿ onto paper — applies viewing lens automatically"
       >
         <div className="struct-card-row">
-          <span className="op-drag-grip" title="Drag">
+          <span
+            className="op-drag-grip"
+            title="Drag onto paper"
+            draggable
+            onDragStart={(e) => startStructDrag(e, struct)}
+          >
             ⠿
           </span>
+          <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />
           <div className="struct-card-body">
-            <span className="struct-kind">{label}</span>
             <span className="struct-title">{struct.title || preview}</span>
-            <span className="struct-preview">{preview}</span>
+            {meaning ? (
+              <span className="struct-meaning">{meaning}</span>
+            ) : (
+              <span className="struct-meaning pending">reading symbol…</span>
+            )}
+            {viewName && <span className="struct-view-lens">via {viewName}</span>}
           </div>
+        </div>
+        <div className="struct-card-actions">
+          {onEditViewLens && (
+            <button
+              type="button"
+              className="struct-card-view-lens"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditViewLens(struct);
+              }}
+              title="Edit the lens through which this symbol is viewed"
+            >
+              View lens
+            </button>
+          )}
+          {onEditSymbol && (
+            <button
+              type="button"
+              className="struct-card-edit-symbol"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSymbol(struct);
+              }}
+              title="Draw glyph"
+            >
+              ✎
+            </button>
+          )}
           {onShare && (
             <button
+              type="button"
               className="struct-card-share"
               onClick={(e) => {
                 e.stopPropagation();
                 onShare(struct);
               }}
-              title="copy share link"
+              title="Share"
             >
               ↗
             </button>
           )}
-          <button className="struct-card-del" onClick={onDelete} title="delete">
+          <button type="button" className="struct-card-del" onClick={onDelete} title="Delete">
             ×
           </button>
         </div>
@@ -8339,326 +9978,6 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function FunctionEditor({ editor, opMap, operators, onClose, onSaveTree, onSaveManual, onDelete }) {
-  const isCreate = editor.mode === "create";
-  const sourceRoot = editor.op || null;
-
-  const [draftOps, setDraftOps] = useState(() => (isCreate ? [] : collectDraftOps(sourceRoot, opMap)));
-  const [rootId, setRootId] = useState(() => sourceRoot?.id || null);
-  const [focusId, setFocusId] = useState(null);
-  const [createName, setCreateName] = useState("");
-  const [createDesc, setCreateDesc] = useState("");
-  const [createPrompt, setCreatePrompt] = useState("");
-  const [prose, setProse] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const [treeExpanded, setTreeExpanded] = useState(() => new Set(sourceRoot?.id ? [sourceRoot.id] : []));
-
-  const draftMap = useMemo(() => Object.fromEntries(draftOps.map((o) => [o.id, o])), [draftOps]);
-  const rootDraft = rootId ? draftMap[rootId] : null;
-
-  useEffect(() => {
-    if (rootId) setTreeExpanded((prev) => new Set([...prev, rootId]));
-  }, [rootId]);
-
-  function toggleTreeNode(id) {
-    setTreeExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function patchOp(id, patch) {
-    setDraftOps((ops) => ops.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-  }
-
-  async function runProse() {
-    const instruction = prose.trim();
-    if (!instruction) return;
-    setBusy(true);
-    setError(null);
-    try {
-      let tree;
-      if (isCreate && !rootDraft) {
-        tree = await createFunctionFromProse(instruction, operators, opMap);
-      } else {
-        const target = (focusId && draftMap[focusId]) || rootDraft;
-        tree = await editFunctionWithProse(target, draftMap, instruction, operators);
-      }
-      const { rootId: rid, ops } = treeToOperators(tree, {
-        role: rootDraft?.role || sourceRoot?.role || null,
-        top: isCreate ? true : !!sourceRoot?.top,
-      });
-      setDraftOps(ops);
-      setRootId(rid);
-      setFocusId(null);
-      setProse("");
-    } catch (err) {
-      setError(err.message || "Could not apply changes.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function saveAll() {
-    let ops = draftOps;
-    let rid = rootId;
-    if (!rid && createName.trim() && createPrompt.trim()) {
-      rid = uid();
-      ops = [
-        {
-          id: rid,
-          kind: "prompt",
-          name: createName.trim(),
-          description: createDesc.trim(),
-          prompt: createPrompt.trim(),
-          top: true,
-        },
-      ];
-    }
-    const root = ops.find((o) => o.id === rid);
-    if (!rid || !root?.name?.trim()) return;
-    if (root.kind === "prompt" && !root.prompt?.trim()) return;
-    onSaveTree(isCreate ? null : sourceRoot?.id, ops);
-  }
-
-  const canSave =
-    !!rootDraft ||
-    (createName.trim() && createPrompt.trim()) ||
-    (rootId && draftOps.some((o) => o.id === rootId && o.name?.trim()));
-
-  const focusLabel = focusId && draftMap[focusId] ? draftMap[focusId].name : rootDraft?.name;
-
-  return (
-    <div className="modal-scrim fn-scrim-full" onClick={onClose}>
-      <div className="fn-editor fn-editor-fullscreen" onClick={(e) => e.stopPropagation()}>
-        <div className="fn-head">
-          <div>
-            <h3>{isCreate ? "create function" : "edit function"}</h3>
-            {rootDraft && (
-              <p className="fn-head-sub">
-                Expand steps to edit details. Click a step to focus it for AI edits.
-              </p>
-            )}
-          </div>
-          <button className="fn-close" onClick={onClose} type="button">
-            ×
-          </button>
-        </div>
-
-        <div className="fn-editor-body">
-          <div className="fn-tree-scroll">
-            {rootDraft ? (
-              <FunctionTreeNode
-                op={rootDraft}
-                draftMap={draftMap}
-                depth={0}
-                focusId={focusId}
-                onFocus={setFocusId}
-                onPatch={patchOp}
-                pathLabels={[]}
-                treeExpanded={treeExpanded}
-                onToggleExpand={toggleTreeNode}
-              />
-            ) : (
-              <div className="fn-create-panel">
-                <p className="fn-hint">
-                  Describe what this function should do below, or fill in the fields. Once generated, the
-                  full tree appears here with every prompt visible.
-                </p>
-                <label>name</label>
-                <input
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="e.g. Build Full Investment Thesis"
-                />
-                <label>description</label>
-                <input
-                  value={createDesc}
-                  onChange={(e) => setCreateDesc(e.target.value)}
-                  placeholder="what goes in, what comes out"
-                />
-                <label>prompt</label>
-                <textarea
-                  rows={6}
-                  value={createPrompt}
-                  onChange={(e) => setCreatePrompt(e.target.value)}
-                  placeholder="Or skip and describe with AI below."
-                />
-              </div>
-            )}
-          </div>
-
-          <aside className="fn-editor-side">
-            <label>{rootDraft ? "revise with words" : "describe with words"}</label>
-            {focusLabel && rootDraft && (
-              <p className="fn-focus-hint">
-                AI edits <strong>{focusLabel}</strong>
-                {focusId && focusId !== rootId ? " and its subtree" : ""}. Click another step to switch.
-              </p>
-            )}
-            <textarea
-              className="fn-prose"
-              rows={5}
-              placeholder={
-                isCreate
-                  ? 'e.g. "Extract action items, owners, and deadlines from messy meeting notes"'
-                  : 'e.g. "Add a step that checks for contradictions" or "Make every leaf prompt more specific"'
-              }
-              value={prose}
-              onChange={(e) => setProse(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runProse();
-              }}
-            />
-            {error && <div className="fn-error">{error}</div>}
-            <button className="fn-generate" type="button" disabled={busy || !prose.trim()} onClick={runProse}>
-              {busy ? (
-                <>
-                  <span className="spinner" /> building…
-                </>
-              ) : rootDraft ? (
-                "apply with AI"
-              ) : (
-                "generate with AI"
-              )}
-            </button>
-          </aside>
-        </div>
-
-        <div className="fn-foot">
-          {!isCreate && sourceRoot && (
-            <button className="fn-del" type="button" onClick={() => onDelete(sourceRoot.id)}>
-              delete
-            </button>
-          )}
-          <span style={{ flex: 1 }} />
-          <button className="fn-secondary" type="button" onClick={onClose}>
-            cancel
-          </button>
-          <button className="fn-primary" type="button" disabled={!canSave} onClick={saveAll}>
-            save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FunctionTreeNode({ op, draftMap, depth, focusId, onFocus, onPatch, pathLabels, treeExpanded, onToggleExpand }) {
-  const cardRef = useRef(null);
-  const isPipeline = op.kind === "pipeline";
-  const steps =
-    isPipeline && op.steps ? op.steps.map((id) => draftMap[id]).filter(Boolean) : [];
-  const isFocused = focusId === op.id;
-  const isOpen = treeExpanded.has(op.id);
-  const hasBody = isPipeline || !!(op.description || op.prompt);
-  const promptRows = Math.min(14, Math.max(5, ((op.prompt || "").split("\n").length || 0) + 2));
-
-  useEffect(() => {
-    if (isFocused && cardRef.current) {
-      cardRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [isFocused]);
-
-  return (
-    <div
-      ref={cardRef}
-      className={"fn-tree-card" + (isFocused ? " focused" : "") + (isPipeline ? " pipeline" : " leaf") + (isOpen ? " open" : " collapsed")}
-      style={{ marginLeft: depth * 16 }}
-    >
-      <div className="fn-tree-card-head">
-        <button
-          type="button"
-          className={"fn-tree-toggle" + (hasBody || steps.length ? "" : " hidden")}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(op.id);
-          }}
-          aria-expanded={isOpen}
-          title={isOpen ? "collapse" : "expand"}
-        >
-          {isOpen ? "▾" : "▸"}
-        </button>
-        <button
-          type="button"
-          className="fn-tree-summary"
-          onClick={() => onFocus(op.id)}
-        >
-          <span className={"fn-tree-badge" + (isPipeline ? " pipeline" : " leaf")}>
-            {isPipeline ? `${steps.length} step${steps.length === 1 ? "" : "s"}` : "leaf"}
-          </span>
-          <span className="fn-tree-name-preview">{op.name || "unnamed step"}</span>
-          {!isOpen && op.description && (
-            <span className="fn-tree-desc-preview">{op.description}</span>
-          )}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="fn-tree-body" onClick={() => onFocus(op.id)}>
-          {pathLabels.length > 0 && (
-            <span className="fn-tree-path">{pathLabels.join(" → ")}</span>
-          )}
-
-          <label className="fn-tree-label">name</label>
-          <input
-            className="fn-tree-input"
-            value={op.name || ""}
-            onChange={(e) => onPatch(op.id, { name: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            placeholder="descriptive step name"
-          />
-
-          <label className="fn-tree-label">description</label>
-          <input
-            className="fn-tree-input"
-            value={op.description || ""}
-            onChange={(e) => onPatch(op.id, { description: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            placeholder="what goes in, what comes out"
-          />
-
-          {!isPipeline && (
-            <>
-              <label className="fn-tree-label">prompt</label>
-              <textarea
-                className="fn-tree-prompt-input"
-                rows={promptRows}
-                value={op.prompt || ""}
-                onChange={(e) => onPatch(op.id, { prompt: e.target.value })}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="GOAL, INPUT, PROCESS, OUTPUT FORMAT, QUALITY BAR…"
-              />
-            </>
-          )}
-
-          {steps.length > 0 && (
-            <div className="fn-tree-children">
-              {steps.map((step, i) => (
-                <FunctionTreeNode
-                  key={step.id}
-                  op={step}
-                  draftMap={draftMap}
-                  depth={depth + 1}
-                  focusId={focusId}
-                  onFocus={onFocus}
-                  onPatch={onPatch}
-                  pathLabels={[...pathLabels, step.name || `step ${i + 1}`]}
-                  treeExpanded={treeExpanded}
-                  onToggleExpand={onToggleExpand}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -15,12 +15,12 @@ import { PHASE_TIMEOUT } from "./phase-timeouts.js";
 
 describe("transform primitives", () => {
   it("defines the canonical grammar", () => {
-    assert.equal(TRANSFORM_PRIMITIVES.length, 15);
+    assert.equal(TRANSFORM_PRIMITIVES.length, 7);
     assert.ok(PRIMITIVE_NAMES.has("expand"));
     assert.ok(PRIMITIVE_NAMES.has("compress"));
-    assert.ok(PRIMITIVE_NAMES.has("merge"));
-    assert.ok(PRIMITIVE_NAMES.has("translate"));
-    assert.equal(TRANSFORM_PRIMITIVES.filter((p) => p.multi).length, 1);
+    assert.ok(PRIMITIVE_NAMES.has("explore"));
+    assert.ok(PRIMITIVE_NAMES.has("research"));
+    assert.equal(TRANSFORM_PRIMITIVES.filter((p) => p.multi).length, 0);
   });
 
   it("marks primitives as transform-eligible", () => {
@@ -35,7 +35,7 @@ describe("transform primitives", () => {
       { id: "x1", name: "thesis", top: true, kind: "pipeline", steps: [] },
     ];
     const next = migrateOperatorStore(legacy);
-    assert.equal(next.filter((o) => o.primitive).length, 15);
+    assert.equal(next.filter((o) => o.primitive).length, 7);
     assert.ok(next.some((o) => o.name === "thesis"));
     assert.ok(!next.some((o) => o.name === "combine"));
   });
@@ -51,6 +51,16 @@ describe("transform primitives", () => {
     assert.equal(plan.phases[0].id, "synthesize");
     assert.match(plan.phases[0].prompt, /Unfold/i);
     assert.ok(plan.fastPath);
+  });
+
+  it("routes research primitive through research + synthesize", () => {
+    const research = TRANSFORM_PRIMITIVES.find((p) => p.name === "research");
+    assert.ok(primitiveNeedsResearch(research, "anything"));
+    const plan = compileExecutionPlan(research, { [research.id]: research }, "Cursor AI");
+    assert.equal(plan.phases.length, 2);
+    assert.equal(plan.phases[0].id, "research");
+    assert.equal(plan.phases[1].id, "synthesize");
+    assert.ok(!plan.fastPath);
   });
 
   it("keeps primitive prompts short perceptual nudges", () => {

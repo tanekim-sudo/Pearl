@@ -1,6 +1,5 @@
 import React from "react";
 import AiNodeCanvas from "./AiNodeCanvas.jsx";
-import AiToolbox from "./AiToolbox.jsx";
 
 const THOUGHT_MIME = "application/lens-thought";
 const SEL_MIME = "application/lens-selection";
@@ -21,24 +20,17 @@ export default function AiColumn({
   onReturnToConstellation,
   onFocusFromZoom,
   focusedNodeId,
-  expandToolboxSignal = 0,
-  onToolboxExpanded,
   onTourEvent,
   getStrandChoices,
   onStrandSelect,
   dropOver,
   canvasDropOver,
-  libraryDropOver,
   onDragOver,
   onDragLeave,
   onDrop,
   onCanvasDrop,
   onCanvasDragOver,
   onCanvasDragLeave,
-  onLibraryDragOver,
-  onLibraryDragLeave,
-  onLibraryDrop,
-  toolbox,
   tool,
   onSpaceTransferStart,
   onFragmentReplace,
@@ -46,27 +38,20 @@ export default function AiColumn({
   isPaperDestination,
   viewportRef,
   landingNodeIds,
+  onPointerTrack,
+  collapsed,
 }) {
   return (
     <aside
-      className={"ai-column" + (dropOver ? " column-drop-over" : "")}
+      className={"ai-column" + (collapsed ? " col-collapsed" : "") + (dropOver ? " column-drop-over" : "")}
       data-tour="ai-spacetime"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
+      onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
     >
       <div className="ai-column-body unified">
-        <AiToolbox
-          dropOver={libraryDropOver}
-          onDragOver={onLibraryDragOver}
-          onDragLeave={onLibraryDragLeave}
-          onDrop={onLibraryDrop}
-          expandSignal={expandToolboxSignal}
-          onExpandedChange={onToolboxExpanded}
-        >
-          {toolbox}
-        </AiToolbox>
-
         <section className="ai-spacetime ai-void-only">
           <AiNodeCanvas
             nodes={nodes || []}
@@ -94,6 +79,7 @@ export default function AiColumn({
             viewportRef={viewportRef}
             onTourEvent={onTourEvent}
             landingNodeIds={landingNodeIds}
+            onPointerTrack={onPointerTrack}
           />
         </section>
       </div>

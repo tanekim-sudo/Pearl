@@ -1,9 +1,8 @@
 import React, { useRef, useState } from "react";
 import { extractTextRangeFromHighlightStroke } from "../lib/highlight-text.js";
+import { HIGHLIGHT_INK, HIGHLIGHT_W } from "../lib/highlight-ink.js";
 
-const HIGHLIGHT_INK = "#E8B923";
-const HIGHLIGHT_W = 18;
-const MIN_STROKE_PX = 4;
+const MIN_STROKE_PX = 3;
 
 /**
  * Transparent overlay for word/fragment highlight gestures on AI-side text.
@@ -12,6 +11,10 @@ const MIN_STROKE_PX = 4;
 export default function FragmentHighlightLayer({
   active,
   text,
+  fontSize,
+  lineHeight,
+  width,
+  fontFamily,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -20,10 +23,18 @@ export default function FragmentHighlightLayer({
   const surfaceRef = useRef(null);
   const gestureRef = useRef(null);
   const [draft, setDraft] = useState(null);
+  const [previewQuote, setPreviewQuote] = useState(null);
 
   if (!active || !text?.trim()) {
     return null;
   }
+
+  const textStyle = {
+    ...(fontSize ? { fontSize: `${fontSize}px` } : {}),
+    ...(lineHeight ? { lineHeight } : {}),
+    ...(width ? { width: typeof width === "number" ? `${width}px` : width } : {}),
+    ...(fontFamily ? { fontFamily } : {}),
+  };
 
   function toLocal(clientX, clientY) {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -41,6 +52,32 @@ export default function FragmentHighlightLayer({
     else onFragmentReplace?.(extracted.quote, opts);
   }
 
+  function updatePreview(clientPoints) {
+    const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
+    if (!el || clientPoints.length < 2) {
+      setPreviewQuote(null);
+      return;
+    }
+    const extracted = extractTextRangeFromHighlightStroke(el, clientPoints, HIGHLIGHT_W);
+    setPreviewQuote(extracted?.quote || null);
+  }
+
+  function renderMirrorText() {
+    if (!previewQuote || !text.includes(previewQuote)) {
+      return text;
+    }
+    const idx = text.indexOf(previewQuote);
+    const before = text.slice(0, idx);
+    const after = text.slice(idx + previewQuote.length);
+    return (
+      <>
+        {before}
+        <mark className="fragment-highlight-preview">{previewQuote}</mark>
+        {after}
+      </>
+    );
+  }
+
   function onPointerDown(e) {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -48,6 +85,7 @@ export default function FragmentHighlightLayer({
     const pts = [{ x: e.clientX, y: e.clientY }];
     gestureRef.current = { points: pts };
     setDraft({ points: pts.map((p) => toLocal(p.x, p.y)) });
+    setPreviewQuote(null);
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -58,12 +96,14 @@ export default function FragmentHighlightLayer({
       if (!gestureRef.current) return;
       gestureRef.current.points.push({ x: ev.clientX, y: ev.clientY });
       setDraft({ points: gestureRef.current.points.map((p) => toLocal(p.x, p.y)) });
+      updatePreview(gestureRef.current.points);
     }
 
     function onUp(ev) {
       const g = gestureRef.current;
       gestureRef.current = null;
       setDraft(null);
+      setPreviewQuote(null);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -73,7 +113,7 @@ export default function FragmentHighlightLayer({
         return acc + Math.hypot(p.x - arr[i - 1].x, p.y - arr[i - 1].y);
       }, 0);
       if (len >= MIN_STROKE_PX) {
-        const toPaper = ev.shiftKey || isPaperDestination?.(ev.clientX, ev.clientY);
+        const toPaper = isPaperDestination?.(ev.clientX, ev.clientY);
         finishStroke(g.points, ev.clientX, ev.clientY, toPaper);
       }
     }
@@ -94,8 +134,12 @@ export default function FragmentHighlightLayer({
       className={"fragment-highlight-layer" + (className ? ` ${className}` : "")}
       onPointerDown={onPointerDown}
     >
-      <div className="fragment-highlight-text" aria-hidden="true">
-        {text}
+      <div
+        className="fragment-highlight-text"
+        style={textStyle}
+        aria-hidden="true"
+      >
+        {renderMirrorText()}
       </div>
       {draftPath && (
         <svg className="fragment-highlight-draft" aria-hidden="true">

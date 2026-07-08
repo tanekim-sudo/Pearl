@@ -1,13 +1,12 @@
 import React from "react";
 
-const PAD = 10;
-const EDGE = 8;
+const PAD = 8;
+const HANDLE = 7;
 
 /**
- * Screen-space selection ring: dashed outer = move-original (edge handles),
- * solid inner hint = clone zone (interior drag handled by canvas input layer).
+ * Screen-space selection handles — Google Slides style (drag anywhere on the shape to move).
  */
-export default function SelectionBoundary({ bbox, onEdgePointerDown }) {
+export default function SelectionBoundary({ bbox, onFramePointerDown }) {
   if (!bbox) return null;
 
   const w = bbox.right - bbox.left;
@@ -17,44 +16,36 @@ export default function SelectionBoundary({ bbox, onEdgePointerDown }) {
   const outerW = w + PAD * 2;
   const outerH = h + PAD * 2;
 
-  const edges = [
-    { id: "n", style: { left, top: top - EDGE, width: outerW, height: EDGE } },
-    { id: "s", style: { left, top: top + outerH, width: outerW, height: EDGE } },
-    { id: "w", style: { left: left - EDGE, top, width: EDGE, height: outerH } },
-    { id: "e", style: { left: left + outerW, top, width: EDGE, height: outerH } },
-    { id: "nw", style: { left: left - EDGE, top: top - EDGE, width: EDGE, height: EDGE } },
-    { id: "ne", style: { left: left + outerW, top: top - EDGE, width: EDGE, height: EDGE } },
-    { id: "sw", style: { left: left - EDGE, top: top + outerH, width: EDGE, height: EDGE } },
-    { id: "se", style: { left: left + outerW, top: top + outerH, width: EDGE, height: EDGE } },
+  const handles = [
+    { id: "nw", style: { left: left - HANDLE / 2, top: top - HANDLE / 2 } },
+    { id: "n", style: { left: left + outerW / 2 - HANDLE / 2, top: top - HANDLE / 2 } },
+    { id: "ne", style: { left: left + outerW - HANDLE / 2, top: top - HANDLE / 2 } },
+    { id: "e", style: { left: left + outerW - HANDLE / 2, top: top + outerH / 2 - HANDLE / 2 } },
+    { id: "se", style: { left: left + outerW - HANDLE / 2, top: top + outerH - HANDLE / 2 } },
+    { id: "s", style: { left: left + outerW / 2 - HANDLE / 2, top: top + outerH - HANDLE / 2 } },
+    { id: "sw", style: { left: left - HANDLE / 2, top: top + outerH - HANDLE / 2 } },
+    { id: "w", style: { left: left - HANDLE / 2, top: top + outerH / 2 - HANDLE / 2 } },
   ];
 
-  function handleEdgeDown(e) {
+  function handleFramePointerDown(e) {
     e.stopPropagation();
     e.preventDefault();
-    onEdgePointerDown?.(e);
+    onFramePointerDown?.(e);
   }
 
   return (
     <div className="selection-boundary-layer" aria-hidden="true">
       <div
-        className="selection-boundary-outer"
+        className="selection-boundary-frame"
         style={{ left, top, width: outerW, height: outerH }}
+        onPointerDown={handleFramePointerDown}
       />
-      <div
-        className="selection-boundary-inner"
-        style={{
-          left: left + EDGE,
-          top: top + EDGE,
-          width: outerW - EDGE * 2,
-          height: outerH - EDGE * 2,
-        }}
-      />
-      {edges.map(({ id, style }) => (
+      {handles.map(({ id, style }) => (
         <div
           key={id}
-          className={"selection-boundary-edge selection-boundary-edge-" + id}
-          style={style}
-          onPointerDown={handleEdgeDown}
+          className={"selection-boundary-handle selection-boundary-handle-" + id}
+          style={{ ...style, width: HANDLE, height: HANDLE }}
+          onPointerDown={handleFramePointerDown}
         />
       ))}
     </div>

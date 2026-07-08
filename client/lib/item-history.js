@@ -1,4 +1,4 @@
-/** @typedef {'born'|'transfer-to-ai'|'expand'|'transfer-to-paper'|'edit'|'voice-session'|'highlight-transfer'} HistoryKind */
+/** @typedef {'born'|'transfer-to-ai'|'expand'|'transfer-to-paper'|'edit'|'voice-session'|'highlight-transfer'|'saved-as-function'} HistoryKind */
 
 export const ITEM_HISTORY_KEY = "lens.item.history.v1";
 
@@ -37,6 +37,36 @@ export function truncatePreview(text, max = 120) {
 }
 
 /** Minimal serializable snapshot for replay ghosts. */
+/** World-space bbox from a stored snapshot (for history replay when live item moved). */
+export function snapshotWorldBBox(snap) {
+  if (!snap) return null;
+  if (snap.type === "stroke" && snap.points?.length) {
+    const xs = snap.points.map((p) => p.x);
+    const ys = snap.points.map((p) => p.y);
+    return {
+      minx: Math.min(...xs),
+      miny: Math.min(...ys),
+      maxx: Math.max(...xs),
+      maxy: Math.max(...ys),
+    };
+  }
+  const w =
+    snap.w ||
+    (snap.type === "image" ? 200 : snap.type === "voice" ? 260 : snap.type === "video" ? 280 : 360);
+  const h =
+    snap.h ||
+    (snap.type === "image"
+      ? 150
+      : snap.type === "voice"
+        ? 56
+        : snap.type === "video"
+          ? 158
+          : 120);
+  const x = snap.x ?? 0;
+  const y = snap.y ?? 0;
+  return { minx: x, miny: y, maxx: x + w, maxy: y + h };
+}
+
 export function itemSnapshot(it) {
   if (!it) return null;
   const snap = { id: it.id, type: it.type };
@@ -89,6 +119,7 @@ export function replayStepDuration(kind) {
     case "transfer-to-ai":
     case "transfer-to-paper":
     case "highlight-transfer":
+    case "saved-as-function":
       return 1100;
     case "expand":
       return 1000;
@@ -116,7 +147,11 @@ function normalizeRawEvent(ev) {
     caption: ev.caption,
     itemSnapshot: ev.itemSnapshot || null,
     aiNodeId: ev.aiNodeId,
+    opId: ev.opId,
     opName: ev.opName,
+    moveRef: ev.moveRef,
+    targetLayer: ev.targetLayer,
+    functionName: ev.functionName,
     inputPreview: ev.inputPreview,
     outputPreview: ev.outputPreview,
     textSnapshot: ev.textSnapshot,
@@ -221,10 +256,117 @@ function stepCaption(ev) {
     case "voice-session":
       return "voice session";
     case "highlight-transfer":
-      return "highlighted → AI";
+      return ev.targetLayer === "functions"
+        ? "highlighted → steps"
+        : ev.targetLayer === "structures"
+          ? "highlighted → symbol"
+        : ev.targetLayer === "paper"
+          ? "highlighted → paper"
+          : "highlighted → AI";
+    case "saved-as-function":
+      return ev.functionName ? `saved as “${ev.functionName}”` : "saved as function";
     default:
       return "step";
   }
+}
+
+/** Perceptual moves distilled from history — reapplicable on any new material. */
+const HISTORY_PERCEPTUAL_MOVES = {
+  "highlight-transfer": {
+    name: "highlight explore",
+    description: "Pull highlighted material into the void and expand it.",
+    moveRef: { kind: "move", name: "highlight explore" },
+  },
+  "transfer-to-ai": {
+    name: "send to void",
+    description: "Gather material into the AI exploration layer.",
+    moveRef: { kind: "move", name: "send to void" },
+  },
+  "transfer-to-paper": {
+    name: "return to paper",
+    description: "Land expanded thought back on the paper surface.",
+    moveRef: { kind: "move", name: "return to paper" },
+  },
+  edit: {
+    name: "refine on paper",
+    description: "Edit and refine the mark in place.",
+    moveRef: { kind: "move", name: "refine on paper" },
+  },
+  "voice-session": {
+    name: "voice session",
+    description: "Shape the mark through a live voice-and-ink session.",
+    moveRef: { kind: "move", name: "voice session" },
+  },
+};
+
+/** One abstract pipeline step from a recorded history event. */
+export function historyEventToPerceptualStep(ev) {
+  if (!ev?.kind || ev.kind === "born" || ev.kind === "saved-as-function") return null;
+
+  if (ev.kind === "expand" && ev.opName) {
+    return {
+      name: ev.opName,
+      description: `Perceptual expansion: ${ev.opName}`,
+      moveRef: ev.moveRef || { kind: "primitive", name: ev.opName, id: ev.opId || undefined },
+    };
+  }
+
+  const preset = HISTORY_PERCEPTUAL_MOVES[ev.kind];
+  if (preset) {
+    return { ...preset };
+  }
+
+  return null;
+}
+
+/** Convert a replay timeline into portable capture steps (skips birth-only threads). */
+export function timelineToPerceptualSteps(timeline) {
+  if (!timeline?.steps?.length) return [];
+  const steps = [];
+  const seen = new Set();
+  for (const step of timeline.steps) {
+    const perceptual = historyEventToPerceptualStep(step);
+    if (!perceptual) continue;
+    const key = `${perceptual.name}:${perceptual.moveRef?.id || perceptual.moveRef?.name || ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    steps.push(perceptual);
+  }
+  return steps;
+}
+
+/**
+ * Build capture-ready perceptual steps from an item's full lineage log.
+ * @returns {{ canCapture: boolean, steps?: object[], defaultName?: string, captureMeta?: object, reason?: string }}
+ */
+export function buildPerceptualCaptureFromItem(itemId, ctx) {
+  const timeline = buildItemTimeline(itemId, ctx);
+  if (!timeline) return { canCapture: false, reason: "not a capturable mark" };
+
+  const steps = timelineToPerceptualSteps(timeline);
+  if (!steps.length) {
+    return { canCapture: false, reason: "no perceptual moves yet — explore or transform first" };
+  }
+
+  const moveNames = steps.map((s) => s.name);
+  const shortChain = moveNames.slice(0, 4).join(" → ") + (moveNames.length > 4 ? " → …" : "");
+  const title = timeline.title || "a thought";
+  const defaultName =
+    title && title !== "a thought"
+      ? `${title}: ${shortChain}`.slice(0, 72)
+      : `thread: ${shortChain}`.slice(0, 72);
+
+  return {
+    canCapture: true,
+    steps,
+    defaultName,
+    captureMeta: {
+      provenance: "history-capture",
+      moveChain: steps.map((s) => s.moveRef || { name: s.name }),
+      stepCount: steps.length,
+      sourceItemId: itemId,
+    },
+  };
 }
 
 /**

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PageTabs from "./PageTabs.jsx";
 import PaperRecordBar from "./PaperRecordBar.jsx";
+import MicIcon from "./MicIcon.jsx";
 
 const TOOLS_COLLAPSED_KEY = "lens.canvas-tools.collapsed";
 
@@ -8,7 +9,6 @@ const CANVAS_TOOLS = [
   { id: "select", label: "Select", icon: "↖" },
   { id: "highlight", label: "Highlight", icon: "▬" },
   { id: "pen", label: "Pen", icon: "✎" },
-  { id: "marker", label: "Marker", icon: "◯" },
   { id: "eraser", label: "Eraser", icon: "⌫" },
   { id: "text", label: "Text", icon: "T" },
   { id: "sticky", label: "Note", icon: "▢" },
@@ -39,6 +39,7 @@ export default function CanvasColumn({
   expandToolsSignal = 0,
   onToolsOpenChange,
   onTourEvent,
+  collapsed,
   children,
 }) {
   const secs = Math.floor((paperRecordMs || 0) / 1000);
@@ -46,9 +47,11 @@ export default function CanvasColumn({
   const ss = String(secs % 60).padStart(2, "0");
   const [toolsOpen, setToolsOpen] = useState(() => {
     try {
-      return localStorage.getItem(TOOLS_COLLAPSED_KEY) === "0";
+      const v = localStorage.getItem(TOOLS_COLLAPSED_KEY);
+      if (v === null) return true;
+      return v === "0";
     } catch {
-      return false;
+      return true;
     }
   });
   const [zoomOpen, setZoomOpen] = useState(false);
@@ -71,7 +74,14 @@ export default function CanvasColumn({
   }, [toolsOpen, onToolsOpenChange, onTourEvent]);
 
   return (
-    <div className={"canvas-column" + (dropOver ? " column-drop-over" : "") + (boundaryMagnet ? " boundary-magnet" : "")}>
+    <div
+      className={
+        "canvas-column" +
+        (collapsed ? " col-collapsed" : "") +
+        (dropOver ? " column-drop-over" : "") +
+        (boundaryMagnet ? " boundary-magnet" : "")
+      }
+    >
       <div className="canvas-column-main">{children}</div>
 
       <div className={"canvas-edge-top" + (toolsOpen ? " open" : "")}>
@@ -94,7 +104,7 @@ export default function CanvasColumn({
             aria-label={toolsOpen ? "Collapse drawing tools" : "Expand drawing tools"}
             onClick={() => setToolsOpen((o) => !o)}
           >
-            <span className="canvas-tools-label">Tools</span>
+            <span className="canvas-tools-label">{toolsOpen ? "Tools" : CANVAS_TOOLS.find((t) => t.id === tool)?.icon || "Tools"}</span>
             <span className="canvas-tools-chevron" aria-hidden="true">
               {toolsOpen ? "▲" : "▼"}
             </span>
@@ -107,21 +117,16 @@ export default function CanvasColumn({
             aria-label={paperRecording ? "Stop recording" : "Record voice + drawing"}
             onClick={onTogglePaperRecord}
           >
-            <span
-              className="paper-record-dot"
-              style={
-                paperRecording
-                  ? { transform: `scale(${0.85 + (paperRecordLevel || 0) * 0.35})` }
-                  : undefined
-              }
-            />
+            <MicIcon className="paper-record-mic" recording={paperRecording} />
           </button>
           {toolsOpen && (
             <div className="canvas-column-tools">
               {CANVAS_TOOLS.map((t) => {
                 const active =
                   (t.id === "image" && imageArmed) ||
-                  (t.id !== "image" && tool === t.id);
+                  (t.id === "text" && tool === "text") ||
+                  (t.id === "sticky" && tool === "sticky") ||
+                  (t.id !== "image" && t.id !== "text" && t.id !== "sticky" && tool === t.id);
                 return (
                   <button
                     key={t.id}

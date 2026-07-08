@@ -1,23 +1,13 @@
 /** Perceptual direction — compression (paper/left) vs expansion (AI/right). */
 
-export const COMPRESSION_PRIMITIVE_IDS = new Set([
-  "op-compress",
-  "op-specialize",
-  "op-ground",
-  "op-merge",
-  "op-reduce",
-  "op-release",
-]);
+export const COMPRESSION_PRIMITIVE_IDS = new Set(["op-compress"]);
 
 export const EXPANSION_PRIMITIVE_IDS = new Set([
   "op-expand",
-  "op-generalize",
-  "op-differentiate",
-  "op-amplify",
+  "op-explore",
+  "op-research",
   "op-invert",
   "op-reframe",
-  "op-translate",
-  "op-harmonize",
   "op-transcend",
 ]);
 
@@ -25,7 +15,7 @@ const COMPRESS_RE =
   /\b(compress|distill\w*|narrow|focus|summar\w*|reduce|simplif\w*|merge|speciali\w*|ground|release|combine|sharpen|condense|trim|tighten|essence|core|abstract|extract)\b/i;
 
 const EXPAND_RE =
-  /\b(expand|unfold|elaborat\w*|generaliz\w*|differentiat\w*|split|amplif\w*|invert|flip|reframe|translat\w*|harmoniz\w*|transcend|branch|broaden|extend|counter|explore|diverge|multiply|enrich|detail)\b/i;
+  /\b(expand|unfold|elaborat\w*|generaliz\w*|differentiat\w*|split|amplif\w*|invert|flip|reframe|translat\w*|harmoniz\w*|transcend|branch|broaden|extend|counter|explore|research|diverge|multiply|enrich|detail)\b/i;
 
 function textSignals(op) {
   return [op?.name, op?.description, op?.prompt].filter(Boolean).join(" ");

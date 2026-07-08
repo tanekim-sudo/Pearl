@@ -4,7 +4,7 @@ export const PAPER_HEIGHT = 1104;
 export const PAPER_MARGIN = 24;
 export const MIN_SCALE = 0.05;
 export const MAX_SCALE = 1e6;
-export const ZOOM_STEP = 1.2;
+export const ZOOM_STEP = 1.44;
 export const PAPER_INK = "#000000";
 
 /** Infinite ambiguous sketch space — no page edges, no clamping. */

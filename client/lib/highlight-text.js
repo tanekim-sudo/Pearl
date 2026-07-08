@@ -6,7 +6,7 @@ export function sampleStrokePoints(points) {
     if (i + 1 < points.length) {
       const a = points[i];
       const b = points[i + 1];
-      const steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 6));
+      const steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 3));
       for (let s = 1; s < steps; s++) {
         samples.push({
           x: a.x + ((b.x - a.x) * s) / steps,
@@ -32,13 +32,13 @@ function pointNearRect(px, py, rect, pad = 6) {
  * @param {{x:number,y:number}[]} clientPoints - stroke in client coordinates
  * @param {number} strokeWidth - brush width in px
  */
-export function extractTextRangeFromHighlightStroke(el, clientPoints, strokeWidth = 14) {
+export function extractTextRangeFromHighlightStroke(el, clientPoints, strokeWidth = 5) {
   if (!el || !clientPoints?.length) return null;
   const full = el.value ?? el.innerText ?? el.textContent ?? "";
   if (!full.trim()) return null;
 
   const samples = sampleStrokePoints(clientPoints);
-  const pad = Math.max(10, strokeWidth * 0.55);
+  const pad = Math.max(3, strokeWidth * 0.32);
   const charHits = new Set();
   const textNode = el.firstChild?.nodeType === Node.TEXT_NODE ? el.firstChild : null;
 
@@ -48,9 +48,15 @@ export function extractTextRangeFromHighlightStroke(el, clientPoints, strokeWidt
         const range = document.createRange();
         range.setStart(textNode, i);
         range.setEnd(textNode, Math.min(i + 1, textNode.length));
-        const cr = range.getBoundingClientRect();
-        if (!cr.width && !cr.height) continue;
-        if (samples.some((s) => pointNearRect(s.x, s.y, cr, pad))) charHits.add(i);
+        const rects = range.getClientRects();
+        for (let r = 0; r < rects.length; r++) {
+          const cr = rects[r];
+          if (!cr.width && !cr.height) continue;
+          if (samples.some((s) => pointNearRect(s.x, s.y, cr, pad))) {
+            charHits.add(i);
+            break;
+          }
+        }
       } catch {
         /* skip bad range */
       }
