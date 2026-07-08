@@ -4213,6 +4213,60 @@ html[data-theme="chalk"] body {
   color: rgba(255, 250, 230, 0.95);
 }
 
+.toolbox-apply-ghost {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(280px, 72vw);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid rgba(26, 26, 26, 0.2);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+  opacity: 0.9;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.toolbox-apply-ghost.over-paper {
+  border-color: #1a73e8;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 0 0 4px rgba(26, 115, 232, 0.15),
+    0 10px 32px rgba(26, 115, 232, 0.2);
+}
+
+.toolbox-apply-ghost-badge {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(26, 26, 26, 0.08);
+  color: rgba(26, 26, 26, 0.8);
+}
+
+.toolbox-apply-ghost.over-paper .toolbox-apply-ghost-badge {
+  background: rgba(26, 115, 232, 0.12);
+  color: #1a73e8;
+}
+
+.toolbox-apply-ghost-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: rgba(26, 26, 26, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Golden fragment highlight in explore overlay ── */
 .ai-golden-fragment {
   background: linear-gradient(180deg, rgba(232, 185, 35, 0.45), rgba(232, 185, 35, 0.28));
