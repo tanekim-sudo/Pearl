@@ -9,12 +9,8 @@ import {
   truncateLabel,
 } from "../lib/ai-nodes.js";
 import {
-  AI_CELL_ZOOM_MAX,
   AI_DOT_ONLY_THRESHOLD,
-  AI_STRAND_DRAG_MAX_SCALE,
   AI_BLEND_ZOOM_START,
-  AI_TEXT_VISIBLE_MIN_BLEND,
-  findNearestNodeToCenter,
   nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
@@ -30,6 +26,22 @@ const STRAND_DRAG_THRESHOLD = 4;
 const STRAND_MIN_LENGTH = 52;
 const STRAND_MAX_LENGTH = 148;
 const STRAND_TIP_HIT = 36;
+const NODE_EDGE_BAND_PX = 10;
+const NODE_EDGE_BAND_RATIO = 0.24;
+
+function pointerHitZone(clientX, clientY, node, camera, viewportRect) {
+  if (!viewportRect) return { onEdge: false, inNode: true };
+  const screen = worldToScreen(camera, node.x, node.y);
+  const screenX = screen.x + viewportRect.left;
+  const screenY = screen.y + viewportRect.top;
+  const screenR = (node.radius || 20) * camera.scale;
+  const dist = Math.hypot(clientX - screenX, clientY - screenY);
+  const edgePx = Math.max(NODE_EDGE_BAND_PX, screenR * NODE_EDGE_BAND_RATIO);
+  return {
+    onEdge: dist >= screenR - edgePx,
+    inNode: dist < screenR - edgePx,
+  };
+}
 
 export default function AiNodeCanvas({
   nodes,
@@ -79,7 +91,6 @@ export default function AiNodeCanvas({
   const knownNodeIdsRef = useRef(null);
   const [bornIds, setBornIds] = useState(() => new Set());
   const [wheelZooming, setWheelZooming] = useState(false);
-  const constellationReturnRef = useRef(0);
   const [hoverPreview, setHoverPreview] = useState(null);
 
   // New nodes glow gold, then fade to stardust white over ~5s.
@@ -151,29 +162,13 @@ export default function AiNodeCanvas({
         const rect = el.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
       },
-      (prev, next) => {
-        if (prev.scale > AI_BLEND_ZOOM_START && next.scale <= AI_CELL_ZOOM_MAX - 0.06) {
-          const now = Date.now();
-          if (now - constellationReturnRef.current > 450) {
-            constellationReturnRef.current = now;
-            onReturnToConstellation?.();
-          }
-          return;
-        }
-        if (prev.scale < AI_BLEND_ZOOM_START && next.scale >= AI_BLEND_ZOOM_START) {
-          const pickId =
-            selectedIds.length === 1
-              ? selectedIds[0]
-              : findNearestNodeToCenter(nodes, next, vpSize.w, vpSize.h)?.id;
-          if (pickId) onFocusFromZoom?.(pickId);
-        }
-      },
+      undefined,
       {
         onWheelActive: () => setWheelZooming(true),
         onWheelIdle: () => setWheelZooming(false),
       }
     );
-  }, [onCameraChange, onReturnToConstellation, onFocusFromZoom, viewportRef, nodes, selectedIds, vpSize.w, vpSize.h]);
+  }, [onCameraChange, viewportRef]);
 
   function startPan(e) {
     if (e.button !== 0 && e.button !== 1) return;
@@ -440,7 +435,7 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleStrandEnd);
   }
 
-  function startConstellationNodeGesture(e, node) {
+  function startEdgeStrandGesture(e, node) {
     if (e.button !== 0) return;
     e.stopPropagation();
     const startX = e.clientX;
@@ -508,60 +503,7 @@ export default function AiNodeCanvas({
     onSpaceTransferStart?.(e, [node.id], { immediate: true });
   }
 
-  function startNodeDrag(e, node) {
-    if (e.button !== 0) return;
-
-    if (tool === "highlight") {
-      const readable = node.expandedText?.trim() || node.preview?.trim();
-      const zoomedForText = contentBlend > 0.08;
-      if (readable && zoomedForText) {
-        onSelect?.(node.id, { replace: true });
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect?.(node.id, { replace: true });
-      if (!readable) {
-        const canExpand =
-          (node.nodeKind === "source" || node.nodeKind === "session") &&
-          node.sourceIds?.length &&
-          !node.loading;
-        if (canExpand && !node.expandedText) onExpandNode?.(node.id);
-        return;
-      }
-      const startX = e.clientX;
-      const startY = e.clientY;
-      let armed = false;
-
-      function onMove(ev) {
-        if (armed) return;
-        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
-        armed = true;
-        cleanup();
-        startFragmentGrab(e, node);
-      }
-
-      function onUp() {
-        cleanup();
-      }
-
-      function cleanup() {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        window.removeEventListener("pointercancel", onUp);
-      }
-
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-      window.addEventListener("pointercancel", onUp);
-      return;
-    }
-
-    const constellationMode = cameraRef.current.scale <= AI_STRAND_DRAG_MAX_SCALE;
-    if (constellationMode) {
-      startConstellationNodeGesture(e, node);
-      return;
-    }
+  function startNodePositionDrag(e, node) {
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
@@ -645,6 +587,66 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleDragEnd);
   }
 
+  function startNodeDrag(e, node) {
+    if (e.button !== 0) return;
+
+    if (tool === "highlight") {
+      const readable = node.expandedText?.trim() || node.preview?.trim();
+      const zoomedForText = contentBlend > 0.45;
+      if (readable && zoomedForText) {
+        onSelect?.(node.id, { replace: true });
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect?.(node.id, { replace: true });
+      if (!readable) {
+        const canExpand =
+          (node.nodeKind === "source" || node.nodeKind === "session") &&
+          node.sourceIds?.length &&
+          !node.loading;
+        if (canExpand && !node.expandedText) onExpandNode?.(node.id);
+        return;
+      }
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let armed = false;
+
+      function onMove(ev) {
+        if (armed) return;
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) <= NODE_DRAG_THRESHOLD) return;
+        armed = true;
+        cleanup();
+        startFragmentGrab(e, node);
+      }
+
+      function onUp() {
+        cleanup();
+      }
+
+      function cleanup() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+      return;
+    }
+
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
+    const strandChoices = getStrandChoices?.(node) || [];
+    if (tool === "select" && hit.onEdge && strandChoices.length) {
+      startEdgeStrandGesture(e, node);
+      return;
+    }
+
+    startNodePositionDrag(e, node);
+  }
+
   function handleViewportPointerDown(e) {
     if (e.target.closest?.(".ai-node")) return;
     if (e.target.closest?.(".ai-explore-overlay-inner")) return;
@@ -682,18 +684,23 @@ export default function AiNodeCanvas({
   const bundleOffsets = edgeBundleOffsets(edges);
 
   const contentBlend = zoomContentBlend(camera.scale);
-  const constellationMode = camera.scale <= AI_STRAND_DRAG_MAX_SCALE;
   const invScale = 1 / Math.max(0.08, camera.scale);
-  const screenStroke = constellationMode ? 4.2 : 2.6;
-  const edgeStroke = screenStroke * invScale;
+  const edgeStroke = 2.6 * invScale;
   const markerSize = Math.min(32, Math.max(12, 14 * invScale));
-  const explorationMode = contentBlend > 0.04;
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
       : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
+
+  function updateNodeCursor(e, node) {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
+    const strandChoices = getStrandChoices?.(node) || [];
+    e.currentTarget.style.cursor =
+      tool === "select" && hit.onEdge && strandChoices.length ? "crosshair" : "grab";
+  }
 
   function nodeDetailText(node) {
     return (
@@ -715,7 +722,7 @@ export default function AiNodeCanvas({
   }
 
   function showNodeHoverPreview(node, clientX, clientY) {
-    if (contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND) {
+    if (contentBlend > 0.15) {
       setHoverPreview(null);
       return;
     }
@@ -728,7 +735,7 @@ export default function AiNodeCanvas({
     const r = node.radius || 20;
     const childCount = nodes.filter((n) => n.parentId === node.id).length;
     const detail = nodeDetailText(node);
-    const blend = detail && contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND ? contentBlend : 0;
+    const blend = detail ? contentBlend : 0;
     return {
       invScale,
       cellWeight: 1 + Math.min(childCount * 0.14, 0.5),
@@ -772,9 +779,7 @@ export default function AiNodeCanvas({
         (panning ? " ai-panning" : "") +
         (wheelZooming ? " ai-wheel-zooming" : "") +
         (tool === "highlight" ? " ai-highlight-mode" : "") +
-        (explorationMode ? " ai-exploration-mode" : " ai-constellation-mode") +
-        (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full") +
-        (contentBlend > 0.5 ? " ai-text-dominant" : "")
+        (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
       }
       style={{ "--ai-content-blend": contentBlend, "--ai-inv-scale": invScale }}
       onPointerDown={handleViewportPointerDown}
@@ -932,9 +937,8 @@ export default function AiNodeCanvas({
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
           const detail = nodeDetailText(node);
-          const showInCircleText = detail && contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND;
-          const nodeBlend = showInCircleText ? contentBlend : 0;
-          const textLayout = showInCircleText ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend, detail) : null;
+          const nodeBlend = detail ? contentBlend : 0;
+          const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend, detail) : null;
           return (
             <div
               key={node.id}
@@ -943,7 +947,7 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
-                (showInCircleText ? " morphing" : "") +
+                (detail ? " morphing" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
@@ -960,15 +964,20 @@ export default function AiNodeCanvas({
                 "--ai-node-blend": nodeBlend,
                 "--ai-ring-stroke": `${Math.max(2, 2.8 * invScale)}px`,
               }}
-              onPointerEnter={(e) => showNodeHoverPreview(node, e.clientX, e.clientY)}
+              onPointerEnter={(e) => {
+                updateNodeCursor(e, node);
+                showNodeHoverPreview(node, e.clientX, e.clientY);
+              }}
               onPointerMove={(e) => {
+                updateNodeCursor(e, node);
                 if (hoverPreview?.id === node.id) {
                   setHoverPreview((prev) =>
                     prev?.id === node.id ? { ...prev, x: e.clientX, y: e.clientY } : prev
                   );
                 }
               }}
-              onPointerLeave={() => {
+              onPointerLeave={(e) => {
+                e.currentTarget.style.cursor = "";
                 setHoverPreview((prev) => (prev?.id === node.id ? null : prev));
               }}
               onPointerDown={(e) => startNodeDrag(e, node)}
@@ -980,7 +989,7 @@ export default function AiNodeCanvas({
               <span className="ai-node-ring" aria-hidden="true" />
               {node.loading && <span className="ai-node-loading-core" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
-              {showInCircleText && textLayout && (
+              {detail && textLayout && (
                 <div
                   className="ai-node-content-text"
                   style={{

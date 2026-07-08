@@ -1175,11 +1175,11 @@ body.ai-strand-dragging * {
 }
 
 .ai-constellation-mode .ai-node {
-  cursor: crosshair;
+  cursor: grab;
 }
 
 .ai-constellation-mode .ai-node:active {
-  cursor: crosshair;
+  cursor: grabbing;
 }
 
 .ai-node-lines {
@@ -1611,17 +1611,13 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   animation: none;
 }
 
-/* Once text is showing, fully remove circle chrome (glow reads through at high zoom). */
-.ai-node.text-visible .ai-node-ring,
-.ai-node.text-visible .ai-node-cell,
-.ai-node.text-visible .ai-node-starburst,
-.ai-node.text-visible .ai-node-label,
-.ai-node.text-visible::after,
-.ai-node.text-visible .ai-node-born-ring,
-.ai-node.text-visible .ai-node-fn-count {
-  opacity: 0 !important;
-  visibility: hidden;
-  animation: none;
+/* Circle dissolves continuously as --ai-node-blend rises with zoom. */
+.ai-node.morphing .ai-node-ring {
+  transition: none;
+}
+
+.ai-node.morphing .ai-node-content-text {
+  transition: none;
 }
 
 .ai-node-viewport.ai-zoom-dot .ai-node-starburst,
@@ -1778,7 +1774,8 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: var(--ai-ring-stroke, 2px) solid rgba(255, 255, 255, calc(0.82 * (1 - var(--ai-node-blend, 0) * 0.85)));
+  border: var(--ai-ring-stroke, 2px) solid rgba(255, 255, 255, 0.82);
+  opacity: calc(1 - var(--ai-node-blend, 0));
   box-shadow: none;
   pointer-events: none;
   background: transparent;
@@ -1792,18 +1789,15 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node-viewport:not(.ai-wheel-zooming):not(.ai-panning) .ai-node-ring {
-  transition:
-    border-color 0.2s ease-out,
-    box-shadow 0.2s ease-out,
-    opacity 0.2s ease-out;
+  transition: none;
 }
 
 .ai-node-viewport:not(.ai-wheel-zooming):not(.ai-panning) .ai-node-content-text {
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition: none;
 }
 
 .ai-node.selected .ai-node-ring {
-  border-color: rgba(255, 255, 255, calc(0.95 * (1 - var(--ai-node-blend, 0) * 0.85)));
+  border-color: rgba(255, 255, 255, 0.95);
   box-shadow: none;
 }
 
@@ -1817,7 +1811,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 }
 
 .ai-node.multi-selected .ai-node-ring {
-  border-color: rgba(255, 255, 255, calc(0.98 * (1 - var(--ai-node-blend, 0))));
+  border-color: rgba(255, 255, 255, 0.98);
 }
 
 .ai-node-viewport.ai-constellation-mode .ai-node,

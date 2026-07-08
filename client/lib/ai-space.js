@@ -29,9 +29,9 @@ export const EXPLORE_ZOOM_SCALE = 1.25;
 /** Below this scale, nodes are pure circles. */
 export const AI_CELL_ZOOM_MAX = 0.85;
 /** Crossfade from circle → text begins here (wider band = longer morph). */
-export const AI_BLEND_ZOOM_START = 0.35;
+export const AI_BLEND_ZOOM_START = 0.72;
 /** Text fully readable above this scale. */
-export const AI_TEXT_ZOOM_FULL = 1.25;
+export const AI_TEXT_ZOOM_FULL = 1.28;
 /** Click-to-read zoom — card fills viewport with ~15px screen font. */
 export const AI_READING_ZOOM = 2.35;
 export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;
@@ -40,8 +40,8 @@ export const AI_STRAND_DRAG_MAX_SCALE = AI_CELL_ZOOM_MAX;
 /** Below this scale, nodes are pure circles (no readable text). */
 export const AI_DOT_ONLY_THRESHOLD = 0.35;
 
-/** Below this scale, in-circle text is hidden (hover preview only). */
-export const AI_TEXT_VISIBLE_MIN_BLEND = 0.22;
+/** @deprecated Text opacity now tracks zoomContentBlend directly — no separate gate. */
+export const AI_TEXT_VISIBLE_MIN_BLEND = 0;
 
 /** Smooth 0→1 blend tied continuously to zoom (no mode switches). */
 export function zoomContentBlend(scale) {
