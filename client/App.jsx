@@ -2157,6 +2157,7 @@ export default function App() {
   const functionsColumnRef = useRef(null);
   const aiCamAnimCancelRef = useRef(null);
   const prevAiNodeCountRef = useRef(0);
+  const aiStableCameraUntilRef = useRef(0);
   aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
@@ -2216,6 +2217,7 @@ export default function App() {
     const prev = prevAiNodeCountRef.current;
     prevAiNodeCountRef.current = count;
     if (count === 0) return;
+    if (aiStableCameraUntilRef.current > Date.now()) return;
     const el = aiViewportRef.current;
     if (!el) return;
     const w = el.clientWidth;
@@ -4053,7 +4055,7 @@ export default function App() {
       showToast("drop onto an idea");
       return;
     }
-    const lens = transformationRepos.find((l) => l.id === lensId);
+    const lens = transformationRepos.find((l) => l.id === lensId) || displayTransformations.find((l) => l.id === lensId);
     if (!lens) return;
     const moveOps = (lens.moveIds || []).map((id) => opMap[id]).filter(Boolean);
     if (!moveOps.length) {
@@ -4079,7 +4081,7 @@ export default function App() {
 
   function applyTransformationLensDrop(lensId, atClient) {
     if (!atClient) return;
-    const lens = transformationRepos.find((l) => l.id === lensId);
+    const lens = transformationRepos.find((l) => l.id === lensId) || displayTransformations.find((l) => l.id === lensId);
     if (!lens) return;
     const ids = resolveTargetIds(atClient);
     if (!ids.length) {
@@ -5648,8 +5650,39 @@ export default function App() {
   function applyPatternLensDrop(structId, atClient) {
     const struct = lenses.find((s) => s.id === structId);
     if (!struct) return;
+
+    const ids = resolveTargetIds(atClient);
     const at = atClient ? clientToWorld(atClient.x, atClient.y) : paperViewportCenterWorld();
-    plantLens(struct, at);
+
+    // If the drop doesn't hit an idea, fall back to planting the lens onto paper.
+    if (!ids.length) {
+      plantLens(struct, at);
+      return;
+    }
+
+    // If dropping onto ideas, apply the lens' view transformation to those ideas.
+    const viewLens = struct.viewLens;
+    if (!viewLens) {
+      plantLens(struct, at);
+      return;
+    }
+
+    const textIds = ids.filter((id) => {
+      const it = itemsRef.current.find((x) => x.id === id);
+      return it && (it.type === "text" || it.type === "sticky" || it.type === "callout") && String(it.text || "").trim();
+    });
+
+    if (!textIds.length) {
+      showToast("drop lens onto text ideas");
+      return;
+    }
+
+    const { ops, rootId } = treeToOperators(viewLens, { top: true });
+    const root = ops.find((o) => o.id === rootId);
+    if (!root) return;
+
+    setOperators((prev) => [...prev, ...ops]);
+    runOperator(root, textIds, { atClient });
   }
 
   function startToolboxApplyDrag(e, payload) {
@@ -7813,6 +7846,7 @@ export default function App() {
 
   async function expandInAi(ids, opts = {}) {
     emitTourEvent("expand-ai");
+    if (opts.stableCamera) aiStableCameraUntilRef.current = Date.now() + 5000;
     const op = opts.op || opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
     if (!op) {
       showToast("expand primitive not found");

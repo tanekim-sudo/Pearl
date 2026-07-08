@@ -137,6 +137,34 @@ export default function AiNodeCanvas({
     };
   }, []);
 
+  // While dragging an AI “strand”, let arrow keys cycle the chosen operation.
+  // This makes branching choices keyboard-friendly (release to commit).
+  useEffect(() => {
+    function onKeyDown(e) {
+      const typing = e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
+      if (typing) return;
+
+      const sd = strandDragRef.current;
+      if (!sd?.active) return;
+      if (!sd.choices?.length) return;
+
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
+      const next = Math.max(0, Math.min(sd.choices.length - 1, cur + dir));
+
+      const nextState = { ...sd, hoverIdx: next };
+      strandDragRef.current = nextState;
+      setStrandDrag(nextState);
+    }
+
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, []);
+
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
