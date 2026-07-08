@@ -13,6 +13,7 @@ import {
   AI_DOT_ONLY_THRESHOLD,
   AI_STRAND_DRAG_MAX_SCALE,
   AI_BLEND_ZOOM_START,
+  AI_TEXT_VISIBLE_MIN_BLEND,
   findNearestNodeToCenter,
   nodeTextLayoutAtBlend,
   screenToWorld,
@@ -78,6 +79,7 @@ export default function AiNodeCanvas({
   const [bornIds, setBornIds] = useState(() => new Set());
   const [wheelZooming, setWheelZooming] = useState(false);
   const constellationReturnRef = useRef(0);
+  const [hoverPreview, setHoverPreview] = useState(null);
 
   // New nodes glow gold, then fade to stardust white over ~5s.
   useEffect(() => {
@@ -675,15 +677,36 @@ export default function AiNodeCanvas({
     return (
       node?.expandedText?.trim() ||
       node?.preview?.trim() ||
+      node?.label?.trim() ||
       null
     );
+  }
+
+  function nodePreviewSnippet(node, maxLen = 140) {
+    const raw = nodeDetailText(node);
+    if (!raw) return "";
+    const flat = raw.replace(/^#+\s*/gm, "").replace(/\s+/g, " ").trim();
+    const sentences = flat.match(/[^.!?]+[.!?]+/g) || [flat];
+    const couple = sentences.slice(0, 2).join(" ").trim();
+    const text = couple || flat;
+    return text.length > maxLen ? `${text.slice(0, maxLen - 1)}…` : text;
+  }
+
+  function showNodeHoverPreview(node, clientX, clientY) {
+    if (contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND) {
+      setHoverPreview(null);
+      return;
+    }
+    const text = nodePreviewSnippet(node);
+    if (!text) return;
+    setHoverPreview({ id: node.id, text, x: clientX, y: clientY });
   }
 
   function nodeEdgeView(node) {
     const r = node.radius || 20;
     const childCount = nodes.filter((n) => n.parentId === node.id).length;
     const detail = nodeDetailText(node);
-    const blend = detail ? contentBlend : 0;
+    const blend = detail && contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND ? contentBlend : 0;
     return {
       invScale,
       cellWeight: 1 + Math.min(childCount * 0.14, 0.5),
@@ -715,12 +738,6 @@ export default function AiNodeCanvas({
       return part;
     });
   }
-
-  const highlightReaderNode =
-    tool === "highlight" && selectedIds.length === 1
-      ? nodes.find((n) => n.id === selectedIds[0] && n.expandedText?.trim())
-      : null;
-  const showHighlightReader = highlightReaderNode && contentBlend < 0.42;
 
   return (
     <div
@@ -892,10 +909,10 @@ export default function AiNodeCanvas({
           const childCount = nodes.filter((n) => n.parentId === node.id).length;
           const cellWeight = 1 + Math.min(childCount * 0.14, 0.5);
           const isLanding = landingNodeIds?.has?.(node.id);
-          // Every node with content morphs in place: circle dissolves, text fades in.
           const detail = nodeDetailText(node);
-          const nodeBlend = detail ? contentBlend : 0;
-          const textLayout = detail ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
+          const showInCircleText = detail && contentBlend >= AI_TEXT_VISIBLE_MIN_BLEND;
+          const nodeBlend = showInCircleText ? contentBlend : 0;
+          const textLayout = showInCircleText ? nodeTextLayoutAtBlend(r, detail.length, nodeBlend) : null;
           return (
             <div
               key={node.id}
@@ -904,13 +921,13 @@ export default function AiNodeCanvas({
                 ` ai-node-${node.nodeKind}` +
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
-                (nodeBlend > 0.01 ? " morphing" : "") +
-                (nodeBlend > 0.82 ? " text-visible" : "") +
+                (showInCircleText ? " morphing" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
                 (isLanding ? " landing" : "") +
-                (bornIds.has(node.id) ? " born-gold" : "")
+                (bornIds.has(node.id) ? " born-gold" : "") +
+                (hoverPreview?.id === node.id ? " hover-preview" : "")
               }
               style={{
                 left: node.x - r,
@@ -919,30 +936,38 @@ export default function AiNodeCanvas({
                 height: r * 2,
                 "--ai-cell-weight": cellWeight,
                 "--ai-node-blend": nodeBlend,
-                "--ai-ring-stroke": `${Math.max(2.5, 3.8 * invScale)}px`,
+                "--ai-ring-stroke": `${Math.max(2, 2.8 * invScale)}px`,
               }}
-              title={constellationMode ? node.preview || node.expandedText || node.label : undefined}
+              onPointerEnter={(e) => showNodeHoverPreview(node, e.clientX, e.clientY)}
+              onPointerMove={(e) => {
+                if (hoverPreview?.id === node.id) {
+                  setHoverPreview((prev) =>
+                    prev?.id === node.id ? { ...prev, x: e.clientX, y: e.clientY } : prev
+                  );
+                }
+              }}
+              onPointerLeave={() => {
+                setHoverPreview((prev) => (prev?.id === node.id ? null : prev));
+              }}
               onPointerDown={(e) => startNodeDrag(e, node)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 onExploreNode?.(node.id);
               }}
             >
-              <span className="ai-node-cell-glow" aria-hidden="true" />
-              <span className="ai-node-cell-membrane" aria-hidden="true" />
-              <span className="ai-node-cell-nucleus" aria-hidden="true" />
               <span className="ai-node-ring" aria-hidden="true" />
-              {node.loading && <span className="ai-node-spinner" aria-hidden="true" />}
+              {node.loading && <span className="ai-node-loading-core" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
-              {detail && nodeBlend > 0.01 && textLayout && (
+              {showInCircleText && textLayout && (
                 <div
                   className="ai-node-content-text"
                   style={{
                     opacity: nodeBlend,
-                    transform: `translateX(-50%) scale(${0.88 + nodeBlend * 0.12})`,
                     width: textLayout.w,
+                    height: textLayout.h,
                     fontSize: textLayout.fontSize,
                     lineHeight: textLayout.lineHeight,
+                    padding: textLayout.pad,
                   }}
                 >
                   <div className="ai-node-content-text-body" aria-label={node.label}>
@@ -951,7 +976,7 @@ export default function AiNodeCanvas({
                   {tool === "highlight" &&
                     node.expandedText?.trim() &&
                     (isSelected || isFocused) &&
-                    nodeBlend > 0.04 && (
+                    nodeBlend > 0.55 && (
                       <div
                         className="ai-node-text-highlight"
                         onPointerDown={(ev) => ev.stopPropagation()}
@@ -1002,34 +1027,13 @@ export default function AiNodeCanvas({
         </div>
       )}
 
-      {showHighlightReader && (
+      {hoverPreview && (
         <div
-          className="ai-response-reader"
-          onPointerDown={(e) => e.stopPropagation()}
+          className="ai-node-hover-preview"
+          style={{ left: hoverPreview.x, top: hoverPreview.y }}
+          role="tooltip"
         >
-          <div className="ai-response-reader-head">
-            <span className="ai-response-reader-title">{highlightReaderNode.label}</span>
-            <button
-              type="button"
-              className="ai-response-reader-drag"
-              onPointerDown={(e) => startFragmentGrab(e, highlightReaderNode)}
-            >
-              Drag to paper →
-            </button>
-          </div>
-          <div className="ai-response-reader-body">
-            <FragmentHighlightLayer
-              active
-              text={highlightReaderNode.expandedText}
-              fontSize={15}
-              lineHeight={1.5}
-              fontFamily="inherit"
-              onFragmentReplace={onFragmentReplace}
-              onFragmentToPaper={onFragmentToPaper}
-              isPaperDestination={isPaperDestination}
-              className="ai-response-reader-highlight"
-            />
-          </div>
+          {hoverPreview.text}
         </div>
       )}
 

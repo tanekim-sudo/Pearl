@@ -173,14 +173,11 @@ export function edgeBundleOffsets(edges) {
   return offsets;
 }
 
-/** Visible membrane radius in world units — matches CSS glow + ring, not just node.radius. */
+/** Visible ring radius in world units — circle edge, not glow padding. */
 export function nodeVisualRadius(node, opts = {}) {
   const r = node?.radius || 20;
-  const weight = opts.cellWeight ?? 1.14;
-  const invScale = opts.invScale ?? 1;
-  const glow = r * 0.34 * weight;
-  const ring = 3.8 * invScale * 0.65 + 6;
-  return r + glow + ring;
+  const ring = Math.max(1.5, (opts.invScale ?? 1) * 2.2);
+  return r + ring * 0.55;
 }
 
 /** Ray exit from axis-aligned rect; returns nearest intersection in the forward direction. */
@@ -230,15 +227,13 @@ export function attachPointOnNode(node, targetX, targetY, opts = {}) {
   const blend = opts.contentBlend ?? 0;
   const layout = opts.textLayout;
 
-  if (blend > 0.12 && layout?.w > 0 && layout?.h > 0) {
-    const nr = node.radius || 20;
-    const scale = 0.88 + blend * 0.12;
-    const sw = layout.w * scale;
-    const sh = layout.h * scale;
-    const top = cy - nr;
+  if (blend > 0.35 && layout?.w > 0 && layout?.h > 0) {
+    const sw = layout.w;
+    const sh = layout.h;
+    const top = cy - sh / 2;
     const left = cx - sw / 2;
     const right = cx + sw / 2;
-    const bottom = top + sh;
+    const bottom = cy + sh / 2;
     const hit = rayRectExit(cx, cy, ux, uy, left, top, right, bottom);
     if (hit) {
       return { x: hit.x + ux * pad, y: hit.y + uy * pad, ux, uy };
@@ -299,11 +294,11 @@ export function edgeGeometry(from, to, opts = {}) {
     };
   }
 
-  const curve = Math.min(segLen * 0.28, chordLen * 0.14, 96) * (opts.curveSign ?? 1);
-  const cx1 = x1 + start.ux * curve * 0.5;
-  const cy1 = y1 + start.uy * curve * 0.5;
-  const cx2 = x2 - end.ux * curve * 0.5;
-  const cy2 = y2 - end.uy * curve * 0.5;
+  const curve = Math.min(segLen * 0.44, chordLen * 0.24, 148) * (opts.curveSign ?? 1);
+  const cx1 = x1 + start.ux * curve * 0.55;
+  const cy1 = y1 + start.uy * curve * 0.55;
+  const cx2 = x2 - end.ux * curve * 0.55;
+  const cy2 = y2 - end.uy * curve * 0.55;
 
   return {
     x1,

@@ -1,29 +1,40 @@
 import React from "react";
 import { commitCount, gitRefLabel } from "../lib/cognition-git.js";
 
-export default function CognitionGitHeader({ activeLens, lensCount, onNewLens }) {
-  const ref = activeLens ? gitRefLabel(activeLens) : null;
-  const commits = activeLens ? commitCount(activeLens) : 0;
+export default function CognitionGitHeader({ activeTransformation, transformationCount, onNewTransformation }) {
+  const ref = activeTransformation ? gitRefLabel(activeTransformation) : null;
+  const commits = activeTransformation ? commitCount(activeTransformation) : 0;
 
   return (
     <div className="cognition-git-header" data-tour="cognition-git">
       <div className="cognition-git-brand">
-        <div className="cognition-git-title">Lenses</div>
+        <div className="cognition-git-title">Transformations</div>
       </div>
       <div className="cognition-git-status">
-        {activeLens ? (
+        {activeTransformation ? (
           <>
             <span className="git-ref-badge checkout">{ref}</span>
-            <span className="cognition-git-checkout" title="Selected lens">
-              {activeLens.name}
+            <span className="cognition-git-checkout" title="Selected transformation">
+              {activeTransformation.name}
             </span>
-            {commits > 0 && <span className="cognition-git-commits">{commits} save{commits === 1 ? "" : "s"}</span>}
+            {commits > 0 && (
+              <span className="cognition-git-commits">
+                {commits} save{commits === 1 ? "" : "s"}
+              </span>
+            )}
           </>
         ) : (
-          <span className="cognition-git-idle">{lensCount} lens{lensCount === 1 ? "" : "es"}</span>
+          <span className="cognition-git-idle">
+            {transformationCount} transformation{transformationCount === 1 ? "" : "s"}
+          </span>
         )}
       </div>
-      <button type="button" className="rail-create cognition-git-new" data-tour="create-function" onClick={onNewLens}>
+      <button
+        type="button"
+        className="rail-create cognition-git-new"
+        data-tour="create-function"
+        onClick={onNewTransformation}
+      >
         +
       </button>
     </div>

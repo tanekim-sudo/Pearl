@@ -65,8 +65,8 @@ describe("ai-space", () => {
     const big = nodeTextLayout(40, 300);
     assert.ok(big.w > small.w);
     assert.ok(big.h >= small.h);
-    assert.ok(small.w >= 148);
-    assert.equal(small.anchorY, -20);
+    assert.ok(small.w <= 40);
+    assert.ok(small.w >= 20);
   });
 
   it("fitTextFontSize shrinks for longer responses within bounds", () => {
@@ -77,24 +77,20 @@ describe("ai-space", () => {
     assert.ok(short <= 9.5);
   });
 
-  it("nodeTextLayoutAtBlend grows from inside the circle to full layout", () => {
+  it("nodeTextLayoutAtBlend keeps layout stable across zoom blend", () => {
     const inner = nodeTextLayoutAtBlend(20, 400, 0);
     const full = nodeTextLayoutAtBlend(20, 400, 1);
-    assert.ok(full.w > inner.w);
-    assert.ok(full.h > inner.h);
-    assert.ok(full.fontSize > inner.fontSize);
+    assert.equal(inner.w, full.w);
+    assert.equal(inner.h, full.h);
+    assert.equal(inner.fontSize, full.fontSize);
   });
 
-  it("focusAiNodeRead frames full text from the top", () => {
+  it("focusAiNodeRead centers the node in the viewport", () => {
     const node = { x: 100, y: 50, radius: 30 };
     const layout = nodeTextLayout(30, 300);
     const cam = focusAiNodeRead(node, layout, 800, 600);
     assert.ok(Math.abs(node.x * cam.scale + cam.x - 400) < 1);
-    const topY = (node.y + layout.anchorY) * cam.scale + cam.y;
-    assert.ok(Math.abs(topY - 44) < 1);
+    assert.ok(Math.abs(node.y * cam.scale + cam.y - 300) < 1);
     assert.ok(cam.scale <= AI_READING_ZOOM);
-    const screenH = layout.h * cam.scale;
-    assert.ok(screenH <= 600 * 0.92 + 1);
-    assert.equal(zoomContentBlend(cam.scale), 1);
   });
 });

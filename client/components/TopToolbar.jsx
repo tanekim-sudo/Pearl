@@ -62,11 +62,11 @@ export default function TopToolbar({
     { id: "insert-callout-obs", label: "Observation" },
     { id: "insert-callout-q", label: "Question" },
     { id: "insert-diagram", label: "Diagram" },
-    { id: "open-functions", label: "Lenses tab" },
-    { id: "open-structures", label: "Structures tab" },
+    { id: "open-transformations", label: "Transformations" },
+    { id: "open-lenses", label: "Lenses" },
     { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
-    { id: "new-function", label: "Create lens" },
+    { id: "new-function", label: "Create transformation" },
   ];
 
   return (

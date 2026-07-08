@@ -119,11 +119,11 @@ export default function ShareWelcomeOverlay({ bundle, railRef, canvasRef, onAcce
   }
 
   const ctaQuestion =
-    dest === "structures"
-      ? "Add to your structures?"
+    dest === "lenses"
+      ? "Add to your lenses?"
       : dest === "canvas"
         ? "Add to your canvas?"
-        : "Add to your laboratory?";
+        : "Add to your transformations?";
 
   return (
     <div className={"share-welcome-scrim" + (flying ? " flying" : "")} onClick={handleScrimClick}>

@@ -95,9 +95,9 @@ describe("ai-layout spatial reasoning", () => {
     assert.ok(geom.path.startsWith("M "));
     assert.ok(geom.path.includes("C"));
     const startDist = Math.hypot(geom.x1, geom.y1);
-    assert.ok(startDist > 40 && startDist < 70, `startDist ${startDist}`);
+    assert.ok(startDist > 30 && startDist < 45, `startDist ${startDist}`);
     const endDist = Math.hypot(geom.x2 - 500, geom.y2);
-    assert.ok(endDist > 40 && endDist < 70, `endDist ${endDist}`);
+    assert.ok(endDist > 30 && endDist < 45, `endDist ${endDist}`);
   });
 
   it("attachPointOnNode exits on the nearest visible edge, not the center", () => {

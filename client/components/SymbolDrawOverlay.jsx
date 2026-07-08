@@ -69,10 +69,10 @@ export default function SymbolDrawOverlay({ title, meaning, interpreting, onComp
     <div className="symbol-draw-scrim" onPointerDown={(e) => e.stopPropagation()}>
       <div className="symbol-draw-panel">
         <div className="symbol-draw-head">
-          <span className="symbol-draw-label">symbol</span>
+          <span className="symbol-draw-label">lens</span>
           <h3 className="symbol-draw-title">{title || "this idea"}</h3>
           {interpreting ? (
-            <p className="symbol-draw-reading">reading symbol…</p>
+            <p className="symbol-draw-reading">reading lens…</p>
           ) : meaning ? (
             <p className="symbol-draw-meaning">{meaning}</p>
           ) : null}
@@ -112,7 +112,7 @@ export default function SymbolDrawOverlay({ title, meaning, interpreting, onComp
             disabled={!hasStroke || pointsRef.current.length < 2}
             onClick={finish}
           >
-            save symbol
+            save lens
           </button>
         </div>
       </div>

@@ -29,6 +29,21 @@ import {
   resolveTransferContext,
 } from "../shared/cognitive-transfer.js";
 import { enrichTransferWithLLM, instantiateTransfer } from "./lib/cognitive-transfer-runtime.js";
+import {
+  isPortableOperator,
+  matchingOperatorsForMaterial,
+  recognitionHint,
+} from "../shared/cognitive-recognition.js";
+import {
+  ACTIVE_TRANSFORMATION_KEY,
+  loadActiveTransformationId,
+  loadPatternLenses,
+  loadTransformationRepos,
+  PATTERN_LENSES_KEY,
+  RAIL_LENSES,
+  RAIL_TRANSFORMATIONS,
+  TRANSFORMATION_REPOS_KEY,
+} from "../shared/object-types.js";
 import { interpretSymbolWithLLM } from "./lib/symbol-runtime.js";
 import { normalizeSymbolRecord, stampSymbolStruct, viewingLensTreeFromSymbol } from "../shared/symbol-lens.js";
 import { scaleEta, ETA } from "../shared/eta.js";
@@ -70,6 +85,8 @@ import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.js
 import LensTreeEditor from "./components/LensTreeEditor.jsx";
 import CognitionGitHeader from "./components/CognitionGitHeader.jsx";
 import LensHistoryPanel from "./components/LensHistoryPanel.jsx";
+import ItemStagesPanel from "./components/ItemStagesPanel.jsx";
+import TransferExplorePanel from "./components/TransferExplorePanel.jsx";
 import LensCommitDialog from "./components/LensCommitDialog.jsx";
 import {
   appendCommit,
@@ -175,12 +192,14 @@ import {
 } from "./lib/highlight-ink.js";
 import {
   appendItemHistory,
+  buildOperatorStages,
   buildPerceptualCaptureFromItem,
   createHistoryEvent,
   isReplayableItem,
   itemSnapshot,
   loadItemHistoryLog,
   saveItemHistoryLog,
+  shouldRecordHistory,
   snapshotWorldBBox,
   truncatePreview,
 } from "./lib/item-history.js";
@@ -199,7 +218,6 @@ const THEME_KEY = "lens.theme.v1";
 const CAMERA_KEY = "lens.board.camera.v1";
 const OPERATORS_KEY = "lens.board.operators.v2";
 const LEGACY_OPERATORS_KEY = "lens.board.operators.v1";
-const STRUCTURES_KEY = "lens.structures.v1";
 const STRUCTSEQ_KEY = "lens.structseq.v1";
 const OLD_NODES_KEY = "lens.savednodes.v1";
 const ARTIFACT_KEY = "lens.artifact.v1";
@@ -208,11 +226,9 @@ const OP_MIME = "application/lens-op";
 const STRUCT_MIME = "application/lens-structure";
 const SEL_MIME = "application/lens-selection";
 const LENS_MIME = "application/lens-lens";
-const LENSES_KEY = "lens.lenses.v1";
-const ACTIVE_LENS_KEY = "lens.activeLens.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
-const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI column
+const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI or toolbox columns
 const MOVE_DRAG_THRESHOLD = 8; // px before pointer-down becomes a move / transfer
 const TRANSFER_DRAG_THRESHOLD = 4; // px before boundary transfer activates
 
@@ -410,13 +426,13 @@ const LENS_STORAGE_KEYS = [
   CAMERA_KEY,
   OPERATORS_KEY,
   LEGACY_OPERATORS_KEY,
-  STRUCTURES_KEY,
+  PATTERN_LENSES_KEY,
   STRUCTSEQ_KEY,
   OLD_NODES_KEY,
   ARTIFACT_KEY,
   OLD_SEEDS_KEY,
-  LENSES_KEY,
-  ACTIVE_LENS_KEY,
+  TRANSFORMATION_REPOS_KEY,
+  ACTIVE_TRANSFORMATION_KEY,
   ONBOARDED_KEY,
   TOUR_STORAGE_KEY,
 ];
@@ -478,17 +494,17 @@ function normalizeLens(l) {
 }
 
 function lensMetaLines(lens, lenses) {
-  const nameOf = (id) => lenses.find((x) => x.id === id)?.name || lens.parentName || lens.forkedFromName || "unknown";
+  const nameOf = (id) => transformationRepos.find((x) => x.id === id)?.name || lens.parentName || lens.forkedFromName || "unknown";
   const lines = [];
   if ((lens.version || 1) > 1) lines.push(`v${lens.version}`);
   if (lens.parentId) {
-    const p = lenses.find((x) => x.id === lens.parentId);
+    const p = transformationRepos.find((x) => x.id === lens.parentId);
     lines.push(`branched from “${p?.name || lens.parentName || "unknown"}”`);
   } else if (lens.parentName) {
     lines.push(`branched from “${lens.parentName}”`);
   }
   if (lens.forkedFrom) {
-    const f = lenses.find((x) => x.id === lens.forkedFrom);
+    const f = transformationRepos.find((x) => x.id === lens.forkedFrom);
     lines.push(`forked from “${f?.name || lens.forkedFromName || "unknown"}”`);
   } else if (lens.forkedFromName) {
     lines.push(`forked from “${lens.forkedFromName}”`);
@@ -1341,7 +1357,7 @@ function parseSameness(out) {
   return { name, body: structure };
 }
 
-function structurePreview(struct) {
+function lensPreview(struct) {
   if (struct.kind === "document" && struct.content?.trim()) {
     return struct.content.trim().split("\n")[0].slice(0, 60);
   }
@@ -1946,35 +1962,39 @@ export default function App() {
       return [];
     }
   });
-  const [structures, setStructures] = useState(() => {
+  const [lenses, setLenses] = useState(() => {
     try {
-      const saved = load(STRUCTURES_KEY, null);
-      const list = Array.isArray(saved) && saved.length ? saved : migrateOldSavedNodes();
+      const list = loadPatternLenses(load, migrateOldSavedNodes);
+      
       return list
         .filter((s) => s && typeof s === "object")
         .map((s) => normalizeSymbolRecord(s))
         .filter(Boolean);
     } catch (err) {
-      console.warn("[lens] Could not load saved symbols:", err);
+      console.warn("[lens] Could not load lenses:", err);
       return [];
     }
   });
   // walking: { nodeId, title, steps: [...], stepIndex } — derived from a node's history on demand
   const [walking, setWalking] = useState(null);
   const [itemHistoryLog, setItemHistoryLog] = useState(() => loadItemHistoryLog());
-  // lenses: named sets of recurring moves — git for perception
-  const [lenses, setLenses] = useState(() => {
+  const [stagesItemId, setStagesItemId] = useState(null);
+  const [transferExploreOpId, setTransferExploreOpId] = useState(null);
+  const [transferTestingDomain, setTransferTestingDomain] = useState(null);
+  const [enrichingTransferIds, setEnrichingTransferIds] = useState(() => new Set());
+  // transformationRepos: versioned transformation pipelines
+  const [transformationRepos, setTransformationRepos] = useState(() => {
     try {
-      return loadArray(LENSES_KEY, [])
+      return loadTransformationRepos(loadArray)
         .filter((l) => l && typeof l === "object")
         .map(normalizeLens)
         .filter((l) => l?.id);
     } catch (err) {
-      console.warn("[lens] Could not load lenses:", err);
+      console.warn("[lens] Could not load transformation repos:", err);
       return [];
     }
   });
-  const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
+  const [activeTransformationId, setActiveTransformationId] = useState(() => loadActiveTransformationId(load));
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
   const [lensHistoryId, setLensHistoryId] = useState(null);
   const [pendingBranch, setPendingBranch] = useState(null); // { kind: 'branch'|'fork', sourceId }
@@ -1999,7 +2019,7 @@ export default function App() {
   const [canRedo, setCanRedo] = useState(false);
   const functionsSectionRef = useRef(null);
   const pendingGoldBornRef = useRef(new Set());
-  const symbolsSectionRef = useRef(null);
+  const lensesSectionRef = useRef(null);
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
   const [symbolInterpretingId, setSymbolInterpretingId] = useState(null);
   const symbolDrawPromptRef = useRef(null);
@@ -2078,7 +2098,7 @@ export default function App() {
   const gesture = useRef(null);
   const camRef = useRef(camera);
   const itemsRef = useRef(items);
-  const structuresRef = useRef(structures);
+  const lensesRef = useRef(lenses);
   const toolRef = useRef(tool);
   const selectedAiNodeIdsRef = useRef([]);
   const selRef = useRef(selection);
@@ -2096,7 +2116,7 @@ export default function App() {
   const pushHistoryRef = useRef(() => {});
   camRef.current = camera;
   itemsRef.current = items;
-  structuresRef.current = structures;
+  lensesRef.current = lenses;
   symbolDrawPromptRef.current = symbolDrawPrompt;
   toolRef.current = tool;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
@@ -2202,12 +2222,12 @@ export default function App() {
     return () => clearInterval(paperRecordTickRef.current);
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
-  useEffect(() => localStorage.setItem(STRUCTURES_KEY, JSON.stringify(structures)), [structures]);
+  useEffect(() => localStorage.setItem(PATTERN_LENSES_KEY, JSON.stringify(lenses)), [lenses]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
   }, [selection, editing]);
-  useEffect(() => localStorage.setItem(LENSES_KEY, JSON.stringify(lenses)), [lenses]);
+  useEffect(() => localStorage.setItem(TRANSFORMATION_REPOS_KEY, JSON.stringify(transformationRepos)), [transformationRepos]);
 
   const shareImportedRef = useRef(false);
   useEffect(() => {
@@ -2225,7 +2245,7 @@ export default function App() {
     setTimeout(() => setPendingShareBundle(decoded.bundle), 80);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => localStorage.setItem(ACTIVE_LENS_KEY, JSON.stringify(activeLensId)), [activeLensId]);
+  useEffect(() => localStorage.setItem(ACTIVE_TRANSFORMATION_KEY, JSON.stringify(activeTransformationId)), [activeTransformationId]);
 
   useEffect(() => {
     if (!["select", "highlight"].includes(tool)) setHighlight(null);
@@ -2373,6 +2393,11 @@ export default function App() {
     return clientX >= r.right - BOUNDARY_MAGNET_PX;
   }
 
+  function isNearLeftTransferBoundary(clientX) {
+    const r = vpRect();
+    return clientX <= r.left + BOUNDARY_MAGNET_PX;
+  }
+
   function isNearAiTransferBoundary(clientX) {
     const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
     const r = el?.getBoundingClientRect();
@@ -2415,9 +2440,9 @@ export default function App() {
   }
 
   function focusRailPane(pane) {
-    const el = pane === "structures" ? symbolsSectionRef.current : functionsSectionRef.current;
+    const el = pane === RAIL_LENSES ? lensesSectionRef.current : functionsSectionRef.current;
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    if (pane === "structures") emitTourEvent("structures-tab");
+    if (pane === RAIL_LENSES) emitTourEvent("lenses-tab");
   }
 
   function startColumnBoundaryResize(e, edge) {
@@ -2448,7 +2473,7 @@ export default function App() {
   }
 
   function resolveLeftColumnDropTarget(clientX, clientY) {
-    const symbolsEl = symbolsSectionRef.current;
+    const symbolsEl = lensesSectionRef.current;
     if (symbolsEl) {
       const r = symbolsEl.getBoundingClientRect();
       if (
@@ -2457,10 +2482,20 @@ export default function App() {
         clientX >= r.left &&
         clientX <= r.right
       ) {
-        return "structures";
+        return RAIL_LENSES;
       }
     }
-    return "functions";
+    return RAIL_TRANSFORMATIONS;
+  }
+
+  function guessToolboxTarget(clientX, clientY) {
+    if (isOverFunctionsColumn(clientX, clientY)) {
+      return resolveLeftColumnDropTarget(clientX, clientY);
+    }
+    const symbolsEl = lensesSectionRef.current;
+    const sy = symbolsEl?.getBoundingClientRect();
+    if (sy && clientY >= sy.top && clientY <= sy.bottom) return RAIL_LENSES;
+    return RAIL_TRANSFORMATIONS;
   }
 
   function resolveSpaceTransferTarget(origin, clientX, clientY) {
@@ -2478,11 +2513,79 @@ export default function App() {
 
   function resolveTransferDropTarget(origin, clientX, clientY) {
     const target = resolveSpaceTransferTarget(origin, clientX, clientY);
-    if (origin === "paper" && !target && (isOverAiColumn(clientX, clientY) || isNearTransferBoundary(clientX))) {
-      return "ai";
+    if (origin === "paper" && !target) {
+      if (isOverAiColumn(clientX, clientY) || isNearTransferBoundary(clientX)) return "ai";
+      if (isOverFunctionsColumn(clientX, clientY) || isNearLeftTransferBoundary(clientX)) {
+        return guessToolboxTarget(clientX, clientY);
+      }
     }
     if (origin === "ai" && !target && isNearAiTransferBoundary(clientX)) return "paper";
     return target;
+  }
+
+  function transferGhostWrapClass(ghost) {
+    if (!ghost) return "";
+    const px = ghost.pointerX ?? ghost.cx;
+    const py = ghost.pointerY ?? ghost.cy;
+    const { target, origin } = ghost;
+    if (target === "ai") return " over-ai";
+    if (target === "paper") return " over-paper";
+    if (target === RAIL_TRANSFORMATIONS) return " over-transformations";
+    if (target === RAIL_LENSES) return " over-lenses";
+    if (origin === "paper" && isNearLeftTransferBoundary(px)) {
+      return guessToolboxTarget(px, py) === RAIL_LENSES
+        ? " over-boundary-lenses"
+        : " over-boundary-transformations";
+    }
+    if (origin === "paper" && isNearTransferBoundary(px)) return " over-boundary";
+    if (origin === "ai" && isNearAiTransferBoundary(px)) return " over-boundary";
+    return " over-boundary";
+  }
+
+  function buildSpaceTransferGhost(origin, ids, clientX, clientY, target = null) {
+    const preview = transferPreviewText(origin, ids);
+    const anchor = transferGhostAnchor(origin, ids, clientX, clientY);
+    return {
+      cx: anchor.cx,
+      cy: anchor.cy,
+      pointerX: clientX,
+      pointerY: clientY,
+      count: ids.length,
+      target,
+      origin,
+      preview,
+      previewBox: computeTransferPreviewBox(origin, ids),
+    };
+  }
+
+  function syncPaperDragTransferUI(ids, clientX, clientY) {
+    const target = resolveTransferDropTarget("paper", clientX, clientY);
+    const overToolbox = target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES;
+    const overAi = target === "ai";
+    const nearLeft = isNearLeftTransferBoundary(clientX);
+    const nearRight = isNearTransferBoundary(clientX);
+    const inTransferZone = overAi || overToolbox || nearLeft || nearRight;
+
+    setBoundaryMagnetActive(inTransferZone);
+    setTransferDragActive(inTransferZone);
+    setRailDropOver(overToolbox);
+    if (target === RAIL_LENSES) {
+      setSymbolDropTargetId(structCardAtClient(clientX, clientY));
+    } else {
+      setSymbolDropTargetId(null);
+    }
+
+    if (!inTransferZone) {
+      setSpaceTransferGhost(null);
+      return null;
+    }
+    setSpaceTransferGhost(buildSpaceTransferGhost("paper", ids, clientX, clientY, target));
+    return target;
+  }
+
+  function launchToolboxTransfer(target) {
+    focusRailPane(target === RAIL_LENSES ? RAIL_LENSES : RAIL_TRANSFORMATIONS);
+    pulseFunctionsRail();
   }
 
   function transferGhostAnchor(origin, ids, clientX, clientY) {
@@ -2556,16 +2659,9 @@ export default function App() {
       lastCy: e.clientY,
     };
     setTransferDragActive(true);
-    const anchor = transferGhostAnchor(origin, ids, e.clientX, e.clientY);
-    setSpaceTransferGhost({
-      cx: anchor.cx,
-      cy: anchor.cy,
-      count: ids.length,
-      target: null,
-      origin,
-      preview,
-      previewBox,
-    });
+    setSpaceTransferGhost(
+      buildSpaceTransferGhost(origin, ids, e.clientX, e.clientY, null)
+    );
     try {
       (e.currentTarget || inputLayerRef.current)?.setPointerCapture?.(e.pointerId);
     } catch {
@@ -2583,16 +2679,7 @@ export default function App() {
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
     if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
-    const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
-    setSpaceTransferGhost({
-      cx: anchor.cx,
-      cy: anchor.cy,
-      count: g.ids.length,
-      target: null,
-      origin: g.origin,
-      preview: g.preview,
-      previewBox: g.previewBox,
-    });
+    setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, null));
   }
 
   function transferAiNodesToPaper(nodeIds, atWorld) {
@@ -2655,11 +2742,10 @@ export default function App() {
     });
   }
 
-  /** Zoom so borderless node text fills the view, anchored from the top. */
+  /** Zoom so the node circle is centered and text is readable in-place. */
   function aiCardCameraFor(node, el) {
-    const detail = node.expandedText || node.preview || node.label || "";
-    const layout = nodeTextLayout(node.radius || 20, detail.length);
-    return focusAiNodeRead(node, layout, el.clientWidth, el.clientHeight);
+    const scale = clampScale(AI_TEXT_ZOOM_FULL);
+    return focusAiNode(node, el.clientWidth, el.clientHeight, scale);
   }
 
   function zoomAiToNode(node, ms = 580) {
@@ -2882,16 +2968,7 @@ export default function App() {
         g.lastCx = cx;
         g.lastCy = cy;
         const target = resolveSpaceTransferTarget(g.origin, cx, cy);
-        const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
-        setSpaceTransferGhost({
-          cx: anchor.cx,
-          cy: anchor.cy,
-          count: g.ids.length,
-          target,
-          origin: g.origin,
-          preview: g.preview,
-          previewBox: g.previewBox,
-        });
+        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target));
         const dist = Math.hypot(cx - g.cx, cy - g.cy);
         if (dist > TRANSFER_DRAG_THRESHOLD) {
           activateSpaceTransfer(g, cx, cy);
@@ -2903,32 +2980,24 @@ export default function App() {
         const magnet =
           (g.origin === "paper" &&
             (isNearTransferBoundary(cx) ||
+              isNearLeftTransferBoundary(cx) ||
               target === "ai" ||
-              target === "functions" ||
-              target === "structures")) ||
+              target === RAIL_TRANSFORMATIONS ||
+              target === RAIL_LENSES)) ||
           (g.origin === "ai" &&
             (isNearAiTransferBoundary(cx) ||
               target === "paper" ||
-              target === "functions" ||
-              target === "structures"));
+              target === RAIL_TRANSFORMATIONS ||
+              target === RAIL_LENSES));
         setBoundaryMagnetActive(magnet);
-        setRailDropOver(target === "functions" || target === "structures");
-        if (target === "structures") {
+        setRailDropOver(target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES);
+        if (target === RAIL_LENSES) {
           setSymbolDropTargetId(structCardAtClient(cx, cy));
         } else {
           setSymbolDropTargetId(null);
         }
         setTransferDragActive(true);
-        const anchor = transferGhostAnchor(g.origin, g.ids, cx, cy);
-        setSpaceTransferGhost({
-          cx: anchor.cx,
-          cy: anchor.cy,
-          count: g.ids.length,
-          target,
-          origin: g.origin,
-          preview: g.preview,
-          previewBox: g.previewBox,
-        });
+        setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target));
       } else if (g.mode === "draw") {
         const w = clientToWorld(cx, cy);
         if (g.highlight) {
@@ -2981,28 +3050,27 @@ export default function App() {
       } else if (g.mode === "move") {
         g.lastCx = cx;
         g.lastCy = cy;
-        const overAi = isOverAiColumn(cx, cy);
-        setBoundaryMagnetActive(isNearTransferBoundary(cx) && !overAi);
-        setTransferDragActive(overAi);
-        setSpaceTransferGhost(null);
+        const transferTarget = syncPaperDragTransferUI(g.ids, cx, cy);
         const dx = (cx - g.cx) / camRef.current.scale;
         const dy = (cy - g.cy) / camRef.current.scale;
         g.cx = cx;
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
-        const ids = new Set(g.ids);
-        setItems((arr) =>
-          arr.map((it) => {
-            if (!ids.has(it.id)) return it;
-            if (it.type === "stroke") {
-              return clampItemToPaper(
-                { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
-                itemWorldBBox
-              );
-            }
-            return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
-          })
-        );
+        if (!transferTarget) {
+          const ids = new Set(g.ids);
+          setItems((arr) =>
+            arr.map((it) => {
+              if (!ids.has(it.id)) return it;
+              if (it.type === "stroke") {
+                return clampItemToPaper(
+                  { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
+                  itemWorldBBox
+                );
+              }
+              return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
+            })
+          );
+        }
       } else if (g.mode === "pending") {
         if (g.intent === "clone") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -3173,10 +3241,13 @@ export default function App() {
       } else if (g.mode === "move") {
         setBoundaryMagnetActive(false);
         setTransferDragActive(false);
+        setRailDropOver(false);
+        setSymbolDropTargetId(null);
         setSpaceTransferGhost(null);
         const cx = g.lastCx ?? g.cx;
         const cy = g.lastCy ?? g.cy;
-        if (isOverAiColumn(cx, cy) || isNearTransferBoundary(cx)) {
+        const target = resolveTransferDropTarget("paper", cx, cy);
+        if (target === "ai") {
           restoreMovePositions(g.startPositions);
           const world = getAiDropWorldFromClient(cx, cy);
           const sketchBundle = gatherSelectionSketchBundle(g.ids);
@@ -3190,6 +3261,13 @@ export default function App() {
               showToast("Nothing here can transfer to AI");
             }
           }
+        } else if (target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES) {
+          restoreMovePositions(g.startPositions);
+          spaceTransferCompleteRef.current(
+            { origin: "paper", ids: g.ids, activated: true, kind: null },
+            cx,
+            cy
+          );
         } else if (g.ids?.length === 1 && (g.moved || 0) > COMBINE_THRESHOLD) {
           const exclude = new Set(g.ids);
           const target = itemAtPoint(cx, cy, exclude);
@@ -3454,7 +3532,7 @@ export default function App() {
       setHighlightTouchIds([]);
     }, 920);
     recordItemEvents(ids, "highlight-transfer", {
-      targetLayer: "functions",
+      targetLayer: RAIL_TRANSFORMATIONS,
       inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
     });
     captureMaterialWithReplay(ids);
@@ -3462,15 +3540,15 @@ export default function App() {
 
   function transferHighlightSelectionToStructures(ids, structId = null) {
     if (!ids?.length) return;
-    emitTourEvent("highlight-to-structures");
+    emitTourEvent("highlight-to-lenses");
     finishHighlightTransfer(ids);
     recordItemEvents(ids, "highlight-transfer", {
-      targetLayer: "structures",
+      targetLayer: RAIL_LENSES,
       structId: structId || undefined,
       merged: !!structId,
       inputPreview: truncatePreview(transferPreviewText("paper", ids), 120),
     });
-    addMaterialToSymbol(ids, { structId });
+    addMaterialToLens(ids, { structId });
   }
 
   function accumulateHighlightSelection(newIds, addToExisting = false) {
@@ -3616,11 +3694,17 @@ export default function App() {
     if (!text?.trim() && !image) throw new Error("no readable content");
 
     const transfer = resolveTransferContext(op, opts.lens);
-    if (transfer && text?.trim() && needsCognitiveInstantiation(transfer, text)) {
-      const targetDomain = inferDomainFromMaterial(text);
+    if (transfer && text?.trim() && (needsCognitiveInstantiation(transfer, text) || opts.forceTargetDomain)) {
+      const targetDomain = opts.forceTargetDomain || inferDomainFromMaterial(text);
       const original = transfer.fidelity?.originalDomain || transfer.domainAnchor?.label;
-      const cross = !!(original && targetDomain && original !== targetDomain);
-      patchJob(jobId, { step: cross ? "adapting across domains…" : "restoring cognitive transfer…" });
+      const cross = opts.forceTargetDomain
+        ? opts.forceTargetDomain !== original
+        : !!(original && targetDomain && original !== targetDomain);
+      patchJob(jobId, {
+        step: cross
+          ? `adapting to ${targetDomain || "new domain"}…`
+          : "restoring cognitive transfer…",
+      });
       let pipelineTree;
       if (!cross) {
         pipelineTree = buildFidelityPipelineFallback(transfer);
@@ -3808,7 +3892,7 @@ export default function App() {
 
   function applyLensDrop(lensId, atClient) {
     if (!atClient) return;
-    const lens = lenses.find((l) => l.id === lensId);
+    const lens = transformationRepos.find((l) => l.id === lensId);
     if (!lens) return;
     const ids = resolveTargetIds(atClient);
     if (!ids.length) {
@@ -3837,7 +3921,7 @@ export default function App() {
     runOperator(compound, ids, { atClient, opMap: mergedMap, lens });
   }
 
-  // ---- saved idea structures ----
+  // ---- lenses (ways of seeing) ----
   async function runOnboarding(role) {
     localStorage.setItem(ONBOARDED_KEY, "1");
     setOnboard(null);
@@ -3943,9 +4027,9 @@ export default function App() {
     setItems([]);
     setCamera({ x: 0, y: 0, scale: 1 });
     setOperators(freshOperators());
-    setStructures([]);
     setLenses([]);
-    setActiveLensId(null);
+    setTransformationRepos([]);
+    setActiveTransformationId(null);
     setWalking(null);
     setLensCompare(null);
     setTool("select");
@@ -3961,7 +4045,7 @@ export default function App() {
     setHighlight(null);
     setGesturing(false);
     setImageArmed(false);
-    focusRailPane("functions");
+    focusRailPane(RAIL_TRANSFORMATIONS);
     setRailDropOver(false);
     setCaptureNameOverride(null);
     setOnboard({ step: "role" });
@@ -3973,12 +4057,12 @@ export default function App() {
     setOpEditor({ mode: "create" });
   }
 
-  function syncLensForOperator(rootId, rootOp, { isNew = false, stepNames = [], commitMessage = "", commitKind = "commit" } = {}) {
+  function syncTransformationRepoForOperator(rootId, rootOp, { isNew = false, stepNames = [], commitMessage = "", commitKind = "commit" } = {}) {
     if (!rootId || !rootOp) return;
-    const name = (rootOp.name || "").trim() || "unnamed lens";
+    const name = (rootOp.name || "").trim() || "unnamed transformation";
     const now = Date.now();
     const names = stepNames.length ? stepNames : [name];
-    setLenses((ls) => {
+    setTransformationRepos((ls) => {
       const idx = ls.findIndex((l) => l.opId === rootId || l.id === rootId);
       if (idx >= 0) {
         const prev = ls[idx];
@@ -4016,13 +4100,13 @@ export default function App() {
       );
       return [lens, ...ls];
     });
-    if (isNew) setActiveLensId(rootId);
+    if (isNew) setActiveTransformationId(rootId);
   }
 
-  function removeLensForOperator(rootId) {
+  function removeTransformationRepoForOperator(rootId) {
     if (!rootId) return;
-    setLenses((ls) => ls.filter((l) => lensRootOpId(l) !== rootId && l.id !== rootId));
-    setActiveLensId((id) => (id === rootId ? null : id));
+    setTransformationRepos((ls) => ls.filter((l) => lensRootOpId(l) !== rootId && l.id !== rootId));
+    setActiveTransformationId((id) => (id === rootId ? null : id));
   }
 
   function duplicateOperatorSubtree(rootId) {
@@ -4074,7 +4158,7 @@ export default function App() {
       const { ops, rootId } = treeToOperators(tree, { top: true });
       const newRoot = ops.find((o) => o.id === rootId);
       setOperators((prev) => [...prev, ...ops]);
-      setLenses((ls) =>
+      setTransformationRepos((ls) =>
         ls.some((l) => l.id === lens.id)
           ? ls.map((l) =>
               l.id === lens.id ? normalizeLens({ ...l, opId: rootId, moveIds: [rootId], name: lens.name }) : l
@@ -4159,7 +4243,7 @@ export default function App() {
     const draftMap = Object.fromEntries(newOps.map((o) => [o.id, o]));
     const stepNames = collectPipelineStepNames(newRootId, draftMap);
     if (root?.top) {
-      syncLensForOperator(newRootId, root, {
+      syncTransformationRepoForOperator(newRootId, root, {
         isNew: !oldRootId,
         stepNames,
         commitMessage,
@@ -4192,13 +4276,18 @@ export default function App() {
     showToast("saved");
   }
 
-  function deleteLens(rootId, opts = {}) {
+  function deleteTransformation(rootId, opts = {}) {
     const map = Object.fromEntries(operators.map((o) => [o.id, o]));
     const removeIds = collectSubtreeIds(rootId, map);
     setOperators((arr) => arr.filter((o) => !removeIds.has(o.id)));
-    if (!opts.skipLensRemove) removeLensForOperator(rootId);
+    if (!opts.skipLensRemove) removeTransformationRepoForOperator(rootId);
     setOpEditor(null);
-    showToast("lens deleted");
+    showToast("transformation deleted");
+  }
+
+  /** @deprecated alias */
+  function deleteLens(rootId, opts = {}) {
+    deleteTransformation(rootId, opts);
   }
 
   /** @deprecated alias */
@@ -4222,7 +4311,7 @@ export default function App() {
   useEffect(() => saveItemHistoryLog(itemHistoryLog), [itemHistoryLog]);
 
   function recordItemEvent(itemId, kind, meta = {}) {
-    if (!itemId) return;
+    if (!itemId || !shouldRecordHistory(kind)) return;
     const it = itemsRef.current.find((x) => x.id === itemId);
     const event = createHistoryEvent(kind, {
       itemSnapshot: meta.itemSnapshot || (it ? itemSnapshot(it) : null),
@@ -4428,6 +4517,58 @@ export default function App() {
     setWalking(null);
   }
 
+  function openItemStages(itemId) {
+    const item = itemsRef.current.find((it) => it.id === itemId);
+    if (!item || !isReplayableItem(item)) return;
+    finishEditing();
+    emitTourEvent("history-replay");
+    setTransferExploreOpId(null);
+    setStagesItemId(itemId);
+  }
+
+  function openTransferExplore(opId) {
+    const op = opMap[opId];
+    if (!op || !isPortableOperator(op)) {
+      showToast("no portable pattern on this operator yet");
+      return;
+    }
+    finishEditing();
+    setStagesItemId(null);
+    setTransferExploreOpId(opId);
+    emitTourEvent("transfer-explore");
+  }
+
+  function testTransferInDomain(opId, domain) {
+    const op = opMap[opId];
+    if (!op) return;
+    const ids = selRef.current;
+    if (!ids.length) {
+      showToast("select material on the board first");
+      return;
+    }
+    setTransferTestingDomain(domain);
+    const jobId = pushJob({
+      id: uid(),
+      label: `${op.name} → ${domain}`,
+      type: "operator",
+      status: "running",
+      step: `testing in ${domain}…`,
+      progress: 0,
+      startedAt: Date.now(),
+      estimatedMs: ETA.default,
+    });
+    executeOperatorJob(jobId, op, ids, null, { forceTargetDomain: domain })
+      .then(() => {
+        finishJob(jobId, "done", `tested in ${domain}`);
+        setTransferExploreOpId(null);
+      })
+      .catch((err) => {
+        finishJob(jobId, "error", err.message || "failed");
+        showToast(err.message || "failed");
+      })
+      .finally(() => setTransferTestingDomain(null));
+  }
+
   /**
    * Distill the full transformation thread behind a node into one reusable
    * operator: the sequence of moves that produced it becomes a pipeline that
@@ -4439,19 +4580,44 @@ export default function App() {
       showToast(info.reason || "no transformations on this thread yet — apply some operators first");
       return null;
     }
+    const item = itemsRef.current.find((it) => it.id === nodeId);
+    const materialSample = (item?.text || "").slice(0, 800);
+    const domainLabel = opts.domainLabel || inferDomainFromMaterial(materialSample) || null;
     const { vias, moveNames, moveCount, captureMeta } = info;
     const stepNodes = vias.map((via) => abstractStepFromVia(via, opMap, operators));
     const chainLabel = moveNames.join(" → ");
     const name = (opts.name || info.defaultName || `thread: ${chainLabel}`).trim().slice(0, 72);
     const tree = {
       name,
-      description: `Captured move sequence (${moveCount} steps): ${chainLabel}. Applies to any similar input.`,
+      description: `Captured move sequence (${moveCount} steps): ${chainLabel}. Portable across domains.`,
       steps: stepNodes,
     };
-    const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta });
-    setOperators((prev) => [...prev, ...ops]);
-    focusRailPane("functions");
-    showToast(`saved function · ${moveCount} move${moveCount === 1 ? "" : "s"}`);
+    const meta = {
+      ...(captureMeta || {}),
+      provenance: captureMeta?.provenance || "thread-capture",
+      stepCount: moveCount,
+    };
+    const { ops, rootId } = treeToOperators(tree, { top: true, captured: true, captureMeta: meta });
+    const rootOp = ops.find((o) => o.id === rootId);
+    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+    const cognitiveTransfer = rootOp
+      ? abstractOperatorToTransfer(rootOp, draftMap, [...operators, ...ops], {
+          captureMeta: meta,
+          domainLabel,
+          materialSample,
+          kind: "function",
+        })
+      : null;
+    const opsWithMeta = ops.map((o) =>
+      o.id === rootId && cognitiveTransfer
+        ? { ...o, captureMeta: { ...(o.captureMeta || meta), cognitiveTransfer } }
+        : o
+    );
+    setOperators((prev) => [...prev, ...opsWithMeta]);
+    if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
+    if (cognitiveTransfer) enrichOperatorTransferAsync(rootId, cognitiveTransfer, { domainLabel, materialSample });
+    focusRailPane(RAIL_TRANSFORMATIONS);
+    showToast(`saved portable operator · ${moveCount} move${moveCount === 1 ? "" : "s"}`);
     return rootId;
   }
 
@@ -4497,6 +4663,29 @@ export default function App() {
     window.setTimeout(() => setRailPulse(false), 1200);
   }
 
+  function enrichOperatorTransferAsync(rootId, structural, opts = {}) {
+    if (!rootId || !structural) return;
+    setEnrichingTransferIds((s) => new Set(s).add(rootId));
+    enrichTransferWithLLM(structural, runClaude, opts)
+      .then((enriched) => {
+        setOperators((prev) =>
+          prev.map((o) =>
+            o.id === rootId
+              ? { ...o, captureMeta: { ...(o.captureMeta || {}), cognitiveTransfer: enriched } }
+              : o
+          )
+        );
+      })
+      .catch(() => {})
+      .finally(() => {
+        setEnrichingTransferIds((s) => {
+          const next = new Set(s);
+          next.delete(rootId);
+          return next;
+        });
+      });
+  }
+
   function captureStepsAsOperator(steps, captureMeta, opts = {}) {
     if (!steps?.length) return null;
     const moveNames = steps.map((s) => s.name);
@@ -4529,8 +4718,9 @@ export default function App() {
         : o
     );
     setOperators((prev) => [...prev, ...opsWithMeta]);
-    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
-    focusRailPane("functions");
+    if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
+    if (cognitiveTransfer) enrichOperatorTransferAsync(rootId, cognitiveTransfer, opts);
+    focusRailPane(RAIL_TRANSFORMATIONS);
     pulseFunctionsRail();
     showToast(`saved lens · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
     if (opts.sourceIds?.length) {
@@ -4655,6 +4845,8 @@ export default function App() {
         return captureStepsAsOperator(perceptual.steps, perceptual.captureMeta, {
           name: opts.name || perceptual.defaultName,
           sourceIds: ids,
+          domainLabel: inferDomainFromMaterial(item?.text || "") || null,
+          materialSample: (item?.text || "").slice(0, 800),
         });
       }
     }
@@ -4810,7 +5002,7 @@ export default function App() {
   }
 
   function mergeMaterialIntoSymbol(structId, ids) {
-    const struct = structuresRef.current.find((s) => s.id === structId);
+    const struct = lensesRef.current.find((s) => s.id === structId);
     if (!struct) return saveMaterialAsSymbol(ids);
     const rawNew = relativeItemsFromIds(ids);
     if (!rawNew.length) {
@@ -4825,7 +5017,7 @@ export default function App() {
     };
     const mergedItems = relativeItemsFromIds(ids, offset);
     const nextTitle = mergeTitle(struct, mergedItems);
-    setStructures((arr) =>
+    setLenses((arr) =>
       arr.map((s) => {
         if (s.id !== structId) return s;
         return stampSymbolStruct({
@@ -4837,14 +5029,14 @@ export default function App() {
         });
       })
     );
-    focusRailPane("structures");
+    focusRailPane(RAIL_LENSES);
     emitTourEvent("save-structure");
     showToast(`added to · ${nextTitle}`);
     enrichSymbolRecord(structId, { inEditor: false });
     return struct;
   }
 
-  function addMaterialToSymbol(ids, opts = {}) {
+  function addMaterialToLens(ids, opts = {}) {
     if (opts.structId) return mergeMaterialIntoSymbol(opts.structId, ids);
     return saveMaterialAsSymbol(ids, opts);
   }
@@ -4888,7 +5080,7 @@ export default function App() {
     if (!ids?.length) return;
     const hl = highlightSelectionRef.current;
     if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
-    addMaterialToSymbol(ids, { structId });
+    addMaterialToLens(ids, { structId });
   }
 
   function finishHighlightTransfer(ids) {
@@ -4924,23 +5116,23 @@ export default function App() {
       savedAt: Date.now(),
     };
     const stamped = struct.kind === "symbol" ? normalizeSymbolRecord(struct) : struct;
-    setStructures((arr) => [stamped, ...arr]);
-    focusRailPane("structures");
+    setLenses((arr) => [stamped, ...arr]);
+    focusRailPane(RAIL_LENSES);
     emitTourEvent("save-structure");
-    if (!extra.skipToast) showToast(extra.toast || "saved structure");
+    if (!extra.skipToast) showToast(extra.toast || "saved lens");
     return stamped;
   }
 
-  function openSymbolDrawPrompt(struct) {
+  function openLensDrawPrompt(struct) {
     if (!struct?.id) return;
     setSymbolDrawPrompt({ structId: struct.id, title: struct.title || "idea" });
-    focusRailPane("structures");
+    focusRailPane(RAIL_LENSES);
     enrichSymbolRecord(struct.id, { inEditor: true });
   }
 
   function completeSymbolDraw(structId, symbolStroke) {
     if (!structId) return;
-    setStructures((arr) =>
+    setLenses((arr) =>
       arr.map((s) => {
         if (s.id !== structId) return s;
         return stampSymbolStruct({ ...s, symbolStroke: symbolStroke || null });
@@ -4953,18 +5145,18 @@ export default function App() {
   }
 
   async function enrichSymbolRecord(structId, opts = {}) {
-    const struct = structuresRef.current.find((s) => s.id === structId);
+    const struct = lensesRef.current.find((s) => s.id === structId);
     if (!struct) return;
 
     const local = stampSymbolStruct(struct);
-    setStructures((arr) => arr.map((s) => (s.id === structId ? { ...s, ...local } : s)));
+    setLenses((arr) => arr.map((s) => (s.id === structId ? { ...s, ...local } : s)));
 
     const inEditor = opts.inEditor ?? symbolDrawPromptRef.current?.structId === structId;
     if (!inEditor || !runClaude) return;
 
     setSymbolInterpretingId(structId);
     try {
-      const current = structuresRef.current.find((s) => s.id === structId) || local;
+      const current = lensesRef.current.find((s) => s.id === structId) || local;
       const { interpretation, viewLens } = await interpretSymbolWithLLM(current, runClaude);
       let cognitiveTransfer = null;
       try {
@@ -4975,7 +5167,7 @@ export default function App() {
       } catch {
         /* optional metadata */
       }
-      setStructures((arr) =>
+      setLenses((arr) =>
         arr.map((s) =>
           s.id === structId
             ? { ...s, interpretation, viewLens, cognitiveTransfer, interpretedAt: Date.now() }
@@ -4989,7 +5181,7 @@ export default function App() {
     }
   }
 
-  function openEditSymbolViewLens(struct) {
+  function openEditLensApplyPrompt(struct) {
     if (!struct) return;
     const tree = struct.viewLens || viewingLensTreeFromSymbol(struct);
     const { ops, rootId } = treeToOperators(tree, { top: true });
@@ -5014,7 +5206,7 @@ export default function App() {
     const draftMap = Object.fromEntries(newOps.map((o) => [o.id, o]));
     if (structId && root) {
       const viewLens = opToJsonTree(root, draftMap);
-      setStructures((arr) =>
+      setLenses((arr) =>
         arr.map((s) => (s.id === structId ? { ...s, viewLens, viewLensOpId: newRootId } : s))
       );
       symbolViewLensSaveRef.current = null;
@@ -5045,7 +5237,7 @@ export default function App() {
     }
     const content = texts.join("\n\n");
     if (structId) {
-      const struct = structuresRef.current.find((s) => s.id === structId);
+      const struct = lensesRef.current.find((s) => s.id === structId);
       if (!struct) return saveAiNodesAsSymbol(nodeIds);
       const item = normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 });
       const existingBb = structureItemsBBox(struct.items);
@@ -5056,7 +5248,7 @@ export default function App() {
         y: existingBb.miny || 0,
       };
       const nextTitle = mergeTitle(struct, [placed]);
-      setStructures((arr) =>
+      setLenses((arr) =>
         arr.map((s) => {
           if (s.id !== structId) return s;
           return stampSymbolStruct({
@@ -5068,7 +5260,7 @@ export default function App() {
           });
         })
       );
-      focusRailPane("structures");
+      focusRailPane(RAIL_LENSES);
       showToast(`added to · ${nextTitle}`);
       enrichSymbolRecord(structId, { inEditor: false });
       return struct;
@@ -5081,7 +5273,7 @@ export default function App() {
       symbolStroke: null,
       savedAt: Date.now(),
     });
-    setStructures((arr) => [struct, ...arr]);
+    setLenses((arr) => [struct, ...arr]);
     showToast(`saved · ${struct.title}`);
     emitTourEvent("save-symbol");
     enrichSymbolRecord(struct.id, { inEditor: false });
@@ -5091,11 +5283,12 @@ export default function App() {
   function applyLeftColumnMaterialDrop(ids, clientX, clientY) {
     if (!ids?.length) return;
     const dropTarget = resolveLeftColumnDropTarget(clientX, clientY);
-    const structId = dropTarget === "structures" ? structCardAtClient(clientX, clientY) : null;
+    const structId = dropTarget === RAIL_LENSES ? structCardAtClient(clientX, clientY) : null;
     const hl = highlightSelectionRef.current;
     if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
-    if (dropTarget === "structures") addMaterialToSymbol(ids, { structId });
+    if (dropTarget === RAIL_LENSES) addMaterialToLens(ids, { structId });
     else captureMaterialWithReplay(ids);
+    launchToolboxTransfer(dropTarget);
   }
 
   function captureSelectionAsStructure(extra = {}) {
@@ -5125,8 +5318,8 @@ export default function App() {
       savedAt: Date.now(),
       items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: item.w || 320 })],
     };
-    setStructures((arr) => [struct, ...arr]);
-    focusRailPane("structures");
+    setLenses((arr) => [struct, ...arr]);
+    focusRailPane(RAIL_LENSES);
     showToast("Saved as document");
     return struct;
   }
@@ -5143,8 +5336,8 @@ export default function App() {
     const { ops, rootId } = treeToOperators(tree, { role: op.role || null, top: true });
     const rootOp = ops.find((o) => o.id === rootId);
     setOperators((prev) => [...prev, ...ops]);
-    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
-    focusRailPane("functions");
+    if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
+    focusRailPane(RAIL_TRANSFORMATIONS);
     showToast(`saved lens · ${op.name}`);
   }
 
@@ -5165,16 +5358,16 @@ export default function App() {
       ...prev,
       ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
     ]);
-    if (rootOp) syncLensForOperator(rootId, rootOp, { isNew: true });
-    focusRailPane("functions");
+    if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
+    focusRailPane(RAIL_TRANSFORMATIONS);
     showToast(`compound lens · ${a.name} → ${b.name}`);
   }
 
-  function deleteStructure(id) {
-    setStructures((arr) => arr.filter((s) => s.id !== id));
+  function deletePatternLens(id) {
+    setLenses((arr) => arr.filter((s) => s.id !== id));
   }
 
-  function plantStructure(struct, atWorld, { applyViewLens = true } = {}) {
+  function plantLens(struct, atWorld, { applyViewLens = true } = {}) {
     if (!struct?.items?.length) return;
     const center = atWorld || paperViewportCenterWorld();
     const newIds = [];
@@ -5207,11 +5400,11 @@ export default function App() {
     }
   }
 
-  function applyStructureDrop(structId, atClient) {
-    const struct = structures.find((s) => s.id === structId);
+  function applyLensDrop(structId, atClient) {
+    const struct = lenses.find((s) => s.id === structId);
     if (!struct) return;
     const at = atClient ? clientToWorld(atClient.x, atClient.y) : paperViewportCenterWorld();
-    plantStructure(struct, at);
+    plantLens(struct, at);
   }
 
   async function runSamenessDiscovery() {
@@ -5243,8 +5436,8 @@ export default function App() {
         items: [normalizeItem({ type: "text", x: 0, y: 0, text: body, w: 420 })],
         savedAt: Date.now(),
       };
-      setStructures((arr) => [struct, ...arr]);
-      focusRailPane("structures");
+      setLenses((arr) => [struct, ...arr]);
+      focusRailPane(RAIL_LENSES);
       finishJob(jobId, "done");
       showToast(`discovered · ${title}`);
     } catch (err) {
@@ -5254,10 +5447,10 @@ export default function App() {
   }
 
   const topFunctions = operators.filter((o) => o.top && !o.move);
-  const displayLenses = useMemo(() => {
+  const displayTransformations = useMemo(() => {
     const seen = new Set();
     const out = [];
-    for (const lens of lenses) {
+    for (const lens of transformationRepos) {
       const key = lensRootOpId(lens) || lens.id;
       if (key) seen.add(key);
       out.push(lens);
@@ -5275,7 +5468,7 @@ export default function App() {
       }
     }
     return out;
-  }, [lenses, topFunctions]);
+  }, [transformationRepos, topFunctions]);
   const canonicalPrimitives = useMemo(() => {
     const byName = Object.fromEntries(
       operators.filter((o) => o.primitive && !o.role && !o.top).map((o) => [o.name, o])
@@ -5285,9 +5478,9 @@ export default function App() {
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
-  const activeLens =
-    displayLenses.find((l) => l.id === activeLensId || lensRootOpId(l) === activeLensId) || null;
-  const lensRepos = useMemo(() => groupLensesByRepo(displayLenses), [displayLenses]);
+  const activeTransformation =
+    displayTransformations.find((l) => l.id === activeTransformationId || lensRootOpId(l) === activeTransformationId) || null;
+  const transformationRepoGroups = useMemo(() => groupLensesByRepo(displayTransformations), [displayTransformations]);
 
   function renderLensCard(lens, { depth = 0 } = {}) {
     return (
@@ -5295,14 +5488,14 @@ export default function App() {
         key={lens.id}
         lens={lens}
         depth={depth}
-        active={lens.id === activeLensId || lensRootOpId(lens) === activeLensId}
+        active={lens.id === activeTransformationId || lensRootOpId(lens) === activeTransformationId}
         opMap={opMap}
-        lenses={displayLenses}
+        lenses={displayTransformations}
         comparing={lensCompare?.aId === lens.id || (lensCompare?.bId === lens.id && !!lensCompare?.bId)}
         comparePick={lensCompare?.aId === lens.id && !lensCompare?.bId}
         onUse={() => {
           const id = lens.id;
-          setActiveLensId(id === activeLensId ? null : id);
+          setActiveTransformationId(id === activeTransformationId ? null : id);
           emitTourEvent("lens-use");
         }}
         onEvolve={() => openEditLensFromLens(lens)}
@@ -5318,7 +5511,7 @@ export default function App() {
           }
         }}
         onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
-        onDelete={() => deleteLensRecord(lens.id)}
+        onDelete={() => deleteTransformationRecord(lens.id)}
       />
     );
   }
@@ -5394,7 +5587,7 @@ export default function App() {
 
   // ---- lenses: branch, fork, merge, compare, upload — git for perception ----
   function branchLens(parentId, commitMessage = "") {
-    const parent = displayLenses.find((l) => l.id === parentId) || lenses.find((l) => l.id === parentId);
+    const parent = displayTransformations.find((l) => l.id === parentId) || transformationRepos.find((l) => l.id === parentId);
     if (!parent) return;
     const now = Date.now();
     const parentOpId = lensRootOpId(parent);
@@ -5418,13 +5611,13 @@ export default function App() {
       }),
       commit
     );
-    setLenses((ls) => [lens, ...ls]);
-    setActiveLensId(lens.id);
+    setTransformationRepos((ls) => [lens, ...ls]);
+    setActiveTransformationId(lens.id);
     showToast(`Branched · ${lens.name}`);
   }
 
   function forkLens(sourceId, commitMessage = "") {
-    const source = displayLenses.find((l) => l.id === sourceId) || lenses.find((l) => l.id === sourceId);
+    const source = displayTransformations.find((l) => l.id === sourceId) || transformationRepos.find((l) => l.id === sourceId);
     if (!source) return;
     const now = Date.now();
     const sourceOpId = lensRootOpId(source);
@@ -5447,15 +5640,15 @@ export default function App() {
       }),
       commit
     );
-    setLenses((ls) => [lens, ...ls]);
-    setActiveLensId(lens.id);
+    setTransformationRepos((ls) => [lens, ...ls]);
+    setActiveTransformationId(lens.id);
     showToast(`Forked · ${lens.name}`);
   }
 
   function mergeLenses(aId, bId) {
     if (!aId || aId === bId) return;
-    const a = lenses.find((x) => x.id === aId) || displayLenses.find((x) => x.id === aId);
-    const b = lenses.find((x) => x.id === bId) || displayLenses.find((x) => x.id === bId);
+    const a = transformationRepos.find((x) => x.id === aId) || displayTransformations.find((x) => x.id === aId);
+    const b = transformationRepos.find((x) => x.id === bId) || displayTransformations.find((x) => x.id === bId);
     if (!a || !b) return;
     const now = Date.now();
     const aOpId = lensRootOpId(a);
@@ -5499,19 +5692,19 @@ export default function App() {
       }),
       commit
     );
-    setLenses((ls) => [lens, ...ls]);
-    setActiveLensId(lens.id);
+    setTransformationRepos((ls) => [lens, ...ls]);
+    setActiveTransformationId(lens.id);
     showToast(`Merged · ${lens.name}`);
   }
 
-  function deleteLensRecord(id) {
-    const lens = lenses.find((l) => l.id === id) || displayLenses.find((l) => l.id === id);
+  function deleteTransformationRecord(id) {
+    const lens = transformationRepos.find((l) => l.id === id) || displayTransformations.find((l) => l.id === id);
     const opId = lensRootOpId(lens);
     if (opId) {
       deleteLens(opId, { skipLensRemove: true });
     }
-    setLenses((ls) => ls.filter((l) => l.id !== id));
-    if (activeLensId === id || activeLensId === opId) setActiveLensId(null);
+    setTransformationRepos((ls) => ls.filter((l) => l.id !== id));
+    if (activeTransformationId === id || activeTransformationId === opId) setActiveTransformationId(null);
     setLensCompare(null);
   }
 
@@ -5552,9 +5745,9 @@ export default function App() {
       createdAt: now,
       updatedAt: now,
     });
-    setLenses((ls) => [lens, ...ls]);
-    setActiveLensId(lens.id);
-    focusRailPane("functions");
+    setTransformationRepos((ls) => [lens, ...ls]);
+    setActiveTransformationId(lens.id);
+    focusRailPane(RAIL_TRANSFORMATIONS);
     if (!opts.silent) showToast(`Uploaded · ${lens.name} — now looking through it`);
   }
 
@@ -5576,13 +5769,21 @@ export default function App() {
     if (!tree) throw new Error("missing operator");
     const existing = operators.find((o) => o.name === tree.name && !o.top && !tree.steps);
     if (existing && !opts.forceNew) {
-      focusRailPane("functions");
+      focusRailPane(RAIL_TRANSFORMATIONS);
       showToast(`already have · ${existing.name}`);
       return existing.id;
     }
     const { ops, rootId } = treeToOperators(tree, { top: true, ...opts });
-    setOperators((prev) => [...prev, ...ops]);
-    focusRailPane("functions");
+    const cognitiveTransfer = opts.cognitiveTransfer || null;
+    const opsWithMeta = cognitiveTransfer
+      ? ops.map((o) =>
+          o.id === rootId
+            ? { ...o, captureMeta: { ...(o.captureMeta || {}), cognitiveTransfer } }
+            : o
+        )
+      : ops;
+    setOperators((prev) => [...prev, ...opsWithMeta]);
+    focusRailPane(RAIL_TRANSFORMATIONS);
     showToast(opts.toast || `added · ${tree.name}`);
     return rootId;
   }
@@ -5640,7 +5841,7 @@ export default function App() {
     finishEditing();
     setSelection([]);
     setWalking({ nodeId: null, title: journey.title || "shared journey", steps, stepIndex: 0, imported: true });
-    focusRailPane("functions");
+    focusRailPane(RAIL_TRANSFORMATIONS);
     if (!opts.silent) showToast("journey imported — walking it");
   }
 
@@ -5650,15 +5851,17 @@ export default function App() {
       switch (bundle.kind) {
         case "operator":
           importOperatorTree(bundle.operators[0], {
-            toast: fromWelcome ? "Added to laboratory" : undefined,
+            toast: fromWelcome ? "Added to transformations" : undefined,
+            cognitiveTransfer: extractCognitiveMeta(bundle),
           });
           break;
         case "lens":
           importLensData(bundle.lens, { silent: fromWelcome });
-          if (fromWelcome) showToast("Added to laboratory");
+          if (fromWelcome) showToast("Added to transformations");
           break;
         case "symbol": {
           const raw = bundle.symbols[0];
+          const cognitiveTransfer = raw.cognitiveTransfer || extractCognitiveMeta(bundle) || null;
           const struct = {
             id: uid(),
             title: raw.title || bundle.meta?.name || "shared structure",
@@ -5667,15 +5870,16 @@ export default function App() {
             items: raw.items,
             savedAt: Date.now(),
             shared: true,
+            cognitiveTransfer,
           };
-          setStructures((arr) => [struct, ...arr]);
-          focusRailPane("structures");
-          showToast(fromWelcome ? "Added to structures" : `structure received · ${struct.title}`);
+          setLenses((arr) => [struct, ...arr]);
+          focusRailPane(RAIL_LENSES);
+          showToast(fromWelcome ? "Added to lenses" : `lens received · ${struct.title}`);
           break;
         }
         case "journey":
           importJourneyBundle(bundle.journey, { silent: fromWelcome });
-          if (fromWelcome) showToast("Added to laboratory");
+          if (fromWelcome) showToast("Added to transformations");
           break;
         case "path":
           importPathItems(bundle.path, { silent: fromWelcome });
@@ -5748,7 +5952,7 @@ export default function App() {
   }
 
   function shareLensLink(id) {
-    const l = lenses.find((x) => x.id === id);
+    const l = transformationRepos.find((x) => x.id === id);
     if (!l) return;
     const opTrees = [];
     let cognitiveTransfer = null;
@@ -5764,11 +5968,11 @@ export default function App() {
       opTrees.push(exported.opTree);
       cognitiveTransfer = exported.cognitiveTransfer;
     }
-    const parent = l.parentId ? lenses.find((x) => x.id === l.parentId) : null;
-    const forked = l.forkedFrom ? lenses.find((x) => x.id === l.forkedFrom) : null;
+    const parent = l.parentId ? transformationRepos.find((x) => x.id === l.parentId) : null;
+    const forked = l.forkedFrom ? transformationRepos.find((x) => x.id === l.forkedFrom) : null;
     const mergedFromNames =
       l.mergedFrom?.length === 2
-        ? l.mergedFrom.map((mid) => lenses.find((x) => x.id === mid)?.name).filter(Boolean)
+        ? l.mergedFrom.map((mid) => transformationRepos.find((x) => x.id === mid)?.name).filter(Boolean)
         : l.mergedFromNames || null;
     copyShareLink(
       createLensShareBundle(l.name, opTrees, {
@@ -5782,7 +5986,7 @@ export default function App() {
     );
   }
 
-  function shareSymbolStruct(struct) {
+  function sharePatternLens(struct) {
     if (!struct) return;
     const cognitiveTransfer = abstractSymbolToTransfer(struct, { domainLabel: struct.title });
     copyShareLink(createSymbolBundle(struct, { name: struct.title, cognitiveTransfer }));
@@ -6697,7 +6901,7 @@ export default function App() {
     setTool("select");
   }
 
-  // double-click object: edit text · blank paper: new text box · ◷ for history replay
+  // double-click object: edit text · blank paper: new text box · ◷ for operator stages
   function onDoubleClick(e) {
     if (!["select", "highlight"].includes(toolRef.current)) return;
     const hit = itemAtPoint(e.clientX, e.clientY);
@@ -7348,26 +7552,30 @@ export default function App() {
       }
     } else if (g.origin === "paper" && target === "paper" && g.kind === "highlight") {
       transferHighlightSelectionToPaper(g.ids, clientToWorld(cx, cy));
-    } else if (g.origin === "paper" && target === "functions") {
+    } else if (g.origin === "paper" && target === RAIL_TRANSFORMATIONS) {
       if (g.kind === "highlight") {
         transferHighlightSelectionToFunctions(g.ids);
       } else {
         captureMaterialWithReplay(g.ids);
       }
-    } else if (g.origin === "paper" && target === "structures") {
+      launchToolboxTransfer(RAIL_TRANSFORMATIONS);
+    } else if (g.origin === "paper" && target === RAIL_LENSES) {
       const structId = structCardAtClient(cx, cy);
       if (g.kind === "highlight") {
         transferHighlightSelectionToStructures(g.ids, structId);
       } else {
-        addMaterialToSymbol(g.ids, { structId });
+        addMaterialToLens(g.ids, { structId });
       }
+      launchToolboxTransfer(RAIL_LENSES);
     } else if (g.origin === "ai" && target === "paper") {
       emitTourEvent("transfer-to-paper");
       transferAiNodesToPaper(g.ids, clientToWorld(cx, cy), { fromClient });
-    } else if (g.origin === "ai" && target === "functions") {
+    } else if (g.origin === "ai" && target === RAIL_TRANSFORMATIONS) {
       captureAiNodesAsFunction(g.ids);
-    } else if (g.origin === "ai" && target === "structures") {
+      launchToolboxTransfer(RAIL_TRANSFORMATIONS);
+    } else if (g.origin === "ai" && target === RAIL_LENSES) {
       saveAiNodesAsSymbol(g.ids, structCardAtClient(cx, cy));
+      launchToolboxTransfer(RAIL_LENSES);
     } else if (g.origin === "ai" && target === "ai") {
       const world = getAiDropWorldFromClient(cx, cy);
       for (const nodeId of g.ids) {
@@ -7627,8 +7835,8 @@ export default function App() {
     else if (action === "insert-callout-obs") insertBlock("callout", { variant: "observation", text: "Your observation…" });
     else if (action === "insert-callout-q") insertBlock("callout", { variant: "question", text: "Your question?" });
     else if (action === "insert-diagram") insertBlock("diagram");
-    else if (action === "open-functions") focusRailPane("functions");
-    else if (action === "open-structures") focusRailPane("structures");
+    else if (action === "open-transformations") focusRailPane(RAIL_TRANSFORMATIONS);
+    else if (action === "open-lenses") focusRailPane(RAIL_LENSES);
     else if (action === "feature-tour") startFeatureTour();
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateLens();
@@ -7664,6 +7872,29 @@ export default function App() {
         .filter(Boolean)
         .map((it) => itemScreenBBox(it))
     : [];
+  const itemStages = stagesItemId
+    ? buildOperatorStages(stagesItemId, {
+        item: items.find((it) => it.id === stagesItemId),
+        historyLog: itemHistoryLog,
+      })
+    : null;
+  const transferExploreOp = transferExploreOpId ? opMap[transferExploreOpId] : null;
+  const transferExploreRecord = transferExploreOp ? resolveTransferContext(transferExploreOp) : null;
+  const selectedMaterialText =
+    selItem?.text?.trim() ||
+    (selItem?.type === "sticky" || selItem?.type === "callout" ? selItem?.text : "") ||
+    "";
+  const selectedMaterialDomain = selectedMaterialText
+    ? inferDomainFromMaterial(selectedMaterialText)
+    : null;
+  const transferRecognition = useMemo(() => {
+    if (!selectedMaterialText || transferExploreOpId) return null;
+    const matches = matchingOperatorsForMaterial(operators, selectedMaterialText, opMap);
+    if (!matches.length) return null;
+    const top = matches[0];
+    const hint = recognitionHint(top.transfer, selectedMaterialText);
+    return hint ? { matches, hint } : null;
+  }, [selectedMaterialText, operators, opMap, transferExploreOpId]);
   const cursorClass =
     panning
       ? "cur-grabbing"
@@ -7692,7 +7923,7 @@ export default function App() {
       aiCamera,
       aiNodes,
       operators,
-      structures,
+      lenses,
       highlightSelection: highlightSelectionIds,
       expandCanvasTools: () => setExpandToolsSignal((n) => n + 1),
       setTool,
@@ -7704,7 +7935,7 @@ export default function App() {
         focusRailPane(tab);
       },
     }),
-    [items, camera, aiCamera, aiNodes, operators, structures, highlightSelectionIds]
+    [items, camera, aiCamera, aiNodes, operators, lenses, highlightSelectionIds]
   );
 
   const paperColWidth = Math.max(0, colGridWidth - columnLayout.left - columnLayout.right - 24);
@@ -7763,7 +7994,7 @@ export default function App() {
               setRailDropOver(true);
               e.dataTransfer.dropEffect = "copy";
               const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
-              if (dropTarget === "structures") {
+              if (dropTarget === RAIL_LENSES) {
                 setSymbolDropTargetId(structCardAtClient(e.clientX, e.clientY));
               } else {
                 setSymbolDropTargetId(null);
@@ -7792,7 +8023,7 @@ export default function App() {
             }
             const structId = e.dataTransfer.getData(STRUCT_MIME);
             if (structId) {
-              focusRailPane("structures");
+              focusRailPane(RAIL_LENSES);
               showToast("already saved");
             }
           }}
@@ -7804,35 +8035,35 @@ export default function App() {
           >
             <section ref={functionsSectionRef} className="rail-pane rail-functions-pane cognition-git-pane" data-tour="functions-section">
               <CognitionGitHeader
-                activeLens={activeLens}
-                lensCount={displayLenses.length}
-                onNewLens={openCreateLens}
+                activeTransformation={activeTransformation}
+                transformationCount={displayTransformations.length}
+                onNewTransformation={openCreateLens}
               />
               <div className="move-quick-add">
                 <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
               <div className="rail-scroll">
-                {lensRepos.length > 0 &&
-                  lensRepos.map((repo) => (
+                {transformationRepoGroups.length > 0 &&
+                  transformationRepoGroups.map((repo) => (
                     <div key={repo.root.id} className="git-repo-group">
                       {renderLensCard(repo.root, { depth: 0 })}
                       {repo.branches.map((lens) => renderLensCard(lens, { depth: 1 }))}
                       {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
                     </div>
                   ))}
-                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
               </div>
             </section>
-            <section ref={symbolsSectionRef} className="rail-pane rail-symbols-pane" data-tour="structures-tab">
+            <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab">
               <h3 className="rail-pane-heading">
-                symbols {structures.length ? `(${structures.length})` : ""}
+                lenses {lenses.length ? `(${lenses.length})` : ""}
               </h3>
               <div className="rail-scroll">
-                {structures.filter((s) => s?.id).map((struct) => (
-                  <StructureCard
+                {lenses.filter((s) => s?.id).map((struct) => (
+                  <PatternLensCard
                     key={struct.id}
                     struct={struct}
                     dropTarget={symbolDropTargetId === struct.id}
@@ -7841,10 +8072,10 @@ export default function App() {
                       setSymbolDropTargetId((prev) => (prev === struct.id ? null : prev))
                     }
                     onMaterialDrop={handleStructCardMaterialDrop}
-                    onDelete={() => deleteStructure(struct.id)}
-                    onShare={() => shareSymbolStruct(struct)}
-                    onEditSymbol={() => openSymbolDrawPrompt(struct)}
-                    onEditViewLens={() => openEditSymbolViewLens(struct)}
+                    onDelete={() => deletePatternLens(struct.id)}
+                    onShare={() => sharePatternLens(struct)}
+                    onEditSymbol={() => openLensDrawPrompt(struct)}
+                    onEditViewLens={() => openEditLensApplyPrompt(struct)}
                   />
                 ))}
               </div>
@@ -8274,7 +8505,7 @@ export default function App() {
           }
           const structId = e.dataTransfer.getData(STRUCT_MIME);
           if (structId) {
-            applyStructureDrop(structId, { x: e.clientX, y: e.clientY });
+            applyLensDrop(structId, { x: e.clientX, y: e.clientY });
             return;
           }
           if (e.dataTransfer.files?.length) {
@@ -8288,7 +8519,7 @@ export default function App() {
         <SymbolDrawOverlay
           title={symbolDrawPrompt.title}
           meaning={
-            structures.find((s) => s.id === symbolDrawPrompt.structId)?.interpretation?.meaning
+            lenses.find((s) => s.id === symbolDrawPrompt.structId)?.interpretation?.meaning
           }
           interpreting={symbolInterpretingId === symbolDrawPrompt.structId}
           onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
@@ -8382,6 +8613,62 @@ export default function App() {
           onDrop={handleAiDrop}
         />
       </div>
+
+      {selItem && isReplayableItem(selItem) && !walking && !stagesItemId && (
+        <button
+          type="button"
+          className="item-stages-trigger"
+          style={{
+            left: itemScreenBBox(selItem).right - 6,
+            top: itemScreenBBox(selItem).top - 6,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            openItemStages(selItem.id);
+          }}
+          title="Operator stages"
+        >
+          ◷
+        </button>
+      )}
+
+      {itemStages && (
+        <ItemStagesPanel
+          title={itemStages.title}
+          stages={itemStages.stages}
+          onClose={() => setStagesItemId(null)}
+        />
+      )}
+
+      {transferExploreRecord && (
+        <TransferExplorePanel
+          op={transferExploreOp}
+          transfer={transferExploreRecord}
+          currentMaterial={selectedMaterialText}
+          currentDomain={selectedMaterialDomain}
+          testingDomain={transferTestingDomain}
+          enriching={transferExploreOpId && enrichingTransferIds.has(transferExploreOpId)}
+          onClose={() => setTransferExploreOpId(null)}
+          onTestDomain={(domain) => testTransferInDomain(transferExploreOpId, domain)}
+          onShare={() => shareOperator(transferExploreOpId)}
+          onEdit={() => {
+            setTransferExploreOpId(null);
+            openEditLens(transferExploreOp);
+          }}
+        />
+      )}
+
+      {transferRecognition && !walking && !stagesItemId && (
+        <div className="transfer-recognition-bar">
+          <span>{transferRecognition.hint}</span>
+          <button
+            type="button"
+            onClick={() => openTransferExplore(transferRecognition.matches[0].op.id)}
+          >
+            explore
+          </button>
+        </div>
+      )}
 
       {walking && walkStep && (
         <WalkOverlay
@@ -8495,8 +8782,8 @@ export default function App() {
 
       {lensCompare?.aId && lensCompare?.bId && (
         <LensComparePanel
-          a={lenses.find((l) => l.id === lensCompare.aId) || displayLenses.find((l) => l.id === lensCompare.aId)}
-          b={lenses.find((l) => l.id === lensCompare.bId) || displayLenses.find((l) => l.id === lensCompare.bId)}
+          a={transformationRepos.find((l) => l.id === lensCompare.aId) || displayTransformations.find((l) => l.id === lensCompare.aId)}
+          b={transformationRepos.find((l) => l.id === lensCompare.bId) || displayTransformations.find((l) => l.id === lensCompare.bId)}
           opMap={opMap}
           onClose={() => setLensCompare(null)}
           onMerge={(aId, bId) => {
@@ -8508,11 +8795,11 @@ export default function App() {
 
       {lensHistoryId && (
         <LensHistoryPanel
-          lens={displayLenses.find((l) => l.id === lensHistoryId) || lenses.find((l) => l.id === lensHistoryId)}
-          lenses={displayLenses}
+          lens={displayTransformations.find((l) => l.id === lensHistoryId) || transformationRepos.find((l) => l.id === lensHistoryId)}
+          lenses={displayTransformations}
           onClose={() => setLensHistoryId(null)}
           onCheckout={(id) => {
-            setActiveLensId(id);
+            setActiveTransformationId(id);
             setLensHistoryId(null);
           }}
         />
@@ -8534,6 +8821,39 @@ export default function App() {
           }}
           onCancel={() => setPendingBranch(null)}
         />
+      )}
+
+      {spaceTransferGhost && (
+        <div
+          className={"space-transfer-ghost-wrap" + transferGhostWrapClass(spaceTransferGhost)}
+          style={{ left: spaceTransferGhost.cx, top: spaceTransferGhost.cy }}
+        >
+          <div className="transfer-morph">
+            <div className="transfer-morph-card">
+              {spaceTransferGhost.preview}
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
+            <div className="transfer-morph-orb">
+              <span className="transfer-morph-orb-glow" />
+              <span className="transfer-morph-orb-core" />
+              {spaceTransferGhost.count > 1 && (
+                <span className="transfer-morph-orb-count">{spaceTransferGhost.count}</span>
+              )}
+            </div>
+            <div className="transfer-morph-function" aria-hidden="true">
+              <span className="transfer-morph-function-badge">ƒ</span>
+              <span className="transfer-morph-function-name">
+                {spaceTransferGhost.preview?.slice(0, 64) || "function"}
+              </span>
+            </div>
+            <div className="transfer-morph-symbol" aria-hidden="true">
+              <span className="transfer-morph-symbol-ring" />
+              <span className="transfer-morph-symbol-glyph">◇</span>
+            </div>
+          </div>
+        </div>
       )}
 
       {cloneGhost && (
@@ -8904,7 +9224,7 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onRun, flat, starlike }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, starlike }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -8972,6 +9292,18 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
           >
             Edit
           </button>
+          {onExplore && isPortableOperator(op) && (
+            <button
+              className="op-card-portable"
+              onClick={(e) => {
+                e.stopPropagation();
+                onExplore(op);
+              }}
+              title="Where else does this apply?"
+            >
+              ◎
+            </button>
+          )}
           {onShare && (
             <button
               className="op-card-share"
@@ -9280,7 +9612,7 @@ function LensComparePanel({ a, b, opMap, onClose, onMerge }) {
   );
 }
 
-function StructureCard({
+function PatternLensCard({
   struct,
   dropTarget,
   onMaterialDragOver,
@@ -9291,7 +9623,7 @@ function StructureCard({
   onEditSymbol,
   onEditViewLens,
 }) {
-  const preview = structurePreview(struct);
+  const preview = lensPreview(struct);
   const meaning = struct.interpretation?.meaning || preview;
   const acceptsMaterial = (e) =>
     e.dataTransfer.types.includes(THOUGHT_MIME) ||
@@ -9337,13 +9669,13 @@ function StructureCard({
           {onEditViewLens && (
             <button
               type="button"
-              className="struct-card-view-lens"
+              className="lens-card-apply"
               onClick={(e) => {
                 e.stopPropagation();
                 onEditViewLens(struct);
               }}
             >
-              View lens
+              Apply
             </button>
           )}
           {onEditSymbol && (

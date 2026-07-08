@@ -1,5 +1,8 @@
 /** Versioned share bundles — operators, symbols, journeys, paths. */
 
+import { extractCognitiveMeta } from "./cognitive-transfer.js";
+import { sourceDomainOf, transferUseCaseBullets } from "./cognitive-recognition.js";
+
 export const SHARE_BUNDLE_VERSION = 1;
 export const SHARE_QUERY_LIMIT = 1800;
 
@@ -208,6 +211,14 @@ export function getBundleDisplayName(bundle) {
 /** One-line tagline for the reveal step. */
 export function shareTagline(bundle) {
   const name = getBundleDisplayName(bundle);
+  const transfer = extractCognitiveMeta(bundle);
+  const source = sourceDomainOf(transfer);
+  if (transfer?.invariant?.phaseGrammar?.length) {
+    const portable = source
+      ? `Portable operator from ${source} — ${name}`
+      : `Portable cognitive operator — ${name}`;
+    return portable;
+  }
   switch (bundle.kind) {
     case "operator":
       return `A reusable move — ${name}`;
@@ -260,6 +271,10 @@ const KEYWORD_USE_CASES = [
 /** 2–3 auto-generated use-case bullets (no LLM). */
 export function shareUseCases(bundle) {
   const name = getBundleDisplayName(bundle);
+  const transfer = extractCognitiveMeta(bundle);
+  const fromTransfer = transferUseCaseBullets(transfer, name);
+  if (fromTransfer) return fromTransfer;
+
   const lower = name.toLowerCase();
 
   for (const kw of KEYWORD_USE_CASES) {
@@ -347,23 +362,23 @@ export function sharePreviewItems(bundle) {
 export function shareDestinationKind(bundle) {
   switch (bundle?.kind) {
     case "symbol":
-      return "structures";
+      return "lenses";
     case "path":
       return "canvas";
     default:
-      return "functions";
+      return "transformations";
   }
 }
 
 /** Human label for the destination (laboratory, etc.). */
 export function shareDestinationLabel(bundle) {
   switch (shareDestinationKind(bundle)) {
-    case "structures":
-      return "structures";
+    case "lenses":
+      return "lenses";
     case "canvas":
       return "canvas";
     default:
-      return "laboratory";
+      return "transformations";
   }
 }
 
@@ -371,13 +386,13 @@ export function shareDestinationLabel(bundle) {
 export function shareKindLabel(bundle) {
   switch (bundle?.kind) {
     case "operator":
-      return "function";
+      return "transformation";
     case "lens":
-      return "lens";
+      return "transformation";
     case "journey":
       return "journey";
     case "symbol":
-      return "structure";
+      return "lens";
     case "path":
       return "path";
     default:

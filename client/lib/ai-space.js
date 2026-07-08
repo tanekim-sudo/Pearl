@@ -25,22 +25,25 @@ export function viewportCenterWorld(camera, vpWidth, vpHeight) {
 /** Default zoom for constellation view — tiny planet nodes, long strands. */
 export const DEFAULT_CONSTELLATION_SCALE = 0.25;
 /** Double-click / deep explore — readable text inside the node. */
-export const EXPLORE_ZOOM_SCALE = 1.9;
-/** Below this scale, nodes are pure brain-cell circles. */
-export const AI_CELL_ZOOM_MAX = 0.72;
+export const EXPLORE_ZOOM_SCALE = 1.25;
+/** Below this scale, nodes are pure circles. */
+export const AI_CELL_ZOOM_MAX = 0.85;
 /** Crossfade from circle → text begins here (wider band = longer morph). */
-export const AI_BLEND_ZOOM_START = 0.52;
+export const AI_BLEND_ZOOM_START = 0.35;
 /** Text fully readable above this scale. */
-export const AI_TEXT_ZOOM_FULL = 1.88;
+export const AI_TEXT_ZOOM_FULL = 1.25;
 /** Click-to-read zoom — card fills viewport with ~15px screen font. */
 export const AI_READING_ZOOM = 2.35;
 export const CONSTELLATION_ZOOM_THRESHOLD = AI_BLEND_ZOOM_START;
 /** Drag-out strand gestures only when zoomed out (brain-cell / constellation view). */
 export const AI_STRAND_DRAG_MAX_SCALE = AI_CELL_ZOOM_MAX;
-/** Below this scale, nodes render as dots/planets with no label text. */
-export const AI_DOT_ONLY_THRESHOLD = 0.55;
+/** Below this scale, nodes are pure circles (no readable text). */
+export const AI_DOT_ONLY_THRESHOLD = 0.35;
 
-/** Smooth 0→1 blend for circle-to-text transition (smoothstep). */
+/** Below this scale, in-circle text is hidden (hover preview only). */
+export const AI_TEXT_VISIBLE_MIN_BLEND = 0.22;
+
+/** Smooth 0→1 blend tied continuously to zoom (no mode switches). */
 export function zoomContentBlend(scale) {
   if (scale <= AI_BLEND_ZOOM_START) return 0;
   if (scale >= AI_TEXT_ZOOM_FULL) return 1;
@@ -139,17 +142,35 @@ export function focusAiNode(node, vpWidth, vpHeight, targetScale = EXPLORE_ZOOM_
 }
 
 /**
- * Borderless text block for a node — world units, top-anchored at the cell rim.
- * The full response is laid out (no clipping); the camera scales to fit on click.
+ * Text laid out to fit inside the node circle — scales font down for long responses.
  */
 export function nodeTextLayout(radius = 20, textLen = 0) {
-  const w = Math.max(radius * 4.4, 148);
-  const lineHeight = 1.48;
-  const fontSize = fitTextFontSize(w, textLen, radius);
-  const charsPerLine = Math.max(14, Math.floor(w / (fontSize * 0.52)));
-  const lines = Math.max(1, Math.ceil(Math.max(textLen, 1) / charsPerLine));
-  const h = lines * fontSize * lineHeight;
-  return { w, h, fontSize, lineHeight, anchorY: -radius };
+  const d = radius * 2;
+  const pad = radius * 0.16;
+  const maxW = d - pad * 2;
+  const maxH = d - pad * 2;
+  const lineHeight = 1.32;
+  const charW = 0.52;
+
+  if (!textLen) {
+    return { w: maxW, h: maxH, fontSize: radius * 0.22, lineHeight, pad };
+  }
+
+  let fontSize = Math.min(radius * 0.3, maxH / 2.8);
+  for (let i = 0; i < 48; i++) {
+    const charsPerLine = Math.max(4, Math.floor(maxW / (fontSize * charW)));
+    const lines = Math.max(1, Math.ceil(textLen / charsPerLine));
+    const h = lines * fontSize * lineHeight;
+    if (h <= maxH) break;
+    fontSize *= 0.9;
+    if (fontSize < 3.2) break;
+  }
+
+  const charsPerLine = Math.max(4, Math.floor(maxW / (fontSize * charW)));
+  const lines = Math.max(1, Math.ceil(textLen / charsPerLine));
+  const h = Math.min(maxH, lines * fontSize * lineHeight);
+
+  return { w: maxW, h, fontSize, lineHeight, pad };
 }
 
 /** @deprecated Use nodeTextLayout */
@@ -175,18 +196,9 @@ export function fitCardFontSize(w, _h, textLen) {
   return fitTextFontSize(w, textLen);
 }
 
-/** Interpolate text footprint from inside the circle → full response layout. */
-export function nodeTextLayoutAtBlend(radius, textLen, blend) {
-  const full = nodeTextLayout(radius, textLen);
-  const t = Math.min(1, Math.max(0, blend));
-  const inner = radius * 1.88;
-  return {
-    w: inner + (full.w - inner) * t,
-    h: inner + (full.h - inner) * t,
-    fontSize: radius * 0.26 + (full.fontSize - radius * 0.26) * t,
-    lineHeight: full.lineHeight,
-    anchorY: full.anchorY,
-  };
+/** Layout is fixed inside the circle; zoom only drives opacity crossfade in the view. */
+export function nodeTextLayoutAtBlend(radius, textLen, _blend) {
+  return nodeTextLayout(radius, textLen);
 }
 
 /**
@@ -194,21 +206,15 @@ export function nodeTextLayoutAtBlend(radius, textLen, blend) {
  */
 export function focusAiNodeRead(node, layout, vpWidth, vpHeight, opts = {}) {
   const topMargin = opts.topMargin ?? 44;
-  const padX = opts.padX ?? 0.9;
-  const padY = opts.padY ?? 0.9;
   const maxScale = opts.maxScale ?? AI_READING_ZOOM;
-  const minScreenFontPx = opts.minScreenFontPx ?? 14;
+  const minScreenFontPx = opts.minScreenFontPx ?? 13;
+  const d = (node.radius || 20) * 2;
 
-  const fitScale = Math.min((vpWidth * padX) / layout.w, (vpHeight * padY) / layout.h);
+  const fitScale = Math.min((vpWidth * 0.55) / d, (vpHeight * 0.55) / d);
   const minReadScale = minScreenFontPx / layout.fontSize;
   const scale = clampScale(Math.min(Math.max(fitScale, minReadScale), maxScale));
 
-  const textTopWorld = node.y + layout.anchorY;
-  return {
-    scale,
-    x: vpWidth / 2 - node.x * scale,
-    y: topMargin - textTopWorld * scale,
-  };
+  return focusAiNode(node, vpWidth, vpHeight, scale);
 }
 
 /** @deprecated Use nodeTextLayout + focusAiNodeRead */

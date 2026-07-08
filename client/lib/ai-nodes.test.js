@@ -146,8 +146,8 @@ describe("ai-nodes layout", () => {
     const node = { x: 0, y: 0, radius: 30 };
     const pt = attachPointOnNode(node, 0, 100);
     const dist = Math.hypot(pt.x, pt.y);
-    assert.ok(dist > 35, `edge should be outside core radius, got ${dist}`);
-    assert.ok(dist < 65, `edge should stay near membrane, got ${dist}`);
+    assert.ok(dist > 30, `edge should be outside core radius, got ${dist}`);
+    assert.ok(dist < 42, `edge should stay near ring, got ${dist}`);
   });
 
   it("edgeGeometry skips degenerate coincident nodes", () => {
