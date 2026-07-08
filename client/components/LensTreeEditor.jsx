@@ -5,7 +5,6 @@ import {
   addLeafStep,
   addPipelineStep,
   buildDraftMap,
-  collectAllNodeIds,
   duplicateStep,
   ensurePipelineRoot,
   findParentId,
@@ -34,6 +33,39 @@ function collectDraftOps(rootOp, opMap) {
   return [...ids].map((id) => ({ ...opMap[id] }));
 }
 
+function collectFlowNames(op, draftMap, limit = 12) {
+  if (!op) return [];
+  if (op.kind === "prompt") return [op.name || "step"];
+  if (op.kind !== "pipeline" || !op.steps?.length) return [];
+  const names = [];
+  for (const id of op.steps) {
+    const step = draftMap[id];
+    if (!step) continue;
+    if (step.kind === "pipeline") {
+      names.push(step.name || "group");
+    } else {
+      names.push(step.name || "step");
+    }
+    if (names.length >= limit) break;
+  }
+  return names;
+}
+
+function buildFocusPath(focusId, rootId, draftMap) {
+  if (!focusId || focusId === rootId) return [];
+  const crumbs = [];
+  let cur = focusId;
+  while (cur && cur !== rootId) {
+    const op = draftMap[cur];
+    if (!op) break;
+    crumbs.unshift(op.name || "step");
+    const parent = findParentId(cur, draftMap);
+    if (!parent) break;
+    cur = parent;
+  }
+  return crumbs;
+}
+
 export default function LensTreeEditor({
   editor,
   opMap,
@@ -58,7 +90,6 @@ export default function LensTreeEditor({
   const [prose, setProse] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [treeExpanded, setTreeExpanded] = useState(() => new Set(sourceRoot?.id ? [sourceRoot.id] : []));
   const [dropTarget, setDropTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const clipboardRef = useRef(null);
@@ -66,10 +97,16 @@ export default function LensTreeEditor({
 
   const draftMap = useMemo(() => buildDraftMap(draftOps), [draftOps]);
   const rootDraft = rootId ? draftMap[rootId] : null;
-
-  useEffect(() => {
-    if (rootId) setTreeExpanded((prev) => new Set([...prev, rootId]));
-  }, [rootId]);
+  const focusOp = focusId ? draftMap[focusId] : null;
+  const inspectorOp = focusOp || rootDraft;
+  const flowSummary = useMemo(
+    () => collectFlowNames(rootDraft, draftMap).join(" → "),
+    [rootDraft, draftMap]
+  );
+  const focusPath = useMemo(
+    () => buildFocusPath(focusId, rootId, draftMap),
+    [focusId, rootId, draftMap]
+  );
 
   useEffect(() => {
     if (!toast) return;
@@ -82,25 +119,6 @@ export default function LensTreeEditor({
   const patchOp = useCallback((id, patch) => {
     setDraftOps((ops) => ops.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   }, []);
-
-  const toggleTreeNode = useCallback((id) => {
-    setTreeExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const expandAll = useCallback(() => {
-    if (!rootId) return;
-    setTreeExpanded(new Set(collectAllNodeIds(draftOps, rootId)));
-  }, [draftOps, rootId]);
-
-  const collapseAll = useCallback(() => {
-    if (!rootId) setTreeExpanded(new Set());
-    else setTreeExpanded(new Set([rootId]));
-  }, [rootId]);
 
   const applyDrop = useCallback(
     (parentId, index, payload) => {
@@ -136,7 +154,6 @@ export default function LensTreeEditor({
       if (payload.type === "clipboard" && payload.tree) {
         const { draftOps: next, stepId } = pasteTreeAt(ops, payload.tree, parentId, index, newId);
         setDraftOps(next);
-        setTreeExpanded((prev) => new Set([...prev, parentId, stepId]));
         setFocusId(stepId);
         return;
       }
@@ -145,7 +162,6 @@ export default function LensTreeEditor({
         const tree = opToClipboardTree(payload.op, { ...opMap, [payload.op.id]: payload.op });
         const { draftOps: next, stepId } = pasteTreeAt(ops, tree, parentId, index, newId);
         setDraftOps(next);
-        setTreeExpanded((prev) => new Set([...prev, parentId, stepId]));
         setFocusId(stepId);
       }
     },
@@ -168,7 +184,7 @@ export default function LensTreeEditor({
     let parentId = findParentId(target, draftMapNow) || target;
     let index = findParentId(target, draftMapNow)
       ? stepIndexInParent(draftOps, parentId, target) + 1
-      : (draftMapNow[parentId]?.steps?.length || 0);
+      : draftMapNow[parentId]?.steps?.length || 0;
 
     const parent = draftMapNow[parentId];
     if (parent?.kind === "pipeline" && focusId === parentId) {
@@ -213,14 +229,16 @@ export default function LensTreeEditor({
   }, [draftOps, focusId, showHint]);
 
   const addStepAfter = useCallback(
-    (kind) => {
-      const target = focusId || rootId;
+    (kind, parentOverride) => {
+      const target = parentOverride || focusId || rootId;
       if (!target) return;
       const map = buildDraftMap(draftOps);
-      let parentId = findParentId(target, map);
+      let parentId = parentOverride || findParentId(target, map);
       let index = 0;
       if (parentId) {
-        index = stepIndexInParent(draftOps, parentId, target) + 1;
+        index = parentOverride
+          ? map[parentId]?.steps?.length || 0
+          : stepIndexInParent(draftOps, parentId, target) + 1;
       } else {
         const wrapped = ensurePipelineRoot(draftOps, target, newId);
         if (wrapped.rootId !== rootId) {
@@ -230,13 +248,12 @@ export default function LensTreeEditor({
           index = 1;
         } else {
           parentId = target;
-          index = (map[target]?.steps?.length || 0);
+          index = map[target]?.steps?.length || 0;
         }
       }
       const fn = kind === "pipeline" ? addPipelineStep : addLeafStep;
       const { draftOps: next, stepId } = fn(draftOps, parentId, index, {}, newId);
       setDraftOps(next);
-      setTreeExpanded((prev) => new Set([...prev, parentId, stepId]));
       setFocusId(stepId);
     },
     [draftOps, focusId, rootId]
@@ -293,7 +310,6 @@ export default function LensTreeEditor({
       setRootId(rid);
       setFocusId(null);
       setProse("");
-      setTreeExpanded(new Set(collectAllNodeIds(ops, rid)));
     } catch (err) {
       setError(err.message || "Could not apply changes.");
     } finally {
@@ -329,199 +345,250 @@ export default function LensTreeEditor({
     (createName.trim() && createPrompt.trim()) ||
     (rootId && draftOps.some((o) => o.id === rootId && o.name?.trim()));
 
-  const focusLabel = focusId && draftMap[focusId] ? draftMap[focusId].name : rootDraft?.name;
+  const stepCount =
+    rootDraft?.kind === "pipeline" ? rootDraft.steps?.length || 0 : rootDraft ? 1 : 0;
 
   return (
     <div className="modal-scrim fn-scrim-full" onClick={onClose}>
       <div
         ref={editorRef}
-        className="fn-editor fn-editor-fullscreen fn-editor-programmable"
+        className="fn-editor fn-editor-fullscreen fn-editor-programmable fn-editor-flow"
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
         <div className="fn-head">
-          <div>
-            <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
-            <p className="fn-head-sub">
-              Steps flow top to bottom · drag to reorder · describe changes with AI below
-            </p>
-          </div>
+          <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
           <div className="fn-head-actions">
-            {rootDraft && (
-              <>
-                <button type="button" className="fn-head-btn" onClick={expandAll}>
-                  expand all
-                </button>
-                <button type="button" className="fn-head-btn" onClick={collapseAll}>
-                  collapse all
-                </button>
-              </>
-            )}
             <button className="fn-close" onClick={onClose} type="button">
               ×
             </button>
           </div>
         </div>
 
-        <div className="fn-editor-body fn-editor-body-vertical">
-          <aside className="fn-palette fn-palette-strip">
-            <div className="fn-palette-title">Add blocks</div>
-            <div className="fn-palette-blocks">
-            <button
-              type="button"
-              className="fn-palette-block"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData(
-                  FN_PALETTE_MIME,
-                  JSON.stringify({ name: "new step", prompt: "Return ONLY the step output." })
-                );
-                e.dataTransfer.effectAllowed = "copy";
-              }}
-            >
-              + leaf step
-            </button>
-            <button
-              type="button"
-              className="fn-palette-block pipeline"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData(FN_PALETTE_MIME, JSON.stringify({ name: "group", steps: [] }));
-                e.dataTransfer.effectAllowed = "copy";
-              }}
-            >
-              + group
-            </button>
-            {paletteGroups
-              .filter((g) => g.ops?.length)
-              .map((g) => (
-                <div key={g.label} className="fn-palette-group fn-palette-group-inline">
-                  <div className="fn-palette-group-label">{g.label}</div>
-                  <div className="fn-palette-group-blocks">
-                  {g.ops.map((op) => (
-                    <button
-                      key={op.id}
-                      type="button"
-                      className="fn-palette-block"
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(FN_PALETTE_MIME, JSON.stringify({ opId: op.id }));
-                        e.dataTransfer.effectAllowed = "copy";
-                      }}
-                      title={op.description || op.name}
-                    >
-                      {op.name}
-                    </button>
-                  ))}
-                  </div>
+        <div className="fn-editor-body fn-editor-body-flow">
+          <div className="fn-flow-main">
+            {rootDraft && (
+              <div className="fn-flow-overview">
+                <div className="fn-flow-overview-top">
+                  <span className="fn-flow-stat">
+                    {stepCount} step{stepCount === 1 ? "" : "s"}
+                  </span>
+                  {flowSummary && <span className="fn-flow-summary">{flowSummary}</span>}
                 </div>
-              ))}
-            </div>
-          </aside>
-
-          <div className="fn-tree-scroll">
-            {rootDraft ? (
-              <LensTreeNode
-                op={rootDraft}
-                draftMap={draftMap}
-                depth={0}
-                rootId={rootId}
-                focusId={focusId}
-                onFocus={setFocusId}
-                onPatch={patchOp}
-                treeExpanded={treeExpanded}
-                onToggleExpand={toggleTreeNode}
-                dropTarget={dropTarget}
-                setDropTarget={setDropTarget}
-                onDrop={applyDrop}
-                onFork={duplicateFocused}
-                onMergeNext={mergeWithNext}
-                onAddLeaf={() => addStepAfter("leaf")}
-                onAddGroup={() => addStepAfter("pipeline")}
-                onDelete={deleteFocused}
-                opMap={opMap}
-              />
-            ) : (
-              <div className="fn-create-panel">
-                <p className="fn-hint">
-                  Describe what this lens should do, drag blocks from above, or fill in the fields below.
-                </p>
-                <label>name</label>
-                <input
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="e.g. Build Full Investment Thesis"
-                />
-                <label>description</label>
-                <input
-                  value={createDesc}
-                  onChange={(e) => setCreateDesc(e.target.value)}
-                  placeholder="what goes in, what comes out"
-                />
-                <label>prompt</label>
-                <textarea
-                  rows={6}
-                  value={createPrompt}
-                  onChange={(e) => setCreatePrompt(e.target.value)}
-                  placeholder="Or skip and describe with AI on the right."
-                />
               </div>
             )}
-          </div>
 
-          <aside className="fn-editor-side fn-editor-side-bottom">
-            <label>{rootDraft ? "revise with words" : "describe with words"}</label>
-            {focusLabel && rootDraft && (
-              <p className="fn-focus-hint">
-                AI edits <strong>{focusLabel}</strong>
-                {focusId && focusId !== rootId ? " and its subtree" : ""}
-              </p>
-            )}
-            <textarea
-              className="fn-prose"
-              rows={5}
-              placeholder={
-                isCreate
-                  ? 'e.g. "Extract action items, owners, and deadlines from messy meeting notes"'
-                  : 'e.g. "Add a step that checks for contradictions"'
-              }
-              value={prose}
-              onChange={(e) => setProse(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runProse();
-              }}
-            />
-            {error && <div className="fn-error">{error}</div>}
-            <button className="fn-generate" type="button" disabled={busy || !prose.trim()} onClick={runProse}>
-              {busy ? (
-                <>
-                  <span className="spinner" /> building…
-                </>
-              ) : rootDraft ? (
-                "apply with AI"
-              ) : (
-                "generate with AI"
-              )}
-            </button>
-            {focusId && focusId !== rootId && (
-              <div className="fn-step-actions">
-                <button type="button" className="fn-step-action" onClick={duplicateFocused}>
-                  fork
+            <aside className="fn-palette fn-palette-strip">
+              <div className="fn-palette-blocks">
+                <button
+                  type="button"
+                  className="fn-palette-block"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(
+                      FN_PALETTE_MIME,
+                      JSON.stringify({ name: "new step", prompt: "Return ONLY the step output." })
+                    );
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                >
+                  + step
                 </button>
-                <button type="button" className="fn-step-action" onClick={mergeWithNext}>
-                  merge ↓
-                </button>
-                <button type="button" className="fn-step-action" onClick={() => addStepAfter("leaf")}>
-                  + leaf
-                </button>
-                <button type="button" className="fn-step-action" onClick={() => addStepAfter("pipeline")}>
+                <button
+                  type="button"
+                  className="fn-palette-block pipeline"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(FN_PALETTE_MIME, JSON.stringify({ name: "group", steps: [] }));
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                >
                   + group
                 </button>
-                <button type="button" className="fn-step-action danger" onClick={deleteFocused}>
-                  delete
-                </button>
+                {paletteGroups
+                  .filter((g) => g.ops?.length)
+                  .map((g) => (
+                    <div key={g.label} className="fn-palette-group fn-palette-group-inline">
+                      <div className="fn-palette-group-label">{g.label}</div>
+                      <div className="fn-palette-group-blocks">
+                        {g.ops.map((op) => (
+                          <button
+                            key={op.id}
+                            type="button"
+                            className="fn-palette-block"
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData(FN_PALETTE_MIME, JSON.stringify({ opId: op.id }));
+                              e.dataTransfer.effectAllowed = "copy";
+                            }}
+                            title={op.description || op.name}
+                          >
+                            {op.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
               </div>
-            )}
+            </aside>
+
+            <div
+              className="fn-flow-scroll"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setFocusId(null);
+              }}
+            >
+              {rootDraft ? (
+                <LensFlowView
+                  rootOp={rootDraft}
+                  rootId={rootId}
+                  draftMap={draftMap}
+                  focusId={focusId}
+                  onFocus={setFocusId}
+                  dropTarget={dropTarget}
+                  setDropTarget={setDropTarget}
+                  onDrop={applyDrop}
+                  onAddLeaf={(parentId) => addStepAfter("leaf", parentId)}
+                  onAddGroup={(parentId) => addStepAfter("pipeline", parentId)}
+                  opMap={opMap}
+                />
+              ) : (
+                <div className="fn-create-panel">
+                  <label>name</label>
+                  <input
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    placeholder="e.g. Build Full Investment Thesis"
+                  />
+                  <label>description</label>
+                  <input
+                    value={createDesc}
+                    onChange={(e) => setCreateDesc(e.target.value)}
+                    placeholder="what goes in, what comes out"
+                  />
+                  <label>prompt</label>
+                  <textarea
+                    rows={6}
+                    value={createPrompt}
+                    onChange={(e) => setCreatePrompt(e.target.value)}
+                    placeholder="Or skip and describe with AI on the right."
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside className="fn-editor-side fn-editor-inspector">
+            {inspectorOp ? (
+              <>
+                {focusPath.length > 0 && (
+                  <div className="fn-inspector-crumb">
+                    {rootDraft?.name || "lens"}
+                    {focusPath.map((c, i) => (
+                      <React.Fragment key={i}>
+                        <span className="fn-inspector-crumb-sep">›</span>
+                        <span>{c}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+                <div className="fn-inspector-section">
+                  <label>{focusId && focusId !== rootId ? "step name" : "lens name"}</label>
+                  <input
+                    className="fn-tree-input"
+                    value={inspectorOp.name || ""}
+                    onChange={(e) => patchOp(inspectorOp.id, { name: e.target.value })}
+                  />
+                  <label>description</label>
+                  <input
+                    className="fn-tree-input"
+                    value={inspectorOp.description || ""}
+                    onChange={(e) => patchOp(inspectorOp.id, { description: e.target.value })}
+                    placeholder="what this step does"
+                  />
+                  {inspectorOp.kind === "prompt" && (
+                    <>
+                      <label>prompt</label>
+                      <textarea
+                        className="fn-tree-prompt-input"
+                        rows={10}
+                        value={inspectorOp.prompt || ""}
+                        onChange={(e) => patchOp(inspectorOp.id, { prompt: e.target.value })}
+                      />
+                    </>
+                  )}
+                </div>
+
+                {focusId && focusId !== rootId && (
+                  <div className="fn-step-actions">
+                    <button type="button" className="fn-step-action" onClick={duplicateFocused}>
+                      fork
+                    </button>
+                    <button type="button" className="fn-step-action" onClick={mergeWithNext}>
+                      merge →
+                    </button>
+                    <button type="button" className="fn-step-action" onClick={() => addStepAfter("leaf")}>
+                      + step after
+                    </button>
+                    <button type="button" className="fn-step-action" onClick={() => addStepAfter("pipeline")}>
+                      + group after
+                    </button>
+                    <button type="button" className="fn-step-action danger" onClick={deleteFocused}>
+                      delete
+                    </button>
+                  </div>
+                )}
+
+                {inspectorOp.kind === "pipeline" && (
+                  <div className="fn-step-actions">
+                    <button
+                      type="button"
+                      className="fn-step-action"
+                      onClick={() => addStepAfter("leaf", inspectorOp.id)}
+                    >
+                      + step
+                    </button>
+                    <button
+                      type="button"
+                      className="fn-step-action"
+                      onClick={() => addStepAfter("pipeline", inspectorOp.id)}
+                    >
+                      + group
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : null}
+
+            <div className="fn-inspector-ai">
+              <label>{rootDraft ? "revise" : "describe"}</label>
+              <textarea
+                className="fn-prose"
+                rows={4}
+                placeholder={
+                  isCreate
+                    ? 'e.g. "Extract action items, owners, and deadlines from messy meeting notes"'
+                    : 'e.g. "Add a step that checks for contradictions"'
+                }
+                value={prose}
+                onChange={(e) => setProse(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runProse();
+                }}
+              />
+              {error && <div className="fn-error">{error}</div>}
+              <button className="fn-generate" type="button" disabled={busy || !prose.trim()} onClick={runProse}>
+                {busy ? (
+                  <>
+                    <span className="spinner" /> building…
+                  </>
+                ) : rootDraft ? (
+                  "apply with AI"
+                ) : (
+                  "generate with AI"
+                )}
+              </button>
+            </div>
           </aside>
         </div>
 
@@ -545,11 +612,11 @@ export default function LensTreeEditor({
   );
 }
 
-function DropSlot({ parentId, index, dropTarget, setDropTarget, onDrop, opMap, label }) {
+function DropSlot({ parentId, index, dropTarget, setDropTarget, onDrop, opMap, label, horizontal }) {
   const active = dropTarget?.parentId === parentId && dropTarget?.index === index;
   return (
     <div
-      className={"fn-drop-slot" + (active ? " active" : "")}
+      className={"fn-drop-slot" + (horizontal ? " horizontal" : "") + (active ? " active" : "")}
       onDragOver={(e) => {
         if (
           e.dataTransfer.types.includes(FN_STEP_MIME) ||
@@ -584,211 +651,259 @@ function DropSlot({ parentId, index, dropTarget, setDropTarget, onDrop, opMap, l
         }
       }}
     >
-      {active && <span className="fn-drop-label">{label || "drop here"}</span>}
+      {active && <span className="fn-drop-label">{label || "drop"}</span>}
     </div>
   );
 }
 
-function LensTreeNode({
-  op,
-  draftMap,
-  depth,
+function LensFlowView({
+  rootOp,
   rootId,
+  draftMap,
   focusId,
   onFocus,
-  onPatch,
-  treeExpanded,
-  onToggleExpand,
   dropTarget,
   setDropTarget,
   onDrop,
-  onFork,
-  onMergeNext,
   onAddLeaf,
   onAddGroup,
-  onDelete,
   opMap,
 }) {
-  const cardRef = useRef(null);
-  const isPipeline = op.kind === "pipeline";
-  const steps = isPipeline && op.steps ? op.steps.map((id) => draftMap[id]).filter(Boolean) : [];
-  const isFocused = focusId === op.id;
-  const isOpen = treeExpanded.has(op.id);
-  const hasBody = isPipeline || !!(op.description || op.prompt);
-  const promptRows = Math.min(14, Math.max(5, ((op.prompt || "").split("\n").length || 0) + 2));
-  const parentId = isPipeline ? op.id : findParentId(op.id, draftMap);
+  if (rootOp.kind === "prompt") {
+    return (
+      <div className="fn-flow-canvas">
+        <div className="fn-flow-row fn-flow-row-root">
+          <span className="fn-flow-port">input</span>
+          <span className="fn-flow-arrow" aria-hidden>
+            →
+          </span>
+          <LensFlowCard
+            op={rootOp}
+            stepIndex={1}
+            rootId={rootId}
+            focusId={focusId}
+            onFocus={onFocus}
+            draggable={false}
+          />
+          <span className="fn-flow-arrow" aria-hidden>
+            →
+          </span>
+          <span className="fn-flow-port">output</span>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (isFocused && cardRef.current) {
-      cardRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [isFocused]);
+  const pipelineId = rootOp.id;
+  return (
+    <div className="fn-flow-canvas">
+        <LensFlowRow
+          parentId={pipelineId}
+          parentOp={rootOp}
+          isRoot
+          rootId={rootId}
+          draftMap={draftMap}
+          focusId={focusId}
+          onFocus={onFocus}
+          dropTarget={dropTarget}
+          setDropTarget={setDropTarget}
+          onDrop={onDrop}
+          onAddLeaf={onAddLeaf}
+          onAddGroup={onAddGroup}
+          opMap={opMap}
+        />
+    </div>
+  );
+}
 
-  const seqParentId = isPipeline ? op.id : parentId;
+function LensFlowRow({
+  parentId,
+  parentOp,
+  isRoot,
+  rootId,
+  draftMap,
+  focusId,
+  onFocus,
+  dropTarget,
+  setDropTarget,
+  onDrop,
+  onAddLeaf,
+  onAddGroup,
+  opMap,
+}) {
+  const steps = parentOp?.steps?.map((id) => draftMap[id]).filter(Boolean) || [];
 
   return (
-    <div className="fn-tree-node-wrap" style={{ marginLeft: depth * 12 }}>
-      {isPipeline && (
+    <div className={"fn-flow-lane" + (isRoot ? " root" : "")}>
+      {!isRoot && (
+        <button
+          type="button"
+          className={"fn-flow-group-head" + (focusId === parentId ? " focused" : "")}
+          onClick={() => onFocus(parentId)}
+        >
+          <span className="fn-flow-group-badge">group</span>
+          <span className="fn-flow-group-name">{parentOp.name || "unnamed group"}</span>
+          <span className="fn-flow-group-count">
+            {steps.length} step{steps.length === 1 ? "" : "s"}
+          </span>
+        </button>
+      )}
+      <div className="fn-flow-row">
+        {isRoot && (
+          <>
+            <span className="fn-flow-port">input</span>
+            <span className="fn-flow-arrow" aria-hidden>
+              →
+            </span>
+          </>
+        )}
         <DropSlot
-          parentId={op.id}
+          parentId={parentId}
           index={0}
           dropTarget={dropTarget}
           setDropTarget={setDropTarget}
           onDrop={onDrop}
           opMap={opMap}
+          horizontal
         />
-      )}
-
-      <div
-        ref={cardRef}
-        className={
-          "fn-tree-card" +
-          (isFocused ? " focused" : "") +
-          (isPipeline ? " pipeline" : " leaf") +
-          (isOpen ? " open" : " collapsed")
-        }
-        draggable={op.id !== rootId}
-        onDragStart={(e) => {
-          if (op.id === rootId) {
-            e.preventDefault();
-            return;
-          }
-          e.dataTransfer.setData(FN_STEP_MIME, op.id);
-          e.dataTransfer.effectAllowed = "move";
-        }}
-      >
-        <div className="fn-tree-card-head">
-          <span className="fn-drag-grip" title="Drag to reorder or nest">
-            ⠿
-          </span>
-          <button
-            type="button"
-            className={"fn-tree-toggle" + (hasBody || steps.length ? "" : " hidden")}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand(op.id);
-            }}
-            aria-expanded={isOpen}
-          >
-            {isOpen ? "▾" : "▸"}
-          </button>
-          <button type="button" className="fn-tree-summary" onClick={() => onFocus(op.id)}>
-            <span className={"fn-tree-badge" + (isPipeline ? " pipeline" : " leaf")}>
-              {isPipeline ? `${steps.length} step${steps.length === 1 ? "" : "s"}` : "leaf"}
-            </span>
-            <span className="fn-tree-name-preview">{op.name || "unnamed step"}</span>
-            {!isOpen && op.description && <span className="fn-tree-desc-preview">{op.description}</span>}
-          </button>
-          {isFocused && op.id !== rootId && (
-            <div className="fn-inline-actions">
-              <button type="button" title="Fork" onClick={onFork}>
-                ⎇
-              </button>
-              <button type="button" title="Merge with next" onClick={onMergeNext}>
-                ⚭
-              </button>
-              <button type="button" title="Delete" onClick={onDelete}>
-                ×
-              </button>
-            </div>
-          )}
-        </div>
-
-        {isOpen && (
-          <div className="fn-tree-body" onClick={() => onFocus(op.id)}>
-            <label className="fn-tree-label">name</label>
-            <input
-              className="fn-tree-input"
-              value={op.name || ""}
-              onChange={(e) => onPatch(op.id, { name: e.target.value })}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <label className="fn-tree-label">description</label>
-            <input
-              className="fn-tree-input"
-              value={op.description || ""}
-              onChange={(e) => onPatch(op.id, { description: e.target.value })}
-              onClick={(e) => e.stopPropagation()}
-            />
-            {!isPipeline && (
-              <>
-                <label className="fn-tree-label">prompt</label>
-                <textarea
-                  className="fn-tree-prompt-input"
-                  rows={promptRows}
-                  value={op.prompt || ""}
-                  onChange={(e) => onPatch(op.id, { prompt: e.target.value })}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </>
-            )}
-            {isPipeline && (
-              <div className="fn-seq-toolbar">
-                <button type="button" onClick={onAddLeaf}>
-                  + leaf
-                </button>
-                <button type="button" onClick={onAddGroup}>
-                  + group
+        {steps.length === 0 ? (
+          isRoot ? (
+            <>
+              <div className="fn-flow-empty">
+                <p>No steps yet</p>
+                <div className="fn-flow-empty-actions">
+                  <button type="button" onClick={() => onAddLeaf(parentId)}>
+                    + step
+                  </button>
+                  <button type="button" onClick={() => onAddGroup(parentId)}>
+                    + group
+                  </button>
+                </div>
+              </div>
+              <span className="fn-flow-arrow" aria-hidden>
+                →
+              </span>
+              <span className="fn-flow-port">output</span>
+            </>
+          ) : (
+            <div className="fn-flow-empty fn-flow-empty-nested">
+              <p>Empty group</p>
+              <div className="fn-flow-empty-actions">
+                <button type="button" onClick={() => onAddLeaf(parentId)}>
+                  + step
                 </button>
               </div>
-            )}
+            </div>
+          )
+        ) : (
+          steps.map((step, i) => (
+            <React.Fragment key={step.id}>
+              {step.kind === "pipeline" ? (
+                <div className="fn-flow-group-box">
+                  <LensFlowRow
+                    parentId={step.id}
+                    parentOp={step}
+                    rootId={rootId}
+                    draftMap={draftMap}
+                    focusId={focusId}
+                    onFocus={onFocus}
+                    dropTarget={dropTarget}
+                    setDropTarget={setDropTarget}
+                    onDrop={onDrop}
+                    onAddLeaf={onAddLeaf}
+                    onAddGroup={onAddGroup}
+                    opMap={opMap}
+                  />
+                </div>
+              ) : (
+                <LensFlowCard
+                  op={step}
+                  stepIndex={i + 1}
+                  rootId={rootId}
+                  focusId={focusId}
+                  onFocus={onFocus}
+                  draggable={step.id !== rootId}
+                />
+              )}
+              <span className="fn-flow-arrow" aria-hidden>
+                →
+              </span>
+              <DropSlot
+                parentId={parentId}
+                index={i + 1}
+                dropTarget={dropTarget}
+                setDropTarget={setDropTarget}
+                onDrop={onDrop}
+                opMap={opMap}
+                horizontal
+                label="insert"
+              />
+            </React.Fragment>
+          ))
+        )}
+        {isRoot && steps.length > 0 && (
+          <>
+            <span className="fn-flow-arrow" aria-hidden>
+              →
+            </span>
+            <span className="fn-flow-port">output</span>
+          </>
+        )}
+        {steps.length > 0 && (
+          <div className="fn-flow-add">
+            <button type="button" onClick={() => onAddLeaf(parentId)} title="Add step">
+              +
+            </button>
           </div>
         )}
       </div>
+    </div>
+  );
+}
 
-      {isPipeline && steps.length > 0 && (
-        <div className="fn-seq-list">
-          {steps.map((step, i) => (
-            <React.Fragment key={step.id}>
-              {i > 0 && (
-                <div className="fn-seq-arrow-row" aria-hidden>
-                  <span className="fn-seq-arrow">→</span>
-                </div>
-              )}
-              <DropSlot
-                parentId={op.id}
-                index={i}
-                dropTarget={dropTarget}
-                setDropTarget={setDropTarget}
-                onDrop={onDrop}
-                opMap={opMap}
-              />
-              <LensTreeNode
-                op={step}
-                draftMap={draftMap}
-                depth={depth + 1}
-                rootId={rootId}
-                focusId={focusId}
-                onFocus={onFocus}
-                onPatch={onPatch}
-                treeExpanded={treeExpanded}
-                onToggleExpand={onToggleExpand}
-                dropTarget={dropTarget}
-                setDropTarget={setDropTarget}
-                onDrop={onDrop}
-                onFork={onFork}
-                onMergeNext={onMergeNext}
-                onAddLeaf={onAddLeaf}
-                onAddGroup={onAddGroup}
-                onDelete={onDelete}
-                opMap={opMap}
-              />
-            </React.Fragment>
-          ))}
-          <DropSlot
-            parentId={op.id}
-            index={steps.length}
-            dropTarget={dropTarget}
-            setDropTarget={setDropTarget}
-            onDrop={onDrop}
-            opMap={opMap}
-            label="append step"
-          />
+function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable }) {
+  const cardRef = useRef(null);
+  const isFocused = focusId === op.id;
+
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    }
+  }, [isFocused]);
+
+  return (
+    <div
+      ref={cardRef}
+      className={"fn-flow-card" + (isFocused ? " focused" : "")}
+      draggable={draggable}
+      onDragStart={(e) => {
+        if (!draggable) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.setData(FN_STEP_MIME, op.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onFocus(op.id);
+      }}
+    >
+      <div className="fn-flow-card-top">
+        {draggable && (
+          <span className="fn-flow-grip" title="Drag to reorder">
+            ⠿
+          </span>
+        )}
+        <span className="fn-flow-step-num">{stepIndex}</span>
+      </div>
+      <div className="fn-flow-card-name">{op.name || "unnamed step"}</div>
+      {op.description && <div className="fn-flow-card-desc">{op.description}</div>}
+      {!op.description && op.prompt && (
+        <div className="fn-flow-card-desc fn-flow-card-prompt-preview">
+          {(op.prompt || "").slice(0, 80)}
+          {(op.prompt || "").length > 80 ? "…" : ""}
         </div>
-      )}
-
-      {isPipeline && steps.length === 0 && isOpen && (
-        <div className="fn-seq-empty">drop blocks here or use + leaf</div>
       )}
     </div>
   );

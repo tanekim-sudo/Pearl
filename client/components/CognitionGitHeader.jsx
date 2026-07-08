@@ -8,13 +8,7 @@ export default function CognitionGitHeader({ activeLens, lensCount, onNewLens })
   return (
     <div className="cognition-git-header" data-tour="cognition-git">
       <div className="cognition-git-brand">
-        <span className="cognition-git-icon" aria-hidden>
-          ◈
-        </span>
-        <div>
-          <div className="cognition-git-title">Lenses</div>
-          <div className="cognition-git-tagline">drag onto ideas to transform them</div>
-        </div>
+        <div className="cognition-git-title">Lenses</div>
       </div>
       <div className="cognition-git-status">
         {activeLens ? (
@@ -30,7 +24,7 @@ export default function CognitionGitHeader({ activeLens, lensCount, onNewLens })
         )}
       </div>
       <button type="button" className="rail-create cognition-git-new" data-tour="create-function" onClick={onNewLens}>
-        + lens
+        +
       </button>
     </div>
   );

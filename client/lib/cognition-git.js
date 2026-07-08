@@ -128,9 +128,10 @@ export function appendCommit(lens, commit) {
 
 /** Group lenses into repo trees for the rail. */
 export function groupLensesByRepo(lenses) {
-  const byId = Object.fromEntries(lenses.map((l) => [l.id, l]));
+  const clean = (lenses || []).filter((l) => l && typeof l === "object" && l.id);
+  const byId = Object.fromEntries(clean.map((l) => [l.id, l]));
   const childrenOf = new Map();
-  for (const lens of lenses) {
+  for (const lens of clean) {
     const parent =
       lens.parentId ||
       (lens.lineage?.length ? lens.lineage[lens.lineage.length - 1] : null) ||
@@ -145,7 +146,7 @@ export function groupLensesByRepo(lenses) {
     for (const k of kids) isChild.add(k.id);
   }
   const forksOf = new Map();
-  for (const lens of lenses) {
+  for (const lens of clean) {
     if (lens.forkedFrom && byId[lens.forkedFrom]) {
       if (!forksOf.has(lens.forkedFrom)) forksOf.set(lens.forkedFrom, []);
       forksOf.get(lens.forkedFrom).push(lens);
@@ -154,7 +155,7 @@ export function groupLensesByRepo(lenses) {
   }
 
   const repos = [];
-  for (const lens of lenses) {
+  for (const lens of clean) {
     if (isChild.has(lens.id)) continue;
     repos.push({
       root: lens,
@@ -162,7 +163,7 @@ export function groupLensesByRepo(lenses) {
       forks: forksOf.get(lens.id) || [],
     });
   }
-  for (const lens of lenses) {
+  for (const lens of clean) {
     if (!isChild.has(lens.id) && !repos.some((r) => r.root.id === lens.id)) {
       repos.push({ root: lens, branches: [], forks: [] });
     }

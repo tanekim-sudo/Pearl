@@ -2249,6 +2249,20 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   line-height: 1.4;
 }
 
+.symbol-draw-meaning {
+  margin: -6px 0 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.symbol-draw-reading {
+  margin: -6px 0 14px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--faint);
+}
+
 .symbol-draw-canvas {
   display: block;
   width: 120px;

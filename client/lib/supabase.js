@@ -1,8 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
-
 // Vite inlines import.meta.env at build time; under `node --test` it is
 // undefined, so all reads go through this guard.
 const VITE_ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};
+
+let createClientFn = null;
+let sdkLoadError = null;
+
+const sdkReady = import("@supabase/supabase-js")
+  .then((mod) => {
+    createClientFn = mod.createClient;
+  })
+  .catch((err) => {
+    sdkLoadError = err;
+    console.warn("[lens] @supabase/supabase-js unavailable — accounts disabled.", err);
+  });
 
 export function readSupabaseConfig(env) {
   const url =
@@ -21,7 +31,11 @@ let client = null;
 let warned = false;
 
 export function isSupabaseConfigured() {
-  return CONFIG !== null;
+  return CONFIG !== null && !sdkLoadError;
+}
+
+export function whenSupabaseReady() {
+  return sdkReady;
 }
 
 // The client is constructed lazily, never at module scope: the boot-time auth
@@ -37,8 +51,14 @@ export function getSupabase() {
     }
     return null;
   }
+  if (!createClientFn) return null;
   if (!client) {
-    client = createClient(CONFIG.url, CONFIG.key);
+    try {
+      client = createClientFn(CONFIG.url, CONFIG.key);
+    } catch (err) {
+      console.warn("[lens] Supabase client init failed:", err);
+      return null;
+    }
   }
   return client;
 }

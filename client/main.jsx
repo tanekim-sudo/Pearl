@@ -35,6 +35,24 @@ class RootErrorBoundary extends React.Component {
               Something crashed on startup. Try a hard refresh (Cmd+Shift+R). If it persists, clear site
               data for this page.
             </p>
+            {this.state.error?.message && (
+              <pre
+                style={{
+                  margin: "0 0 16px",
+                  padding: 12,
+                  textAlign: "left",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  overflow: "auto",
+                  maxHeight: 160,
+                }}
+              >
+                {this.state.error.message}
+              </pre>
+            )}
             <button
               type="button"
               style={{

@@ -34,9 +34,8 @@ export async function interpretSymbolWithLLM(struct, runClaude, opts = {}) {
   }
   try {
     const out = await runClaude(buildSymbolInterpretPrompt(struct), "", {
-      system:
-        "You interpret visual/text symbols for a thinking canvas. Output ONLY valid JSON. The viewPrompt must work on any new material.",
-      maxTokens: opts.maxTokens || 2048,
+      system: "Interpret symbols for a thinking canvas. Output ONLY valid JSON.",
+      maxTokens: opts.maxTokens || 512,
     });
     const json = parseJsonFromModel(out);
     const interpretation = mergeSymbolInterpretation(structural, json);

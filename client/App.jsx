@@ -30,7 +30,7 @@ import {
 } from "../shared/cognitive-transfer.js";
 import { enrichTransferWithLLM, instantiateTransfer } from "./lib/cognitive-transfer-runtime.js";
 import { interpretSymbolWithLLM } from "./lib/symbol-runtime.js";
-import { viewingLensTreeFromSymbol } from "../shared/symbol-lens.js";
+import { normalizeSymbolRecord, stampSymbolStruct, viewingLensTreeFromSymbol } from "../shared/symbol-lens.js";
 import { scaleEta, ETA } from "../shared/eta.js";
 import { pipelineClientAbortMs, CLIENT_ABORT_MS, PHASE_TIMEOUT } from "../shared/phase-timeouts.js";
 import { compileExecutionPlan } from "../server/plan.js";
@@ -343,7 +343,6 @@ const CANVAS_TOOLS = {
     group: "think",
     label: "Highlighter",
     icon: "▬",
-    hint: "Draw over ink to select fragments · Delete removes · drag → AI to transfer",
     swatch: HIGHLIGHT_INK,
   },
   select: {
@@ -351,21 +350,18 @@ const CANVAS_TOOLS = {
     group: "canvas",
     label: "Select",
     icon: "↖",
-    hint: "Click to select · drag anywhere to move · double-click text to edit · Alt+drag to duplicate",
   },
   image: {
     id: "image",
     group: "input",
     label: "Image",
     icon: "▢",
-    hint: "Pick an image, then click the paper to place it.",
   },
   pen: {
     id: "pen",
     group: "draw",
     label: "Pen",
     icon: "✎",
-    hint: "Precise ink lines · Space cycles pen / highlight / select",
     swatch: INK,
   },
   marker: {
@@ -373,7 +369,6 @@ const CANVAS_TOOLS = {
     group: "draw",
     label: "Marker",
     icon: "▔",
-    hint: "Wide translucent strokes.",
     swatch: INK,
     swatchOpacity: 0.35,
   },
@@ -382,7 +377,6 @@ const CANVAS_TOOLS = {
     group: "edit",
     label: "Eraser",
     icon: "⌫",
-    hint: "Click or drag over strokes and objects to remove.",
   },
 };
 
@@ -469,7 +463,7 @@ function lensStepNames(lens, opMap) {
 
 /** Normalize persisted lenses toward git-for-perception metadata. */
 function normalizeLens(l) {
-  if (!l || typeof l !== "object") return l;
+  if (!l || typeof l !== "object" || !l.id) return null;
   const createdAt = l.createdAt || l.evolvedAt || Date.now();
   return {
     ...l,
@@ -981,6 +975,16 @@ function treeToOperators(node, opts = {}) {
   const out = [];
   const rootId = materializeTree(node, role, top, out, { captured, captureMeta });
   return { rootId, ops: out };
+}
+
+function loadArray(key, fallback = []) {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : fallback;
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function load(key, fallback) {
@@ -1925,13 +1929,28 @@ export default function App() {
     return { x: 0, y: 0, scale: 1 };
   });
   const [operators, setOperators] = useState(() => {
-    const saved = load(OPERATORS_KEY, null) || load(LEGACY_OPERATORS_KEY, null);
-    return migrateOperators(migrateOperatorStore(saved));
+    try {
+      const saved = load(OPERATORS_KEY, null) || load(LEGACY_OPERATORS_KEY, null);
+      const store = migrateOperatorStore(saved);
+      const ops = migrateOperators(store);
+      return Array.isArray(ops) ? ops.filter((o) => o && o.id) : [];
+    } catch (err) {
+      console.warn("[lens] Could not load operators:", err);
+      return [];
+    }
   });
   const [structures, setStructures] = useState(() => {
-    const saved = load(STRUCTURES_KEY, null);
-    if (Array.isArray(saved) && saved.length) return saved;
-    return migrateOldSavedNodes();
+    try {
+      const saved = load(STRUCTURES_KEY, null);
+      const list = Array.isArray(saved) && saved.length ? saved : migrateOldSavedNodes();
+      return list
+        .filter((s) => s && typeof s === "object")
+        .map((s) => normalizeSymbolRecord(s))
+        .filter(Boolean);
+    } catch (err) {
+      console.warn("[lens] Could not load saved symbols:", err);
+      return [];
+    }
   });
   // walking: { nodeId, title, steps: [...], stepIndex } — derived from a node's history on demand
   const [walking, setWalking] = useState(null);
@@ -1939,7 +1958,17 @@ export default function App() {
   const [historyReplay, setHistoryReplay] = useState(null);
   const [itemHistoryLog, setItemHistoryLog] = useState(() => loadItemHistoryLog());
   // lenses: named sets of recurring moves — git for perception
-  const [lenses, setLenses] = useState(() => load(LENSES_KEY, []).map(normalizeLens));
+  const [lenses, setLenses] = useState(() => {
+    try {
+      return loadArray(LENSES_KEY, [])
+        .filter((l) => l && typeof l === "object")
+        .map(normalizeLens)
+        .filter((l) => l?.id);
+    } catch (err) {
+      console.warn("[lens] Could not load lenses:", err);
+      return [];
+    }
+  });
   const [activeLensId, setActiveLensId] = useState(() => load(ACTIVE_LENS_KEY, null));
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
   const [lensHistoryId, setLensHistoryId] = useState(null);
@@ -1967,6 +1996,8 @@ export default function App() {
   const pendingGoldBornRef = useRef(new Set());
   const symbolsSectionRef = useRef(null);
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
+  const [symbolInterpretingId, setSymbolInterpretingId] = useState(null);
+  const symbolDrawPromptRef = useRef(null);
   const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
@@ -2062,6 +2093,7 @@ export default function App() {
   camRef.current = camera;
   itemsRef.current = items;
   structuresRef.current = structures;
+  symbolDrawPromptRef.current = symbolDrawPrompt;
   toolRef.current = tool;
   selectedAiNodeIdsRef.current = selectedAiNodeIds;
   selRef.current = selection;
@@ -4932,21 +4964,21 @@ export default function App() {
     const mergedItems = relativeItemsFromIds(ids, offset);
     const nextTitle = mergeTitle(struct, mergedItems);
     setStructures((arr) =>
-      arr.map((s) =>
-        s.id === structId
-          ? {
-              ...s,
-              kind: "symbol",
-              title: nextTitle,
-              items: [...(s.items || []), ...mergedItems],
-              savedAt: Date.now(),
-            }
-          : s
-      )
+      arr.map((s) => {
+        if (s.id !== structId) return s;
+        return stampSymbolStruct({
+          ...s,
+          kind: "symbol",
+          title: nextTitle,
+          items: [...(s.items || []), ...mergedItems],
+          savedAt: Date.now(),
+        });
+      })
     );
     focusRailPane("structures");
     emitTourEvent("save-structure");
     showToast(`added to · ${nextTitle}`);
+    enrichSymbolRecord(structId, { inEditor: false });
     return struct;
   }
 
@@ -5029,47 +5061,58 @@ export default function App() {
       symbolStroke: extra.symbolStroke || null,
       savedAt: Date.now(),
     };
-    setStructures((arr) => [struct, ...arr]);
+    const stamped = struct.kind === "symbol" ? normalizeSymbolRecord(struct) : struct;
+    setStructures((arr) => [stamped, ...arr]);
     focusRailPane("structures");
     emitTourEvent("save-structure");
     if (!extra.skipToast) showToast(extra.toast || "saved structure");
-    return struct;
+    return stamped;
   }
 
   function openSymbolDrawPrompt(struct) {
     if (!struct?.id) return;
     setSymbolDrawPrompt({ structId: struct.id, title: struct.title || "idea" });
     focusRailPane("structures");
+    enrichSymbolRecord(struct.id, { inEditor: true });
   }
 
   function completeSymbolDraw(structId, symbolStroke) {
     if (!structId) return;
     setStructures((arr) =>
-      arr.map((s) => (s.id === structId ? { ...s, symbolStroke: symbolStroke || null } : s))
+      arr.map((s) => {
+        if (s.id !== structId) return s;
+        return stampSymbolStruct({ ...s, symbolStroke: symbolStroke || null });
+      })
     );
     setSymbolDrawPrompt(null);
     showToast("symbol saved");
     emitTourEvent("save-symbol");
+    enrichSymbolRecord(structId, { inEditor: false });
   }
 
-  async function enrichSymbolRecord(structId) {
+  async function enrichSymbolRecord(structId, opts = {}) {
     const struct = structuresRef.current.find((s) => s.id === structId);
     if (!struct) return;
-    const jobId = pushJob({
-      id: uid(),
-      label: `reading · ${struct.title}`,
-      type: "symbol-interpret",
-      status: "running",
-      step: "interpreting symbol…",
-      startedAt: Date.now(),
-      estimatedMs: ETA.default,
-    });
+
+    const local = stampSymbolStruct(struct);
+    setStructures((arr) => arr.map((s) => (s.id === structId ? { ...s, ...local } : s)));
+
+    const inEditor = opts.inEditor ?? symbolDrawPromptRef.current?.structId === structId;
+    if (!inEditor || !runClaude) return;
+
+    setSymbolInterpretingId(structId);
     try {
-      const { interpretation, viewLens } = await interpretSymbolWithLLM(struct, runClaude);
-      const cognitiveTransfer = abstractSymbolToTransfer(
-        { ...struct, interpretation },
-        { domainLabel: struct.title }
-      );
+      const current = structuresRef.current.find((s) => s.id === structId) || local;
+      const { interpretation, viewLens } = await interpretSymbolWithLLM(current, runClaude);
+      let cognitiveTransfer = null;
+      try {
+        cognitiveTransfer = abstractSymbolToTransfer(
+          { ...current, interpretation },
+          { domainLabel: current.title }
+        );
+      } catch {
+        /* optional metadata */
+      }
       setStructures((arr) =>
         arr.map((s) =>
           s.id === structId
@@ -5077,9 +5120,10 @@ export default function App() {
             : s
         )
       );
-      finishJob(jobId, "done", interpretation.meaning?.slice(0, 48) || "symbol read");
-    } catch (err) {
-      finishJob(jobId, "error", err.message || "failed");
+    } catch {
+      /* keep local interpretation */
+    } finally {
+      setSymbolInterpretingId(null);
     }
   }
 
@@ -5123,7 +5167,7 @@ export default function App() {
       ...extra,
     });
     if (!struct) return null;
-    enrichSymbolRecord(struct.id);
+    enrichSymbolRecord(struct.id, { inEditor: false });
     showToast(`saved · ${struct.title}`);
     return struct;
   }
@@ -5151,33 +5195,34 @@ export default function App() {
       };
       const nextTitle = mergeTitle(struct, [placed]);
       setStructures((arr) =>
-        arr.map((s) =>
-          s.id === structId
-            ? {
-                ...s,
-                kind: "symbol",
-                title: nextTitle,
-                items: [...(s.items || []), placed],
-                savedAt: Date.now(),
-              }
-            : s
-        )
+        arr.map((s) => {
+          if (s.id !== structId) return s;
+          return stampSymbolStruct({
+            ...s,
+            kind: "symbol",
+            title: nextTitle,
+            items: [...(s.items || []), placed],
+            savedAt: Date.now(),
+          });
+        })
       );
       focusRailPane("structures");
       showToast(`added to · ${nextTitle}`);
+      enrichSymbolRecord(structId, { inEditor: false });
       return struct;
     }
-    const struct = {
+    const struct = stampSymbolStruct({
       id: uid(),
       title: truncatePreview(texts[0], 48) || "idea",
       kind: "symbol",
       items: [normalizeItem({ type: "text", x: 0, y: 0, text: content, w: 320 })],
       symbolStroke: null,
       savedAt: Date.now(),
-    };
+    });
     setStructures((arr) => [struct, ...arr]);
     showToast(`saved · ${struct.title}`);
     emitTourEvent("save-symbol");
+    enrichSymbolRecord(struct.id, { inEditor: false });
     return struct;
   }
 
@@ -7758,7 +7803,6 @@ export default function App() {
   const paperContentItems = visibleItems.filter(
     (it) => it.type !== "link" && !(it.type === "stroke" && it.highlight)
   );
-  const paperIsEmpty = paperContentItems.length === 0 && !walking && !historyReplay;
   const activePageHasSession =
     (pages.find((p) => p.id === activePageId)?.sessions?.length || 0) > 0;
   const walkStep = walking?.steps?.[walking.stepIndex] || null;
@@ -7948,7 +7992,6 @@ export default function App() {
                 lensCount={displayLenses.length}
                 onNewLens={openCreateLens}
               />
-              <p className="rail-functions-hint">Drag a lens onto paper to transform · click a lens to edit it</p>
               <div className="move-quick-add">
                 <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
@@ -7960,18 +8003,14 @@ export default function App() {
                 </div>
               )}
               <div className="rail-scroll">
-                {lensRepos.length > 0 && (
-                  <>
-                    <div className="rail-section" data-tour="lenses-section">Lenses</div>
-                    {lensRepos.map((repo) => (
-                      <div key={repo.root.id} className="git-repo-group">
-                        {renderLensCard(repo.root, { depth: 0 })}
-                        {repo.branches.map((lens) => renderLensCard(lens, { depth: 1 }))}
-                        {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
-                      </div>
-                    ))}
-                  </>
-                )}
+                {lensRepos.length > 0 &&
+                  lensRepos.map((repo) => (
+                    <div key={repo.root.id} className="git-repo-group">
+                      {renderLensCard(repo.root, { depth: 0 })}
+                      {repo.branches.map((lens) => renderLensCard(lens, { depth: 1 }))}
+                      {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
+                    </div>
+                  ))}
                 {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
                 {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
                 {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
@@ -7981,11 +8020,8 @@ export default function App() {
               <h3 className="rail-pane-heading">
                 symbols {structures.length ? `(${structures.length})` : ""}
               </h3>
-              <p className="rail-structures-hint">
-                AI reads each symbol’s meaning · edit its viewing lens · drag onto paper to apply
-              </p>
               <div className="rail-scroll">
-                {structures.map((struct) => (
+                {structures.filter((s) => s?.id).map((struct) => (
                   <StructureCard
                     key={struct.id}
                     struct={struct}
@@ -8077,18 +8113,6 @@ export default function App() {
             : undefined
         }
       >
-        {paperIsEmpty && (
-          <div className="paper-empty-hint" aria-hidden="true">
-            <p className="paper-empty-title">Your ideas live here</p>
-            <p className="paper-empty-steps">
-              1. Write or draw with <strong>Tools</strong> above
-              <br />
-              2. Drag a <strong>lens</strong> from the left onto your note
-              <br />
-              3. Highlight text and drag <strong>→ AI</strong> to explore
-            </p>
-          </div>
-        )}
         <div
           className="world"
           style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}
@@ -8517,9 +8541,14 @@ export default function App() {
       {symbolDrawPrompt && (
         <SymbolDrawOverlay
           title={symbolDrawPrompt.title}
+          meaning={
+            structures.find((s) => s.id === symbolDrawPrompt.structId)?.interpretation?.meaning
+          }
+          interpreting={symbolInterpretingId === symbolDrawPrompt.structId}
           onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
           onCancel={() => {
             setSymbolDrawPrompt(null);
+            setSymbolInterpretingId(null);
             showToast("symbol skipped — idea saved");
           }}
         />
@@ -9136,7 +9165,6 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveToFunctions();
           }}
-          title="Save as a reusable lens"
         >
           Save lens
         </button>
@@ -9152,7 +9180,6 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveToStructures();
           }}
-          title="Save as a symbol template"
         >
           Save symbol
         </button>
@@ -9165,7 +9192,6 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onSaveDocument();
           }}
-          title="Save as document"
         >
           Save as document
         </button>
@@ -9178,9 +9204,8 @@ function SelectionCaptureChip({
           e.stopPropagation();
           onSave();
         }}
-        title="Save process"
       >
-        ◈ save process
+        Save
       </button>
       )}
       {onShareJourney && (
@@ -9191,7 +9216,6 @@ function SelectionCaptureChip({
             e.stopPropagation();
             onShareJourney();
           }}
-          title="Share"
         >
           ↗ share
         </button>
@@ -9424,12 +9448,10 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             onCompose(draggedId, op.id);
           }
         }}
-        title="Drag ⠿ onto paper to transform"
       >
         <div className="op-card-row">
           <span
             className="op-drag-grip"
-            title="Drag onto paper"
             draggable
             onDragStart={(e) => {
               startOpDrag(e, op);
@@ -9581,7 +9603,6 @@ function LensCard({
           onMergeDrop(draggedId);
         }
       }}
-      title="Click to edit · drag ⠿ onto paper to transform"
     >
       <div className="lens-card-top">
         <span
@@ -9620,7 +9641,6 @@ function LensCard({
           ))}
         </div>
       )}
-      {mergeOver && <div className="lens-merge-hint">drop here to combine pipelines</div>}
       <div className="lens-card-actions">
         <button
           className="lens-btn primary"
@@ -9789,8 +9809,7 @@ function StructureCard({
   onEditViewLens,
 }) {
   const preview = structurePreview(struct);
-  const meaning = struct.interpretation?.meaning;
-  const viewName = struct.viewLens?.name || (struct.interpretation ? "viewing lens" : null);
+  const meaning = struct.interpretation?.meaning || preview;
   const acceptsMaterial = (e) =>
     e.dataTransfer.types.includes(THOUGHT_MIME) ||
     e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
@@ -9816,12 +9835,10 @@ function StructureCard({
       <div
         className={"struct-card" + (dropTarget ? " drop-target merge-target" : "")}
         data-struct-id={struct.id}
-        title="Drag ⠿ onto paper — applies viewing lens automatically"
       >
         <div className="struct-card-row">
           <span
             className="op-drag-grip"
-            title="Drag onto paper"
             draggable
             onDragStart={(e) => startStructDrag(e, struct)}
           >
@@ -9830,12 +9847,7 @@ function StructureCard({
           <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />
           <div className="struct-card-body">
             <span className="struct-title">{struct.title || preview}</span>
-            {meaning ? (
-              <span className="struct-meaning">{meaning}</span>
-            ) : (
-              <span className="struct-meaning pending">reading symbol…</span>
-            )}
-            {viewName && <span className="struct-view-lens">via {viewName}</span>}
+            {meaning && <span className="struct-meaning">{meaning}</span>}
           </div>
         </div>
         <div className="struct-card-actions">
@@ -9847,7 +9859,6 @@ function StructureCard({
                 e.stopPropagation();
                 onEditViewLens(struct);
               }}
-              title="Edit the lens through which this symbol is viewed"
             >
               View lens
             </button>
@@ -9860,7 +9871,6 @@ function StructureCard({
                 e.stopPropagation();
                 onEditSymbol(struct);
               }}
-              title="Draw glyph"
             >
               ✎
             </button>

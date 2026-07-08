@@ -20,7 +20,7 @@ function drawStroke(ctx, points, color, width) {
   ctx.stroke();
 }
 
-export default function SymbolDrawOverlay({ title, onComplete, onCancel }) {
+export default function SymbolDrawOverlay({ title, meaning, interpreting, onComplete, onCancel }) {
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
   const [hasStroke, setHasStroke] = useState(false);
@@ -69,9 +69,13 @@ export default function SymbolDrawOverlay({ title, onComplete, onCancel }) {
     <div className="symbol-draw-scrim" onPointerDown={(e) => e.stopPropagation()}>
       <div className="symbol-draw-panel">
         <div className="symbol-draw-head">
-          <span className="symbol-draw-label">draw a symbol</span>
+          <span className="symbol-draw-label">symbol</span>
           <h3 className="symbol-draw-title">{title || "this idea"}</h3>
-          <p className="symbol-draw-hint">A mark that stands for the concept — not the steps.</p>
+          {interpreting ? (
+            <p className="symbol-draw-reading">reading symbol…</p>
+          ) : meaning ? (
+            <p className="symbol-draw-meaning">{meaning}</p>
+          ) : null}
         </div>
         <canvas
           ref={canvasRef}

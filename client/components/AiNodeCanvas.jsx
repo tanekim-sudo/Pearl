@@ -959,13 +959,6 @@ export default function AiNodeCanvas({
         />
       )}
 
-      {nodes.length === 0 && (
-        <div className="ai-node-empty">
-          <p className="ai-empty-title">AI spacetime</p>
-          <p>Highlight text on paper and drag <strong>→ Explore</strong> here</p>
-          <p>Or drop a lens onto a brain cell to expand it</p>
-        </div>
-      )}
 
       {strandTip && (
         <div
@@ -1005,9 +998,6 @@ export default function AiNodeCanvas({
               className="ai-response-reader-highlight"
             />
           </div>
-          <p className="ai-response-reader-hint">
-            Draw over words to highlight · release on paper to pull them across
-          </p>
         </div>
       )}
 
