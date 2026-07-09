@@ -4230,7 +4230,7 @@ export default function App() {
     }
     const tree = {
       name: lens.name,
-      description: `Lens: ${lens.name}`,
+      description: `Function: ${lens.name}`,
       steps: moveOps.map((op) => opToJsonTree(op, opMap)),
     };
     const { ops, rootId } = treeToOperators(tree, { top: false });
@@ -4534,10 +4534,10 @@ export default function App() {
         .filter(Boolean)
         .map((o) => opToJsonTree(o, opMap));
       if (!stepTrees.length) {
-        showToast("Can't edit — steps are missing. Try + lens to rebuild.");
+        showToast("Can't edit — steps are missing. Try + function to rebuild.");
         return;
       }
-      const tree = { name: lens.name, description: `Lens: ${lens.name}`, steps: stepTrees };
+      const tree = { name: lens.name, description: `Function: ${lens.name}`, steps: stepTrees };
       const { ops, rootId } = treeToOperators(tree, { top: true });
       const newRoot = ops.find((o) => o.id === rootId);
       setOperators((prev) => [...prev, ...ops]);
@@ -5105,7 +5105,7 @@ export default function App() {
     if (cognitiveTransfer) enrichOperatorTransferAsync(rootId, cognitiveTransfer, opts);
     focusRailPane(RAIL_TRANSFORMATIONS);
     pulseFunctionsRail();
-    showToast(`saved lens · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
+    showToast(`saved function · ${steps.length} perceptual step${steps.length === 1 ? "" : "s"}`);
     if (opts.sourceIds?.length) {
       recordItemEvents(opts.sourceIds, "saved-as-function", {
         opId: rootId,
@@ -5768,7 +5768,7 @@ export default function App() {
     setOperators((prev) => [...prev, ...ops]);
     if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
     focusRailPane(RAIL_TRANSFORMATIONS);
-    showToast(`saved lens · ${op.name}`);
+    showToast(`saved function · ${op.name}`);
   }
 
   /** Merge: drop one operator onto another → a compound pipeline (A, then B). */
@@ -6142,7 +6142,7 @@ export default function App() {
     }
     const tree = {
       name: lens.name,
-      description: `Lens: ${lens.name}`,
+      description: `Function: ${lens.name}`,
       steps: moveOps.map((op) => opToJsonTree(op, opMap)),
     };
     const { ops, rootId } = treeToOperators(tree, { top: false });
@@ -8113,11 +8113,16 @@ export default function App() {
     let sourceNode = opts.sourceNode || (idList.length ? findSourceNodeForIds(idList) : null);
     const dropPinned = !!dropWorld;
 
+    // The dragged material lands exactly under the cursor; the result branches
+    // outward from it rather than displacing it.
     if (!sourceNode && idList.length) {
-      const sourceAt = dropWorld
-        ? { x: dropWorld.x - AI_SPAWN_MIN_DIST * 0.32, y: dropWorld.y }
-        : null;
+      const sourceAt = dropWorld ? { x: dropWorld.x, y: dropWorld.y } : null;
       sourceNode = ensureSourceNode(idList, null, "Source", sourceAt, { dropPinned: !!sourceAt });
+    } else if (sourceNode && dropWorld && !opts.sourceNode) {
+      // Existing source for this material: bring it to the drop point so the
+      // node the user "carried" is the one under their cursor.
+      updateAiNode(sourceNode.id, { x: dropWorld.x, y: dropWorld.y, dropPinned: true });
+      sourceNode = { ...sourceNode, x: dropWorld.x, y: dropWorld.y };
     }
     if (!sourceNode) {
       showToast("no source node for this operation");

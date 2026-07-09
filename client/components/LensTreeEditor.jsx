@@ -357,7 +357,7 @@ export default function LensTreeEditor({
         tabIndex={-1}
       >
         <div className="fn-head">
-          <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
+          <h3>{isCreate ? "Create function" : "Edit function"}</h3>
           <div className="fn-head-actions">
             <button className="fn-close" onClick={onClose} type="button">
               ×
@@ -483,7 +483,7 @@ export default function LensTreeEditor({
               <>
                 {focusPath.length > 0 && (
                   <div className="fn-inspector-crumb">
-                    {rootDraft?.name || "lens"}
+                    {rootDraft?.name || "function"}
                     {focusPath.map((c, i) => (
                       <React.Fragment key={i}>
                         <span className="fn-inspector-crumb-sep">›</span>
@@ -493,7 +493,7 @@ export default function LensTreeEditor({
                   </div>
                 )}
                 <div className="fn-inspector-section">
-                  <label>{focusId && focusId !== rootId ? "step name" : "lens name"}</label>
+                  <label>{focusId && focusId !== rootId ? "step name" : "function name"}</label>
                   <input
                     className="fn-tree-input"
                     value={inspectorOp.name || ""}
@@ -596,7 +596,7 @@ export default function LensTreeEditor({
           {toast && <span className="fn-toast">{toast}</span>}
           {!isCreate && sourceRoot && (
             <button className="fn-del" type="button" onClick={() => onDelete(sourceRoot.id)}>
-              delete lens
+              delete function
             </button>
           )}
           <span style={{ flex: 1 }} />
