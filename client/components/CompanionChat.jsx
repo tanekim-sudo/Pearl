@@ -1,0 +1,211 @@
+import React, { useEffect, useRef, useState } from "react";
+import { subscribeDirector, stopDirector } from "../lib/director.js";
+
+const SpeechRecognitionImpl =
+  typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+
+/**
+ * Companion — a voice/text helper that answers by DOING: every reply can play
+ * a live demonstration with the ghost cursor, so the user learns the exact
+ * gesture. Mic in via Web Speech API, replies spoken via speechSynthesis.
+ */
+export default function CompanionChat({ demos = [], onCommand, initialOpen = false, onOpened }) {
+  const [open, setOpen] = useState(initialOpen);
+  const [messages, setMessages] = useState(() => [
+    {
+      role: "companion",
+      text: "hi — I'm your companion. ask me to show you anything, or tell me what to build and I'll do it in front of you. try “make me an investment memo function and run it on Gimlet Labs.”",
+    },
+  ]);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceOut, setVoiceOut] = useState(true);
+  const [director, setDirector] = useState(null);
+  const listRef = useRef(null);
+  const recRef = useRef(null);
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  useEffect(() => subscribeDirector(setDirector), []);
+
+  useEffect(() => {
+    if (initialOpen) setOpen(true);
+  }, [initialOpen]);
+
+  useEffect(() => {
+    if (open) onOpened?.();
+  }, [open, onOpened]);
+
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, busy]);
+
+  function speak(text) {
+    if (!voiceOut || typeof speechSynthesis === "undefined" || !text) return;
+    try {
+      speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.04;
+      utter.pitch = 1.0;
+      speechSynthesis.speak(utter);
+    } catch {
+      /* voice out is best-effort */
+    }
+  }
+
+  async function send(rawText) {
+    const text = (rawText ?? draft).trim();
+    if (!text || busy) return;
+    setDraft("");
+    setMessages((m) => [...m, { role: "user", text }]);
+    setBusy(true);
+    try {
+      const say = await onCommand(text);
+      setMessages((m) => [...m, { role: "companion", text: say }]);
+      speak(say);
+    } catch (err) {
+      const msg = err?.message || "something went wrong — try again";
+      setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function stopListening() {
+    setListening(false);
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* already stopped */
+    }
+    recRef.current = null;
+  }
+
+  function toggleMic() {
+    if (listening) {
+      stopListening();
+      return;
+    }
+    if (!SpeechRecognitionImpl) {
+      setMessages((m) => [...m, { role: "companion", text: "voice input isn't available in this browser — typing works just as well.", error: true }]);
+      return;
+    }
+    const rec = new SpeechRecognitionImpl();
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = "";
+    rec.onresult = (e) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setDraft(finalText + interim);
+    };
+    rec.onerror = () => stopListening();
+    rec.onend = () => {
+      setListening(false);
+      recRef.current = null;
+      const said = finalText.trim();
+      if (said) send(said);
+    };
+    recRef.current = rec;
+    setListening(true);
+    try {
+      rec.start();
+    } catch {
+      stopListening();
+    }
+  }
+
+  useEffect(() => () => stopListening(), []);
+
+  const playing = !!director?.running;
+
+  if (!open) {
+    return (
+      <button type="button" className="companion-fab" onClick={() => setOpen(true)} title="Ask the companion">
+        <span className="companion-fab-orb" />
+        <span className="companion-fab-label">companion</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className={"companion-panel" + (playing ? " playing" : "")}>
+      <div className="companion-head">
+        <span className="companion-head-orb" />
+        <span className="companion-head-title">companion</span>
+        <button
+          type="button"
+          className={"companion-head-btn" + (voiceOut ? " on" : "")}
+          onClick={() => {
+            if (voiceOut && typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+            setVoiceOut((v) => !v);
+          }}
+          title={voiceOut ? "Mute spoken replies" : "Speak replies aloud"}
+        >
+          {voiceOut ? "voice on" : "voice off"}
+        </button>
+        <button type="button" className="companion-head-btn" onClick={() => setOpen(false)} title="Close">
+          ×
+        </button>
+      </div>
+
+      <div className="companion-messages" ref={listRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={"companion-msg " + m.role + (m.error ? " error" : "")}>
+            {m.text}
+          </div>
+        ))}
+        {busy && <div className="companion-msg companion thinking">thinking…</div>}
+        {playing && (
+          <div className="companion-playing">
+            <span>demonstrating{director?.scriptTitle ? ` — ${director.scriptTitle}` : ""}…</span>
+            <button type="button" onClick={() => stopDirector()}>stop</button>
+          </div>
+        )}
+      </div>
+
+      {!playing && (
+        <div className="companion-demos">
+          {demos.slice(0, 6).map((d) => (
+            <button key={d.id} type="button" className="companion-demo-chip" onClick={() => send(`show me: ${d.title}`)}>
+              {d.title}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="companion-input-row">
+        <button
+          type="button"
+          className={"companion-mic" + (listening ? " listening" : "")}
+          onClick={toggleMic}
+          title={listening ? "Stop listening" : "Speak to the companion"}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
+          </svg>
+        </button>
+        <input
+          className="companion-input"
+          placeholder={listening ? "listening…" : "ask, or tell me what to build…"}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") send();
+          }}
+          disabled={busy}
+        />
+        <button type="button" className="companion-send" onClick={() => send()} disabled={busy || !draft.trim()}>
+          ↑
+        </button>
+      </div>
+    </div>
+  );
+}

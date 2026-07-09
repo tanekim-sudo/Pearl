@@ -131,6 +131,11 @@ import {
   worldToScreen,
 } from "./lib/ai-space.js";
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
+import GhostCursor from "./components/GhostCursor.jsx";
+import CompanionChat from "./components/CompanionChat.jsx";
+import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
+import { buildCompanionSystemPrompt, parseCompanionReply, matchDemoLocally } from "./lib/companion-intent.js";
+import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
   recordingItemTags,
@@ -185,6 +190,7 @@ import {
   saveColumnLayout,
   clampColumnLayout,
   layoutAfterResizeDrag,
+  DEFAULT_COLUMN_LAYOUT,
 } from "./lib/column-layout.js";
 import { createTourContext, tourEvent, TOUR_STORAGE_KEY } from "./lib/onboarding-steps.js";
 import { cyclePrimaryUtensil, UTENSIL_LABELS } from "./lib/primary-utensils.js";
@@ -423,6 +429,7 @@ function migrateOperators(ops) {
 }
 
 const ONBOARDED_KEY = "lens.onboarded.v1";
+const COMPANION_SEEN_KEY = "lens.companion.seen.v1";
 
 /** @type {{ current: ((name: string) => void) | null }} */
 const tourEmitRef = { current: null };
@@ -2040,6 +2047,7 @@ export default function App() {
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
   const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
+  const [companionAutoOpen, setCompanionAutoOpen] = useState(() => !localStorage.getItem(COMPANION_SEEN_KEY));
   const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
   const [columnResizing, setColumnResizing] = useState(null);
   const [colGridWidth, setColGridWidth] = useState(0);
@@ -3845,11 +3853,24 @@ export default function App() {
     return newIds;
   }
 
+  /** Results must be visible where they are born — reopen a collapsed AI column. */
+  function ensureAiColumnVisible() {
+    if (columnLayoutRef.current.right > 0) return;
+    const width = threeColumnGridRef.current?.clientWidth || window.innerWidth;
+    const next = clampColumnLayout(
+      { ...columnLayoutRef.current, right: DEFAULT_COLUMN_LAYOUT.right },
+      width
+    );
+    setColumnLayout(next);
+    saveColumnLayout(next);
+  }
+
   /**
    * All function outputs are born in the AI layer, linked to their sources.
    * They enter the notebook only when the user drags them across the boundary.
    */
   function spawnAiOutputs(texts, sourceIds, via = null, opts = {}) {
+    ensureAiColumnVisible();
     const list = (Array.isArray(texts) ? texts : [texts])
       .map((t) => stripMd(t || "").trim())
       .filter(Boolean);
@@ -7980,11 +8001,11 @@ export default function App() {
     return gathered;
   }
 
-  async function runOpForAi(op, ids) {
+  async function runOpForAi(op, ids, opts = {}) {
     const idSet = new Set(ids);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
     const gathered = await gatherMaterialFromItems(itemList);
-    return runOpForAiMaterial(op, gathered.text, { image: gathered.image });
+    return runOpForAiMaterial(op, gathered.text, { image: gathered.image, opMap: opts.opMap });
   }
 
   async function runOpForAiMaterial(op, material, opts = {}) {
@@ -7992,7 +8013,9 @@ export default function App() {
     const { image } = opts;
     if (!text && !image) throw new Error("no readable content");
 
-    const map = opts.opMap || hydrateOperatorMap(opMap, operators, op.id);
+    // Merge any caller-supplied ops (compound lenses) and always hydrate
+    // moveRef-only steps so captured functions execute with real prompts.
+    const map = hydrateOperatorMap({ ...opMap, ...(opts.opMap || {}) }, operators, op.id);
     const execOp = map[op.id] || op;
     const plan = compileExecutionPlan(execOp, map, text);
 
@@ -8019,6 +8042,7 @@ export default function App() {
 
   async function expandInAi(ids, opts = {}) {
     emitTourEvent("expand-ai");
+    ensureAiColumnVisible();
     if (opts.stableCamera) aiStableCameraUntilRef.current = Date.now() + 5000;
     const op = opts.op || opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
     if (!op) {
@@ -8114,10 +8138,9 @@ export default function App() {
         throw new Error("no readable content");
       }
 
-      const execMap = opts.opMap || opMap;
       let out = aiMaterial
-        ? await runOpForAiMaterial(op, aiMaterial, { opMap: execMap })
-        : await runOpForAi(op, idList);
+        ? await runOpForAiMaterial(op, aiMaterial, { opMap: opts.opMap })
+        : await runOpForAi(op, idList, { opMap: opts.opMap });
       if (isTransformPrimitive(op)) {
         out = sanitizePrimitiveOutput(out);
         if (!out?.trim() || isPrimitiveMetaOutput(out)) {
@@ -8617,6 +8640,315 @@ export default function App() {
     const w = itemWidth(it) * (it.scale ?? 1);
     const h = itemHeight(it) * (it.scale ?? 1);
     return { x: it.x + w / 2, y: it.y + h / 2 };
+  }
+
+  // ---- companion director: verbs demonstrating real app actions with a ghost cursor ----
+  const jobsRef = useRef(jobs);
+  jobsRef.current = jobs;
+
+  function directorResolveItem(ref, ctx) {
+    if (!ref || ref === "last") {
+      const id = ctx.vars.lastItemId;
+      return itemsRef.current.find((it) => it.id === id) || null;
+    }
+    if (ctx.vars[ref]) {
+      const hit = itemsRef.current.find((it) => it.id === ctx.vars[ref]);
+      if (hit) return hit;
+    }
+    const needle = String(ref).toLowerCase();
+    return (
+      itemsRef.current.find((it) => it.id === ref) ||
+      itemsRef.current.find((it) => (it.text || "").toLowerCase().includes(needle)) ||
+      null
+    );
+  }
+
+  function directorResolveOp(ref, ctx) {
+    if (!ref || ref === "last") return opMap[ctx.vars.lastOpId] || null;
+    if (ctx.vars[ref] && opMap[ctx.vars[ref]]) return opMap[ctx.vars[ref]];
+    const needle = String(ref).toLowerCase();
+    return (
+      opMap[ref] ||
+      operators.find((o) => (o.name || "").toLowerCase() === needle) ||
+      operators.find((o) => (o.name || "").toLowerCase().includes(needle)) ||
+      Object.values(opMap).find((o) => (o.name || "").toLowerCase() === needle) ||
+      null
+    );
+  }
+
+  function directorItemClientCenter(item) {
+    const bb = itemWorldBBox(item);
+    const cx = bb ? (bb.minx + bb.maxx) / 2 : item.x;
+    const cy = bb ? (bb.miny + bb.maxy) / 2 : item.y;
+    return worldToClient(cx, cy);
+  }
+
+  function directorAiClientPoint(wx, wy) {
+    const rect = aiViewportRef.current?.getBoundingClientRect();
+    if (!rect) return { x: window.innerWidth * 0.85, y: window.innerHeight * 0.42 };
+    const s = worldToScreen(aiCamRef.current, wx, wy);
+    return { x: rect.left + s.x, y: rect.top + s.y };
+  }
+
+  function directorLatestAiNode(ctx) {
+    const id = ctx.vars.lastAiNodeId || selectedAiNodeIdsRef.current[0];
+    return (
+      aiNodesRef.current.find((n) => n.id === id) ||
+      [...aiNodesRef.current].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] ||
+      null
+    );
+  }
+
+  async function directorWaitForJobs(tk, timeoutMs = 120000) {
+    const start = Date.now();
+    // give the job a beat to register before polling
+    await tk.wait(400);
+    while (Date.now() - start < timeoutMs && !tk.isAborted()) {
+      const busy = jobsRef.current.some((j) => j.status === "running");
+      if (!busy) return;
+      await tk.wait(320);
+    }
+  }
+
+  function directorOpRowCenter(tk, op) {
+    if (!op) return null;
+    return (
+      tk.elementCenter(`[data-transformation-lens-id="${op.id}"]`) ||
+      tk.elementCenter(`[data-op-id="${op.id}"]`)
+    );
+  }
+
+  registerDirectorVerbs({
+    caption: async (a, tk) => {
+      tk.caption(a.text || "");
+      await tk.wait(a.ms ?? 1600);
+    },
+    pause: async (a, tk) => tk.wait(a.ms ?? 600),
+    switchTool: async (a, tk) => {
+      const target =
+        tk.elementCenter(`.canvas-tools-bar [data-tool="${a.tool}"]`) ||
+        tk.elementCenter(".canvas-tools-bar");
+      if (target) await tk.click(target.x, target.y);
+      setTool(a.tool);
+      if (a.caption) tk.caption(a.caption);
+      await tk.wait(500);
+    },
+    fitPaper: async (a, tk) => {
+      const r = vpRect();
+      animateCameraDirect(fitPaperInView(r.width, r.height), 520);
+      await tk.wait(680);
+    },
+    spawnText: async (a, tk, ctx) => {
+      const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);
+      const center = paperViewportCenterWorld();
+      const world = a.at || { x: center.x - 60, y: center.y - 150 + (count - 1) * 150 };
+      const client = worldToClient(world.x, world.y);
+      tk.caption(a.caption || `put “${truncatePreview(a.text, 42)}” on the page`);
+      await tk.click(client.x, client.y);
+      const id = spawnTextAtWorld(a.text, world, { silent: true });
+      ctx.vars.lastItemId = id;
+      if (a.saveAs) ctx.vars[a.saveAs] = id;
+      await tk.wait(450);
+    },
+    createFunction: async (a, tk, ctx) => {
+      tk.caption(a.caption || `create a new function: “${a.name}”`);
+      const plus = tk.elementCenter(".cognition-git-new");
+      if (plus) await tk.click(plus.x, plus.y);
+      const steps = (a.steps || []).map((s) => (typeof s === "string" ? { name: s, description: "" } : s));
+      const tree = steps.length
+        ? {
+            name: a.name,
+            description: a.description || "",
+            steps: steps.map((s) => ({
+              name: s.name,
+              description: s.description || "",
+              prompt: buildDefaultLeafPrompt(s.name, s.description),
+            })),
+          }
+        : {
+            name: a.name,
+            description: a.description || "",
+            prompt: buildDefaultLeafPrompt(a.name, a.description),
+          };
+      const { ops, rootId } = treeToOperators(tree, { top: true });
+      setOperators((prev) => [...prev, ...ops]);
+      const rootOp = ops.find((o) => o.id === rootId);
+      syncTransformationRepoForOperator(rootId, rootOp, {
+        isNew: true,
+        stepNames: steps.map((s) => s.name),
+        commitMessage: "created with the companion",
+      });
+      ctx.vars.lastOpId = rootId;
+      if (a.saveAs) ctx.vars[a.saveAs] = rootId;
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      pulseFunctionsRail();
+      await tk.wait(750);
+      const row = directorOpRowCenter(tk, rootOp);
+      if (row) {
+        await tk.moveTo(row.x, row.y);
+        if (steps.length) tk.caption(`${steps.length} steps compose into one reusable move`);
+        await tk.wait(900);
+      }
+    },
+    applyFunction: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      const item = directorResolveItem(a.target, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      if (!item) throw new Error("no object on the page to apply it to");
+      tk.caption(a.caption || `drag “${op.name}” onto the object`);
+      const row = directorOpRowCenter(tk, op);
+      const at = directorItemClientCenter(item);
+      if (row) {
+        await tk.moveTo(row.x, row.y);
+        await tk.press(op.name);
+        await tk.moveTo(at.x, at.y, 950);
+        await tk.release();
+      } else {
+        await tk.click(at.x, at.y);
+      }
+      runOperator(op, [item.id], {});
+      tk.caption(`“${op.name}” is thinking…`);
+      await directorWaitForJobs(tk);
+      const node = directorLatestAiNode(ctx);
+      if (node) ctx.vars.lastAiNodeId = node.id;
+      tk.caption("the result blooms in the AI layer, branching from its source");
+      await tk.wait(1500);
+    },
+    dragItemToAi: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("no object to move");
+      const from = directorItemClientCenter(item);
+      const rect = aiViewportRef.current?.getBoundingClientRect();
+      const to = rect
+        ? { x: rect.left + rect.width * 0.45, y: rect.top + rect.height * 0.45 }
+        : { x: window.innerWidth * 0.86, y: window.innerHeight * 0.42 };
+      tk.caption(a.caption || "drag it across the boundary into the AI space");
+      await tk.moveTo(from.x, from.y);
+      await tk.press(truncatePreview(item.text || "object", 18));
+      await tk.moveTo(to.x, to.y, 1000);
+      await tk.release();
+      const world = getAiDropWorldFromClient(to.x, to.y);
+      await expandInAi([item.id], { expandedAt: world, stableCamera: true });
+      const node = directorLatestAiNode(ctx);
+      if (node) ctx.vars.lastAiNodeId = node.id;
+      await directorWaitForJobs(tk);
+      await tk.wait(600);
+    },
+    applyFunctionToAiNode: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      const node = directorLatestAiNode(ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      if (!node) throw new Error("no AI node to branch from");
+      const row = directorOpRowCenter(tk, op);
+      const at = directorAiClientPoint(node.x, node.y);
+      tk.caption(a.caption || `drop “${op.name}” onto the node to branch it further`);
+      if (row) {
+        await tk.moveTo(row.x, row.y);
+        await tk.press(op.name);
+        await tk.moveTo(at.x, at.y, 950);
+        await tk.release();
+      }
+      applyOperatorToAiNode(node, op, { x: at.x, y: at.y }, { stableCamera: true });
+      await directorWaitForJobs(tk);
+      const next = directorLatestAiNode(ctx);
+      if (next) ctx.vars.lastAiNodeId = next.id;
+      await tk.wait(800);
+    },
+    focusAiResult: async (a, tk, ctx) => {
+      const node = directorLatestAiNode(ctx);
+      if (!node) return;
+      const c = directorAiClientPoint(node.x, node.y);
+      await tk.moveTo(c.x, c.y);
+      zoomAiToNode(node);
+      tk.caption(a.caption || "zoom in — the circle relaxes into readable text");
+      await tk.wait(1500);
+    },
+    dragAiResultToPaper: async (a, tk, ctx) => {
+      const node = directorLatestAiNode(ctx);
+      if (!node) throw new Error("no AI result to bring back yet");
+      const from = directorAiClientPoint(node.x, node.y);
+      const center = paperViewportCenterWorld();
+      const to = worldToClient(center.x, center.y + 120);
+      tk.caption(a.caption || "drag the result back onto paper to keep it");
+      await tk.moveTo(from.x, from.y);
+      await tk.press("result");
+      await tk.moveTo(to.x, to.y, 1000);
+      await tk.release();
+      transferAiNodesToPaper([node.id], clientToWorld(to.x, to.y));
+      await tk.wait(700);
+    },
+    highlight: async (a, tk, ctx) => {
+      setTool("highlight");
+      const refsList = a.targets || ["last"];
+      const targets = refsList.map((t) => directorResolveItem(t, ctx)).filter(Boolean);
+      if (!targets.length) throw new Error("nothing to highlight");
+      tk.caption(a.caption || "sweep the highlighter — every stroke adds to one living selection");
+      for (const it of targets) {
+        const c = directorItemClientCenter(it);
+        await tk.moveTo(c.x - 44, c.y);
+        await tk.press();
+        await tk.moveTo(c.x + 48, c.y, 420);
+        await tk.release();
+        accumulateHighlightSelection([it.id], true);
+        await tk.wait(200);
+      }
+      await tk.wait(500);
+    },
+    captureThread: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      const ids = item ? [item.id] : highlightSelectionRef.current;
+      if (!ids?.length) throw new Error("nothing to capture");
+      if (item) {
+        const c = directorItemClientCenter(item);
+        await tk.click(c.x, c.y);
+      }
+      tk.caption(a.caption || "capture the whole path that produced this as one reusable function");
+      captureMaterialAsFunction(Array.isArray(ids) ? ids : [...ids], {});
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      pulseFunctionsRail();
+      await tk.wait(1000);
+    },
+    showLenses: async (a, tk) => {
+      focusRailPane(RAIL_LENSES);
+      const pane = tk.elementCenter(".rail-lenses-pane");
+      if (pane) await tk.moveTo(pane.x, pane.y);
+      tk.caption(a.caption || "lenses live here — symbols, saved pages, ways of seeing");
+      await tk.wait(1200);
+    },
+    waitForJobs: async (a, tk) => directorWaitForJobs(tk),
+  });
+
+  async function handleCompanionCommand(text) {
+    const demosMeta = COMPANION_DEMOS.map((d) => ({ id: d.id, title: d.title, blurb: d.blurb }));
+    const functionNames = operators
+      .filter((o) => o.top || o.move)
+      .map((o) => o.name)
+      .filter(Boolean)
+      .slice(0, 30);
+    const itemPreviews = itemsRef.current
+      .map((it) => truncatePreview(it.text || "", 40))
+      .filter(Boolean)
+      .slice(0, 12);
+    let reply = null;
+    try {
+      const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
+        system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
+        maxTokens: 1600,
+        timeoutMs: 45000,
+      });
+      reply = parseCompanionReply(raw);
+    } catch (err) {
+      const fallback = matchDemoLocally(text, COMPANION_DEMOS);
+      if (!fallback) throw new Error("I couldn't reach the model — try again in a moment.");
+      reply = { say: `let me show you — ${fallback.title.toLowerCase()}.`, demoId: fallback.id, steps: [] };
+    }
+    const demo = reply.demoId ? findDemo(reply.demoId) : null;
+    const steps = demo ? demo.steps : reply.steps;
+    if (steps?.length) {
+      // fire-and-forget: the ghost cursor takes over while chat stays responsive
+      runDirectorScript(steps, { title: demo?.title || "demonstration" });
+    }
+    return reply.say || (demo ? `watch — ${demo.title.toLowerCase()}.` : steps?.length ? "watch." : "done.");
   }
 
   const tourState = useMemo(
@@ -9621,6 +9953,20 @@ export default function App() {
         </div>
       )}
 
+      <GhostCursor />
+      <CompanionChat
+        demos={COMPANION_DEMOS}
+        onCommand={handleCompanionCommand}
+        initialOpen={!onboard && companionAutoOpen}
+        onOpened={() => {
+          if (companionAutoOpen) setCompanionAutoOpen(false);
+          try {
+            localStorage.setItem(COMPANION_SEEN_KEY, "1");
+          } catch {
+            /* private mode */
+          }
+        }}
+      />
     </div>
   );
 }
