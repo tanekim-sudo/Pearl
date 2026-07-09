@@ -22,7 +22,7 @@
     var(--col-right-w, 340px);
   min-height: 0;
   gap: 0;
-  transition: grid-template-columns 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-columns 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .three-column-grid.column-resizing {
@@ -47,7 +47,63 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--card);
-  transition: box-shadow 0.15s, background 0.15s;
+  position: relative;
+  transition:
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Edge auras — each column breathes into its neighbors instead of ending
+   at a hard cut. Pure atmosphere: no pointer events, very low alpha. */
+.canvas-column::before,
+.canvas-column::after,
+.ai-column::before,
+.functions-column::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Cream of the functions library drifting onto the paper's left edge. */
+.canvas-column::before {
+  left: 0;
+  width: 72px;
+  background: linear-gradient(90deg, rgba(235, 230, 220, 0.38) 0%, rgba(235, 230, 220, 0) 100%);
+}
+
+/* Paper dims toward dusk as it approaches the void. */
+.canvas-column::after {
+  right: 0;
+  width: 140px;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 10, 16, 0) 0%,
+    rgba(10, 10, 16, 0.028) 45%,
+    rgba(14, 12, 8, 0.085) 100%
+  );
+}
+
+/* Warm paper-light spilling into the void's left edge. */
+.ai-column::before {
+  left: 0;
+  width: 180px;
+  background: linear-gradient(
+    90deg,
+    rgba(244, 238, 222, 0.085) 0%,
+    rgba(244, 238, 222, 0.03) 40%,
+    rgba(244, 238, 222, 0) 100%
+  );
+}
+
+/* Functions cream easing toward the paper white. */
+.functions-column::after {
+  right: 0;
+  width: 64px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 100%);
 }
 
 .functions-column.col-collapsed,
@@ -139,14 +195,24 @@
   color: var(--faint);
 }
 
-/* Seam between functions library and paper */
+/* Seam between functions library and paper — cream melts into white */
 .interpret-boundary.tools-paper {
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, #ebe6dc 88%, transparent) 0%,
-    rgba(212, 168, 60, 0.06) 50%,
-    color-mix(in srgb, var(--paper-deep) 88%, transparent) 100%
+    rgba(235, 230, 220, 0.9) 0%,
+    rgba(243, 239, 230, 0.75) 45%,
+    rgba(255, 255, 255, 0.9) 100%
   );
+}
+
+/* The library seam barely announces itself until something needs it. */
+.interpret-boundary.tools-paper::after {
+  opacity: 0.3;
+}
+
+.interpret-boundary.tools-paper.magnet::after,
+.interpret-boundary.tools-paper.drop-over::after {
+  opacity: 1;
 }
 
 /* legacy alias — same layout */
@@ -162,6 +228,7 @@
   z-index: 20;
   cursor: default;
   touch-action: none;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .interpret-boundary-hit.resizable {
@@ -211,11 +278,18 @@ body.column-boundary-resizing * {
   left: -24px;
   right: -24px;
   z-index: 0;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 100% 60% at 50% 50%,
+    color-mix(in srgb, var(--accent) 12%, transparent) 0%,
+    transparent 72%
+  );
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .interpret-boundary-hit.drop-over::before,
 .interpret-boundary-hit.magnet::before {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  opacity: 1;
 }
 
 .interpret-boundary-hit.drop-over {
@@ -230,16 +304,19 @@ body.column-boundary-resizing * {
   min-height: 100%;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--paper-deep) 88%, transparent) 0%,
-    rgba(212, 168, 60, 0.06) 50%,
-    rgba(5, 6, 11, 0.95) 100%
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(236, 228, 212, 0.8) 24%,
+    rgba(150, 138, 116, 0.5) 50%,
+    rgba(56, 50, 42, 0.72) 74%,
+    rgba(10, 10, 14, 0.92) 100%
   );
   pointer-events: none;
   z-index: 1;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The golden seam between paper and the void. */
+/* The golden seam between paper and the void — a faint filament at rest,
+   waking up only when something is carried toward it. */
 .interpret-boundary::after {
   content: "";
   position: absolute;
@@ -250,31 +327,38 @@ body.column-boundary-resizing * {
   width: 2px;
   background: linear-gradient(
     180deg,
-    rgba(212, 168, 60, 0.1) 0%,
-    rgba(240, 195, 80, 0.75) 18%,
-    rgba(240, 195, 80, 0.75) 82%,
-    rgba(212, 168, 60, 0.1) 100%
+    rgba(240, 195, 80, 0) 0%,
+    rgba(240, 195, 80, 0.42) 30%,
+    rgba(240, 195, 80, 0.42) 70%,
+    rgba(240, 195, 80, 0) 100%
   );
   box-shadow:
-    0 0 14px rgba(240, 195, 80, 0.35),
-    0 0 42px rgba(240, 195, 80, 0.14);
-  opacity: 1;
-  transition: opacity 0.15s, box-shadow 0.15s, width 0.15s;
+    0 0 10px rgba(240, 195, 80, 0.16),
+    0 0 30px rgba(240, 195, 80, 0.07);
+  opacity: 0.55;
+  filter: blur(0.4px);
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1), width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.interpret-boundary-hit:hover .interpret-boundary::after {
+  opacity: 0.85;
 }
 
 .interpret-boundary.magnet::after,
 .interpret-boundary.drop-over::after {
   width: 3px;
+  opacity: 1;
+  filter: none;
   background: linear-gradient(
     180deg,
-    rgba(240, 195, 80, 0.35) 0%,
-    rgba(255, 216, 110, 0.98) 20%,
-    rgba(255, 216, 110, 0.98) 80%,
-    rgba(240, 195, 80, 0.35) 100%
+    rgba(240, 195, 80, 0) 0%,
+    rgba(255, 216, 110, 0.95) 22%,
+    rgba(255, 216, 110, 0.95) 78%,
+    rgba(240, 195, 80, 0) 100%
   );
   box-shadow:
-    0 0 22px rgba(255, 210, 90, 0.65),
-    0 0 70px rgba(255, 205, 85, 0.28);
+    0 0 22px rgba(255, 210, 90, 0.55),
+    0 0 70px rgba(255, 205, 85, 0.24);
 }
 
 .interpret-boundary.processing::after {
@@ -293,8 +377,8 @@ body.column-boundary-resizing * {
 }
 
 .column-drop-over {
-  background: color-mix(in srgb, var(--accent) 8%, var(--card));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+  box-shadow: inset 0 0 48px -12px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .canvas-column {
@@ -942,9 +1026,9 @@ html[data-theme="chalk"] .ai-column {
   position: relative;
   flex: 1;
   min-height: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 12%, #121218);
-  border-radius: 12px;
-  background: #0a0a0a;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
@@ -3371,7 +3455,7 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
 
 .canvas-column.boundary-magnet,
 .board-main.boundary-magnet {
-  box-shadow: inset -4px 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: inset -36px 0 44px -28px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .board-main.transfer-drag .highlight-glow-layer {
@@ -3383,9 +3467,13 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   opacity: 0.72;
 }
 
-.board-main.transfer-drag .interpret-boundary-hit::before,
+.board-main.transfer-drag .interpret-boundary-hit::before {
+  opacity: 1;
+}
+
+/* While carrying something toward the void, warm it slightly — never flash it light. */
 .three-column-grid.transfer-drag .ai-column {
-  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+  background: color-mix(in srgb, var(--accent) 7%, #0a0a0c);
 }
 
 .canvas-column .ink-layer polyline:not(.hl-stroke) {
