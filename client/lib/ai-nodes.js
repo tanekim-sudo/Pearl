@@ -358,11 +358,18 @@ export function collectStrandChoices(
     }
   }
 
+  const hasAiMaterial =
+    !!node.expandedText?.trim() ||
+    !!node.preview?.trim() ||
+    !!node.goldenFragment?.trim();
+
   const canExpand =
     node.sourceIds?.length ||
+    hasAiMaterial ||
     node.nodeKind === "source" ||
     node.nodeKind === "expanded" ||
-    node.nodeKind === "move";
+    node.nodeKind === "move" ||
+    node.nodeKind === "session";
 
   if (canExpand) {
     for (const op of expansionPrimitives) {

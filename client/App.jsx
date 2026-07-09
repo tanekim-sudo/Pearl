@@ -2807,6 +2807,7 @@ export default function App() {
     if (!g.previewBox) g.previewBox = computeTransferPreviewBox(g.origin, g.ids);
     if (!g.preview) g.preview = transferPreviewText(g.origin, g.ids);
     setTransferDragActive(true);
+    setBoundaryMagnetActive(true);
     setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, null, g.preview));
   }
 
@@ -3104,6 +3105,7 @@ export default function App() {
           activateSpaceTransfer(g, cx, cy);
         }
         if (g.mode === "space-transfer" || dist > TRANSFER_DRAG_THRESHOLD) {
+          setTransferDragActive(true);
           const target = resolveSpaceTransferTarget(g.origin, cx, cy);
           setSpaceTransferGhost(buildSpaceTransferGhost(g.origin, g.ids, cx, cy, target, g.preview));
         }
@@ -5981,9 +5983,17 @@ export default function App() {
   }
 
   function getStrandChoicesForNode(node) {
+    const lensMoves = activeLens?.moveIds?.length
+      ? moves.filter((m) => activeLens.moveIds.includes(m.id))
+      : moves;
     return collectStrandChoices(node, aiNodesRef.current, {
-      expansionPrimitives: primitives.filter(isExpansionOperator),
-      exploreOnly: true,
+      expansionPrimitives: [
+        ...primitives.filter(isExpansionOperator),
+        ...primitives.filter(isCompressionOperator),
+      ],
+      topFunctions,
+      moves: lensMoves.length ? lensMoves : moves,
+      exploreOnly: false,
       opMap,
     });
   }
@@ -6025,8 +6035,9 @@ export default function App() {
     emitTourEvent("strand-select");
     handleAiNodeSelect(nodeId, { replace: true });
 
-    if (choice.kind === "expand" && choice.op) {
-      const atClient = lastPointerRef.current || { x: 0, y: 0 };
+    const atClient = lastPointerRef.current || { x: 0, y: 0 };
+
+    if (choice.op) {
       applyOperatorToAiNode(node, choice.op, atClient, {
         expandedAt: info.worldPos,
         stableCamera: true,
@@ -6034,8 +6045,15 @@ export default function App() {
       return;
     }
 
-    // Keep camera and source node stable for strand gestures.
-    showToast("No expandable source attached to this strand");
+    if (choice.kind === "interpret") {
+      const bundle = aiPanel?.sketchBundle;
+      if (bundle) {
+        interpretSketchBundle(bundle, info.worldPos, { fromClient: atClient });
+        return;
+      }
+    }
+
+    showToast("Nothing to apply for this strand");
   }
 
   // ---- lenses: branch, fork, merge, compare, upload — git for perception ----

@@ -41,7 +41,8 @@ function pointerHitZone(clientX, clientY, node, camera, viewportRect) {
   const screenY = screen.y + viewportRect.top;
   const screenR = (node.radius || 20) * camera.scale;
   const dist = Math.hypot(clientX - screenX, clientY - screenY);
-  const edgePx = Math.max(NODE_EDGE_BAND_PX, screenR * NODE_EDGE_BAND_RATIO);
+  const edgeRatio = camera.scale > 1.05 ? 0.4 : NODE_EDGE_BAND_RATIO;
+  const edgePx = Math.max(NODE_EDGE_BAND_PX, screenR * edgeRatio);
   return {
     onEdge: dist >= screenR - edgePx,
     inNode: dist < screenR - edgePx,
@@ -140,6 +141,13 @@ export default function AiNodeCanvas({
   // While dragging an AI “strand”, let arrow keys cycle the chosen operation.
   // This makes branching choices keyboard-friendly (release to commit).
   useEffect(() => {
+    function cycleStrandHover(sd, nextIdx) {
+      const clamped = Math.max(0, Math.min(sd.choices.length - 1, nextIdx));
+      const nextState = { ...sd, hoverIdx: clamped };
+      strandDragRef.current = nextState;
+      setStrandDrag(nextState);
+    }
+
     function onKeyDown(e) {
       const typing = e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
       if (typing) return;
@@ -148,17 +156,28 @@ export default function AiNodeCanvas({
       if (!sd?.active) return;
       if (!sd.choices?.length) return;
 
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const dir = e.key === "ArrowRight" ? 1 : -1;
-      const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
-      const next = Math.max(0, Math.min(sd.choices.length - 1, cur + dir));
-
-      const nextState = { ...sd, hoverIdx: next };
-      strandDragRef.current = nextState;
-      setStrandDrag(nextState);
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
+        cycleStrandHover(sd, cur - 1);
+        return;
+      }
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
+        cycleStrandHover(sd, cur + 1);
+        return;
+      }
+      if (e.key >= "1" && e.key <= "9") {
+        const idx = Number(e.key) - 1;
+        if (idx < sd.choices.length) {
+          e.preventDefault();
+          e.stopPropagation();
+          cycleStrandHover(sd, idx);
+        }
+      }
     }
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
@@ -423,12 +442,15 @@ export default function AiNodeCanvas({
       const rectNow = viewportRef.current?.getBoundingClientRect();
       if (!rectNow) return;
 
-      let pickIdx = state.hoverIdx;
+      let pickIdx =
+        typeof state.hoverIdx === "number" && state.hoverIdx >= 0
+          ? state.hoverIdx
+          : -1;
       if (pickIdx < 0 && state.angles?.length) {
         pickIdx = pickStrandIndex(state.baseAngle, state.angles);
       }
 
-      if (state.angles?.length) {
+      if (pickIdx < 0 && state.angles?.length) {
         let bestIdx = -1;
         let bestD = STRAND_TIP_HIT;
         const px = ev.clientX - rectNow.left;
@@ -470,7 +492,7 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleStrandEnd);
   }
 
-  function startEdgeStrandGesture(e, node) {
+  function startBranchStrandGesture(e, node) {
     if (e.button !== 0) return;
     e.stopPropagation();
     const startX = e.clientX;
@@ -690,11 +712,10 @@ export default function AiNodeCanvas({
       return;
     }
 
-    const rect = viewportRef.current?.getBoundingClientRect();
-    const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
     const strandChoices = getStrandChoices?.(node) || [];
-    if (tool === "select" && hit.onEdge && strandChoices.length) {
-      startEdgeStrandGesture(e, node);
+    // Alt/Option+drag repositions; default drag branches when operations are available.
+    if (tool === "select" && strandChoices.length && !e.altKey) {
+      startBranchStrandGesture(e, node);
       return;
     }
 
@@ -760,7 +781,7 @@ export default function AiNodeCanvas({
     e.currentTarget.style.cursor =
       tool === "highlight"
         ? "grab"
-        : tool === "select" && hit.onEdge && strandChoices.length
+        : tool === "select" && strandChoices.length
           ? "crosshair"
           : "grab";
   }
@@ -1147,6 +1168,24 @@ export default function AiNodeCanvas({
           role="tooltip"
         >
           {hoverPreview.text}
+        </div>
+      )}
+
+      {strandDrag?.active && (
+        <div className="ai-strand-choice-hud" role="listbox" aria-label="Branch operation">
+          <span className="ai-strand-choice-hud-title">Choose operation</span>
+          {strandDrag.choices.map((choice, i) => (
+            <div
+              key={choice.id}
+              className={"ai-strand-choice-hud-item" + (strandDrag.hoverIdx === i ? " active" : "")}
+              role="option"
+              aria-selected={strandDrag.hoverIdx === i}
+            >
+              <span className="ai-strand-choice-hud-key">{i < 9 ? i + 1 : "·"}</span>
+              <span className="ai-strand-choice-hud-label">{choice.label}</span>
+            </div>
+          ))}
+          <span className="ai-strand-choice-hud-hint">← → or 1–9 · release to apply · Alt+drag to move node</span>
         </div>
       )}
 
