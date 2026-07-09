@@ -143,7 +143,12 @@ export default function AiNodeCanvas({
   useEffect(() => {
     function cycleStrandHover(sd, nextIdx) {
       const clamped = Math.max(0, Math.min(sd.choices.length - 1, nextIdx));
-      const nextState = { ...sd, hoverIdx: clamped };
+      const nextState = {
+        ...sd,
+        hoverIdx: clamped,
+        // Remember where the pointer was so small jitters don't undo the pick.
+        keyLockAt: { x: sd.pointerX ?? 0, y: sd.pointerY ?? 0 },
+      };
       strandDragRef.current = nextState;
       setStrandDrag(nextState);
     }
@@ -390,9 +395,32 @@ export default function AiNodeCanvas({
       }
     }
 
+    function abortStrandDrag(ev) {
+      strandDragRef.current = null;
+      setStrandDrag(null);
+      document.body.classList.remove("ai-strand-dragging");
+      try {
+        if (captured) captureTarget.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
+      window.removeEventListener("pointermove", handleStrandMove);
+      window.removeEventListener("pointerup", handleStrandEnd);
+      window.removeEventListener("pointercancel", handleStrandEnd);
+    }
+
     function updateFromPointer(clientX, clientY, moveEv) {
       const state = strandDragRef.current;
       if (!state) return;
+
+      // Dragging across a column boundary means "move this through layers",
+      // not "branch": hand off to the space-transfer flow.
+      if (moveEv && shouldHandoffNodeDrag?.(clientX, clientY)) {
+        abortStrandDrag(moveEv);
+        onSpaceTransferStart?.(moveEv, [state.nodeId], { immediate: true });
+        return;
+      }
+
       const px = clientX - state.rectLeft;
       const py = clientY - state.rectTop;
       const dx = px - state.originX;
@@ -402,10 +430,24 @@ export default function AiNodeCanvas({
       if (moveEv) ensureCapture(moveEv);
 
       const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, dist));
-      const baseAngle = Math.atan2(dy, dx);
-      const angles = fanStrandAngles(state.choices.length, baseAngle);
-      const pointerAngle = baseAngle;
-      const hoverIdx = pickStrandIndex(pointerAngle, angles);
+      const pointerAngle = Math.atan2(dy, dx);
+      // Freeze the fan at first activation so the tips stay put and the
+      // pointer can actually aim at one of them.
+      const baseAngle = state.active ? state.baseAngle : pointerAngle;
+      const angles =
+        state.active && state.angles?.length
+          ? state.angles
+          : fanStrandAngles(state.choices.length, baseAngle);
+
+      let hoverIdx;
+      let keyLockAt = state.keyLockAt;
+      if (keyLockAt && Math.hypot(clientX - keyLockAt.x, clientY - keyLockAt.y) <= 14) {
+        // A keyboard pick stays sticky until the pointer clearly moves again.
+        hoverIdx = state.hoverIdx;
+      } else {
+        keyLockAt = null;
+        hoverIdx = pickStrandIndex(pointerAngle, angles);
+      }
 
       const next = {
         ...state,
@@ -414,6 +456,7 @@ export default function AiNodeCanvas({
         baseAngle,
         angles,
         hoverIdx,
+        keyLockAt,
         pointerX: clientX,
         pointerY: clientY,
       };
