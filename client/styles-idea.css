@@ -3402,6 +3402,28 @@ body.ai-strand-dragging {
   animation: hl-golden-settle 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Word-level highlight marks: exactly the words a stroke covered. */
+mark.hl-fragment-mark {
+  background: linear-gradient(
+    to top,
+    var(--gold-fill, rgba(255, 215, 0, 0.42)) 0%,
+    rgba(255, 215, 0, 0.26) 85%,
+    transparent 100%
+  );
+  color: inherit;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(232, 185, 35, 0.55);
+  padding: 0 1px;
+  margin: 0 -1px;
+  animation: hl-fragment-settle 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: grab;
+}
+
+@keyframes hl-fragment-settle {
+  0% { background-color: rgba(255, 215, 0, 0.75); }
+  100% { background-color: transparent; }
+}
+
 @keyframes hl-golden-settle {
   0% {
     box-shadow:
@@ -5175,6 +5197,31 @@ body.toolbox-dragging .toolbox-drag-row {
   padding: 14px 14px 4px;
 }
 
+.rail-pane-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rail-pane-heading-row .generator-new {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.rail-pane-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.32);
+}
+
 /* ============ ghost cursor (companion director) ============ */
 
 .ghost-cursor-layer {
@@ -5935,6 +5982,114 @@ body.director-running .idea-app {
 
 .lens-settings-save:hover {
   transform: translateY(-1px);
+}
+
+/* generator workspace: graduate hint + resonance probes */
+.lens-settings-graduate-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(30, 28, 22, 0.5);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px dashed rgba(212, 175, 55, 0.45);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.lens-settings-probe-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.lens-settings-probe-chip,
+.lens-settings-probe-go {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: transparent;
+  border-radius: 999px;
+  font-size: 11.5px;
+  padding: 4px 11px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(30, 28, 22, 0.72);
+}
+
+.lens-settings-probe-chip:hover:not(:disabled),
+.lens-settings-probe-go:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.lens-settings-probe-chip:disabled,
+.lens-settings-probe-go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.lens-settings-probe-input {
+  flex: 1 1 90px;
+  min-width: 80px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 11.5px;
+  background: transparent;
+}
+
+.lens-settings-probe-status {
+  font-size: 11.5px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(30, 28, 22, 0.5);
+}
+
+.lens-settings-probe-status.error {
+  color: rgba(180, 60, 40, 0.8);
+}
+
+.lens-settings-probe-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.lens-settings-probe-candidate {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.lens-settings-probe-candidate p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(30, 28, 22, 0.8);
+}
+
+.lens-settings-probe-candidate-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lens-settings-probe-candidate-actions button {
+  border: none;
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  background: rgba(26, 24, 18, 0.9);
+  color: rgba(248, 242, 220, 0.95);
+}
+
+.lens-settings-probe-candidate-actions button.quiet {
+  background: transparent;
+  color: rgba(30, 28, 22, 0.5);
 }
 
 /* ============ board conflict (login transfer) modal ============ */

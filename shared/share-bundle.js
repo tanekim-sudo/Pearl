@@ -6,7 +6,7 @@ import { sourceDomainOf, transferUseCaseBullets } from "./cognitive-recognition.
 export const SHARE_BUNDLE_VERSION = 1;
 export const SHARE_QUERY_LIMIT = 1800;
 
-const KINDS = new Set(["operator", "symbol", "journey", "path", "lens", "bundle"]);
+const KINDS = new Set(["operator", "symbol", "journey", "path", "ai-path", "lens", "bundle"]);
 
 /** @typedef {{ v: number, kind: string, operators?: object[], symbols?: object[], journey?: object, path?: object, lens?: object, meta?: object }} ShareBundle */
 
@@ -69,6 +69,17 @@ export function createJourneyBundle({ title, steps, opTrees, captureMeta, cognit
   };
 }
 
+/** Generative AI-space path — nodes + arrows the receiver walks, annotates, forks. */
+export function createAiPathBundle(path, meta = {}) {
+  if (!path?.nodes?.length) throw new Error("path nodes required");
+  return {
+    v: SHARE_BUNDLE_VERSION,
+    kind: "ai-path",
+    path,
+    meta: createShareMeta(meta.name || path.title, meta),
+  };
+}
+
 /** Full canvas path — lineage items land on recipient's board. */
 export function createPathBundle(nodeId, items, meta = {}) {
   return {
@@ -99,6 +110,10 @@ export function validateShareBundle(raw) {
       break;
     case "path":
       if (!raw.path?.items?.length) return { ok: false, error: "missing path items" };
+      break;
+    case "ai-path":
+      if (!raw.path?.nodes?.length || !raw.path?.steps?.length)
+        return { ok: false, error: "missing ai-path nodes" };
       break;
     case "bundle":
       break;
@@ -203,6 +218,8 @@ export function getBundleDisplayName(bundle) {
       return bundle.symbols?.[0]?.title || bundle.meta?.name || "structure";
     case "path":
       return bundle.meta?.name || "shared path";
+    case "ai-path":
+      return bundle.path?.title || bundle.meta?.name || "a path";
     default:
       return bundle.meta?.name || "shared";
   }
@@ -232,6 +249,8 @@ export function shareTagline(bundle) {
       return `A reusable template — ${name}`;
     case "path":
       return "A thought path someone shared with you";
+    case "ai-path":
+      return "Not a conclusion — the path that produced it. Walk it.";
     default:
       return `${name} was shared with you`;
   }
@@ -394,6 +413,7 @@ export function shareKindLabel(bundle) {
     case "symbol":
       return "lens";
     case "path":
+    case "ai-path":
       return "path";
     default:
       return "share";

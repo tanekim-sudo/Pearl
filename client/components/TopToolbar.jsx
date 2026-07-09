@@ -62,11 +62,11 @@ export default function TopToolbar({
     { id: "insert-callout-obs", label: "Observation" },
     { id: "insert-callout-q", label: "Question" },
     { id: "insert-diagram", label: "Diagram" },
-    { id: "open-transformations", label: "Transformations" },
-    { id: "open-lenses", label: "Lenses" },
+    { id: "open-transformations", label: "Lenses" },
+    { id: "open-lenses", label: "Generators" },
     { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
-    { id: "new-function", label: "Create transformation" },
+    { id: "new-function", label: "Create lens" },
   ];
   if (showPlans) allItems.push({ id: "open-plans", label: "Plans" });
 

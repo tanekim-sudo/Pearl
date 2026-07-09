@@ -8,13 +8,14 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
   return (
     <div className="cognition-git-header" data-tour="cognition-git">
       <div className="cognition-git-brand">
-        <div className="cognition-git-title">Transformations</div>
+        <div className="cognition-git-title">lenses</div>
+        <div className="rail-pane-sub">ways of transforming — reusable cognitive operations</div>
       </div>
       <div className="cognition-git-status">
         {activeTransformation ? (
           <>
             <span className="git-ref-badge checkout">{ref}</span>
-            <span className="cognition-git-checkout" title="Selected transformation">
+            <span className="cognition-git-checkout" title="Selected lens">
               {activeTransformation.name}
             </span>
             {commits > 0 && (
@@ -25,7 +26,7 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
           </>
         ) : (
           <span className="cognition-git-idle">
-            {transformationCount} transformation{transformationCount === 1 ? "" : "s"}
+            {transformationCount} lens{transformationCount === 1 ? "" : "es"}
           </span>
         )}
       </div>

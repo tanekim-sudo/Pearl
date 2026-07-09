@@ -6,7 +6,9 @@ import {
   createSymbolBundle,
   createJourneyBundle,
   createPathBundle,
+  createAiPathBundle,
   createLensShareBundle,
+  validateShareBundle,
   encodeShareBundle,
   decodeShareToken,
   buildShareUrl,
@@ -52,6 +54,38 @@ describe("share-bundle", () => {
     const decoded = decodeShareToken(token);
     assert.equal(decoded.ok, true);
     assert.equal(decoded.bundle.journey.title, "a thought");
+  });
+
+  it("round-trips ai-path bundle", () => {
+    const bundle = createAiPathBundle({
+      id: "p1",
+      title: "how it grew",
+      targetId: "b",
+      nodes: [
+        { id: "a", nodeKind: "source", label: "seed", x: 0, y: 0 },
+        { id: "b", nodeKind: "expanded", label: "grown", parentId: "a", opLabel: "expand", x: 100, y: 40 },
+      ],
+      edges: [{ id: "a-b", fromId: "a", toId: "b", kind: "expand", label: "expand" }],
+      steps: [
+        { nodeId: "a", caption: "where it began" },
+        { nodeId: "b", caption: "through “expand”" },
+      ],
+    });
+    assert.equal(bundle.kind, "ai-path");
+    const token = encodeShareBundle(bundle);
+    const decoded = decodeShareToken(token);
+    assert.equal(decoded.ok, true);
+    assert.equal(decoded.bundle.path.title, "how it grew");
+    assert.equal(decoded.bundle.path.steps.length, 2);
+  });
+
+  it("rejects ai-path bundle without steps", () => {
+    const res = validateShareBundle({
+      v: SHARE_BUNDLE_VERSION,
+      kind: "ai-path",
+      path: { nodes: [{ id: "a" }], steps: [] },
+    });
+    assert.equal(res.ok, false);
   });
 
   it("normalizes legacy lens-path", () => {

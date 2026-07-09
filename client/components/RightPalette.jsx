@@ -1,11 +1,11 @@
 import React from "react";
 
+// No separate Text tool: the select cursor types (click empty paper), like Google Slides.
 const PALETTE_TOOLS = [
   { id: "sticky", label: "Note", icon: "▢" },
   { id: "pen", label: "Draw", icon: "✎" },
   { id: "voice", label: "Voice", icon: "🎙" },
   { id: "image", label: "Image", icon: "🖼" },
-  { id: "text", label: "Text", icon: "T" },
   { id: "diagram", label: "Diagram", icon: "◎" },
   { id: "math", label: "Math", icon: "∑" },
   { id: "table", label: "Table", icon: "▦" },

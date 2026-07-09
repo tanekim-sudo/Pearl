@@ -2337,6 +2337,14 @@ body {
   opacity: 1;
   color: var(--ink);
 }
+.ai-capture-trigger {
+  background: rgba(20, 18, 30, 0.82);
+  color: rgba(255, 216, 130, 0.9);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+.ai-capture-trigger:hover {
+  color: rgba(255, 228, 160, 1);
+}
 .item-stages-panel {
   width: min(420px, 92vw);
   max-height: 70vh;
@@ -3954,6 +3962,23 @@ body {
 .fn-inspector-section {
   flex-shrink: 0;
 }
+.fn-output-controls {
+  margin-top: 10px;
+}
+.fn-output-controls-row {
+  display: flex;
+  gap: 6px;
+}
+.fn-output-controls-row select {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.14));
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
 .fn-inspector-hint {
   font-size: 12.5px;
   color: var(--ink-2);
@@ -5239,4 +5264,143 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---- sending paths: walking a shared generative path ---- */
+.path-walk {
+  position: fixed;
+  inset: 0;
+  /* above the rail/drawers (90) — the walk owns the whole room while it runs */
+  z-index: 95;
+  background: rgba(12, 12, 14, 0.86);
+}
+.path-walk-space {
+  position: absolute;
+  inset: 0;
+}
+.path-walk-camera {
+  transition: transform 0.72s cubic-bezier(0.4, 0.08, 0.24, 1);
+}
+.pw-edge path {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.4;
+}
+.pw-edge.lit path {
+  stroke: rgba(245, 230, 163, 0.55);
+  stroke-width: 1.8;
+}
+.pw-edge-label {
+  font-size: 10px;
+  fill: rgba(255, 255, 255, 0.28);
+  font-style: italic;
+}
+.pw-edge.lit .pw-edge-label {
+  fill: rgba(245, 230, 163, 0.7);
+}
+.pw-node {
+  cursor: pointer;
+}
+.pw-node circle {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1.6;
+}
+.pw-node.visited circle {
+  fill: rgba(245, 230, 163, 0.08);
+  stroke: rgba(245, 230, 163, 0.5);
+}
+.pw-node.current circle {
+  stroke: rgba(245, 230, 163, 0.95);
+  fill: rgba(245, 230, 163, 0.14);
+}
+.pw-node .pw-node-halo {
+  fill: none;
+  stroke: rgba(245, 230, 163, 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  animation: hole-breathe 2.4s ease-in-out infinite;
+}
+.pw-node .pw-note-dot {
+  fill: rgba(245, 230, 163, 0.9);
+  stroke: none;
+}
+.pw-node-label {
+  font-size: 11px;
+  fill: rgba(255, 255, 255, 0.55);
+}
+.pw-node.current .pw-node-label {
+  fill: rgba(245, 230, 163, 0.9);
+}
+.path-walk-footer {
+  z-index: 71;
+}
+.pw-caption {
+  font-size: 13px;
+  color: var(--faint);
+  font-style: italic;
+  margin-left: 8px;
+}
+.pw-content {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  max-height: 128px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  padding: 2px 0 6px;
+}
+.pw-note {
+  border: none;
+  border-bottom: 1px dashed var(--line-2);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  padding: 4px 2px;
+  resize: none;
+  outline: none;
+}
+.pw-note::placeholder {
+  color: var(--faint);
+  font-style: italic;
+}
+.pw-note:focus {
+  border-bottom-color: var(--chalk-yellow-deep);
+}
+.path-return-chip {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 62;
+  border: 1px dashed var(--chalk-yellow-deep);
+  background: var(--card);
+  color: var(--chalk-yellow-muted);
+  border-radius: 999px;
+  font-size: 12.5px;
+  padding: 7px 16px;
+  cursor: pointer;
+  box-shadow: 0 6px 24px var(--shadow-soft);
+}
+.path-return-chip:hover {
+  background: rgba(245, 230, 163, 0.14);
+}
+.ai-path-send {
+  position: fixed;
+  right: 18px;
+  bottom: 64px;
+  z-index: 30;
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--faint);
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 6px 13px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.ai-path-send:hover {
+  color: var(--ink);
+  border-color: var(--chalk-yellow-deep);
+  opacity: 1;
 }

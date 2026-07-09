@@ -180,9 +180,20 @@ export function nodeVisualRadius(node, opts = {}) {
   return r + ring * 0.55;
 }
 
+/** Distance from a rect's center to its boundary along a unit direction. */
+function rectBoundaryDist(w, h, ux, uy) {
+  const dx = Math.abs(ux) > 1e-6 ? w / 2 / Math.abs(ux) : Infinity;
+  const dy = Math.abs(uy) > 1e-6 ? h / 2 / Math.abs(uy) : Infinity;
+  return Math.min(dx, dy);
+}
+
 /**
  * Point on the visible node boundary where a strand should attach,
  * on the ray from node center toward (targetX, targetY).
+ *
+ * When the node has morphed toward its text card (contentBlend > 0 with a
+ * blend-aware textLayout), the boundary is the card's box, not the original
+ * circle — otherwise arrows pierce the text at reading zoom.
  */
 export function attachPointOnNode(node, targetX, targetY, opts = {}) {
   const cx = node.x;
@@ -200,7 +211,13 @@ export function attachPointOnNode(node, targetX, targetY, opts = {}) {
   const ringStroke = Math.max(1.5, (opts.invScale ?? 1) * 2.8);
   const pad = opts.edgePad ?? ringStroke * 0.55 + 1.5;
 
-  const radius = nodeVisualRadius(node, opts);
+  let radius = nodeVisualRadius(node, opts);
+  const blend = Math.max(0, Math.min(1, opts.contentBlend || 0));
+  const box = opts.textLayout;
+  if (blend > 0 && box?.boxW && box?.boxH) {
+    const cardDist = rectBoundaryDist(box.boxW, box.boxH, ux, uy);
+    radius = radius * (1 - blend) + Math.max(radius, cardDist) * blend;
+  }
   return {
     x: cx + ux * (radius + pad),
     y: cy + uy * (radius + pad),
@@ -232,14 +249,17 @@ export function edgeGeometry(from, to, opts = {}) {
   const end = attachPointOnNode(to, from.x, from.y, toOpts);
 
   const chordLen = Math.hypot(to.x - from.x, to.y - from.y) || 0;
+  // Sibling separation bows the MIDDLE of the strand only. Endpoints must stay
+  // on the ray to each node's rim — shifting them sideways made arrows pierce
+  // one node and float off its sibling.
   const bundle = opts.bundleOffset || 0;
   const px = -start.uy * bundle;
   const py = start.ux * bundle;
 
-  const x1 = start.x + px;
-  const y1 = start.y + py;
-  const x2 = end.x + px;
-  const y2 = end.y + py;
+  const x1 = start.x;
+  const y1 = start.y;
+  const x2 = end.x;
+  const y2 = end.y;
 
   const segLen = Math.hypot(x2 - x1, y2 - y1) || 1;
   if (segLen < 6) {
@@ -255,10 +275,10 @@ export function edgeGeometry(from, to, opts = {}) {
   }
 
   const curve = Math.min(segLen * 0.44, chordLen * 0.24, 148) * (opts.curveSign ?? 1);
-  const cx1 = x1 + start.ux * curve * 0.55;
-  const cy1 = y1 + start.uy * curve * 0.55;
-  const cx2 = x2 + end.ux * curve * 0.55;
-  const cy2 = y2 + end.uy * curve * 0.55;
+  const cx1 = x1 + start.ux * curve * 0.55 + px;
+  const cy1 = y1 + start.uy * curve * 0.55 + py;
+  const cx2 = x2 + end.ux * curve * 0.55 + px;
+  const cy2 = y2 + end.uy * curve * 0.55 + py;
 
   return {
     x1,

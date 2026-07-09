@@ -368,7 +368,7 @@ export default function LensTreeEditor({
         tabIndex={-1}
       >
         <div className="fn-head">
-          <h3>{isCreate ? "Create function" : "Edit function"}</h3>
+          <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
           <div className="fn-head-actions">
             <button className="fn-close" onClick={onClose} type="button">
               ×
@@ -494,7 +494,7 @@ export default function LensTreeEditor({
               <>
                 {focusPath.length > 0 && (
                   <div className="fn-inspector-crumb">
-                    {rootDraft?.name || "function"}
+                    {rootDraft?.name || "lens"}
                     {focusPath.map((c, i) => (
                       <React.Fragment key={i}>
                         <span className="fn-inspector-crumb-sep">›</span>
@@ -504,7 +504,7 @@ export default function LensTreeEditor({
                   </div>
                 )}
                 <div className="fn-inspector-section">
-                  <label>{focusId && focusId !== rootId ? "step name" : "function name"}</label>
+                  <label>{focusId && focusId !== rootId ? "step name" : "lens name"}</label>
                   <input
                     className="fn-tree-input"
                     value={inspectorOp.name || ""}
@@ -527,6 +527,32 @@ export default function LensTreeEditor({
                         onChange={(e) => patchOp(inspectorOp.id, { prompt: e.target.value })}
                       />
                     </>
+                  )}
+                  {(!focusId || focusId === rootId) && (
+                    <div className="fn-output-controls">
+                      <label>outputs</label>
+                      <div className="fn-output-controls-row">
+                        <select
+                          value={Number(inspectorOp.outputCount) > 1 ? Number(inspectorOp.outputCount) : 1}
+                          onChange={(e) => patchOp(inspectorOp.id, { outputCount: Number(e.target.value) })}
+                          title="How many distinct outputs this lens produces per run"
+                        >
+                          <option value={1}>1 output</option>
+                          <option value={2}>2 outputs</option>
+                          <option value={3}>3 outputs</option>
+                          <option value={4}>4 outputs</option>
+                        </select>
+                        <select
+                          value={inspectorOp.outputBlockType || "text"}
+                          onChange={(e) => patchOp(inspectorOp.id, { outputBlockType: e.target.value })}
+                          title="Block type outputs become when dragged onto paper"
+                        >
+                          <option value="text">as text</option>
+                          <option value="sticky">as sticky</option>
+                          <option value="callout">as callout</option>
+                        </select>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -607,7 +633,7 @@ export default function LensTreeEditor({
           {toast && <span className="fn-toast">{toast}</span>}
           {!isCreate && sourceRoot && (
             <button className="fn-del" type="button" onClick={() => onDelete(sourceRoot.id)}>
-              delete function
+              delete lens
             </button>
           )}
           <span style={{ flex: 1 }} />

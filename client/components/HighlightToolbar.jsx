@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from "react";
 export default function HighlightToolbar({
   paperCount = 0,
   aiCount = 0,
+  fragmentCount = 0,
   ops = [],
   onOperate,
   onExtend,
@@ -18,7 +19,7 @@ export default function HighlightToolbar({
 }) {
   const [opsOpen, setOpsOpen] = useState(false);
   const rootRef = useRef(null);
-  const total = paperCount + aiCount;
+  const total = paperCount + aiCount + fragmentCount;
 
   useEffect(() => {
     if (!opsOpen) return undefined;
@@ -31,12 +32,11 @@ export default function HighlightToolbar({
 
   if (!total) return null;
 
-  const countLabel =
-    paperCount && aiCount
-      ? `${paperCount} on paper · ${aiCount} in AI`
-      : paperCount
-        ? `${paperCount} highlighted`
-        : `${aiCount} node${aiCount === 1 ? "" : "s"} marked`;
+  const parts = [];
+  if (paperCount) parts.push(`${paperCount} highlighted`);
+  if (fragmentCount) parts.push(`${fragmentCount} phrase${fragmentCount === 1 ? "" : "s"}`);
+  if (aiCount) parts.push(`${aiCount} node${aiCount === 1 ? "" : "s"}`);
+  const countLabel = parts.join(" · ");
 
   return (
     <div className="omni-highlight-bar" ref={rootRef} onPointerDown={(e) => e.stopPropagation()}>
@@ -66,7 +66,7 @@ export default function HighlightToolbar({
                 </button>
               ))
             ) : (
-              <span className="omni-highlight-op empty">no functions yet</span>
+              <span className="omni-highlight-op empty">no lenses yet</span>
             )}
           </div>
         )}
@@ -83,14 +83,14 @@ export default function HighlightToolbar({
       >
         find sameness
       </button>
-      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection as lens material">
-        save as lens
+      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into a generator — material for a latent structure">
+        save as generator
       </button>
       <button
         type="button"
         className="omni-highlight-btn"
         onClick={onSendToAi}
-        disabled={!paperCount}
+        disabled={!paperCount && !fragmentCount}
         title="Send the highlighted paper material into the AI space"
       >
         send to AI

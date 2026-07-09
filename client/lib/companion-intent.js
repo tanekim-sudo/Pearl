@@ -30,8 +30,16 @@ export const COMPANION_VERBS = {
   renamePage: { args: { name: "string" } },
   zoomToItem: { args: { target: "string or 'last'" } },
   moveAiNode: { args: { target: "string (node label) or omit for latest", dx: "number?", dy: "number?" } },
-  openFunctionEditor: { args: { op: "string (function name, incl. primitives like compress/expand)" } },
-  editFunction: { args: { op: "string (function name, incl. primitives)", name: "string?", description: "string?", prompt: "string?" } },
+  openFunctionEditor: { args: { op: "string (lens name, incl. primitives like compress/expand)" } },
+  editFunction: { args: { op: "string (lens name, incl. primitives)", name: "string?", description: "string?", prompt: "string?" } },
+  forkLens: { args: { lens: "string (lens name or 'last')", message: "string?" } },
+  mergeLenses: { args: { a: "string (lens name)", b: "string (lens name)" } },
+  editLensByInstruction: { args: { op: "string (lens name or 'last')", instruction: "string (plain-language change; AI rewrites the lens tree)" } },
+  newGenerator: { args: { saveAs: "string?" } },
+  attachToGenerator: { args: { generator: "string (generator title, ◇N, or 'last')", target: "string (item text match or 'last')" } },
+  graduateGenerator: { args: { generator: "string (◇N or title or 'last')", name: "string (its real name, now that it's clear)" } },
+  probeGenerator: { args: { generator: "string or 'last'", domain: "string (music, books, prayers, paintings, or anything)" } },
+  makeLensFromGenerator: { args: { generator: "string or 'last'" } },
 };
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
@@ -41,12 +49,12 @@ export function buildCompanionSystemPrompt({ demos = [], functionNames = [], ite
     .map(([name, def]) => `- ${name}(${Object.entries(def.args).map(([k, v]) => `${k}: ${v}`).join(", ")})`)
     .join("\n");
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");
-  return `You are the companion inside "lens", a thinking tool with three layers: a functions rail (left), a paper notebook page (middle), and an AI space (right). Users store reusable cognitive transformations as functions, apply them to ideas on paper, and results bloom as nodes in the AI layer. Everything you do is DEMONSTRATED live with an animated ghost cursor so the user learns the tool by watching.
+  return `You are the companion inside "lens", a thinking tool with three layers: a rail (left) holding LENSES and GENERATORS, a paper notebook page (middle), and an AI space (right). LENSES are reusable cognitive transformations — executable pipelines the user applies to ideas; results bloom as nodes in the AI layer. Lenses support "git for perception": fork, merge, branch, capture a whole thread as one lens, and rewrite by instruction. GENERATORS are latent structures — numbered ◇N placeholders for proto-concepts; the user attaches observations over time, graduates them to real names when clear, probes them against other domains (music, books, prayers, paintings…), and can turn one into a lens. Everything you do is DEMONSTRATED live with an animated ghost cursor so the user learns the tool by watching.
 
 You translate the user's request into a JSON script of director verbs. Available verbs:
 ${verbDoc}
 
-Existing functions on the user's rail: ${functionNames.length ? functionNames.join(", ") : "(none yet)"}
+Existing lenses on the user's rail: ${functionNames.length ? functionNames.join(", ") : "(none yet)"}
 Objects currently on the page: ${itemPreviews.length ? itemPreviews.map((p) => `"${p}"`).join(", ") : "(empty page)"}
 
 Prebuilt demonstrations you can play instead of writing a script:
@@ -57,8 +65,10 @@ Reply with ONLY a JSON object, no prose, no code fences:
 
 Rules:
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
-- If the user asks you to DO something concrete (e.g. "make an investment memo function with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
-- You can do ANYTHING a hand can: move/edit/delete/select objects, tidy the page (organizePage), add stickies/callouts/diagrams, rename the page, zoom to things, reposition AI nodes, and edit any function — including the built-in primitives (compress, expand, explore, research, invert, reframe, merge, transcend) via editFunction or openFunctionEditor.
+- If the user asks you to DO something concrete (e.g. "make an investment memo lens with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
+- You can do ANYTHING a hand can: move/edit/delete/select objects, tidy the page (organizePage), add stickies/callouts/diagrams, rename the page, zoom to things, reposition AI nodes, and edit any lens — including the built-in primitives (compress, expand, explore, research, invert, reframe, merge, transcend) via editFunction, editLensByInstruction, or openFunctionEditor.
+- Lens lifecycle: forkLens copies a lens to evolve separately; mergeLenses composes two into one compound; captureThread turns the path that produced an object (paper item or AI node) into a lens.
+- Generator lifecycle: newGenerator creates an empty ◇N placeholder; attachToGenerator accumulates observations onto it; graduateGenerator names it once understood; probeGenerator expresses its structure in another domain; makeLensFromGenerator turns its structure into a reusable lens.
 - Multi-part requests are fine: chain as many steps as needed, in the order the user asked. A failed step is skipped, the rest still run.
 - Interleave short caption verbs so the user understands each move.
 - Use "last" to refer to the thing just created. Use text fragments to refer to existing items/functions.

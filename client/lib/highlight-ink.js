@@ -96,7 +96,10 @@ export function highlightBrushHits(
   blockWidth,
   itemHeight
 ) {
-  const brush = Math.max(5, HIGHLIGHT_W * scale * 0.38);
+  // Constant screen-space brush: the highlighter feels identical at every
+  // zoom. (The old * scale formula ballooned the brush when zoomed in and
+  // starved it when zoomed out.)
+  const brush = HIGHLIGHT_W * 1.2;
   const hits = [];
   for (const it of items) {
     if (skipIds?.has(it.id)) continue;
@@ -163,8 +166,15 @@ function isClosedHighlightLoop(points, scale) {
   if (points.length < 8) return false;
   const a = points[0];
   const b = points[points.length - 1];
-  const closeDist = Math.max(24, highlightWorldWidth(scale) * 1.8);
-  return Math.hypot(b.x - a.x, b.y - a.y) <= closeDist;
+  // Screen-space thresholds so loops behave identically at every zoom:
+  // a loop is closed when its ends meet within ~26 px ON SCREEN and it
+  // encloses a real area (not a scribble).
+  const s = Math.max(scale, 0.02);
+  const closePx = Math.hypot(b.x - a.x, b.y - a.y) * s;
+  if (closePx > 26) return false;
+  const bb = strokeWorldBBox(points, 0);
+  if (!bb) return false;
+  return (bb.maxx - bb.minx) * s > 40 && (bb.maxy - bb.miny) * s > 40;
 }
 
 function itemsInsideHighlightLoop(points, itemList) {

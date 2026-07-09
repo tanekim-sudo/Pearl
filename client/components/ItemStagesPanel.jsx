@@ -5,7 +5,7 @@ export default function ItemStagesPanel({ title, stages, onClose }) {
   return (
     <div className="onboard-scrim" onClick={onClose}>
       <div className="item-stages-panel" onClick={(e) => e.stopPropagation()}>
-        <h3 className="item-stages-title">transformations · {title}</h3>
+        <h3 className="item-stages-title">lenses applied · {title}</h3>
         {stages?.length ? (
           <ol className="item-stages-list">
             {stages.map((s, i) => (
@@ -22,7 +22,7 @@ export default function ItemStagesPanel({ title, stages, onClose }) {
           </ol>
         ) : (
           <p className="item-stages-empty">
-            No transformations yet — drag a lens onto this idea to start a thread.
+            No lenses applied yet — drag a lens onto this idea to start a thread.
           </p>
         )}
         <div className="item-stages-foot">

@@ -96,6 +96,34 @@ export function writeLocalBoardSnapshot(snapshot) {
     JSON.stringify({
       savedAt: snapshot?.savedAt || new Date().toISOString(),
       version: snapshot?.version || BOARD_SYNC_VERSION,
+      ownerId: getLocalBoardOwner(),
+    })
+  );
+}
+
+/** Which account the local board already belongs to (null = anonymous work). */
+export function getLocalBoardOwner() {
+  try {
+    const meta = JSON.parse(safeGet(BOARD_SYNC_META_KEY) || "null");
+    return meta?.ownerId || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setLocalBoardOwner(userId) {
+  let meta = {};
+  try {
+    meta = JSON.parse(safeGet(BOARD_SYNC_META_KEY) || "null") || {};
+  } catch {
+    meta = {};
+  }
+  safeSet(
+    BOARD_SYNC_META_KEY,
+    JSON.stringify({
+      savedAt: meta.savedAt || new Date().toISOString(),
+      version: meta.version || BOARD_SYNC_VERSION,
+      ownerId: userId || null,
     })
   );
 }
@@ -268,7 +296,11 @@ export function useBoardCloudSync({
     dirtyRef.current = true;
     safeSet(
       BOARD_SYNC_META_KEY,
-      JSON.stringify({ savedAt: new Date().toISOString(), version: BOARD_SYNC_VERSION })
+      JSON.stringify({
+        savedAt: new Date().toISOString(),
+        version: BOARD_SYNC_VERSION,
+        ownerId: getLocalBoardOwner(),
+      })
     );
   }, [dirtyToken]);
 
@@ -295,6 +327,7 @@ export function useBoardCloudSync({
         if (!remote) {
           const stamped = { ...local, savedAt: new Date().toISOString() };
           writeLocalBoardSnapshot(stamped);
+          setLocalBoardOwner(userId);
           await pushCloudBoardSnapshot(supabase, userId, stamped);
           hydratedUserRef.current = userId;
           onSynced?.();
@@ -303,11 +336,14 @@ export function useBoardCloudSync({
 
         const winner = compareSnapshotTimestamps(local.savedAt, remote.savedAt);
 
-        // Both sides have real content and disagree: the user decides whether
-        // to keep the account board or bring the anonymous work in.
+        // Ask only when the local board is genuinely foreign to this account
+        // (anonymous work or another user's). A board this account already
+        // adopted just syncs newest-wins — no popup on every open.
+        const localOwner = getLocalBoardOwner();
         if (
           winner !== "equal" &&
           onConflict &&
+          localOwner !== userId &&
           snapshotHasContent(local) &&
           snapshotHasContent(remote)
         ) {
@@ -328,6 +364,7 @@ export function useBoardCloudSync({
                   onHydrate?.(parseBoardSnapshot(merged));
                   await pushCloudBoardSnapshot(supabase, userId, merged);
                 }
+                setLocalBoardOwner(userId);
                 hydratedUserRef.current = userId;
                 onSynced?.();
               } catch (err) {
@@ -340,16 +377,19 @@ export function useBoardCloudSync({
 
         if (winner === "remote") {
           writeLocalBoardSnapshot(remote);
+          setLocalBoardOwner(userId);
           onHydrate?.(parseBoardSnapshot(remote));
           hydratedUserRef.current = userId;
           onSynced?.();
         } else if (winner === "local") {
           const stamped = { ...local, savedAt: new Date().toISOString() };
           writeLocalBoardSnapshot(stamped);
+          setLocalBoardOwner(userId);
           await pushCloudBoardSnapshot(supabase, userId, stamped);
           hydratedUserRef.current = userId;
           onSynced?.();
         } else {
+          setLocalBoardOwner(userId);
           hydratedUserRef.current = userId;
         }
       } catch (err) {

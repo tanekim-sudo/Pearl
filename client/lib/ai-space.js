@@ -305,6 +305,16 @@ export function focusAiNodeRead(node, layout, vpWidth, vpHeight, opts = {}) {
   const minReadScale = minScreenFontPx / layout.fontSize;
   const scale = clampScale(Math.min(Math.max(fitScale, minReadScale), maxScale));
 
+  // Content taller than the viewport: read from the top, not the middle.
+  const boxH = (layout.boxH || d) * scale;
+  if (boxH > vpHeight - topMargin * 2) {
+    const boxTopWorld = node.y - (layout.boxH || d) / 2;
+    return {
+      scale,
+      x: vpWidth / 2 - node.x * scale,
+      y: topMargin - boxTopWorld * scale,
+    };
+  }
   return focusAiNode(node, vpWidth, vpHeight, scale);
 }
 
