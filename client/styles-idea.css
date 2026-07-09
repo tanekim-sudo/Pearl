@@ -5958,3 +5958,49 @@ body.director-running .idea-app {
   font-size: 12px;
   color: rgba(30, 28, 22, 0.55);
 }
+
+/* ============ audit gaps: walk trigger + empty lenses CTA ============ */
+
+.item-walk-trigger {
+  font-size: 13px;
+}
+
+.rail-empty-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 12px;
+  margin: 4px 0;
+  border: 1px dashed rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.rail-empty-cta p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(30, 28, 22, 0.6);
+}
+
+.rail-empty-cta button {
+  border: none;
+  border-radius: 999px;
+  background: rgba(26, 24, 18, 0.9);
+  color: rgba(248, 242, 220, 0.95);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.rail-empty-cta button:hover {
+  transform: translateY(-1px);
+}
+
+.rail-empty-cta span {
+  font-size: 11px;
+  color: rgba(30, 28, 22, 0.4);
+}

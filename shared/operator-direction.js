@@ -1,6 +1,6 @@
 /** Perceptual direction — compression (paper/left) vs expansion (AI/right). */
 
-export const COMPRESSION_PRIMITIVE_IDS = new Set(["op-compress"]);
+export const COMPRESSION_PRIMITIVE_IDS = new Set(["op-compress", "op-merge"]);
 
 export const EXPANSION_PRIMITIVE_IDS = new Set([
   "op-expand",

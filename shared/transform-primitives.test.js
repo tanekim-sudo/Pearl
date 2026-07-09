@@ -15,7 +15,7 @@ import { PHASE_TIMEOUT } from "./phase-timeouts.js";
 
 describe("transform primitives", () => {
   it("defines the canonical grammar", () => {
-    assert.equal(TRANSFORM_PRIMITIVES.length, 7);
+    assert.equal(TRANSFORM_PRIMITIVES.length, 8);
     assert.ok(PRIMITIVE_NAMES.has("expand"));
     assert.ok(PRIMITIVE_NAMES.has("compress"));
     assert.ok(PRIMITIVE_NAMES.has("explore"));
@@ -35,7 +35,7 @@ describe("transform primitives", () => {
       { id: "x1", name: "thesis", top: true, kind: "pipeline", steps: [] },
     ];
     const next = migrateOperatorStore(legacy);
-    assert.equal(next.filter((o) => o.primitive).length, 7);
+    assert.equal(next.filter((o) => o.primitive).length, 8);
     assert.ok(next.some((o) => o.name === "thesis"));
     assert.ok(!next.some((o) => o.name === "combine"));
   });

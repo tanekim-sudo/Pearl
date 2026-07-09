@@ -3465,6 +3465,7 @@ export default function App() {
           } else {
             const expandIds = transformableDragIds(g.ids);
             if (expandIds.length) expandInAi(expandIds, { expandedAt: world, stableCamera: true });
+            else showToast("Nothing here can transfer to AI");
           }
         } else {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -5517,7 +5518,10 @@ export default function App() {
     setSymbolDropTargetId(null);
     setTransferDragActive(false);
     const ids = idsFromMaterialTransfer(e);
-    if (!ids?.length) return;
+    if (!ids?.length) {
+      showToast("drag thoughts or highlights onto a lens to add them");
+      return;
+    }
     const hl = highlightSelectionRef.current;
     if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
     addMaterialToLens(ids, { structId });
@@ -6279,6 +6283,18 @@ export default function App() {
       const bundle = aiPanel?.sketchBundle;
       if (bundle) {
         interpretSketchBundle(bundle, info.worldPos, { fromClient: atClient });
+        return;
+      }
+      // No live panel bundle: rebuild from the node's own paper sources, or
+      // expand the sources through the node so the strand never dead-ends.
+      const srcIds = node.sourceIds || [];
+      const rebuilt = srcIds.length ? gatherSelectionSketchBundle(srcIds) : null;
+      if (rebuilt) {
+        interpretSketchBundle(rebuilt, info.worldPos, { fromClient: atClient });
+        return;
+      }
+      if (srcIds.length) {
+        expandInAi(srcIds, { sourceNode: node, expandedAt: info.worldPos, stableCamera: true });
         return;
       }
     }
@@ -7676,7 +7692,10 @@ export default function App() {
   // ---- export / object helpers ----
   async function combineItemsByDrag(draggedIds, targetIds) {
     const ids = [...new Set([...draggedIds, ...targetIds])];
-    const mergeOp = operators.find((o) => o.name === "merge") || TRANSFORM_PRIMITIVES.find((o) => o.name === "expand");
+    const mergeOp =
+      opMap["op-merge"] ||
+      operators.find((o) => o.name === "merge") ||
+      TRANSFORM_PRIMITIVES.find((o) => o.name === "merge");
     runOperator(mergeOp, ids, {});
   }
   combineRef.current = combineItemsByDrag;
@@ -9231,6 +9250,31 @@ export default function App() {
                 lenses {lenses.length ? `(${lenses.length})` : ""}
               </h3>
               <div className="rail-scroll">
+                {lenses.filter((s) => s?.id).length === 0 && (
+                  <div className="rail-empty-cta">
+                    <p>
+                      A lens is a saved way of seeing — a page, a highlight, or a few
+                      thoughts that share a structure.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const hl = highlightSelectionRef.current;
+                        const sel = selRef.current;
+                        const ids = hl.length ? hl : sel;
+                        if (ids.length) {
+                          const struct = saveMaterialAsSymbol(ids);
+                          if (struct) setSymbolDrawPrompt({ structId: struct.id, title: struct.title });
+                        } else {
+                          savePageAsLens();
+                        }
+                      }}
+                    >
+                      ◇ save {highlightSelectionIds.length || selection.length ? "selection" : "this page"} as a lens
+                    </button>
+                    <span>or drag highlighted thoughts here</span>
+                  </div>
+                )}
                 {lenses.filter((s) => s?.id).map((struct) => (
                   <PatternLensCard
                     key={struct.id}
@@ -9829,6 +9873,25 @@ export default function App() {
           title="Operator stages"
         >
           ◷
+        </button>
+      )}
+
+      {/* walk the path that produced this thought */}
+      {selItem && !walking && !stagesItemId && (selItem.bornFrom?.length || selItem.via) && (
+        <button
+          type="button"
+          className="item-stages-trigger item-walk-trigger"
+          style={{
+            left: itemScreenBBox(selItem).right - 6,
+            top: itemScreenBBox(selItem).top + 22,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            walkNode(selItem.id);
+          }}
+          title="Walk the path that led here"
+        >
+          ↝
         </button>
       )}
 
