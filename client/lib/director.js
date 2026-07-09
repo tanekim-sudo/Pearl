@@ -169,7 +169,8 @@ export async function runDirectorScript(steps, opts = {}) {
   emit();
   document.body.classList.add("director-running");
   const ctx = { vars: {} };
-  let error = null;
+  const errors = [];
+  let consecutiveFailures = 0;
   try {
     for (const step of steps) {
       if (state.abortRequested) break;
@@ -177,11 +178,20 @@ export async function runDirectorScript(steps, opts = {}) {
       if (!fn) continue;
       try {
         await fn(step.args || {}, toolkit, ctx);
+        consecutiveFailures = 0;
       } catch (err) {
-        error = err?.message || String(err);
-        setDirectorCaption(`something went wrong: ${error}`);
-        await directorWait(1600);
-        break;
+        // One broken step shouldn't kill a long demonstration — note it,
+        // let the viewer read the note, and carry on with the rest.
+        const msg = err?.message || String(err);
+        errors.push(msg);
+        consecutiveFailures += 1;
+        setDirectorCaption(`skipping a step (${msg}) — continuing…`);
+        await directorWait(1400);
+        if (consecutiveFailures >= 3) {
+          setDirectorCaption("too many steps failed in a row — stopping here");
+          await directorWait(1400);
+          break;
+        }
       }
     }
   } finally {
@@ -195,13 +205,18 @@ export async function runDirectorScript(steps, opts = {}) {
     state.abortRequested = false;
     document.body.classList.remove("director-running");
     emit();
-    opts.onDone?.({ completed: !aborted && !error, aborted, error });
+    opts.onDone?.({ completed: !aborted && !errors.length, aborted, errors });
   }
-  return { completed: !error, error };
+  return { completed: !errors.length, errors };
 }
 
 export function stopDirector() {
   if (!state.running) return;
   state.abortRequested = true;
   emit();
+}
+
+// Dev-only hook so automated audits can exercise director verbs end to end.
+if (typeof window !== "undefined" && import.meta.env?.DEV) {
+  window.__lensDirector = { run: runDirectorScript, stop: stopDirector, verbs: listDirectorVerbs };
 }

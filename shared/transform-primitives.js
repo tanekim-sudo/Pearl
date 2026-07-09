@@ -195,5 +195,31 @@ export function migrateOperatorStore(saved) {
       (!o.primitive && !o.move && !LEGACY_DEFAULT_NAMES.has(o.name) && !PRIMITIVE_NAMES.has(o.name))
   );
 
-  return [...TRANSFORM_PRIMITIVES.map((p) => ({ ...p })), ...userOps];
+  // Primitives are editable: a saved primitive-flagged op that keeps a
+  // canonical name is the user's edit of that primitive — it replaces the
+  // built-in. If the edit turned the primitive into a pipeline, keep its
+  // whole step subtree alive too.
+  const byId = Object.fromEntries(saved.map((o) => [o.id, o]));
+  const overrides = saved.filter((o) => o.primitive && !o.role && !o.top && PRIMITIVE_NAMES.has(o.name));
+  const overrideByName = new Map(overrides.map((o) => [o.name, o]));
+  const keepIds = new Set();
+  const walkSteps = (id) => {
+    const op = byId[id];
+    if (!op || keepIds.has(id)) return;
+    keepIds.add(id);
+    if (op.kind === "pipeline") (op.steps || []).forEach(walkSteps);
+  };
+  overrides.forEach((o) => (o.steps || []).forEach(walkSteps));
+  const overrideSubtree = saved.filter(
+    (o) => keepIds.has(o.id) && !overrideByName.has(o.name) && !userOps.some((u) => u.id === o.id)
+  );
+
+  return [
+    ...TRANSFORM_PRIMITIVES.map((p) => {
+      const edited = overrideByName.get(p.name);
+      return edited ? { ...edited } : { ...p };
+    }),
+    ...overrideSubtree,
+    ...userOps,
+  ];
 }

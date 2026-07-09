@@ -9065,6 +9065,209 @@ export default function App() {
       savePageAsLens();
       await tk.wait(1400);
     },
+    // ---- direct manipulation: the companion can do anything a hand can ----
+    moveItem: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("no object to move");
+      const w = itemWidth(item) * (item.scale ?? 1);
+      const h = itemHeight(item) * (item.scale ?? 1);
+      const destWorld = a.to
+        ? { x: a.to.x, y: a.to.y }
+        : { x: item.x + (a.dx ?? 120), y: item.y + (a.dy ?? 80) };
+      const from = directorItemClientCenter(item);
+      const toClient = worldToClient(destWorld.x + w / 2, destWorld.y + h / 2);
+      tk.caption(a.caption || "grab it and put it where it belongs");
+      await tk.moveTo(from.x, from.y);
+      await tk.press(truncatePreview(item.text || "object", 18));
+      await tk.moveTo(toClient.x, toClient.y, 750);
+      await tk.release();
+      pushHistory();
+      setItems((arr) =>
+        arr.map((it) =>
+          it.id === item.id
+            ? clampItemToPaper({ ...it, x: destWorld.x, y: destWorld.y }, itemWorldBBox)
+            : it
+        )
+      );
+      await tk.wait(400);
+    },
+    editItem: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("no object to edit");
+      const c = directorItemClientCenter(item);
+      tk.caption(a.caption || "click into the text and rewrite it");
+      await tk.click(c.x, c.y);
+      pushHistory();
+      const nextText = a.append ? `${item.text || ""}${item.text ? "\n" : ""}${a.text}` : a.text;
+      setItems((arr) => arr.map((it) => (it.id === item.id ? { ...it, text: nextText } : it)));
+      ctx.vars.lastItemId = item.id;
+      await tk.wait(600);
+    },
+    deleteItem: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("nothing to delete");
+      const c = directorItemClientCenter(item);
+      tk.caption(a.caption || "select it, then delete");
+      await tk.click(c.x, c.y);
+      pushHistory();
+      setItems((arr) =>
+        arr.filter((it) => {
+          if (it.id === item.id) return false;
+          if (it.type === "link" && (it.fromId === item.id || it.toId === item.id)) return false;
+          return true;
+        })
+      );
+      setSelection([]);
+      await tk.wait(500);
+    },
+    selectItems: async (a, tk, ctx) => {
+      const targets = (a.targets || [a.target || "last"])
+        .map((t) => directorResolveItem(t, ctx))
+        .filter(Boolean);
+      if (!targets.length) throw new Error("nothing to select");
+      const c = directorItemClientCenter(targets[0]);
+      await tk.click(c.x, c.y);
+      setSelection(targets.map((t) => t.id));
+      if (a.caption) tk.caption(a.caption);
+      await tk.wait(400);
+    },
+    organizePage: async (a, tk) => {
+      const movable = itemsRef.current.filter(
+        (it) =>
+          itemVisibleOnPage(it, activePageId, worldFilter) &&
+          it.type !== "link" &&
+          it.type !== "stroke"
+      );
+      if (!movable.length) throw new Error("the page is empty — nothing to organize");
+      tk.caption(a.caption || "tidy the page — everything into a clean reading order");
+      const sorted = [...movable].sort((p, q) => p.y - q.y || p.x - q.x);
+      const cols = sorted.length > 4 ? 2 : 1;
+      const colW = (PAPER_WIDTH - PAPER_MARGIN * 2 - (cols - 1) * 24) / cols;
+      const colY = new Array(cols).fill(PAPER_MARGIN + 48);
+      const placements = sorted.map((it) => {
+        const col = colY.indexOf(Math.min(...colY));
+        const x = PAPER_MARGIN + col * (colW + 24);
+        const y = colY[col];
+        const h = itemHeight(it) * (it.scale ?? 1);
+        colY[col] += h + 20;
+        return { id: it.id, x, y };
+      });
+      // sweep the cursor over a couple of moves so the tidy-up reads as a gesture
+      for (const p of placements.slice(0, 3)) {
+        const it = itemsRef.current.find((i) => i.id === p.id);
+        if (!it) continue;
+        const from = directorItemClientCenter(it);
+        const to = worldToClient(p.x + (itemWidth(it) * (it.scale ?? 1)) / 2, p.y + 20);
+        await tk.moveTo(from.x, from.y, 350);
+        await tk.press();
+        await tk.moveTo(to.x, to.y, 450);
+        await tk.release();
+      }
+      pushHistory();
+      const byId = Object.fromEntries(placements.map((p) => [p.id, p]));
+      setItems((arr) =>
+        arr.map((it) =>
+          byId[it.id]
+            ? clampItemToPaper({ ...it, x: byId[it.id].x, y: byId[it.id].y }, itemWorldBBox)
+            : it
+        )
+      );
+      await tk.wait(700);
+    },
+    addBlock: async (a, tk, ctx) => {
+      const type = a.type || "sticky";
+      tk.caption(a.caption || `add a ${type} to the page`);
+      const center = paperViewportCenterWorld();
+      const world = a.at || { x: center.x - 80, y: center.y - 40 };
+      const client = worldToClient(world.x, world.y);
+      await tk.click(client.x, client.y);
+      const id = insertBlock(type === "callout" ? "callout" : type, {
+        atWorld: world,
+        ...(a.text ? { text: a.text } : {}),
+        ...(a.variant ? { variant: a.variant } : {}),
+      });
+      if (id) ctx.vars.lastItemId = id;
+      await tk.wait(500);
+    },
+    renamePage: async (a, tk) => {
+      if (!a.name?.trim()) throw new Error("what should the page be called?");
+      const title = tk.elementCenter(".page-title-input") || tk.elementCenter(".page-title-chip");
+      if (title) await tk.click(title.x, title.y);
+      tk.caption(a.caption || `name the page “${a.name.trim()}”`);
+      setDocTitle(a.name.trim().slice(0, 64));
+      await tk.wait(600);
+    },
+    zoomToItem: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("nothing to zoom to");
+      const c = directorItemClientCenter(item);
+      await tk.moveTo(c.x, c.y);
+      const bb = itemWorldBBox(item);
+      const r = vpRect();
+      const pad = 160;
+      const scale = Math.min(
+        2.4,
+        (r.width - pad) / Math.max(1, bb.maxx - bb.minx),
+        (r.height - pad) / Math.max(1, bb.maxy - bb.miny)
+      );
+      animateCameraDirect(
+        {
+          scale,
+          x: r.width / 2 - ((bb.minx + bb.maxx) / 2) * scale,
+          y: r.height / 2 - ((bb.miny + bb.maxy) / 2) * scale,
+        },
+        520
+      );
+      if (a.caption) tk.caption(a.caption);
+      await tk.wait(700);
+    },
+    moveAiNode: async (a, tk, ctx) => {
+      const node = a.target
+        ? aiNodesRef.current.find(
+            (n) => n.id === a.target || (n.label || "").toLowerCase().includes(String(a.target).toLowerCase())
+          ) || directorLatestAiNode(ctx)
+        : directorLatestAiNode(ctx);
+      if (!node) throw new Error("no AI node to move");
+      const destWorld = a.to ? { x: a.to.x, y: a.to.y } : { x: node.x + (a.dx ?? 160), y: node.y + (a.dy ?? 0) };
+      const from = directorAiClientPoint(node.x, node.y);
+      const to = directorAiClientPoint(destWorld.x, destWorld.y);
+      tk.caption(a.caption || "grab the node by its middle and place it");
+      await tk.moveTo(from.x, from.y);
+      await tk.press();
+      await tk.moveTo(to.x, to.y, 700);
+      await tk.release();
+      moveAiNode(node.id, destWorld.x, destWorld.y);
+      ctx.vars.lastAiNodeId = node.id;
+      await tk.wait(400);
+    },
+    openFunctionEditor: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      tk.caption(a.caption || `open “${op.name}” in the editor — every function is editable, even built-ins`);
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      openEditLens(op);
+      await tk.wait(900);
+    },
+    editFunction: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      const patch = {};
+      if (a.name?.trim()) patch.name = a.name.trim();
+      if (a.description != null) patch.description = a.description;
+      if (a.prompt?.trim() && op.kind === "prompt") patch.prompt = a.prompt.trim();
+      if (!Object.keys(patch).length) throw new Error("nothing to change on this function");
+      tk.caption(a.caption || `rewrite “${op.name}” — its prompt is just text you own`);
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      const next = { ...op, ...patch };
+      setOperators((arr) => {
+        const exists = arr.some((o) => o.id === op.id);
+        return exists ? arr.map((o) => (o.id === op.id ? next : o)) : [...arr, next];
+      });
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(800);
+    },
   });
 
   async function handleCompanionCommand(text) {
@@ -9082,8 +9285,8 @@ export default function App() {
     try {
       const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
         system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
-        maxTokens: 1600,
-        timeoutMs: 45000,
+        maxTokens: 4000,
+        timeoutMs: 60000,
       });
       reply = parseCompanionReply(raw);
     } catch (err) {

@@ -5003,8 +5003,20 @@ body.toolbox-dragging .toolbox-drag-row {
   font-size: 12px;
 }
 
-.op-chip .rail-row-actions,
 .op-chip .op-card-stepcount {
+  display: none;
+}
+
+/* Primitives are editable too — reveal just the edit pencil on hover. */
+.op-chip .rail-row-actions {
+  display: none;
+}
+
+.op-chip:hover .rail-row-actions {
+  display: inline-flex;
+}
+
+.op-chip .rail-row-actions .rail-icon-btn:not([title="Edit"]) {
   display: none;
 }
 

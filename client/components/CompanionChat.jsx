@@ -24,6 +24,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   const [director, setDirector] = useState(null);
   const listRef = useRef(null);
   const recRef = useRef(null);
+  const voiceSessionRef = useRef(null);
   const openRef = useRef(open);
   openRef.current = open;
 
@@ -72,53 +73,115 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
     }
   }
 
-  function stopListening() {
-    setListening(false);
+  /** How long a pause (after you've said something) means "I'm done". */
+  const VOICE_SILENCE_MS = 2600;
+
+  function endVoiceSession({ send: shouldSend } = { send: true }) {
+    const s = voiceSessionRef.current;
+    if (!s) return;
+    voiceSessionRef.current = null;
+    s.active = false;
+    if (s.silenceTimer) clearTimeout(s.silenceTimer);
     try {
-      recRef.current?.stop();
+      s.rec.stop();
     } catch {
       /* already stopped */
     }
     recRef.current = null;
+    setListening(false);
+    const said = (s.finalText + " " + s.interim).replace(/\s+/g, " ").trim();
+    if (shouldSend && said) send(said);
+    else if (said) setDraft(said);
+  }
+
+  function stopListening() {
+    endVoiceSession({ send: false });
+  }
+
+  function startVoiceSession() {
+    const session = {
+      rec: null,
+      finalText: "",
+      interim: "",
+      active: true,
+      silenceTimer: null,
+      restarts: 0,
+    };
+
+    const armSilenceTimer = () => {
+      if (session.silenceTimer) clearTimeout(session.silenceTimer);
+      // Only auto-send once something has actually been said — otherwise
+      // keep listening indefinitely until the user speaks or taps the mic.
+      if (!(session.finalText + session.interim).trim()) return;
+      session.silenceTimer = setTimeout(() => {
+        if (session.active) endVoiceSession({ send: true });
+      }, VOICE_SILENCE_MS);
+    };
+
+    const attach = () => {
+      const rec = new SpeechRecognitionImpl();
+      rec.lang = navigator.language || "en-US";
+      rec.interimResults = true;
+      // Continuous: pauses between phrases don't end the session.
+      rec.continuous = true;
+      rec.onresult = (e) => {
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) session.finalText += r[0].transcript + " ";
+          else interim += r[0].transcript;
+        }
+        session.interim = interim;
+        setDraft((session.finalText + interim).replace(/\s+/g, " ").trimStart());
+        armSilenceTimer();
+      };
+      rec.onerror = (e) => {
+        // "no-speech" just means a quiet stretch — the restart below handles it.
+        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+          endVoiceSession({ send: false });
+        }
+      };
+      rec.onend = () => {
+        if (!session.active) return;
+        // The engine ends on its own after quiet stretches; if the user
+        // hasn't finished (no silence-send fired), seamlessly restart and
+        // keep the transcript accumulated so far.
+        session.restarts += 1;
+        if (session.restarts > 40) {
+          endVoiceSession({ send: true });
+          return;
+        }
+        try {
+          attach();
+        } catch {
+          endVoiceSession({ send: true });
+        }
+      };
+      session.rec = rec;
+      recRef.current = rec;
+      rec.start();
+    };
+
+    voiceSessionRef.current = session;
+    setListening(true);
+    try {
+      attach();
+    } catch {
+      endVoiceSession({ send: false });
+    }
   }
 
   function toggleMic() {
     if (listening) {
-      stopListening();
+      // Tapping the mic while listening means "I'm done — go".
+      endVoiceSession({ send: true });
       return;
     }
     if (!SpeechRecognitionImpl) {
       setMessages((m) => [...m, { role: "companion", text: "voice input isn't available in this browser — typing works just as well.", error: true }]);
       return;
     }
-    const rec = new SpeechRecognitionImpl();
-    rec.lang = navigator.language || "en-US";
-    rec.interimResults = true;
-    rec.continuous = false;
-    let finalText = "";
-    rec.onresult = (e) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalText += r[0].transcript;
-        else interim += r[0].transcript;
-      }
-      setDraft(finalText + interim);
-    };
-    rec.onerror = () => stopListening();
-    rec.onend = () => {
-      setListening(false);
-      recRef.current = null;
-      const said = finalText.trim();
-      if (said) send(said);
-    };
-    recRef.current = rec;
-    setListening(true);
-    try {
-      rec.start();
-    } catch {
-      stopListening();
-    }
+    startVoiceSession();
   }
 
   useEffect(() => () => stopListening(), []);
@@ -194,7 +257,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
         </button>
         <input
           className="companion-input"
-          placeholder={listening ? "listening…" : "ask, or tell me what to build…"}
+          placeholder={listening ? "listening — pause when done, or tap the mic to send" : "ask, or tell me what to build…"}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

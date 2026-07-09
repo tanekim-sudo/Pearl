@@ -40,6 +40,36 @@ describe("transform primitives", () => {
     assert.ok(!next.some((o) => o.name === "combine"));
   });
 
+  it("preserves user-edited primitives across migration", () => {
+    const saved = [
+      {
+        id: "abc123",
+        name: "compress",
+        primitive: true,
+        kind: "prompt",
+        prompt: "Distill to a haiku.",
+        description: "my custom compress",
+      },
+      { id: "x1", name: "thesis", top: true, kind: "pipeline", steps: [] },
+    ];
+    const next = migrateOperatorStore(saved);
+    const compress = next.find((o) => o.name === "compress");
+    assert.equal(compress.prompt, "Distill to a haiku.");
+    assert.equal(compress.description, "my custom compress");
+    assert.equal(next.filter((o) => o.primitive).length, 8);
+    // a pipeline-edited primitive keeps its step subtree alive
+    const saved2 = [
+      { id: "r1", name: "expand", primitive: true, kind: "pipeline", steps: ["s1", "s2"] },
+      { id: "s1", name: "unfold detail", kind: "prompt", prompt: "Unfold." },
+      { id: "s2", name: "surface implications", kind: "prompt", prompt: "Implications." },
+    ];
+    const next2 = migrateOperatorStore(saved2);
+    const expand = next2.find((o) => o.name === "expand");
+    assert.equal(expand.kind, "pipeline");
+    assert.ok(next2.some((o) => o.id === "s1"));
+    assert.ok(next2.some((o) => o.id === "s2"));
+  });
+
   it("routes expand on sparse entity as single perceptual step", () => {
     const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
     const material = "bobyard ai startup";

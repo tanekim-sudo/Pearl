@@ -21,6 +21,17 @@ export const COMPANION_VERBS = {
   captureThread: { args: { target: "string or 'last'" } },
   showLenses: { args: {} },
   waitForJobs: { args: {} },
+  moveItem: { args: { target: "string or 'last'", to: "{x, y} world coords?", dx: "number?", dy: "number?" } },
+  editItem: { args: { target: "string or 'last'", text: "string (new text)", append: "boolean?" } },
+  deleteItem: { args: { target: "string or 'last'" } },
+  selectItems: { args: { targets: "array of item text matches or ['last']" } },
+  organizePage: { args: {} },
+  addBlock: { args: { type: "'sticky'|'callout'|'diagram'|'text'", text: "string?", variant: "string?" } },
+  renamePage: { args: { name: "string" } },
+  zoomToItem: { args: { target: "string or 'last'" } },
+  moveAiNode: { args: { target: "string (node label) or omit for latest", dx: "number?", dy: "number?" } },
+  openFunctionEditor: { args: { op: "string (function name, incl. primitives like compress/expand)" } },
+  editFunction: { args: { op: "string (function name, incl. primitives)", name: "string?", description: "string?", prompt: "string?" } },
 };
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
@@ -47,9 +58,11 @@ Reply with ONLY a JSON object, no prose, no code fences:
 Rules:
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
 - If the user asks you to DO something concrete (e.g. "make an investment memo function with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
+- You can do ANYTHING a hand can: move/edit/delete/select objects, tidy the page (organizePage), add stickies/callouts/diagrams, rename the page, zoom to things, reposition AI nodes, and edit any function — including the built-in primitives (compress, expand, explore, research, invert, reframe, merge, transcend) via editFunction or openFunctionEditor.
+- Multi-part requests are fine: chain as many steps as needed, in the order the user asked. A failed step is skipped, the rest still run.
 - Interleave short caption verbs so the user understands each move.
 - Use "last" to refer to the thing just created. Use text fragments to refer to existing items/functions.
-- Keep scripts under 20 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
+- Keep scripts under 40 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
 }
 
 function cleanArgs(args) {
@@ -71,6 +84,14 @@ function cleanArgs(args) {
               : null
         )
         .filter(Boolean);
+    } else if (typeof v === "object") {
+      // shallow coordinate-style objects, e.g. to: {x, y} or at: {x, y}
+      const nested = {};
+      for (const [nk, nv] of Object.entries(v)) {
+        if (typeof nv === "number" && Number.isFinite(nv)) nested[nk] = nv;
+        else if (typeof nv === "string") nested[nk] = nv.slice(0, 400);
+      }
+      if (Object.keys(nested).length) out[k] = nested;
     }
   }
   return out;
@@ -90,7 +111,7 @@ export function parseCompanionReply(raw) {
   const steps = Array.isArray(parsed.steps)
     ? parsed.steps
         .filter((s) => s && typeof s === "object" && VERB_NAMES.has(s.verb))
-        .slice(0, 24)
+        .slice(0, 48)
         .map((s) => ({ verb: s.verb, args: cleanArgs(s.args) }))
     : [];
   return { say, demoId, steps };

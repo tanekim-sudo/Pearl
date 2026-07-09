@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PRIMITIVE_NAMES } from "../../shared/transform-primitives.js";
 import {
   FN_PALETTE_MIME,
   FN_STEP_MIME,
@@ -22,15 +23,18 @@ const newId = () => Math.random().toString(36).slice(2, 10);
 
 function collectDraftOps(rootOp, opMap) {
   if (!rootOp) return [];
+  // Built-in primitives live outside the operator store — resolve the root
+  // through itself so they open in the editor like any other function.
+  const resolve = (id) => (id === rootOp.id ? opMap[id] || rootOp : opMap[id]);
   const ids = new Set();
   function walk(id) {
     if (!id || ids.has(id)) return;
     ids.add(id);
-    const op = opMap[id];
+    const op = resolve(id);
     if (op?.kind === "pipeline" && op.steps) op.steps.forEach(walk);
   }
   walk(rootOp.id);
-  return [...ids].map((id) => ({ ...opMap[id] }));
+  return [...ids].map((id) => ({ ...resolve(id) })).filter((o) => o.id);
 }
 
 function collectFlowNames(op, draftMap, limit = 12) {
@@ -333,9 +337,16 @@ export default function LensTreeEditor({
         },
       ];
     }
-    const root = ops.find((o) => o.id === rid);
+    let root = ops.find((o) => o.id === rid);
     if (!rid || !root?.name?.trim()) return;
     if (root.kind === "prompt" && !root.prompt?.trim()) return;
+    // An edited primitive stays a primitive (it overrides the built-in) as
+    // long as it keeps its canonical name; renamed, it becomes a new function.
+    if (!isCreate && sourceRoot?.primitive) {
+      const keepsName = PRIMITIVE_NAMES.has(root.name.trim());
+      root = { ...root, primitive: keepsName, top: !keepsName, move: false };
+      ops = ops.map((o) => (o.id === rid ? root : o));
+    }
     const message = isCreate ? `created · ${root.name}` : `updated · ${root.name}`;
     onSaveTree(isCreate ? null : sourceRoot?.id, ops, { commitMessage: message });
   }
