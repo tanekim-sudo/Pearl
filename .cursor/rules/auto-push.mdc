@@ -8,8 +8,9 @@ alwaysApply: true
 When you finish a task that modifies this repository:
 
 1. Commit the changes with a clear message (unless the user explicitly said not to commit).
-2. Push to `origin/main` (or the current branch) without waiting for the user to ask.
-3. Confirm the commit hash and that the push succeeded.
+2. Push only to this repo's `origin` remote: `https://github.com/tanekim-sudo/representation.git` (`origin/main` or the current branch). Do not push to any other GitHub remote or repository.
+3. Before pushing, verify `git remote get-url origin` matches `tanekim-sudo/representation`. If it does not, stop and ask the user instead of pushing elsewhere.
+4. Confirm the commit hash and that the push succeeded.
 
 Skip auto-push only if:
 - The user explicitly says not to push or commit in that turn.
