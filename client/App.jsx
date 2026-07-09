@@ -133,6 +133,7 @@ import {
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import GhostCursor from "./components/GhostCursor.jsx";
 import CompanionChat from "./components/CompanionChat.jsx";
+import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import { buildCompanionSystemPrompt, parseCompanionReply, matchDemoLocally } from "./lib/companion-intent.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
@@ -2103,6 +2104,7 @@ export default function App() {
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
   const [highlightSelectionIds, setHighlightSelectionIds] = useState([]);
+  const [highlightAiNodeIds, setHighlightAiNodeIds] = useState([]); // AI nodes in the cross-layer highlight selection
   const [highlightTransferringIds, setHighlightTransferringIds] = useState([]);
   const [aiLandingNodeIds, setAiLandingNodeIds] = useState(() => new Set());
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
@@ -3348,7 +3350,9 @@ export default function App() {
                   prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
                 );
               } else {
-                accumulateHighlightSelection(merged, g.additive || isTap);
+                // Omni-highlighter: every stroke is additive — the selection
+                // is a living thing that grows until Esc clears it.
+                accumulateHighlightSelection(merged, true);
               }
             }
           } else {
@@ -3750,9 +3754,55 @@ export default function App() {
 
   function clearHighlightSelection() {
     setHighlightSelectionIds([]);
+    setHighlightAiNodeIds([]);
     setHighlightTouchIds([]);
     setHighlightTransferringIds([]);
     setHighlightGrabHover(false);
+  }
+
+  function toggleHighlightAiNode(nodeId) {
+    setHighlightAiNodeIds((prev) =>
+      prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId]
+    );
+  }
+
+  // ---- omni-highlighter toolbar actions: operate on the whole living selection ----
+
+  function highlightToolbarOperate(op) {
+    if (!op) return;
+    const paperIds = highlightSelectionRef.current;
+    const nodeIds = highlightAiNodeIds;
+    if (!paperIds.length && !nodeIds.length) {
+      showToast("highlight something first");
+      return;
+    }
+    if (paperIds.length) runOperator(op, paperIds, {});
+    for (const nid of nodeIds) {
+      const node = aiNodesRef.current.find((n) => n.id === nid);
+      if (node) applyOperatorToAiNode(node, op, null, { stableCamera: true });
+    }
+  }
+
+  function highlightSaveAsLens() {
+    const paperIds = highlightSelectionRef.current;
+    const nodeIds = highlightAiNodeIds;
+    if (!paperIds.length && !nodeIds.length) {
+      showToast("highlight something first");
+      return;
+    }
+    let struct = null;
+    if (paperIds.length) struct = saveMaterialAsSymbol(paperIds);
+    if (nodeIds.length) struct = saveAiNodesAsSymbol(nodeIds, struct?.id || null) || struct;
+    if (struct) clearHighlightSelection();
+  }
+
+  function highlightSendToAi() {
+    const paperIds = highlightSelectionRef.current;
+    if (!paperIds.length) {
+      showToast("highlight paper material to send across");
+      return;
+    }
+    expandInAi(paperIds, {});
   }
 
   function deleteSelection() {
@@ -5876,8 +5926,8 @@ export default function App() {
 
   toolboxApplyDragRef.current = startToolboxApplyDrag;
 
-  async function runSamenessDiscovery() {
-    const ids = selRef.current;
+  async function runSamenessDiscovery(idsOverride = null) {
+    const ids = idsOverride?.length ? idsOverride : selRef.current;
     const idSet = new Set(ids);
     const nodes = itemsRef.current.filter((it) => idSet.has(it.id) && ((it.type === "text" && it.text?.trim()) || it.type === "image"));
     if (nodes.length < 2) {
@@ -8569,6 +8619,7 @@ export default function App() {
   const selectedAiNodeId = selectedAiNodeIds[selectedAiNodeIds.length - 1] ?? null;
   const highlightTouchSet = useMemo(() => new Set(highlightTouchIds), [highlightTouchIds]);
   const highlightSelectionSet = useMemo(() => new Set(highlightSelectionIds), [highlightSelectionIds]);
+  const highlightAiNodeSet = useMemo(() => new Set(highlightAiNodeIds), [highlightAiNodeIds]);
   const highlightTransferringSet = useMemo(() => new Set(highlightTransferringIds), [highlightTransferringIds]);
   const selBBox = selection.length ? selectionWorldBBox() : null;
   const selItem = selection.length === 1 ? items.find((it) => it.id === selection[0]) : null;
@@ -9611,6 +9662,8 @@ export default function App() {
           onHighlightTransferStart={(e, nodeIds, opts = {}) => {
             startAiHighlightTransfer(e, nodeIds, opts);
           }}
+          onHighlightMark={toggleHighlightAiNode}
+          highlightMarkedIds={highlightAiNodeSet}
           onSpaceTransferStart={(e, nodeIds, opts = {}) => {
             const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
             if (!ids.length) return;
@@ -9959,6 +10012,24 @@ export default function App() {
         </div>
       )}
 
+      <HighlightToolbar
+        paperCount={highlightSelectionIds.length}
+        aiCount={highlightAiNodeIds.length}
+        ops={[
+          ...operators.filter((o) => o.top || o.move),
+          ...TRANSFORM_PRIMITIVES.filter((p) => opMap[p.id]).map((p) => opMap[p.id]),
+        ].slice(0, 24)}
+        onOperate={highlightToolbarOperate}
+        onExtend={() =>
+          highlightToolbarOperate(
+            opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand")
+          )
+        }
+        onSameness={() => runSamenessDiscovery(highlightSelectionIds)}
+        onSaveLens={highlightSaveAsLens}
+        onSendToAi={highlightSendToAi}
+        onClear={clearHighlightSelection}
+      />
       <GhostCursor />
       <CompanionChat
         demos={COMPANION_DEMOS}

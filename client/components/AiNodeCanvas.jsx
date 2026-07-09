@@ -70,6 +70,8 @@ export default function AiNodeCanvas({
   tool = "select",
   onSpaceTransferStart,
   onHighlightTransferStart,
+  onHighlightMark,
+  highlightMarkedIds,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -734,6 +736,9 @@ export default function AiNodeCanvas({
 
     function onUp() {
       cleanup();
+      // Tap (no drag) with the highlighter: toggle this node in the living
+      // cross-layer highlight selection.
+      if (!armed) onHighlightMark?.(node.id);
     }
 
     function cleanup() {
@@ -1089,6 +1094,7 @@ export default function AiNodeCanvas({
                 (isSelected ? " selected" : "") +
                 (isFocused ? " focused" : "") +
                 (golden ? " hl-marked" : "") +
+                (highlightMarkedIds?.has?.(node.id) ? " omni-marked" : "") +
                 (detail ? " morphing" : "") +
                 (nodeBlend > 0.6 ? " text-dominant" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +

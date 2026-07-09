@@ -5602,3 +5602,137 @@ body.director-running .idea-app {
   background: rgba(201, 162, 39, 0.16);
   color: rgba(139, 108, 27, 0.95);
 }
+
+/* ============ omni-highlighter: living selection toolbar + AI marks ============ */
+
+.omni-highlight-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 3500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(26, 24, 18, 0.93);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(245, 230, 163, 0.14);
+  animation: omni-bar-in 0.24s var(--ease-out, ease);
+}
+
+@keyframes omni-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.omni-highlight-count {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(245, 236, 205, 0.85);
+  padding: 0 8px 0 4px;
+  white-space: nowrap;
+}
+
+.omni-highlight-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f5e6a3, #c9a227);
+  box-shadow: 0 0 8px rgba(201, 162, 39, 0.7);
+}
+
+.omni-highlight-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 0 4px;
+}
+
+.omni-highlight-btn {
+  border: none;
+  background: transparent;
+  color: rgba(248, 242, 220, 0.88);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.omni-highlight-btn:hover:not(:disabled) {
+  background: rgba(245, 230, 163, 0.16);
+  color: #f5e6a3;
+}
+
+.omni-highlight-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.omni-highlight-btn.quiet {
+  color: rgba(248, 242, 220, 0.5);
+}
+
+.omni-highlight-op-wrap {
+  position: relative;
+}
+
+.omni-highlight-ops {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 190px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(253, 251, 244, 0.98);
+  box-shadow: 0 14px 44px rgba(40, 32, 12, 0.3);
+  animation: omni-bar-in 0.18s var(--ease-out, ease);
+}
+
+.omni-highlight-op {
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 12.5px;
+  color: rgba(30, 28, 22, 0.9);
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.omni-highlight-op:hover {
+  background: rgba(201, 162, 39, 0.14);
+}
+
+.omni-highlight-op.empty {
+  color: rgba(30, 28, 22, 0.4);
+  cursor: default;
+}
+
+/* AI nodes marked into the cross-layer selection */
+.ai-node.omni-marked::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
+  border: 2px solid rgba(232, 216, 120, 0.85);
+  box-shadow: 0 0 14px rgba(201, 162, 39, 0.4);
+  pointer-events: none;
+  animation: omni-mark-in 0.25s ease;
+}
+
+@keyframes omni-mark-in {
+  from { opacity: 0; transform: scale(1.12); }
+  to { opacity: 1; transform: scale(1); }
+}

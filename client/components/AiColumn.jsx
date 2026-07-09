@@ -34,6 +34,8 @@ export default function AiColumn({
   tool,
   onSpaceTransferStart,
   onHighlightTransferStart,
+  onHighlightMark,
+  highlightMarkedIds,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -77,6 +79,8 @@ export default function AiColumn({
             tool={tool}
             onSpaceTransferStart={onSpaceTransferStart}
             onHighlightTransferStart={onHighlightTransferStart}
+            onHighlightMark={onHighlightMark}
+            highlightMarkedIds={highlightMarkedIds}
             onFragmentReplace={onFragmentReplace}
             onFragmentToPaper={onFragmentToPaper}
             isPaperDestination={isPaperDestination}
