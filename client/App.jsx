@@ -177,6 +177,7 @@ import {
   clampTextWidth,
   bboxClampOffset,
   fitPaperInView,
+  clampPaperCamera,
   maxTextWidth,
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
@@ -1965,11 +1966,20 @@ export default function App() {
     if (fromArtifact.length) return fromArtifact;
     return migrateOldSeeds().map(normalizeItem);
   });
-  const [camera, setCamera] = useState(() => {
+  const [camera, setCameraRaw] = useState(() => {
     const saved = load(CAMERA_KEY, null);
     if (saved && typeof saved.scale === "number") return saved;
     return { x: 0, y: 0, scale: 1 };
   });
+  // Single-page model: every camera update keeps the sheet locked in view.
+  const setCamera = useCallback((next) => {
+    setCameraRaw((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      const r = viewportRef.current?.getBoundingClientRect();
+      if (!r || r.width < 60 || r.height < 60) return value;
+      return clampPaperCamera(value, r.width, r.height);
+    });
+  }, []);
   const [operators, setOperators] = useState(() => {
     try {
       const saved = load(OPERATORS_KEY, null) || load(LEGACY_OPERATORS_KEY, null);
@@ -5557,6 +5567,21 @@ export default function App() {
     return struct;
   }
 
+  /** Snapshot every item on the current page into a pattern lens, then ask for a glyph. */
+  function savePageAsLens() {
+    const ids = itemsRef.current
+      .filter((it) => itemVisibleOnPage(it, activePageId, worldFilter))
+      .map((it) => it.id);
+    if (!ids.length) {
+      showToast("this page is empty — nothing to save yet");
+      return null;
+    }
+    const title = (docTitle || "").trim() || "untitled page";
+    const struct = saveMaterialAsSymbol(ids, { title, toast: `page saved · ${title}` });
+    if (struct) setSymbolDrawPrompt({ structId: struct.id, title: struct.title });
+    return struct;
+  }
+
   function saveAiNodesAsSymbol(nodeIds, structId = null) {
     const nodes = aiNodesRef.current.filter((n) => nodeIds.includes(n.id));
     const texts = nodes
@@ -8916,6 +8941,13 @@ export default function App() {
       await tk.wait(1200);
     },
     waitForJobs: async (a, tk) => directorWaitForJobs(tk),
+    savePageAsLens: async (a, tk) => {
+      const chip = tk.elementCenter(".page-title-save-lens");
+      if (chip) await tk.click(chip.x, chip.y);
+      tk.caption(a.caption || "the whole page becomes a lens — draw a glyph to name what it means");
+      savePageAsLens();
+      await tk.wait(1400);
+    },
   });
 
   async function handleCompanionCommand(text) {
@@ -8981,12 +9013,10 @@ export default function App() {
   return (
     <div className={"idea-app theme-" + theme}>
       <TopToolbar
-        title={docTitle}
         starred={docStarred}
         saved={savedIndicator}
         canUndo={canUndo}
         canRedo={canRedo}
-        onTitleChange={setDocTitle}
         onToggleStar={() => setDocStarred((s) => !s)}
         onMenuAction={handleMenuAction}
         onUndo={undo}
@@ -9183,6 +9213,23 @@ export default function App() {
           onTogglePaperRecord={togglePaperRecord}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
+      <div className="page-title-chip" data-tour="page-title" onPointerDown={(e) => e.stopPropagation()}>
+        <input
+          className="page-title-input"
+          value={docTitle}
+          onChange={(e) => setDocTitle(e.target.value)}
+          aria-label="Page title"
+          placeholder="Untitled idea"
+        />
+        <button
+          type="button"
+          className="page-title-save-lens"
+          onClick={savePageAsLens}
+          title="Save this page as a lens"
+        >
+          ◇
+        </button>
+      </div>
       <div
         ref={viewportRef}
         className="viewport"

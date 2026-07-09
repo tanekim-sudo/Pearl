@@ -10,6 +10,8 @@ import {
   clampItemToPaper,
   fitPaperInView,
   maxTextWidth,
+  clampPaperCamera,
+  paperMinScale,
 } from "./paper.js";
 
 describe("paper bounds", () => {
@@ -32,11 +34,23 @@ describe("paper bounds", () => {
     assert.equal(off.dy, PAPER_MARGIN - 10);
   });
 
-  it("ambiguous mode skips clamping by default", () => {
-    assert.deepEqual(clampToPaper(-10, 2000), { x: -10, y: 2000 });
-    const off = bboxClampOffset({ minx: -20, miny: 10, maxx: 800, maxy: 50 });
-    assert.equal(off.dx, 0);
+  it("single-page mode clamps by default", () => {
+    assert.deepEqual(clampToPaper(-10, 2000), { x: 0, y: PAPER_HEIGHT });
+    const off = bboxClampOffset({ minx: -20, miny: 30, maxx: 100, maxy: 50 });
+    assert.equal(off.dx, PAPER_MARGIN - -20);
     assert.equal(off.dy, 0);
+  });
+
+  it("clampPaperCamera never lets the page leave the viewport", () => {
+    // zooming out beyond the fit scale snaps back to the full page
+    const out = clampPaperCamera({ x: 0, y: 0, scale: 0.01 }, 900, 1200);
+    assert.ok(out.scale >= paperMinScale(900, 1200));
+    // page smaller than viewport: centered
+    assert.ok(out.x > 0 && out.y > 0);
+    // zoomed in: pan clamps so no gap appears past the page edge
+    const inn = clampPaperCamera({ x: 500, y: -99999, scale: 2 }, 900, 1200);
+    assert.equal(inn.x, 0);
+    assert.equal(inn.y, 1200 - PAPER_HEIGHT * 2);
   });
 
   it("moves text items back onto the page", () => {

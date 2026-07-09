@@ -33,12 +33,10 @@ function MenuDropdown({ label, items, onAction, dataTour }) {
 }
 
 export default function TopToolbar({
-  title,
   starred,
   saved,
   canUndo,
   canRedo,
-  onTitleChange,
   onToggleStar,
   onMenuAction,
   onUndo,
@@ -75,13 +73,7 @@ export default function TopToolbar({
   return (
     <header className="idea-toolbar idea-toolbar-minimal">
       <div className="toolbar-row toolbar-row-minimal">
-        <input
-          className="doc-title-input doc-title-minimal"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          aria-label="Document title"
-          placeholder="Untitled"
-        />
+        <span className="toolbar-wordmark">lens</span>
 
         <div className="toolbar-hover-actions" data-tour="toolbar-actions">
           <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo">

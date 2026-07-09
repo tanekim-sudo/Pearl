@@ -7,8 +7,11 @@ export const MAX_SCALE = 1e6;
 export const ZOOM_STEP = 1.44;
 export const PAPER_INK = "#000000";
 
-/** Infinite ambiguous sketch space — no page edges, no clamping. */
-export const AMBIGUOUS_PAPER = true;
+/**
+ * Single-page model: one 8.5x11 sheet, always in view. Zoom is free within
+ * bounds but the page never leaves the viewport and content stays on it.
+ */
+export const AMBIGUOUS_PAPER = false;
 
 export function clampScale(scale) {
   return Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
@@ -111,6 +114,32 @@ export function ambiguousCenterCamera(vpWidth, vpHeight) {
 /** Pan is meaningful only when the zoomed paper exceeds the viewport. */
 export function paperAllowsPan(scale, vpWidth, vpHeight) {
   return scale * PAPER_WIDTH > vpWidth + 2 || scale * PAPER_HEIGHT > vpHeight + 2;
+}
+
+/** Smallest scale that still shows the whole page (with breathing room). */
+export function paperMinScale(vpWidth, vpHeight, pad = 40) {
+  const fit = Math.min((vpWidth - pad) / PAPER_WIDTH, (vpHeight - pad) / PAPER_HEIGHT);
+  return clampScale(Math.min(fit, 1));
+}
+
+/**
+ * Keep the sheet locked in view: zooming out stops at the full page, and pan
+ * can never push the page off-screen. Axes where the page fits are centered.
+ */
+export function clampPaperCamera(camera, vpWidth, vpHeight) {
+  if (!camera || !vpWidth || !vpHeight || vpWidth < 60 || vpHeight < 60) return camera;
+  const minS = paperMinScale(vpWidth, vpHeight);
+  const scale = Math.max(minS, Math.min(MAX_SCALE, camera.scale || minS));
+  const pw = PAPER_WIDTH * scale;
+  const ph = PAPER_HEIGHT * scale;
+  let x = camera.x;
+  let y = camera.y;
+  if (pw <= vpWidth) x = (vpWidth - pw) / 2;
+  else x = Math.max(vpWidth - pw, Math.min(0, x));
+  if (ph <= vpHeight) y = (vpHeight - ph) / 2;
+  else y = Math.max(vpHeight - ph, Math.min(0, y));
+  if (scale === camera.scale && x === camera.x && y === camera.y) return camera;
+  return { scale, x, y };
 }
 
 export function describeStroke(stroke) {
