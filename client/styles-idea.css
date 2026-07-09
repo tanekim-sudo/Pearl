@@ -5736,3 +5736,176 @@ body.director-running .idea-app {
   from { opacity: 0; transform: scale(1.12); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* ============ symbol draw + lens settings ============ */
+
+.symbol-draw-hint {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: rgba(30, 28, 22, 0.5);
+}
+
+.symbol-draw-canvas.locked {
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.lens-settings {
+  width: min(460px, calc(100vw - 48px));
+  max-height: min(640px, calc(100vh - 80px));
+  overflow-y: auto;
+  background: rgba(253, 251, 244, 0.99);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(40, 32, 12, 0.35);
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: companion-in 0.24s var(--ease-out, ease);
+}
+
+.lens-settings-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lens-settings-glyph {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  color: rgba(30, 28, 22, 0.85);
+}
+
+.lens-settings-title {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 700;
+  color: rgba(30, 28, 22, 0.92);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.lens-settings-title:focus {
+  border-bottom-color: rgba(201, 162, 39, 0.5);
+}
+
+.lens-settings-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: rgba(30, 28, 22, 0.4);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.lens-settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(30, 28, 22, 0.45);
+}
+
+.lens-settings-text {
+  border: none;
+  outline: none;
+  resize: vertical;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.045);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 400;
+  color: rgba(30, 28, 22, 0.92);
+  line-height: 1.5;
+}
+
+.lens-settings-text:focus {
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.lens-settings-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lens-settings-element {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 6px;
+}
+
+.lens-settings-element input {
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.045);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: rgba(30, 28, 22, 0.9);
+}
+
+.lens-settings-element input:focus {
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.lens-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.lens-settings-spacer {
+  flex: 1;
+}
+
+.lens-settings-quiet {
+  border: none;
+  background: transparent;
+  color: rgba(30, 28, 22, 0.55);
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.lens-settings-quiet:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(30, 28, 22, 0.85);
+}
+
+.lens-settings-quiet:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lens-settings-save {
+  border: none;
+  border-radius: 999px;
+  background: rgba(26, 24, 18, 0.92);
+  color: rgba(248, 242, 220, 0.95);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.lens-settings-save:hover {
+  transform: translateY(-1px);
+}

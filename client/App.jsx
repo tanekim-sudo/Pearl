@@ -134,6 +134,7 @@ import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBou
 import GhostCursor from "./components/GhostCursor.jsx";
 import CompanionChat from "./components/CompanionChat.jsx";
 import HighlightToolbar from "./components/HighlightToolbar.jsx";
+import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
 import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import { buildCompanionSystemPrompt, parseCompanionReply, matchDemoLocally } from "./lib/companion-intent.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
@@ -2052,6 +2053,7 @@ export default function App() {
   const lensesSectionRef = useRef(null);
   const [symbolDrawPrompt, setSymbolDrawPrompt] = useState(null); // { structId, title }
   const [symbolInterpretingId, setSymbolInterpretingId] = useState(null);
+  const [lensSettingsId, setLensSettingsId] = useState(null);
   const symbolDrawPromptRef = useRef(null);
   const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
@@ -5532,10 +5534,10 @@ export default function App() {
         return stampSymbolStruct({ ...s, symbolStroke: symbolStroke || null });
       })
     );
-    setSymbolDrawPrompt(null);
-    showToast("symbol saved");
+    // The overlay stays open with a "reading your symbol…" state; the drawn
+    // glyph persists on the card either way.
     emitTourEvent("save-symbol");
-    enrichSymbolRecord(structId, { inEditor: false });
+    enrichSymbolRecord(structId, { force: true });
   }
 
   async function enrichSymbolRecord(structId, opts = {}) {
@@ -5546,7 +5548,7 @@ export default function App() {
     setLenses((arr) => arr.map((s) => (s.id === structId ? { ...s, ...local } : s)));
 
     const inEditor = opts.inEditor ?? symbolDrawPromptRef.current?.structId === structId;
-    if (!inEditor || !runClaude) return;
+    if ((!opts.force && !inEditor) || !runClaude) return;
 
     setSymbolInterpretingId(structId);
     try {
@@ -5573,6 +5575,25 @@ export default function App() {
     } finally {
       setSymbolInterpretingId(null);
     }
+  }
+
+  /** Persist edits from the lens settings dialog; user intent beats heuristics. */
+  function saveLensSettings(structId, patch) {
+    setLenses((arr) =>
+      arr.map((s) => {
+        if (s.id !== structId) return s;
+        const interpretation = {
+          ...(s.interpretation || {}),
+          meaning: patch.meaning || s.interpretation?.meaning || "",
+          viewPrompt: patch.viewPrompt || s.interpretation?.viewPrompt || "",
+          elements: patch.elements ?? s.interpretation?.elements ?? [],
+        };
+        const next = { ...s, title: patch.title, customized: true, interpretation };
+        return { ...next, viewLens: viewingLensTreeFromSymbol(next) };
+      })
+    );
+    setLensSettingsId(null);
+    showToast("lens updated");
   }
 
   function openEditLensApplyPrompt(struct) {
@@ -8339,7 +8360,7 @@ export default function App() {
         applyToolboxTransformationLensAt(g.payload.lensId, atClient);
       } else if (g.payload.kind === "pattern-lens") {
         if (env.isOverAiColumn?.(cx, cy)) {
-          showToast("pattern lenses apply on paper — drag to the whiteboard");
+          applyPatternLensToAiNode(g.payload.structId, atClient);
         } else {
           applyPatternLensDrop(g.payload.structId, atClient);
         }
@@ -8364,6 +8385,24 @@ export default function App() {
     getAiDropWorldFromClient,
     aiNodeAtWorld,
   };
+
+  /** Pattern lenses work in the AI space too: read a node through the symbol's structure. */
+  function applyPatternLensToAiNode(structId, atClient) {
+    const struct = lensesRef.current.find((s) => s.id === structId);
+    if (!struct) return;
+    const world = getAiDropWorldFromClient(atClient.x, atClient.y);
+    const node = aiNodeAtWorld(world.x, world.y);
+    if (!node) {
+      showToast("drop the lens onto a node");
+      return;
+    }
+    const tree = struct.viewLens || viewingLensTreeFromSymbol(struct);
+    const { ops, rootId } = treeToOperators(tree, { top: false });
+    const op = ops.find((o) => o.id === rootId);
+    if (!op) return;
+    const mergedMap = { ...opMap, ...Object.fromEntries(ops.map((o) => [o.id, o])) };
+    applyOperatorToAiNode(node, op, atClient, { opMap: mergedMap, opLabel: `◇ ${struct.title}` });
+  }
 
   function spawnTextAtWorld(text, atWorld, opts = {}) {
     const clean = stripMd(text).trim();
@@ -9157,6 +9196,7 @@ export default function App() {
                     onShare={() => sharePatternLens(struct)}
                     onEditSymbol={() => openLensDrawPrompt(struct)}
                     onEditViewLens={() => openEditLensApplyPrompt(struct)}
+                    onSettings={() => setLensSettingsId(struct.id)}
                   />
                 ))}
               </div>
@@ -9621,6 +9661,10 @@ export default function App() {
           }
           interpreting={symbolInterpretingId === symbolDrawPrompt.structId}
           onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
+          onDone={() => {
+            setSymbolDrawPrompt(null);
+            showToast("lens saved");
+          }}
           onCancel={() => {
             setSymbolDrawPrompt(null);
             setSymbolInterpretingId(null);
@@ -10011,6 +10055,25 @@ export default function App() {
           <span className="toolbox-apply-ghost-label">{toolboxApplyGhost.label}</span>
         </div>
       )}
+
+      {lensSettingsId && (() => {
+        const struct = lenses.find((s) => s.id === lensSettingsId);
+        if (!struct) return null;
+        return (
+          <LensSettingsDialog
+            key={struct.id + ":" + (struct.interpretedAt || 0)}
+            struct={struct}
+            interpreting={symbolInterpretingId === struct.id}
+            onSave={(patch) => saveLensSettings(struct.id, patch)}
+            onReread={() => enrichSymbolRecord(struct.id, { force: true })}
+            onRedraw={() => {
+              setLensSettingsId(null);
+              openLensDrawPrompt(struct);
+            }}
+            onClose={() => setLensSettingsId(null)}
+          />
+        );
+      })()}
 
       <HighlightToolbar
         paperCount={highlightSelectionIds.length}
@@ -10839,6 +10902,7 @@ function PatternLensCard({
   onShare,
   onEditSymbol,
   onEditViewLens,
+  onSettings,
 }) {
   const preview = lensPreview(struct);
   const meaning = struct.interpretation?.meaning || preview;
@@ -10889,6 +10953,19 @@ function PatternLensCard({
                 title="Apply as a way of seeing"
               >
                 ◉
+              </button>
+            )}
+            {onSettings && (
+              <button
+                type="button"
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettings(struct);
+                }}
+                title="Lens settings — meaning, generation, structure"
+              >
+                ⚙
               </button>
             )}
             {onEditSymbol && (

@@ -162,8 +162,41 @@ export function applyLocalSymbolEnrichment(struct) {
 /** Apply instant local symbol reading to a saved structure record. */
 export function stampSymbolStruct(struct) {
   if (!struct || struct.kind !== "symbol") return struct;
+  // Never clobber an LLM-produced or user-customized reading with the local
+  // heuristic — only fill gaps.
+  if (struct.customized || struct.interpretedAt) {
+    const viewLens = struct.viewLens || viewingLensTreeFromSymbol(struct);
+    return { ...struct, viewLens };
+  }
   const { interpretation, viewLens } = applyLocalSymbolEnrichment(struct);
   return { ...struct, interpretation, viewLens };
+}
+
+/** Rough shape description of a hand-drawn glyph, so the model can read it. */
+export function describeGlyphStroke(symbolStroke) {
+  const strokes = symbolStroke?.strokes?.length
+    ? symbolStroke.strokes
+    : symbolStroke?.points?.length >= 2
+      ? [symbolStroke.points]
+      : [];
+  if (!strokes.length) return null;
+  const all = strokes.flat();
+  const xs = all.map((p) => p.x);
+  const ys = all.map((p) => p.y);
+  const w = Math.max(...xs) - Math.min(...xs);
+  const h = Math.max(...ys) - Math.min(...ys);
+  const first = all[0];
+  const last = all[all.length - 1];
+  const closed = Math.hypot(first.x - last.x, first.y - last.y) < 0.12;
+  const aspect = h > 0 ? w / h : 1;
+  const shapeHint =
+    strokes.length === 1 && closed
+      ? "a closed loop"
+      : strokes.length === 1
+        ? "a single open stroke"
+        : `${strokes.length} separate strokes`;
+  const proportions = aspect > 1.6 ? "wide" : aspect < 0.6 ? "tall" : "roughly square";
+  return `${shapeHint}, ${proportions}`;
 }
 
 export function buildSymbolInterpretPrompt(struct) {
@@ -171,15 +204,16 @@ export function buildSymbolInterpretPrompt(struct) {
   const lines =
     objects.length === 0
       ? ["(visual only)"]
-      : objects.length === 1
-        ? [`${objects[0].label}${objects[0].body ? `\n${objects[0].body.slice(0, 200)}` : ""}`]
-        : objects.map((o, i) => `${i + 1}. ${o.label}${o.body ? `: ${o.body.slice(0, 120)}` : ""}`);
+      : objects.map((o, i) => `${i + 1}. [${o.kind}] ${o.label}${o.body ? `: ${o.body.slice(0, 200)}` : ""}`);
+  const glyph = describeGlyphStroke(struct?.symbolStroke);
 
-  return `Interpret this symbol. JSON only:
-{"meaning":"one clear sentence","viewPrompt":"one sentence to re-apply this way of seeing"}
+  return `You are reading a personal symbol — a compression of recurring structure someone keeps noticing across domains. Interpret it fully and generalizably: what deep structure do the elements share, and how would that way of seeing re-apply anywhere?
+
+Reply with ONLY this JSON:
+{"meaning":"one or two sentences naming the underlying structure this symbol compresses","elements":[{"element":"element label","reading":"what this element contributes to the shared structure"}],"pattern":"a short name for the recurring pattern","viewPrompt":"one imperative sentence instructing an AI to read any new material through this structure and return only the transformed material"}
 
 Title: ${struct?.title || "untitled"}
-Surface:
+${glyph ? `Hand-drawn glyph: ${glyph}\n` : ""}Elements on the symbol surface:
 ${lines.join("\n")}`;
 }
 
@@ -190,6 +224,7 @@ export function mergeSymbolInterpretation(structural, llmJson) {
     meaning: llmJson.meaning || structural.meaning,
     pattern: llmJson.pattern || structural.pattern,
     roles: llmJson.roles?.length ? llmJson.roles : structural.roles,
+    elements: Array.isArray(llmJson.elements) ? llmJson.elements : structural.elements || [],
     viewPrompt: llmJson.viewPrompt || structural.viewPrompt,
   };
 }
