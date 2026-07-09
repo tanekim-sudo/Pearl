@@ -86,12 +86,18 @@ describe("ai-space", () => {
     assert.ok(short <= 9.5);
   });
 
-  it("nodeTextLayoutAtBlend keeps layout stable across zoom blend", () => {
+  it("nodeTextLayoutAtBlend relaxes the circle into a wider card as blend rises", () => {
     const inner = nodeTextLayoutAtBlend(20, 400, 0);
     const full = nodeTextLayoutAtBlend(20, 400, 1);
-    assert.equal(inner.w, full.w);
-    assert.equal(inner.h, full.h);
-    assert.equal(inner.fontSize, full.fontSize);
+    // At blend 0 the text sits inside the circle.
+    assert.equal(inner.boxW, 40);
+    assert.equal(inner.boxH, 40);
+    assert.equal(inner.cornerRadius, 20);
+    // At full blend the box grows beyond the circle and the corners flatten.
+    assert.ok(full.boxW > inner.boxW);
+    assert.ok(full.w > inner.w);
+    assert.ok(full.cornerRadius < inner.cornerRadius);
+    assert.ok(full.fontSize >= inner.fontSize);
   });
 
   it("focusAiNodeRead centers the node in the viewport", () => {

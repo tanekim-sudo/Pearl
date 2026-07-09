@@ -270,6 +270,26 @@ body.column-boundary-resizing * {
   user-select: none !important;
 }
 
+/* While a boundary is being dragged, layers clip hard at their edges and
+   floating object chrome disappears — nothing may hover over the seam. */
+body.column-boundary-resizing .canvas-column,
+body.column-boundary-resizing .canvas-column .board-main,
+body.column-boundary-resizing .canvas-column .viewport,
+body.column-boundary-resizing .ai-column,
+body.column-boundary-resizing .functions-column {
+  overflow: hidden !important;
+}
+
+body.column-boundary-resizing .board-text.editing,
+body.column-boundary-resizing .stroke-voice-tooltip,
+body.column-boundary-resizing .ai-node-fragment-panel,
+body.column-boundary-resizing .ai-strand-tooltip,
+body.column-boundary-resizing .ai-node-hover-preview,
+body.column-boundary-resizing .canvas-edge-top,
+body.column-boundary-resizing .canvas-edge-bottom {
+  visibility: hidden !important;
+}
+
 .interpret-boundary-hit::before {
   content: "";
   position: absolute;
@@ -1595,7 +1615,8 @@ body.ai-strand-dragging * {
   fill: rgba(255, 255, 255, 0.92);
   stroke: rgba(255, 220, 140, 0.7);
   stroke-width: 1.5;
-  transition: r 0.1s ease, fill 0.1s ease;
+  stroke-linejoin: round;
+  transition: fill 0.1s ease;
 }
 
 .ai-strand-drag-strand.hovered .ai-strand-drag-tip {
@@ -1696,11 +1717,33 @@ body.ai-strand-dragging .ai-node-viewport.ai-constellation-mode .ai-node {
   transition: opacity 0.06s linear;
 }
 
-/* While morphing, the radiant ring dissolves as text blooms in. */
+/* While morphing, the radiant ring dissolves as text blooms in.
+   Overflow stays visible so the text card can relax beyond the circle;
+   the text container clips itself with its own animated corner radius. */
 .ai-node.morphing {
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Once text dominates, every circle cue truly disappears — including
+   loading/born pulses that would otherwise override the fade. */
+.ai-node.text-dominant .ai-node-ring {
+  animation: none;
+  box-shadow: none;
+  opacity: calc(1 - var(--ai-node-blend, 0));
+}
+
+.ai-node.text-dominant .ai-node-cell,
+.ai-node.text-dominant .ai-node-cell-glow,
+.ai-node.text-dominant .ai-node-born-ring,
+.ai-node.text-dominant .ai-node-starburst {
+  animation: none;
+  opacity: 0;
+}
+
+.ai-node.text-dominant.hl-marked .ai-node-ring {
+  box-shadow: none;
 }
 
 /* Text clipped inside the circle when zoomed in */

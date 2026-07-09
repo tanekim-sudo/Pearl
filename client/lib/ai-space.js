@@ -224,9 +224,51 @@ export function fitCardFontSize(w, _h, textLen) {
   return fitTextFontSize(w, textLen);
 }
 
-/** Layout is fixed inside the circle; zoom only drives opacity crossfade in the view. */
-export function nodeTextLayoutAtBlend(radius, textLen, _blend, text = "") {
-  return nodeTextLayout(radius, textLen, text);
+/**
+ * Blend-aware layout: at blend 0 the text sits clipped inside the circle; as
+ * blend rises with zoom, the circle relaxes into a wider rounded card so the
+ * silhouette genuinely stops being a circle at full text zoom.
+ */
+export function nodeTextLayoutAtBlend(radius, textLen, blend = 0, text = "") {
+  const t = Math.max(0, Math.min(1, blend || 0));
+  const d = radius * 2;
+  if (t <= 0.001) {
+    const base = nodeTextLayout(radius, textLen, text);
+    return { ...base, boxW: d, boxH: d, cornerRadius: radius };
+  }
+
+  const boxW = d * (1 + 0.6 * t);
+  const boxH = d * (1 + 0.22 * t);
+  const pad = radius * (0.22 - 0.1 * t);
+  const maxW = boxW - pad * 2;
+  const maxH = boxH - pad * 2;
+  const lineHeight = 1.28 + 0.14 * t;
+  const charW = 0.54;
+  const sample = text || (textLen ? "x".repeat(textLen) : "");
+
+  let fontSize = Math.min(radius * (0.28 + 0.04 * t), maxH / 2.6);
+  let lines = [""];
+  for (let i = 0; i < 64; i++) {
+    const charsPerLine = Math.max(3, Math.floor(maxW / (fontSize * charW)));
+    lines = wrapTextLines(sample, charsPerLine);
+    const h = lines.length * fontSize * lineHeight;
+    if (h <= maxH) break;
+    fontSize *= 0.88;
+    if (fontSize < 2.4) break;
+  }
+  const h = Math.min(maxH, lines.length * fontSize * lineHeight);
+
+  return {
+    w: maxW,
+    h,
+    fontSize,
+    lineHeight,
+    pad,
+    lineCount: lines.length,
+    boxW,
+    boxH,
+    cornerRadius: radius * (1 - t) + 12 * t,
+  };
 }
 
 /**

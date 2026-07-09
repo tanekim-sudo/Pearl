@@ -2540,6 +2540,10 @@ export default function App() {
     const gridW = threeColumnGridRef.current?.clientWidth || window.innerWidth;
     const startLayout = { ...columnLayoutRef.current };
     const startX = e.clientX;
+    // A moving boundary must never leave editing chrome floating over
+    // whatever it covers — commit any open text editor before resizing.
+    finishEditing();
+    setStagesItemId(null);
     setColumnResizing(edge);
     document.body.classList.add("column-boundary-resizing");
 
@@ -2826,11 +2830,16 @@ export default function App() {
           .join("\n\n");
       }
       if (text?.trim()) {
+        const lineage = aiNodeLineageVias(node);
         spawnTextAtWorld(text, { x: atWorld.x, y: atWorld.y + yOffset }, {
           silent: true,
           fromAi: true,
           aiNodeId: node.id,
           sourceIds: node.sourceIds,
+          // Single-step productions keep a via for thread capture; longer
+          // sequences rely on the per-step history recorded below.
+          via: lineage.length === 1 ? lineage[0] : undefined,
+          lineageVias: lineage,
         });
         if (fragment) {
           updateAiNode(node.id, { goldenFragment: null });
@@ -3836,11 +3845,69 @@ export default function App() {
     return newIds;
   }
 
+  /**
+   * All function outputs are born in the AI layer, linked to their sources.
+   * They enter the notebook only when the user drags them across the boundary.
+   */
+  function spawnAiOutputs(texts, sourceIds, via = null, opts = {}) {
+    const list = (Array.isArray(texts) ? texts : [texts])
+      .map((t) => stripMd(t || "").trim())
+      .filter(Boolean);
+    if (!list.length) return [];
+
+    let parent = opts.parentNode || null;
+    if (!parent && sourceIds?.length) {
+      parent = ensureSourceNode(sourceIds, opts.sourcePreview || null, opts.sourcePreview?.slice(0, 24) || "Source");
+      const idSet = new Set(sourceIds);
+      const preview =
+        opts.sourcePreview ||
+        truncatePreview(
+          itemsRef.current
+            .filter((it) => idSet.has(it.id))
+            .map((it) => it.text || it.preview || "")
+            .join(" ")
+            .trim(),
+          200
+        );
+      updateAiNode(parent.id, {
+        ...(preview ? { preview, label: truncateLabel(preview) } : {}),
+        loading: false,
+      });
+    }
+
+    const nodes = [];
+    let chainParent = parent;
+    for (const text of list) {
+      let node;
+      if (chainParent) {
+        node = createExpandedChild(
+          chainParent,
+          { opLabel: via?.name || "output", opId: via?.opId || null, loading: false },
+          undefined
+        );
+      } else {
+        node = createOutputNode(text, null);
+      }
+      updateAiNode(node.id, {
+        expandedText: text,
+        loading: false,
+        error: null,
+        label: truncateLabel(via?.name || text.slice(0, 24) || "Output"),
+        ...(via ? { via, opId: via.opId || node.opId || null, opLabel: via.name || node.opLabel || null } : {}),
+      });
+      nodes.push(node);
+      if (opts.chain || !chainParent) chainParent = node;
+    }
+
+    if (nodes.length) {
+      setSelectedAiNodeIds(nodes.map((n) => n.id));
+      launchPaperToAiTransfer({ nodeIds: nodes.map((n) => n.id) });
+    }
+    return nodes;
+  }
+
   function spawnMultipleObjects(texts, sourceIds, atWorld, via = null) {
-    pushHistory();
-    return spawnTransformOutputs(texts, sourceIds, atWorld, via, {
-      widthFor: (clean) => Math.min(520, Math.max(260, Math.round(clean.length * 0.5 + 180))),
-    }).ids;
+    return spawnAiOutputs(texts, sourceIds, via).map((n) => n.id);
   }
 
   async function executeOperatorJob(jobId, op, targetIds, atClient, opts = {}, mapOverride = null) {
@@ -3902,20 +3969,17 @@ export default function App() {
         startedAt: Date.now(),
         estimatedMs: stepMs,
       });
-      const atWorld = atClient ? clientToWorld(atClient.x, atClient.y) : null;
-      let chainParentIds = targetIds;
-      let chainAnchor = null;
+      let chainParentNode = null;
       await runMoveSequence(execOp, map, text, image, onProgress, operators, async ({ out: stepOut, stepOp }) => {
         patchJob(jobId, { step: "spawning object…", progress: 0.92 });
-        pushHistory();
         const polished = isTransformPrimitive(stepOp)
           ? sanitizePrimitiveOutput(stepOut)
           : await polishDeliverable(stepOut, stepOp, text);
-        const result = spawnTransformOutputs([polished], chainParentIds, atWorld, viaFromOp(stepOp, chainParentIds), {
-          anchorBox: chainAnchor || undefined,
+        const nodes = spawnAiOutputs([polished], targetIds, viaFromOp(stepOp, targetIds), {
+          parentNode: chainParentNode,
+          sourcePreview: gathered.preview,
         });
-        chainParentIds = result.lastParentIds;
-        chainAnchor = result.lastAnchorBox;
+        chainParentNode = nodes[nodes.length - 1] || chainParentNode;
       });
       return;
     } else {
@@ -3983,8 +4047,9 @@ export default function App() {
       }
     }
     patchJob(jobId, { step: "spawning object…", progress: 0.98 });
-    const atWorld = atClient ? clientToWorld(atClient.x, atClient.y) : null;
-    applyTransformResult(out, targetIds, atWorld, viaFromOp(execOp, targetIds));
+    spawnAiOutputs([out], targetIds, viaFromOp(execOp, targetIds), {
+      sourcePreview: gathered.preview,
+    });
   }
 
   function runOperator(op, targetIds, opts = {}) {
@@ -4965,10 +5030,40 @@ export default function App() {
     return rootId;
   }
 
+  /** Production sequence of an AI node: via records from the root ancestor down to the node. */
+  function aiNodeLineageVias(node) {
+    const chain = [];
+    const seen = new Set();
+    let cur = node;
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      if (cur.via || cur.opLabel) {
+        chain.push(
+          cur.via || {
+            name: cur.opLabel,
+            opId: cur.opId || null,
+            moveRef: cur.opId
+              ? { kind: "function", id: cur.opId, name: cur.opLabel }
+              : { kind: "primitive", name: cur.opLabel },
+          }
+        );
+      }
+      const parentId = cur.parentId || cur.sourceNodeIds?.[0];
+      cur = parentId ? aiNodesRef.current.find((n) => n.id === parentId) : null;
+    }
+    return chain.reverse();
+  }
+
   function collectAiLineageSteps(node) {
     if (!node) return [];
     const steps = [];
     const seen = new Set();
+    const pushStep = (step) => {
+      const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      steps.push(step);
+    };
     const { ids: sourceIds } = resolveNodeSourceIds(node);
     if (sourceIds?.length) {
       const primaryId = pickPrimaryCaptureId(sourceIds);
@@ -4976,12 +5071,7 @@ export default function App() {
       const threadInfo = primaryId ? getNodeThreadCapture(primaryId) : null;
       if (threadInfo?.canCapture) {
         for (const via of threadInfo.vias) {
-          const step = abstractStepFromVia(via, opMap, operators);
-          const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            steps.push(step);
-          }
+          pushStep(abstractStepFromVia(via, opMap, operators));
         }
       } else if (item) {
         const perceptual = buildPerceptualCaptureFromItem(primaryId, {
@@ -4989,37 +5079,13 @@ export default function App() {
           ...historyCaptureContext(),
         });
         if (perceptual.canCapture) {
-          for (const step of perceptual.steps) {
-            const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              steps.push(step);
-            }
-          }
+          for (const step of perceptual.steps) pushStep(step);
         }
       }
     }
-    let cur = node;
-    const nodeSeen = new Set();
-    while (cur && !nodeSeen.has(cur.id)) {
-      nodeSeen.add(cur.id);
-      if (cur.opLabel) {
-        const via = {
-          name: cur.opLabel,
-          opId: cur.opId,
-          moveRef: cur.opId
-            ? { kind: "function", id: cur.opId, name: cur.opLabel }
-            : { kind: "primitive", name: cur.opLabel },
-        };
-        const step = abstractStepFromVia(via, opMap, operators);
-        const key = `${step.name}:${step.moveRef?.id || step.moveRef?.name || ""}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          steps.push(step);
-        }
-      }
-      const parentId = cur.parentId || cur.sourceNodeIds?.[0];
-      cur = parentId ? aiNodesRef.current.find((n) => n.id === parentId) : null;
+    // Root-to-node order — the sequence that produced this exact object.
+    for (const via of aiNodeLineageVias(node)) {
+      pushStep(abstractStepFromVia(via, opMap, operators));
     }
     return steps;
   }
@@ -5781,7 +5847,7 @@ export default function App() {
       const title = `#${num} · ${parsed.name}`;
       const center = paperViewportCenterWorld();
       const body = `${parsed.name.toUpperCase()}\n\n${parsed.body}`;
-      spawnNewObject(body, nodes.map((n) => n.id), center, { name: "sameness" });
+      spawnAiOutputs([body], nodes.map((n) => n.id), { name: "sameness" });
       const struct = {
         id: uid(),
         title,
@@ -7479,15 +7545,6 @@ export default function App() {
   }
 
   // ---- export / object helpers ----
-  function spawnNewObject(text, sourceIds, atWorld, via = null) {
-    pushHistory();
-    return spawnTransformOutputs([text], sourceIds, atWorld, via).ids[0] || null;
-  }
-
-  function applyTransformResult(out, sourceIds, atWorld, via = null) {
-    spawnNewObject(out, sourceIds, atWorld, via);
-  }
-
   async function combineItemsByDrag(draggedIds, targetIds) {
     const ids = [...new Set([...draggedIds, ...targetIds])];
     const mergeOp = operators.find((o) => o.name === "merge") || TRANSFORM_PRIMITIVES.find((o) => o.name === "expand");
@@ -8072,22 +8129,15 @@ export default function App() {
         out = await polishDeliverable(out, op, polishSource);
       }
       const text = out.trim();
+      // History lives on the produced object only — the source keeps no record
+      // of transformations that made other objects.
       updateAiNode(expandedNode.id, {
         expandedText: text,
         loading: false,
         error: null,
         label: truncateLabel(opts.opLabel || op.name || "Expanded"),
+        via: viaFromOp(op, idList),
       });
-      if (idList.length) {
-        recordItemEvents(idList, "expand", {
-          aiNodeId: expandedNode.id,
-          opName: opts.opLabel || op.name,
-          opId: op.id,
-          moveRef: viaFromOp(op, idList).moveRef,
-          inputPreview: truncatePreview(gathered?.preview || inputPreview, 80),
-          outputPreview: truncatePreview(text, 120),
-        });
-      }
       setAiPanel((prev) => ({
         ...prev,
         expandedText: text,
@@ -8273,6 +8323,7 @@ export default function App() {
       pageId: activePageId,
       world: worldFilter || null,
       bornFrom: opts.sourceIds || undefined,
+      via: opts.via || undefined,
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
@@ -8283,6 +8334,15 @@ export default function App() {
       aiNodeId: opts.aiNodeId,
       outputPreview: truncatePreview(clean, 120),
     });
+    // The object carries the sequence of steps that produced it — and only that.
+    for (const v of opts.lineageVias || []) {
+      recordItemEvent(id, "expand", {
+        opName: v.name,
+        opId: v.opId,
+        moveRef: v.moveRef,
+        outputPreview: truncatePreview(clean, 120),
+      });
+    }
     if (!opts.silent) showToast("added to paper");
     return id;
   }

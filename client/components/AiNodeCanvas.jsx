@@ -809,13 +809,16 @@ export default function AiNodeCanvas({
   const contentBlend = zoomContentBlend(camera.scale);
   const invScale = 1 / Math.max(0.08, camera.scale);
   const edgeStroke = 2.6 * invScale;
-  const markerSize = Math.min(14 * invScale, Math.max(7 * invScale, 5 * invScale));
   const zoomTier =
     camera.scale < AI_DOT_ONLY_THRESHOLD
       ? "dot"
       : camera.scale < AI_BLEND_ZOOM_START
         ? "short"
         : "full";
+  // Arrowheads hold a constant on-screen size: ~13px normally, smaller when
+  // nodes shrink to dots so heads never dwarf them.
+  const markerScreenPx = zoomTier === "dot" ? 9 : 13;
+  const markerSize = markerScreenPx * invScale;
 
   function updateNodeCursor(e, node) {
     const rect = viewportRef.current?.getBoundingClientRect();
@@ -1087,6 +1090,7 @@ export default function AiNodeCanvas({
                 (isFocused ? " focused" : "") +
                 (golden ? " hl-marked" : "") +
                 (detail ? " morphing" : "") +
+                (nodeBlend > 0.6 ? " text-dominant" : "") +
                 (isSelected && selectedIds.length > 1 ? " multi-selected" : "") +
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
@@ -1133,8 +1137,9 @@ export default function AiNodeCanvas({
                   className="ai-node-content-text"
                   style={{
                     opacity: nodeBlend,
-                    width: r * 2,
-                    height: r * 2,
+                    width: textLayout.boxW ?? r * 2,
+                    height: textLayout.boxH ?? r * 2,
+                    borderRadius: textLayout.cornerRadius ?? r,
                     fontSize: textLayout.fontSize,
                     lineHeight: textLayout.lineHeight,
                     padding: textLayout.pad,
@@ -1269,8 +1274,12 @@ export default function AiNodeCanvas({
                 style={{ "--strand-i": i }}
               >
                 <path d={pathD} className="ai-strand-drag-path" filter="url(#ai-drag-strand-glow)" />
-                <circle cx={x2} cy={y2} r={hovered ? 10 : 7} className="ai-strand-drag-tip" />
-                <text x={x2} y={y2 - 14} className="ai-strand-drag-label">
+                <path
+                  className="ai-strand-drag-tip"
+                  d={hovered ? "M -16 -10 L 7 0 L -16 10 L -10 0 Z" : "M -12 -7.5 L 5 0 L -12 7.5 L -7.5 0 Z"}
+                  transform={`translate(${x2} ${y2}) rotate(${(angle * 180) / Math.PI})`}
+                />
+                <text x={x2} y={y2 - 16} className="ai-strand-drag-label">
                   {truncateLabel(choice.label, 14)}
                 </text>
               </g>
