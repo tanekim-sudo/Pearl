@@ -4927,3 +4927,342 @@ body.toolbox-dragging .toolbox-drag-row {
   0%, 100% { opacity: 0.45; transform: scaleX(0.85); }
   50% { opacity: 1; transform: scaleX(1); }
 }
+
+/* ================================================================
+   Rail redesign — Linear-grade list: one-line rows, zero card chrome,
+   hover-revealed controls, git metadata compressed to a tinted dot.
+   ================================================================ */
+
+.board-rail {
+  border-right: none;
+  box-shadow: none;
+}
+
+.rail-section {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 0, 0, 0.34);
+  padding: 14px 14px 4px;
+  user-select: none;
+}
+
+/* --- rows: functions, quick moves, library --- */
+.op-card-wrap {
+  margin: 0 6px;
+}
+
+.op-card,
+.struct-card,
+.lens-card {
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+}
+
+.lens-card {
+  margin: 0 6px;
+}
+
+.op-card:hover,
+.lens-card:hover,
+.struct-card:hover {
+  background: rgba(64, 52, 28, 0.06);
+  border-color: transparent;
+}
+
+.op-card-row,
+.lens-card-top,
+.struct-card-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  min-height: 28px;
+  position: relative;
+  border-radius: 8px;
+}
+
+.op-card-name,
+.lens-card-name,
+.struct-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lens-card-name {
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.op-card-label {
+  min-width: 0;
+}
+
+.op-card-stepcount {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0, 0, 0, 0.32);
+  flex: none;
+}
+
+/* grip fades in only on hover — rows stay quiet at rest */
+.op-drag-grip {
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.op-card-row:hover .op-drag-grip,
+.lens-card-top:hover .op-drag-grip,
+.struct-card-row:hover .op-drag-grip {
+  opacity: 0.55;
+}
+
+/* --- hover-revealed row actions --- */
+.rail-row-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.op-card-row:hover .rail-row-actions,
+.lens-card-top:hover .rail-row-actions,
+.struct-card-row:hover .rail-row-actions,
+.rail-row-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rail-icon-btn {
+  border: none;
+  background: transparent;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.52);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.rail-icon-btn:hover {
+  background: rgba(64, 52, 28, 0.12);
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.rail-icon-btn.danger:hover {
+  background: rgba(180, 40, 40, 0.12);
+  color: #a02020;
+}
+
+/* --- git metadata: one tinted dot --- */
+.git-ref-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.git-ref-dot.main {
+  background: #b8901e;
+  box-shadow: 0 0 0 3px rgba(184, 144, 30, 0.16);
+}
+
+.git-ref-dot.branch {
+  background: #2e8b74;
+}
+
+.git-ref-dot.fork {
+  background: #7a5fc0;
+}
+
+.git-ref-dot.merge {
+  background: #b05684;
+}
+
+.git-ref-dot.checkout {
+  background: #e8b923;
+  box-shadow: 0 0 0 3px rgba(232, 185, 35, 0.25);
+}
+
+.lens-card.git-child {
+  margin-left: 20px;
+  border-left: 1px solid rgba(110, 92, 52, 0.16);
+  border-radius: 0 8px 8px 0;
+}
+
+.lens-card.active {
+  background: rgba(184, 144, 30, 0.1);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.lens-card.active .lens-card-name {
+  color: #6d5410;
+}
+
+.lens-card.comparing {
+  box-shadow: inset 0 0 0 1px rgba(122, 95, 192, 0.55);
+}
+
+.lens-card.merge-over,
+.op-card.compose-over,
+.struct-card.drop-target {
+  background: rgba(184, 144, 30, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(184, 144, 30, 0.5);
+  border-color: transparent;
+}
+
+.lens-menu {
+  top: calc(100% + 2px);
+  right: 6px;
+  z-index: 80;
+}
+
+/* --- hover preview card: steps + lineage live here, never inline --- */
+.rail-hover-card {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: calc(100% + 4px);
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition:
+    opacity 0.2s ease 0.4s,
+    transform 0.2s ease 0.4s,
+    visibility 0s linear 0.6s;
+  background: rgba(30, 26, 18, 0.95);
+  color: rgba(255, 250, 240, 0.92);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 10px 28px rgba(20, 15, 5, 0.28);
+}
+
+.lens-card:hover > .rail-hover-card,
+.struct-card:hover > .rail-hover-card {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.rail-hover-crumb {
+  color: rgba(255, 220, 140, 0.85);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.rail-hover-steps {
+  color: rgba(255, 250, 240, 0.95);
+}
+
+.rail-hover-meta {
+  color: rgba(255, 250, 240, 0.55);
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+/* --- primitives: compact glyph chips, two per row --- */
+.op-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 4px;
+  margin: 2px 6px 6px;
+}
+
+.op-chip-wrap {
+  margin: 0;
+}
+
+.op-card.op-chip {
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: auto;
+}
+
+.op-chip .op-card-row {
+  padding: 4px 8px;
+  min-height: 26px;
+  gap: 6px;
+}
+
+.op-chip:hover {
+  background: rgba(64, 52, 28, 0.07);
+  border-color: transparent;
+}
+
+.op-chip-glyph {
+  flex: none;
+  width: 15px;
+  text-align: center;
+  font-size: 12px;
+  color: #8a6d1f;
+  opacity: 0.75;
+}
+
+.op-chip .op-card-name {
+  font-weight: 450;
+  font-size: 12px;
+}
+
+.op-chip .rail-row-actions,
+.op-chip .op-card-stepcount {
+  display: none;
+}
+
+/* --- lenses pane: symbol rows --- */
+.struct-card-wrap {
+  margin: 0 6px;
+}
+
+.struct-card-horizontal .struct-card {
+  display: block;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.struct-card-glyph {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.struct-card-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+}
+
+.struct-meaning {
+  display: none;
+}

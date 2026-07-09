@@ -8761,9 +8761,9 @@ export default function App() {
                       {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
                     </div>
                   ))}
-                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">Built-in</div>{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
-                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat starlike />))}</>)}
+                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">Built-in</div><div className="op-chip-grid">{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat chip />))}</div></>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
               </div>
             </section>
             <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab">
@@ -10000,15 +10000,35 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, starlike }) {
+const PRIMITIVE_GLYPHS = {
+  compress: "⊖",
+  expand: "⊕",
+  explore: "✧",
+  research: "⌕",
+  invert: "⇅",
+  reframe: "⟲",
+  transcend: "△",
+};
+
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, chip }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
   const open = expanded[op.id];
+  const stepNames = steps.map((s) => s?.name).filter(Boolean);
+  // Details live in a hover tooltip, never inline — the list stays one line per function.
+  const rowTitle = [
+    op.description?.trim(),
+    stepNames.length ? `steps: ${stepNames.join(" → ")}` : "",
+    "drag onto paper or AI",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const glyph = chip ? PRIMITIVE_GLYPHS[op.name] || "◦" : null;
   return (
-    <div className="op-card-wrap">
+    <div className={"op-card-wrap" + (chip ? " op-chip-wrap" : "")}>
       <div
-        className={"op-card" + (composeOver ? " compose-over" : "") + (starlike ? " starlike-op" : "")}
+        className={"op-card" + (composeOver ? " compose-over" : "") + (chip ? " op-chip" : "")}
         data-op-id={op.id}
         onDragOver={(e) => {
           if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
@@ -10032,66 +10052,74 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
         <div
           className="op-card-row toolbox-drag-row"
           onPointerDown={(e) => startToolboxOperatorDrag(e, op)}
+          title={rowTitle}
         >
-          <span className="op-drag-grip" title="Drag onto paper or AI">
-            ⠿
-          </span>
+          {glyph ? (
+            <span className="op-chip-glyph" aria-hidden="true">
+              {glyph}
+            </span>
+          ) : (
+            <span className="op-drag-grip" aria-hidden="true">
+              ⠿
+            </span>
+          )}
           <div className="op-card-label">
             <span className="op-card-name">{op.name}</span>
-            {open && op.description && <span className="op-card-desc">{op.description}</span>}
-            {open && op.mergedFrom && (
-              <span className="op-card-lineage">⚭ compound</span>
-            )}
           </div>
-          {!flat && steps.length > 0 && (
-            <button
-            className="op-card-toggle"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle(op.id);
-            }}
-            title={`${steps.length} steps`}
-          >
-              {open ? "▾" : "▸"}
-            </button>
+          {stepNames.length > 0 && !chip && (
+            <span className="op-card-stepcount">{stepNames.length}</span>
           )}
-          <button
-            className="op-card-edit"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(op);
-            }}
-            title="Edit"
-          >
-            Edit
-          </button>
-          {onExplore && isPortableOperator(op) && (
+          <span className="rail-row-actions">
+            {!flat && steps.length > 0 && (
+              <button
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle(op.id);
+                }}
+                title={`${steps.length} steps`}
+              >
+                {open ? "▾" : "▸"}
+              </button>
+            )}
             <button
-              className="op-card-portable"
+              className="rail-icon-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                onExplore(op);
+                onEdit(op);
               }}
-              title="Where else does this apply?"
+              title="Edit"
             >
-              ◎
+              ✎
             </button>
-          )}
-          {onShare && (
-            <button
-              className="op-card-share"
-              onClick={(e) => {
-                e.stopPropagation();
-                onShare(op);
-              }}
-              title="Copy share link"
-            >
-              ↗
-            </button>
-          )}
+            {onExplore && isPortableOperator(op) && (
+              <button
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExplore(op);
+                }}
+                title="Where else does this apply?"
+              >
+                ◎
+              </button>
+            )}
+            {onShare && (
+              <button
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(op);
+                }}
+                title="Copy share link"
+              >
+                ↗
+              </button>
+            )}
+          </span>
         </div>
       </div>
-      {open && steps.length > 0 && (
+      {open && steps.length > 0 && !flat && (
         <div className="op-card-steps">
           {steps.map((step) => (
             <DraggableStep key={step.id} step={step} opMap={opMap} expanded={expanded} onToggle={onToggle} onEdit={onEdit} depth={1} />
@@ -10176,7 +10204,7 @@ function LensCard({
           toolboxDidDragRef.current = false;
           return;
         }
-        if (e.target.closest(".op-drag-grip, .lens-card-actions, .lens-menu, button")) return;
+        if (e.target.closest(".op-drag-grip, .rail-row-actions, .lens-menu, button")) return;
         onUse();
       }}
       onDragOver={(e) => {
@@ -10201,64 +10229,45 @@ function LensCard({
         className="lens-card-top toolbox-drag-row"
         onPointerDown={(e) => startToolboxTransformationLensDrag(e, lens)}
       >
-        <span className="op-drag-grip" title="Drag onto paper or AI">
-          ⠿
-        </span>
-        <span className={"git-ref-badge " + refKind}>{refKind}</span>
+        <span
+          className={"git-ref-dot " + refKind}
+          title={[refKind, commits > 0 ? `${commits} commit${commits === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ")}
+          aria-hidden="true"
+        />
         <span className="lens-card-name">{lens.name}</span>
-        <span className="lens-card-badges">
-          {commits > 0 && <span className="lens-badge">{commits}◦</span>}
+        {moveNames.length > 0 && <span className="op-card-stepcount">{moveNames.length}</span>}
+        <span className="rail-row-actions">
+          <button
+            className="rail-icon-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEvolve();
+            }}
+            title="Edit this lens"
+          >
+            ✎
+          </button>
+          <button
+            className="rail-icon-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSend();
+            }}
+            title="Copy share link"
+          >
+            ↗
+          </button>
+          <button
+            className="rail-icon-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((o) => !o);
+            }}
+            title="More actions"
+          >
+            ⋯
+          </button>
         </span>
-      </div>
-      {crumbs.length > 1 && depth > 0 && (
-        <div className="lens-card-crumb">{crumbs.slice(0, -1).join(" → ")}</div>
-      )}
-      <div className="lens-card-moves">
-        {moveNames.slice(0, 6).map((n, i) => (
-          <span key={i} className="lens-move-chip">
-            {n}
-          </span>
-        ))}
-        {moveNames.length > 6 && <span className="lens-move-chip more">+{moveNames.length - 6}</span>}
-      </div>
-      {metaLines.length > 0 && (
-        <div className="lens-card-meta">
-          {metaLines.map((line, i) => (
-            <span key={i}>{line}</span>
-          ))}
-        </div>
-      )}
-      <div className="lens-card-actions">
-        <button
-          className="lens-btn primary"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEvolve();
-          }}
-          title="Edit this lens"
-        >
-          Edit
-        </button>
-        <button
-          className="lens-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSend();
-          }}
-          title="Copy share link"
-        >
-          Share
-        </button>
-        <button
-          className="lens-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen((o) => !o);
-          }}
-          title="More actions"
-        >
-          ⋯
-        </button>
         {menuOpen && (
           <div className="lens-menu" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => { onUse(); setMenuOpen(false); }}>
@@ -10274,6 +10283,19 @@ function LensCard({
           </div>
         )}
       </div>
+      {(moveNames.length > 0 || metaLines.length > 0 || crumbs.length > 1) && (
+        <div className="rail-hover-card" aria-hidden="true">
+          {crumbs.length > 1 && <div className="rail-hover-crumb">{crumbs.join(" → ")}</div>}
+          {moveNames.length > 0 && (
+            <div className="rail-hover-steps">{moveNames.join(" → ")}</div>
+          )}
+          {metaLines.map((line, i) => (
+            <div key={i} className="rail-hover-meta">
+              {line}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -10426,58 +10448,58 @@ function PatternLensCard({
         <div
           className="struct-card-row toolbox-drag-row"
           onPointerDown={(e) => startToolboxPatternLensDrag(e, struct)}
+          title={[meaning, "drag onto paper or AI · drop material here to deepen"].filter(Boolean).join("\n")}
         >
-          <span className="op-drag-grip" title="Drag onto paper">
-            ⠿
-          </span>
           <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />
           <div className="struct-card-body">
             <span className="struct-title">{struct.title || preview}</span>
-            {meaning && <span className="struct-meaning">{meaning}</span>}
           </div>
+          <span className="rail-row-actions">
+            {onEditViewLens && (
+              <button
+                type="button"
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditViewLens(struct);
+                }}
+                title="Apply as a way of seeing"
+              >
+                ◉
+              </button>
+            )}
+            {onEditSymbol && (
+              <button
+                type="button"
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditSymbol(struct);
+                }}
+                title="Edit symbol"
+              >
+                ✎
+              </button>
+            )}
+            {onShare && (
+              <button
+                type="button"
+                className="rail-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(struct);
+                }}
+                title="Share"
+              >
+                ↗
+              </button>
+            )}
+            <button type="button" className="rail-icon-btn danger" onClick={onDelete} title="Delete">
+              ×
+            </button>
+          </span>
         </div>
-        <div className="struct-card-actions">
-          {onEditViewLens && (
-            <button
-              type="button"
-              className="lens-card-apply"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditViewLens(struct);
-              }}
-            >
-              Apply
-            </button>
-          )}
-          {onEditSymbol && (
-            <button
-              type="button"
-              className="struct-card-edit-symbol"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditSymbol(struct);
-              }}
-            >
-              ✎
-            </button>
-          )}
-          {onShare && (
-            <button
-              type="button"
-              className="struct-card-share"
-              onClick={(e) => {
-                e.stopPropagation();
-                onShare(struct);
-              }}
-              title="Share"
-            >
-              ↗
-            </button>
-          )}
-          <button type="button" className="struct-card-del" onClick={onDelete} title="Delete">
-            ×
-          </button>
-        </div>
+        {meaning && <div className="rail-hover-card" aria-hidden="true">{meaning}</div>}
       </div>
     </div>
   );
