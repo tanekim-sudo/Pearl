@@ -19,6 +19,8 @@ const DOC_STAR_KEY = "lens.doc.star.v1";
 const THEME_KEY = "lens.theme.v1";
 const CAMERA_KEY = "lens.board.camera.v1";
 const OPERATORS_KEY = "lens.board.operators.v2";
+export const AI_NODES_KEY = "lens.ai.nodes.v1";
+const ITEM_HISTORY_KEY = "lens.item.history.v1";
 
 export const BOARD_SYNC_STORAGE_KEYS = [
   ITEMS_KEY,
@@ -31,6 +33,18 @@ export const BOARD_SYNC_STORAGE_KEYS = [
   PATTERN_LENSES_KEY,
   TRANSFORMATION_REPOS_KEY,
   ACTIVE_TRANSFORMATION_KEY,
+  AI_NODES_KEY,
+  ITEM_HISTORY_KEY,
+];
+
+/** Keys whose values are arrays of {id}-bearing records, mergeable by id. */
+const ID_ARRAY_KEYS = [
+  ITEMS_KEY,
+  PAGES_KEY,
+  OPERATORS_KEY,
+  PATTERN_LENSES_KEY,
+  TRANSFORMATION_REPOS_KEY,
+  AI_NODES_KEY,
 ];
 
 function safeGet(key) {
@@ -125,7 +139,66 @@ export function parseBoardSnapshot(snapshot) {
     lenses: parseJson(PATTERN_LENSES_KEY, []),
     transformationRepos: parseJson(TRANSFORMATION_REPOS_KEY, []),
     activeTransformationId: parseJson(ACTIVE_TRANSFORMATION_KEY, null),
+    aiNodes: parseJson(AI_NODES_KEY, []),
+    itemHistory: parseJson(ITEM_HISTORY_KEY, {}),
   };
+}
+
+/** Whether a snapshot holds meaningful anonymous work worth protecting. */
+export function snapshotHasContent(snapshot) {
+  const parsed = parseBoardSnapshot(snapshot);
+  return (
+    (parsed.items?.length || 0) > 0 ||
+    (parsed.lenses?.length || 0) > 0 ||
+    (parsed.transformationRepos?.length || 0) > 0 ||
+    (parsed.aiNodes?.length || 0) > 0
+  );
+}
+
+/**
+ * Merge anonymous local work into an account snapshot: id-bearing arrays merge
+ * with local records winning on id conflicts; scalar keys prefer local
+ * (what the user is looking at right now); item history merges per item.
+ */
+export function mergeBoardSnapshots(local, remote) {
+  const keys = { ...(remote?.keys || {}) };
+  const localKeys = local?.keys || {};
+
+  for (const key of BOARD_SYNC_STORAGE_KEYS) {
+    if (!(key in localKeys)) continue;
+    if (!(key in keys)) {
+      keys[key] = localKeys[key];
+      continue;
+    }
+    if (ID_ARRAY_KEYS.includes(key)) {
+      try {
+        const remoteArr = JSON.parse(keys[key]);
+        const localArr = JSON.parse(localKeys[key]);
+        if (Array.isArray(remoteArr) && Array.isArray(localArr)) {
+          const byId = new Map();
+          for (const rec of remoteArr) if (rec?.id) byId.set(rec.id, rec);
+          for (const rec of localArr) if (rec?.id) byId.set(rec.id, rec);
+          keys[key] = JSON.stringify([...byId.values()]);
+          continue;
+        }
+      } catch {
+        /* fall through to local-wins */
+      }
+      keys[key] = localKeys[key];
+    } else if (key === ITEM_HISTORY_KEY) {
+      try {
+        const remoteLog = JSON.parse(keys[key]) || {};
+        const localLog = JSON.parse(localKeys[key]) || {};
+        keys[key] = JSON.stringify({ ...remoteLog, ...localLog });
+      } catch {
+        keys[key] = localKeys[key];
+      }
+    } else {
+      keys[key] = localKeys[key];
+    }
+  }
+
+  return { version: BOARD_SYNC_VERSION, savedAt: new Date().toISOString(), keys };
 }
 
 /**
@@ -169,18 +242,35 @@ export async function pushCloudBoardSnapshot(supabase, userId, snapshot) {
 }
 
 /**
- * @param {{ session: import('@supabase/supabase-js').Session | null, sessionResolved: boolean, onHydrate?: (parsed: ReturnType<typeof parseBoardSnapshot>) => void, onSynced?: () => void, dirtyToken?: unknown }} opts
+ * @param {{ session: import('@supabase/supabase-js').Session | null, sessionResolved: boolean, onHydrate?: (parsed: ReturnType<typeof parseBoardSnapshot>) => void, onSynced?: () => void, onConflict?: (opts: { local: any, remote: any, resolve: (choice: 'remote'|'merge'|'local') => Promise<void> }) => void, dirtyToken?: unknown }} opts
  */
 export function useBoardCloudSync({
   session,
   sessionResolved,
   onHydrate,
   onSynced,
+  onConflict,
   dirtyToken,
 }) {
   const syncGenRef = useRef(0);
   const saveTimerRef = useRef(null);
   const hydratedUserRef = useRef(null);
+  const dirtyRef = useRef(false);
+  const firstDirtyRef = useRef(true);
+
+  // Stamp local edits even while signed out — otherwise anonymous work looks
+  // older than any cloud snapshot and gets silently replaced on login.
+  useEffect(() => {
+    if (firstDirtyRef.current) {
+      firstDirtyRef.current = false;
+      return;
+    }
+    dirtyRef.current = true;
+    safeSet(
+      BOARD_SYNC_META_KEY,
+      JSON.stringify({ savedAt: new Date().toISOString(), version: BOARD_SYNC_VERSION })
+    );
+  }, [dirtyToken]);
 
   useEffect(() => {
     if (!sessionResolved || !session?.user?.id) {
@@ -212,6 +302,42 @@ export function useBoardCloudSync({
         }
 
         const winner = compareSnapshotTimestamps(local.savedAt, remote.savedAt);
+
+        // Both sides have real content and disagree: the user decides whether
+        // to keep the account board or bring the anonymous work in.
+        if (
+          winner !== "equal" &&
+          onConflict &&
+          snapshotHasContent(local) &&
+          snapshotHasContent(remote)
+        ) {
+          onConflict({
+            local,
+            remote,
+            resolve: async (choice) => {
+              try {
+                if (choice === "remote") {
+                  writeLocalBoardSnapshot(remote);
+                  onHydrate?.(parseBoardSnapshot(remote));
+                } else {
+                  const merged =
+                    choice === "merge"
+                      ? mergeBoardSnapshots(local, remote)
+                      : { ...local, savedAt: new Date().toISOString() };
+                  writeLocalBoardSnapshot(merged);
+                  onHydrate?.(parseBoardSnapshot(merged));
+                  await pushCloudBoardSnapshot(supabase, userId, merged);
+                }
+                hydratedUserRef.current = userId;
+                onSynced?.();
+              } catch (err) {
+                console.warn("[lens] board conflict resolution failed:", err);
+              }
+            },
+          });
+          return;
+        }
+
         if (winner === "remote") {
           writeLocalBoardSnapshot(remote);
           onHydrate?.(parseBoardSnapshot(remote));
@@ -234,7 +360,7 @@ export function useBoardCloudSync({
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id, sessionResolved, onHydrate, onSynced]);
+  }, [session?.user?.id, sessionResolved, onHydrate, onSynced, onConflict]);
 
   useEffect(() => {
     if (!sessionResolved || !session?.user?.id || !hydratedUserRef.current) return;
@@ -249,6 +375,7 @@ export function useBoardCloudSync({
         };
         writeLocalBoardSnapshot(stamped);
         await pushCloudBoardSnapshot(supabase, session.user.id, stamped);
+        dirtyRef.current = false;
         onSynced?.();
       } catch (err) {
         console.warn("[lens] board cloud save failed:", err);
@@ -258,4 +385,33 @@ export function useBoardCloudSync({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [dirtyToken, session?.user?.id, sessionResolved, onSynced]);
+
+  // Flush pending changes when the tab is backgrounded or closed so quick
+  // edits right before leaving aren't lost to the debounce window.
+  useEffect(() => {
+    if (!sessionResolved || !session?.user?.id) return undefined;
+    const userId = session.user.id;
+    const flush = () => {
+      if (!hydratedUserRef.current || !dirtyRef.current) return;
+      const supabase = getSupabase();
+      if (!supabase) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      const stamped = { ...readLocalBoardSnapshot(), savedAt: new Date().toISOString() };
+      writeLocalBoardSnapshot(stamped);
+      dirtyRef.current = false;
+      pushCloudBoardSnapshot(supabase, userId, stamped).catch(() => {});
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [session?.user?.id, sessionResolved]);
 }

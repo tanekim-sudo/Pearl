@@ -83,7 +83,7 @@ import { useSupabaseSession } from "./lib/auth-session.js";
 import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
 import { planBadgeLabel } from "./lib/plans.js";
 import { useUserPlan } from "./lib/use-user-plan.js";
-import { useBoardCloudSync } from "./lib/board-sync.js";
+import { useBoardCloudSync, AI_NODES_KEY } from "./lib/board-sync.js";
 import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
@@ -2102,7 +2102,11 @@ export default function App() {
   const [theme, setTheme] = useState(() => load(THEME_KEY, "idea"));
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
-  const [aiNodes, setAiNodes] = useState([]);
+  const [aiNodes, setAiNodes] = useState(() => {
+    // AI-layer thinking survives reloads; nodes caught mid-request come back settled.
+    const saved = load(AI_NODES_KEY, []);
+    return Array.isArray(saved) ? saved.map((n) => ({ ...n, loading: false })) : [];
+  });
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
   const [highlightTouchIds, setHighlightTouchIds] = useState([]);
   const [highlightSelectionIds, setHighlightSelectionIds] = useState([]);
@@ -2269,6 +2273,13 @@ export default function App() {
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(PATTERN_LENSES_KEY, JSON.stringify(lenses)), [lenses]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(AI_NODES_KEY, JSON.stringify(aiNodes));
+    } catch {
+      /* quota */
+    }
+  }, [aiNodes]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
@@ -2323,9 +2334,9 @@ export default function App() {
   }, [supaAuth.session]);
 
   const hydrateBoardFromCloud = useCallback((parsed) => {
-    if (Array.isArray(parsed.items)) {
-      setItems(parsed.items.map(normalizeItem).filter(Boolean));
-    }
+    // Full state replacement: absent keys reset to defaults so a hydrated
+    // board never mixes cloud state with leftover local state.
+    setItems(Array.isArray(parsed.items) ? parsed.items.map(normalizeItem).filter(Boolean) : []);
     if (Array.isArray(parsed.pages) && parsed.pages.length) {
       setPages(
         parsed.pages.map((p, i) => ({
@@ -2335,35 +2346,52 @@ export default function App() {
         }))
       );
       setActivePageId(parsed.pages[0]?.id || DEFAULT_PAGE_ID);
+    } else {
+      setPages([{ id: DEFAULT_PAGE_ID, name: "World 1", camera: { x: 0, y: 0, scale: 1 }, sessions: [] }]);
+      setActivePageId(DEFAULT_PAGE_ID);
     }
-    if (parsed.docTitle != null) setDocTitle(parsed.docTitle);
+    setDocTitle(parsed.docTitle != null ? parsed.docTitle : "Untitled Idea");
     setDocStarred(!!parsed.docStarred);
     if (parsed.theme) setTheme(parsed.theme);
     if (parsed.camera) setCamera(parsed.camera);
     if (parsed.operators) {
       const store = migrateOperatorStore(parsed.operators);
       setOperators(migrateOperators(store).filter((o) => o && o.id));
+    } else {
+      setOperators(freshOperators());
     }
-    if (Array.isArray(parsed.lenses)) {
-      setLenses(parsed.lenses.map((s) => normalizeSymbolRecord(s)).filter(Boolean));
-    }
-    if (Array.isArray(parsed.transformationRepos)) {
-      setTransformationRepos(
-        parsed.transformationRepos.map(normalizeLens).filter((l) => l?.id)
-      );
-    }
+    setLenses(
+      Array.isArray(parsed.lenses)
+        ? parsed.lenses.map((s) => normalizeSymbolRecord(s)).filter(Boolean)
+        : []
+    );
+    setTransformationRepos(
+      Array.isArray(parsed.transformationRepos)
+        ? parsed.transformationRepos.map(normalizeLens).filter((l) => l?.id)
+        : []
+    );
     setActiveTransformationId(parsed.activeTransformationId || null);
+    setAiNodes(
+      Array.isArray(parsed.aiNodes) ? parsed.aiNodes.map((n) => ({ ...n, loading: false })) : []
+    );
+    setItemHistoryLog(parsed.itemHistory && typeof parsed.itemHistory === "object" ? parsed.itemHistory : {});
+    setSelectedAiNodeIds([]);
+    setSelection([]);
     historyRef.current = { past: [], future: [] };
     setCanUndo(false);
     setCanRedo(false);
     showToastRef.current?.("board synced from cloud");
   }, []);
 
+  const [boardConflict, setBoardConflict] = useState(null);
+  const handleBoardConflict = useCallback((conflict) => setBoardConflict(conflict), []);
+
   useBoardCloudSync({
     session: supaAuth.session,
     sessionResolved: supaAuth.sessionResolved,
     onHydrate: hydrateBoardFromCloud,
     onSynced: () => setSavedIndicator(true),
+    onConflict: handleBoardConflict,
     dirtyToken: [
       items,
       pages,
@@ -2375,8 +2403,24 @@ export default function App() {
       lenses,
       transformationRepos,
       activeTransformationId,
+      aiNodes,
+      itemHistoryLog,
     ],
   });
+
+  async function resolveBoardConflict(choice) {
+    const conflict = boardConflict;
+    setBoardConflict(null);
+    if (!conflict) return;
+    await conflict.resolve(choice);
+    showToast(
+      choice === "remote"
+        ? "loaded your account's board"
+        : choice === "merge"
+          ? "brought this work into your account"
+          : "kept this board — synced to your account"
+    );
+  }
 
   useEffect(() => {
     if (!supaAuth.sessionResolved) return;
@@ -9868,6 +9912,32 @@ export default function App() {
               </button>
               <button type="button" className="primary del" onClick={confirmStartFresh}>
                 Clear everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {boardConflict && (
+        <div className="modal-scrim">
+          <div className="modal board-conflict-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>You have work here and in your account</h3>
+            <p className="board-conflict-note">
+              This browser has a board with ideas on it, and your account has a saved board too.
+              What should happen?
+            </p>
+            <div className="board-conflict-options">
+              <button type="button" className="board-conflict-option" onClick={() => resolveBoardConflict("merge")}>
+                <strong>Bring this work into my account</strong>
+                <span>Merge everything — nothing is lost.</span>
+              </button>
+              <button type="button" className="board-conflict-option" onClick={() => resolveBoardConflict("remote")}>
+                <strong>Use my account's board</strong>
+                <span>Replace what's here with the account version.</span>
+              </button>
+              <button type="button" className="board-conflict-option" onClick={() => resolveBoardConflict("local")}>
+                <strong>Keep this board</strong>
+                <span>Overwrite the account version with this one.</span>
               </button>
             </div>
           </div>
