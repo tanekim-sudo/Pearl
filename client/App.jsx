@@ -3380,6 +3380,9 @@ export default function App() {
             })
             .map((it) => it.id);
           setSelection(picked);
+        } else if (g.spawnTextOnClick && toolRef.current === "select") {
+          // clean click on empty paper: the select cursor doubles as the text cursor
+          placeBlockAtClick("text", g.x0 + r.left, g.y0 + r.top);
         }
       } else if (g.mode === "edit-click") {
         placeEditCaret(g.hitId, g.cx, g.cy);
@@ -7287,44 +7290,6 @@ export default function App() {
       return;
     }
 
-    if (t === "text") {
-      const editHit = itemAtPoint(cx, cy);
-      if (
-        editHit &&
-        isEditableBlock(editHit) &&
-        textClickRegion(editHit, cx, cy) === "interior"
-      ) {
-        setSelection([editHit.id]);
-        editingRef.current = editHit.id;
-        setEditing(editHit.id);
-        editClickRef.current = { cx, cy };
-        setGesturing(false);
-        return;
-      }
-      placeBlockAtClick("text", cx, cy);
-      setGesturing(false);
-      return;
-    }
-
-    if (t === "sticky") {
-      const editHit = itemAtPoint(cx, cy);
-      if (
-        editHit &&
-        isEditableBlock(editHit) &&
-        textClickRegion(editHit, cx, cy) === "interior"
-      ) {
-        setSelection([editHit.id]);
-        editingRef.current = editHit.id;
-        setEditing(editHit.id);
-        editClickRef.current = { cx, cy };
-        setGesturing(false);
-        return;
-      }
-      placeBlockAtClick("sticky", cx, cy);
-      setGesturing(false);
-      return;
-    }
-
     if (t === "pen" || t === "marker" || t === "eraser") {
       pushHistory();
     }
@@ -7450,9 +7415,12 @@ export default function App() {
           alreadySelected: true,
         };
       } else {
+        // Google Slides model: a clean click on empty paper (nothing selected,
+        // nothing being edited) creates a text box; a drag is still a marquee.
+        const spawnTextOnClick = !editingRef.current && selRef.current.length === 0 && !e.shiftKey;
         if (editingRef.current) finishEditing();
         if (!e.shiftKey) setSelection([]);
-        gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y };
+        gesture.current = { mode: "lasso", x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y, spawnTextOnClick };
         setLasso({ x0: lp.x, y0: lp.y, x1: lp.x, y1: lp.y });
       }
     } else {
@@ -7733,14 +7701,8 @@ export default function App() {
   }
 
   function insertBlockFromPalette(type) {
-    if (type === "text") {
-      toolRef.current = "text";
-      setTool("text");
-      return;
-    }
-    if (type === "sticky") {
-      toolRef.current = "sticky";
-      setTool("sticky");
+    if (type === "text" || type === "sticky") {
+      insertBlock(type);
       return;
     }
     if (type === "pen") {
@@ -8646,19 +8608,16 @@ export default function App() {
     const hint = recognitionHint(top.transfer, selectedMaterialText);
     return hint ? { matches, hint } : null;
   }, [selectedMaterialText, operators, opMap, transferExploreOpId]);
+  // Three cursor types: select (which also types), draw (pen/eraser), highlight.
   const cursorClass =
     panning
       ? "cur-grabbing"
-      : tool === "text" || tool === "sticky"
-      ? "cur-text"
       : tool === "highlight" && highlightGrabHover
       ? "cur-grab"
       : tool === "highlight"
       ? "cur-highlight"
-      : tool === "pen" || tool === "marker"
+      : tool === "pen" || tool === "marker" || tool === "eraser"
       ? "cur-draw"
-      : tool === "eraser"
-      ? "cur-erase"
       : "cur-select";
 
   function itemCenter(it) {

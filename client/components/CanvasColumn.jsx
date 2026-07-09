@@ -5,14 +5,12 @@ import MicIcon from "./MicIcon.jsx";
 
 const TOOLS_COLLAPSED_KEY = "lens.canvas-tools.collapsed";
 
+// Three cursors, Google Slides model: select doubles as the text cursor
+// (click empty paper to type), pen carries the eraser as a sub-mode.
 const CANVAS_TOOLS = [
-  { id: "select", label: "Select", icon: "↖" },
-  { id: "highlight", label: "Highlight", icon: "▬" },
-  { id: "pen", label: "Pen", icon: "✎" },
-  { id: "eraser", label: "Eraser", icon: "⌫" },
-  { id: "text", label: "Text", icon: "T" },
-  { id: "sticky", label: "Note", icon: "▢" },
-  { id: "image", label: "Image", icon: "🖼" },
+  { id: "select", label: "Select — click empty paper to type", icon: "↖" },
+  { id: "pen", label: "Pen — click again for eraser", icon: "✎" },
+  { id: "highlight", label: "Highlighter", icon: "▬" },
 ];
 
 export default function CanvasColumn({
@@ -104,7 +102,13 @@ export default function CanvasColumn({
             aria-label={toolsOpen ? "Collapse drawing tools" : "Expand drawing tools"}
             onClick={() => setToolsOpen((o) => !o)}
           >
-            <span className="canvas-tools-label">{toolsOpen ? "Tools" : CANVAS_TOOLS.find((t) => t.id === tool)?.icon || "Tools"}</span>
+            <span className="canvas-tools-label">
+              {toolsOpen
+                ? "Tools"
+                : tool === "eraser"
+                  ? "⌫"
+                  : CANVAS_TOOLS.find((t) => t.id === tool)?.icon || "↖"}
+            </span>
             <span className="canvas-tools-chevron" aria-hidden="true">
               {toolsOpen ? "▲" : "▼"}
             </span>
@@ -122,35 +126,30 @@ export default function CanvasColumn({
           {toolsOpen && (
             <div className="canvas-column-tools">
               {CANVAS_TOOLS.map((t) => {
-                const active =
-                  (t.id === "image" && imageArmed) ||
-                  (t.id === "text" && tool === "text") ||
-                  (t.id === "sticky" && tool === "sticky") ||
-                  (t.id !== "image" && t.id !== "text" && t.id !== "sticky" && tool === t.id);
+                const penMode = tool === "pen" || tool === "marker" || tool === "eraser";
+                const active = t.id === "pen" ? penMode : tool === t.id;
+                const erasing = t.id === "pen" && tool === "eraser";
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    className={"canvas-tool-btn" + (active ? " active" : "")}
-                    title={t.label}
+                    className={"canvas-tool-btn" + (active ? " active" : "") + (erasing ? " erasing" : "")}
+                    title={erasing ? "Eraser — click again for pen" : t.label}
+                    data-tool={t.id}
                     data-tour={"tool-" + t.id}
                     onClick={() => {
-                      if (t.id === "image") {
-                        onTourEvent?.("tool-image");
-                        onPickImage();
-                      } else if (t.id === "sticky") {
-                        onTourEvent?.("insert-sticky");
-                        onInsertBlock(t.id);
-                      } else if (t.id === "text") {
-                        onTourEvent?.("insert-text");
-                        onInsertBlock(t.id);
+                      if (t.id === "pen") {
+                        // pen ⇄ eraser sub-mode toggle
+                        const next = tool === "pen" ? "eraser" : "pen";
+                        onTourEvent?.("tool-" + next);
+                        onSelectTool(next);
                       } else {
                         onTourEvent?.("tool-" + t.id);
                         onSelectTool(t.id);
                       }
                     }}
                   >
-                    {t.icon}
+                    {erasing ? "⌫" : t.icon}
                   </button>
                 );
               })}

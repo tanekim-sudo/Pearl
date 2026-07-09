@@ -970,14 +970,8 @@ body {
 .cur-select {
   cursor: default;
 }
-.cur-text {
-  cursor: text;
-}
 .cur-draw {
   cursor: crosshair;
-}
-.cur-erase {
-  cursor: cell;
 }
 .cur-grab {
   cursor: grab;
