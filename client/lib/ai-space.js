@@ -40,6 +40,17 @@ export const AI_STRAND_DRAG_MAX_SCALE = AI_CELL_ZOOM_MAX;
 /** Below this scale, nodes are pure circles (no readable text). */
 export const AI_DOT_ONLY_THRESHOLD = 0.35;
 
+/** AI-space zoom bounds: constellation dots up to comfortably past reading zoom. */
+export const AI_MIN_SCALE = 0.05;
+export const AI_MAX_SCALE = 3.2;
+
+/** Clamp an AI camera's scale to the usable zoom band (pan stays free). */
+export function clampAiCamera(camera) {
+  if (!camera) return camera;
+  const scale = Math.max(AI_MIN_SCALE, Math.min(AI_MAX_SCALE, camera.scale));
+  return scale === camera.scale ? camera : { ...camera, scale };
+}
+
 /** @deprecated Text opacity now tracks zoomContentBlend directly — no separate gate. */
 export const AI_TEXT_VISIBLE_MIN_BLEND = 0;
 
@@ -228,6 +239,12 @@ export function fitCardFontSize(w, _h, textLen) {
  * Blend-aware layout: at blend 0 the text sits clipped inside the circle; as
  * blend rises with zoom, the circle relaxes into a wider rounded card so the
  * silhouette genuinely stops being a circle at full text zoom.
+ *
+ * One silhouette rule: the node RING must be drawn with this exact geometry
+ * (boxW/boxH/cornerRadius) so text can never spill past a visible circle —
+ * the circle and the text share one shape that morphs and fades together.
+ * Growth is delayed (starts ~35% into the fade) so the circle reads as a
+ * circle while it is still strongly visible.
  */
 export function nodeTextLayoutAtBlend(radius, textLen, blend = 0, text = "") {
   const t = Math.max(0, Math.min(1, blend || 0));
@@ -237,8 +254,12 @@ export function nodeTextLayoutAtBlend(radius, textLen, blend = 0, text = "") {
     return { ...base, boxW: d, boxH: d, cornerRadius: radius };
   }
 
-  const boxW = d * (1 + 0.6 * t);
-  const boxH = d * (1 + 0.22 * t);
+  // Shape growth lags the fade: no distortion until the ring is already going.
+  const g = t <= 0.35 ? 0 : (t - 0.35) / 0.65;
+  const gs = g * g * (3 - 2 * g);
+
+  const boxW = d * (1 + 0.6 * gs);
+  const boxH = d * (1 + 0.22 * gs);
   const pad = radius * (0.22 - 0.1 * t);
   const maxW = boxW - pad * 2;
   const maxH = boxH - pad * 2;
@@ -267,7 +288,7 @@ export function nodeTextLayoutAtBlend(radius, textLen, blend = 0, text = "") {
     lineCount: lines.length,
     boxW,
     boxH,
-    cornerRadius: radius * (1 - t) + 12 * t,
+    cornerRadius: radius * (1 - gs) + 12 * gs,
   };
 }
 

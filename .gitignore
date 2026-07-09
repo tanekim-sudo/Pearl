@@ -10,3 +10,5 @@ dist
 supabase/.temp
 supabase/.branches
 .env*
+.pw-browsers/
+audit-shots/

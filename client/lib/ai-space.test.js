@@ -88,11 +88,17 @@ describe("ai-space", () => {
 
   it("nodeTextLayoutAtBlend relaxes the circle into a wider card as blend rises", () => {
     const inner = nodeTextLayoutAtBlend(20, 400, 0);
+    const early = nodeTextLayoutAtBlend(20, 400, 0.3);
     const full = nodeTextLayoutAtBlend(20, 400, 1);
     // At blend 0 the text sits inside the circle.
     assert.equal(inner.boxW, 40);
     assert.equal(inner.boxH, 40);
     assert.equal(inner.cornerRadius, 20);
+    // Early in the fade the silhouette is STILL a circle — growth lags the
+    // fade so text never spills past a clearly visible ring.
+    assert.equal(early.boxW, 40);
+    assert.equal(early.boxH, 40);
+    assert.equal(early.cornerRadius, 20);
     // At full blend the box grows beyond the circle and the corners flatten.
     assert.ok(full.boxW > inner.boxW);
     assert.ok(full.w > inner.w);

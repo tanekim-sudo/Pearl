@@ -176,12 +176,14 @@
   overflow: hidden;
 }
 
+/* Exactly half the column each: transformations own the top half,
+   lenses own the bottom half. */
 .functions-board-rail .rail-functions-pane {
-  flex: 1.15 1 0;
+  flex: 1 1 0;
 }
 
-.functions-board-rail .rail-symbols-pane {
-  flex: 0.85 1 0;
+.functions-board-rail .rail-lenses-pane {
+  flex: 1 1 0;
   border-top: 1px solid var(--line);
 }
 
@@ -1577,7 +1579,7 @@ body.ai-strand-dragging {
 .ai-node.text-dominant .ai-node-ring {
   animation: none;
   box-shadow: none;
-  opacity: calc(1 - var(--ai-node-blend, 0));
+  opacity: calc(1 - min(1, var(--ai-node-blend, 0) * 1.45));
 }
 
 .ai-node.text-dominant .ai-node-cell,
@@ -1810,10 +1812,20 @@ body.ai-strand-dragging {
   inset: 0;
   border-radius: 50%;
   border: var(--ai-ring-stroke, 2px) solid rgba(255, 255, 255, 0.82);
-  opacity: calc(1 - var(--ai-node-blend, 0));
+  /* The ring fades AHEAD of the text bloom: gone by ~70% blend so the
+     silhouette hands over cleanly and text never sits inside a stale circle. */
+  opacity: calc(1 - min(1, var(--ai-node-blend, 0) * 1.45));
   box-shadow: none;
   pointer-events: none;
   background: transparent;
+  box-sizing: border-box;
+}
+
+/* While the silhouette morphs (ring is inline-sized to the text card), any
+   ring animation would override its centering transform — loading is carried
+   by the golden core instead. */
+.ai-node.morphing.loading .ai-node-ring {
+  animation: none;
 }
 
 .ai-node-viewport.ai-wheel-zooming .ai-node-ring,
@@ -1856,13 +1868,16 @@ body.ai-strand-dragging {
   box-shadow: none;
 }
 
+/* The node div paints NO circle of its own — the .ai-node-ring span is the
+   single silhouette, and it fades/morphs with zoom. (A bare `border-style:
+   solid` here used to resolve to a 3px currentColor border that never faded.) */
 .ai-node-source,
 .ai-node-expanded,
 .ai-node-session,
 .ai-node-lens,
 .ai-node-move {
   background: transparent;
-  border-style: solid;
+  border: none;
 }
 
 .ai-node-cell,

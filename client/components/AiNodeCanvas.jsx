@@ -11,6 +11,7 @@ import {
 import {
   AI_DOT_ONLY_THRESHOLD,
   AI_BLEND_ZOOM_START,
+  clampAiCamera,
   nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
@@ -43,9 +44,13 @@ function pointerHitZone(clientX, clientY, node, camera, viewportRect) {
   const dist = Math.hypot(clientX - screenX, clientY - screenY);
   const edgeRatio = camera.scale > 1.05 ? 0.4 : NODE_EDGE_BAND_RATIO;
   const edgePx = Math.max(NODE_EDGE_BAND_PX, screenR * edgeRatio);
+  // The middle of a node is ALWAYS grabbable for moving it — even when the
+  // node renders tiny at constellation zoom, keep a core of at least 62% of
+  // the radius so the edge band can never swallow the whole node.
+  const innerR = Math.max(screenR - edgePx, screenR * 0.62);
   return {
-    onEdge: dist >= screenR - edgePx,
-    inNode: dist < screenR - edgePx,
+    onEdge: dist >= innerR,
+    inNode: dist < innerR,
   };
 }
 
@@ -218,7 +223,7 @@ export default function AiNodeCanvas({
     return attachCanvasWheel(
       el,
       () => cameraRef.current,
-      (next) => onCameraChange?.(next),
+      (next) => onCameraChange?.(clampAiCamera(next)),
       (e) => {
         const rect = el.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -760,9 +765,14 @@ export default function AiNodeCanvas({
       return;
     }
 
+    // Two zones, like grabbing a cell vs pulling its membrane:
+    //  - grab the MIDDLE to move the node (or click to open it)
+    //  - drag from the EDGE to pull out the strand fan of operations
+    // Alt/Option+drag always repositions, from anywhere.
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
     const strandChoices = getStrandChoices?.(node) || [];
-    // Alt/Option+drag repositions; default drag branches when operations are available.
-    if (tool === "select" && strandChoices.length && !e.altKey) {
+    if (tool === "select" && strandChoices.length && !e.altKey && hit.onEdge) {
       startBranchStrandGesture(e, node);
       return;
     }
@@ -829,10 +839,11 @@ export default function AiNodeCanvas({
     const rect = viewportRef.current?.getBoundingClientRect();
     const hit = pointerHitZone(e.clientX, e.clientY, node, cameraRef.current, rect);
     const strandChoices = getStrandChoices?.(node) || [];
+    // Edge = pull a strand (crosshair); middle = move/open (grab).
     e.currentTarget.style.cursor =
       tool === "highlight"
         ? "grab"
-        : tool === "select" && strandChoices.length
+        : tool === "select" && strandChoices.length && hit.onEdge
           ? "crosshair"
           : "grab";
   }
@@ -1135,7 +1146,26 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
-              <span className="ai-node-ring" aria-hidden="true" />
+              {/* Ring shares the text card's exact geometry: one silhouette that
+                  morphs circle→card and fades as text blooms, so text can never
+                  spill outside a visible circle. */}
+              <span
+                className="ai-node-ring"
+                aria-hidden="true"
+                style={
+                  textLayout && nodeBlend > 0.001
+                    ? {
+                        inset: "auto",
+                        left: "50%",
+                        top: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: textLayout.boxW,
+                        height: textLayout.boxH,
+                        borderRadius: textLayout.cornerRadius,
+                      }
+                    : undefined
+                }
+              />
               {node.loading && <span className="ai-node-loading-core" aria-hidden="true" />}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
               {detail && textLayout && (

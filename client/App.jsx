@@ -6217,8 +6217,8 @@ export default function App() {
   }
 
   function getStrandChoicesForNode(node) {
-    const lensMoves = activeLens?.moveIds?.length
-      ? moves.filter((m) => activeLens.moveIds.includes(m.id))
+    const lensMoves = activeTransformation?.moveIds?.length
+      ? moves.filter((m) => activeTransformation.moveIds.includes(m.id))
       : moves;
     return collectStrandChoices(node, aiNodesRef.current, {
       expansionPrimitives: [
