@@ -34,6 +34,29 @@ page.on("pageerror", (error) => errors.push(error.message));
 await page.route("**/api/run", async (route) => {
   const body = JSON.parse(route.request().postData() || "{}");
   if (/Create the validated action plan/i.test(body.prompt || "")) {
+    if (/research/i.test(body.text || "")) {
+      const researchPlan = {
+        version: 1,
+        title: "research claim",
+        root: {
+          kind: "sequence",
+          steps: [
+            {
+              kind: "research",
+              question: "What is the latest evidence on retention as a predictor of durable demand?",
+              recency: "past 12 months",
+              maxSources: 5,
+              saveAs: "evidence",
+            },
+            { kind: "artifact", from: "evidence", placement: "beside-target", target: "claim" },
+          ],
+        },
+      };
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ outputs: [JSON.stringify(researchPlan)] }),
+      });
+    }
     const plan = {
       version: 1,
       title: "compare and reorganize",
@@ -188,6 +211,15 @@ try {
   check("complex plan exposes visual strip", await page.locator('[data-testid="companion-plan-strip"]').isVisible());
   await page.getByTestId("companion-plan-strip").getByRole("button", { name: "stop" }).click();
 
+  await input.fill("research the latest evidence on this claim");
+  await input.press("Enter");
+  await page.waitForSelector("text=Live web research is unavailable", { timeout: 5000 });
+  await page.screenshot({ path: path.join(OUT, "research-provenance.png") });
+  check(
+    "unverifiable research blocks before mutation",
+    (await page.locator("text=Live web research is unavailable").count()) === 1
+  );
+
   await page.setViewportSize({ width: 820, height: 900 });
   await page.screenshot({ path: path.join(OUT, "narrow-viewport.png") });
   const panel = await page.locator(".companion-panel").boundingBox();
@@ -231,6 +263,7 @@ ${checks.map((entry) => `- ${entry.ok ? "PASS" : "FAIL"} — ${entry.name}${entr
 - [Plan strip](plan-strip.png)
 - [Rearrangement](rearrangement.png)
 - [Critique annotations](critique-annotations.png)
+- [Research provenance blocker](research-provenance.png)
 - [Reflection](reflection.png)
 - [Generator organization](generator-organization.png)
 - [Multi-output result](multi-output-result.png)
