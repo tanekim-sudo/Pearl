@@ -1,0 +1,20 @@
+---
+description: Keep every user-facing app action available through the companion
+alwaysApply: true
+---
+
+# Companion Capability Parity
+
+Every change that adds or materially changes a user-facing capability must update the companion in the same change.
+
+Required:
+
+1. Add or update a real director verb backed by the same state/action handler as direct manipulation.
+2. Add its canonical entry in `client/lib/companion-capabilities.js`, including arguments, domains, destructive status, purpose, and a user intent example.
+3. Provide a genuine ghost-cursor/director animation path where meaningful. Never use a static mutation while claiming it was demonstrated.
+4. Update planner semantics or deterministic parsing when the intent is common, high-confidence, or destructive.
+5. Add coverage proving manifest ↔ runtime verb parity and the representative intent.
+
+Executable commands are action-first: run the real director animation immediately and emit no conversational acknowledgement, narration, praise, or summary. Text is reserved for destructive confirmation, a required choice, or a precise blocker. TTS stays off unless the user explicitly enables spoken guidance.
+
+Do not ship a UI-only capability. If an action cannot be safely automated, document the precise limitation in the manifest/planner instead of pretending success.

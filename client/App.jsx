@@ -2143,6 +2143,7 @@ export default function App() {
   const [expandToolsSignal, setExpandToolsSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingCompanionClear, setPendingCompanionClear] = useState(null);
+  const [companionNotice, setCompanionNotice] = useState(null);
   const [pendingChainName, setPendingChainName] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const supaAuth = useSupabaseSession();
@@ -2186,6 +2187,20 @@ export default function App() {
   // Word-level marks: { id, itemId, start, end, quote } — a stroke over part
   // of a text block selects exactly the words it covers, not the whole block.
   const [highlightFragments, setHighlightFragments] = useState([]);
+  // Session highlight ink: released strokes stay visible as golden marks
+  // (never persisted to storage) until Esc / clear / leaving the highlighter.
+  const [highlightStrokes, setHighlightStrokes] = useState([]); // paper: { id, points, loop }
+  const [aiHighlightStrokes, setAiHighlightStrokes] = useState([]); // ai: { id, points }
+  // Left-rail cards marked by the highlighter (lens/op/generator cards).
+  const [highlightRailLensIds, setHighlightRailLensIds] = useState([]);
+  const [highlightRailOpIds, setHighlightRailOpIds] = useState([]);
+  const [highlightRailGenIds, setHighlightRailGenIds] = useState([]);
+  const highlightRailGenIdsRef = useRef(highlightRailGenIds);
+  highlightRailGenIdsRef.current = highlightRailGenIds;
+  const highlightRailOpIdsRef = useRef(highlightRailOpIds);
+  highlightRailOpIdsRef.current = highlightRailOpIds;
+  const highlightRailLensIdsRef = useRef(highlightRailLensIds);
+  highlightRailLensIdsRef.current = highlightRailLensIds;
   const [highlightTransferringIds, setHighlightTransferringIds] = useState([]);
   const [aiLandingNodeIds, setAiLandingNodeIds] = useState(() => new Set());
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
@@ -2913,6 +2928,7 @@ export default function App() {
     startPendingSpaceTransfer(e, "ai", nodeIds, {
       kind: "highlight",
       immediate: opts.immediate,
+      fromNode: opts.fromNode,
       fragment,
       preview,
     });
@@ -2931,6 +2947,9 @@ export default function App() {
       kind: opts.kind || null,
       fragment: opts.fragment || null,
       fragments: opts.fragments || null,
+      // Whether the drag deliberately started on a node body / strand — only
+      // those gestures may expand when dropped back inside the AI column.
+      fromNode: !!opts.fromNode,
       previewBox,
       preview,
       activated: immediate,
@@ -3490,6 +3509,12 @@ export default function App() {
             // selects exactly the words it covers. Taps and loops still
             // select whole objects.
             const frag = !isTap && !isLoop ? extractPaperFragmentFromStroke(pts) : null;
+            // The golden ink stays visible after release — a session mark that
+            // clears on Esc / clear / leaving the highlighter. Word-level
+            // strokes rely on their fragment mark instead.
+            if (!isTap && !frag) {
+              setHighlightStrokes((prev) => [...prev, { id: uid(), points: pts, loop: isLoop }]);
+            }
             if (frag) {
               addHighlightFragment(frag.itemId, frag);
             } else {
@@ -4014,12 +4039,102 @@ export default function App() {
     setHighlightFragments([]);
     setHighlightTransferringIds([]);
     setHighlightGrabHover(false);
+    setHighlightStrokes([]);
+    setAiHighlightStrokes([]);
+    setHighlightRailLensIds([]);
+    setHighlightRailOpIds([]);
+    setHighlightRailGenIds([]);
   }
 
   function toggleHighlightAiNode(nodeId) {
     setHighlightAiNodeIds((prev) =>
       prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId]
     );
+  }
+
+  // Leaving the highlighter retires its session ink (strokes); marked items
+  // keep their golden state until the selection itself is cleared.
+  useEffect(() => {
+    if (tool !== "highlight") {
+      setHighlightStrokes([]);
+      setAiHighlightStrokes([]);
+    }
+  }, [tool]);
+
+  /** AI-space highlight stroke finished: keep the ink, mark touched nodes. */
+  function completeAiHighlightStroke(points, touchedNodeIds) {
+    if (points?.length > 1) {
+      setAiHighlightStrokes((prev) => [...prev, { id: uid(), points }]);
+    }
+    if (touchedNodeIds?.length) {
+      setHighlightAiNodeIds((prev) => [...new Set([...prev, ...touchedNodeIds])]);
+    }
+  }
+
+  // ---- left rail highlighting: lens / function / generator cards join the selection ----
+
+  function railCardAtClient(cx, cy) {
+    const el = document.elementFromPoint(cx, cy);
+    if (!el) return null;
+    const lensCard = el.closest?.("[data-transformation-lens-id]");
+    if (lensCard) return { kind: "lens", id: lensCard.getAttribute("data-transformation-lens-id") };
+    const structCard = el.closest?.("[data-struct-id]");
+    if (structCard) return { kind: "gen", id: structCard.getAttribute("data-struct-id") };
+    const opCard = el.closest?.("[data-op-id]");
+    if (opCard) return { kind: "op", id: opCard.getAttribute("data-op-id") };
+    return null;
+  }
+
+  function addRailMark(card) {
+    if (!card?.id) return;
+    if (card.kind === "lens") setHighlightRailLensIds((prev) => (prev.includes(card.id) ? prev : [...prev, card.id]));
+    else if (card.kind === "gen") setHighlightRailGenIds((prev) => (prev.includes(card.id) ? prev : [...prev, card.id]));
+    else if (card.kind === "op") setHighlightRailOpIds((prev) => (prev.includes(card.id) ? prev : [...prev, card.id]));
+  }
+
+  function toggleRailMark(card) {
+    if (!card?.id) return;
+    const toggle = (prev) =>
+      prev.includes(card.id) ? prev.filter((x) => x !== card.id) : [...prev, card.id];
+    if (card.kind === "lens") setHighlightRailLensIds(toggle);
+    else if (card.kind === "gen") setHighlightRailGenIds(toggle);
+    else if (card.kind === "op") setHighlightRailOpIds(toggle);
+  }
+
+  /**
+   * With the highlighter active, the left rail becomes selectable: tap a
+   * lens / function / generator card to toggle its golden mark, or stroke
+   * across several to sweep them into the living selection.
+   */
+  function handleRailHighlightPointerDown(e) {
+    if (toolRef.current !== "highlight" || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startCard = railCardAtClient(e.clientX, e.clientY);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let swept = false;
+
+    function onMove(ev) {
+      if (!swept && Math.hypot(ev.clientX - startX, ev.clientY - startY) <= 6) return;
+      if (!swept) {
+        swept = true;
+        if (startCard) addRailMark(startCard);
+      }
+      const card = railCardAtClient(ev.clientX, ev.clientY);
+      if (card) addRailMark(card);
+    }
+
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      if (!swept && startCard) toggleRailMark(startCard);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }
 
   // ---- omni-highlighter toolbar actions: operate on the whole living selection ----
@@ -4029,7 +4144,8 @@ export default function App() {
     const paperIds = highlightSelectionRef.current;
     const nodeIds = highlightAiNodeIds;
     const frags = highlightFragmentsRef.current;
-    if (!paperIds.length && !nodeIds.length && !frags.length) {
+    const genIds = highlightRailGenIdsRef.current;
+    if (!paperIds.length && !nodeIds.length && !frags.length && !genIds.length) {
       showToast("highlight something first");
       return;
     }
@@ -4044,6 +4160,18 @@ export default function App() {
       if (node) applyOperatorToAiNode(node, op, null, { stableCamera: true });
     }
     if (frags.length) finishFragmentTransfer(frags);
+    // Marked generator cards: their held material runs through the operator
+    // in the AI layer too.
+    for (const gid of genIds) {
+      const struct = lensesRef.current.find((s) => s.id === gid);
+      const material = (struct?.items || [])
+        .filter((it) => it.text?.trim())
+        .map((it) => it.text.trim())
+        .join("\n---\n");
+      if (!material) continue;
+      const node = createOutputNode(`◇ ${struct.title}\n\n${truncatePreview(material, 200)}`, null);
+      if (node) applyOperatorToAiNode(node, op, null, { stableCamera: true, aiMaterial: material });
+    }
   }
 
   function highlightSaveAsLens() {
@@ -4054,8 +4182,13 @@ export default function App() {
       showToast("highlight something first");
       return;
     }
-    let struct = null;
-    if (paperIds.length) struct = saveMaterialAsSymbol(paperIds);
+    // A marked generator card is the destination: the selection deepens it
+    // instead of spawning a new generator.
+    const targetGenId = highlightRailGenIdsRef.current[0] || null;
+    let struct = targetGenId ? lensesRef.current.find((s) => s.id === targetGenId) : null;
+    if (paperIds.length) {
+      struct = targetGenId ? mergeMaterialIntoSymbol(targetGenId, paperIds) : saveMaterialAsSymbol(paperIds);
+    }
     if (frags.length) struct = saveQuotesAsLens(highlightFragmentQuotes(frags), struct?.id || null) || struct;
     if (nodeIds.length) struct = saveAiNodesAsSymbol(nodeIds, struct?.id || null) || struct;
     if (struct) clearHighlightSelection();
@@ -4087,6 +4220,12 @@ export default function App() {
 
   // ---- composed operators (functions made of functions) ----
   const opMap = useMemo(() => Object.fromEntries(operators.map((o) => [o.id, o])), [operators]);
+
+  // Built-in primitives offered inside the generator workspace.
+  const generatorFunctionChips = useMemo(
+    () => ["op-compress", "op-expand", "op-invert", "op-explore"].map((id) => opMap[id]).filter(Boolean),
+    [opMap]
+  );
 
   function makeBoardLink(fromId, toId, fromDir = null) {
     return normalizeItem({ id: uid(), type: "link", fromId, toId, fromDir });
@@ -6232,6 +6371,123 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return rootId;
   }
 
+  /** Persist a new placement for one item inside a generator's holding space. */
+  function moveGeneratorItem(structId, itemId, pos) {
+    if (!structId || !itemId || !pos) return;
+    setLenses((arr) =>
+      arr.map((s) => {
+        if (s.id !== structId) return s;
+        const items = (s.items || []).map((it) => {
+          if (it?.id !== itemId) return it;
+          if (it.type === "stroke" && Array.isArray(it.points) && it.points.length) {
+            const minx = Math.min(...it.points.map((p) => p.x));
+            const miny = Math.min(...it.points.map((p) => p.y));
+            const dx = pos.x - minx;
+            const dy = pos.y - miny;
+            return { ...it, points: it.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })) };
+          }
+          return { ...it, x: pos.x, y: pos.y };
+        });
+        return { ...s, items, savedAt: Date.now() };
+      })
+    );
+  }
+
+  /** Attach a produced text to a generator, placed beside its material. */
+  function attachTextToGenerator(structId, text, label = null) {
+    const struct = lensesRef.current.find((s) => s.id === structId);
+    const clean = stripMd(text || "").trim();
+    if (!struct || !clean) return null;
+    const bb = structureItemsBBox(struct.items);
+    const placed = normalizeItem({
+      id: uid(),
+      type: "text",
+      x: (bb.maxx || 0) + 36,
+      y: bb.miny || 0,
+      text: label ? `[${label}] ${clean}` : clean,
+      w: 340,
+    });
+    setLenses((arr) =>
+      arr.map((s) =>
+        s.id === structId
+          ? stampSymbolStruct({ ...s, kind: "symbol", items: [...(s.items || []), placed], savedAt: Date.now() })
+          : s
+      )
+    );
+    return placed;
+  }
+
+  /** Run an operator over selected generator items; the output joins the space. */
+  async function runFunctionOnGeneratorItems(structId, op, itemIds) {
+    const struct = lensesRef.current.find((s) => s.id === structId);
+    if (!struct || !op) throw new Error("nothing to run on");
+    const idSet = new Set(itemIds || []);
+    const material = (struct.items || [])
+      .filter((it) => idSet.has(it.id) && it.text?.trim())
+      .map((it) => it.text.trim())
+      .join("\n---\n");
+    if (!material.trim()) throw new Error("select text material first");
+    const out = await runOpForAiMaterial(op, material);
+    const clean = sanitizePrimitiveOutput(out);
+    if (!clean?.trim()) throw new Error("came back empty — try again");
+    attachTextToGenerator(structId, clean, op.name);
+    showToast(`${op.name} → added to ${struct.title}`);
+  }
+
+  /** Find the hidden sameness across selected generator items; result joins the space. */
+  async function findSamenessInGenerator(structId, itemIds) {
+    const struct = lensesRef.current.find((s) => s.id === structId);
+    if (!struct) throw new Error("generator not found");
+    const idSet = new Set(itemIds || []);
+    const labels = (struct.items || [])
+      .filter((it) => idSet.has(it.id) && it.text?.trim())
+      .map((it) => it.text.trim());
+    if (labels.length < 2) throw new Error("select at least two text items");
+    const out = await runClaude(samenessPrompt(labels), "", {
+      system: boardSystem(operators, opMap),
+      maxTokens: 2000,
+    });
+    const parsed = parseSameness(out);
+    attachTextToGenerator(structId, `${parsed.name.toUpperCase()}\n\n${parsed.body}`, "sameness");
+    showToast(`sameness found · ${parsed.name}`);
+  }
+
+  /**
+   * The user crafts the lens: open the lens editor pre-seeded with whatever
+   * they selected and arranged in the generator's space — they shape the
+   * steps and save it themselves. Nothing is auto-generated.
+   */
+  function craftLensFromGenerator(structId, itemIds = []) {
+    const struct = lensesRef.current.find((s) => s.id === structId);
+    if (!struct) return;
+    const idSet = new Set(itemIds);
+    const picked = (struct.items || []).filter(
+      (it) => it.text?.trim() && (!idSet.size || idSet.has(it.id))
+    );
+    const meaning = struct.interpretation?.meaning?.trim() || "";
+    const viewPrompt = struct.interpretation?.viewPrompt?.trim() || "";
+    const isPlaceholder = !!struct.structNum || /^[◇#]\s*\d+/.test(struct.title || "");
+    const gathered = picked
+      .slice(0, 6)
+      .map((it) => `— ${it.text.trim().split("\n")[0].slice(0, 120)}`)
+      .join("\n");
+    const tree = {
+      name: isPlaceholder ? "" : String(struct.title || "").slice(0, 60),
+      description: meaning || `crafted from the generator "${struct.title}"`,
+      prompt:
+        (viewPrompt ? `${viewPrompt}\n\n` : "") +
+        (gathered
+          ? `Read the material through the structure held by these gathered pieces:\n${gathered}`
+          : "Read the material through this structure."),
+    };
+    const { ops, rootId } = treeToOperators(tree, { top: true });
+    const root = ops.find((o) => o.id === rootId);
+    if (!root) return;
+    setOperators((prev) => [...prev, ...ops]);
+    openEditLens(root);
+    showToast("shape it, name it, save — it becomes a permanent lens");
+  }
+
   function openEditLensApplyPrompt(struct) {
     if (!struct) return;
     const tree = struct.viewLens || viewingLensTreeFromSymbol(struct);
@@ -6716,6 +6972,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         key={lens.id}
         lens={lens}
         depth={depth}
+        marked={highlightRailLensIds.includes(lens.id)}
         active={lens.id === activeTransformationId || lensRootOpId(lens) === activeTransformationId}
         opMap={opMap}
         lenses={displayTransformations}
@@ -9117,6 +9374,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       saveAiNodesAsSymbol(g.ids, structCardAtClient(cx, cy));
       launchToolboxTransfer(RAIL_LENSES);
     } else if (g.origin === "ai" && target === "ai") {
+      // Only a drag that deliberately began on a node body / strand may
+      // expand when it lands back inside the AI column. Background drags,
+      // highlight sweeps, and stray gestures do nothing here.
+      if (!g.fromNode || g.kind === "highlight") return;
       const world = getAiDropWorldFromClient(cx, cy);
       for (const nodeId of g.ids) {
         const node = aiNodesRef.current.find((n) => n.id === nodeId);
@@ -9592,6 +9853,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     );
   }
 
+  function directorResolveAiNode(ref, ctx) {
+    if (!ref || ref === "last") return directorLatestAiNode(ctx);
+    const needle = String(ref).toLowerCase();
+    return (
+      aiNodesRef.current.find((node) => node.id === ref) ||
+      aiNodesRef.current.find((node) =>
+        [node.label, node.preview, node.expandedText].some((value) =>
+          String(value || "").toLowerCase().includes(needle)
+        )
+      ) ||
+      null
+    );
+  }
+
   async function directorWaitForJobs(tk, timeoutMs = 120000) {
     const start = Date.now();
     // give the job a beat to register before polling
@@ -9736,6 +10011,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const snapshot = readLocalBoardSnapshot();
     writeLocalBoardSnapshot({ ...snapshot, savedAt: new Date().toISOString() });
     showToast("Cleared the confirmed workspace content");
+    const summary = pending.domains
+      .map((domain) => `${pending.counts[domain] || 0} ${domain === "lenses" ? "user lenses" : domain}`)
+      .join(", ");
+    setCompanionNotice({
+      id: Date.now(),
+      text: `Cleared: ${summary}.`,
+    });
+  }
+
+  function cancelCompanionClear() {
+    setPendingCompanionClear(null);
+    setCompanionNotice({
+      id: Date.now(),
+      text: "Cancelled. Nothing changed.",
+    });
   }
 
   registerDirectorVerbs({
@@ -9757,6 +10047,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const r = vpRect();
       animateCameraDirect(fitPaperInView(r.width, r.height), 520);
       await tk.wait(680);
+    },
+    zoomPaper: async (a, tk) => {
+      const direction = a.direction || "in";
+      const action = direction === "out" ? "zoom-out" : direction === "reset" ? "zoom-reset" : "zoom-in";
+      const button = tk.elementCenter(`[data-action="${action}"]`) || tk.elementCenter('[data-tour="paper-zoom"]');
+      if (button) await tk.click(button.x, button.y);
+      if (direction === "reset") setCamera((current) => ({ ...current, scale: 1 }));
+      else setCamera((current) => zoomCamera(current, direction === "out" ? 1 / ZOOM_STEP : ZOOM_STEP));
+      await tk.wait(420);
+    },
+    panPaper: async (a, tk) => {
+      const dx = Number(a.dx) || 0;
+      const dy = Number(a.dy) || 0;
+      const viewport = tk.elementCenter('[data-tour="paper-canvas"]');
+      if (viewport) await tk.moveTo(viewport.x + Math.sign(dx) * 80, viewport.y + Math.sign(dy) * 60);
+      setCamera((current) => ({ ...current, x: current.x + dx, y: current.y + dy }));
+      await tk.wait(420);
     },
     spawnText: async (a, tk, ctx) => {
       const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);
@@ -9883,6 +10190,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       tk.caption(a.caption || "zoom in — the circle relaxes into readable text");
       await tk.wait(1500);
     },
+    fitAiSpace: async (a, tk) => {
+      const el = aiViewportRef.current;
+      if (!el) throw new Error("AI space is not available");
+      const target = tk.elementCenter('[data-tour="ai-spacetime"]');
+      if (target) await tk.moveTo(target.x, target.y);
+      animateAiCameraTo(fitAiConstellation(aiNodesRef.current, el.clientWidth, el.clientHeight), 520);
+      await tk.wait(650);
+    },
+    selectAiNode: async (a, tk, ctx) => {
+      const node = directorResolveAiNode(a.target, ctx);
+      if (!node) throw new Error(`no AI node matching “${a.target || "latest"}”`);
+      const point = directorAiClientPoint(node.x, node.y);
+      await tk.click(point.x, point.y);
+      handleAiNodeSelect(node.id);
+      ctx.vars.lastAiNodeId = node.id;
+      await tk.wait(350);
+    },
     dragAiResultToPaper: async (a, tk, ctx) => {
       const node = directorLatestAiNode(ctx);
       if (!node) throw new Error("no AI result to bring back yet");
@@ -9913,6 +10237,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         await tk.wait(200);
       }
       await tk.wait(500);
+    },
+    operateHighlight: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no lens called “${a.op}”`);
+      tk.caption(a.caption || `apply “${op.name}” to the living cross-domain selection`);
+      highlightToolbarOperate(op);
+      await directorWaitForJobs(tk);
+    },
+    clearHighlight: async (a, tk) => {
+      tk.caption(a.caption || "clear the living highlight selection");
+      const toolbar = tk.elementCenter(".highlight-toolbar");
+      if (toolbar) await tk.moveTo(toolbar.x, toolbar.y);
+      clearHighlightSelection();
+      await tk.wait(350);
     },
     captureThread: async (a, tk, ctx) => {
       const item = directorResolveItem(a.target, ctx);
@@ -10140,6 +10478,53 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (row) await tk.click(row.x, row.y);
       openEditLens(op);
       await tk.wait(900);
+    },
+    walkItemPath: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      if (!item) throw new Error("no paper object to walk");
+      const point = directorItemClientCenter(item);
+      await tk.click(point.x, point.y);
+      walkNode(item.id);
+      await tk.wait(650);
+    },
+    stepSharedPath: async (a, tk) => {
+      const walk = pathWalkRef.current;
+      if (!walk) throw new Error("no shared path is currently open");
+      pathWalkSetStep(a.index != null ? Number(a.index) : walk.stepIndex + (Number(a.delta) || 1));
+      await tk.wait(450);
+    },
+    noteSharedPath: async (a, tk) => {
+      const walk = pathWalkRef.current;
+      if (!walk) throw new Error("no shared path is currently open");
+      const step = walk.path.steps[walk.stepIndex];
+      if (!step) throw new Error("the shared path has no current step");
+      const field = tk.elementCenter(".pw-note");
+      if (field) await tk.click(field.x, field.y);
+      pathWalkSetNote(step.nodeId, a.text || "");
+      await tk.wait(350);
+    },
+    branchSharedPath: async (a, tk) => {
+      if (!pathWalkRef.current) throw new Error("no shared path is currently open");
+      const button = tk.elementCenter(".walk-btn.branch");
+      if (button) await tk.click(button.x, button.y);
+      pathWalkBranch();
+      await tk.wait(700);
+    },
+    materializeSharedPath: async (a, tk) => {
+      if (!pathWalkRef.current) throw new Error("no shared path is currently open");
+      const button = tk.elementCenter(".path-walk-footer .walk-btn.primary");
+      if (button) await tk.click(button.x, button.y);
+      pathWalkMakeMine();
+      await tk.wait(800);
+    },
+    leaveSharedPath: async (a, tk) => {
+      if (!pathWalkRef.current) throw new Error("no shared path is currently open");
+      const buttons = [...document.querySelectorAll(".path-walk-footer .walk-btn")];
+      const leave = buttons.find((button) => button.textContent?.trim() === "leave");
+      const point = leave ? tk.elementCenter(leave) : null;
+      if (point) await tk.click(point.x, point.y);
+      leavePathWalk();
+      await tk.wait(350);
     },
     editFunction: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
@@ -10381,23 +10766,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       runDirectorScript([{ verb: "captureThread", args: { name } }], { title: "save chain as lens" }).then((result) => {
         if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name });
       });
-      return `Saving this chain as “${text.trim()}” in your lenses.`;
+      return null;
     }
     const chain = parseSaveChainCommand(text);
     if (chain) {
       if (!chain.name) {
         setPendingChainName(true);
-        return "What should I name this lens?";
+        return { visible: true, text: "Name this lens." };
       }
       runDirectorScript([{ verb: "captureThread", args: { name: chain.name } }], { title: "save chain as lens" }).then((result) => {
         if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: chain.name });
       });
-      return `Saving the selected chain as “${chain.name}” in your lenses.`;
+      return null;
     }
     const administrative = parseAdministrativeCommand(text);
     if (administrative?.kind === "clear-workspace") {
       stageCompanionClear(administrative.domains);
-      return "I need your confirmation before I clear the listed workspace content.";
+      return null;
     }
 
     const demosMeta = COMPANION_DEMOS.map((d) => ({ id: d.id, title: d.title, blurb: d.blurb }));
@@ -10442,7 +10827,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
     if (requestedClears.size) {
       stageCompanionClear([...requestedClears]);
-      return "I need your confirmation before I clear the listed workspace content.";
+      return null;
     }
     if (steps?.length) {
       // fire-and-forget: the ghost cursor takes over while chat stays responsive
@@ -10460,7 +10845,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
       });
     }
-    return reply.say || (demo ? `watch — ${demo.title.toLowerCase()}.` : steps?.length ? "watch." : "done.");
+    if (steps?.length) return null;
+    return {
+      visible: true,
+      text: reply.say || "No executable capability matched that request.",
+    };
   }
 
   const tourState = useMemo(
@@ -10581,8 +10970,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         >
           <aside
             ref={railRef}
-            className={"board-rail functions-board-rail" + (railDropOver ? " drop-over" : "") + (railPulse ? " rail-pulse" : "")}
+            className={
+              "board-rail functions-board-rail" +
+              (railDropOver ? " drop-over" : "") +
+              (railPulse ? " rail-pulse" : "") +
+              (tool === "highlight" ? " rail-highlight-mode" : "")
+            }
             data-tour="functions-toolbox"
+            onPointerDownCapture={handleRailHighlightPointerDown}
           >
             <section ref={functionsSectionRef} className="rail-pane rail-functions-pane cognition-git-pane" data-tour="functions-section">
               <CognitionGitHeader
@@ -10603,9 +10998,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                       {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
                     </div>
                   ))}
-                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">Built-in</div><div className="op-chip-grid">{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat chip />))}</div></>)}
-                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
+                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
+                {primitives.length > 0 && (<><div className="rail-section">Built-in</div><div className="op-chip-grid">{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat chip />))}</div></>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
               </div>
             </section>
             <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab">
@@ -10653,6 +11048,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                   <PatternLensCard
                     key={struct.id}
                     struct={struct}
+                    marked={highlightRailGenIds.includes(struct.id)}
                     dropTarget={symbolDropTargetId === struct.id}
                     onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
                     onMaterialDragLeave={() =>
@@ -10840,6 +11236,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                   />
                 </g>
               ))}
+            {highlightStrokes.map((hs) => (
+              <polyline
+                key={hs.id}
+                className="hl-session-stroke"
+                points={hs.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill={hs.loop ? "rgba(232, 185, 35, 0.08)" : "none"}
+                stroke={HIGHLIGHT_INK}
+                strokeWidth={highlightWorldWidth(camera.scale)}
+                strokeOpacity={0.62}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
             {draft && draft.points.length >= 1 && (
               <>
                 {draft.points.length === 1 ? (
@@ -11182,12 +11591,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           }}
           onHighlightMark={toggleHighlightAiNode}
           highlightMarkedIds={highlightAiNodeSet}
+          highlightStrokes={aiHighlightStrokes}
+          onHighlightStrokeComplete={completeAiHighlightStroke}
           onSpaceTransferStart={(e, nodeIds, opts = {}) => {
             const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
             if (!ids.length) return;
             startPendingSpaceTransfer(e, "ai", ids, {
               kind: opts.kind ?? (toolRef.current === "highlight" ? "highlight" : null),
               immediate: opts.immediate,
+              fromNode: opts.fromNode,
               fragment: opts.fragment || null,
             });
           }}
@@ -11424,7 +11836,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         <div
           className="modal-scrim"
           data-testid="companion-clear-confirmation"
-          onClick={() => setPendingCompanionClear(null)}
+          onClick={cancelCompanionClear}
         >
           <div className="modal fresh-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Clear this workspace content?</h3>
@@ -11449,7 +11861,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
               <button
                 type="button"
                 data-testid="companion-clear-cancel"
-                onClick={() => setPendingCompanionClear(null)}
+                onClick={cancelCompanionClear}
               >
                 Cancel
               </button>
@@ -11683,6 +12095,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             key={struct.id + ":" + (struct.interpretedAt || 0)}
             struct={struct}
             interpreting={symbolInterpretingId === struct.id}
+            functionChips={generatorFunctionChips}
             onSave={(patch) => saveLensSettings(struct.id, patch)}
             onReread={() => enrichSymbolRecord(struct.id, { force: true })}
             onRedraw={() => {
@@ -11695,6 +12108,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
               setLensSettingsId(null);
               makeLensFromGenerator(struct.id);
             }}
+            onMoveItem={(itemId, pos) => moveGeneratorItem(struct.id, itemId, pos)}
+            onRunFunction={(op, itemIds) => runFunctionOnGeneratorItems(struct.id, op, itemIds)}
+            onFindSameness={(itemIds) => findSamenessInGenerator(struct.id, itemIds)}
+            onCraftLens={(itemIds) => {
+              setLensSettingsId(null);
+              craftLensFromGenerator(struct.id, itemIds);
+            }}
             onClose={() => setLensSettingsId(null)}
           />
         );
@@ -11704,10 +12124,22 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         paperCount={highlightSelectionIds.length}
         aiCount={highlightAiNodeIds.length}
         fragmentCount={highlightFragments.length}
-        ops={[
-          ...operators.filter((o) => o.top || o.move),
-          ...TRANSFORM_PRIMITIVES.filter((p) => opMap[p.id]).map((p) => opMap[p.id]),
-        ].slice(0, 24)}
+        railCount={highlightRailLensIds.length + highlightRailOpIds.length + highlightRailGenIds.length}
+        ops={(() => {
+          // Marked rail lenses/functions run first — selecting lenses plus
+          // material is the fast path for "run these on this".
+          const markedOps = [
+            ...highlightRailOpIds.map((id) => opMap[id]),
+            ...highlightRailLensIds
+              .map((id) => transformationRepos.find((l) => l.id === id))
+              .map((l) => (l ? opMap[lensRootOpId(l)] : null)),
+          ].filter(Boolean);
+          const rest = [
+            ...operators.filter((o) => o.top || o.move),
+            ...TRANSFORM_PRIMITIVES.filter((p) => opMap[p.id]).map((p) => opMap[p.id]),
+          ].filter((o) => !markedOps.some((m) => m.id === o.id));
+          return [...markedOps, ...rest].slice(0, 24);
+        })()}
         onOperate={highlightToolbarOperate}
         onExtend={() =>
           highlightToolbarOperate(
@@ -11724,6 +12156,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         demos={COMPANION_DEMOS}
         onCommand={handleCompanionCommand}
         userId={supaAuth.session?.user?.id || null}
+        notice={companionNotice}
+        confirmationOpen={!!pendingCompanionClear}
         initialOpen={companionAutoOpen}
         onOpened={() => {
           if (companionAutoOpen) setCompanionAutoOpen(false);
@@ -12124,7 +12558,7 @@ const PRIMITIVE_GLYPHS = {
   transcend: "△",
 };
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, chip }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, chip, marked }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -12142,7 +12576,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
   return (
     <div className={"op-card-wrap" + (chip ? " op-chip-wrap" : "")}>
       <div
-        className={"op-card" + (composeOver ? " compose-over" : "") + (chip ? " op-chip" : "")}
+        className={"op-card" + (composeOver ? " compose-over" : "") + (chip ? " op-chip" : "") + (marked ? " omni-rail-marked" : "")}
         data-op-id={op.id}
         onDragOver={(e) => {
           if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
@@ -12280,6 +12714,7 @@ function LensCard({
   lens,
   depth = 0,
   active,
+  marked,
   opMap,
   lenses,
   comparing,
@@ -12307,6 +12742,7 @@ function LensCard({
       className={
         "lens-card" +
         (active ? " active" : "") +
+        (marked ? " omni-rail-marked" : "") +
         (mergeOver ? " merge-over" : "") +
         (comparing ? " comparing" : "") +
         (depth > 0 ? " git-child" : "")
@@ -12522,6 +12958,7 @@ function LensComparePanel({ a, b, opMap, onClose, onMerge }) {
 
 function PatternLensCard({
   struct,
+  marked,
   dropTarget,
   onMaterialDragOver,
   onMaterialDragLeave,
@@ -12557,7 +12994,7 @@ function PatternLensCard({
       }}
     >
       <div
-        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "")}
+        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "") + (marked ? " omni-rail-marked" : "")}
         data-struct-id={struct.id}
       >
         <div

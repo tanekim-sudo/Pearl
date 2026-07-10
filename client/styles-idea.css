@@ -3579,6 +3579,47 @@ mark.hl-fragment-mark {
   stroke-opacity: 0.92 !important;
 }
 
+/* Session highlight ink: released strokes stay as visible golden marks until
+   Esc / clear-selection / leaving the highlighter. */
+.canvas-column .ink-layer polyline.hl-session-stroke {
+  stroke: var(--gold-stroke, #e8b923) !important;
+  stroke-width: 22px !important;
+  stroke-opacity: 0.55 !important;
+  pointer-events: none;
+}
+
+/* Highlighter over the left rail: cards are selectable, marks glow gold. */
+.rail-highlight-mode {
+  cursor: crosshair;
+}
+
+.omni-rail-marked {
+  border-color: var(--gold-stroke, #e8b923) !important;
+  box-shadow:
+    0 0 0 2px rgba(232, 185, 35, 0.5),
+    0 0 12px rgba(232, 185, 35, 0.32) !important;
+  border-radius: 10px;
+}
+
+/* AI space session highlight ink. */
+.ai-node-lines polyline.ai-hl-session-stroke {
+  stroke: var(--gold-stroke, #e8b923);
+  stroke-opacity: 0.55;
+  fill: none;
+  pointer-events: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ai-node-lines polyline.ai-hl-draft-stroke {
+  stroke: var(--gold-stroke, #e8b923);
+  stroke-opacity: 0.88;
+  fill: none;
+  pointer-events: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @keyframes idea-flash {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.9);
@@ -5396,6 +5437,14 @@ body.director-running .idea-app {
   opacity: 0.94;
 }
 
+.companion-panel.confirming {
+  pointer-events: none;
+}
+
+[data-testid="companion-clear-confirmation"] {
+  z-index: 5000;
+}
+
 .companion-panel.interviewing {
   right: 50%;
   bottom: 50%;
@@ -6138,6 +6187,153 @@ body.director-running .idea-app {
 .lens-settings-probe-candidate-actions button.quiet {
   background: transparent;
   color: rgba(30, 28, 22, 0.5);
+}
+
+/* ============ generator workspace: spatial holding space ============ */
+
+.lens-settings-wide {
+  width: min(700px, calc(100vw - 48px));
+}
+
+.gen-space {
+  position: relative;
+  height: 300px;
+  border-radius: 12px;
+  background:
+    radial-gradient(rgba(30, 28, 22, 0.05) 1px, transparent 1px) 0 0 / 18px 18px,
+    rgba(253, 251, 244, 0.9);
+  border: 1px solid rgba(30, 28, 22, 0.08);
+  overflow: hidden;
+  color: rgba(30, 28, 22, 0.75);
+}
+
+.gen-space-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(30, 28, 22, 0.4);
+  line-height: 1.6;
+}
+
+.gen-space-card {
+  position: absolute;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(30, 28, 22, 0.12);
+  box-shadow: 0 2px 8px rgba(40, 32, 12, 0.08);
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.45;
+  color: rgba(30, 28, 22, 0.85);
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.gen-space-card:active {
+  cursor: grabbing;
+}
+
+.gen-space-stroke {
+  position: absolute;
+  overflow: visible;
+  cursor: grab;
+  touch-action: none;
+}
+
+.gen-space-image {
+  position: absolute;
+  border-radius: 6px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.gen-item-selected {
+  border-color: var(--gold-stroke, #e8b923);
+  box-shadow:
+    0 0 0 2px rgba(232, 185, 35, 0.55),
+    0 0 14px rgba(232, 185, 35, 0.35);
+}
+
+svg.gen-item-selected {
+  color: var(--gold-stroke, #c9a227);
+  filter: drop-shadow(0 0 5px rgba(232, 185, 35, 0.6));
+}
+
+.gen-space-hint {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: rgba(30, 28, 22, 0.35);
+}
+
+.gen-space-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gen-craft-lens {
+  border: 1px solid rgba(201, 162, 39, 0.55);
+  background: rgba(232, 185, 35, 0.14);
+  color: rgba(90, 70, 12, 0.9);
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.gen-craft-lens:hover {
+  background: rgba(232, 185, 35, 0.26);
+}
+
+.gen-quiet-tools {
+  border-top: 1px dashed rgba(30, 28, 22, 0.12);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gen-quiet-tools > summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(30, 28, 22, 0.4);
+  list-style: none;
+}
+
+.gen-quiet-tools > summary::before {
+  content: "▸ ";
+}
+
+.gen-quiet-tools[open] > summary::before {
+  content: "▾ ";
+}
+
+.gen-quiet-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ============ board conflict (login transfer) modal ============ */

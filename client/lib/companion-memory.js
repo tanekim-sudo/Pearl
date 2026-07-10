@@ -24,11 +24,16 @@ export function emptyCompanionMemory() {
 
 function compact(memory) {
   const base = emptyCompanionMemory();
+  const rawIdentity = String(memory?.identity || "").slice(0, 120);
+  // Repair profiles polluted by the original onboarding routing bug.
+  const identityLooksLikeCommand =
+    rawIdentity.split(/\s+/).length > 5 &&
+    /\b(clear|delete|remove|wipe|get rid|functions?|drawings?|ai stuff)\b/i.test(rawIdentity);
   return {
     ...base,
     ...memory,
     version: COMPANION_MEMORY_VERSION,
-    identity: String(memory?.identity || "").slice(0, 120),
+    identity: identityLooksLikeCommand ? "" : rawIdentity,
     role: String(memory?.role || "").slice(0, 240),
     goals: Array.isArray(memory?.goals) ? memory.goals.slice(-8).map((v) => String(v).slice(0, 300)) : [],
     preferences: memory?.preferences && typeof memory.preferences === "object" ? memory.preferences : {},
@@ -120,9 +125,9 @@ export function adoptAnonymousCompanionMemory(userId, storage = globalThis.local
 }
 
 export function nextInterviewPrompt(memory) {
-  if (!memory.identity) return "Before we begin — who are you?";
-  if (!memory.role) return `Nice to meet you, ${memory.identity}. What do you do?`;
-  if (!memory.interviewComplete) return "What would you like to think through or build first? I can demonstrate it directly here.";
+  if (!memory.identity) return "Who are you?";
+  if (!memory.role) return "What do you do?";
+  if (!memory.interviewComplete) return "What should I do first?";
   return null;
 }
 

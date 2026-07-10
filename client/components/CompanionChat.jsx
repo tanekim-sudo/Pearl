@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
+import { classifyInterviewInput } from "../lib/companion-intent.js";
 import {
   adoptAnonymousCompanionMemory,
   applyInterviewAnswer,
@@ -18,7 +19,15 @@ const SpeechRecognitionImpl =
  * a live demonstration with the ghost cursor, so the user learns the exact
  * gesture. Mic in via Web Speech API, replies spoken via speechSynthesis.
  */
-export default function CompanionChat({ demos = [], onCommand, initialOpen = false, onOpened, userId = null }) {
+export default function CompanionChat({
+  demos = [],
+  onCommand,
+  initialOpen = false,
+  onOpened,
+  userId = null,
+  notice = null,
+  confirmationOpen = false,
+}) {
   const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
   const [messages, setMessages] = useState(() => [
@@ -32,7 +41,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
-  const [voiceOut, setVoiceOut] = useState(true);
+  const [voiceOut, setVoiceOut] = useState(false);
   const [director, setDirector] = useState(null);
   const listRef = useRef(null);
   const recRef = useRef(null);
@@ -54,6 +63,12 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   useEffect(() => {
     if (open) onOpened?.();
   }, [open, onOpened]);
+
+  useEffect(() => {
+    if (!notice?.text) return;
+    setMessages((current) => [...current, { role: "companion", text: notice.text }]);
+    speak(notice.text);
+  }, [notice?.id]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -81,19 +96,37 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
     try {
       const interviewPrompt = nextInterviewPrompt(memory);
       if (interviewPrompt) {
+        const field = !memory.identity ? "identity" : !memory.role ? "role" : "goal";
+        const route = classifyInterviewInput(text, field);
+        if (route.kind === "command") {
+          const commandReply = await onCommand(text);
+          setMemory(rememberCompanionAction(userId, text));
+          if (commandReply?.visible && commandReply.text) {
+            setMessages((m) => [...m, { role: "companion", text: commandReply.text }]);
+            speak(commandReply.text);
+          }
+          return;
+        }
         const next = saveCompanionMemory(userId, applyInterviewAnswer(memory, text));
         setMemory(next);
         const prompt = nextInterviewPrompt(next);
-        const say = prompt ||
-          `That gives me enough context. I’ll remember it without storing a raw transcript. I can start on “${next.goals.at(-1)}” now — tell me to go, or refine the outcome first.`;
-        setMessages((m) => [...m, { role: "companion", text: say }]);
-        speak(say);
+        if (prompt) setMessages((m) => [...m, { role: "companion", text: prompt }]);
+        if (field === "goal") {
+          const result = await onCommand(text);
+          setMemory(rememberCompanionAction(userId, text));
+          if (result?.visible && result.text) {
+            setMessages((m) => [...m, { role: "companion", text: result.text }]);
+            speak(result.text);
+          }
+        }
         return;
       }
-      const say = await onCommand(text);
+      const result = await onCommand(text);
       setMemory(rememberCompanionAction(userId, text));
-      setMessages((m) => [...m, { role: "companion", text: say }]);
-      speak(say);
+      if (result?.visible && result.text) {
+        setMessages((m) => [...m, { role: "companion", text: result.text }]);
+        speak(result.text);
+      }
     } catch (err) {
       const msg = err?.message || "something went wrong — try again";
       setDraft(text);
@@ -228,7 +261,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   }
 
   return (
-    <div className={"companion-panel" + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "")}>
+    <div className={"companion-panel" + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}>
       <div className="companion-head">
         <span className="companion-head-orb" />
         <span className="companion-head-title">companion</span>
@@ -287,7 +320,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
             {m.text}
           </div>
         ))}
-        {busy && <div className="companion-msg companion thinking">on it — checking what I can do…</div>}
+        {busy && <div className="companion-msg companion thinking">working…</div>}
         {playing && (
           <div className="companion-playing">
             <span>demonstrating{director?.scriptTitle ? ` — ${director.scriptTitle}` : ""}…</span>

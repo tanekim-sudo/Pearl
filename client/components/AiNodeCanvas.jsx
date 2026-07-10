@@ -78,6 +78,8 @@ export default function AiNodeCanvas({
   onHighlightTransferStart,
   onHighlightMark,
   highlightMarkedIds,
+  highlightStrokes = [],
+  onHighlightStrokeComplete,
   onFragmentReplace,
   onFragmentToPaper,
   isPaperDestination,
@@ -108,6 +110,9 @@ export default function AiNodeCanvas({
   const [bornIds, setBornIds] = useState(() => new Set());
   const [wheelZooming, setWheelZooming] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null);
+  const [hlDraft, setHlDraft] = useState(null); // live highlight stroke (world points)
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
 
   // New nodes glow gold, then fade to stardust white over ~5s.
   useEffect(() => {
@@ -350,7 +355,7 @@ export default function AiNodeCanvas({
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e, [node.id]);
+      onSpaceTransferStart?.(e, [node.id], { fromNode: true });
       return;
     }
     e.stopPropagation();
@@ -426,7 +431,7 @@ export default function AiNodeCanvas({
       // not "branch": hand off to the space-transfer flow.
       if (moveEv && shouldHandoffNodeDrag?.(clientX, clientY)) {
         abortStrandDrag(moveEv);
-        onSpaceTransferStart?.(moveEv, [state.nodeId], { immediate: true });
+        onSpaceTransferStart?.(moveEv, [state.nodeId], { immediate: true, fromNode: true });
         return;
       }
 
@@ -607,7 +612,7 @@ export default function AiNodeCanvas({
 
   function startHighlightTransfer(e, node, opts = {}) {
     const fragment = opts.fragment || node.goldenFragment?.trim() || null;
-    onHighlightTransferStart?.(e, [node.id], { immediate: true, fragment });
+    onHighlightTransferStart?.(e, [node.id], { immediate: true, fragment, fromNode: true });
   }
 
   function startFragmentGrab(e, node) {
@@ -621,7 +626,7 @@ export default function AiNodeCanvas({
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
       e.stopPropagation();
-      onSpaceTransferStart?.(e, [node.id]);
+      onSpaceTransferStart?.(e, [node.id], { fromNode: true });
       return;
     }
     e.stopPropagation();
@@ -691,7 +696,7 @@ export default function AiNodeCanvas({
         } catch {
           /* ignore */
         }
-        onSpaceTransferStart?.(ev, [node.id], { immediate: true });
+        onSpaceTransferStart?.(ev, [node.id], { immediate: true, fromNode: true });
         return;
       }
 
@@ -782,6 +787,57 @@ export default function AiNodeCanvas({
     startNodePositionDrag(e, node);
   }
 
+  /**
+   * Highlight tool on empty space: draw a golden stroke that marks every
+   * node it touches. The ink stays visible (session mark) — it never
+   * transfers or expands anything by itself.
+   */
+  function startHighlightStroke(e) {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    e.preventDefault();
+    const toWorld = (ev) => screenToWorld(cameraRef.current, ev.clientX - rect.left, ev.clientY - rect.top);
+    const points = [toWorld(e)];
+    const touched = new Set();
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    function hitNodes(w) {
+      const pad = 10 / Math.max(cameraRef.current.scale, 0.08);
+      for (const n of nodesRef.current) {
+        const r = (n.radius || 20) + pad;
+        if (Math.hypot(w.x - n.x, w.y - n.y) <= r) touched.add(n.id);
+      }
+    }
+    hitNodes(points[0]);
+
+    function onMovePt(ev) {
+      const w = toWorld(ev);
+      points.push(w);
+      hitNodes(w);
+      setHlDraft({ points: points.slice() });
+    }
+
+    function onUpPt(ev) {
+      window.removeEventListener("pointermove", onMovePt);
+      window.removeEventListener("pointerup", onUpPt);
+      window.removeEventListener("pointercancel", onUpPt);
+      setHlDraft(null);
+      const moved = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+      if (moved <= 6) {
+        // Tap on empty space with the highlighter: nothing to mark.
+        const single = [...touched];
+        if (single.length === 1) onHighlightMark?.(single[0]);
+        return;
+      }
+      onHighlightStrokeComplete?.(points, [...touched]);
+    }
+
+    window.addEventListener("pointermove", onMovePt);
+    window.addEventListener("pointerup", onUpPt);
+    window.addEventListener("pointercancel", onUpPt);
+  }
+
   function handleViewportPointerDown(e) {
     if (e.target.closest?.(".ai-node")) return;
     if (e.target.closest?.(".ai-explore-overlay-inner")) return;
@@ -800,8 +856,10 @@ export default function AiNodeCanvas({
 
     if (e.button !== 0) return;
 
-    if (tool === "highlight" && selectedIds.length) {
-      onHighlightTransferStart?.(e, selectedIds, { immediate: false });
+    // Background drags never transfer or spawn nodes: the highlighter
+    // strokes/marks, everything else pans. Transfers must start from a node.
+    if (tool === "highlight") {
+      startHighlightStroke(e);
       return;
     }
 
@@ -1083,6 +1141,21 @@ export default function AiNodeCanvas({
               </g>
             );
           })}
+          {highlightStrokes.map((hs) => (
+            <polyline
+              key={hs.id}
+              className="ai-hl-session-stroke"
+              points={hs.points.map((p) => `${p.x},${p.y}`).join(" ")}
+              strokeWidth={5 * invScale}
+            />
+          ))}
+          {hlDraft && hlDraft.points.length > 1 && (
+            <polyline
+              className="ai-hl-draft-stroke"
+              points={hlDraft.points.map((p) => `${p.x},${p.y}`).join(" ")}
+              strokeWidth={5 * invScale}
+            />
+          )}
         </svg>
 
         {nodes.map((node) => {
@@ -1208,6 +1281,7 @@ export default function AiNodeCanvas({
                             onHighlightTransferStart?.(ev, [node.id], {
                               immediate: true,
                               fragment: quote,
+                              fromNode: true,
                             })
                           }
                           isPaperDestination={isPaperDestination}

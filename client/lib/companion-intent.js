@@ -23,17 +23,50 @@ export function parseAdministrativeCommand(text) {
     .trim();
   if (!normalized) return null;
 
-  const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized);
+  const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized) || /\bget rid (?:of|fo)\b/.test(normalized);
   const bulk = /\b(all|everything|every single thing|entire|whole)\b/.test(normalized);
   if (!destructive || !bulk) return null;
 
   const domains = [];
-  if (/\b(white\s*board|whiteboard|paper|canvas|current page)\b/.test(normalized)) domains.push("paper");
-  if (/\b(ai space|ai nodes?|artificial intelligence space)\b/.test(normalized)) domains.push("ai");
+  if (/\b(white\s*board|whiteboard|paper|canvas|current page|drawings?|sketch(?:es)?)\b/.test(normalized)) domains.push("paper");
+  if (/\b(ai space|ai nodes?|ai stuff|artificial intelligence space)\b/.test(normalized)) domains.push("ai");
   if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.push("lenses");
   if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.push("generators");
 
   return domains.length ? { kind: "clear-workspace", domains } : null;
+}
+
+const COMMAND_LEAD =
+  /^(?:please\s+)?(?:add|apply|attach|branch|build|capture|change|clear|close|create|delete|do|draw|edit|erase|fit|focus|fork|get rid|graduate|highlight|make|merge|move|open|organize|pan|probe|remove|rename|research|run|save|select|share|show|start|switch|turn|walk|wipe|zoom)\b/i;
+
+/**
+ * Interview answers are deliberately narrow. Everything else gets a chance
+ * to route through deterministic intent detection / the planner first.
+ */
+export function looksLikeProfileAnswer(text, field) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value || /[?;]|\n/.test(value)) return false;
+  const words = value.split(" ");
+  if (parseAdministrativeCommand(value) || parseSaveChainCommand(value)) return false;
+  if (field === "identity") {
+    if (words.length > 7 || value.length > 80 || COMMAND_LEAD.test(value)) return false;
+    return /^[\p{L}\p{M}][\p{L}\p{M} .,'’-]*$/u.test(value);
+  }
+  if (field === "role") {
+    if (words.length > 18 || value.length > 160) return false;
+    return /^(?:i\s+(?:am|work|run|lead|write|research|design|build|teach|invest|found)|my\s+(?:work|role)|a[n]?\s+|[\p{L}\p{M}][\p{L}\p{M} /&'-]{1,60}$)/iu.test(value);
+  }
+  // A first goal may be a noun phrase. Imperative requests should execute now.
+  return words.length <= 18 && value.length <= 180 && !COMMAND_LEAD.test(value);
+}
+
+export function classifyInterviewInput(text, field) {
+  const administrative = parseAdministrativeCommand(text);
+  if (administrative) return { kind: "command", intent: administrative };
+  const chain = parseSaveChainCommand(text);
+  if (chain) return { kind: "command", intent: chain };
+  if (looksLikeProfileAnswer(text, field)) return { kind: "profile" };
+  return { kind: "command", intent: null };
 }
 
 /** Local fast path for the high-confidence lineage-capture command. */
@@ -64,9 +97,11 @@ Prebuilt demonstrations you can play instead of writing a script:
 ${demoDoc || "(none)"}
 
 Reply with ONLY a JSON object, no prose, no code fences:
-{"say": "one short spoken sentence about what you'll show", "demoId": "id-if-a-prebuilt-demo-fits-best", "steps": [{"verb": "...", "args": {...}}, ...]}
+{"say": "empty for executable actions; only a required choice, answer, or precise blocker", "demoId": "id-if-a-prebuilt-demo-fits-best", "steps": [{"verb": "...", "args": {...}}, ...]}
 
 Rules:
+- Action-first: for every executable request, set "say" to "" and emit the steps immediately. Do not acknowledge, praise, summarize, or announce what you will do.
+- Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
 - If the user asks you to DO something concrete (e.g. "make an investment memo lens with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
 - Never promise unsupported actions. Only claim an action was done when a listed verb executes it. For a missing capability, say exactly which action is unavailable and return no steps.
@@ -74,8 +109,9 @@ Rules:
 - Lens structure: lenses are step pipelines that can FORK into multiple outputs — a branch point runs the shared steps once, then each branch continues from that intermediate result and produces its own output node (e.g. input → expand → branch "one pager" + branch "investment memo" = two outputs per run). Build with addFunctionStep (new step, or use an existing lens/primitive via "use"), addFunctionBranch (fork at a step), setFunctionStep (rename/rewrite a step's prompt), saveFunction (commit). These are the same edits the lens editor makes, so you can build a branched lens end to end.
 - Generator lifecycle: newGenerator creates an empty ◇N placeholder; attachToGenerator accumulates observations onto it; graduateGenerator names it once understood; probeGenerator expresses its structure in another domain; makeLensFromGenerator turns its structure into a reusable lens.
 - For bulk deletion, call clearWorkspaceDomains once with every requested domain. It only stages a confirmation; destructive clearing never happens without the user's explicit confirmation. "Functions" means user-created lenses, while "structures" means generators.
-- Multi-part requests are fine: chain as many steps as needed, in the order the user asked. A failed step is skipped, the rest still run.
-- Interleave short caption verbs so the user understands each move.
+- Multi-part and hard requests are plans: compose as many available verbs as needed in dependency order (for example create material → create/apply a lens → focus or transfer the AI result). Prefer a valid sequence over claiming no single verb exists. A failed nonfatal step is skipped and the rest continue.
+- Selection is cross-domain: the persistent highlighter can include paper material, AI nodes, lenses, functions, generators, and exact text fragments. Lenses are executable transformation trees (including branch outputs); generators are spatial collections that mature into named structures. Shared paths can be walked, annotated, branched, returned to, or materialized by the direct UI; do not claim those path operations unless a matching registered capability is listed.
+- Do not add conversational caption steps. The animation itself is the response.
 - Use "last" to refer to the thing just created. Use text fragments to refer to existing items/functions.
 - Keep scripts under 40 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
 }

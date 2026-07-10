@@ -9,6 +9,7 @@ export default function HighlightToolbar({
   paperCount = 0,
   aiCount = 0,
   fragmentCount = 0,
+  railCount = 0,
   ops = [],
   onOperate,
   onExtend,
@@ -19,7 +20,7 @@ export default function HighlightToolbar({
 }) {
   const [opsOpen, setOpsOpen] = useState(false);
   const rootRef = useRef(null);
-  const total = paperCount + aiCount + fragmentCount;
+  const total = paperCount + aiCount + fragmentCount + railCount;
 
   useEffect(() => {
     if (!opsOpen) return undefined;
@@ -36,6 +37,7 @@ export default function HighlightToolbar({
   if (paperCount) parts.push(`${paperCount} highlighted`);
   if (fragmentCount) parts.push(`${fragmentCount} phrase${fragmentCount === 1 ? "" : "s"}`);
   if (aiCount) parts.push(`${aiCount} node${aiCount === 1 ? "" : "s"}`);
+  if (railCount) parts.push(`${railCount} card${railCount === 1 ? "" : "s"}`);
   const countLabel = parts.join(" · ");
 
   return (

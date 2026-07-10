@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-import { validateCapabilityNames } from "./companion-capabilities.js";
+import {
+  COMPANION_CAPABILITIES,
+  validateCapabilityManifest,
+} from "./companion-capabilities.js";
 
 test("companion whitelist covers every registered director verb", () => {
   const source = fs.readFileSync(new URL("../App.jsx", import.meta.url), "utf8");
@@ -12,7 +15,22 @@ test("companion whitelist covers every registered director verb", () => {
 
   const registry = source.slice(start, end);
   const registered = [...registry.matchAll(/^\s{4}([A-Za-z]\w*):\s*async\b/gm)].map((match) => match[1]);
-  const drift = validateCapabilityNames(registered);
+  const drift = validateCapabilityManifest(registered);
 
-  assert.deepEqual(drift, { undocumented: [], unregistered: [] });
+  assert.deepEqual(drift, {
+    undocumented: [],
+    unregistered: [],
+    missingExamples: [],
+    missingAnimation: [],
+  });
+});
+
+test("capability audit rejects missing intent and animation metadata", () => {
+  const broken = COMPANION_CAPABILITIES.map((entry, index) =>
+    index === 0 ? { ...entry, examples: [], animation: null } : entry
+  );
+  const registered = COMPANION_CAPABILITIES.map((entry) => entry.name);
+  const audit = validateCapabilityManifest(registered, broken);
+  assert.deepEqual(audit.missingExamples, [broken[0].name]);
+  assert.deepEqual(audit.missingAnimation, [broken[0].name]);
 });

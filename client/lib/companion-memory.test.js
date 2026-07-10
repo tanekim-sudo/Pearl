@@ -48,7 +48,7 @@ test("interview asks identity, role, then first goal and completes", () => {
   memory = applyInterviewAnswer(memory, "Ada");
   assert.match(nextInterviewPrompt(memory), /what do you do/i);
   memory = applyInterviewAnswer(memory, "I research systems");
-  assert.match(nextInterviewPrompt(memory), /build first/i);
+  assert.match(nextInterviewPrompt(memory), /do first/i);
   memory = applyInterviewAnswer(memory, "Map a product strategy");
   assert.equal(memory.interviewComplete, true);
   assert.equal(nextInterviewPrompt(memory), null);
@@ -61,4 +61,12 @@ test("created references are compact and deduplicated", () => {
   assert.deepEqual(loadCompanionMemory("a", store).references.lenses, [
     { id: "lens-1", name: "Renamed" },
   ]);
+});
+
+test("repairs identities polluted by swallowed commands", () => {
+  const store = storage();
+  saveCompanionMemory(null, {
+    identity: "get rid fo all functions and drawings and ai stuff",
+  }, store);
+  assert.equal(loadCompanionMemory(null, store).identity, "");
 });
