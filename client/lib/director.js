@@ -54,6 +54,14 @@ export function listDirectorVerbs() {
   return Object.keys(verbs);
 }
 
+export function resolveDirectorCapabilities(names = []) {
+  const requested = [...new Set(names.filter(Boolean))];
+  return {
+    available: requested.filter((name) => typeof verbs[name] === "function"),
+    missing: requested.filter((name) => typeof verbs[name] !== "function"),
+  };
+}
+
 // ---- motion primitives ----
 
 function easeInOut(t) {
@@ -164,6 +172,11 @@ const toolkit = {
 
 export async function runDirectorScript(steps, opts = {}) {
   if (!Array.isArray(steps) || !steps.length) return { completed: false, error: "empty script" };
+  const resolution = resolveDirectorCapabilities(steps.map((step) => step?.verb));
+  if (resolution.missing.length) {
+    const error = `unavailable capability: ${resolution.missing.join(", ")}`;
+    return { completed: false, error, errors: [error], missing: resolution.missing };
+  }
   if (state.running) {
     stopDirector();
     await directorWait(80);
@@ -187,7 +200,6 @@ export async function runDirectorScript(steps, opts = {}) {
     for (const step of steps) {
       if (state.abortRequested) break;
       const fn = verbs[step.verb];
-      if (!fn) continue;
       try {
         await fn(step.args || {}, toolkit, ctx);
         consecutiveFailures = 0;

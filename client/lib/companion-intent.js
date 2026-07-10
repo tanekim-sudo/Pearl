@@ -12,11 +12,32 @@ const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
 
 export const CLEARABLE_DOMAINS = ["paper", "ai", "lenses", "generators"];
 
+function clearDomainsFromText(normalized) {
+  const domains = new Set();
+  const unifiedCanvas =
+    /\b(white\s*board|whiteboard|whitebaord|canvas|everything here|workspace|start (?:completely )?over)\b/.test(normalized);
+  if (
+    unifiedCanvas ||
+    /\b(paper|current page|drawings?|sketch(?:es)?|notes?|blocks?|links?|highlights?|marks?)\b/.test(normalized)
+  ) domains.add("paper");
+  if (
+    unifiedCanvas ||
+    /\b(ai space|ai nodes?|nodes?|ai stuff|artificial intelligence space|edges?)\b/.test(normalized)
+  ) domains.add("ai");
+  if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.add("lenses");
+  if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.add("generators");
+  if (/\bnot (?:the )?(?:lenses?|functions?|operators?)\b/.test(normalized)) domains.delete("lenses");
+  if (/\bnot (?:the )?(?:generators?|structures?)\b/.test(normalized)) domains.delete("generators");
+  if (/\bnot (?:the )?(?:ai|nodes?|ai stuff)\b/.test(normalized)) domains.delete("ai");
+  if (/\bnot (?:the )?(?:paper|notes?|drawings?)\b/.test(normalized)) domains.delete("paper");
+  return [...domains];
+}
+
 /**
  * Deterministic fast path for high-confidence destructive workspace commands.
  * It deliberately requires both destructive/all language and named app domains.
  */
-export function parseAdministrativeCommand(text) {
+export function parseAdministrativeCommand(text, { previousDomains = [], pending = false } = {}) {
   const normalized = String(text || "")
     .toLowerCase()
     .replace(/[’']/g, "'")
@@ -24,16 +45,28 @@ export function parseAdministrativeCommand(text) {
     .trim();
   if (!normalized) return null;
 
+  if (/^(?:yes|confirm|do it|go ahead|clear it)$/i.test(normalized) && pending) {
+    return { kind: "confirm-clear", domains: [...previousDomains] };
+  }
+  if (/^(?:no|cancel|stop|never mind|nevermind)$/i.test(normalized) && pending) {
+    return { kind: "cancel-clear", domains: [...previousDomains] };
+  }
   const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized) || /\bget rid (?:of|fo)\b/.test(normalized);
   const bulk = /\b(all|everything|every single thing|entire|whole)\b/.test(normalized);
-  if (!destructive || !bulk) return null;
-
-  const domains = [];
-  if (/\b(white\s*board|whiteboard|whitebaord|paper|canvas|current page|drawings?|sketch(?:es)?)\b/.test(normalized)) domains.push("paper");
-  if (/\b(ai space|ai nodes?|ai stuff|artificial intelligence space)\b/.test(normalized)) domains.push("ai");
-  if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.push("lenses");
-  if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.push("generators");
-
+  const followup = pending && (
+    /\b(also|including?|plus|and the|do the rest|nodes?|notes?|lenses?|functions?|generators?)\b/.test(normalized)
+  );
+  if ((!destructive || !bulk) && !followup) return null;
+  let domains = clearDomainsFromText(normalized);
+  if (followup) {
+    if (/\bdo the rest\b/.test(normalized)) {
+      domains = CLEARABLE_DOMAINS.filter((domain) => !previousDomains.includes(domain));
+    } else {
+      domains = [...new Set([...previousDomains, ...domains])];
+      if (/\bnot (?:the )?(?:lenses?|functions?|operators?)\b/.test(normalized)) domains = domains.filter((d) => d !== "lenses");
+      if (/\bnot (?:the )?(?:generators?|structures?)\b/.test(normalized)) domains = domains.filter((d) => d !== "generators");
+    }
+  }
   return domains.length ? { kind: "clear-workspace", domains } : null;
 }
 
@@ -49,6 +82,10 @@ export function looksLikeProfileAnswer(text, field) {
   if (!value || /[?;]|\n/.test(value)) return false;
   const words = value.split(" ");
   if (parseAdministrativeCommand(value) || parseSaveChainCommand(value)) return false;
+  if (
+    field === "identity" &&
+    /\b(?:add|apply|clear|create|delete|draw|edit|erase|include|make|move|remove|run|wipe)\b/i.test(value)
+  ) return false;
   if (field === "identity") {
     if (words.length > 7 || value.length > 80 || COMMAND_LEAD.test(value)) return false;
     return /^[\p{L}\p{M}][\p{L}\p{M} .,'’-]*$/u.test(value);

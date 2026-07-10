@@ -18,6 +18,7 @@ export function emptyCompanionMemory() {
     references: { lenses: [], generators: [], paths: [] },
     actions: [],
     interviewComplete: false,
+    interviewPaused: false,
     updatedAt: null,
   };
 }
@@ -52,6 +53,7 @@ function compact(memory) {
       ])
     ),
     actions: Array.isArray(memory?.actions) ? memory.actions.slice(-MAX_ACTIONS) : [],
+    interviewPaused: Boolean(memory?.interviewPaused),
     updatedAt: memory?.updatedAt || null,
   };
 }
@@ -145,6 +147,7 @@ export function adoptAnonymousCompanionMemory(userId, storage = globalThis.local
 }
 
 export function nextInterviewPrompt(memory) {
+  if (memory.interviewPaused) return null;
   if (!memory.identity) return "Who are you?";
   if (!memory.role) return "What do you do?";
   if (!memory.interviewComplete) return "What should I do first?";
@@ -156,4 +159,12 @@ export function applyInterviewAnswer(memory, answer) {
   if (!memory.identity) return { ...memory, identity: value };
   if (!memory.role) return { ...memory, role: value };
   return { ...memory, goals: [...memory.goals, value].slice(-8), interviewComplete: true };
+}
+
+export function pauseCompanionInterview(userId, storage = globalThis.localStorage) {
+  return saveCompanionMemory(userId, { interviewPaused: true }, storage);
+}
+
+export function resumeCompanionInterview(userId, storage = globalThis.localStorage) {
+  return saveCompanionMemory(userId, { interviewPaused: false }, storage);
 }

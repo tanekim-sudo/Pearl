@@ -16,7 +16,7 @@ describe("companion submit guard", () => {
     assert.equal(guard.begin("build another lens"), null, "pointer race is ignored while active");
     guard.finish(keyboard.id);
     assert.equal(guard.begin("build a lens"), null, "speech finalization duplicate is ignored");
-    time += 1600;
+    time += 16_000;
     assert.ok(guard.begin("build a lens"), "the same intentional request works later");
   });
 
@@ -57,11 +57,30 @@ describe("companion submit guard", () => {
     assert.ok(guard.begin("run that lens"));
   });
 
+  it("dedupes Enter/click fan-out but allows a later identical text gesture", () => {
+    const guard = createCompanionSubmitGuard();
+    const first = guard.begin("move this note", { source: "text", eventId: "gesture-1" });
+    assert.ok(first);
+    assert.equal(
+      guard.begin("move this note", { source: "form", eventId: "gesture-1" }),
+      null
+    );
+    guard.finish(first.id);
+    assert.ok(
+      guard.begin("move this note", { source: "text", eventId: "gesture-2" }),
+      "new gesture envelope is not semantically suppressed"
+    );
+  });
+
   it("allows an immediate retry after a completed confirmation interaction", () => {
     const guard = createCompanionSubmitGuard();
     const first = guard.begin("clear the paper");
     guard.finish(first.id);
     guard.resetDedupe();
-    assert.ok(guard.begin("clear the paper"));
+    assert.equal(guard.begin("clear the paper"), null, "UI effects cannot reopen a consumed event");
+    assert.ok(
+      guard.begin("clear the paper", { source: "voice", utteranceId: "later-utterance", sessionGeneration: 2 }),
+      "a new user utterance remains executable"
+    );
   });
 });

@@ -33,6 +33,43 @@ test("administrative parser recognizes user-facing and legacy domain names", () 
   });
 });
 
+test("a unified whiteboard clear includes paper and AI material", () => {
+  assert.deepEqual(parseAdministrativeCommand("delete everything in the Whiteboard"), {
+    kind: "clear-workspace",
+    domains: ["paper", "ai"],
+  });
+});
+
+test("destructive follow-ups amend recent clear context without becoming profile data", () => {
+  const followup = parseAdministrativeCommand("including the notes delete the nodes", {
+    previousDomains: ["paper"],
+    pending: true,
+  });
+  assert.deepEqual(followup, {
+    kind: "clear-workspace",
+    domains: ["paper", "ai"],
+  });
+  assert.equal(classifyInterviewInput("including the notes delete the nodes", "identity").kind, "command");
+  assert.deepEqual(
+    parseAdministrativeCommand("also the generators, not the lenses", {
+      previousDomains: ["paper", "ai"],
+      pending: true,
+    }),
+    { kind: "clear-workspace", domains: ["paper", "ai", "generators"] }
+  );
+});
+
+test("confirmation and cancellation are grounded in a pending clear", () => {
+  assert.deepEqual(parseAdministrativeCommand("yes", { previousDomains: ["paper", "ai"], pending: true }), {
+    kind: "confirm-clear",
+    domains: ["paper", "ai"],
+  });
+  assert.deepEqual(parseAdministrativeCommand("cancel", { previousDomains: ["paper"], pending: true }), {
+    kind: "cancel-clear",
+    domains: ["paper"],
+  });
+});
+
 test("typo-filled first-run clear request routes before profile capture", () => {
   const text = "get rid fo all functions and drawings and ai stuff let me start completely from scratch";
   assert.deepEqual(parseAdministrativeCommand(text), {

@@ -2177,6 +2177,7 @@ export default function App() {
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingCompanionClear, setPendingCompanionClear] = useState(null);
   const [companionNotice, setCompanionNotice] = useState(null);
+  const lastCompanionClearRef = useRef({ domains: [], at: 0 });
   const [pendingChainName, setPendingChainName] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const supaAuth = useSupabaseSession();
@@ -9986,7 +9987,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const lensCount = operators.filter((o) => !o.primitive && (o.top || o.move)).length;
     return {
       paper: requested.has("paper")
-        ? itemsRef.current.filter((it) => it.type !== "link").length
+        ? itemsRef.current.length
         : 0,
       ai: requested.has("ai") ? aiNodesRef.current.length : 0,
       lenses: requested.has("lenses")
@@ -9997,8 +9998,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   }
 
   function stageCompanionClear(domains) {
-    const normalized = CLEARABLE_DOMAINS.filter((domain) => domains?.includes(domain));
+    const combined = new Set([...(pendingCompanionClear?.domains || []), ...(domains || [])]);
+    const normalized = CLEARABLE_DOMAINS.filter((domain) => combined.has(domain));
     if (!normalized.length) return;
+    lastCompanionClearRef.current = { domains: normalized, at: Date.now() };
     setPendingCompanionClear({
       domains: normalized,
       counts: companionClearCounts(normalized),
@@ -10010,9 +10013,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (!pending) return;
     const domains = new Set(pending.domains);
     setPendingCompanionClear(null);
+    const nextItems = domains.has("paper") ? [] : itemsRef.current;
+    const nextAiNodes = domains.has("ai") ? [] : aiNodesRef.current;
 
     if (domains.has("paper")) {
-      localStorage.setItem(ITEMS_KEY, "[]");
       localStorage.removeItem(ARTIFACT_KEY);
       localStorage.removeItem(OLD_SEEDS_KEY);
       saveItemHistoryLog({});
@@ -10032,7 +10036,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       setCanRedo(false);
     }
     if (domains.has("ai")) {
-      localStorage.setItem(AI_NODES_KEY, "[]");
       setAiNodes([]);
       setSelectedAiNodeIds([]);
       setHighlightAiNodeIds([]);
@@ -10064,16 +10067,25 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       setSymbolDropTargetId(null);
     }
 
+    // Write legacy and unified stores as one logical snapshot before React
+    // effects or cloud sync can observe a mixed pre/post-clear workspace.
+    localStorage.setItem(ITEMS_KEY, JSON.stringify(nextItems));
+    localStorage.setItem(AI_NODES_KEY, JSON.stringify(nextAiNodes));
+    localStorage.setItem(
+      UNIFIED_WORKSPACE_KEY,
+      serializeUnifiedWorkspace({ items: nextItems, nodes: nextAiNodes, camera: camRef.current })
+    );
     const snapshot = readLocalBoardSnapshot();
     writeLocalBoardSnapshot({ ...snapshot, savedAt: new Date().toISOString() });
-    showToast("Cleared the confirmed workspace content");
+    showToast(
+      pending.domains
+        .map((domain) => `${pending.counts[domain] || 0} ${domain === "lenses" ? "user lenses" : domain}`)
+        .join(" · ")
+    );
     const summary = pending.domains
       .map((domain) => `${pending.counts[domain] || 0} ${domain === "lenses" ? "user lenses" : domain}`)
       .join(", ");
-    setCompanionNotice({
-      id: Date.now(),
-      text: `Cleared: ${summary}.`,
-    });
+    setCompanionNotice({ id: Date.now(), text: `Cleared ${summary}.`, transient: true });
   }
 
   function cancelCompanionClear() {
@@ -11042,7 +11054,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       return null;
     }
-    const administrative = parseAdministrativeCommand(text);
+    const recentClear =
+      pendingCompanionClear ||
+      (Date.now() - lastCompanionClearRef.current.at < 5 * 60_000
+        ? lastCompanionClearRef.current
+        : null);
+    const administrative = parseAdministrativeCommand(text, {
+      previousDomains: recentClear?.domains || [],
+      pending: Boolean(recentClear),
+    });
+    if (administrative?.kind === "confirm-clear") {
+      confirmCompanionClear();
+      return null;
+    }
+    if (administrative?.kind === "cancel-clear") {
+      cancelCompanionClear();
+      return null;
+    }
     if (administrative?.kind === "clear-workspace") {
       stageCompanionClear(administrative.domains);
       return null;

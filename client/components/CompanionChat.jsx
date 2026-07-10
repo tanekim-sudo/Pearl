@@ -2,13 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 import { classifyInterviewInput } from "../lib/companion-intent.js";
 import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
+import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import {
   adoptAnonymousCompanionMemory,
   applyInterviewAnswer,
   clearCompanionMemory,
   loadCompanionMemory,
   nextInterviewPrompt,
+  pauseCompanionInterview,
   rememberCompanionAction,
+  resumeCompanionInterview,
   saveCompanionMemory,
   setCompanionAutonomy,
 } from "../lib/companion-memory.js";
@@ -50,6 +53,7 @@ export default function CompanionChat({
   const listRef = useRef(null);
   const recRef = useRef(null);
   const voiceSessionRef = useRef(null);
+  const voiceGenerationRef = useRef(0);
   const composingRef = useRef(false);
   const submitGuardRef = useRef(null);
   if (!submitGuardRef.current) submitGuardRef.current = createCompanionSubmitGuard();
@@ -76,7 +80,12 @@ export default function CompanionChat({
     // A confirmation/cancellation notice marks a completed user interaction,
     // so an immediate intentional retry is distinct from a duplicate event.
     submitGuardRef.current.resetDedupe();
-    setMessages((current) => [...current, { role: "companion", text: notice.text }]);
+    if (notice.transient) return;
+    setMessages((current) =>
+      current.some((message) => message.role === "companion" && message.text === notice.text)
+        ? current
+        : [...current, { role: "companion", text: notice.text }]
+    );
     speak(notice.text);
   }, [notice?.id]);
 
@@ -101,12 +110,14 @@ export default function CompanionChat({
     }
   }
 
-  async function send(rawText, source = "unknown") {
-    const run = submitGuardRef.current.begin(rawText ?? draft);
+  async function send(rawText, sourceOrEnvelope = "unknown") {
+    const envelope =
+      typeof sourceOrEnvelope === "string" ? { source: sourceOrEnvelope } : sourceOrEnvelope || {};
+    const run = submitGuardRef.current.begin(rawText ?? draft, envelope);
     if (!run) return;
     const { text } = run;
     if (typeof window !== "undefined" && import.meta.env?.DEV) {
-      window.__lensCompanionLastRun = { id: run.id, text, source, startedAt: run.at };
+      window.__lensCompanionLastRun = { ...run, controller: undefined, signal: undefined, text, startedAt: run.at };
       window.dispatchEvent(new CustomEvent("lens:companion-run", { detail: window.__lensCompanionLastRun }));
     }
     setDraft("");
@@ -123,11 +134,25 @@ export default function CompanionChat({
       },
     };
     try {
+      if (/^(?:continue|resume|finish)\s+(?:my\s+)?(?:setup|onboarding|profile)$/i.test(text)) {
+        const resumed = resumeCompanionInterview(userId);
+        setMemory(resumed);
+        const prompt = nextInterviewPrompt(resumed);
+        if (prompt) {
+          setMessages((current) =>
+            current.some((message) => message.role === "companion" && message.text === prompt)
+              ? current
+              : [...current, { role: "companion", text: prompt }]
+          );
+        }
+        return;
+      }
       const interviewPrompt = nextInterviewPrompt(memory);
       if (interviewPrompt) {
         const field = !memory.identity ? "identity" : !memory.role ? "role" : "goal";
         const route = classifyInterviewInput(text, field);
         if (route.kind === "command") {
+          setMemory(pauseCompanionInterview(userId));
           const commandReply = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
           if (commandReply?.visible && commandReply.text) {
@@ -184,25 +209,14 @@ export default function CompanionChat({
     stopDirector();
   }
 
-  /** How long a pause (after you've said something) means "I'm done". */
-  const VOICE_SILENCE_MS = 2600;
-
   function endVoiceSession({ send: shouldSend } = { send: true }) {
     const s = voiceSessionRef.current;
     if (!s) return;
     voiceSessionRef.current = null;
-    s.active = false;
-    if (s.silenceTimer) clearTimeout(s.silenceTimer);
-    try {
-      s.rec.stop();
-    } catch {
-      /* already stopped */
-    }
+    const said = s.finish({ send: shouldSend });
     recRef.current = null;
     setListening(false);
-    const said = (s.finalText + " " + s.interim).replace(/\s+/g, " ").trim();
-    if (shouldSend && said) send(said, "speech");
-    else if (said) setDraft(said);
+    if (!shouldSend && said) setDraft(s.text());
   }
 
   function stopListening() {
@@ -210,41 +224,29 @@ export default function CompanionChat({
   }
 
   function startVoiceSession() {
-    const session = {
-      rec: null,
-      finalText: "",
-      interim: "",
-      active: true,
-      silenceTimer: null,
-      restarts: 0,
-    };
-
-    const armSilenceTimer = () => {
-      if (session.silenceTimer) clearTimeout(session.silenceTimer);
-      // Only auto-send once something has actually been said — otherwise
-      // keep listening indefinitely until the user speaks or taps the mic.
-      if (!(session.finalText + session.interim).trim()) return;
-      session.silenceTimer = setTimeout(() => {
-        if (session.active) endVoiceSession({ send: true });
-      }, VOICE_SILENCE_MS);
-    };
+    endVoiceSession({ send: false });
+    const generation = ++voiceGenerationRef.current;
+    let restarts = 0;
+    const session = createCompanionVoiceSession({
+      generation,
+      dispatch: (text, envelope) => {
+        if (voiceSessionRef.current === session) voiceSessionRef.current = null;
+        recRef.current = null;
+        setListening(false);
+        send(text, envelope);
+      },
+      updateDraft: setDraft,
+    });
 
     const attach = () => {
+      if (!session.isActive() || generation !== voiceGenerationRef.current) return;
       const rec = new SpeechRecognitionImpl();
       rec.lang = navigator.language || "en-US";
       rec.interimResults = true;
       // Continuous: pauses between phrases don't end the session.
       rec.continuous = true;
       rec.onresult = (e) => {
-        let interim = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) session.finalText += r[0].transcript + " ";
-          else interim += r[0].transcript;
-        }
-        session.interim = interim;
-        setDraft((session.finalText + interim).replace(/\s+/g, " ").trimStart());
-        armSilenceTimer();
+        session.ingest(e, generation);
       };
       rec.onerror = (e) => {
         // "no-speech" just means a quiet stretch — the restart below handles it.
@@ -253,12 +255,12 @@ export default function CompanionChat({
         }
       };
       rec.onend = () => {
-        if (!session.active) return;
+        if (!session.isActive() || generation !== voiceGenerationRef.current) return;
         // The engine ends on its own after quiet stretches; if the user
         // hasn't finished (no silence-send fired), seamlessly restart and
         // keep the transcript accumulated so far.
-        session.restarts += 1;
-        if (session.restarts > 40) {
+        restarts += 1;
+        if (restarts > 40) {
           endVoiceSession({ send: true });
           return;
         }
@@ -268,7 +270,7 @@ export default function CompanionChat({
           endVoiceSession({ send: true });
         }
       };
-      session.rec = rec;
+      session.registerRecognizer(rec);
       recRef.current = rec;
       rec.start();
     };
@@ -297,6 +299,7 @@ export default function CompanionChat({
 
   useEffect(
     () => () => {
+      voiceGenerationRef.current += 1;
       stopListening();
       submitGuardRef.current.cancel();
     },
@@ -415,7 +418,14 @@ export default function CompanionChat({
       {!playing && (
         <div className="companion-demos">
           {memory.interviewComplete && demos.slice(0, 3).map((d) => (
-            <button key={d.id} type="button" className="companion-demo-chip" onClick={() => send(`show me: ${d.title}`)}>
+            <button
+              key={d.id}
+              type="button"
+              className="companion-demo-chip"
+              onClick={(event) =>
+                send(`show me: ${d.title}`, { source: "text", eventId: `demo-${d.id}-${event.timeStamp}` })
+              }
+            >
               {d.title}
             </button>
           ))}
@@ -427,7 +437,10 @@ export default function CompanionChat({
         onSubmit={(e) => {
           e.preventDefault();
           if (!composingRef.current) {
-            send(e.currentTarget.elements.companionRequest?.value, "form");
+            send(e.currentTarget.elements.companionRequest?.value, {
+              source: "text",
+              eventId: `form-${e.nativeEvent?.timeStamp ?? e.timeStamp}`,
+            });
           }
         }}
       >
@@ -463,7 +476,10 @@ export default function CompanionChat({
             if (e.key !== "Enter") return;
             e.preventDefault();
             if (e.repeat || e.nativeEvent?.isComposing || composingRef.current) return;
-            send(e.currentTarget.value, "keyboard");
+            send(e.currentTarget.value, {
+              source: "text",
+              eventId: `keyboard-${e.nativeEvent?.timeStamp ?? e.timeStamp}`,
+            });
           }}
           disabled={busy}
         />

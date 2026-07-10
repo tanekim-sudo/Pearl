@@ -70,20 +70,44 @@ async function main() {
   let plannerCalls = 0;
   await page.route("**/api/run", async (route) => {
     const body = JSON.parse(route.request().postData() || "{}");
-    if (/Translate this request into a director script/i.test(body.prompt || "")) {
+    if (/Create the validated action plan/i.test(body.prompt || "")) {
       plannerCalls++;
       const demo = /show me.*(?:make|create).*lens/i.test(body.text || "");
-      const output = demo
-        ? { say: "", demoId: "create-function", steps: [] }
-        : {
-            say: "",
-            steps: [
-              {
-                verb: "spawnText",
+      const output = {
+        version: 1,
+        title: demo ? "create lens walkthrough" : "place audit note",
+        root: {
+          kind: "sequence",
+          steps: demo
+            ? [
+                {
+                  kind: "action",
+                  capability: "createFunction",
+                  args: { name: "audit lens", steps: [{ name: "inspect", description: "Inspect the material" }] },
+                },
+                {
+                  kind: "action",
+                  capability: "addFunctionBranch",
+                  args: { op: "audit lens", from: "inspect", name: "brief", prompt: "Write a brief." },
+                },
+                {
+                  kind: "action",
+                  capability: "addFunctionBranch",
+                  args: { op: "audit lens", from: "inspect", name: "memo", prompt: "Write a memo." },
+                },
+                {
+                  kind: "action",
+                  capability: "saveFunction",
+                  args: { op: "audit lens", message: "audit branched lens" },
+                },
+              ]
+            : [{
+                kind: "action",
+                capability: "spawnText",
                 args: { text: `audit:${body.text}`, saveAs: "submitted" },
-              },
-            ],
-          };
+              }],
+        },
+      };
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ outputs: [JSON.stringify(output)] }) });
     }
     const output = /JSON only|Return ONLY JSON/i.test(`${body.prompt || ""}\n${body.system || ""}`)
@@ -261,7 +285,10 @@ async function main() {
     }));
     check(`${len} chars opens at top`, scroll.top === 0, `${scroll.top}`);
     check(`${len} chars wraps without horizontal spill`, !scroll.horizontal);
-    await page.locator(".ai-explore-overlay-inner").evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await page.locator(".ai-explore-overlay-inner").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.waitForTimeout(80);
     const bottom = await page.locator(".ai-explore-overlay-inner").evaluate(
       (el, finalLine) => ({
         atEnd: Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) <= 2,

@@ -7,8 +7,10 @@ import {
   emptyCompanionMemory,
   loadCompanionMemory,
   nextInterviewPrompt,
+  pauseCompanionInterview,
   rememberCompanionReference,
   saveCompanionMemory,
+  resumeCompanionInterview,
   setCompanionAutonomy,
 } from "./companion-memory.js";
 
@@ -53,6 +55,16 @@ test("interview asks identity, role, then first goal and completes", () => {
   memory = applyInterviewAnswer(memory, "Map a product strategy");
   assert.equal(memory.interviewComplete, true);
   assert.equal(nextInterviewPrompt(memory), null);
+});
+
+test("commands pause onboarding idempotently until setup is explicitly resumed", () => {
+  const store = storage();
+  assert.match(nextInterviewPrompt(loadCompanionMemory(null, store)), /who are you/i);
+  pauseCompanionInterview(null, store);
+  pauseCompanionInterview(null, store);
+  assert.equal(nextInterviewPrompt(loadCompanionMemory(null, store)), null);
+  resumeCompanionInterview(null, store);
+  assert.match(nextInterviewPrompt(loadCompanionMemory(null, store)), /who are you/i);
 });
 
 test("created references are compact and deduplicated", () => {
