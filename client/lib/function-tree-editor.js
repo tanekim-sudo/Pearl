@@ -154,6 +154,84 @@ export function addPipelineStep(draftOps, parentId, index, partial, newId) {
   return { draftOps: next, stepId: id };
 }
 
+/**
+ * Drag a strand out of a step: continue its lane if it's the tail, otherwise
+ * fork. Forks are pipelines with fork:true whose children are sibling
+ * branches — each leaf branch produces its own output at run time.
+ * @param {DraftOp[]} draftOps @param {string} stepId @param {Partial<DraftOp>} partial @param {() => string} newId
+ * @returns {{ draftOps: DraftOp[], stepId: string|null, forked: boolean }}
+ */
+export function addBranchAtStep(draftOps, stepId, partial, newId) {
+  const draftMap = buildDraftMap(draftOps);
+  const parentId = findParentId(stepId, draftMap);
+  if (!parentId) return { draftOps, stepId: null, forked: false };
+  const parent = draftMap[parentId];
+  const idx = parent.steps.indexOf(stepId);
+  if (idx < 0) return { draftOps, stepId: null, forked: false };
+
+  const leafId = newId();
+  const leaf = {
+    id: leafId,
+    kind: "prompt",
+    name: partial?.name || "new branch",
+    description: partial?.description || "",
+    prompt: partial?.prompt || "Return ONLY the step output.",
+    ...(partial?.moveRef ? { moveRef: partial.moveRef } : {}),
+    ...(partial?.research ? { research: true } : {}),
+  };
+
+  if (parent.fork) {
+    // stepId IS a whole branch: extend it linearly by wrapping into a lane.
+    const pipeId = newId();
+    const pipe = {
+      id: pipeId,
+      kind: "pipeline",
+      name: draftMap[stepId]?.name || "branch",
+      description: "",
+      steps: [stepId, leafId],
+    };
+    const next = draftOps
+      .map((o) =>
+        o.id === parentId
+          ? { ...o, steps: o.steps.map((sid) => (sid === stepId ? pipeId : sid)) }
+          : o
+      )
+      .concat(pipe, leaf);
+    return { draftOps: next, stepId: leafId, forked: false };
+  }
+
+  const rest = parent.steps.slice(idx + 1);
+  if (!rest.length) {
+    // Tail of its lane: plain linear continuation.
+    const next = [...draftOps, leaf].map((o) =>
+      o.id === parentId ? { ...o, steps: [...o.steps, leafId] } : o
+    );
+    return { draftOps: next, stepId: leafId, forked: false };
+  }
+  if (rest.length === 1 && draftMap[rest[0]]?.fork) {
+    // A fork already follows this step: open one more branch on it.
+    const next = [...draftOps, leaf].map((o) =>
+      o.id === rest[0] ? { ...o, steps: [...o.steps, leafId] } : o
+    );
+    return { draftOps: next, stepId: leafId, forked: true };
+  }
+  // Wrap the remainder into branch A, the new leaf becomes branch B.
+  const forkId = newId();
+  const extra = [leaf];
+  let branchAId;
+  if (rest.length === 1) {
+    branchAId = rest[0];
+  } else {
+    branchAId = newId();
+    extra.push({ id: branchAId, kind: "pipeline", name: "branch", description: "", steps: rest });
+  }
+  extra.push({ id: forkId, kind: "pipeline", fork: true, name: "fork", description: "", steps: [branchAId, leafId] });
+  const next = [...draftOps, ...extra].map((o) =>
+    o.id === parentId ? { ...o, steps: [...o.steps.slice(0, idx + 1), forkId] } : o
+  );
+  return { draftOps: next, stepId: leafId, forked: true };
+}
+
 /** @param {DraftOp[]} draftOps @param {string} stepIdA @param {string} stepIdB @param {() => string} newId */
 export function mergeStepsSequential(draftOps, stepIdA, stepIdB, newId) {
   const draftMap = buildDraftMap(draftOps);
@@ -190,6 +268,7 @@ export function opToClipboardTree(op, draftMap) {
   if (op.kind === "pipeline" && op.steps?.length) {
     return {
       ...base,
+      ...(op.fork ? { fork: true } : {}),
       steps: op.steps.map((id) => opToClipboardTree(draftMap[id], draftMap)).filter(Boolean),
     };
   }
@@ -206,7 +285,7 @@ export function materializeDraftTree(node, newId, out = []) {
   const description = (node.description || "").trim();
   if (Array.isArray(node.steps) && node.steps.length) {
     const steps = node.steps.map((s) => materializeDraftTree(s, newId, out));
-    out.push({ id, name, description, kind: "pipeline", steps });
+    out.push({ id, name, description, kind: "pipeline", steps, ...(node.fork ? { fork: true } : {}) });
     return id;
   }
   if (node.moveRef && !(node.prompt || "").trim()) {

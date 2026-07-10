@@ -195,6 +195,23 @@ export function migrateOperatorStore(saved) {
       (!o.primitive && !o.move && !LEGACY_DEFAULT_NAMES.has(o.name) && !PRIMITIVE_NAMES.has(o.name))
   );
 
+  // Sub-steps of a kept function must survive even when they share a name
+  // with a primitive or legacy default (e.g. an "expand" step dragged into a
+  // branch) — otherwise the parent pipeline points at missing ids.
+  const savedById = Object.fromEntries(saved.map((o) => [o.id, o]));
+  const userIds = new Set(userOps.map((o) => o.id));
+  const walkUserSteps = (id) => {
+    const op = savedById[id];
+    if (!op || userIds.has(id)) return;
+    userIds.add(id);
+    // Canonical / override primitives are re-added below under the same id.
+    if (!(op.primitive && PRIMITIVE_NAMES.has(op.name))) userOps.push(op);
+    if (op.kind === "pipeline") (op.steps || []).forEach(walkUserSteps);
+  };
+  for (const o of [...userOps]) {
+    if (o.kind === "pipeline") (o.steps || []).forEach(walkUserSteps);
+  }
+
   // Primitives are editable: a saved primitive-flagged op that keeps a
   // canonical name is the user's edit of that primitive — it replaces the
   // built-in. If the edit turned the primitive into a pipeline, keep its

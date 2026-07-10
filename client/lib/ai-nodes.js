@@ -274,11 +274,17 @@ export function edgeGeometry(from, to, opts = {}) {
     };
   }
 
-  const curve = Math.min(segLen * 0.44, chordLen * 0.24, 148) * (opts.curveSign ?? 1);
+  // Curve extent is always positive: control points must trail OUTWARD along
+  // each rim ray. (A negative sign used to flip them through the nodes, which
+  // reversed the end tangent and made marker-end arrowheads point sideways.)
+  const curve = Math.min(segLen * 0.44, chordLen * 0.24, 148) * Math.abs(opts.curveSign ?? 1);
+  // Bundle offset bows the source side / middle only. The END control point
+  // stays on the radial ray so the path tangent at the arrowhead points
+  // straight into the node (orient="auto" markers follow this tangent).
   const cx1 = x1 + start.ux * curve * 0.55 + px;
   const cy1 = y1 + start.uy * curve * 0.55 + py;
-  const cx2 = x2 + end.ux * curve * 0.55 + px;
-  const cy2 = y2 + end.uy * curve * 0.55 + py;
+  const cx2 = x2 + end.ux * curve * 0.55;
+  const cy2 = y2 + end.uy * curve * 0.55;
 
   return {
     x1,

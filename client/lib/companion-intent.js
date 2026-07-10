@@ -20,6 +20,7 @@ export const COMPANION_VERBS = {
   highlight: { args: { targets: "array of item text matches or ['last']" } },
   captureThread: { args: { target: "string or 'last'" } },
   showLenses: { args: {} },
+  savePageAsLens: { args: {} },
   waitForJobs: { args: {} },
   moveItem: { args: { target: "string or 'last'", to: "{x, y} world coords?", dx: "number?", dy: "number?" } },
   editItem: { args: { target: "string or 'last'", text: "string (new text)", append: "boolean?" } },
@@ -32,6 +33,14 @@ export const COMPANION_VERBS = {
   moveAiNode: { args: { target: "string (node label) or omit for latest", dx: "number?", dy: "number?" } },
   openFunctionEditor: { args: { op: "string (lens name, incl. primitives like compress/expand)" } },
   editFunction: { args: { op: "string (lens name, incl. primitives)", name: "string?", description: "string?", prompt: "string?" } },
+  addFunctionStep: {
+    args: { op: "string (lens name or 'last')", name: "string (step name)?", prompt: "string?", description: "string?", after: "string (existing step name to insert after)?", use: "string (existing lens/primitive to insert as the step)?" },
+  },
+  addFunctionBranch: {
+    args: { op: "string (lens name or 'last')", from: "string (step name to branch from; defaults to the last step)?", name: "string (what this branch produces)", prompt: "string?" },
+  },
+  setFunctionStep: { args: { op: "string (lens name or 'last')", step: "string (step name)", name: "string?", prompt: "string?", description: "string?" } },
+  saveFunction: { args: { op: "string (lens name or 'last')", message: "string (commit message)?" } },
   forkLens: { args: { lens: "string (lens name or 'last')", message: "string?" } },
   mergeLenses: { args: { a: "string (lens name)", b: "string (lens name)" } },
   editLensByInstruction: { args: { op: "string (lens name or 'last')", instruction: "string (plain-language change; AI rewrites the lens tree)" } },
@@ -40,9 +49,44 @@ export const COMPANION_VERBS = {
   graduateGenerator: { args: { generator: "string (◇N or title or 'last')", name: "string (its real name, now that it's clear)" } },
   probeGenerator: { args: { generator: "string or 'last'", domain: "string (music, books, prayers, paintings, or anything)" } },
   makeLensFromGenerator: { args: { generator: "string or 'last'" } },
+  clearPaper: { args: {} },
+  clearAiSpace: { args: {} },
+  clearUserLenses: { args: {} },
+  clearGenerators: { args: {} },
+  clearWorkspaceDomains: {
+    args: { domains: "array containing paper, ai, lenses, and/or generators" },
+  },
 };
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
+
+export const CLEARABLE_DOMAINS = ["paper", "ai", "lenses", "generators"];
+export const COMPANION_LLM_TIMEOUT_MS = 9000;
+
+/**
+ * Deterministic fast path for high-confidence destructive workspace commands.
+ * It deliberately requires both destructive/all language and named app domains.
+ */
+export function parseAdministrativeCommand(text) {
+  const normalized = String(text || "")
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return null;
+
+  const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized);
+  const bulk = /\b(all|everything|every single thing|entire|whole)\b/.test(normalized);
+  if (!destructive || !bulk) return null;
+
+  const domains = [];
+  if (/\b(white\s*board|whiteboard|paper|canvas|current page)\b/.test(normalized)) domains.push("paper");
+  if (/\b(ai space|ai nodes?|artificial intelligence space)\b/.test(normalized)) domains.push("ai");
+  if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.push("lenses");
+  if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.push("generators");
+
+  return domains.length ? { kind: "clear-workspace", domains } : null;
+}
 
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
   const verbDoc = Object.entries(COMPANION_VERBS)
@@ -68,7 +112,9 @@ Rules:
 - If the user asks you to DO something concrete (e.g. "make an investment memo lens with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
 - You can do ANYTHING a hand can: move/edit/delete/select objects, tidy the page (organizePage), add stickies/callouts/diagrams, rename the page, zoom to things, reposition AI nodes, and edit any lens — including the built-in primitives (compress, expand, explore, research, invert, reframe, merge, transcend) via editFunction, editLensByInstruction, or openFunctionEditor.
 - Lens lifecycle: forkLens copies a lens to evolve separately; mergeLenses composes two into one compound; captureThread turns the path that produced an object (paper item or AI node) into a lens.
+- Lens structure: lenses are step pipelines that can FORK into multiple outputs — a branch point runs the shared steps once, then each branch continues from that intermediate result and produces its own output node (e.g. input → expand → branch "one pager" + branch "investment memo" = two outputs per run). Build with addFunctionStep (new step, or use an existing lens/primitive via "use"), addFunctionBranch (fork at a step), setFunctionStep (rename/rewrite a step's prompt), saveFunction (commit). These are the same edits the lens editor makes, so you can build a branched lens end to end.
 - Generator lifecycle: newGenerator creates an empty ◇N placeholder; attachToGenerator accumulates observations onto it; graduateGenerator names it once understood; probeGenerator expresses its structure in another domain; makeLensFromGenerator turns its structure into a reusable lens.
+- For bulk deletion, call clearWorkspaceDomains once with every requested domain. It only stages a confirmation; destructive clearing never happens without the user's explicit confirmation. "Functions" means user-created lenses, while "structures" means generators.
 - Multi-part requests are fine: chain as many steps as needed, in the order the user asked. A failed step is skipped, the rest still run.
 - Interleave short caption verbs so the user understands each move.
 - Use "last" to refer to the thing just created. Use text fragments to refer to existing items/functions.

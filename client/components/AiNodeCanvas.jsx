@@ -12,6 +12,7 @@ import {
   AI_DOT_ONLY_THRESHOLD,
   AI_BLEND_ZOOM_START,
   clampAiCamera,
+  clampAiScale,
   nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
@@ -232,6 +233,7 @@ export default function AiNodeCanvas({
       {
         onWheelActive: () => setWheelZooming(true),
         onWheelIdle: () => setWheelZooming(false),
+        clampScale: clampAiScale,
       }
     );
   }, [onCameraChange, viewportRef]);
@@ -1017,13 +1019,12 @@ export default function AiNodeCanvas({
               </feMerge>
             </filter>
           </defs>
-          {edges.map(({ id, from, to, kind, label }, edgeIdx) => {
+          {edges.map(({ id, from, to, kind, label }) => {
             if (!from || !to) return null;
             const fromView = nodeEdgeView(from);
             const toView = nodeEdgeView(to);
             const geom = edgeGeometry(from, to, {
               bundleOffset: bundleOffsets.get(id) || 0,
-              curveSign: edgeIdx % 2 === 0 ? 1 : -1,
               invScale,
               fromCellWeight: fromView.cellWeight,
               toCellWeight: toView.cellWeight,

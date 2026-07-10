@@ -47,4 +47,30 @@ describe("canvas-navigation", () => {
     assert.ok(wheelZoomFactor({ deltaY: 120 }) < 1);
     assert.ok(wheelZoomFactor({ deltaY: -120 }) > 1);
   });
+
+  it("zooming in at the max-scale clamp is a no-op (no sideways drift)", () => {
+    const clamp = (s) => Math.max(0.05, Math.min(3.2, s));
+    const cam = { x: -500, y: -300, scale: 3.2 };
+    const next = applyWheelToCamera({ deltaY: -100, ctrlKey: true }, cam, 200, 150, clamp);
+    assert.equal(next, null);
+    const out = applyWheelToCamera(
+      { deltaY: 100, ctrlKey: true },
+      { ...cam, scale: 0.05 },
+      200,
+      150,
+      clamp
+    );
+    assert.equal(out, null);
+  });
+
+  it("clamped zoom derives translation from the clamped scale (anchor preserved)", () => {
+    const clamp = (s) => Math.max(0.05, Math.min(3.2, s));
+    const cam = { x: 40, y: 20, scale: 3.1 };
+    const next = applyWheelToCamera({ deltaY: -400, ctrlKey: true }, cam, 100, 100, clamp);
+    assert.ok(Math.abs(next.scale - 3.2) < 1e-9);
+    const wx = (100 - cam.x) / cam.scale;
+    const wy = (100 - cam.y) / cam.scale;
+    assert.ok(Math.abs(wx * next.scale + next.x - 100) < 1e-6);
+    assert.ok(Math.abs(wy * next.scale + next.y - 100) < 1e-6);
+  });
 });

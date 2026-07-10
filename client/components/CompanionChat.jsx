@@ -67,6 +67,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
       speak(say);
     } catch (err) {
       const msg = err?.message || "something went wrong — try again";
+      setDraft(text);
       setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
     } finally {
       setBusy(false);
@@ -224,7 +225,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
             {m.text}
           </div>
         ))}
-        {busy && <div className="companion-msg companion thinking">thinking…</div>}
+        {busy && <div className="companion-msg companion thinking">on it — checking what I can do…</div>}
         {playing && (
           <div className="companion-playing">
             <span>demonstrating{director?.scriptTitle ? ` — ${director.scriptTitle}` : ""}…</span>

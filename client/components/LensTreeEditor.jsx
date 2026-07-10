@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PRIMITIVE_NAMES } from "../../shared/transform-primitives.js";
+import { operatorHasFork, branchOutputCount } from "../../shared/operator-branching.js";
 import {
   FN_PALETTE_MIME,
   FN_STEP_MIME,
+  addBranchAtStep,
   addLeafStep,
   addPipelineStep,
   buildDraftMap,
@@ -96,6 +98,7 @@ export default function LensTreeEditor({
   const [error, setError] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const [toast, setToast] = useState(null);
+  const [strandDrag, setStrandDrag] = useState(null);
   const clipboardRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -110,6 +113,14 @@ export default function LensTreeEditor({
   const focusPath = useMemo(
     () => buildFocusPath(focusId, rootId, draftMap),
     [focusId, rootId, draftMap]
+  );
+  const treeHasFork = useMemo(
+    () => (rootDraft ? operatorHasFork(rootDraft, draftMap) : false),
+    [rootDraft, draftMap]
+  );
+  const forkOutputs = useMemo(
+    () => (treeHasFork ? branchOutputCount(rootDraft, draftMap) : 1),
+    [treeHasFork, rootDraft, draftMap]
   );
 
   useEffect(() => {
@@ -212,8 +223,40 @@ export default function LensTreeEditor({
     const target = focusId;
     if (!target || target === rootId) return;
     setDraftOps((ops) => duplicateStep(ops, target, newId));
-    showHint("forked step");
+    showHint("duplicated step");
   }, [focusId, rootId, showHint]);
+
+  /** Drag a strand out of a step: continue its lane or fork a new branch. */
+  const branchFromStep = useCallback(
+    (stepId, partial) => {
+      if (!stepId || stepId === rootId) return;
+      const res = addBranchAtStep(draftOps, stepId, partial || {}, newId);
+      if (!res.stepId) return;
+      setDraftOps(res.draftOps);
+      setFocusId(res.stepId);
+      showHint(res.forked ? "new branch — name it on the right" : "step added");
+    },
+    [draftOps, rootId, showHint]
+  );
+
+  const beginStrandDrag = useCallback(
+    (e, stepId) => {
+      if (stepId === rootId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setStrandDrag({ stepId, x: e.clientX, y: e.clientY });
+      const onMove = (ev) => setStrandDrag({ stepId, x: ev.clientX, y: ev.clientY });
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        setStrandDrag(null);
+        branchFromStep(stepId);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [branchFromStep, rootId]
+  );
 
   const deleteFocused = useCallback(() => {
     const target = focusId;
@@ -448,6 +491,22 @@ export default function LensTreeEditor({
               onClick={(e) => {
                 if (e.target === e.currentTarget) setFocusId(null);
               }}
+              onDragOver={(e) => {
+                if (
+                  rootDraft &&
+                  (e.dataTransfer.types.includes(FN_STEP_MIME) ||
+                    e.dataTransfer.types.includes(FN_PALETTE_MIME))
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              onDrop={(e) => {
+                // Dropping on the open canvas appends to the end of the flow.
+                if (!rootDraft) return;
+                e.preventDefault();
+                const payload = readDropPayload(e, opMap);
+                if (payload) applyDrop(rootId, 9999, payload);
+              }}
             >
               {rootDraft ? (
                 <LensFlowView
@@ -461,6 +520,7 @@ export default function LensTreeEditor({
                   onDrop={applyDrop}
                   onAddLeaf={(parentId) => addStepAfter("leaf", parentId)}
                   onAddGroup={(parentId) => addStepAfter("pipeline", parentId)}
+                  onStrandDown={beginStrandDrag}
                   opMap={opMap}
                 />
               ) : (
@@ -532,16 +592,22 @@ export default function LensTreeEditor({
                     <div className="fn-output-controls">
                       <label>outputs</label>
                       <div className="fn-output-controls-row">
-                        <select
-                          value={Number(inspectorOp.outputCount) > 1 ? Number(inspectorOp.outputCount) : 1}
-                          onChange={(e) => patchOp(inspectorOp.id, { outputCount: Number(e.target.value) })}
-                          title="How many distinct outputs this lens produces per run"
-                        >
-                          <option value={1}>1 output</option>
-                          <option value={2}>2 outputs</option>
-                          <option value={3}>3 outputs</option>
-                          <option value={4}>4 outputs</option>
-                        </select>
+                        {treeHasFork ? (
+                          <span className="fn-output-fork-note" title="Each leaf branch produces its own output">
+                            ⑂ {forkOutputs} outputs · one per branch
+                          </span>
+                        ) : (
+                          <select
+                            value={Number(inspectorOp.outputCount) > 1 ? Number(inspectorOp.outputCount) : 1}
+                            onChange={(e) => patchOp(inspectorOp.id, { outputCount: Number(e.target.value) })}
+                            title="How many distinct outputs this lens produces per run"
+                          >
+                            <option value={1}>1 output</option>
+                            <option value={2}>2 outputs</option>
+                            <option value={3}>3 outputs</option>
+                            <option value={4}>4 outputs</option>
+                          </select>
+                        )}
                         <select
                           value={inspectorOp.outputBlockType || "text"}
                           onChange={(e) => patchOp(inspectorOp.id, { outputBlockType: e.target.value })}
@@ -558,8 +624,16 @@ export default function LensTreeEditor({
 
                 {focusId && focusId !== rootId && (
                   <div className="fn-step-actions">
+                    <button
+                      type="button"
+                      className="fn-step-action"
+                      onClick={() => branchFromStep(focusId)}
+                      title="Branch from this step — each branch produces its own output"
+                    >
+                      ⌁ branch
+                    </button>
                     <button type="button" className="fn-step-action" onClick={duplicateFocused}>
-                      fork
+                      duplicate
                     </button>
                     <button type="button" className="fn-step-action" onClick={mergeWithNext}>
                       merge →
@@ -629,6 +703,12 @@ export default function LensTreeEditor({
           </aside>
         </div>
 
+        {strandDrag && (
+          <div className="fn-strand-ghost" style={{ left: strandDrag.x + 10, top: strandDrag.y + 6 }}>
+            ⌁ new branch
+          </div>
+        )}
+
         <div className="fn-foot">
           {toast && <span className="fn-toast">{toast}</span>}
           {!isCreate && sourceRoot && (
@@ -647,6 +727,21 @@ export default function LensTreeEditor({
       </div>
     </div>
   );
+}
+
+/** Decode a chip / step / clipboard drag payload from a drop event. */
+function readDropPayload(e, opMap) {
+  const stepId = e.dataTransfer.getData(FN_STEP_MIME);
+  if (stepId) return { type: "step", stepId };
+  const raw = e.dataTransfer.getData(FN_PALETTE_MIME);
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    if (data.opId && opMap[data.opId]) return { type: "palette", op: opMap[data.opId] };
+    return { type: "clipboard", tree: data };
+  } catch {
+    return null;
+  }
 }
 
 function DropSlot({ parentId, index, dropTarget, setDropTarget, onDrop, opMap, label, horizontal }) {
@@ -669,23 +764,8 @@ function DropSlot({ parentId, index, dropTarget, setDropTarget, onDrop, opMap, l
         e.preventDefault();
         e.stopPropagation();
         setDropTarget(null);
-        const stepId = e.dataTransfer.getData(FN_STEP_MIME);
-        if (stepId) {
-          onDrop(parentId, index, { type: "step", stepId });
-          return;
-        }
-        const raw = e.dataTransfer.getData(FN_PALETTE_MIME);
-        if (!raw) return;
-        try {
-          const data = JSON.parse(raw);
-          if (data.opId && opMap[data.opId]) {
-            onDrop(parentId, index, { type: "palette", op: opMap[data.opId] });
-          } else {
-            onDrop(parentId, index, { type: "clipboard", tree: data });
-          }
-        } catch {
-          /* ignore */
-        }
+        const payload = readDropPayload(e, opMap);
+        if (payload) onDrop(parentId, index, payload);
       }}
     >
       {active && <span className="fn-drop-label">{label || "drop"}</span>}
@@ -704,6 +784,7 @@ function LensFlowView({
   onDrop,
   onAddLeaf,
   onAddGroup,
+  onStrandDown,
   opMap,
 }) {
   if (rootOp.kind === "prompt") {
@@ -747,8 +828,112 @@ function LensFlowView({
           onDrop={onDrop}
           onAddLeaf={onAddLeaf}
           onAddGroup={onAddGroup}
+          onStrandDown={onStrandDown}
           opMap={opMap}
         />
+    </div>
+  );
+}
+
+/** A fork point: sibling branches stacked under it, each ending in its own output. */
+function LensFlowFork({
+  forkOp,
+  rootId,
+  draftMap,
+  focusId,
+  onFocus,
+  dropTarget,
+  setDropTarget,
+  onDrop,
+  onAddLeaf,
+  onAddGroup,
+  onStrandDown,
+  opMap,
+}) {
+  const branches = (forkOp.steps || []).map((id) => draftMap[id]).filter(Boolean);
+  return (
+    <div
+      className={"fn-flow-fork" + (focusId === forkOp.id ? " focused" : "")}
+      data-step-id={forkOp.id}
+    >
+      <button
+        type="button"
+        className="fn-flow-fork-head"
+        onClick={(e) => {
+          e.stopPropagation();
+          onFocus(forkOp.id);
+        }}
+        title="Fork — each branch runs from here and produces its own output"
+      >
+        ⑂ {branches.length} branch{branches.length === 1 ? "" : "es"}
+      </button>
+      <div className="fn-flow-fork-branches">
+        {branches.map((branch, bi) => {
+          const branchEndsInFork =
+            branch.fork ||
+            (branch.kind === "pipeline" &&
+              branch.steps?.length &&
+              draftMap[branch.steps[branch.steps.length - 1]]?.fork);
+          return (
+            <div key={branch.id} className="fn-flow-branch" data-branch-index={bi}>
+              {branch.kind === "pipeline" && !branch.fork ? (
+                <div className="fn-flow-group-box">
+                  <LensFlowRow
+                    parentId={branch.id}
+                    parentOp={branch}
+                    rootId={rootId}
+                    draftMap={draftMap}
+                    focusId={focusId}
+                    onFocus={onFocus}
+                    dropTarget={dropTarget}
+                    setDropTarget={setDropTarget}
+                    onDrop={onDrop}
+                    onAddLeaf={onAddLeaf}
+                    onAddGroup={onAddGroup}
+                    onStrandDown={onStrandDown}
+                    opMap={opMap}
+                  />
+                </div>
+              ) : branch.fork ? (
+                <LensFlowFork
+                  forkOp={branch}
+                  rootId={rootId}
+                  draftMap={draftMap}
+                  focusId={focusId}
+                  onFocus={onFocus}
+                  dropTarget={dropTarget}
+                  setDropTarget={setDropTarget}
+                  onDrop={onDrop}
+                  onAddLeaf={onAddLeaf}
+                  onAddGroup={onAddGroup}
+                  onStrandDown={onStrandDown}
+                  opMap={opMap}
+                />
+              ) : (
+                <LensFlowCard
+                  op={branch}
+                  stepIndex={bi + 1}
+                  rootId={rootId}
+                  focusId={focusId}
+                  onFocus={onFocus}
+                  draggable
+                  onStrandDown={onStrandDown}
+                  dropAfter={(payload) => onDrop(forkOp.id, bi + 1, payload)}
+                  opMap={opMap}
+                />
+              )}
+              {!branchEndsInFork && (
+                <>
+                  <span className="fn-flow-arrow" aria-hidden>
+                    →
+                  </span>
+                  <span className="fn-flow-port">output</span>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -766,9 +951,11 @@ function LensFlowRow({
   onDrop,
   onAddLeaf,
   onAddGroup,
+  onStrandDown,
   opMap,
 }) {
   const steps = parentOp?.steps?.map((id) => draftMap[id]).filter(Boolean) || [];
+  const lastIsFork = steps.length > 0 && !!steps[steps.length - 1].fork;
 
   return (
     <div className={"fn-flow-lane" + (isRoot ? " root" : "")}>
@@ -783,6 +970,17 @@ function LensFlowRow({
           <span className="fn-flow-group-count">
             {steps.length} step{steps.length === 1 ? "" : "s"}
           </span>
+          {onStrandDown && (
+            <span
+              className="fn-flow-branch-handle"
+              title="drag out to branch from this group"
+              data-branch-handle={parentId}
+              onPointerDown={(e) => onStrandDown(e, parentId)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              ⌁
+            </span>
+          )}
         </button>
       )}
       <div className="fn-flow-row">
@@ -835,7 +1033,22 @@ function LensFlowRow({
         ) : (
           steps.map((step, i) => (
             <React.Fragment key={step.id}>
-              {step.kind === "pipeline" ? (
+              {step.kind === "pipeline" && step.fork ? (
+                <LensFlowFork
+                  forkOp={step}
+                  rootId={rootId}
+                  draftMap={draftMap}
+                  focusId={focusId}
+                  onFocus={onFocus}
+                  dropTarget={dropTarget}
+                  setDropTarget={setDropTarget}
+                  onDrop={onDrop}
+                  onAddLeaf={onAddLeaf}
+                  onAddGroup={onAddGroup}
+                  onStrandDown={onStrandDown}
+                  opMap={opMap}
+                />
+              ) : step.kind === "pipeline" ? (
                 <div className="fn-flow-group-box">
                   <LensFlowRow
                     parentId={step.id}
@@ -849,6 +1062,7 @@ function LensFlowRow({
                     onDrop={onDrop}
                     onAddLeaf={onAddLeaf}
                     onAddGroup={onAddGroup}
+                    onStrandDown={onStrandDown}
                     opMap={opMap}
                   />
                 </div>
@@ -860,11 +1074,16 @@ function LensFlowRow({
                   focusId={focusId}
                   onFocus={onFocus}
                   draggable={step.id !== rootId}
+                  onStrandDown={onStrandDown}
+                  dropAfter={(payload) => onDrop(parentId, i + 1, payload)}
+                  opMap={opMap}
                 />
               )}
-              <span className="fn-flow-arrow" aria-hidden>
-                →
-              </span>
+              {!step.fork && (
+                <span className="fn-flow-arrow" aria-hidden>
+                  →
+                </span>
+              )}
               <DropSlot
                 parentId={parentId}
                 index={i + 1}
@@ -878,7 +1097,7 @@ function LensFlowRow({
             </React.Fragment>
           ))
         )}
-        {isRoot && steps.length > 0 && (
+        {isRoot && steps.length > 0 && !lastIsFork && (
           <>
             <span className="fn-flow-arrow" aria-hidden>
               →
@@ -898,7 +1117,7 @@ function LensFlowRow({
   );
 }
 
-function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable }) {
+function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable, onStrandDown, dropAfter, opMap }) {
   const cardRef = useRef(null);
   const isFocused = focusId === op.id;
 
@@ -912,6 +1131,7 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable }) {
     <div
       ref={cardRef}
       className={"fn-flow-card" + (isFocused ? " focused" : "")}
+      data-step-id={op.id}
       draggable={draggable}
       onDragStart={(e) => {
         if (!draggable) {
@@ -920,6 +1140,23 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable }) {
         }
         e.dataTransfer.setData(FN_STEP_MIME, op.id);
         e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragOver={(e) => {
+        if (
+          dropAfter &&
+          (e.dataTransfer.types.includes(FN_STEP_MIME) ||
+            e.dataTransfer.types.includes(FN_PALETTE_MIME))
+        ) {
+          e.preventDefault();
+        }
+      }}
+      onDrop={(e) => {
+        // Dropping a chip onto a step inserts right after it.
+        if (!dropAfter) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const payload = readDropPayload(e, opMap || {});
+        if (payload && payload.stepId !== op.id) dropAfter(payload);
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -933,6 +1170,17 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable }) {
           </span>
         )}
         <span className="fn-flow-step-num">{stepIndex}</span>
+        {onStrandDown && op.id !== rootId && (
+          <span
+            className="fn-flow-branch-handle"
+            title="drag out to branch — each branch makes its own output"
+            data-branch-handle={op.id}
+            onPointerDown={(e) => onStrandDown(e, op.id)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            ⌁
+          </span>
+        )}
       </div>
       <div className="fn-flow-card-name">{op.name || "unnamed step"}</div>
       {op.description && <div className="fn-flow-card-desc">{op.description}</div>}

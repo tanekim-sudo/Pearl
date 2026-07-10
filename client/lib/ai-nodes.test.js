@@ -176,6 +176,30 @@ describe("ai-nodes layout", () => {
     assert.ok(dist > 28, `expected circle edge attach, got dist=${dist}`);
   });
 
+  it("edgeGeometry end tangent points radially into the child (arrowhead never sideways)", () => {
+    const from = { x: 0, y: 0, radius: 26 };
+    const targets = [
+      { x: 500, y: 300, radius: 26 },
+      { x: 130, y: 40, radius: 26 },
+    ];
+    for (const to of targets) {
+      for (const curveSign of [1, -1]) {
+        for (const bundleOffset of [0, 14, 28, -28]) {
+          const g = edgeGeometry(from, to, { curveSign, bundleOffset });
+          // marker-end with orient="auto" follows the tangent p3 - p2
+          const tangent = Math.atan2(g.y2 - g.cy2, g.x2 - g.cx2);
+          const radialIn = Math.atan2(to.y - g.y2, to.x - g.x2);
+          let diff = Math.abs(tangent - radialIn);
+          if (diff > Math.PI) diff = 2 * Math.PI - diff;
+          assert.ok(
+            diff < 0.02,
+            `tangent off by ${((diff * 180) / Math.PI).toFixed(1)}° (sign=${curveSign}, bundle=${bundleOffset})`
+          );
+        }
+      }
+    }
+  });
+
   it("edgeGeometry skips degenerate coincident nodes", () => {
     const node = { x: 50, y: 50, radius: 30 };
     const geom = edgeGeometry(node, { ...node, id: "b" });

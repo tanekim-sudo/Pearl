@@ -3931,6 +3931,84 @@ body {
   border-color: var(--ink);
   color: var(--ink);
 }
+/* ---- branching: fork points + strand handle ---- */
+.fn-flow-fork {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 2px solid var(--line-2);
+  border-radius: 4px;
+  padding: 6px 0 6px 14px;
+}
+.fn-flow-fork.focused {
+  border-left-color: var(--ink);
+}
+.fn-flow-fork-head {
+  align-self: flex-start;
+  border: 1px dashed var(--line-2);
+  background: none;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  color: var(--faint);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.fn-flow-fork-head:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.fn-flow-fork-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fn-flow-branch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+}
+.fn-flow-branch-handle {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 1;
+  padding: 1px 5px;
+  border-radius: 999px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.fn-flow-branch-handle:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--card) 70%, var(--paper));
+}
+.fn-flow-card-top .fn-flow-branch-handle {
+  margin-left: auto;
+}
+.fn-strand-ghost {
+  position: fixed;
+  z-index: 400;
+  pointer-events: none;
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px dashed var(--line-2);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.fn-output-fork-note {
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px dashed var(--line-2);
+  border-radius: 999px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
 .fn-drop-slot.horizontal {
   flex-shrink: 0;
   width: 8px;

@@ -11,6 +11,21 @@ import {
   isExpansionOperator,
 } from "../shared/operator-direction.js";
 import {
+  operatorHasFork,
+  buildBranchPlan,
+  branchOutputNames,
+} from "../shared/operator-branching.js";
+import {
+  addBranchAtStep,
+  addLeafStep as ftAddLeafStep,
+  buildDraftMap as ftBuildDraftMap,
+  findParentId as ftFindParentId,
+  stepIndexInParent as ftStepIndexInParent,
+  ensurePipelineRoot as ftEnsurePipelineRoot,
+  pasteTreeAt as ftPasteTreeAt,
+  opToClipboardTree as ftOpToClipboardTree,
+} from "./lib/function-tree-editor.js";
+import {
   viaFromOp,
   abstractStepFromVia,
   buildCaptureMetadata,
@@ -86,7 +101,12 @@ import { useSupabaseSession } from "./lib/auth-session.js";
 import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
 import { planBadgeLabel } from "./lib/plans.js";
 import { useUserPlan } from "./lib/use-user-plan.js";
-import { useBoardCloudSync, AI_NODES_KEY } from "./lib/board-sync.js";
+import {
+  useBoardCloudSync,
+  AI_NODES_KEY,
+  readLocalBoardSnapshot,
+  writeLocalBoardSnapshot,
+} from "./lib/board-sync.js";
 import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
@@ -107,6 +127,7 @@ import {
   makeCommit,
   commitCount,
 } from "./lib/cognition-git.js";
+import { findDuplicateLens } from "./lib/lens-dedupe.js";
 import FunctionsColumn from "./components/FunctionsColumn.jsx";
 import {
   makeAiNode,
@@ -141,7 +162,14 @@ import CompanionChat from "./components/CompanionChat.jsx";
 import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
 import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
-import { buildCompanionSystemPrompt, parseCompanionReply, matchDemoLocally } from "./lib/companion-intent.js";
+import {
+  buildCompanionSystemPrompt,
+  parseAdministrativeCommand,
+  parseCompanionReply,
+  matchDemoLocally,
+  CLEARABLE_DOMAINS,
+  COMPANION_LLM_TIMEOUT_MS,
+} from "./lib/companion-intent.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
@@ -808,6 +836,7 @@ function materializeTree(node, role, top, out, opts = {}) {
   if (Array.isArray(node.steps) && node.steps.length) {
     const steps = node.steps.map((s) => materializeTree(s, role, false, out, opts));
     const pipeline = { id, name, description, kind: "pipeline", steps, role, top };
+    if (node.fork) pipeline.fork = true;
     if (captured) pipeline.captured = true;
     if (captureMeta && top) pipeline.captureMeta = captureMeta;
     out.push(pipeline);
@@ -863,7 +892,8 @@ function formatPipelineInput(originalMaterial, currentMaterial) {
 function serializeTree(node, opMap, depth = 0) {
   if (!node) return "";
   const pad = "  ".repeat(depth);
-  let line = `${pad}• ${node.name}`;
+  let line = `${pad}${node.fork ? "⑂" : "•"} ${node.name}`;
+  if (node.fork) line += " (fork — each child branch runs from here and produces its own output)";
   if (node.description) line += ` — ${node.description}`;
   if (node.kind === "prompt" && node.prompt) {
     line += `\n${pad}  prompt: ${node.prompt.slice(0, 220)}${node.prompt.length > 220 ? "…" : ""}`;
@@ -881,6 +911,7 @@ function opToJsonTree(op, opMap) {
   if (op.kind === "pipeline" && op.steps?.length) {
     return {
       ...base,
+      ...(op.fork ? { fork: true } : {}),
       steps: op.steps.map((id) => opToJsonTree(opMap[id], opMap)).filter(Boolean),
     };
   }
@@ -1901,11 +1932,12 @@ async function runClaude(prompt, text, opts = {}) {
     maxTokens = null,
     research = false,
     timeoutMs = null,
+    clientAbortMs = CLIENT_ABORT_MS,
     compact = false,
   } = opts;
   const controller = new AbortController();
   const serverTimeoutMs = timeoutMs || PHASE_TIMEOUT.synthesizeComposite;
-  const timer = setTimeout(() => controller.abort(), CLIENT_ABORT_MS);
+  const timer = setTimeout(() => controller.abort(), clientAbortMs);
   try {
     const res = await fetch("/api/run", {
       method: "POST",
@@ -2094,6 +2126,7 @@ export default function App() {
   const [tourStepIndex, setTourStepIndex] = useState(0);
   const [expandToolsSignal, setExpandToolsSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
+  const [pendingCompanionClear, setPendingCompanionClear] = useState(null);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const supaAuth = useSupabaseSession();
   const [authOpen, setAuthOpen] = useState(
@@ -4214,6 +4247,56 @@ export default function App() {
     return spawnAiOutputs(texts, sourceIds, via, spawnOpts).map((n) => n.id);
   }
 
+  /** Run a forked lens as a DAG: prefix once, one output per leaf branch. */
+  async function runBranchedOperatorJob(jobId, execOp, map, material, image, targetIds, opts = {}) {
+    const plan = buildBranchPlan(execOp, map);
+    const outputNames = branchOutputNames(execOp, map);
+    const totalOutputs = outputNames.length;
+    patchJob(jobId, {
+      step: `${execOp.name} · ${totalOutputs} outputs`,
+      startedAt: Date.now(),
+      estimatedMs: scaleEta(ETA.default * Math.max(2, totalOutputs)),
+    });
+    const onProgress = (step) => patchJob(jobId, { step });
+    let produced = 0;
+
+    async function runPlanNode(node, mat, img) {
+      let current = mat;
+      let first = true;
+      for (const sid of node.segments) {
+        const stepOp = map[sid];
+        if (!stepOp) continue;
+        onProgress(stepOp.name || "step");
+        const out = await runMoveSequenceStep(stepOp, map, current, first ? img : null, onProgress, operators);
+        if (!out?.trim()) throw new Error(`empty output at ${stepOp.name || "step"}`);
+        current = out.trim();
+        first = false;
+      }
+      if (node.branches) {
+        for (const branch of node.branches) {
+          await runPlanNode(branch, current, null);
+        }
+        return;
+      }
+      const lastOp = map[node.segments[node.segments.length - 1]] || execOp;
+      produced += 1;
+      onProgress(`output ${produced}/${totalOutputs} · ${lastOp.name || "output"}`);
+      let polished = isTransformPrimitive(lastOp)
+        ? sanitizePrimitiveOutput(current)
+        : await polishDeliverable(current, lastOp, material);
+      if (!polished?.trim()) polished = current;
+      spawnAiOutputs(
+        [polished],
+        targetIds,
+        { ...viaFromOp(execOp, targetIds), name: `${execOp.name} · ${lastOp.name || "output"}` },
+        { sourcePreview: opts.sourcePreview, blockType: opts.blockType }
+      );
+    }
+
+    await runPlanNode(plan, material, image);
+    if (!produced) throw new Error("forked lens produced no outputs");
+  }
+
   async function executeOperatorJob(jobId, op, targetIds, atClient, opts = {}, mapOverride = null) {
     const idSet = new Set(targetIds);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
@@ -4258,6 +4341,17 @@ export default function App() {
 
     if (opts.highlightQuote) {
       text = `HIGHLIGHTED:\n"""\n${opts.highlightQuote.trim()}\n"""\n\nFULL TEXT:\n"""\n${(opts.highlightContext || text).trim()}\n"""`;
+    }
+
+    // Branched lens: the shared prefix runs once, each branch continues from
+    // the fork's intermediate result, and every leaf branch spawns its own
+    // output node. Supersedes the declared output-count contract.
+    if (execOp.kind === "pipeline" && operatorHasFork(execOp, map)) {
+      await runBranchedOperatorJob(jobId, execOp, map, text, image, targetIds, {
+        sourcePreview: gathered.preview,
+        blockType: execOp.outputBlockType || null,
+      });
+      return;
     }
 
     // Declared output contract: a lens can ask for N distinct outputs.
@@ -4830,7 +4924,26 @@ export default function App() {
     showToast(`move · ${name}`);
   }
 
+  /**
+   * Shared duplicate guard for every save-as-lens path: same name (trimmed,
+   * case-insensitive) or same prompt/pipeline content as an existing lens
+   * asks before saving. Returns true when it's fine to proceed.
+   */
+  function confirmLensNotDuplicate(root, draftMap, { excludeId = null } = {}) {
+    const dupe = findDuplicateLens(operators, root, draftMap, { excludeId });
+    if (!dupe) return true;
+    return window.confirm(`“${dupe.name}” already exists — this is a duplicate. save anyway?`);
+  }
+
   function saveLensTree(oldRootId, newOps, { commitMessage = "" } = {}) {
+    const draftRootId = newOps.length
+      ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id
+      : null;
+    const draftRoot = newOps.find((o) => o.id === draftRootId);
+    const draftOpMap = Object.fromEntries(newOps.map((o) => [o.id, o]));
+    if (draftRoot && !confirmLensNotDuplicate(draftRoot, draftOpMap, { excludeId: oldRootId })) {
+      return;
+    }
     setOperators((arr) => {
       let next = arr;
       const newRootId = newOps.length ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id : null;
@@ -5226,6 +5339,7 @@ export default function App() {
         ? { ...o, captureMeta: { ...(o.captureMeta || meta), cognitiveTransfer } }
         : o
     );
+    if (rootOp && !confirmLensNotDuplicate(rootOp, draftMap)) return null;
     setOperators((prev) => [...prev, ...opsWithMeta]);
     if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
     if (cognitiveTransfer) enrichOperatorTransferAsync(rootId, cognitiveTransfer, { domainLabel, materialSample });
@@ -5330,6 +5444,7 @@ export default function App() {
         ? { ...o, captureMeta: { ...(o.captureMeta || meta), cognitiveTransfer } }
         : o
     );
+    if (rootOp && !confirmLensNotDuplicate(rootOp, draftMap)) return null;
     setOperators((prev) => [...prev, ...opsWithMeta]);
     if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
     if (cognitiveTransfer) enrichOperatorTransferAsync(rootId, cognitiveTransfer, opts);
@@ -6103,6 +6218,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (!tree?.name) tree = struct.viewLens || viewingLensTreeFromSymbol(struct);
     const { ops, rootId } = treeToOperators(tree, { top: true });
     const rootOp = ops.find((o) => o.id === rootId);
+    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+    if (rootOp && !confirmLensNotDuplicate(rootOp, draftMap)) return null;
     setOperators((prev) => [...prev, ...ops]);
     if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
     focusRailPane(RAIL_TRANSFORMATIONS);
@@ -6318,6 +6435,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     };
     const { ops, rootId } = treeToOperators(tree, { top: true });
     const rootOp = ops.find((o) => o.id === rootId);
+    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
+    if (rootOp && !confirmLensNotDuplicate(rootOp, draftMap)) return;
     setOperators((prev) => [
       ...prev,
       ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
@@ -6567,6 +6686,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
   const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
+  // Editor palette: only the user's own top-level lenses, deduped by name —
+  // never orphan sub-steps of saved functions.
+  const paletteLenses = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const o of operators) {
+      if (!o.top || o.primitive || o.role || o.move) continue;
+      const key = (o.name || "").trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(o);
+      if (out.length >= 12) break;
+    }
+    return out;
+  }, [operators]);
   const activeTransformation =
     displayTransformations.find((l) => l.id === activeTransformationId || lensRootOpId(l) === activeTransformationId) || null;
   const transformationRepoGroups = useMemo(() => groupLensesByRepo(displayTransformations), [displayTransformations]);
@@ -9407,6 +9541,29 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     );
   }
 
+  /** Editable draft of a lens subtree (leaf roots get wrapped in a pipeline). */
+  function directorLensDraft(op) {
+    let draft = collectDraftOps(op, { ...opMap, [op.id]: opMap[op.id] || op });
+    let rootId = op.id;
+    if (draft.find((o) => o.id === rootId)?.kind !== "pipeline") {
+      const wrapped = ftEnsurePipelineRoot(draft, rootId, uid);
+      draft = wrapped.draftOps;
+      rootId = wrapped.rootId;
+    }
+    return { draft, rootId };
+  }
+
+  /** Fuzzy step lookup inside a lens draft by name or id. */
+  function directorFindStepId(draft, rootId, ref) {
+    if (!ref) return null;
+    if (draft.some((o) => o.id === ref && o.id !== rootId)) return ref;
+    const needle = String(ref).toLowerCase();
+    const exact = draft.find((o) => o.id !== rootId && (o.name || "").toLowerCase() === needle);
+    if (exact) return exact.id;
+    const part = draft.find((o) => o.id !== rootId && (o.name || "").toLowerCase().includes(needle));
+    return part?.id || null;
+  }
+
   function directorItemClientCenter(item) {
     const bb = itemWorldBBox(item);
     const cx = bb ? (bb.minx + bb.maxx) / 2 : item.x;
@@ -9486,6 +9643,94 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       list.find((s) => (s.title || "").toLowerCase().includes(needle)) ||
       null
     );
+  }
+
+  function companionClearCounts(domains) {
+    const requested = new Set(domains);
+    const lensCount = operators.filter((o) => !o.primitive && (o.top || o.move)).length;
+    return {
+      paper: requested.has("paper")
+        ? itemsRef.current.filter((it) => it.type !== "link").length
+        : 0,
+      ai: requested.has("ai") ? aiNodesRef.current.length : 0,
+      lenses: requested.has("lenses")
+        ? Math.max(lensCount, transformationRepos.length)
+        : 0,
+      generators: requested.has("generators") ? lensesRef.current.length : 0,
+    };
+  }
+
+  function stageCompanionClear(domains) {
+    const normalized = CLEARABLE_DOMAINS.filter((domain) => domains?.includes(domain));
+    if (!normalized.length) return;
+    setPendingCompanionClear({
+      domains: normalized,
+      counts: companionClearCounts(normalized),
+    });
+  }
+
+  function confirmCompanionClear() {
+    const pending = pendingCompanionClear;
+    if (!pending) return;
+    const domains = new Set(pending.domains);
+    setPendingCompanionClear(null);
+
+    if (domains.has("paper")) {
+      localStorage.setItem(ITEMS_KEY, "[]");
+      localStorage.removeItem(ARTIFACT_KEY);
+      localStorage.removeItem(OLD_SEEDS_KEY);
+      saveItemHistoryLog({});
+      historyRef.current = { past: [], future: [] };
+      setItems([]);
+      setItemHistoryLog({});
+      setSelection([]);
+      setEditing(null);
+      setDraft(null);
+      setLasso(null);
+      setHighlight(null);
+      setHighlightTouchIds([]);
+      setHighlightSelectionIds([]);
+      setHighlightFragments([]);
+      setStagesItemId(null);
+      setCanUndo(false);
+      setCanRedo(false);
+    }
+    if (domains.has("ai")) {
+      localStorage.setItem(AI_NODES_KEY, "[]");
+      setAiNodes([]);
+      setSelectedAiNodeIds([]);
+      setHighlightAiNodeIds([]);
+      setAiFocusedNodeId(null);
+      setAiPanel(null);
+      setWalking(null);
+      setPathWalk(null);
+    }
+    if (domains.has("lenses")) {
+      const primitives = operators.filter((o) => o.primitive);
+      const preserved = primitives.length ? primitives : freshOperators();
+      localStorage.setItem(OPERATORS_KEY, JSON.stringify(preserved));
+      localStorage.setItem(TRANSFORMATION_REPOS_KEY, "[]");
+      localStorage.setItem(ACTIVE_TRANSFORMATION_KEY, "null");
+      setOperators(preserved);
+      setTransformationRepos([]);
+      setActiveTransformationId(null);
+      setOpEditor(null);
+      setLensCompare(null);
+      setLensHistoryId(null);
+      setTransferExploreOpId(null);
+    }
+    if (domains.has("generators")) {
+      localStorage.setItem(PATTERN_LENSES_KEY, "[]");
+      localStorage.removeItem(OLD_NODES_KEY);
+      setLenses([]);
+      setLensSettingsId(null);
+      setSymbolDrawPrompt(null);
+      setSymbolDropTargetId(null);
+    }
+
+    const snapshot = readLocalBoardSnapshot();
+    writeLocalBoardSnapshot({ ...snapshot, savedAt: new Date().toISOString() });
+    showToast("Cleared the confirmed workspace content");
   }
 
   registerDirectorVerbs({
@@ -9908,6 +10153,109 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       ctx.vars.lastOpId = op.id;
       await tk.wait(800);
     },
+    // ---- lens structure: steps + branches, same edits the tree editor makes ----
+    addFunctionStep: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no lens called “${a.op}”`);
+      const { draft, rootId } = directorLensDraft(op);
+      const map = ftBuildDraftMap(draft);
+      let parentId = rootId;
+      let index = map[rootId]?.steps?.length || 0;
+      if (a.after) {
+        const afterId = directorFindStepId(draft, rootId, a.after);
+        if (afterId) {
+          parentId = ftFindParentId(afterId, map) || rootId;
+          index = ftStepIndexInParent(draft, parentId, afterId) + 1;
+        }
+      }
+      let next;
+      const useOp = a.use ? directorResolveOp(a.use, ctx) : null;
+      if (useOp) {
+        // Insert an existing lens / primitive as a step (a copy of its tree).
+        const tree = ftOpToClipboardTree(useOp, { ...opMap, [useOp.id]: useOp });
+        next = ftPasteTreeAt(draft, tree, parentId, index, uid).draftOps;
+        tk.caption(a.caption || `slot “${useOp.name}” in as a step of “${op.name}”`);
+      } else {
+        if (!a.name?.trim()) throw new Error("what is the step called?");
+        next = ftAddLeafStep(
+          draft,
+          parentId,
+          index,
+          {
+            name: a.name.trim(),
+            description: a.description || "",
+            prompt: (a.prompt || "").trim() || buildDefaultLeafPrompt(a.name, a.description),
+          },
+          uid
+        ).draftOps;
+        tk.caption(a.caption || `add a step to “${op.name}”: ${a.name.trim()}`);
+      }
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      saveLensTree(op.id, next, {
+        commitMessage: `companion: + step ${useOp ? useOp.name : a.name || ""}`.trim(),
+      });
+      ctx.vars.lastOpId = next.find((o) => o.top || o.kind === "pipeline")?.id || rootId;
+      await tk.wait(800);
+    },
+    addFunctionBranch: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no lens called “${a.op}”`);
+      if (!a.name?.trim()) throw new Error("what should the branch produce?");
+      const { draft, rootId } = directorLensDraft(op);
+      const map = ftBuildDraftMap(draft);
+      let fromId = a.from ? directorFindStepId(draft, rootId, a.from) : null;
+      if (!fromId) {
+        const rootSteps = map[rootId]?.steps || [];
+        fromId = rootSteps[rootSteps.length - 1] || null;
+      }
+      if (!fromId) throw new Error(`“${op.name}” has no step to branch from`);
+      tk.caption(a.caption || `drag a strand out of “${map[fromId]?.name || "the step"}” — a new branch, a new output`);
+      const res = addBranchAtStep(
+        draft,
+        fromId,
+        {
+          name: a.name.trim(),
+          description: a.description || "",
+          prompt: (a.prompt || "").trim() || buildDefaultLeafPrompt(a.name, a.description),
+        },
+        uid
+      );
+      if (!res.stepId) throw new Error("couldn't branch there");
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      saveLensTree(op.id, res.draftOps, {
+        commitMessage: `companion: ⑂ branch ${a.name.trim()}`,
+      });
+      ctx.vars.lastOpId = res.draftOps.find((o) => o.top || o.kind === "pipeline")?.id || rootId;
+      await tk.wait(900);
+    },
+    setFunctionStep: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no lens called “${a.op}”`);
+      const { draft, rootId } = directorLensDraft(op);
+      const stepId = directorFindStepId(draft, rootId, a.step);
+      if (!stepId) throw new Error(`no step called “${a.step}” in “${op.name}”`);
+      const patch = {};
+      if (a.name?.trim()) patch.name = a.name.trim();
+      if (a.description != null) patch.description = a.description;
+      if (a.prompt?.trim()) patch.prompt = a.prompt.trim();
+      if (!Object.keys(patch).length) throw new Error("nothing to change on that step");
+      tk.caption(a.caption || `rewrite the “${a.step}” step of “${op.name}”`);
+      const next = draft.map((o) => (o.id === stepId ? { ...o, ...patch } : o));
+      saveLensTree(op.id, next, { commitMessage: `companion: edit step ${a.step}` });
+      ctx.vars.lastOpId = next.find((o) => o.top || o.kind === "pipeline")?.id || rootId;
+      await tk.wait(700);
+    },
+    saveFunction: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no lens called “${a.op}”`);
+      const { draft, rootId } = directorLensDraft(op);
+      tk.caption(a.caption || `commit “${op.name}” — the history remembers`);
+      saveLensTree(op.id, draft, { commitMessage: a.message || `companion: save ${op.name}` });
+      ctx.vars.lastOpId = rootId;
+      await tk.wait(600);
+    },
     // ---- lenses: git for perception ----
     forkLens: async (a, tk, ctx) => {
       const rec = directorResolveLensRecord(a.lens, ctx);
@@ -10012,9 +10360,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (rootId) ctx.vars.lastOpId = rootId;
       await tk.wait(1000);
     },
+    clearPaper: async () => stageCompanionClear(["paper"]),
+    clearAiSpace: async () => stageCompanionClear(["ai"]),
+    clearUserLenses: async () => stageCompanionClear(["lenses"]),
+    clearGenerators: async () => stageCompanionClear(["generators"]),
+    clearWorkspaceDomains: async (a) => stageCompanionClear(a.domains),
   });
 
   async function handleCompanionCommand(text) {
+    const administrative = parseAdministrativeCommand(text);
+    if (administrative?.kind === "clear-workspace") {
+      stageCompanionClear(administrative.domains);
+      return "I need your confirmation before I clear the listed workspace content.";
+    }
+
     const demosMeta = COMPANION_DEMOS.map((d) => ({ id: d.id, title: d.title, blurb: d.blurb }));
     const functionNames = operators
       .filter((o) => o.top || o.move)
@@ -10029,17 +10388,36 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     try {
       const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
         system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
-        maxTokens: 4000,
-        timeoutMs: 60000,
+        maxTokens: 1600,
+        timeoutMs: COMPANION_LLM_TIMEOUT_MS - 500,
+        clientAbortMs: COMPANION_LLM_TIMEOUT_MS,
       });
       reply = parseCompanionReply(raw);
     } catch (err) {
       const fallback = matchDemoLocally(text, COMPANION_DEMOS);
-      if (!fallback) throw new Error("I couldn't reach the model — try again in a moment.");
+      if (!fallback) {
+        throw new Error(
+          "I couldn't finish interpreting that within 10 seconds. Your request is still in the input so you can retry or split it into smaller steps."
+        );
+      }
       reply = { say: `let me show you — ${fallback.title.toLowerCase()}.`, demoId: fallback.id, steps: [] };
     }
     const demo = reply.demoId ? findDemo(reply.demoId) : null;
     const steps = demo ? demo.steps : reply.steps;
+    const requestedClears = new Set();
+    for (const step of steps || []) {
+      if (step.verb === "clearPaper") requestedClears.add("paper");
+      if (step.verb === "clearAiSpace") requestedClears.add("ai");
+      if (step.verb === "clearUserLenses") requestedClears.add("lenses");
+      if (step.verb === "clearGenerators") requestedClears.add("generators");
+      if (step.verb === "clearWorkspaceDomains") {
+        for (const domain of step.args?.domains || []) requestedClears.add(domain);
+      }
+    }
+    if (requestedClears.size) {
+      stageCompanionClear([...requestedClears]);
+      return "I need your confirmation before I clear the listed workspace content.";
+    }
     if (steps?.length) {
       // fire-and-forget: the ghost cursor takes over while chat stays responsive
       runDirectorScript(steps, { title: demo?.title || "demonstration" });
@@ -11004,6 +11382,52 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         </div>
       )}
 
+      {pendingCompanionClear && (
+        <div
+          className="modal-scrim"
+          data-testid="companion-clear-confirmation"
+          onClick={() => setPendingCompanionClear(null)}
+        >
+          <div className="modal fresh-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Clear this workspace content?</h3>
+            <p className="modal-sub">
+              {pendingCompanionClear.domains
+                .map((domain) => {
+                  const count = pendingCompanionClear.counts[domain] || 0;
+                  const label =
+                    domain === "paper"
+                      ? "whiteboard items"
+                      : domain === "ai"
+                        ? "AI nodes"
+                        : domain === "lenses"
+                          ? "user-created lenses"
+                          : "generators";
+                  return `${count} ${label}`;
+                })
+                .join(" · ")}
+            </p>
+            <p className="modal-sub">Built-in lens primitives will be kept.</p>
+            <div className="modal-foot">
+              <button
+                type="button"
+                data-testid="companion-clear-cancel"
+                onClick={() => setPendingCompanionClear(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary del"
+                data-testid="companion-clear-confirm"
+                onClick={confirmCompanionClear}
+              >
+                Clear listed content
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {boardConflict && (
         <div className="modal-scrim">
           <div className="modal board-conflict-modal" onClick={(e) => e.stopPropagation()}>
@@ -11088,7 +11512,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           paletteGroups={[
             { label: "your moves", ops: moves },
             { label: "primitives", ops: primitives },
-            { label: "basics", ops: basics },
+            { label: "your lenses", ops: paletteLenses },
           ]}
           onClose={() => setOpEditor(null)}
           onSaveTree={handleSaveLensTree}

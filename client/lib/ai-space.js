@@ -44,10 +44,15 @@ export const AI_DOT_ONLY_THRESHOLD = 0.35;
 export const AI_MIN_SCALE = 0.05;
 export const AI_MAX_SCALE = 3.2;
 
+/** Clamp a scale value to the AI-space zoom band. */
+export function clampAiScale(scale) {
+  return Math.max(AI_MIN_SCALE, Math.min(AI_MAX_SCALE, scale));
+}
+
 /** Clamp an AI camera's scale to the usable zoom band (pan stays free). */
 export function clampAiCamera(camera) {
   if (!camera) return camera;
-  const scale = Math.max(AI_MIN_SCALE, Math.min(AI_MAX_SCALE, camera.scale));
+  const scale = clampAiScale(camera.scale);
   return scale === camera.scale ? camera : { ...camera, scale };
 }
 

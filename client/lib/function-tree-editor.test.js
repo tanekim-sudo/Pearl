@@ -7,7 +7,9 @@ import {
   removeStep,
   duplicateStep,
   addLeafStep,
+  addBranchAtStep,
   mergeStepsSequential,
+  opToClipboardTree,
   pasteTreeAt,
   ensurePipelineRoot,
   cloneSubtree,
@@ -127,5 +129,63 @@ describe("function-tree-editor", () => {
     const newMap = buildDraftMap(ops);
     assert.equal(newMap[rootId].name, "B group");
     assert.notEqual(newMap[rootId].steps[0], "c");
+  });
+
+  it("branch from the tail step appends linearly", () => {
+    const { ops, root } = sampleTree();
+    const { draftOps, stepId, forked } = addBranchAtStep(ops, "b", { name: "next" }, id);
+    assert.equal(forked, false);
+    const map = buildDraftMap(draftOps);
+    assert.deepEqual(map[root].steps, ["a", "b", stepId]);
+    assert.equal(map[stepId].name, "next");
+  });
+
+  it("branch from a mid step forks the remainder", () => {
+    const { ops, root } = sampleTree();
+    const { draftOps, stepId, forked } = addBranchAtStep(ops, "a", { name: "one pager" }, id);
+    assert.equal(forked, true);
+    const map = buildDraftMap(draftOps);
+    assert.equal(map[root].steps.length, 2);
+    const forkId = map[root].steps[1];
+    assert.ok(map[forkId].fork);
+    assert.deepEqual(map[forkId].steps, ["b", stepId]);
+  });
+
+  it("second branch from the same step joins the existing fork", () => {
+    const { ops } = sampleTree();
+    const first = addBranchAtStep(ops, "a", { name: "one pager" }, id);
+    const second = addBranchAtStep(first.draftOps, "a", { name: "memo" }, id);
+    assert.equal(second.forked, true);
+    const map = buildDraftMap(second.draftOps);
+    const fork = Object.values(map).find((o) => o.fork);
+    assert.equal(fork.steps.length, 3);
+    assert.deepEqual(fork.steps, ["b", first.stepId, second.stepId]);
+  });
+
+  it("branch from a leaf branch extends it into a lane", () => {
+    const { ops } = sampleTree();
+    const first = addBranchAtStep(ops, "a", { name: "one pager" }, id);
+    const ext = addBranchAtStep(first.draftOps, first.stepId, { name: "polish" }, id);
+    assert.equal(ext.forked, false);
+    const map = buildDraftMap(ext.draftOps);
+    const fork = Object.values(map).find((o) => o.fork);
+    const laneId = fork.steps.find((sid) => map[sid].kind === "pipeline" && !map[sid].fork && map[sid].steps.includes(first.stepId));
+    assert.ok(laneId, "branch leaf wrapped into a lane");
+    assert.deepEqual(map[laneId].steps, [first.stepId, ext.stepId]);
+  });
+
+  it("fork flag survives clipboard round-trip", () => {
+    const { ops, root } = sampleTree();
+    const { draftOps } = addBranchAtStep(ops, "a", { name: "one pager" }, id);
+    const map = buildDraftMap(draftOps);
+    const tree = opToClipboardTree(map[root], map);
+    assert.ok(tree.steps.some((s) => s.fork));
+    const empty = [{ id: "r2", kind: "pipeline", name: "r2", steps: [] }];
+    const { draftOps: pasted, stepId: pastedRoot } = pasteTreeAt(empty, tree, "r2", 0, id);
+    const pmap = buildDraftMap(pasted);
+    const pforks = Object.values(pmap).filter((o) => o.fork);
+    assert.equal(pforks.length, 1);
+    assert.equal(pforks[0].steps.length, 2);
+    assert.ok(pmap[pastedRoot]);
   });
 });

@@ -17,11 +17,20 @@ export function wheelZoomFactor(e, sensitivity = 0.0032) {
 
 /**
  * Unified wheel navigation: pinch / ctrl+scroll zooms at cursor; plain scroll pans.
+ * @param {(scale: number) => number} [clampScaleFn] zoom bounds — the effective
+ *   scale is clamped BEFORE deriving the translation, so zooming at the clamp
+ *   is a true no-op (no sideways drift from an unclamped anchor delta).
  * @returns {object|null} next camera, or null when unchanged
  */
-export function applyWheelToCamera(e, camera, localX, localY) {
+export function applyWheelToCamera(e, camera, localX, localY, clampScaleFn = null) {
   if (isWheelZoomGesture(e)) {
-    return zoomAtPoint(camera, localX, localY, wheelZoomFactor(e));
+    let factor = wheelZoomFactor(e);
+    if (clampScaleFn) {
+      const target = clampScaleFn(camera.scale * factor);
+      if (Math.abs(target - camera.scale) < 1e-9) return null;
+      factor = target / camera.scale;
+    }
+    return zoomAtPoint(camera, localX, localY, factor);
   }
   const { dx, dy } = wheelPanDelta(e);
   if (!dx && !dy) return null;
@@ -40,7 +49,7 @@ const WHEEL_IDLE_MS = 140;
  * @param {(next: object) => void} setCamera
  * @param {(e: WheelEvent) => { x: number, y: number }} getLocalPoint
  * @param {(prev: object, next: object, e: WheelEvent) => void} [onAfterZoom]
- * @param {{ onWheelActive?: () => void, onWheelIdle?: () => void }} [opts]
+ * @param {{ onWheelActive?: () => void, onWheelIdle?: () => void, clampScale?: (scale: number) => number }} [opts]
  */
 export function attachCanvasWheel(el, getCamera, setCamera, getLocalPoint, onAfterZoom, opts = {}) {
   let wheelEndTimer = null;
@@ -57,7 +66,7 @@ export function attachCanvasWheel(el, getCamera, setCamera, getLocalPoint, onAft
     const camera = getCamera();
     const local = getLocalPoint(e);
     const prevScale = camera.scale;
-    const next = applyWheelToCamera(e, camera, local.x, local.y);
+    const next = applyWheelToCamera(e, camera, local.x, local.y, opts.clampScale || null);
     if (!next) return;
     setCamera(next);
     if (isWheelZoomGesture(e) && next.scale !== prevScale) {
