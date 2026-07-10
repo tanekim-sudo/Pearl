@@ -5396,6 +5396,54 @@ body.director-running .idea-app {
   opacity: 0.94;
 }
 
+.companion-panel.interviewing {
+  right: 50%;
+  bottom: 50%;
+  width: min(520px, calc(100vw - 40px));
+  max-height: min(620px, calc(100vh - 60px));
+  transform: translate(50%, 50%);
+}
+
+.companion-memory {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(201, 162, 39, 0.09);
+  border-bottom: 1px solid rgba(60, 48, 18, 0.1);
+}
+
+.companion-memory label {
+  display: grid;
+  gap: 3px;
+  font-size: 10px;
+  color: rgba(50, 45, 32, 0.66);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.companion-memory input {
+  border: 1px solid rgba(50, 45, 32, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 7px 9px;
+  color: inherit;
+  font: inherit;
+}
+
+.companion-memory small {
+  color: rgba(50, 45, 32, 0.6);
+}
+
+.companion-memory button {
+  justify-self: start;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(178, 58, 46, 0.1);
+  color: rgba(140, 42, 32, 0.95);
+  cursor: pointer;
+}
+
 @keyframes companion-in {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }

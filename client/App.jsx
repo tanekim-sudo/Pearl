@@ -106,6 +106,7 @@ import {
   AI_NODES_KEY,
   readLocalBoardSnapshot,
   writeLocalBoardSnapshot,
+  dedupeLocalBoardStores,
 } from "./lib/board-sync.js";
 import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
@@ -165,11 +166,13 @@ import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import {
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
+  parseSaveChainCommand,
   parseCompanionReply,
   matchDemoLocally,
   CLEARABLE_DOMAINS,
   COMPANION_LLM_TIMEOUT_MS,
 } from "./lib/companion-intent.js";
+import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
@@ -2002,6 +2005,16 @@ function distToSeg(px, py, ax, ay, bx, by) {
   return Math.hypot(px - cx, py - cy);
 }
 
+// One-shot before first render: collapse exact-duplicate functions/lenses/
+// generators an earlier buggy account merge may have written to this browser.
+if (typeof window !== "undefined") {
+  try {
+    dedupeLocalBoardStores();
+  } catch {
+    /* never block boot on cleanup */
+  }
+}
+
 export default function App() {
   const [items, setItems] = useState(() => {
     const saved = load(ITEMS_KEY, null);
@@ -2113,8 +2126,11 @@ export default function App() {
   const [railDropOver, setRailDropOver] = useState(false);
   const [captureNameOverride, setCaptureNameOverride] = useState(null);
   const captureSelRef = useRef(null);
-  const [onboard, setOnboard] = useState(() => (localStorage.getItem(ONBOARDED_KEY) ? null : { step: "role" }));
-  const [companionAutoOpen, setCompanionAutoOpen] = useState(() => !localStorage.getItem(COMPANION_SEEN_KEY));
+  // The companion interview replaces the old blocking role/setup overlay.
+  const [onboard, setOnboard] = useState(null);
+  const [companionAutoOpen, setCompanionAutoOpen] = useState(
+    () => !loadCompanionMemory(null).interviewComplete || !localStorage.getItem(COMPANION_SEEN_KEY)
+  );
   const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
   const [columnResizing, setColumnResizing] = useState(null);
   const [colGridWidth, setColGridWidth] = useState(0);
@@ -2127,6 +2143,7 @@ export default function App() {
   const [expandToolsSignal, setExpandToolsSignal] = useState(0);
   const [freshConfirm, setFreshConfirm] = useState(false);
   const [pendingCompanionClear, setPendingCompanionClear] = useState(null);
+  const [pendingChainName, setPendingChainName] = useState(false);
   const [pendingShareBundle, setPendingShareBundle] = useState(null);
   const supaAuth = useSupabaseSession();
   const [authOpen, setAuthOpen] = useState(
@@ -4706,18 +4723,6 @@ export default function App() {
     }
     setTourActive(false);
   }
-
-  useEffect(() => {
-    if (onboard || pendingShareBundle) return;
-    try {
-      if (localStorage.getItem(TOUR_STORAGE_KEY)) return;
-    } catch {
-      /* ignore */
-    }
-    tourContextRef.current = createTourContext();
-    setTourStepIndex(0);
-    setTourActive(true);
-  }, [onboard, pendingShareBundle]);
 
   function confirmStartFresh() {
     setFreshConfirm(false);
@@ -9919,7 +9924,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         const p = directorAiClientPoint(node.x, node.y);
         await tk.click(p.x, p.y);
         tk.caption(a.caption || "capture how I got here — the whole thread becomes one lens");
-        captureAiNodesAsFunction([node.id]);
+        const rootId = captureAiNodesAsFunction([node.id], a.name ? { name: a.name } : {});
+        if (!rootId) throw new Error("the selected AI node has no transformation lineage to save");
+        ctx.vars.lastOpId = rootId;
         focusRailPane(RAIL_TRANSFORMATIONS);
         pulseFunctionsRail();
         await tk.wait(1000);
@@ -10368,6 +10375,25 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   });
 
   async function handleCompanionCommand(text) {
+    if (pendingChainName) {
+      setPendingChainName(false);
+      const name = text.trim();
+      runDirectorScript([{ verb: "captureThread", args: { name } }], { title: "save chain as lens" }).then((result) => {
+        if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name });
+      });
+      return `Saving this chain as “${text.trim()}” in your lenses.`;
+    }
+    const chain = parseSaveChainCommand(text);
+    if (chain) {
+      if (!chain.name) {
+        setPendingChainName(true);
+        return "What should I name this lens?";
+      }
+      runDirectorScript([{ verb: "captureThread", args: { name: chain.name } }], { title: "save chain as lens" }).then((result) => {
+        if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: chain.name });
+      });
+      return `Saving the selected chain as “${chain.name}” in your lenses.`;
+    }
     const administrative = parseAdministrativeCommand(text);
     if (administrative?.kind === "clear-workspace") {
       stageCompanionClear(administrative.domains);
@@ -10420,7 +10446,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
     if (steps?.length) {
       // fire-and-forget: the ghost cursor takes over while chat stays responsive
-      runDirectorScript(steps, { title: demo?.title || "demonstration" });
+      runDirectorScript(steps, { title: demo?.title || "demonstration" }).then((result) => {
+        if (!result.completed) return;
+        for (const step of steps) {
+          if (step.verb === "createFunction" && step.args?.name) {
+            rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: step.args.name });
+          }
+          if (step.verb === "newGenerator") {
+            rememberCompanionReference(supaAuth.session?.user?.id, "generators", {
+              name: step.args?.saveAs || "latest generator",
+            });
+          }
+        }
+      });
     }
     return reply.say || (demo ? `watch — ${demo.title.toLowerCase()}.` : steps?.length ? "watch." : "done.");
   }
@@ -11464,10 +11502,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         />
       )}
 
-      {onboard && !supaAuth.passwordRecovery && (
-        <Onboarding state={onboard} onStart={runOnboarding} onSkip={skipOnboarding} onClose={() => setOnboard(null)} />
-      )}
-
       {(authOpen || supaAuth.passwordRecovery) && (
         <AuthOverlay
           forced={supaAuth.passwordRecovery}
@@ -11689,7 +11723,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       <CompanionChat
         demos={COMPANION_DEMOS}
         onCommand={handleCompanionCommand}
-        initialOpen={!onboard && companionAutoOpen}
+        userId={supaAuth.session?.user?.id || null}
+        initialOpen={companionAutoOpen}
         onOpened={() => {
           if (companionAutoOpen) setCompanionAutoOpen(false);
           try {

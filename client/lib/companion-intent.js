@@ -3,60 +3,8 @@
  * into a validated director script the app can perform and demonstrate.
  */
 
-export const COMPANION_VERBS = {
-  caption: { args: { text: "string", ms: "number?" } },
-  pause: { args: { ms: "number?" } },
-  switchTool: { args: { tool: "string" } },
-  fitPaper: { args: {} },
-  spawnText: { args: { text: "string", saveAs: "string?", caption: "string?" } },
-  createFunction: {
-    args: { name: "string", description: "string?", steps: "array of {name, description} or strings", saveAs: "string?" },
-  },
-  applyFunction: { args: { op: "string (function name or 'last')", target: "string (item text match or 'last')" } },
-  dragItemToAi: { args: { target: "string or 'last'" } },
-  applyFunctionToAiNode: { args: { op: "string or 'last'" } },
-  focusAiResult: { args: {} },
-  dragAiResultToPaper: { args: {} },
-  highlight: { args: { targets: "array of item text matches or ['last']" } },
-  captureThread: { args: { target: "string or 'last'" } },
-  showLenses: { args: {} },
-  savePageAsLens: { args: {} },
-  waitForJobs: { args: {} },
-  moveItem: { args: { target: "string or 'last'", to: "{x, y} world coords?", dx: "number?", dy: "number?" } },
-  editItem: { args: { target: "string or 'last'", text: "string (new text)", append: "boolean?" } },
-  deleteItem: { args: { target: "string or 'last'" } },
-  selectItems: { args: { targets: "array of item text matches or ['last']" } },
-  organizePage: { args: {} },
-  addBlock: { args: { type: "'sticky'|'callout'|'diagram'|'text'", text: "string?", variant: "string?" } },
-  renamePage: { args: { name: "string" } },
-  zoomToItem: { args: { target: "string or 'last'" } },
-  moveAiNode: { args: { target: "string (node label) or omit for latest", dx: "number?", dy: "number?" } },
-  openFunctionEditor: { args: { op: "string (lens name, incl. primitives like compress/expand)" } },
-  editFunction: { args: { op: "string (lens name, incl. primitives)", name: "string?", description: "string?", prompt: "string?" } },
-  addFunctionStep: {
-    args: { op: "string (lens name or 'last')", name: "string (step name)?", prompt: "string?", description: "string?", after: "string (existing step name to insert after)?", use: "string (existing lens/primitive to insert as the step)?" },
-  },
-  addFunctionBranch: {
-    args: { op: "string (lens name or 'last')", from: "string (step name to branch from; defaults to the last step)?", name: "string (what this branch produces)", prompt: "string?" },
-  },
-  setFunctionStep: { args: { op: "string (lens name or 'last')", step: "string (step name)", name: "string?", prompt: "string?", description: "string?" } },
-  saveFunction: { args: { op: "string (lens name or 'last')", message: "string (commit message)?" } },
-  forkLens: { args: { lens: "string (lens name or 'last')", message: "string?" } },
-  mergeLenses: { args: { a: "string (lens name)", b: "string (lens name)" } },
-  editLensByInstruction: { args: { op: "string (lens name or 'last')", instruction: "string (plain-language change; AI rewrites the lens tree)" } },
-  newGenerator: { args: { saveAs: "string?" } },
-  attachToGenerator: { args: { generator: "string (generator title, ◇N, or 'last')", target: "string (item text match or 'last')" } },
-  graduateGenerator: { args: { generator: "string (◇N or title or 'last')", name: "string (its real name, now that it's clear)" } },
-  probeGenerator: { args: { generator: "string or 'last'", domain: "string (music, books, prayers, paintings, or anything)" } },
-  makeLensFromGenerator: { args: { generator: "string or 'last'" } },
-  clearPaper: { args: {} },
-  clearAiSpace: { args: {} },
-  clearUserLenses: { args: {} },
-  clearGenerators: { args: {} },
-  clearWorkspaceDomains: {
-    args: { domains: "array containing paper, ai, lenses, and/or generators" },
-  },
-};
+import { capabilityPrompt, COMPANION_VERBS } from "./companion-capabilities.js";
+export { COMPANION_VERBS } from "./companion-capabilities.js";
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
 
@@ -88,10 +36,21 @@ export function parseAdministrativeCommand(text) {
   return domains.length ? { kind: "clear-workspace", domains } : null;
 }
 
+/** Local fast path for the high-confidence lineage-capture command. */
+export function parseSaveChainCommand(text) {
+  const normalized = String(text || "").replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+  if (!/\b(save|capture|turn)\b/i.test(normalized) || !/\b(chain|thread|how i got here|lineage|path)\b/i.test(normalized)) {
+    return null;
+  }
+  const named = normalized.match(/\b(?:as|called|named)\s+(?:a\s+lens\s+)?["“]?(.+?)["”]?\s*$/i);
+  let name = named?.[1]?.trim() || "";
+  name = name.replace(/\s+as\s+a\s+lens$/i, "").trim();
+  if (/^(?:a\s+)?lens$/i.test(name)) name = "";
+  return { kind: "save-chain", name: name || null };
+}
+
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
-  const verbDoc = Object.entries(COMPANION_VERBS)
-    .map(([name, def]) => `- ${name}(${Object.entries(def.args).map(([k, v]) => `${k}: ${v}`).join(", ")})`)
-    .join("\n");
+  const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");
   return `You are the companion inside "lens", a thinking tool with three layers: a rail (left) holding LENSES and GENERATORS, a paper notebook page (middle), and an AI space (right). LENSES are reusable cognitive transformations — executable pipelines the user applies to ideas; results bloom as nodes in the AI layer. Lenses support "git for perception": fork, merge, branch, capture a whole thread as one lens, and rewrite by instruction. GENERATORS are latent structures — numbered ◇N placeholders for proto-concepts; the user attaches observations over time, graduates them to real names when clear, probes them against other domains (music, books, prayers, paintings…), and can turn one into a lens. Everything you do is DEMONSTRATED live with an animated ghost cursor so the user learns the tool by watching.
 
@@ -110,7 +69,7 @@ Reply with ONLY a JSON object, no prose, no code fences:
 Rules:
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
 - If the user asks you to DO something concrete (e.g. "make an investment memo lens with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
-- You can do ANYTHING a hand can: move/edit/delete/select objects, tidy the page (organizePage), add stickies/callouts/diagrams, rename the page, zoom to things, reposition AI nodes, and edit any lens — including the built-in primitives (compress, expand, explore, research, invert, reframe, merge, transcend) via editFunction, editLensByInstruction, or openFunctionEditor.
+- Never promise unsupported actions. Only claim an action was done when a listed verb executes it. For a missing capability, say exactly which action is unavailable and return no steps.
 - Lens lifecycle: forkLens copies a lens to evolve separately; mergeLenses composes two into one compound; captureThread turns the path that produced an object (paper item or AI node) into a lens.
 - Lens structure: lenses are step pipelines that can FORK into multiple outputs — a branch point runs the shared steps once, then each branch continues from that intermediate result and produces its own output node (e.g. input → expand → branch "one pager" + branch "investment memo" = two outputs per run). Build with addFunctionStep (new step, or use an existing lens/primitive via "use"), addFunctionBranch (fork at a step), setFunctionStep (rename/rewrite a step's prompt), saveFunction (commit). These are the same edits the lens editor makes, so you can build a branched lens end to end.
 - Generator lifecycle: newGenerator creates an empty ◇N placeholder; attachToGenerator accumulates observations onto it; graduateGenerator names it once understood; probeGenerator expresses its structure in another domain; makeLensFromGenerator turns its structure into a reusable lens.

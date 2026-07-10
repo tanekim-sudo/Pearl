@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
+import {
+  adoptAnonymousCompanionMemory,
+  applyInterviewAnswer,
+  clearCompanionMemory,
+  loadCompanionMemory,
+  nextInterviewPrompt,
+  rememberCompanionAction,
+  saveCompanionMemory,
+} from "../lib/companion-memory.js";
 
 const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
@@ -9,14 +18,17 @@ const SpeechRecognitionImpl =
  * a live demonstration with the ghost cursor, so the user learns the exact
  * gesture. Mic in via Web Speech API, replies spoken via speechSynthesis.
  */
-export default function CompanionChat({ demos = [], onCommand, initialOpen = false, onOpened }) {
+export default function CompanionChat({ demos = [], onCommand, initialOpen = false, onOpened, userId = null }) {
+  const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
   const [messages, setMessages] = useState(() => [
     {
       role: "companion",
-      text: "hi — I'm your companion. ask me to show you anything, or tell me what to build and I'll do it in front of you. try “make me an investment memo function and run it on Gimlet Labs.”",
+      text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
     },
   ]);
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
@@ -29,6 +41,11 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   openRef.current = open;
 
   useEffect(() => subscribeDirector(setDirector), []);
+
+  useEffect(() => {
+    const next = userId ? adoptAnonymousCompanionMemory(userId) : loadCompanionMemory(null);
+    setMemory(next);
+  }, [userId]);
 
   useEffect(() => {
     if (initialOpen) setOpen(true);
@@ -62,7 +79,19 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
     try {
+      const interviewPrompt = nextInterviewPrompt(memory);
+      if (interviewPrompt) {
+        const next = saveCompanionMemory(userId, applyInterviewAnswer(memory, text));
+        setMemory(next);
+        const prompt = nextInterviewPrompt(next);
+        const say = prompt ||
+          `That gives me enough context. I’ll remember it without storing a raw transcript. I can start on “${next.goals.at(-1)}” now — tell me to go, or refine the outcome first.`;
+        setMessages((m) => [...m, { role: "companion", text: say }]);
+        speak(say);
+        return;
+      }
       const say = await onCommand(text);
+      setMemory(rememberCompanionAction(userId, text));
       setMessages((m) => [...m, { role: "companion", text: say }]);
       speak(say);
     } catch (err) {
@@ -199,10 +228,13 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
   }
 
   return (
-    <div className={"companion-panel" + (playing ? " playing" : "")}>
+    <div className={"companion-panel" + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "")}>
       <div className="companion-head">
         <span className="companion-head-orb" />
         <span className="companion-head-title">companion</span>
+        <button type="button" className="companion-head-btn" onClick={() => setMemoryOpen((v) => !v)} title="Inspect companion memory">
+          memory
+        </button>
         <button
           type="button"
           className={"companion-head-btn" + (voiceOut ? " on" : "")}
@@ -218,6 +250,36 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
           ×
         </button>
       </div>
+
+      {memoryOpen && (
+        <div className="companion-memory" data-testid="companion-memory">
+          <label>
+            who you are
+            <input
+              value={memory.identity}
+              onChange={(e) => setMemory(saveCompanionMemory(userId, { identity: e.target.value }))}
+            />
+          </label>
+          <label>
+            what you do
+            <input
+              value={memory.role}
+              onChange={(e) => setMemory(saveCompanionMemory(userId, { role: e.target.value }))}
+            />
+          </label>
+          <small>{memory.goals.length} goals · {memory.actions.length} recent action summaries</small>
+          <button
+            type="button"
+            onClick={() => {
+              const next = clearCompanionMemory(userId);
+              setMemory(next);
+              setMessages([{ role: "companion", text: nextInterviewPrompt(next) }]);
+            }}
+          >
+            clear memory
+          </button>
+        </div>
+      )}
 
       <div className="companion-messages" ref={listRef}>
         {messages.map((m, i) => (
@@ -236,7 +298,7 @@ export default function CompanionChat({ demos = [], onCommand, initialOpen = fal
 
       {!playing && (
         <div className="companion-demos">
-          {demos.slice(0, 6).map((d) => (
+          {memory.interviewComplete && demos.slice(0, 3).map((d) => (
             <button key={d.id} type="button" className="companion-demo-chip" onClick={() => send(`show me: ${d.title}`)}>
               {d.title}
             </button>

@@ -6,6 +6,7 @@ import {
   COMPANION_VERBS,
   parseAdministrativeCommand,
   parseCompanionReply,
+  parseSaveChainCommand,
 } from "./companion-intent.js";
 
 test("compound administrative command composes every requested clear domain", () => {
@@ -64,4 +65,20 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
 
 test("companion LLM timeout is below the product maximum", () => {
   assert.ok(COMPANION_LLM_TIMEOUT_MS <= 10_000);
+});
+
+test("save-chain requests use the deterministic local path", () => {
+  assert.deepEqual(parseSaveChainCommand("save how I got here as a lens"), {
+    kind: "save-chain",
+    name: null,
+  });
+  assert.deepEqual(parseSaveChainCommand("save this chain as investment memo"), {
+    kind: "save-chain",
+    name: "investment memo",
+  });
+  assert.deepEqual(parseSaveChainCommand("capture this thread named Contrarian Map"), {
+    kind: "save-chain",
+    name: "Contrarian Map",
+  });
+  assert.equal(parseSaveChainCommand("save this page"), null);
 });

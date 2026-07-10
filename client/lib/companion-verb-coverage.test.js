@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-import { COMPANION_VERBS } from "./companion-intent.js";
+import { validateCapabilityNames } from "./companion-capabilities.js";
 
 test("companion whitelist covers every registered director verb", () => {
   const source = fs.readFileSync(new URL("../App.jsx", import.meta.url), "utf8");
@@ -12,7 +12,7 @@ test("companion whitelist covers every registered director verb", () => {
 
   const registry = source.slice(start, end);
   const registered = [...registry.matchAll(/^\s{4}([A-Za-z]\w*):\s*async\b/gm)].map((match) => match[1]);
-  const missing = registered.filter((verb) => !COMPANION_VERBS[verb]);
+  const drift = validateCapabilityNames(registered);
 
-  assert.deepEqual(missing, [], `undocumented director verbs: ${missing.join(", ")}`);
+  assert.deepEqual(drift, { undocumented: [], unregistered: [] });
 });

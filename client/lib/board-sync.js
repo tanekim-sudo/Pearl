@@ -5,6 +5,13 @@ import {
   TRANSFORMATION_REPOS_KEY,
   ACTIVE_TRANSFORMATION_KEY,
 } from "../../shared/object-types.js";
+import {
+  operatorDupeKey,
+  generatorDupeKey,
+  dedupeOperators,
+  dedupeGenerators,
+  dedupeTransformationRepos,
+} from "./operator-dedupe.js";
 
 // Cloud board sync: mirrors lens.* board keys to Supabase for signed-in users.
 // localStorage remains the offline cache; cloud is the cross-device source of truth.
@@ -183,13 +190,120 @@ export function snapshotHasContent(snapshot) {
   );
 }
 
+function parseArray(raw) {
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Collapse content-duplicate operators/lenses/repos a buggy earlier merge may
+ * have accumulated (same name AND same content under different ids). Keeps
+ * the oldest copy and remaps lens/repo references to surviving operator ids.
+ */
+export function dedupeBoardKeys(keys) {
+  const next = { ...keys };
+  let idMap = {};
+  const ops = parseArray(next[OPERATORS_KEY]);
+  if (ops) {
+    const res = dedupeOperators(ops);
+    idMap = res.idMap;
+    if (res.ops.length !== ops.length) next[OPERATORS_KEY] = JSON.stringify(res.ops);
+  }
+  const lenses = parseArray(next[PATTERN_LENSES_KEY]);
+  if (lenses) {
+    const remapped = Object.keys(idMap).length
+      ? lenses.map((l) => (l && idMap[l.viewLensOpId] ? { ...l, viewLensOpId: idMap[l.viewLensOpId] } : l))
+      : lenses;
+    const deduped = dedupeGenerators(remapped);
+    if (deduped !== lenses) next[PATTERN_LENSES_KEY] = JSON.stringify(deduped);
+  }
+  const repos = parseArray(next[TRANSFORMATION_REPOS_KEY]);
+  if (repos) {
+    const remapped = Object.keys(idMap).length
+      ? repos.map((r) => {
+          if (!r || typeof r !== "object") return r;
+          const patch = {};
+          if (idMap[r.opId]) patch.opId = idMap[r.opId];
+          if (Array.isArray(r.moveIds) && r.moveIds.some((id) => idMap[id])) {
+            patch.moveIds = r.moveIds.map((id) => idMap[id] || id);
+          }
+          return Object.keys(patch).length ? { ...r, ...patch } : r;
+        })
+      : repos;
+    const deduped = dedupeTransformationRepos(remapped);
+    if (deduped !== repos) next[TRANSFORMATION_REPOS_KEY] = JSON.stringify(deduped);
+  }
+  return next;
+}
+
+/**
+ * One-shot load-time cleanup: collapse exact-duplicate operators / lenses /
+ * repos that earlier buggy merges wrote into localStorage (oldest copy wins).
+ */
+export function dedupeLocalBoardStores() {
+  const keys = {};
+  for (const key of [OPERATORS_KEY, PATTERN_LENSES_KEY, TRANSFORMATION_REPOS_KEY]) {
+    const raw = safeGet(key);
+    if (raw != null) keys[key] = raw;
+  }
+  const next = dedupeBoardKeys(keys);
+  for (const key of Object.keys(next)) {
+    if (next[key] !== keys[key]) safeSet(key, next[key]);
+  }
+}
+
+/**
+ * True when the local snapshot brings nothing the account doesn't already
+ * have: every id-bearing local record exists remotely by id or by content.
+ * Routine reopens then adopt the account board without asking.
+ */
+export function snapshotContainedIn(local, remote) {
+  const localKeys = local?.keys || {};
+  const remoteKeys = remote?.keys || {};
+  for (const key of ID_ARRAY_KEYS) {
+    const localArr = parseArray(localKeys[key]);
+    if (!localArr || !localArr.length) continue;
+    const remoteArr = parseArray(remoteKeys[key]) || [];
+    const remoteIds = new Set(remoteArr.map((r) => r?.id).filter(Boolean));
+    let remoteContent = null;
+    if (key === OPERATORS_KEY) {
+      const rMap = Object.fromEntries(remoteArr.filter((o) => o?.id).map((o) => [o.id, o]));
+      remoteContent = new Set(remoteArr.map((o) => operatorDupeKey(o, rMap)).filter(Boolean));
+    } else if (key === PATTERN_LENSES_KEY) {
+      remoteContent = new Set(remoteArr.map((r) => generatorDupeKey(r)));
+    }
+    const lMap =
+      key === OPERATORS_KEY
+        ? Object.fromEntries(localArr.filter((o) => o?.id).map((o) => [o.id, o]))
+        : null;
+    for (const rec of localArr) {
+      if (!rec?.id) continue;
+      if (remoteIds.has(rec.id)) continue;
+      if (key === OPERATORS_KEY) {
+        const k = operatorDupeKey(rec, lMap);
+        if (k && remoteContent.has(k)) continue;
+      } else if (key === PATTERN_LENSES_KEY) {
+        if (remoteContent.has(generatorDupeKey(rec))) continue;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Merge anonymous local work into an account snapshot: id-bearing arrays merge
  * with local records winning on id conflicts; scalar keys prefer local
  * (what the user is looking at right now); item history merges per item.
+ * Content-duplicate operators/lenses/generators collapse afterwards so
+ * accepting the merge twice never duplicates anything.
  */
 export function mergeBoardSnapshots(local, remote) {
-  const keys = { ...(remote?.keys || {}) };
+  let keys = { ...(remote?.keys || {}) };
   const localKeys = local?.keys || {};
 
   for (const key of BOARD_SYNC_STORAGE_KEYS) {
@@ -225,6 +339,8 @@ export function mergeBoardSnapshots(local, remote) {
       keys[key] = localKeys[key];
     }
   }
+
+  keys = dedupeBoardKeys(keys);
 
   return { version: BOARD_SYNC_VERSION, savedAt: new Date().toISOString(), keys };
 }
@@ -337,15 +453,18 @@ export function useBoardCloudSync({
         const winner = compareSnapshotTimestamps(local.savedAt, remote.savedAt);
 
         // Ask only when the local board is genuinely foreign to this account
-        // (anonymous work or another user's). A board this account already
-        // adopted just syncs newest-wins — no popup on every open.
+        // (anonymous work or another user's) AND actually brings something
+        // the account doesn't already hold. A board this account already
+        // adopted — or one whose records all exist remotely by id/content —
+        // just syncs newest-wins: no popup on every open.
         const localOwner = getLocalBoardOwner();
         if (
           winner !== "equal" &&
           onConflict &&
           localOwner !== userId &&
           snapshotHasContent(local) &&
-          snapshotHasContent(remote)
+          snapshotHasContent(remote) &&
+          !snapshotContainedIn(local, remote)
         ) {
           onConflict({
             local,
@@ -354,6 +473,10 @@ export function useBoardCloudSync({
               try {
                 if (choice === "remote") {
                   writeLocalBoardSnapshot(remote);
+                  // Persist the decision first — a failed push must not
+                  // re-open this prompt on every launch.
+                  setLocalBoardOwner(userId);
+                  hydratedUserRef.current = userId;
                   onHydrate?.(parseBoardSnapshot(remote));
                 } else {
                   const merged =
@@ -361,17 +484,36 @@ export function useBoardCloudSync({
                       ? mergeBoardSnapshots(local, remote)
                       : { ...local, savedAt: new Date().toISOString() };
                   writeLocalBoardSnapshot(merged);
+                  setLocalBoardOwner(userId);
+                  hydratedUserRef.current = userId;
                   onHydrate?.(parseBoardSnapshot(merged));
                   await pushCloudBoardSnapshot(supabase, userId, merged);
                 }
-                setLocalBoardOwner(userId);
-                hydratedUserRef.current = userId;
                 onSynced?.();
               } catch (err) {
                 console.warn("[lens] board conflict resolution failed:", err);
               }
             },
           });
+          return;
+        }
+
+        // A foreign local board whose records the account already holds:
+        // fold it in silently (idempotent merge) instead of letting a newer
+        // local timestamp overwrite the account with a subset.
+        if (
+          winner !== "equal" &&
+          localOwner !== userId &&
+          snapshotHasContent(local) &&
+          snapshotHasContent(remote)
+        ) {
+          const merged = mergeBoardSnapshots(local, remote);
+          writeLocalBoardSnapshot(merged);
+          setLocalBoardOwner(userId);
+          onHydrate?.(parseBoardSnapshot(merged));
+          await pushCloudBoardSnapshot(supabase, userId, merged);
+          hydratedUserRef.current = userId;
+          onSynced?.();
           return;
         }
 
