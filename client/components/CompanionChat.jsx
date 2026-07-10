@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 import { classifyInterviewInput } from "../lib/companion-intent.js";
+import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
 import {
   adoptAnonymousCompanionMemory,
   applyInterviewAnswer,
@@ -46,6 +47,9 @@ export default function CompanionChat({
   const listRef = useRef(null);
   const recRef = useRef(null);
   const voiceSessionRef = useRef(null);
+  const composingRef = useRef(false);
+  const submitGuardRef = useRef(null);
+  if (!submitGuardRef.current) submitGuardRef.current = createCompanionSubmitGuard();
   const openRef = useRef(open);
   openRef.current = open;
 
@@ -66,9 +70,16 @@ export default function CompanionChat({
 
   useEffect(() => {
     if (!notice?.text) return;
+    // A confirmation/cancellation notice marks a completed user interaction,
+    // so an immediate intentional retry is distinct from a duplicate event.
+    submitGuardRef.current.resetDedupe();
     setMessages((current) => [...current, { role: "companion", text: notice.text }]);
     speak(notice.text);
   }, [notice?.id]);
+
+  useEffect(() => {
+    if (!confirmationOpen) submitGuardRef.current.resetDedupe();
+  }, [confirmationOpen]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -87,9 +98,14 @@ export default function CompanionChat({
     }
   }
 
-  async function send(rawText) {
-    const text = (rawText ?? draft).trim();
-    if (!text || busy) return;
+  async function send(rawText, source = "unknown") {
+    const run = submitGuardRef.current.begin(rawText ?? draft);
+    if (!run) return;
+    const { text } = run;
+    if (typeof window !== "undefined" && import.meta.env?.DEV) {
+      window.__lensCompanionLastRun = { id: run.id, text, source, startedAt: run.at };
+      window.dispatchEvent(new CustomEvent("lens:companion-run", { detail: window.__lensCompanionLastRun }));
+    }
     setDraft("");
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
@@ -132,6 +148,7 @@ export default function CompanionChat({
       setDraft(text);
       setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
     } finally {
+      submitGuardRef.current.finish(run.id);
       setBusy(false);
     }
   }
@@ -153,7 +170,7 @@ export default function CompanionChat({
     recRef.current = null;
     setListening(false);
     const said = (s.finalText + " " + s.interim).replace(/\s+/g, " ").trim();
-    if (shouldSend && said) send(said);
+    if (shouldSend && said) send(said, "speech");
     else if (said) setDraft(said);
   }
 
@@ -339,7 +356,15 @@ export default function CompanionChat({
         </div>
       )}
 
-      <div className="companion-input-row">
+      <form
+        className="companion-input-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!composingRef.current) {
+            send(e.currentTarget.elements.companionRequest?.value, "form");
+          }
+        }}
+      >
         <button
           type="button"
           className={"companion-mic" + (listening ? " listening" : "")}
@@ -352,19 +377,33 @@ export default function CompanionChat({
           </svg>
         </button>
         <input
+          name="companionRequest"
           className="companion-input"
           placeholder={listening ? "listening — pause when done, or tap the mic to send" : "ask, or tell me what to build…"}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => submitGuardRef.current.resetDedupe()}
+          onChange={(e) => {
+            submitGuardRef.current.resetDedupe();
+            setDraft(e.target.value);
+          }}
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            composingRef.current = false;
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") send();
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (e.repeat || e.nativeEvent?.isComposing || composingRef.current) return;
+            send(e.currentTarget.value, "keyboard");
           }}
           disabled={busy}
         />
-        <button type="button" className="companion-send" onClick={() => send()} disabled={busy || !draft.trim()}>
+        <button type="submit" className="companion-send" disabled={busy || !draft.trim()}>
           ↑
         </button>
-      </div>
+      </form>
     </div>
   );
 }

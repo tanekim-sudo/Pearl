@@ -11,7 +11,7 @@ const RAW_CAPABILITIES = [
   ["panPaper", { dx: "number", dy: "number" }, false, ["paper", "interface"], "Pan across the paper"],
   ["spawnText", { text: "string", saveAs: "string?", caption: "string?" }, false, ["paper"], "Create text on paper"],
   ["createFunction", { name: "string", description: "string?", steps: "array", saveAs: "string?" }, false, ["lens"], "Create a reusable transformation lens"],
-  ["applyFunction", { op: "string", target: "string" }, false, ["lens", "paper", "ai"], "Apply a lens to paper material"],
+  ["applyFunction", { op: "string", target: "string", wait: "boolean?" }, false, ["lens", "paper", "ai"], "Apply a lens to paper material"],
   ["dragItemToAi", { target: "string" }, false, ["paper", "ai"], "Transfer paper material into AI space"],
   ["applyFunctionToAiNode", { op: "string" }, false, ["lens", "ai"], "Branch an AI node through a lens"],
   ["focusAiResult", {}, false, ["ai", "interface"], "Focus the latest AI result"],

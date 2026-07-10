@@ -255,7 +255,6 @@ import {
   snapshotWorldBBox,
   truncatePreview,
 } from "./lib/item-history.js";
-import SymbolDrawOverlay, { SymbolGlyph } from "./components/SymbolDrawOverlay.jsx";
 import { PaperRecordSession, buildPaperInterpretPrompt } from "./paper-session.js";
 
 function uid() {
@@ -6553,7 +6552,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return struct;
   }
 
-  /** Snapshot every item on the current page into a pattern lens, then ask for a glyph. */
+  /** Snapshot every item on the current page into a generator workspace. */
   function savePageAsLens() {
     const ids = itemsRef.current
       .filter((it) => itemVisibleOnPage(it, activePageId, worldFilter))
@@ -6563,9 +6562,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
     const title = (docTitle || "").trim() || "untitled page";
-    const struct = saveMaterialAsSymbol(ids, { title, toast: `page saved · ${title}` });
-    if (struct) setSymbolDrawPrompt({ structId: struct.id, title: struct.title });
-    return struct;
+    return saveMaterialAsSymbol(ids, { title, toast: `generator saved · ${title}` });
   }
 
   function saveAiNodesAsSymbol(nodeIds, structId = null) {
@@ -6574,7 +6571,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       .map((n) => n.goldenFragment || n.expandedText || n.preview || n.label || "")
       .filter((t) => t?.trim());
     if (!texts.length) {
-      showToast("nothing to save as symbol");
+      showToast("nothing to add to a generator");
       return null;
     }
     const content = texts.join("\n\n");
@@ -10135,11 +10132,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
       runOperator(op, [item.id], {});
       tk.caption(`“${op.name}” is thinking…`);
-      await directorWaitForJobs(tk);
+      if (a.wait !== false) await directorWaitForJobs(tk);
+      else await tk.wait(260);
       const node = directorLatestAiNode(ctx);
       if (node) ctx.vars.lastAiNodeId = node.id;
-      tk.caption("the result blooms in the AI layer, branching from its source");
-      await tk.wait(1500);
+      tk.caption(a.wait === false ? "the run continues in the AI layer" : "the result blooms in the AI layer, branching from its source");
+      await tk.wait(a.wait === false ? 260 : 1500);
     },
     dragItemToAi: async (a, tk, ctx) => {
       const item = directorResolveItem(a.target, ctx);
@@ -10284,16 +10282,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       focusRailPane(RAIL_LENSES);
       const pane = tk.elementCenter(".rail-lenses-pane");
       if (pane) await tk.moveTo(pane.x, pane.y);
-      tk.caption(a.caption || "generators live here — latent structures and proto-concepts you're cultivating");
-      await tk.wait(1200);
+      tk.caption(a.caption || "generators collect material in open spatial workspaces");
+      await tk.wait(520);
     },
     waitForJobs: async (a, tk) => directorWaitForJobs(tk),
     savePageAsLens: async (a, tk) => {
       const chip = tk.elementCenter(".page-title-save-lens");
       if (chip) await tk.click(chip.x, chip.y);
-      tk.caption(a.caption || "the whole page becomes a generator — draw a glyph to name what it means");
+      tk.caption(a.caption || "the whole page becomes an open generator workspace");
       savePageAsLens();
-      await tk.wait(1400);
+      await tk.wait(520);
     },
     // ---- direct manipulation: the companion can do anything a hand can ----
     moveItem: async (a, tk, ctx) => {
@@ -10690,9 +10688,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       tk.caption(`“${tree.name}” rewritten — the tree changed, the history remembers`);
       await tk.wait(1000);
     },
-    // ---- generators: latent structures ----
+    // ---- generators: open spatial workspaces ----
     newGenerator: async (a, tk, ctx) => {
-      tk.caption(a.caption || "a numbered placeholder — a feeling without a name yet");
+      tk.caption(a.caption || "create an open generator workspace");
       const plus = tk.elementCenter(".generator-new") || tk.elementCenter(".rail-lenses-pane");
       if (plus) await tk.click(plus.x, plus.y);
       const struct = createEmptyGenerator();
@@ -10722,7 +10720,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const struct = directorResolveGenerator(a.generator, ctx);
       if (!struct) throw new Error("no generator to graduate");
       if (!a.name?.trim()) throw new Error("what is its name now?");
-      tk.caption(a.caption || `“${struct.title}” has become clear — graduate it to “${a.name.trim()}”`);
+      tk.caption(a.caption || `name the generator “${a.name.trim()}”`);
       const card = tk.elementCenter(`[data-struct-id="${struct.id}"]`);
       if (card) await tk.click(card.x, card.y);
       graduateGenerator(struct.id, a.name.trim());
@@ -10811,7 +10809,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           "I couldn't finish interpreting that within 10 seconds. Your request is still in the input so you can retry or split it into smaller steps."
         );
       }
-      reply = { say: `let me show you — ${fallback.title.toLowerCase()}.`, demoId: fallback.id, steps: [] };
+      reply = { say: "", demoId: fallback.id, steps: [] };
     }
     const demo = reply.demoId ? findDemo(reply.demoId) : null;
     const steps = demo ? demo.steps : reply.steps;
@@ -11016,14 +11014,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                     +
                   </button>
                 </span>
-                <span className="rail-pane-sub">latent structures — proto-concepts being cultivated</span>
+                <span className="rail-pane-sub">open workspaces for collecting and shaping material</span>
               </h3>
               <div className="rail-scroll">
                 {lenses.filter((s) => s?.id).length === 0 && (
                   <div className="rail-empty-cta">
                     <p>
-                      A generator is a latent structure — a feeling that doesn't have a
-                      name yet. Attach material to it over time until it becomes clear.
+                      A generator is an open spatial workspace. Attach material, arrange
+                      it, run lenses on a selection, and craft a reusable lens.
                     </p>
                     <button
                       type="button"
@@ -11032,8 +11030,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                         const sel = selRef.current;
                         const ids = hl.length ? hl : sel;
                         if (ids.length) {
-                          const struct = saveMaterialAsSymbol(ids);
-                          if (struct) setSymbolDrawPrompt({ structId: struct.id, title: struct.title });
+                          saveMaterialAsSymbol(ids);
                         } else {
                           savePageAsLens();
                         }
@@ -11057,7 +11054,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                     onMaterialDrop={handleStructCardMaterialDrop}
                     onDelete={() => deletePatternLens(struct.id)}
                     onShare={() => sharePatternLens(struct)}
-                    onEditSymbol={() => openLensDrawPrompt(struct)}
                     onEditViewLens={() => openEditLensApplyPrompt(struct)}
                     onSettings={() => setLensSettingsId(struct.id)}
                   />
@@ -11535,26 +11531,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           }
         }}
       />
-
-      {symbolDrawPrompt && (
-        <SymbolDrawOverlay
-          title={symbolDrawPrompt.title}
-          meaning={
-            lenses.find((s) => s.id === symbolDrawPrompt.structId)?.interpretation?.meaning
-          }
-          interpreting={symbolInterpretingId === symbolDrawPrompt.structId}
-          onComplete={(stroke) => completeSymbolDraw(symbolDrawPrompt.structId, stroke)}
-          onDone={() => {
-            setSymbolDrawPrompt(null);
-            showToast("lens saved");
-          }}
-          onCancel={() => {
-            setSymbolDrawPrompt(null);
-            setSymbolInterpretingId(null);
-            showToast("symbol skipped — idea saved");
-          }}
-        />
-      )}
 
       {/* brand moved to rail — canvas stays clean */}
       </div>
@@ -12098,10 +12074,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             functionChips={generatorFunctionChips}
             onSave={(patch) => saveLensSettings(struct.id, patch)}
             onReread={() => enrichSymbolRecord(struct.id, { force: true })}
-            onRedraw={() => {
-              setLensSettingsId(null);
-              openLensDrawPrompt(struct);
-            }}
             onProbe={(domain) => runGeneratorProbe(struct.id, domain)}
             onKeepProbe={(domain, text) => keepProbeCandidate(struct.id, domain, text)}
             onMakeLens={() => {
@@ -12965,7 +12937,6 @@ function PatternLensCard({
   onMaterialDrop,
   onDelete,
   onShare,
-  onEditSymbol,
   onEditViewLens,
   onSettings,
 }) {
@@ -13002,7 +12973,6 @@ function PatternLensCard({
           onPointerDown={(e) => startToolboxPatternLensDrag(e, struct)}
           title={[meaning, "drag onto paper or AI · drop material here to deepen"].filter(Boolean).join("\n")}
         >
-          <SymbolGlyph symbolStroke={struct.symbolStroke} className="struct-card-glyph" />
           <div className="struct-card-body">
             <span className="struct-title">{struct.title || preview}</span>
           </div>
@@ -13028,22 +12998,9 @@ function PatternLensCard({
                   e.stopPropagation();
                   onSettings(struct);
                 }}
-                title="Generator workspace — meaning, probes, structure"
+                title="Open generator workspace"
               >
                 ⚙
-              </button>
-            )}
-            {onEditSymbol && (
-              <button
-                type="button"
-                className="rail-icon-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditSymbol(struct);
-                }}
-                title="Edit symbol"
-              >
-                ✎
               </button>
             )}
             {onShare && (

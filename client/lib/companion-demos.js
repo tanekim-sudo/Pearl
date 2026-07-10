@@ -14,7 +14,7 @@ export const COMPANION_DEMOS = [
       { verb: "caption", args: { text: "lens has three layers. the middle is your paper — one page, like a real sheet.", ms: 2600 } },
       { verb: "fitPaper", args: {} },
       { verb: "caption", args: { text: "the left rail holds your lenses — reusable ways of transforming ideas.", ms: 2400 } },
-      { verb: "showLenses", args: { caption: "below them, generators: latent structures and proto-concepts you're cultivating." } },
+      { verb: "showLenses", args: { caption: "below them, generators: open workspaces for collecting and shaping material." } },
       { verb: "caption", args: { text: "the right side is the AI space — every transformation blooms there first, and you drag back what you want to keep.", ms: 3000 } },
     ],
   },
@@ -38,24 +38,48 @@ export const COMPANION_DEMOS = [
     blurb: "compose named steps into one reusable lens",
     keywords: ["create", "function", "lens", "make", "steps", "compose", "custom", "build", "new function", "new lens"],
     steps: [
-      { verb: "caption", args: { text: "a lens is a recipe of cognitive steps you can reuse forever.", ms: 2200 } },
       {
         verb: "createFunction",
         args: {
-          name: "hidden structure",
-          description: "find the deep structure beneath any idea",
+          name: "hidden pattern",
+          description: "find a shared pattern, then branch into two useful views",
           steps: [
-            { name: "strip particulars", description: "remove domain-specific details, keep only relations" },
-            { name: "name the pattern", description: "give the underlying structure a precise name" },
-            { name: "find twin domains", description: "list three other domains where the same structure operates" },
+            { name: "strip particulars", description: "remove domain details and retain relationships" },
           ],
           saveAs: "fn",
         },
       },
+      { verb: "openFunctionEditor", args: { op: "fn" } },
+      {
+        verb: "addFunctionBranch",
+        args: {
+          op: "fn",
+          from: "strip particulars",
+          name: "name the pattern",
+          prompt: "Give the shared relational pattern a precise name.",
+        },
+      },
+      {
+        verb: "addFunctionBranch",
+        args: {
+          op: "fn",
+          from: "strip particulars",
+          name: "find twin domains",
+          prompt: "Find three other domains where this same relationship operates.",
+        },
+      },
+      {
+        verb: "setFunctionStep",
+        args: {
+          op: "fn",
+          step: "strip particulars",
+          prompt: "Remove domain-specific details. Preserve actors, forces, and relationships.",
+        },
+      },
+      { verb: "saveFunction", args: { op: "fn", message: "build branched hidden-pattern lens" } },
       { verb: "spawnText", args: { text: "A city's traffic grid under rush hour load", saveAs: "subject" } },
-      { verb: "applyFunction", args: { op: "fn", target: "subject" } },
+      { verb: "applyFunction", args: { op: "fn", target: "subject", wait: false } },
       { verb: "focusAiResult", args: {} },
-      { verb: "caption", args: { text: "one drag ran all three steps. your lenses are your style of seeing.", ms: 2600 } },
     ],
   },
   {
@@ -115,14 +139,12 @@ export const COMPANION_DEMOS = [
   },
   {
     id: "lenses",
-    title: "Generators and symbols",
-    blurb: "cultivate latent structures — proto-concepts that don't have a name yet",
-    keywords: ["generator", "symbol", "glyph", "draw", "structure", "save page", "way of seeing", "placeholder", "diamond"],
+    title: "Build with generators",
+    blurb: "collect and arrange material in an open generator workspace",
+    keywords: ["generator", "collect", "arrange", "save page", "workspace", "material", "diamond"],
     steps: [
-      { verb: "showLenses", args: { caption: "generators are placeholders for structure you keep noticing but can't name yet — ◇17 before it becomes a concept." } },
-      { verb: "caption", args: { text: "highlight material and drag it here, or save a whole page as a generator. attach observations over time.", ms: 2400 } },
-      { verb: "caption", args: { text: "draw a glyph for it, and lens reads your drawing to understand what it means to you.", ms: 2600 } },
-      { verb: "caption", args: { text: "when it becomes clear, graduate it to a name — and probe it against music, books, paintings to see what it generates.", ms: 2600 } },
+      { verb: "showLenses", args: { caption: "generators collect material in an open spatial workspace" } },
+      { verb: "caption", args: { text: "attach observations, arrange them, select material, and craft a lens", ms: 520 } },
     ],
   },
   {

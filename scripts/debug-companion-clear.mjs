@@ -30,6 +30,9 @@ async function sendCommand(page) {
   await input.fill(COMMAND);
   const started = Date.now();
   await input.press("Enter");
+  await page.waitForTimeout(25);
+  const observed = await page.evaluate(() => window.__lensCompanionLastRun || null);
+  console.log(`companion run: ${observed?.id || "none"} · ${observed?.source || "none"}`);
   await page.getByTestId("companion-clear-confirmation").waitFor({ state: "visible", timeout: 10_000 });
   return Date.now() - started;
 }

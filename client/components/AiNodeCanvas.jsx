@@ -111,8 +111,20 @@ export default function AiNodeCanvas({
   const [wheelZooming, setWheelZooming] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null);
   const [hlDraft, setHlDraft] = useState(null); // live highlight stroke (world points)
+  const readPanelRef = useRef(null);
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
+
+  useEffect(() => {
+    if (!focusedNodeId) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = readPanelRef.current;
+      if (!panel) return;
+      panel.scrollTop = 0;
+      panel.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusedNodeId]);
 
   // New nodes glow gold, then fade to stardust white over ~5s.
   useEffect(() => {
@@ -872,6 +884,7 @@ export default function AiNodeCanvas({
   }
 
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const focusedNode = focusedNodeId ? nodeById.get(focusedNodeId) : null;
   const edges = collectAiEdges(nodes)
     .map((edge) => ({
       ...edge,
@@ -1220,6 +1233,19 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
+              {(zoomTier === "dot" || zoomTier === "short") && (
+                <span
+                  className="ai-node-screen-hit-target"
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: -Math.max(0, 12 / Math.max(0.01, camera.scale) - r),
+                    borderRadius: "50%",
+                    pointerEvents: "auto",
+                    zIndex: 5,
+                  }}
+                />
+              )}
               {/* Ring shares the text card's exact geometry: one silhouette that
                   morphs circle→card and fades as text blooms, so text can never
                   spill outside a visible circle. */}
@@ -1296,6 +1322,34 @@ export default function AiNodeCanvas({
         })}
 
       </div>
+
+      {focusedNode && nodeDetailText(focusedNode) && (
+        <div className="ai-explore-overlay" role="presentation">
+          <div
+            ref={readPanelRef}
+            className="ai-explore-overlay-inner"
+            tabIndex={-1}
+            role="region"
+            aria-label={`Full output: ${focusedNode.label || "AI result"}`}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="ai-explore-overlay-head">
+              <div className="ai-explore-overlay-label">{focusedNode.label || "AI output"}</div>
+              <button
+                type="button"
+                className="ai-explore-overlay-close"
+                onClick={() => onReturnToConstellation?.()}
+                aria-label="Close full output"
+              >
+                ×
+              </button>
+            </div>
+            <div className="ai-explore-overlay-text" data-testid="ai-full-output">
+              {renderNodeText(focusedNode, nodeDetailText(focusedNode))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {lasso && (
         <div

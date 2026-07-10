@@ -85,7 +85,7 @@ export default function HighlightToolbar({
       >
         find sameness
       </button>
-      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into a generator — material for a latent structure">
+      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into an open generator workspace">
         save as generator
       </button>
       <button

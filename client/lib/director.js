@@ -60,7 +60,9 @@ function easeInOut(t) {
 }
 
 export function directorWait(ms) {
-  const scaled = ms / (state.speed || 1);
+  // Visual beats stay readable but never turn a walkthrough into a slideshow.
+  // Callers that poll asynchronous work invoke multiple short waits.
+  const scaled = Math.min(420, Math.max(0, ms || 0)) / (state.speed || 1);
   return new Promise((resolve) => {
     const start = performance.now();
     function tick(now) {
@@ -78,10 +80,10 @@ export function cursorJumpTo(x, y) {
   emit();
 }
 
-export function cursorMoveTo(x, y, ms = 650) {
+export function cursorMoveTo(x, y, ms = 340) {
   const from = { x: state.cursor.x, y: state.cursor.y };
   const dist = Math.hypot(x - from.x, y - from.y);
-  const duration = Math.max(220, Math.min(ms, 220 + dist * 0.9)) / (state.speed || 1);
+  const duration = Math.max(140, Math.min(360, ms, 140 + dist * 0.32)) / (state.speed || 1);
   state.cursor.visible = true;
   emit();
   return new Promise((resolve) => {
@@ -105,7 +107,7 @@ export async function cursorPress(dragLabel = null) {
   state.cursor.dragLabel = dragLabel;
   state.cursor.pulse += 1;
   emit();
-  await directorWait(180);
+  await directorWait(70);
 }
 
 export async function cursorRelease() {
@@ -113,7 +115,7 @@ export async function cursorRelease() {
   state.cursor.dragLabel = null;
   state.cursor.pulse += 1;
   emit();
-  await directorWait(160);
+  await directorWait(70);
 }
 
 export async function cursorClick(x, y, ms) {
@@ -162,12 +164,17 @@ export async function runDirectorScript(steps, opts = {}) {
     stopDirector();
     await directorWait(80);
   }
+  const previousSpeed = state.speed;
+  state.speed = Math.max(0.25, Math.min(3, opts.speed ?? 1.35));
   state.running = true;
   state.abortRequested = false;
   state.scriptTitle = opts.title || null;
   state.cursor.visible = true;
   emit();
   document.body.classList.add("director-running");
+  // Give the companion panel one short beat to tuck into the corner before
+  // the cursor reaches its first target.
+  await directorWait(320);
   const ctx = { vars: {} };
   const errors = [];
   let consecutiveFailures = 0;
@@ -203,6 +210,7 @@ export async function runDirectorScript(steps, opts = {}) {
     state.cursor.pressed = false;
     state.cursor.dragLabel = null;
     state.abortRequested = false;
+    state.speed = previousSpeed;
     document.body.classList.remove("director-running");
     emit();
     opts.onDone?.({ completed: !aborted && !errors.length, aborted, errors });

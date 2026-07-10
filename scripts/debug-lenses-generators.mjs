@@ -72,7 +72,7 @@ async function main() {
   check("lenses pane has subtitle", !!lensesSub && /ways of transforming/i.test(lensesSub), lensesSub);
   const genHeading = await page.textContent(".rail-lenses-pane .rail-pane-heading").catch(() => null);
   check("lower pane titled 'generators'", !!genHeading && /generators/i.test(genHeading), genHeading?.slice(0, 60));
-  check("generators pane has subtitle", !!genHeading && /latent structures/i.test(genHeading));
+  check("generators pane has subtitle", !!genHeading && /open workspaces/i.test(genHeading));
   await page.screenshot({ path: `${OUT}/lg-pane-headers.png` });
 
   // ---- PART 3: new director verbs registered ----
@@ -182,11 +182,12 @@ async function main() {
   await page.waitForTimeout(400);
 
   // ---- generator workspace: probe row + make-lens affordances ----
-  const settingsBtn = await page.$('[title="Generator workspace — meaning, probes, structure"]');
+  const settingsBtn = await page.$('.rail-lenses-pane button[title="Open generator workspace"]');
   check("generator card has workspace button", !!settingsBtn);
   if (settingsBtn) {
     await settingsBtn.click({ force: true });
     await page.waitForTimeout(600);
+    await page.click(".gen-quiet-tools > summary");
     const probeRow = await page.$(".lens-settings-probe");
     check("workspace has probe row", !!probeRow);
     const chips = await page.$$eval(".lens-settings-probe-chip", (els) => els.map((e) => e.textContent.trim()));
@@ -197,9 +198,9 @@ async function main() {
     check("'make lens from this' button present", !!makeLens);
     const gradHint = await page.textContent(".lens-settings-title").catch(() => null);
     // fire a probe: without an API key we accept either loading state or an error status
-    const musicChip = await page.$$(".lens-settings-probe-chip");
-    if (musicChip[0]) {
-      await musicChip[0].click();
+    const musicChip = await page.$(".gen-quiet-tools .lens-settings-probe-chip");
+    if (musicChip) {
+      await musicChip.click();
       await page.waitForTimeout(400);
       const status = await page.textContent(".lens-settings-probe-status").catch(() => null);
       check("probe fires (loading or error state shown)", !!status, status);

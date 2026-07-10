@@ -448,7 +448,7 @@ export const TOUR_STEPS = [
     id: "pattern-lenses",
     phase: "Generators",
     title: "Generators",
-    instruction: "The lower rail holds **generators** — latent structures you cultivate before they have a name. Drag highlighted material there, or onto a generator card to deepen it.",
+    instruction: "The lower rail holds **generators** — open workspaces for collecting and arranging material. Drag highlighted material there, select what matters, then craft a lens.",
     target: '[data-tour="lenses-tab"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("lenses-tab") || ctx.events.has("save-structure"),

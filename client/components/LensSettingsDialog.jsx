@@ -1,5 +1,4 @@
 import React, { useMemo, useRef, useState } from "react";
-import { SymbolGlyph } from "./SymbolDrawOverlay.jsx";
 
 const PROBE_DOMAINS = ["music", "books", "prayers", "paintings"];
 
@@ -41,7 +40,6 @@ export default function LensSettingsDialog({
   functionChips = [],
   onSave,
   onReread,
-  onRedraw,
   onProbe,
   onKeepProbe,
   onMakeLens,
@@ -290,9 +288,6 @@ export default function LensSettingsDialog({
     <div className="onboard-scrim" onClick={onClose}>
       <div className="lens-settings lens-settings-wide" onClick={(e) => e.stopPropagation()}>
         <div className="lens-settings-head">
-          {struct.symbolStroke && (
-            <SymbolGlyph symbolStroke={struct.symbolStroke} className="lens-settings-glyph" />
-          )}
           <input
             className="lens-settings-title"
             value={title}
@@ -306,8 +301,8 @@ export default function LensSettingsDialog({
         </div>
         {isPlaceholder && (
           <div className="lens-settings-graduate-hint">
-            {struct.title} is a placeholder — when the structure becomes clear, rename it to
-            graduate it into a named concept.
+            {struct.title} is an open workspace — rename it whenever the collected material
+            suggests a useful concept.
           </div>
         )}
 
@@ -323,8 +318,7 @@ export default function LensSettingsDialog({
             {items.map(renderItem)}
           </div>
           <div className="gen-space-hint">
-            drag to arrange · click to select · run functions on the selection to look for
-            structure
+            drag to arrange · click to select · run lenses on the selection · craft a lens
           </div>
         </div>
 
@@ -366,13 +360,13 @@ export default function LensSettingsDialog({
         {runError && <div className="lens-settings-probe-status error">{runError}</div>}
 
         <label className="lens-settings-label">
-          what it means
+          workspace note
           <textarea
             className="lens-settings-text"
             rows={2}
             value={meaning}
             onChange={(e) => setMeaning(e.target.value)}
-            placeholder="the structure this generator compresses…"
+            placeholder="what you are collecting or exploring here…"
           />
         </label>
 
@@ -386,13 +380,13 @@ export default function LensSettingsDialog({
               rows={2}
               value={viewPrompt}
               onChange={(e) => setViewPrompt(e.target.value)}
-              placeholder="instruction for reading new material through this structure…"
+              placeholder="instruction for operating on new material from this workspace…"
             />
           </label>
 
           {elements.length > 0 && (
             <div className="lens-settings-label">
-              structure — how each element reads
+              saved readings
               <div className="lens-settings-elements">
                 {elements.map((el, i) => (
                   <div key={i} className="lens-settings-element">
@@ -416,7 +410,7 @@ export default function LensSettingsDialog({
 
           {onProbe && (
             <div className="lens-settings-label lens-settings-probe" data-tour="generator-probe">
-              probe — express this structure in another domain
+              probe the collected material in another domain
               <div className="lens-settings-probe-row">
                 {PROBE_DOMAINS.map((d) => (
                   <button
@@ -474,9 +468,6 @@ export default function LensSettingsDialog({
           )}
 
           <div className="gen-quiet-actions">
-            <button type="button" className="lens-settings-quiet" onClick={onRedraw}>
-              redraw glyph
-            </button>
             <button
               type="button"
               className="lens-settings-quiet"

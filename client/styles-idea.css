@@ -4139,29 +4139,59 @@ html[data-theme="chalk"] body {
   inset: 0;
   z-index: 8;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: center;
-  padding: 16px 18px 20px;
+  padding: clamp(12px, 3vh, 28px) clamp(10px, 3vw, 30px);
   pointer-events: none;
   transition: opacity 0.1s linear;
-  background: linear-gradient(
-    180deg,
-    rgba(5, 5, 8, 0) 0%,
-    rgba(5, 5, 8, calc(0.35 * var(--ai-content-blend, 0))) 40%,
-    rgba(5, 5, 8, calc(0.82 * var(--ai-content-blend, 0))) 100%
-  );
+  background: rgba(5, 5, 8, 0.72);
 }
 
 .ai-explore-overlay-inner {
   pointer-events: auto;
-  width: min(92%, 520px);
-  max-height: 52%;
+  width: min(100%, 760px);
+  height: 100%;
+  min-height: 0;
   overflow: auto;
-  padding: 14px 16px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 18px 20px 28px;
   border-radius: 12px;
   background: rgba(10, 14, 24, 0.94);
   border: 1px solid rgba(160, 200, 255, 0.28);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ai-explore-overlay-inner:focus {
+  outline: 1px solid rgba(160, 200, 255, 0.52);
+  outline-offset: 2px;
+}
+
+.ai-explore-overlay-head {
+  position: sticky;
+  top: -18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 12px;
+  padding: 4px 0 8px;
+  background: rgba(10, 14, 24, 0.98);
+}
+
+.ai-explore-overlay-close {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(160, 200, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(235, 240, 255, 0.9);
+  cursor: pointer;
 }
 
 .ai-explore-overlay-label {
@@ -4177,6 +4207,8 @@ html[data-theme="chalk"] body {
   line-height: 1.55;
   color: rgba(235, 240, 255, 0.92);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-bottom: 2px;
 }
 
 .ai-explore-overlay-text-wrap {
@@ -5431,10 +5463,42 @@ body.director-running .idea-app {
   box-shadow: 0 18px 60px rgba(40, 32, 12, 0.28), 0 2px 10px rgba(40, 32, 12, 0.12);
   overflow: hidden;
   animation: companion-in 0.26s var(--ease-out, ease);
+  transition:
+    width 0.22s var(--ease-out, ease),
+    max-height 0.22s var(--ease-out, ease),
+    opacity 0.18s ease,
+    transform 0.22s var(--ease-out, ease);
 }
 
 .companion-panel.playing {
-  opacity: 0.94;
+  width: min(220px, calc(100vw - 24px));
+  max-height: 54px;
+  right: 12px;
+  bottom: 12px;
+  opacity: 0.78;
+  border-radius: 14px;
+  transform: scale(0.96);
+  transform-origin: right bottom;
+  box-shadow: 0 8px 28px rgba(40, 32, 12, 0.2);
+}
+
+.companion-panel.playing .companion-head,
+.companion-panel.playing .companion-input-row,
+.companion-panel.playing .companion-demos,
+.companion-panel.playing .companion-msg,
+.companion-panel.playing .companion-memory {
+  display: none;
+}
+
+.companion-panel.playing .companion-messages {
+  min-height: 0;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.companion-panel.playing .companion-playing {
+  padding: 6px 8px;
+  white-space: nowrap;
 }
 
 .companion-panel.confirming {

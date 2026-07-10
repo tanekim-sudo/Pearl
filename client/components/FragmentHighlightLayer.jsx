@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { extractTextRangeFromHighlightStroke } from "../lib/highlight-text.js";
+import { extractFragmentRangeFromStroke } from "../lib/highlight-text.js";
 import { HIGHLIGHT_INK, HIGHLIGHT_W } from "../lib/highlight-ink.js";
 import { HIGHLIGHT_DRAG_THRESHOLD, HIGHLIGHT_MARK_MIN_PX } from "../lib/highlight-tool.js";
 
@@ -48,7 +48,7 @@ export default function FragmentHighlightLayer({
   function finishStroke(clientPoints, clientX, clientY, toPaper) {
     const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
     if (!el || clientPoints.length < 2) return;
-    const extracted = extractTextRangeFromHighlightStroke(el, clientPoints, HIGHLIGHT_W);
+    const extracted = extractFragmentRangeFromStroke(el, clientPoints, HIGHLIGHT_W);
     if (!extracted?.quote) return;
     const opts = { clientX, clientY };
     if (toPaper) onFragmentToPaper?.(extracted.quote, opts);
@@ -61,7 +61,7 @@ export default function FragmentHighlightLayer({
       setPreviewQuote(null);
       return;
     }
-    const extracted = extractTextRangeFromHighlightStroke(el, clientPoints, HIGHLIGHT_W);
+    const extracted = extractFragmentRangeFromStroke(el, clientPoints, HIGHLIGHT_W);
     setPreviewQuote(extracted?.quote || null);
   }
 
@@ -162,7 +162,7 @@ export default function FragmentHighlightLayer({
 
       const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
       const extracted = el
-        ? extractTextRangeFromHighlightStroke(el, g.points, HIGHLIGHT_W)
+        ? extractFragmentRangeFromStroke(el, g.points, HIGHLIGHT_W)
         : null;
       const quote = extracted?.quote?.trim();
       if (!quote) return;
@@ -172,14 +172,10 @@ export default function FragmentHighlightLayer({
         return;
       }
 
-      const moved = Math.hypot(ev.clientX - g.points[0].x, ev.clientY - g.points[0].y);
-      if (moved > HIGHLIGHT_DRAG_THRESHOLD && onTransferStart) {
-        onFragmentReplace?.(quote, { clientX: ev.clientX, clientY: ev.clientY });
-        onTransferStart(ev, quote);
-        setPreviewQuote(null);
-        return;
-      }
-
+      // The first stroke only creates the persistent word mark. Transfer is a
+      // separate, intentional gesture that starts from the locked mark on the
+      // next pointer-down; conflating the two made ordinary highlighting fire
+      // a cross-domain drag on pointer-up.
       finishStroke(g.points, ev.clientX, ev.clientY, false);
       setPreviewQuote(null);
     }

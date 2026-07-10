@@ -117,7 +117,7 @@ async function main() {
   check("no conflict prompt on plain reopen", !(await page.$(".board-conflict, .onboard-scrim .board-conflict")));
 
   // ---- 2. generator workspace ----------------------------------------------
-  const wsBtn = await page.$('[title="Generator workspace — meaning, probes, structure"]');
+  const wsBtn = await page.$('button[title*="generator workspace" i]');
   check("generator workspace button present", !!wsBtn);
   if (wsBtn) {
     await wsBtn.click({ force: true });
@@ -193,10 +193,10 @@ async function main() {
   check("paper: leaving highlighter clears strokes", hadStroke && strokes === 0, `strokes=${strokes}`);
 
   // ---- 3b + 4. AI space: highlight stroke persists, background drags never spawn nodes
-  const aiViewport = await page.$(".ai-node-viewport");
+  let aiViewport = await page.$(".ai-node-viewport");
   check("ai viewport present", !!aiViewport);
   if (aiViewport) {
-    const ab = await aiViewport.boundingBox();
+    let ab = await aiViewport.boundingBox();
     const nodeCountBefore = await page.$$eval(".ai-node", (els) => els.length);
 
     // select tool: background drag pans, never spawns
@@ -217,6 +217,13 @@ async function main() {
       nodeCount = await page.$$eval(".ai-node", (els) => els.length);
       check("ai: background drag with node selected spawns nothing", nodeCount === nodeCountBefore, `${nodeCountBefore}→${nodeCount}`);
     }
+
+    // Reset the camera after adversarial pans so the sweep targets a genuinely
+    // visible node instead of depending on an offscreen bounding box.
+    await page.reload();
+    await page.waitForTimeout(900);
+    aiViewport = await page.$(".ai-node-viewport");
+    ab = await aiViewport.boundingBox();
 
     // highlight tool: background stroke persists, marks swept nodes, spawns nothing
     await pickTool(page, "highlight");
