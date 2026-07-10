@@ -89,6 +89,7 @@ export default function AiNodeCanvas({
   landingNodeIds,
   growingEdgeIds,
   onPointerTrack,
+  embedded = false,
 }) {
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
@@ -114,6 +115,8 @@ export default function AiNodeCanvas({
   const readPanelRef = useRef(null);
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
+  const onStrandSelectRef = useRef(onStrandSelect);
+  onStrandSelectRef.current = onStrandSelect;
 
   useEffect(() => {
     if (!focusedNodeId) return;
@@ -207,6 +210,22 @@ export default function AiNodeCanvas({
           e.stopPropagation();
           cycleStrandHover(sd, idx);
         }
+        return;
+      }
+      if (e.key === "Enter") {
+        const idx = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
+        const choice = sd.choices[idx];
+        if (!choice) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const angle = sd.angles?.[idx] ?? sd.baseAngle ?? 0;
+        const tipScreenX = sd.originX + Math.cos(angle) * sd.length;
+        const tipScreenY = sd.originY + Math.sin(angle) * sd.length;
+        const worldPos = screenToWorld(cameraRef.current, tipScreenX, tipScreenY);
+        strandDragRef.current = null;
+        setStrandDrag(null);
+        document.body.classList.remove("ai-strand-dragging");
+        onStrandSelectRef.current?.(sd.nodeId, choice, { worldPos });
       }
     }
 
@@ -992,6 +1011,7 @@ export default function AiNodeCanvas({
       ref={viewportRef}
       className={
         "ai-node-viewport" +
+        (embedded ? " ai-node-viewport-embedded" : "") +
         (canvasDropOver ? " drop-over" : "") +
         (shiftHeld && tool === "select" && selectedIds.length ? " shift-transfer-ready" : "") +
         (tool === "highlight" ? " highlight-transfer-ready" : "") +
@@ -1001,16 +1021,19 @@ export default function AiNodeCanvas({
         (zoomTier === "dot" ? " ai-zoom-dot" : zoomTier === "short" ? " ai-zoom-short" : " ai-zoom-full")
       }
       style={{ "--ai-content-blend": contentBlend, "--ai-inv-scale": invScale }}
-      onPointerDown={handleViewportPointerDown}
+      onPointerDown={embedded ? undefined : handleViewportPointerDown}
       onPointerMove={(e) => onPointerTrack?.(e.clientX, e.clientY)}
       onPointerEnter={(e) => onPointerTrack?.(e.clientX, e.clientY)}
       onDragOver={(e) => {
+        if (embedded) return;
         onCanvasDragOver?.(e);
       }}
       onDragLeave={(e) => {
+        if (embedded) return;
         if (!e.currentTarget.contains(e.relatedTarget)) onCanvasDragLeave?.(e);
       }}
       onDrop={(e) => {
+        if (embedded) return;
         e.preventDefault();
         e.stopPropagation();
         const world = getDropWorld(e.clientX, e.clientY);
@@ -1037,7 +1060,7 @@ export default function AiNodeCanvas({
               markerHeight={markerSize}
               orient="auto"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.92)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(20, 20, 20, 0.88)" />
             </marker>
             <marker
               id="ai-edge-arrow-interpret"
@@ -1049,7 +1072,7 @@ export default function AiNodeCanvas({
               markerHeight={markerSize}
               orient="auto"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.88)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(20, 20, 20, 0.84)" />
             </marker>
             <marker
               id="ai-edge-arrow-move"
@@ -1061,7 +1084,7 @@ export default function AiNodeCanvas({
               markerHeight={markerSize}
               orient="auto"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.85)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(20, 20, 20, 0.8)" />
             </marker>
             <marker
               id="ai-edge-arrow-default"
@@ -1073,7 +1096,7 @@ export default function AiNodeCanvas({
               markerHeight={markerSize}
               orient="auto"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255, 255, 255, 0.9)" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(20, 20, 20, 0.86)" />
             </marker>
             <filter id="ai-edge-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2" result="blur" />
@@ -1246,6 +1269,15 @@ export default function AiNodeCanvas({
                   }}
                 />
               )}
+              {tool === "select" &&
+                ["n", "e", "s", "w"].map((side) => (
+                  <span
+                    key={side}
+                    className={`ai-node-edge-handle ai-node-edge-handle-${side}`}
+                    aria-hidden="true"
+                    onPointerDown={(event) => startBranchStrandGesture(event, node)}
+                  />
+                ))}
               {/* Ring shares the text card's exact geometry: one silhouette that
                   morphs circle→card and fades as text blooms, so text can never
                   spill outside a visible circle. */}

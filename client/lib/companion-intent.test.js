@@ -98,6 +98,16 @@ test("planner requires executable commands to act without chatter", () => {
   assert.match(prompt, /Do not acknowledge, praise, summarize, or announce/);
 });
 
+test("flat reply parser rejects fake verbs instead of silently dropping them", () => {
+  assert.throws(
+    () =>
+      parseCompanionReply(
+        JSON.stringify({ say: "", steps: [{ verb: "hallucinateResearch", args: {} }] })
+      ),
+    /unsupported companion verb/
+  );
+});
+
 test("save-chain requests use the deterministic local path", () => {
   assert.deepEqual(parseSaveChainCommand("save how I got here as a lens"), {
     kind: "save-chain",

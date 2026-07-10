@@ -6,18 +6,18 @@ const RAW_CAPABILITIES = [
   ["caption", {}, false, ["interface"], "Explain an action while it happens"],
   ["pause", { ms: "number?" }, false, ["interface"], "Pause between visible actions"],
   ["switchTool", { tool: "string" }, false, ["interface", "paper"], "Select a canvas tool"],
-  ["fitPaper", {}, false, ["paper", "interface"], "Fit the paper in view"],
-  ["zoomPaper", { direction: "in|out|reset" }, false, ["paper", "interface"], "Zoom the paper"],
-  ["panPaper", { dx: "number", dy: "number" }, false, ["paper", "interface"], "Pan across the paper"],
+  ["fitPaper", {}, false, ["paper", "ai", "interface"], "Fit the paper frame in the unified workspace"],
+  ["zoomPaper", { direction: "in|out|reset" }, false, ["paper", "ai", "interface"], "Zoom the unified workspace"],
+  ["panPaper", { dx: "number", dy: "number" }, false, ["paper", "ai", "interface"], "Pan the unified world"],
   ["spawnText", { text: "string", saveAs: "string?", caption: "string?" }, false, ["paper"], "Create text on paper"],
   ["createFunction", { name: "string", description: "string?", steps: "array", saveAs: "string?" }, false, ["lens"], "Create a reusable transformation lens"],
   ["applyFunction", { op: "string", target: "string", wait: "boolean?" }, false, ["lens", "paper", "ai"], "Apply a lens to paper material"],
-  ["dragItemToAi", { target: "string" }, false, ["paper", "ai"], "Transfer paper material into AI space"],
+  ["dragItemToAi", { target: "string" }, false, ["paper", "ai"], "Use paper material as a node source in the unified world"],
   ["applyFunctionToAiNode", { op: "string" }, false, ["lens", "ai"], "Branch an AI node through a lens"],
   ["focusAiResult", {}, false, ["ai", "interface"], "Focus the latest AI result"],
   ["fitAiSpace", {}, false, ["ai", "interface"], "Fit the AI constellation in view"],
   ["selectAiNode", { target: "string?" }, false, ["ai"], "Select an AI node"],
-  ["dragAiResultToPaper", {}, false, ["ai", "paper"], "Keep an AI result on paper"],
+  ["dragAiResultToPaper", {}, false, ["ai", "paper"], "Materialize an AI result as editable paper content"],
   ["highlight", { targets: "array" }, false, ["highlight", "paper"], "Highlight paper material"],
   ["operateHighlight", { op: "string" }, false, ["highlight", "paper", "ai", "lens", "generator"], "Apply a lens to the cross-domain highlight selection"],
   ["clearHighlight", {}, false, ["highlight", "paper", "ai", "lens", "generator"], "Clear the persistent cross-domain highlight selection"],
@@ -40,6 +40,11 @@ const RAW_CAPABILITIES = [
   ["materializeSharedPath", {}, false, ["path", "ai"], "Materialize the active shared path into AI space"],
   ["leaveSharedPath", {}, false, ["path"], "Leave the active shared-path walk"],
   ["moveAiNode", { target: "string?", dx: "number?", dy: "number?" }, false, ["ai"], "Move an AI node"],
+  ["arrangeItems", { targets: "array", layout: "align|distribute|stack|grid|cluster|move-relative", options: "object?" }, false, ["paper", "ai"], "Arrange material with a geometry-aware reusable layout"],
+  ["groupItems", { targets: "array", name: "string?" }, false, ["paper", "ai"], "Group selected material without flattening its contents"],
+  ["linkItems", { from: "string", to: "string", label: "string?" }, false, ["paper", "ai", "path"], "Create a visible relationship between two objects"],
+  ["transformMaterial", { mode: "synthesize|compare|critique|reflect|alternatives|counterexamples|revise|cluster-semantically", targets: "array", instruction: "string?", criteria: "array?", outputCount: "number?", preserveOriginal: "boolean?" }, false, ["paper", "ai", "lens", "generator"], "Run a reusable creative or evaluative operation and materialize its output"],
+  ["annotateFeedback", { target: "string", text: "string", kind: "feedback|assumption|tension|evidence|research", sources: "array?" }, false, ["paper", "ai", "path"], "Place linked feedback or provenance beside its target"],
   ["openFunctionEditor", { op: "string" }, false, ["lens", "interface"], "Open a lens in the editor"],
   ["editFunction", { op: "string", name: "string?", description: "string?", prompt: "string?" }, false, ["lens"], "Edit lens metadata or prompt"],
   ["addFunctionStep", { op: "string", name: "string?", prompt: "string?", description: "string?", after: "string?", use: "string?" }, false, ["lens"], "Add a step to a lens"],
@@ -71,6 +76,11 @@ const INTENT_EXAMPLES = {
   captureThread: ["save how I got here as a lens"],
   newGenerator: ["create a new generator"],
   attachToGenerator: ["attach this observation to my generator"],
+  arrangeItems: ["rearrange these notes into three columns"],
+  groupItems: ["group the market evidence in the upper right"],
+  linkItems: ["link this counterexample to the claim"],
+  transformMaterial: ["compare these branches for evidence quality and novelty"],
+  annotateFeedback: ["annotate the weakest assumption beside this branch"],
   clearWorkspaceDomains: ["clear all functions, drawings, and AI stuff"],
 };
 
@@ -83,6 +93,9 @@ export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
     purpose,
     examples: INTENT_EXAMPLES[name] || [`please ${purpose.charAt(0).toLowerCase()}${purpose.slice(1)}`],
     animation: "director",
+    observation: domains.includes("interface") && domains.length === 1 ? [] : ["selection", "objects", "viewport"],
+    risk: destructive ? "high" : ["transformMaterial", "arrangeItems", "groupItems"].includes(name) ? "medium" : "low",
+    testCaseId: `capability-${name}`,
   })
 );
 
@@ -115,5 +128,23 @@ export function validateCapabilityManifest(registeredNames, capabilities = COMPA
   const missingAnimation = capabilities
     .filter((entry) => entry.animation !== "director")
     .map((entry) => entry.name);
-  return { ...names, missingExamples, missingAnimation };
+  const missingArgumentSchema = capabilities
+    .filter((entry) => !entry.args || typeof entry.args !== "object" || Array.isArray(entry.args))
+    .map((entry) => entry.name);
+  const missingRisk = capabilities
+    .filter((entry) => !["low", "medium", "high"].includes(entry.risk))
+    .map((entry) => entry.name);
+  const missingObservation = capabilities
+    .filter((entry) => !Array.isArray(entry.observation))
+    .map((entry) => entry.name);
+  const missingTestCase = capabilities.filter((entry) => !entry.testCaseId).map((entry) => entry.name);
+  return {
+    ...names,
+    missingExamples,
+    missingAnimation,
+    missingArgumentSchema,
+    missingRisk,
+    missingObservation,
+    missingTestCase,
+  };
 }

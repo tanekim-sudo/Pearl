@@ -28,6 +28,7 @@ const CAMERA_KEY = "lens.board.camera.v1";
 const OPERATORS_KEY = "lens.board.operators.v2";
 export const AI_NODES_KEY = "lens.ai.nodes.v1";
 const ITEM_HISTORY_KEY = "lens.item.history.v1";
+const UNIFIED_WORKSPACE_KEY = "lens.unified-workspace.v2";
 
 export const BOARD_SYNC_STORAGE_KEYS = [
   ITEMS_KEY,
@@ -42,6 +43,7 @@ export const BOARD_SYNC_STORAGE_KEYS = [
   ACTIVE_TRANSFORMATION_KEY,
   AI_NODES_KEY,
   ITEM_HISTORY_KEY,
+  UNIFIED_WORKSPACE_KEY,
 ];
 
 /** Keys whose values are arrays of {id}-bearing records, mergeable by id. */

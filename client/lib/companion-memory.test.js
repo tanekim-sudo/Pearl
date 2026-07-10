@@ -9,6 +9,7 @@ import {
   nextInterviewPrompt,
   rememberCompanionReference,
   saveCompanionMemory,
+  setCompanionAutonomy,
 } from "./companion-memory.js";
 
 function storage() {
@@ -69,4 +70,13 @@ test("repairs identities polluted by swallowed commands", () => {
     identity: "get rid fo all functions and drawings and ai stuff",
   }, store);
   assert.equal(loadCompanionMemory(null, store).identity, "");
+});
+
+test("autonomy is bounded, user-scoped, and explicit", () => {
+  const store = storage();
+  assert.equal(loadCompanionMemory("a", store).preferences.autonomy, "preview-complex");
+  setCompanionAutonomy("a", "always-preview", store);
+  assert.equal(loadCompanionMemory("a", store).preferences.autonomy, "always-preview");
+  assert.equal(loadCompanionMemory("b", store).preferences.autonomy, "preview-complex");
+  assert.throws(() => setCompanionAutonomy("a", "unbounded", store), /invalid/);
 });

@@ -14,7 +14,7 @@ export function emptyCompanionMemory() {
     identity: "",
     role: "",
     goals: [],
-    preferences: {},
+    preferences: { autonomy: "preview-complex" },
     references: { lenses: [], generators: [], paths: [] },
     actions: [],
     interviewComplete: false,
@@ -36,7 +36,15 @@ function compact(memory) {
     identity: identityLooksLikeCommand ? "" : rawIdentity,
     role: String(memory?.role || "").slice(0, 240),
     goals: Array.isArray(memory?.goals) ? memory.goals.slice(-8).map((v) => String(v).slice(0, 300)) : [],
-    preferences: memory?.preferences && typeof memory.preferences === "object" ? memory.preferences : {},
+    preferences: {
+      ...base.preferences,
+      ...(memory?.preferences && typeof memory.preferences === "object" ? memory.preferences : {}),
+      autonomy: ["act-immediately", "preview-complex", "always-preview"].includes(
+        memory?.preferences?.autonomy
+      )
+        ? memory.preferences.autonomy
+        : base.preferences.autonomy,
+    },
     references: Object.fromEntries(
       ["lenses", "generators", "paths"].map((kind) => [
         kind,
@@ -91,6 +99,18 @@ export function rememberCompanionReference(userId, kind, reference, storage = gl
   return saveCompanionMemory(
     userId,
     { references: { ...current.references, [kind]: refs.slice(-MAX_REFS) } },
+    storage
+  );
+}
+
+export function setCompanionAutonomy(userId, autonomy, storage = globalThis.localStorage) {
+  if (!["act-immediately", "preview-complex", "always-preview"].includes(autonomy)) {
+    throw new Error("invalid companion autonomy preference");
+  }
+  const current = loadCompanionMemory(userId, storage);
+  return saveCompanionMemory(
+    userId,
+    { preferences: { ...current.preferences, autonomy } },
     storage
   );
 }

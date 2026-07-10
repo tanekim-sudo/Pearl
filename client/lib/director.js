@@ -44,6 +44,7 @@ export function directorRunning() {
 }
 
 let verbs = {};
+let activeAbortController = null;
 
 export function registerDirectorVerbs(map) {
   verbs = { ...verbs, ...map };
@@ -156,6 +157,9 @@ const toolkit = {
   wait: directorWait,
   elementCenter,
   isAborted: () => state.abortRequested,
+  get signal() {
+    return activeAbortController?.signal || null;
+  },
 };
 
 export async function runDirectorScript(steps, opts = {}) {
@@ -168,6 +172,7 @@ export async function runDirectorScript(steps, opts = {}) {
   state.speed = Math.max(0.25, Math.min(3, opts.speed ?? 1.35));
   state.running = true;
   state.abortRequested = false;
+  activeAbortController = new AbortController();
   state.scriptTitle = opts.title || null;
   state.cursor.visible = true;
   emit();
@@ -210,6 +215,7 @@ export async function runDirectorScript(steps, opts = {}) {
     state.cursor.pressed = false;
     state.cursor.dragLabel = null;
     state.abortRequested = false;
+    activeAbortController = null;
     state.speed = previousSpeed;
     document.body.classList.remove("director-running");
     emit();
@@ -221,6 +227,7 @@ export async function runDirectorScript(steps, opts = {}) {
 export function stopDirector() {
   if (!state.running) return;
   state.abortRequested = true;
+  activeAbortController?.abort();
   emit();
 }
 

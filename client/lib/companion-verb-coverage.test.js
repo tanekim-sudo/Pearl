@@ -22,6 +22,10 @@ test("companion whitelist covers every registered director verb", () => {
     unregistered: [],
     missingExamples: [],
     missingAnimation: [],
+    missingArgumentSchema: [],
+    missingRisk: [],
+    missingObservation: [],
+    missingTestCase: [],
   });
 });
 
@@ -33,4 +37,20 @@ test("capability audit rejects missing intent and animation metadata", () => {
   const audit = validateCapabilityManifest(registered, broken);
   assert.deepEqual(audit.missingExamples, [broken[0].name]);
   assert.deepEqual(audit.missingAnimation, [broken[0].name]);
+});
+
+test("capability audit requires schemas, risk, observations, and test IDs", () => {
+  const broken = COMPANION_CAPABILITIES.map((entry, index) =>
+    index === 0
+      ? { ...entry, args: null, risk: null, observation: null, testCaseId: null }
+      : entry
+  );
+  const audit = validateCapabilityManifest(
+    COMPANION_CAPABILITIES.map((entry) => entry.name),
+    broken
+  );
+  assert.deepEqual(audit.missingArgumentSchema, [broken[0].name]);
+  assert.deepEqual(audit.missingRisk, [broken[0].name]);
+  assert.deepEqual(audit.missingObservation, [broken[0].name]);
+  assert.deepEqual(audit.missingTestCase, [broken[0].name]);
 });

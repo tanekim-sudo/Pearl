@@ -4,7 +4,9 @@
  */
 
 import { capabilityPrompt, COMPANION_VERBS } from "./companion-capabilities.js";
+import { parseCompanionPlan } from "./companion-plan.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
+export { parseCompanionPlan } from "./companion-plan.js";
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
 
@@ -115,6 +117,41 @@ Rules:
 - Keep scripts under 40 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
 }
 
+export function buildAdaptiveCompanionPrompt({ workspaceContext = "{}", autonomy = "preview-complex" } = {}) {
+  return `You are the action planner inside lens. Plan against the actual bounded workspace snapshot and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
+
+WORKSPACE:
+${workspaceContext}
+
+CAPABILITIES:
+${capabilityPrompt()}
+
+Return ONLY one versioned JSON plan:
+{"version":1,"title":"short visual label","root":{"kind":"sequence","steps":[]}}
+
+Step DSL:
+- {"kind":"query","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}
+- {"kind":"action","capability":"manifestName","args":{},"saveAs":"optional"}
+- {"kind":"sequence","steps":[]}
+- {"kind":"parallel","steps":[]} (read/evaluate/research only)
+- {"kind":"foreach","in":"savedArray","limit":10,"step":{}}, using "$item.id" for stable action targets
+- {"kind":"conditional","if":{"ref":"$name","exists":true},"then":{},"else":{}}
+- {"kind":"retry","limit":2,"step":{}}
+- {"kind":"evaluate","target":"$savedOrStableId","criteria":["criterion"],"saveAs":"evaluation"}
+- {"kind":"research","question":"...","scope":"web","recency":"...","maxSources":5,"saveAs":"research"}
+- {"kind":"checkpoint","mode":"save|confirm","label":"..."}
+- {"kind":"artifact","from":"savedResult","placement":"paper|ai|generator|beside-target","target":"stable-id"}
+
+Rules:
+- Action-first and silent. The plan itself is the response; do not add conversational text.
+- Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
+- Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
+- Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
+- Destructive capabilities require a prior confirm checkpoint and "confirmed":true on the action.
+- Preserve originals before broad revisions. Use finite loops/retries. Do not exceed 40 total steps, 100 iterations, or 3 research calls.
+- Current autonomy preference is "${autonomy}".`;
+}
+
 function cleanArgs(args) {
   if (!args || typeof args !== "object" || Array.isArray(args)) return {};
   const out = {};
@@ -158,12 +195,10 @@ export function parseCompanionReply(raw) {
   const parsed = JSON.parse(text.slice(start, end + 1));
   const say = typeof parsed.say === "string" ? parsed.say.slice(0, 600) : "";
   const demoId = typeof parsed.demoId === "string" && parsed.demoId ? parsed.demoId : null;
-  const steps = Array.isArray(parsed.steps)
-    ? parsed.steps
-        .filter((s) => s && typeof s === "object" && VERB_NAMES.has(s.verb))
-        .slice(0, 48)
-        .map((s) => ({ verb: s.verb, args: cleanArgs(s.args) }))
-    : [];
+  const rawSteps = Array.isArray(parsed.steps) ? parsed.steps.slice(0, 48) : [];
+  const unsupported = rawSteps.find((step) => !step || typeof step !== "object" || !VERB_NAMES.has(step.verb));
+  if (unsupported) throw new Error(`unsupported companion verb "${unsupported?.verb || "(missing)"}"`);
+  const steps = rawSteps.map((s) => ({ verb: s.verb, args: cleanArgs(s.args) }));
   return { say, demoId, steps };
 }
 

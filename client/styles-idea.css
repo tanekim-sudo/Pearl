@@ -1,3 +1,119 @@
+/* ── Unified workspace v2 ───────────────────────────────────────────────
+   The rail remains tooling; paper and constellation now occupy one white,
+   unbounded world with one camera. */
+.three-column-grid.unified-workspace-grid {
+  grid-template-columns: var(--col-left-w, 280px) 8px minmax(0, 1fr);
+}
+
+.unified-workspace-grid .canvas-column {
+  background: #faf9f6;
+}
+
+.unified-workspace-grid .canvas-column::after {
+  display: none;
+}
+
+.unified-workspace-grid .viewport {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.045) 0.7px, transparent 0.8px)
+      0 0 / 28px 28px,
+    #faf9f6;
+}
+
+.unified-workspace-grid .paper-sheet,
+.unified-workspace-grid .paper-content {
+  overflow: visible;
+}
+
+.unified-workspace-grid .paper-sheet {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.075);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035), 0 14px 40px rgba(0, 0, 0, 0.07);
+}
+
+.unified-workspace-grid .paper-content {
+  background-color: #fff;
+  background-image: none;
+}
+
+.ai-node-viewport.ai-node-viewport-embedded {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: transparent;
+}
+
+.ai-node-viewport-embedded .ai-void-bg {
+  display: none;
+}
+
+.ai-node-viewport-embedded .ai-node,
+.ai-node-viewport-embedded .ai-edge,
+.ai-node-viewport-embedded .ai-explore-overlay,
+.ai-node-viewport-embedded .ai-strand-choice-hud,
+.ai-node-viewport-embedded .ai-strand-drag-layer {
+  pointer-events: auto;
+}
+
+.ai-node-edge-handle {
+  position: absolute;
+  z-index: 8;
+  pointer-events: auto;
+}
+
+.ai-node-edge-handle-n,
+.ai-node-edge-handle-s {
+  left: 25%;
+  width: 50%;
+  height: 24%;
+}
+
+.ai-node-edge-handle-e,
+.ai-node-edge-handle-w {
+  top: 25%;
+  width: 24%;
+  height: 50%;
+}
+
+.ai-node-edge-handle-n { top: 0; cursor: n-resize; }
+.ai-node-edge-handle-e { right: 0; cursor: e-resize; }
+.ai-node-edge-handle-s { bottom: 0; cursor: s-resize; }
+.ai-node-edge-handle-w { left: 0; cursor: w-resize; }
+
+.ai-node-viewport-embedded .ai-node-ring {
+  border-color: rgba(20, 20, 20, 0.82);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.ai-node-viewport-embedded .ai-node.selected .ai-node-ring,
+.ai-node-viewport-embedded .ai-node.multi-selected .ai-node-ring {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(232, 185, 35, 0.22);
+}
+
+.ai-node-viewport-embedded .ai-node-content-text {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.ai-node-viewport-embedded .ai-node-content-text-body {
+  color: rgba(8, 8, 8, 0.94);
+}
+
+.ai-node-viewport-embedded .ai-node-line,
+.ai-node-viewport-embedded .ai-node-line-expand,
+.ai-node-viewport-embedded .ai-node-line-interpret,
+.ai-node-viewport-embedded .ai-node-line-move,
+.ai-node-viewport-embedded .ai-node-line-link,
+.ai-node-viewport-embedded .ai-node-line-branch {
+  stroke: rgba(20, 20, 20, 0.7);
+}
+
+@media (max-width: 900px) {
+  .three-column-grid.unified-workspace-grid {
+    grid-template-columns: minmax(188px, 25vw) 6px minmax(0, 1fr);
+  }
+}
 
 /* ── Idea whiteboard layout (mockup theme) ── */
 
@@ -5556,7 +5672,8 @@ body.director-running .idea-app {
   letter-spacing: 0.06em;
 }
 
-.companion-memory input {
+.companion-memory input,
+.companion-memory select {
   border: 1px solid rgba(50, 45, 32, 0.15);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.75);
@@ -5676,6 +5793,47 @@ body.director-running .idea-app {
 .companion-progress {
   background: rgba(0, 0, 0, 0.035);
   color: rgba(50, 45, 32, 0.62);
+}
+
+.companion-plan-strip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 10px;
+  margin: 8px 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(70, 55, 22, 0.16);
+  border-radius: 10px;
+  background: rgba(201, 162, 39, 0.1);
+  color: rgba(50, 45, 32, 0.82);
+  font-size: 11px;
+}
+
+.companion-plan-strip strong {
+  grid-column: 1;
+}
+
+.companion-plan-strip > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  grid-column: 1;
+}
+
+.companion-plan-strip span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.companion-plan-strip button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(26, 24, 18, 0.88);
+  color: white;
 }
 
 .companion-playing button,
@@ -6520,4 +6678,28 @@ svg.gen-item-selected {
 .rail-empty-cta span {
   font-size: 11px;
   color: rgba(30, 28, 22, 0.4);
+}
+
+.ai-node-viewport-embedded .ai-strand-choice-hud {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #111;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
+}
+
+.ai-node-viewport-embedded .ai-strand-choice-hud-title,
+.ai-node-viewport-embedded .ai-strand-choice-hud-item,
+.ai-node-viewport-embedded .ai-strand-choice-hud-key,
+.ai-node-viewport-embedded .ai-strand-choice-hud-hint {
+  color: rgba(20, 20, 20, 0.72);
+}
+
+.ai-node-viewport-embedded .ai-strand-choice-hud-item.active {
+  background: rgba(232, 185, 35, 0.18);
+  color: #111;
+}
+
+.ai-node-viewport-embedded .ai-strand-choice-hud-key,
+.ai-node-viewport-embedded .ai-strand-choice-hud-item.active .ai-strand-choice-hud-key {
+  background: rgba(0, 0, 0, 0.06);
 }

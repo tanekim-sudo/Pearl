@@ -10,6 +10,7 @@ import {
   nextInterviewPrompt,
   rememberCompanionAction,
   saveCompanionMemory,
+  setCompanionAutonomy,
 } from "../lib/companion-memory.js";
 
 const SpeechRecognitionImpl =
@@ -42,6 +43,7 @@ export default function CompanionChat({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState("");
+  const [activePlan, setActivePlan] = useState(null);
   const [listening, setListening] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [director, setDirector] = useState(null);
@@ -116,6 +118,9 @@ export default function CompanionChat({
       onPhase(nextPhase) {
         if (!run.signal.aborted) setPhase(nextPhase);
       },
+      onPlan(plan) {
+        if (!run.signal.aborted) setActivePlan(plan);
+      },
     };
     try {
       const interviewPrompt = nextInterviewPrompt(memory);
@@ -165,6 +170,7 @@ export default function CompanionChat({
       if (isCurrent) {
         setBusy(false);
         setPhase("");
+        setActivePlan(null);
       }
     }
   }
@@ -174,6 +180,7 @@ export default function CompanionChat({
     if (cancelled) setDraft(cancelled.text);
     setBusy(false);
     setPhase("");
+    setActivePlan(null);
     stopDirector();
   }
 
@@ -348,6 +355,19 @@ export default function CompanionChat({
             />
           </label>
           <small>{memory.goals.length} goals · {memory.actions.length} recent action summaries</small>
+          <label>
+            autonomy
+            <select
+              value={memory.preferences?.autonomy || "preview-complex"}
+              onChange={(event) =>
+                setMemory(setCompanionAutonomy(userId, event.target.value))
+              }
+            >
+              <option value="act-immediately">act immediately</option>
+              <option value="preview-complex">preview complex plans</option>
+              <option value="always-preview">always preview</option>
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => {
@@ -362,6 +382,17 @@ export default function CompanionChat({
       )}
 
       <div className="companion-messages" ref={listRef}>
+        {activePlan?.preview && (
+          <div className="companion-plan-strip" data-testid="companion-plan-strip">
+            <strong>{activePlan.title}</strong>
+            <div>
+              {(activePlan.steps || []).map((step, index) => (
+                <span key={`${step}-${index}`}>{step}</span>
+              ))}
+            </div>
+            <button type="button" onClick={cancelActiveWork}>stop</button>
+          </div>
+        )}
         {messages.map((m, i) => (
           <div key={i} className={"companion-msg " + m.role + (m.error ? " error" : "")}>
             {m.text}

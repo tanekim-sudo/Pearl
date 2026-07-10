@@ -111,6 +111,12 @@ import {
 import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
+import AiNodeCanvas from "./components/AiNodeCanvas.jsx";
+import {
+  UNIFIED_WORKSPACE_KEY,
+  migrateUnifiedWorkspace,
+  serializeUnifiedWorkspace,
+} from "./lib/unified-workspace.js";
 import LensTreeEditor from "./components/LensTreeEditor.jsx";
 import CognitionGitHeader from "./components/CognitionGitHeader.jsx";
 import LensHistoryPanel from "./components/LensHistoryPanel.jsx";
@@ -164,13 +170,23 @@ import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
 import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import {
+  buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
   parseSaveChainCommand,
+  parseCompanionPlan,
   parseCompanionReply,
   CLEARABLE_DOMAINS,
 } from "./lib/companion-intent.js";
 import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
+import {
+  buildWorkspaceSnapshot,
+  queryWorkspace,
+  workspacePromptContext,
+} from "./lib/companion-observation.js";
+import { layoutObjects, avoidOverlaps } from "./lib/companion-geometry.js";
+import { executeCompanionPlan } from "./lib/companion-executor.js";
+import { planNeedsPreview, summarizePlan } from "./lib/companion-plan.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
@@ -1123,7 +1139,7 @@ function normalizeItem(it) {
   if (base.type === "table" && !base.rows) base.rows = defaultBlockMeta("table").rows;
   if (base.type === "voice" && !base.waveform) base.waveform = defaultBlockMeta("voice").waveform;
   if (base.type === "stroke" && !base.highlight) base.color = PAPER_INK;
-  return clampItemToPaper(base, itemWorldBBox);
+  return base;
 }
 
 function migrateFromArtifact() {
@@ -2022,25 +2038,36 @@ if (typeof window !== "undefined") {
 }
 
 export default function App() {
+  const initialUnifiedWorkspace = useMemo(() => {
+    const legacyItems = load(ITEMS_KEY, null);
+    const legacyNodes = load(AI_NODES_KEY, []);
+    const legacyCamera = load(CAMERA_KEY, null);
+    const unified = load(UNIFIED_WORKSPACE_KEY, null);
+    return migrateUnifiedWorkspace({
+      items: Array.isArray(legacyItems) ? legacyItems : [],
+      nodes: Array.isArray(legacyNodes) ? legacyNodes : [],
+      camera: legacyCamera,
+      unified,
+    });
+  }, []);
   const [items, setItems] = useState(() => {
-    const saved = load(ITEMS_KEY, null);
+    const saved = initialUnifiedWorkspace.items;
     if (Array.isArray(saved) && saved.length) return saved.map(normalizeItem).filter(Boolean);
     const fromArtifact = migrateFromArtifact();
     if (fromArtifact.length) return fromArtifact;
     return migrateOldSeeds().map(normalizeItem);
   });
   const [camera, setCameraRaw] = useState(() => {
-    const saved = load(CAMERA_KEY, null);
+    const saved = initialUnifiedWorkspace.camera;
     if (saved && typeof saved.scale === "number") return saved;
     return { x: 0, y: 0, scale: 1 };
   });
-  // Single-page model: every camera update keeps the sheet locked in view.
+  // One unbounded world camera. The paper is a frame in the world, not a
+  // viewport constraint, so nodes, ink, and blocks can coexist around it.
   const setCamera = useCallback((next) => {
     setCameraRaw((prev) => {
       const value = typeof next === "function" ? next(prev) : next;
-      const r = viewportRef.current?.getBoundingClientRect();
-      if (!r || r.width < 60 || r.height < 60) return value;
-      return clampPaperCamera(value, r.width, r.height);
+      return { ...value, scale: clampScale(value.scale) };
     });
   }, []);
   const [operators, setOperators] = useState(() => {
@@ -2182,8 +2209,9 @@ export default function App() {
   const [savedIndicator, setSavedIndicator] = useState(true);
   const [aiPanel, setAiPanel] = useState(null);
   const [aiNodes, setAiNodes] = useState(() => {
-    // AI-layer thinking survives reloads; nodes caught mid-request come back settled.
-    const saved = load(AI_NODES_KEY, []);
+    // The versioned unified store wins after migration; legacy AI storage
+    // remains readable as a recovery source.
+    const saved = initialUnifiedWorkspace.nodes;
     return Array.isArray(saved) ? saved.map((n) => ({ ...n, loading: false })) : [];
   });
   const [selectedAiNodeIds, setSelectedAiNodeIds] = useState([]);
@@ -2221,9 +2249,8 @@ export default function App() {
   const [strokeTooltip, setStrokeTooltip] = useState(null);
   const [aiDropOver, setAiDropOver] = useState(false);
   const [aiCanvasDropOver, setAiCanvasDropOver] = useState(false);
-  const [aiCamera, setAiCamera] = useState(() =>
-    centerAiCamera(400, 300, DEFAULT_CONSTELLATION_SCALE)
-  );
+  const aiCamera = camera;
+  const setAiCamera = setCamera;
   const [aiFocusedNodeId, setAiFocusedNodeId] = useState(null);
   const [boundaryDropOver, setBoundaryDropOver] = useState(false);
   const [boundaryMagnetActive, setBoundaryMagnetActive] = useState(false);
@@ -2281,6 +2308,7 @@ export default function App() {
   const aiViewportRef = useRef(null);
   const functionsColumnRef = useRef(null);
   const aiCamAnimCancelRef = useRef(null);
+  const aiMoveHistoryRef = useRef({ nodeId: null, at: 0 });
   const prevAiNodeCountRef = useRef(0);
   const aiStableCameraUntilRef = useRef(0);
   aiCamRef.current = aiCamera;
@@ -2318,7 +2346,7 @@ export default function App() {
   }, [items]);
   useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
 
-  const paperCenteredRef = useRef(false);
+  const paperCenteredRef = useRef(Boolean(initialUnifiedWorkspace.savedAt));
   useEffect(() => {
     if (paperCenteredRef.current || !viewportRef.current) return;
     const r = viewportRef.current.getBoundingClientRect();
@@ -2326,38 +2354,6 @@ export default function App() {
     paperCenteredRef.current = true;
     setCamera(fitPaperInView(r.width, r.height));
   });
-
-  const aiCenteredRef = useRef(false);
-  useEffect(() => {
-    if (aiCenteredRef.current || !aiViewportRef.current) return;
-    const w = aiViewportRef.current.clientWidth;
-    const h = aiViewportRef.current.clientHeight;
-    if (w < 40 || h < 40) return;
-    aiCenteredRef.current = true;
-    setAiCamera(fitAiConstellation(aiNodesRef.current, w, h));
-  });
-
-  useEffect(() => {
-    const count = aiNodes.length;
-    const prev = prevAiNodeCountRef.current;
-    prevAiNodeCountRef.current = count;
-    if (count === 0) return;
-    if (aiStableCameraUntilRef.current > Date.now()) return;
-    const el = aiViewportRef.current;
-    if (!el) return;
-    const w = el.clientWidth;
-    const h = el.clientHeight;
-    if (w < 40 || h < 40) return;
-
-    if (prev === 0 && count >= 1) {
-      setAiCamera(fitAiConstellation(aiNodes, w, h));
-      return;
-    }
-
-    if (count - prev >= 3 && aiCamRef.current.scale <= CONSTELLATION_ZOOM_THRESHOLD) {
-      animateAiCameraTo(fitAiConstellation(aiNodes, w, h), 520);
-    }
-  }, [aiNodes]);
 
   useEffect(() => {
     if (!paperRecording) {
@@ -2379,6 +2375,16 @@ export default function App() {
       /* quota */
     }
   }, [aiNodes]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        UNIFIED_WORKSPACE_KEY,
+        serializeUnifiedWorkspace({ items, nodes: aiNodes, camera })
+      );
+    } catch {
+      /* quota / privacy mode: legacy stores still provide recovery */
+    }
+  }, [items, aiNodes, camera]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
@@ -2559,7 +2565,7 @@ export default function App() {
   }
 
   function pushHistory() {
-    const snap = JSON.stringify(itemsRef.current);
+    const snap = JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current });
     const { past } = historyRef.current;
     if (past.length && past[past.length - 1] === snap) return;
     past.push(snap);
@@ -2574,8 +2580,10 @@ export default function App() {
     const { past, future } = historyRef.current;
     if (!past.length) return;
     emitTourEvent("undo");
-    future.push(JSON.stringify(itemsRef.current));
-    setItems(JSON.parse(past.pop()));
+    future.push(JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current }));
+    const snap = JSON.parse(past.pop());
+    setItems(Array.isArray(snap) ? snap : snap.items || []);
+    if (!Array.isArray(snap)) setAiNodes(snap.aiNodes || []);
     setCanUndo(past.length > 0);
     setCanRedo(future.length > 0);
     setHighlight(null);
@@ -2588,8 +2596,10 @@ export default function App() {
     const { past, future } = historyRef.current;
     if (!future.length) return;
     emitTourEvent("redo");
-    past.push(JSON.stringify(itemsRef.current));
-    setItems(JSON.parse(future.pop()));
+    past.push(JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current }));
+    const snap = JSON.parse(future.pop());
+    setItems(Array.isArray(snap) ? snap : snap.items || []);
+    if (!Array.isArray(snap)) setAiNodes(snap.aiNodes || []);
     setCanUndo(true);
     setCanRedo(future.length > 0);
     setHighlight(null);
@@ -3354,6 +3364,13 @@ export default function App() {
             brushed.forEach((id) => g.brushedIds.add(id));
             setHighlightTouchIds((prev) => [...new Set([...prev, ...brushed])]);
           }
+          const nodePad = 10 / Math.max(camRef.current.scale, 0.08);
+          for (const node of aiNodesRef.current) {
+            if (Math.hypot(w.x - node.x, w.y - node.y) <= (node.radius || 20) + nodePad) {
+              if (!g.brushedAiIds) g.brushedAiIds = new Set();
+              g.brushedAiIds.add(node.id);
+            }
+          }
           g.lastCx = cx;
           g.lastCy = cy;
         }
@@ -3405,12 +3422,9 @@ export default function App() {
           arr.map((it) => {
             if (!ids.has(it.id)) return it;
             if (it.type === "stroke") {
-              return clampItemToPaper(
-                { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) },
-                itemWorldBBox
-              );
+              return { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
             }
-            return clampItemToPaper({ ...it, x: it.x + dx, y: it.y + dy }, itemWorldBBox);
+            return { ...it, x: it.x + dx, y: it.y + dy };
           })
         );
       } else if (g.mode === "pending") {
@@ -3497,11 +3511,22 @@ export default function App() {
 
       if (g.mode === "draw") {
         const brushedDuring = g.brushedIds ? [...g.brushedIds] : [];
+        const brushedAiDuring = g.brushedAiIds ? [...g.brushedAiIds] : [];
         setHighlightTouchIds([]);
         if (g.points.length > 1) {
           const isHighlight = !!g.highlight;
           if (isHighlight) {
             const pts = g.points.slice();
+            const nodeBrush = 10 / Math.max(camRef.current.scale, 0.08);
+            for (const node of aiNodesRef.current) {
+              const radius = (node.radius || 20) + nodeBrush;
+              const hit = pts.some((point, index) => {
+                if (index === 0) return Math.hypot(point.x - node.x, point.y - node.y) <= radius;
+                const previous = pts[index - 1];
+                return distToSeg(node.x, node.y, previous.x, previous.y, point.x, point.y) <= radius;
+              });
+              if (hit && !brushedAiDuring.includes(node.id)) brushedAiDuring.push(node.id);
+            }
             if (g.strokeId) paperSessionRef.current?.cancelStroke?.();
             const moved = Math.hypot((g.lastCx ?? g.cx) - g.cx, (g.lastCy ?? g.cy) - g.cy);
             // Distance-based tap: point counts vary with event coalescing.
@@ -3545,6 +3570,9 @@ export default function App() {
                   accumulateHighlightSelection(merged, true);
                 }
               }
+            }
+            if (brushedAiDuring.length) {
+              setHighlightAiNodeIds((prev) => [...new Set([...prev, ...brushedAiDuring])]);
             }
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
@@ -3699,19 +3727,6 @@ export default function App() {
       setCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
     }
     paperVpSizeRef.current = { w, h };
-  }, [columnLayout, colGridWidth, columnResizing]);
-
-  useEffect(() => {
-    if (columnResizing) return;
-    const el = aiViewportRef.current;
-    if (!el) return;
-    const w = el.clientWidth;
-    const h = el.clientHeight;
-    const prev = aiVpSizeRef.current;
-    if (prev.w > 0 && (prev.w !== w || prev.h !== h)) {
-      setAiCamera((cam) => compensateCameraForViewportResize(cam, prev.w, prev.h, w, h));
-    }
-    aiVpSizeRef.current = { w, h };
   }, [columnLayout, colGridWidth, columnResizing]);
 
   // wheel: pinch / ctrl+scroll zooms at cursor; two-finger scroll pans
@@ -8893,6 +8908,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   }
 
   function moveAiNode(nodeId, x, y) {
+    const now = performance.now();
+    if (aiMoveHistoryRef.current.nodeId !== nodeId || now - aiMoveHistoryRef.current.at > 500) {
+      pushHistory();
+      aiMoveHistoryRef.current = { nodeId, at: now };
+    } else {
+      aiMoveHistoryRef.current.at = now;
+    }
     setAiNodes((nodes) => nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
   }
 
@@ -10505,6 +10527,212 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       ctx.vars.lastAiNodeId = node.id;
       await tk.wait(400);
     },
+    arrangeItems: async (a, tk) => {
+      const requested = new Set(a.targets || []);
+      const paperTargets = itemsRef.current.filter(
+        (item) => requested.has(item.id) && item.type !== "link" && item.type !== "stroke"
+      );
+      const aiTargets = aiNodesRef.current.filter((node) => requested.has(node.id));
+      if (!paperTargets.length && !aiTargets.length) throw new Error("no matching objects to arrange");
+      const paperObjects = paperTargets.map((item) => {
+        const box = itemWorldBBox(item);
+        return { id: item.id, box };
+      });
+      const aiObjects = aiTargets.map((node) => ({
+        id: node.id,
+        box: {
+          minx: node.x - (node.radius || 20),
+          miny: node.y - (node.radius || 20),
+          maxx: node.x + (node.radius || 20),
+          maxy: node.y + (node.radius || 20),
+        },
+      }));
+      const options = a.options || {};
+      const paperPlacements = avoidOverlaps(
+        layoutObjects(paperObjects, a.layout, options),
+        paperObjects,
+        options
+      );
+      const aiPlacements = avoidOverlaps(
+        layoutObjects(aiObjects, a.layout, options),
+        aiObjects,
+        options
+      );
+      for (const placement of [...paperPlacements, ...aiPlacements].slice(0, 4)) {
+        const item = paperTargets.find((entry) => entry.id === placement.id);
+        const node = aiTargets.find((entry) => entry.id === placement.id);
+        const from = item
+          ? directorItemClientCenter(item)
+          : directorAiClientPoint(node.x, node.y);
+        const to = item
+          ? worldToClient(
+              placement.x + itemWidth(item) * (item.scale ?? 1) / 2,
+              placement.y + itemHeight(item) * (item.scale ?? 1) / 2
+            )
+          : directorAiClientPoint(placement.x + (node.radius || 20), placement.y + (node.radius || 20));
+        await tk.moveTo(from.x, from.y);
+        await tk.press();
+        await tk.moveTo(to.x, to.y, 420);
+        await tk.release();
+      }
+      pushHistory();
+      const paperById = Object.fromEntries(paperPlacements.map((placement) => [placement.id, placement]));
+      setItems((current) =>
+        current.map((item) =>
+          paperById[item.id]
+            ? clampItemToPaper(
+                { ...item, x: paperById[item.id].x, y: paperById[item.id].y },
+                itemWorldBBox
+              )
+            : item
+        )
+      );
+      const aiById = Object.fromEntries(aiPlacements.map((placement) => [placement.id, placement]));
+      setAiNodes((current) =>
+        current.map((node) =>
+          aiById[node.id]
+            ? {
+                ...node,
+                x: aiById[node.id].x + (node.radius || 20),
+                y: aiById[node.id].y + (node.radius || 20),
+              }
+            : node
+        )
+      );
+      await tk.wait(450);
+    },
+    groupItems: async (a, tk, ctx) => {
+      const ids = new Set(a.targets || []);
+      const groupId = `companion-group-${uid()}`;
+      const paperTargets = itemsRef.current.filter((item) => ids.has(item.id));
+      const aiTargets = aiNodesRef.current.filter((node) => ids.has(node.id));
+      if (paperTargets.length + aiTargets.length < 2) throw new Error("choose at least two objects to group");
+      const first = paperTargets[0]
+        ? directorItemClientCenter(paperTargets[0])
+        : directorAiClientPoint(aiTargets[0].x, aiTargets[0].y);
+      await tk.click(first.x, first.y);
+      pushHistory();
+      setItems((current) =>
+        current.map((item) => (ids.has(item.id) ? { ...item, groupId, groupName: a.name || null } : item))
+      );
+      setAiNodes((current) =>
+        current.map((node) => (ids.has(node.id) ? { ...node, groupId, groupName: a.name || null } : node))
+      );
+      ctx.vars.lastGroupId = groupId;
+      await tk.wait(400);
+    },
+    linkItems: async (a, tk) => {
+      const fromItem = directorResolveItem(a.from, { vars: {} });
+      const toItem = directorResolveItem(a.to, { vars: {} });
+      const fromNode = directorResolveAiNode(a.from, { vars: {} });
+      const toNode = directorResolveAiNode(a.to, { vars: {} });
+      if (fromItem && toItem) {
+        const start = directorItemClientCenter(fromItem);
+        const end = directorItemClientCenter(toItem);
+        await tk.moveTo(start.x, start.y);
+        await tk.press(a.label || "link");
+        await tk.moveTo(end.x, end.y, 620);
+        await tk.release();
+        pushHistory();
+        setItems((current) => [...current, { ...makeBoardLink(fromItem.id, toItem.id), label: a.label || null }]);
+      } else if (fromNode && toNode) {
+        const start = directorAiClientPoint(fromNode.x, fromNode.y);
+        const end = directorAiClientPoint(toNode.x, toNode.y);
+        await tk.moveTo(start.x, start.y);
+        await tk.press(a.label || "link");
+        await tk.moveTo(end.x, end.y, 620);
+        await tk.release();
+        pushHistory();
+        setAiNodes((current) =>
+          current.map((node) =>
+            node.id === toNode.id
+              ? { ...node, sourceNodeIds: [...new Set([...(node.sourceNodeIds || []), fromNode.id])] }
+              : node
+          )
+        );
+      } else {
+        throw new Error("links currently require two paper objects or two AI nodes");
+      }
+      await tk.wait(350);
+    },
+    transformMaterial: async (a, tk, ctx) => {
+      const ids = new Set(a.targets || []);
+      const paperTargets = itemsRef.current.filter((item) => ids.has(item.id));
+      const aiTargets = aiNodesRef.current.filter((node) => ids.has(node.id));
+      const materials = [
+        ...paperTargets.map((item) => item.text || ""),
+        ...aiTargets.map((node) => node.expandedText || node.preview || node.label || ""),
+      ].filter(Boolean);
+      if (!materials.length) throw new Error("no readable material matched the requested targets");
+      const first = paperTargets[0]
+        ? directorItemClientCenter(paperTargets[0])
+        : directorAiClientPoint(aiTargets[0].x, aiTargets[0].y);
+      await tk.moveTo(first.x, first.y);
+      const count = Math.min(6, Math.max(1, Number(a.outputCount) || 1));
+      const criteria = (a.criteria || []).join(", ");
+      const instruction = [
+        `Operation: ${a.mode}.`,
+        a.instruction ? `Instruction: ${a.instruction}` : "",
+        criteria ? `Criteria: ${criteria}` : "",
+        `Produce ${count} distinct output${count === 1 ? "" : "s"}.`,
+        count > 1 ? "Separate outputs with a line containing only ---OUTPUT---." : "",
+        "Return only substantive artifact text, with no acknowledgement or narration.",
+      ].filter(Boolean).join("\n");
+      const output = await runClaude(instruction, materials.join("\n\n---\n\n"), {
+        maxTokens: Math.min(4096, 900 * count),
+        clientAbortMs: null,
+        signal: tk.signal,
+      });
+      const outputs = String(output || "")
+        .split(/\n---OUTPUT---\n/i)
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .slice(0, count);
+      if (!outputs.length) throw new Error("the transformation produced no material");
+      const anchor = paperTargets[0]
+        ? { x: paperTargets[0].x + itemWidth(paperTargets[0]) + 44, y: paperTargets[0].y }
+        : { x: aiTargets[0].x + 90, y: aiTargets[0].y - 40 };
+      const sourceIds = [...paperTargets, ...aiTargets].map((target) => target.id);
+      outputs.forEach((text, index) => {
+        const id = spawnTextAtWorld(text, { x: anchor.x, y: anchor.y + index * 150 }, {
+          silent: true,
+          sourceIds,
+          via: { name: a.mode, instruction: a.instruction || null, criteria: a.criteria || [] },
+        });
+        if (id) {
+          ctx.vars.lastItemId = id;
+          ctx.vars[`output${index + 1}`] = id;
+        }
+      });
+      await tk.wait(600);
+    },
+    annotateFeedback: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target, ctx);
+      const node = directorResolveAiNode(a.target, ctx);
+      if (!item && !node) throw new Error(`no target matching “${a.target}”`);
+      const anchor = item
+        ? { x: item.x + itemWidth(item) + 36, y: item.y }
+        : { x: node.x + (node.radius || 20) + 50, y: node.y - 30 };
+      const point = item ? directorItemClientCenter(item) : directorAiClientPoint(node.x, node.y);
+      await tk.moveTo(point.x, point.y);
+      const sources = (a.sources || []).filter(
+        (source) => source && typeof source === "object" && source.url && source.title
+      );
+      const citations = sources.length
+        ? `\n\nSources:\n${sources
+            .map((source) => `- ${source.title}${source.date ? ` (${source.date})` : ""}: ${source.url}`)
+            .join("\n")}`
+        : "";
+      const targetId = item?.id || node.id;
+      const id = spawnTextAtWorld(`[${a.kind || "feedback"}]\n${a.text}${citations}`, anchor, {
+        silent: true,
+        sourceIds: [targetId],
+        via: { name: "companion annotation", kind: a.kind || "feedback", sources },
+      });
+      if (item && id) setItems((current) => [...current, makeBoardLink(targetId, id)]);
+      ctx.vars.lastItemId = id;
+      await tk.wait(500);
+    },
     openFunctionEditor: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
       if (!op) throw new Error(`no function called “${a.op}”`);
@@ -10794,7 +11022,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     clearWorkspaceDomains: async (a) => stageCompanionClear(a.domains),
   });
 
-  async function handleCompanionCommand(text, { signal, onPhase } = {}) {
+  async function handleCompanionCommand(text, { signal, onPhase, onPlan } = {}) {
     if (pendingChainName) {
       setPendingChainName(false);
       const name = text.trim();
@@ -10820,63 +11048,118 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
 
-    const demosMeta = COMPANION_DEMOS.map((d) => ({ id: d.id, title: d.title, blurb: d.blurb }));
-    const functionNames = operators
-      .filter((o) => o.top || o.move)
-      .map((o) => o.name)
-      .filter(Boolean)
-      .slice(0, 30);
-    const itemPreviews = itemsRef.current
-      .map((it) => truncatePreview(it.text || "", 40))
-      .filter(Boolean)
-      .slice(0, 12);
+    const memory = loadCompanionMemory(supaAuth.session?.user?.id);
+    const workspace = buildWorkspaceSnapshot({
+      items: itemsRef.current.filter((item) => itemVisibleOnPage(item, activePageId, worldFilter)),
+      nodes: aiNodesRef.current,
+      selectedItemIds: selRef.current,
+      selectedNodeIds: selectedAiNodeIdsRef.current,
+      highlightedIds: highlightSelectionRef.current,
+      lenses: operators.filter((operator) => operator.top || operator.move),
+      generators: lensesRef.current,
+      camera: camRef.current,
+      viewport: vpRect(),
+      tool,
+      page: pages.find((page) => page.id === activePageId),
+      user: memory,
+    });
+    const autonomy = memory.preferences?.autonomy || "preview-complex";
     onPhase?.("planning");
-    const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
-      system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
-      maxTokens: 1600,
+    const raw = await runClaude("Create the validated action plan for this request.", text, {
+      system: buildAdaptiveCompanionPrompt({
+        workspaceContext: workspacePromptContext(workspace),
+        autonomy,
+      }),
+      maxTokens: 3200,
       timeoutMs: PHASE_TIMEOUT.synthesizeComposite,
       clientAbortMs: null,
       signal,
     });
-    const reply = parseCompanionReply(raw);
-    const demo = reply.demoId ? findDemo(reply.demoId) : null;
-    const steps = demo ? demo.steps : reply.steps;
-    const requestedClears = new Set();
-    for (const step of steps || []) {
-      if (step.verb === "clearPaper") requestedClears.add("paper");
-      if (step.verb === "clearAiSpace") requestedClears.add("ai");
-      if (step.verb === "clearUserLenses") requestedClears.add("lenses");
-      if (step.verb === "clearGenerators") requestedClears.add("generators");
-      if (step.verb === "clearWorkspaceDomains") {
-        for (const domain of step.args?.domains || []) requestedClears.add(domain);
-      }
+    const plan = parseCompanionPlan(raw);
+    const containsResearch = JSON.stringify(plan).includes('"kind":"research"');
+    if (containsResearch) {
+      return {
+        visible: true,
+        text: "Live web research is unavailable in this backend, so I did not mutate the workspace or invent citations.",
+      };
     }
-    if (requestedClears.size) {
-      stageCompanionClear([...requestedClears]);
-      return null;
-    }
-    if (steps?.length) {
-      onPhase?.("executing");
-      // fire-and-forget: the ghost cursor takes over while chat stays responsive
-      runDirectorScript(steps, { title: demo?.title || "demonstration" }).then((result) => {
-        if (!result.completed) return;
-        for (const step of steps) {
-          if (step.verb === "createFunction" && step.args?.name) {
-            rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: step.args.name });
+    onPlan?.({
+      title: plan.title || "workspace plan",
+      steps: summarizePlan(plan),
+      preview: planNeedsPreview(plan, autonomy),
+    });
+    onPhase?.("executing");
+    const execution = await executeCompanionPlan(
+      plan,
+      {
+        query: (query, filter) => queryWorkspace(workspace, query, filter),
+        evaluate: async (target, criteria, options) => {
+          const targets = Array.isArray(target) ? target : [target];
+          const ids = targets.flatMap((entry) =>
+            entry && typeof entry === "object" ? [entry.id].filter(Boolean) : [entry]
+          );
+          const objects = queryWorkspace(workspace, "objects", { ids });
+          if (!objects.length) throw new Error("evaluation target is not present in the workspace snapshot");
+          const evaluation = await runClaude(
+            `Evaluate the supplied material against: ${criteria.join(", ")}. Identify evidence, gaps, tensions, and the most useful revision. Return concise substantive feedback only.`,
+            objects.map((object) => `${object.id}: ${object.summary}`).join("\n\n"),
+            { maxTokens: 1400, clientAbortMs: null, signal: options.signal }
+          );
+          return { text: evaluation, targetId: objects[0].id, criteria };
+        },
+        research: async () => {
+          throw new Error("live web research is unavailable; no sources were fabricated");
+        },
+        checkpoint: async (step) => step.mode === "save",
+        artifact: async (value, step) => {
+          const textValue =
+            typeof value === "string" ? value : value?.text || JSON.stringify(value, null, 2);
+          const target = step.target || value?.targetId;
+          const script = target
+            ? [{
+                verb: "annotateFeedback",
+                args: { target, text: textValue, kind: step.kindLabel || "feedback" },
+              }]
+            : [{ verb: "spawnText", args: { text: textValue } }];
+          const result = await runDirectorScript(script, { title: plan.title || "place artifact" });
+          if (!result.completed) throw new Error(result.errors?.[0] || "artifact placement failed");
+        },
+        action: async (capability, args) => {
+          const result = await runDirectorScript(
+            [{ verb: capability, args }],
+            { title: plan.title || capability }
+          );
+          if (!result.completed) throw new Error(result.errors?.[0] || `${capability} failed`);
+          if (capability === "createFunction" && args.name) {
+            rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: args.name });
           }
-          if (step.verb === "newGenerator") {
+          if (capability === "newGenerator") {
             rememberCompanionReference(supaAuth.session?.user?.id, "generators", {
-              name: step.args?.saveAs || "latest generator",
+              name: args.saveAs || "latest generator",
             });
           }
-        }
-      });
+          return result;
+        },
+      },
+      {
+        signal,
+        onProgress(progress) {
+          if (progress.status === "failed") onPhase?.("blocked");
+          else if (progress.kind === "research") onPhase?.("researching");
+          else if (progress.kind === "evaluate") onPhase?.("evaluating");
+          else onPhase?.("executing");
+        },
+      }
+    );
+    onPlan?.(null);
+    if (!execution.completed) {
+      if (execution.cancelled) return null;
+      return {
+        visible: true,
+        text: `Stopped at step ${execution.checkpoint}: ${execution.error}. Completed work was retained; retry or undo is available.`,
+      };
     }
-    if (steps?.length) return null;
-    return {
-      visible: true,
-      text: reply.say || "No executable capability matched that request.",
-    };
+    return null;
   }
 
   const tourState = useMemo(
@@ -10901,9 +11184,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     [items, camera, aiCamera, aiNodes, operators, lenses, highlightSelectionIds]
   );
 
-  const paperColWidth = Math.max(0, colGridWidth - columnLayout.left - columnLayout.right - 24);
+  const paperColWidth = Math.max(0, colGridWidth - columnLayout.left - 8);
   const leftColCollapsed = columnLayout.left <= 0;
-  const rightColCollapsed = columnLayout.right <= 0;
   const paperColCollapsed = colGridWidth > 0 && paperColWidth <= 0;
 
   return (
@@ -10936,7 +11218,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
       <div
         ref={threeColumnGridRef}
-        className={"three-column-grid" + (columnResizing ? " column-resizing" : "") + (transferDragActive ? " transfer-drag" : "")}
+        className={"three-column-grid unified-workspace-grid" + (columnResizing ? " column-resizing" : "") + (transferDragActive ? " transfer-drag" : "")}
         style={{
           "--col-left-w": `${columnLayout.left}px`,
           "--col-right-w": `${columnLayout.right}px`,
@@ -11151,6 +11433,51 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           onTogglePaperRecord={togglePaperRecord}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
+      <AiNodeCanvas
+        embedded
+        nodes={aiNodes}
+        camera={camera}
+        onCameraChange={setCamera}
+        selectedIds={selectedAiNodeIds}
+        onSelect={handleAiNodeSelect}
+        onMove={moveAiNode}
+        tool={tool}
+        onHighlightTransferStart={(e, nodeIds, opts = {}) =>
+          startAiHighlightTransfer(e, nodeIds, opts)
+        }
+        onHighlightMark={toggleHighlightAiNode}
+        highlightMarkedIds={highlightAiNodeSet}
+        highlightStrokes={aiHighlightStrokes}
+        onHighlightStrokeComplete={completeAiHighlightStroke}
+        onSpaceTransferStart={(e, nodeIds, opts = {}) => {
+          const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
+          if (!ids.length) return;
+          startPendingSpaceTransfer(e, "ai", ids, {
+            kind: opts.kind ?? (toolRef.current === "highlight" ? "highlight" : null),
+            immediate: opts.immediate,
+            fromNode: opts.fromNode,
+            fragment: opts.fragment || null,
+          });
+        }}
+        onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
+        onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
+        isPaperDestination={() => true}
+        shouldHandoffNodeDrag={() => false}
+        viewportRef={aiViewportRef}
+        onExploreNode={(nodeId) => exploreAiNode(nodeId, { runExpand: false })}
+        onFocusFromZoom={focusAiNodeFromZoom}
+        onReturnToConstellation={returnAiToConstellation}
+        focusedNodeId={aiFocusedNodeId}
+        onTourEvent={emitTourEvent}
+        getStrandChoices={getStrandChoicesForNode}
+        onStrandSelect={handleStrandSelect}
+        onExpandNode={(nodeId) => exploreAiNode(nodeId, { runExpand: true })}
+        onPointerTrack={(cx, cy) => {
+          lastPointerRef.current = { cx, cy };
+        }}
+        landingNodeIds={aiLandingNodeIds}
+        growingEdgeIds={growingAiEdgeIds}
+      />
       <div className="page-title-chip" data-tour="page-title" onPointerDown={(e) => e.stopPropagation()}>
         <input
           className="page-title-input"
@@ -11565,95 +11892,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       </div>
         </CanvasColumn>
 
-        <InterpretBoundary
-          dropOver={boundaryDropOver}
-          magnetActive={boundaryMagnetActive || transferDragActive}
-          loading={!!aiPanel?.loading}
-          resizeEdge="right"
-          onResizeStart={startColumnBoundaryResize}
-          resizing={columnResizing === "right"}
-          onDragOver={handleBoundaryDragOver}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-              setBoundaryDropOver(false);
-              setTransferDragActive(false);
-            }
-          }}
-          onDrop={handleBoundaryDrop}
-        />
-
-        <AiColumn
-          collapsed={rightColCollapsed}
-          nodes={aiNodes}
-          camera={aiCamera}
-          onCameraChange={setAiCamera}
-          selectedNodeIds={selectedAiNodeIds}
-          onSelectNode={handleAiNodeSelect}
-          onMoveNode={moveAiNode}
-          tool={tool}
-          onHighlightTransferStart={(e, nodeIds, opts = {}) => {
-            startAiHighlightTransfer(e, nodeIds, opts);
-          }}
-          onHighlightMark={toggleHighlightAiNode}
-          highlightMarkedIds={highlightAiNodeSet}
-          highlightStrokes={aiHighlightStrokes}
-          onHighlightStrokeComplete={completeAiHighlightStroke}
-          onSpaceTransferStart={(e, nodeIds, opts = {}) => {
-            const ids = nodeIds?.length ? nodeIds : selectedAiNodeIdsRef.current;
-            if (!ids.length) return;
-            startPendingSpaceTransfer(e, "ai", ids, {
-              kind: opts.kind ?? (toolRef.current === "highlight" ? "highlight" : null),
-              immediate: opts.immediate,
-              fromNode: opts.fromNode,
-              fragment: opts.fragment || null,
-            });
-          }}
-          shouldHandoffNodeDrag={shouldHandoffAiNodeDrag}
-          onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
-          onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
-          isPaperDestination={(x, y) => isOverPaperColumn(x, y)}
-          viewportRef={aiViewportRef}
-          canvasDropOver={aiCanvasDropOver}
-          onCanvasDragOver={handleAiCanvasDragOver}
-          onCanvasDragLeave={() => setAiCanvasDropOver(false)}
-          onCanvasDrop={handleAiCanvasDrop}
-          onExploreNode={(nodeId) => exploreAiNode(nodeId, { runExpand: false })}
-          onFocusFromZoom={focusAiNodeFromZoom}
-          onReturnToConstellation={returnAiToConstellation}
-          focusedNodeId={aiFocusedNodeId}
-          onTourEvent={emitTourEvent}
-          getStrandChoices={getStrandChoicesForNode}
-          onStrandSelect={handleStrandSelect}
-          onExpandNode={(nodeId) => exploreAiNode(nodeId, { runExpand: true })}
-          onPointerTrack={(cx, cy) => {
-            lastPointerRef.current = { cx, cy };
-          }}
-          landingNodeIds={aiLandingNodeIds}
-          growingEdgeIds={growingAiEdgeIds}
-          dropOver={aiDropOver}
-          onDragOver={(e) => {
-            if (
-              e.dataTransfer.types.includes(THOUGHT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME) ||
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(PAPER_SESSION_MIME) ||
-              e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME) ||
-              e.dataTransfer.types.includes(AI_OUTPUT_MIME)
-            ) {
-              e.preventDefault();
-              setAiDropOver(true);
-              setTransferDragActive(true);
-              e.dataTransfer.dropEffect = "copy";
-            }
-          }}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-              setAiDropOver(false);
-              setTransferDragActive(false);
-            }
-          }}
-          onDrop={handleAiDrop}
-        />
       </div>
 
       {selItem && isReplayableItem(selItem) && !walking && !stagesItemId && (
