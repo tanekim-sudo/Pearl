@@ -195,13 +195,15 @@ export async function runDirectorScript(steps, opts = {}) {
   await directorWait(320);
   const ctx = { vars: {} };
   const errors = [];
+  const results = [];
   let consecutiveFailures = 0;
   try {
     for (const step of steps) {
       if (state.abortRequested) break;
       const fn = verbs[step.verb];
       try {
-        await fn(step.args || {}, toolkit, ctx);
+        const result = await fn(step.args || {}, toolkit, ctx);
+        results.push(result);
         consecutiveFailures = 0;
       } catch (err) {
         // One broken step shouldn't kill a long demonstration — note it,
@@ -233,7 +235,7 @@ export async function runDirectorScript(steps, opts = {}) {
     emit();
     opts.onDone?.({ completed: !aborted && !errors.length, aborted, errors });
   }
-  return { completed: !errors.length, errors };
+  return { completed: !errors.length, errors, results, value: results[results.length - 1] };
 }
 
 export function stopDirector() {

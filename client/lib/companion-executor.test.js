@@ -91,3 +91,102 @@ test("research provenance is required before continuing", async () => {
   assert.equal(result.completed, false);
   assert.match(result.error, /no verifiable sources/);
 });
+
+test("binds structured creation results and resolves live stable IDs", async () => {
+  const calls = [];
+  const plan = {
+    version: 1,
+    root: {
+      kind: "sequence",
+      steps: [
+        {
+          kind: "action",
+          id: "create-a",
+          capability: "createFunction",
+          args: { name: "A", steps: ["one"] },
+          saveAs: "a",
+        },
+        {
+          kind: "action",
+          id: "create-b",
+          capability: "createFunction",
+          args: { name: "B", steps: ["two"] },
+          saveAs: "b",
+        },
+        {
+          kind: "action",
+          id: "merge",
+          capability: "mergeLenses",
+          args: { a: { $ref: "a" }, b: { $ref: "b" } },
+          saveAs: "combined",
+        },
+      ],
+    },
+  };
+  const result = await executeCompanionPlan(
+    plan,
+    tools({
+      action: async (name, args) => {
+        calls.push({ name, args });
+        if (name === "createFunction") {
+          return { type: "lens", lensId: `saved-${args.name.toLowerCase()}`, name: `${args.name} display` };
+        }
+        return { type: "lens", lensId: "saved-combined", name: "Combined" };
+      },
+    }),
+    { runId: "dataflow-run" }
+  );
+  assert.equal(result.completed, true);
+  assert.deepEqual(calls[2].args, { a: "saved-a", b: "saved-b" });
+  assert.equal(result.values.combined.lensId, "saved-combined");
+});
+
+test("retry resumes after the exact checkpoint without duplicating completed creation", async () => {
+  const counts = new Map();
+  let failSecond = true;
+  const plan = {
+    version: 1,
+    root: {
+      kind: "sequence",
+      steps: [
+        {
+          kind: "action",
+          id: "a",
+          capability: "createFunction",
+          args: { name: "A", steps: [] },
+          saveAs: "a",
+        },
+        {
+          kind: "action",
+          id: "b",
+          capability: "createFunction",
+          args: { name: "B", steps: [] },
+          saveAs: "b",
+        },
+        {
+          kind: "action",
+          id: "merge",
+          capability: "mergeLenses",
+          args: { a: { $ref: "a" }, b: { $ref: "b" } },
+        },
+      ],
+    },
+  };
+  const action = async (_name, args, context) => {
+    counts.set(context.idempotencyKey, (counts.get(context.idempotencyKey) || 0) + 1);
+    if (context.idempotencyKey.endsWith(":b") && failSecond) {
+      failSecond = false;
+      throw new Error("B failed");
+    }
+    return { type: "lens", lensId: `lens-${args.name || "merged"}` };
+  };
+  const first = await executeCompanionPlan(plan, tools({ action }), { runId: "checkpoint-run" });
+  assert.equal(first.completed, false);
+  assert.deepEqual(first.completedStepIds, ["a"]);
+
+  const second = await executeCompanionPlan(plan, tools({ action }), { resume: first.resume });
+  assert.equal(second.completed, true);
+  assert.equal(counts.get("checkpoint-run:a"), 1);
+  assert.equal(counts.get("checkpoint-run:b"), 2);
+  assert.equal(counts.get("checkpoint-run:merge"), 1);
+});

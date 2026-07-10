@@ -7254,7 +7254,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
   function forkLens(sourceId, commitMessage = "") {
     const source = displayTransformations.find((l) => l.id === sourceId) || transformationRepos.find((l) => l.id === sourceId);
-    if (!source) return;
+    if (!source) return null;
     const now = Date.now();
     const sourceOpId = lensRootOpId(source);
     let newOpId = null;
@@ -7279,13 +7279,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     setTransformationRepos((ls) => [lens, ...ls]);
     setActiveTransformationId(lens.id);
     showToast(`Forked · ${lens.name}`);
+    return lens;
   }
 
-  function mergeLenses(aId, bId) {
-    if (!aId || aId === bId) return;
+  function mergeLenses(aId, bId, { name = "" } = {}) {
+    if (!aId || aId === bId) return null;
     const a = transformationRepos.find((x) => x.id === aId) || displayTransformations.find((x) => x.id === aId);
     const b = transformationRepos.find((x) => x.id === bId) || displayTransformations.find((x) => x.id === bId);
-    if (!a || !b) return;
+    if (!a || !b) return null;
     const now = Date.now();
     const aOpId = lensRootOpId(a);
     const bOpId = lensRootOpId(b);
@@ -7296,7 +7297,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
     if (aOpId && bOpId && opMap[aOpId] && opMap[bOpId]) {
       const tree = {
-        name: `${a.name} ⚭ ${b.name}`.slice(0, 72),
+        name: (name.trim() || `${a.name} ⚭ ${b.name}`).slice(0, 72),
         description: `Merged pipeline: ${a.name}, then ${b.name}.`,
         steps: [opToAbstractTree(opMap[aOpId], opMap, operators), opToAbstractTree(opMap[bOpId], opMap, operators)],
       };
@@ -7320,7 +7321,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       normalizeLens({
         id: lensId,
         opId: newOpId || undefined,
-        name: `${a.name} ⚭ ${b.name}`.slice(0, 60),
+        name: (name.trim() || `${a.name} ⚭ ${b.name}`).slice(0, 60),
         moveIds,
         mergedFrom: [a.id, b.id],
         createdAt: now,
@@ -7331,6 +7332,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     setTransformationRepos((ls) => [lens, ...ls]);
     setActiveTransformationId(lens.id);
     showToast(`Merged · ${lens.name}`);
+    return lens;
   }
 
   function deleteTransformationRecord(id) {
@@ -9855,9 +9857,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (!ref || ref === "last") return opMap[ctx.vars.lastOpId] || null;
     if (ctx.vars[ref] && opMap[ctx.vars[ref]]) return opMap[ctx.vars[ref]];
     const needle = String(ref).toLowerCase();
+    const normalized = needle.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
     return (
       opMap[ref] ||
       operators.find((o) => (o.name || "").toLowerCase() === needle) ||
+      operators.find(
+        (o) =>
+          String(o.name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "").toLowerCase() === normalized
+      ) ||
       operators.find((o) => (o.name || "").toLowerCase().includes(needle)) ||
       Object.values(opMap).find((o) => (o.name || "").toLowerCase() === needle) ||
       null
@@ -9955,9 +9962,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (hit) return hit;
     }
     const needle = String(ref).toLowerCase();
+    const normalized = needle.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
     return (
       dedup.find((l) => l.id === ref) ||
       dedup.find((l) => (l.name || "").toLowerCase() === needle) ||
+      dedup.find(
+        (l) =>
+          String(l.name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "").toLowerCase() === normalized
+      ) ||
       dedup.find((l) => (l.name || "").toLowerCase().includes(needle)) ||
       null
     );
@@ -10144,6 +10156,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       ctx.vars.lastItemId = id;
       if (a.saveAs) ctx.vars[a.saveAs] = id;
       await tk.wait(450);
+      return { type: "paper-item", itemId: id, id, name: truncatePreview(a.text, 42) };
     },
     createFunction: async (a, tk, ctx) => {
       tk.caption(a.caption || `create a new function: “${a.name}”`);
@@ -10166,8 +10179,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             prompt: buildDefaultLeafPrompt(a.name, a.description),
           };
       const { ops, rootId } = treeToOperators(tree, { top: true });
-      setOperators((prev) => [...prev, ...ops]);
       const rootOp = ops.find((o) => o.id === rootId);
+      // Materialize the real tree incrementally so the construction view and
+      // ghost cursor reflect the same mutations the user is watching.
+      const orderedOps = [rootOp, ...ops.filter((o) => o.id !== rootId)].filter(Boolean);
+      for (const [index, op] of orderedOps.entries()) {
+        setOperators((prev) => (prev.some((entry) => entry.id === op.id) ? prev : [...prev, op]));
+        tk.caption(
+          index === 0
+            ? `create “${a.name}”`
+            : `add ${op.name || `step ${index}`} to “${a.name}”`
+        );
+        await tk.wait(index === 0 ? 240 : 320);
+      }
       syncTransformationRepoForOperator(rootId, rootOp, {
         isNew: true,
         stepNames: steps.map((s) => s.name),
@@ -10184,6 +10208,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         if (steps.length) tk.caption(`${steps.length} steps compose into one reusable move`);
         await tk.wait(900);
       }
+      return {
+        type: "lens",
+        lensId: rootId,
+        id: rootId,
+        name: rootOp?.name || a.name,
+        record: rootOp,
+      };
     },
     applyFunction: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
@@ -10930,9 +10961,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       tk.caption(a.caption || `fork “${rec.name}” — a copy you can take somewhere new`);
       const row = tk.elementCenter(`[data-transformation-lens-id="${rec.id}"]`);
       if (row) await tk.click(row.x, row.y);
-      forkLens(rec.id, a.message || "");
+      const created = forkLens(rec.id, a.message || "");
       focusRailPane(RAIL_TRANSFORMATIONS);
       await tk.wait(900);
+      return created
+        ? { type: "lens", lensId: created.id, id: created.id, name: created.name, record: created }
+        : null;
     },
     mergeLenses: async (a, tk, ctx) => {
       const recA = directorResolveLensRecord(a.a, ctx);
@@ -10947,9 +10981,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         await tk.moveTo(rowB.x, rowB.y, 750);
         await tk.release();
       }
-      mergeLenses(recA.id, recB.id);
+      const created = mergeLenses(recA.id, recB.id, { name: a.name || "" });
       focusRailPane(RAIL_TRANSFORMATIONS);
       await tk.wait(900);
+      return created
+        ? { type: "lens", lensId: created.id, id: created.id, name: created.name, record: created }
+        : null;
     },
     editLensByInstruction: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
@@ -10976,6 +11013,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         if (a.saveAs) ctx.vars[a.saveAs] = struct.id;
       }
       await tk.wait(800);
+      return struct
+        ? { type: "generator", generatorId: struct.id, id: struct.id, name: struct.title, record: struct }
+        : null;
     },
     attachToGenerator: async (a, tk, ctx) => {
       const struct = directorResolveGenerator(a.generator, ctx);
@@ -11026,6 +11066,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const rootId = await makeLensFromGenerator(struct.id);
       if (rootId) ctx.vars.lastOpId = rootId;
       await tk.wait(1000);
+      return rootId
+        ? { type: "lens", lensId: rootId, id: rootId, name: "Lens from generator" }
+        : null;
     },
     clearPaper: async () => stageCompanionClear(["paper"]),
     clearAiSpace: async () => stageCompanionClear(["ai"]),
@@ -11166,7 +11209,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
               name: args.saveAs || "latest generator",
             });
           }
-          return result;
+          return result.value;
         },
       },
       {

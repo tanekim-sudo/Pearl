@@ -75,3 +75,184 @@ test("complex and research plans request a preview by default", () => {
   assert.equal(planNeedsPreview(plan), true);
   assert.equal(planNeedsPreview(plan, "act-immediately"), false);
 });
+
+test("validates typed create-use-compose references in dependency order", () => {
+  const plan = {
+    version: 1,
+    root: {
+      kind: "sequence",
+      steps: [
+        {
+          kind: "action",
+          id: "memo",
+          capability: "createFunction",
+          args: { name: "Investment memo workflow", steps: ["Draft"] },
+          saveAs: "memoLens",
+        },
+        {
+          kind: "action",
+          id: "evaluation",
+          capability: "createFunction",
+          args: { name: "Company evaluation workflow", steps: ["Evaluate"] },
+          saveAs: "evaluationLens",
+        },
+        {
+          kind: "action",
+          id: "combine",
+          capability: "mergeLenses",
+          args: { a: { $ref: "memoLens" }, b: { $ref: "evaluationLens" } },
+          saveAs: "teamLens",
+        },
+      ],
+    },
+  };
+  assert.equal(validateCompanionPlan(plan).stats.steps, 4);
+});
+
+test("rejects forward references, duplicate bindings, and resource type mismatches", () => {
+  assert.throws(
+    () =>
+      validateCompanionPlan({
+        version: 1,
+        root: {
+          kind: "sequence",
+          steps: [
+            {
+              kind: "action",
+              id: "merge",
+              capability: "mergeLenses",
+              args: { a: { $ref: "future" }, b: "existing" },
+            },
+            {
+              kind: "action",
+              id: "create",
+              capability: "createFunction",
+              args: { name: "Future", steps: [] },
+              saveAs: "future",
+            },
+          ],
+        },
+      }),
+    /unknown or future/
+  );
+  assert.throws(
+    () =>
+      validateCompanionPlan({
+        version: 1,
+        root: {
+          kind: "sequence",
+          steps: [
+            { kind: "action", id: "g", capability: "newGenerator", args: {}, saveAs: "resource" },
+            {
+              kind: "action",
+              id: "m",
+              capability: "mergeLenses",
+              args: { a: { $ref: "resource" }, b: "existing" },
+            },
+          ],
+        },
+      }),
+    /expects lens.*produces generator/
+  );
+});
+
+test("repairs legacy future-name aliases into explicit result references", () => {
+  const plan = parseCompanionPlan(
+    JSON.stringify({
+      version: 1,
+      root: {
+        kind: "sequence",
+        steps: [
+          {
+            kind: "action",
+            capability: "createFunction",
+            args: { name: "Investment Memo Generator", steps: ["Draft"], saveAs: "investmentMemoGenerator" },
+          },
+          {
+            kind: "action",
+            capability: "applyFunction",
+            args: { op: "investmentMemoGenerator", target: "existing-note" },
+          },
+        ],
+      },
+    })
+  );
+  assert.equal(plan.root.steps[0].saveAs, "investmentMemoGenerator");
+  assert.deepEqual(plan.root.steps[1].args.op, { $ref: "investmentMemoGenerator" });
+  assert.ok(plan.root.steps.every((step) => step.id));
+});
+
+test("validates generalized create-then-use plans across workspace domains", () => {
+  const createLens = (id = "lens", saveAs = "lens") => ({
+    kind: "action",
+    id,
+    capability: "createFunction",
+    args: { name: `Visible ${id}`, steps: ["Observe", "Transform"] },
+    saveAs,
+  });
+  const spawn = (id = "item", saveAs = "item") => ({
+    kind: "action",
+    id,
+    capability: "spawnText",
+    args: { text: `Material ${id}` },
+    saveAs,
+  });
+  const sequence = (steps) => ({ version: 1, root: { kind: "sequence", steps } });
+  const plans = [
+    sequence([
+      createLens(),
+      spawn(),
+      { kind: "action", id: "apply", capability: "applyFunction", args: { op: { $ref: "lens" }, target: { $ref: "item" } } },
+    ]),
+    sequence([
+      createLens("a", "a"),
+      createLens("b", "b"),
+      { kind: "action", id: "merge", capability: "mergeLenses", args: { a: { $ref: "a" }, b: { $ref: "b" } }, saveAs: "merged" },
+    ]),
+    sequence([
+      createLens(),
+      { kind: "action", id: "fork", capability: "forkLens", args: { lens: { $ref: "lens" } }, saveAs: "fork" },
+    ]),
+    sequence([
+      createLens(),
+      { kind: "action", id: "edit", capability: "editLensByInstruction", args: { op: { $ref: "lens" }, instruction: "Add a counterevidence branch" } },
+    ]),
+    sequence([
+      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
+      spawn(),
+      { kind: "action", id: "attach", capability: "attachToGenerator", args: { generator: { $ref: "generator" }, target: { $ref: "item" } } },
+    ]),
+    sequence([
+      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
+      { kind: "action", id: "craft", capability: "makeLensFromGenerator", args: { generator: { $ref: "generator" } }, saveAs: "crafted" },
+    ]),
+    sequence([
+      { kind: "action", id: "block-a", capability: "addBlock", args: { type: "text", text: "A" }, saveAs: "a" },
+      { kind: "action", id: "block-b", capability: "addBlock", args: { type: "text", text: "B" }, saveAs: "b" },
+      { kind: "action", id: "compare", capability: "transformMaterial", args: { mode: "compare", targets: [{ $ref: "a" }, { $ref: "b" }] } },
+    ]),
+    sequence([
+      spawn("from", "from"),
+      spawn("to", "to"),
+      { kind: "action", id: "link", capability: "linkItems", args: { from: { $ref: "from" }, to: { $ref: "to" } } },
+    ]),
+    sequence([
+      createLens(),
+      { kind: "action", id: "open", capability: "openFunctionEditor", args: { op: { $ref: "lens" } } },
+    ]),
+    sequence([
+      createLens(),
+      { kind: "action", id: "extend", capability: "addFunctionStep", args: { op: { $ref: "lens" }, name: "Decide" } },
+    ]),
+    sequence([
+      { kind: "action", id: "capture", capability: "captureThread", args: { target: "existing-node", name: "Captured path" }, saveAs: "captured" },
+      { kind: "action", id: "fork", capability: "forkLens", args: { lens: { $ref: "captured" } } },
+    ]),
+    sequence([
+      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
+      { kind: "action", id: "graduate", capability: "graduateGenerator", args: { generator: { $ref: "generator" }, name: "Named generator" } },
+    ]),
+  ];
+  assert.equal(plans.length, 12);
+  plans.forEach((plan) => assert.doesNotThrow(() => validateCompanionPlan(plan)));
+});

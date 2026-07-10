@@ -9,6 +9,22 @@ function assertActive(signal) {
 }
 
 function resolveRef(value, scope) {
+  if (value && typeof value === "object" && !Array.isArray(value) && typeof value.$ref === "string") {
+    let current = scope.values[value.$ref];
+    if (value.path) {
+      for (const segment of String(value.path).split(".")) current = current?.[segment];
+      return current;
+    }
+    // Resource arguments are stable identifiers at the director boundary.
+    return (
+      current?.lensId ??
+      current?.generatorId ??
+      current?.itemId ??
+      current?.nodeId ??
+      current?.id ??
+      current
+    );
+  }
   if (typeof value !== "string") return value;
   if (value === "$item") return scope.item;
   if (value.startsWith("$")) {
@@ -24,6 +40,9 @@ function resolveArgs(args, scope) {
   return Object.fromEntries(
     Object.entries(args || {}).map(([key, value]) => {
       if (Array.isArray(value)) return [key, value.map((entry) => resolveRef(entry, scope))];
+      if (value && typeof value === "object" && typeof value.$ref === "string") {
+        return [key, resolveRef(value, scope)];
+      }
       if (value && typeof value === "object") return [key, resolveArgs(value, scope)];
       return [key, resolveRef(value, scope)];
     })
@@ -42,12 +61,20 @@ function conditionMatches(condition, scope) {
 export async function executeCompanionPlan(
   plan,
   tools,
-  { signal, onProgress, budget = {}, initialValues = {} } = {}
+  {
+    signal,
+    onProgress,
+    budget = {},
+    initialValues = {},
+    resume = null,
+    runId = resume?.runId || globalThis.crypto?.randomUUID?.() || `plan-${Date.now()}`,
+  } = {}
 ) {
   const validated = validateCompanionPlan(plan, { budget });
   const limits = { ...DEFAULT_PLAN_BUDGET, ...validated.budget };
-  const scope = { values: { ...initialValues }, item: null };
-  const journal = [];
+  const scope = { values: { ...initialValues, ...(resume?.values || {}) }, item: null };
+  const journal = [...(resume?.journal || [])];
+  const completedStepIds = new Set(resume?.completedStepIds || []);
   let iterations = 0;
   let researchCalls = 0;
   let actionCount = 0;
@@ -98,22 +125,27 @@ export async function executeCompanionPlan(
       throw lastError;
     }
     if (step.kind === "query") {
+      if (step.id && completedStepIds.has(step.id)) return;
       const result = await tools.query(step.query, resolveArgs(step.filter || {}, localScope), { signal });
       localScope.values[step.saveAs] = result;
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "query", status: "completed", id: step.id, count: Array.isArray(result) ? result.length : 1 });
       return;
     }
     if (step.kind === "evaluate") {
+      if (step.id && completedStepIds.has(step.id)) return;
       const result = await tools.evaluate(
         resolveRef(step.target, localScope),
         step.criteria,
         { rubric: step.rubric, signal, context: localScope.values }
       );
       localScope.values[step.saveAs] = result;
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "evaluate", status: "completed", id: step.id });
       return;
     }
     if (step.kind === "research") {
+      if (step.id && completedStepIds.has(step.id)) return;
       researchCalls += 1;
       if (researchCalls > limits.maxResearchCalls) throw new Error("research-call budget exceeded");
       const result = await tools.research({
@@ -125,36 +157,50 @@ export async function executeCompanionPlan(
       });
       if (!result?.sources?.length) throw new Error("research returned no verifiable sources");
       localScope.values[step.saveAs] = result;
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "research", status: "completed", id: step.id, count: result.sources.length });
       return;
     }
     if (step.kind === "checkpoint") {
+      if (step.id && completedStepIds.has(step.id)) return;
       const result = await tools.checkpoint?.(step, { signal, journal, values: localScope.values });
       if (step.mode === "confirm" && result !== true) throw new Error("checkpoint confirmation declined");
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "checkpoint", status: "completed", id: step.id });
       return;
     }
     if (step.kind === "artifact") {
+      if (step.id && completedStepIds.has(step.id)) return;
       const value = localScope.values[step.from];
       if (value == null) throw new Error(`artifact source "${step.from}" is missing`);
       await tools.artifact(value, step, { signal, values: localScope.values });
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "artifact", status: "completed", id: step.id });
       return;
     }
     if (step.kind === "action") {
+      if (step.id && completedStepIds.has(step.id)) return;
       actionCount += 1;
       const result = await tools.action(step.capability, resolveArgs(step.args || {}, localScope), {
         signal,
-        idempotencyKey: step.id || `${step.capability}:${actionCount}`,
+        idempotencyKey: `${runId}:${step.id || `${step.capability}:${actionCount}`}`,
       });
       if (step.saveAs) localScope.values[step.saveAs] = result;
+      if (step.id) completedStepIds.add(step.id);
       record({ kind: "action", capability: step.capability, status: "completed", id: step.id });
     }
   };
 
   try {
     await run(plan.root);
-    return { completed: true, values: scope.values, journal, checkpoint: journal.length };
+    return {
+      completed: true,
+      values: scope.values,
+      journal,
+      checkpoint: journal.length,
+      runId,
+      completedStepIds: [...completedStepIds],
+    };
   } catch (error) {
     const failure = {
       kind: "failure",
@@ -172,6 +218,14 @@ export async function executeCompanionPlan(
       checkpoint: journal.length,
       canRetry: error?.name !== "AbortError",
       canUndo: journal.some((entry) => entry.kind === "action"),
+      runId,
+      completedStepIds: [...completedStepIds],
+      resume: {
+        runId,
+        values: scope.values,
+        journal,
+        completedStepIds: [...completedStepIds],
+      },
     };
   }
 }

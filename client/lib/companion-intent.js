@@ -73,6 +73,48 @@ export function parseAdministrativeCommand(text, { previousDomains = [], pending
 const COMMAND_LEAD =
   /^(?:please\s+)?(?:add|apply|attach|branch|build|capture|change|clear|close|create|delete|do|draw|edit|erase|fit|focus|fork|get rid|graduate|highlight|make|merge|move|open|organize|pan|probe|remove|rename|research|run|save|select|share|show|start|switch|turn|walk|wipe|zoom)\b/i;
 
+export function parseMixedProfileCommand(text, field = "identity") {
+  if (!["identity", "role"].includes(field)) return null;
+  const value = String(text || "").replace(/[’]/g, "'").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+
+  const commandLead = new RegExp(`\\b${COMMAND_LEAD.source.replace(/^\^/, "").replace(/\\b\/i?$/, "")}`, "i");
+  const desire = value.match(/\s+(?:and\s+)?i\s+(?:want|need|would like)\s+(?:you\s+to\s+)?/i);
+  const punctuated = value.match(/[.!?—–-]\s*(?=(?:please\s+)?(?:add|apply|attach|branch|build|create|edit|make|merge|run|share|show)\b)/i);
+  const lead = value.match(commandLead);
+  const split =
+    desire && desire.index > 0
+      ? { index: desire.index, commandIndex: desire.index + desire[0].length }
+      : punctuated && punctuated.index > 0
+        ? { index: punctuated.index, commandIndex: punctuated.index + punctuated[0].length }
+        : lead && lead.index > 0
+          ? { index: lead.index, commandIndex: lead.index }
+          : null;
+  if (!split) return null;
+
+  const profileText = value.slice(0, split.index).replace(/[,\s—–-]+$/g, "").trim();
+  const command = value.slice(split.commandIndex).trim();
+  if (!profileText || !command) return null;
+
+  const profile = {};
+  const namedRole = profileText.match(
+    /^(?:i[' ]?m|i am)\s+([^,]+?),?\s+(?:a|an)\s+(.+)$/i
+  );
+  const roleOnly = profileText.match(/^(?:i[' ]?m|i am)\s+(?:a|an)\s+(.+)$/i);
+  const invests = profileText.match(/^i\s+invest\s+in\s+(.+)$/i);
+  if (namedRole) {
+    profile.identity = namedRole[1].trim();
+    profile.role = namedRole[2].trim();
+  } else if (roleOnly) {
+    profile.role = roleOnly[1].trim();
+  } else if (invests) {
+    profile.role = `investor in ${invests[1].trim()}`;
+  } else {
+    return null;
+  }
+  return { kind: "mixed", profile, command };
+}
+
 /**
  * Interview answers are deliberately narrow. Everything else gets a chance
  * to route through deterministic intent detection / the planner first.
@@ -99,6 +141,8 @@ export function looksLikeProfileAnswer(text, field) {
 }
 
 export function classifyInterviewInput(text, field) {
+  const mixed = parseMixedProfileCommand(text, field);
+  if (mixed) return mixed;
   const administrative = parseAdministrativeCommand(text);
   if (administrative) return { kind: "command", intent: administrative };
   const chain = parseSaveChainCommand(text);
@@ -167,8 +211,9 @@ Return ONLY one versioned JSON plan:
 {"version":1,"title":"short visual label","root":{"kind":"sequence","steps":[]}}
 
 Step DSL:
-- {"kind":"query","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}
-- {"kind":"action","capability":"manifestName","args":{},"saveAs":"optional"}
+- {"kind":"query","id":"observe-1","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}
+- {"kind":"action","id":"unique-step-id","capability":"manifestName","args":{},"saveAs":"optionalResultBinding"}
+- A result reference is {"$ref":"binding"}. It resolves from the live result environment to the actual stable saved ID. Never put saveAs inside args; saveAs is a property of the step.
 - {"kind":"sequence","steps":[]}
 - {"kind":"parallel","steps":[]} (read/evaluate/research only)
 - {"kind":"foreach","in":"savedArray","limit":10,"step":{}}, using "$item.id" for stable action targets
@@ -181,12 +226,41 @@ Step DSL:
 
 Rules:
 - Action-first and silent. The plan itself is the response; do not add conversational text.
+- Every executable leaf step must have a unique id. If an action creates a lens, generator, block, node, path, or other resource used later, give that action a saveAs binding and use {"$ref":"binding"} in every dependent argument. Never guess a future camelCase name or refer to a resource before its creating step completes.
+- Lenses/functions are executable transformation trees. Generators are uncertain spatial collections; do not call a lens a generator. Use createFunction for a requested workflow/function/lens.
+- Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Destructive capabilities require a prior confirm checkpoint and "confirmed":true on the action.
 - Preserve originals before broad revisions. Use finite loops/retries. Do not exceed 40 total steps, 100 iterations, or 3 research calls.
-- Current autonomy preference is "${autonomy}".`;
+- Current autonomy preference is "${autonomy}".
+
+Dependency examples:
+Create A + B + combine + demonstrate:
+{"version":1,"title":"Build team investment workflow","root":{"kind":"sequence","steps":[
+  {"kind":"action","id":"create-memo","capability":"createFunction","args":{"name":"Investment memo workflow","description":"Automate an evidence-grounded investment memo","steps":[{"name":"Collect thesis and evidence"},{"name":"Assess risks"},{"name":"Draft memo"}]},"saveAs":"memoLens"},
+  {"kind":"action","id":"create-evaluation","capability":"createFunction","args":{"name":"Company evaluation workflow","description":"Evaluate a company consistently","steps":[{"name":"Market"},{"name":"Team"},{"name":"Traction"},{"name":"Risks"}]},"saveAs":"evaluationLens"},
+  {"kind":"action","id":"combine","capability":"mergeLenses","args":{"a":{"$ref":"memoLens"},"b":{"$ref":"evaluationLens"},"name":"Investment workflow for teams"},"saveAs":"teamLens"},
+  {"kind":"action","id":"sample","capability":"spawnText","args":{"text":"Demo input — Northstar Analytics, a sample B2B analytics company with early revenue and limited retention data."},"saveAs":"sampleCompany"},
+  {"kind":"action","id":"run","capability":"applyFunction","args":{"op":{"$ref":"teamLens"},"target":{"$ref":"sampleCompany"}}},
+  {"kind":"action","id":"focus","capability":"focusAiResult","args":{}}
+]}}
+
+Create generator + attach + craft:
+{"version":1,"title":"Craft a lens","root":{"kind":"sequence","steps":[
+  {"kind":"action","id":"generator","capability":"newGenerator","args":{},"saveAs":"generator"},
+  {"kind":"action","id":"material","capability":"spawnText","args":{"text":"New observation"},"saveAs":"material"},
+  {"kind":"action","id":"attach","capability":"attachToGenerator","args":{"generator":{"$ref":"generator"},"target":{"$ref":"material"}}},
+  {"kind":"action","id":"craft","capability":"makeLensFromGenerator","args":{"generator":{"$ref":"generator"}},"saveAs":"craftedLens"}
+]}}
+
+Create blocks + operate:
+{"version":1,"title":"Compare new blocks","root":{"kind":"sequence","steps":[
+  {"kind":"action","id":"block-a","capability":"addBlock","args":{"type":"text","text":"Option A"},"saveAs":"blockA"},
+  {"kind":"action","id":"block-b","capability":"addBlock","args":{"type":"text","text":"Option B"},"saveAs":"blockB"},
+  {"kind":"action","id":"compare","capability":"transformMaterial","args":{"mode":"compare","targets":[{"$ref":"blockA"},{"$ref":"blockB"}]}}
+]}}`;
 }
 
 function cleanArgs(args) {

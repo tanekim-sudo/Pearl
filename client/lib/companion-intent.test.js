@@ -8,6 +8,7 @@ import {
   looksLikeProfileAnswer,
   parseAdministrativeCommand,
   parseCompanionReply,
+  parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
 
@@ -95,6 +96,39 @@ test("profile-shaped answers advance while commands interrupt setup", () => {
   assert.equal(classifyInterviewInput("Tan", "identity").kind, "profile");
   assert.equal(classifyInterviewInput("I run a research lab", "role").kind, "profile");
   assert.equal(classifyInterviewInput("create a note about markets", "identity").kind, "command");
+});
+
+test("mixed onboarding utterances retain short profile facts and execute the remainder", () => {
+  assert.deepEqual(
+    parseMixedProfileCommand(
+      "I'm an investor and I want three functions that combine into one workflow",
+      "identity"
+    ),
+    {
+      kind: "mixed",
+      profile: { role: "investor" },
+      command: "three functions that combine into one workflow",
+    }
+  );
+  assert.deepEqual(parseMixedProfileCommand("I’m Sarah, a founder—build a launch lens", "identity"), {
+    kind: "mixed",
+    profile: { identity: "Sarah", role: "founder" },
+    command: "build a launch lens",
+  });
+  assert.deepEqual(parseMixedProfileCommand("I invest in biotech. Create a diligence workflow", "identity"), {
+    kind: "mixed",
+    profile: { role: "investor in biotech" },
+    command: "Create a diligence workflow",
+  });
+  assert.deepEqual(parseMixedProfileCommand("im Sarah a founder build a launch lens", "identity"), {
+    kind: "mixed",
+    profile: { identity: "Sarah", role: "founder" },
+    command: "build a launch lens",
+  });
+  assert.equal(
+    classifyInterviewInput("I'm an investor and I want create a memo lens", "identity").kind,
+    "mixed"
+  );
 });
 
 test("administrative parser rejects non-bulk and non-destructive requests", () => {

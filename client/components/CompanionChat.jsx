@@ -151,6 +151,20 @@ export default function CompanionChat({
       if (interviewPrompt) {
         const field = !memory.identity ? "identity" : !memory.role ? "role" : "goal";
         const route = classifyInterviewInput(text, field);
+        if (route.kind === "mixed") {
+          const next = saveCompanionMemory(userId, {
+            ...route.profile,
+            interviewPaused: true,
+          });
+          setMemory(next);
+          const commandReply = await onCommand(route.command, commandOptions);
+          setMemory(rememberCompanionAction(userId, route.command));
+          if (commandReply?.visible && commandReply.text) {
+            setMessages((m) => [...m, { role: "companion", text: commandReply.text }]);
+            speak(commandReply.text);
+          }
+          return;
+        }
         if (route.kind === "command") {
           setMemory(pauseCompanionInterview(userId));
           const commandReply = await onCommand(text, commandOptions);

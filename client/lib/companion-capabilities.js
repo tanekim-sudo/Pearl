@@ -52,7 +52,7 @@ const RAW_CAPABILITIES = [
   ["setFunctionStep", { op: "string", step: "string", name: "string?", prompt: "string?", description: "string?" }, false, ["lens"], "Edit a lens step"],
   ["saveFunction", { op: "string", message: "string?" }, false, ["lens"], "Commit edits to a lens"],
   ["forkLens", { lens: "string", message: "string?" }, false, ["lens"], "Fork a lens"],
-  ["mergeLenses", { a: "string", b: "string" }, false, ["lens"], "Merge two lenses"],
+  ["mergeLenses", { a: "string", b: "string", name: "string?" }, false, ["lens"], "Merge two lenses"],
   ["editLensByInstruction", { op: "string", instruction: "string" }, false, ["lens"], "Rewrite a lens from an instruction"],
   ["newGenerator", { saveAs: "string?" }, false, ["generator"], "Create a generator"],
   ["attachToGenerator", { generator: "string", target: "string" }, false, ["generator", "paper"], "Attach an observation to a generator"],
@@ -65,6 +65,39 @@ const RAW_CAPABILITIES = [
   ["clearGenerators", {}, true, ["generator"], "Clear generators after confirmation"],
   ["clearWorkspaceDomains", { domains: "array" }, true, ["paper", "ai", "lens", "generator"], "Clear chosen domains after confirmation"],
 ];
+
+const RESULT_TYPES = {
+  spawnText: "paper-item",
+  createFunction: "lens",
+  applyFunction: "ai-node",
+  dragItemToAi: "ai-node",
+  applyFunctionToAiNode: "ai-node",
+  captureThread: "lens",
+  addBlock: "paper-item",
+  forkLens: "lens",
+  mergeLenses: "lens",
+  newGenerator: "generator",
+  makeLensFromGenerator: "lens",
+};
+
+const REF_ARG_TYPES = {
+  applyFunction: { op: "lens", target: "paper-item" },
+  applyFunctionToAiNode: { op: "lens" },
+  operateHighlight: { op: "lens" },
+  openFunctionEditor: { op: "lens" },
+  editFunction: { op: "lens" },
+  addFunctionStep: { op: "lens", use: "lens" },
+  addFunctionBranch: { op: "lens" },
+  setFunctionStep: { op: "lens" },
+  saveFunction: { op: "lens" },
+  forkLens: { lens: "lens" },
+  mergeLenses: { a: "lens", b: "lens" },
+  editLensByInstruction: { op: "lens" },
+  attachToGenerator: { generator: "generator", target: "paper-item" },
+  graduateGenerator: { generator: "generator" },
+  probeGenerator: { generator: "generator" },
+  makeLensFromGenerator: { generator: "generator" },
+};
 
 const INTENT_EXAMPLES = {
   switchTool: ["switch to the highlighter"],
@@ -91,6 +124,8 @@ export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
     destructive,
     domains,
     purpose,
+    resultType: RESULT_TYPES[name] || "action-result",
+    refArgs: REF_ARG_TYPES[name] || {},
     examples: INTENT_EXAMPLES[name] || [`please ${purpose.charAt(0).toLowerCase()}${purpose.slice(1)}`],
     animation: "director",
     observation: domains.includes("interface") && domains.length === 1 ? [] : ["selection", "objects", "viewport"],
@@ -109,7 +144,7 @@ export const COMPANION_VERBS = Object.fromEntries(
 export function capabilityPrompt() {
   return COMPANION_CAPABILITIES.map(
     (capability) =>
-      `- ${capability.name}(${Object.entries(capability.args).map(([key, type]) => `${key}: ${type}`).join(", ")}) — ${capability.purpose}; e.g. “${capability.examples[0]}”${capability.destructive ? " [confirmation required]" : ""}`
+      `- ${capability.name}(${Object.entries(capability.args).map(([key, type]) => `${key}: ${type}`).join(", ")}) -> ${capability.resultType} — ${capability.purpose}; e.g. “${capability.examples[0]}”${capability.destructive ? " [confirmation required]" : ""}`
   ).join("\n");
 }
 
