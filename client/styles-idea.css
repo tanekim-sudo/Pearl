@@ -5636,12 +5636,8 @@ body.director-running .idea-app {
   color: rgba(140, 42, 32, 0.95);
 }
 
-.companion-msg.thinking {
-  opacity: 0.6;
-  font-style: italic;
-}
-
-.companion-playing {
+.companion-playing,
+.companion-progress {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5654,7 +5650,13 @@ body.director-running .idea-app {
   color: rgba(90, 70, 20, 0.9);
 }
 
-.companion-playing button {
+.companion-progress {
+  background: rgba(0, 0, 0, 0.035);
+  color: rgba(50, 45, 32, 0.62);
+}
+
+.companion-playing button,
+.companion-progress button {
   border: none;
   background: rgba(26, 24, 18, 0.88);
   color: rgba(248, 242, 220, 0.94);

@@ -168,9 +168,7 @@ import {
   parseAdministrativeCommand,
   parseSaveChainCommand,
   parseCompanionReply,
-  matchDemoLocally,
   CLEARABLE_DOMAINS,
-  COMPANION_LLM_TIMEOUT_MS,
 } from "./lib/companion-intent.js";
 import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
@@ -1935,11 +1933,18 @@ async function runClaude(prompt, text, opts = {}) {
     research = false,
     timeoutMs = null,
     clientAbortMs = CLIENT_ABORT_MS,
+    signal = null,
     compact = false,
   } = opts;
   const controller = new AbortController();
   const serverTimeoutMs = timeoutMs || PHASE_TIMEOUT.synthesizeComposite;
-  const timer = setTimeout(() => controller.abort(), clientAbortMs);
+  const forwardAbort = () => controller.abort(signal?.reason);
+  if (signal?.aborted) forwardAbort();
+  else signal?.addEventListener("abort", forwardAbort, { once: true });
+  const timer =
+    Number.isFinite(clientAbortMs) && clientAbortMs > 0
+      ? setTimeout(() => controller.abort(), clientAbortMs)
+      : null;
   try {
     const res = await fetch("/api/run", {
       method: "POST",
@@ -1961,10 +1966,12 @@ async function runClaude(prompt, text, opts = {}) {
     const data = parseApiResponse(res, raw);
     return (data.outputs || [])[0] || "";
   } catch (err) {
+    if (signal?.aborted) throw err;
     if (err.name === "AbortError") throw new Error("Request timed out — try again.");
     throw err;
   } finally {
-    clearTimeout(timer);
+    if (timer) clearTimeout(timer);
+    signal?.removeEventListener("abort", forwardAbort);
   }
 }
 
@@ -10757,7 +10764,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     clearWorkspaceDomains: async (a) => stageCompanionClear(a.domains),
   });
 
-  async function handleCompanionCommand(text) {
+  async function handleCompanionCommand(text, { signal, onPhase } = {}) {
     if (pendingChainName) {
       setPendingChainName(false);
       const name = text.trim();
@@ -10793,24 +10800,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       .map((it) => truncatePreview(it.text || "", 40))
       .filter(Boolean)
       .slice(0, 12);
-    let reply = null;
-    try {
-      const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
-        system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
-        maxTokens: 1600,
-        timeoutMs: COMPANION_LLM_TIMEOUT_MS - 500,
-        clientAbortMs: COMPANION_LLM_TIMEOUT_MS,
-      });
-      reply = parseCompanionReply(raw);
-    } catch (err) {
-      const fallback = matchDemoLocally(text, COMPANION_DEMOS);
-      if (!fallback) {
-        throw new Error(
-          "I couldn't finish interpreting that within 10 seconds. Your request is still in the input so you can retry or split it into smaller steps."
-        );
-      }
-      reply = { say: "", demoId: fallback.id, steps: [] };
-    }
+    onPhase?.("planning");
+    const raw = await runClaude("Translate this request into a director script per the system instructions.", text, {
+      system: buildCompanionSystemPrompt({ demos: demosMeta, functionNames, itemPreviews }),
+      maxTokens: 1600,
+      timeoutMs: PHASE_TIMEOUT.synthesizeComposite,
+      clientAbortMs: null,
+      signal,
+    });
+    const reply = parseCompanionReply(raw);
     const demo = reply.demoId ? findDemo(reply.demoId) : null;
     const steps = demo ? demo.steps : reply.steps;
     const requestedClears = new Set();
@@ -10828,6 +10826,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
     if (steps?.length) {
+      onPhase?.("executing");
       // fire-and-forget: the ghost cursor takes over while chat stays responsive
       runDirectorScript(steps, { title: demo?.title || "demonstration" }).then((result) => {
         if (!result.completed) return;

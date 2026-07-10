@@ -20,7 +20,8 @@ export function createCompanionSubmitGuard({ dedupeMs = DEFAULT_DEDUPE_MS, now =
       if (!text || active) return null;
       const at = now();
       if (last?.text === text && at - last.at < dedupeMs) return null;
-      const run = { id: `companion-${++sequence}`, text, at };
+      const controller = new AbortController();
+      const run = { id: `companion-${++sequence}`, text, at, signal: controller.signal, controller };
       active = run;
       last = run;
       return run;
@@ -30,6 +31,14 @@ export function createCompanionSubmitGuard({ dedupeMs = DEFAULT_DEDUPE_MS, now =
     },
     resetDedupe() {
       last = null;
+    },
+    cancel(id = active?.id) {
+      if (!active || active.id !== id) return null;
+      const cancelled = active;
+      active = null;
+      last = null;
+      cancelled.controller.abort();
+      return cancelled;
     },
     active() {
       return active;

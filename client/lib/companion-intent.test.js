@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  COMPANION_LLM_TIMEOUT_MS,
   COMPANION_VERBS,
   buildCompanionSystemPrompt,
   classifyInterviewInput,
@@ -81,10 +80,6 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
   ]) {
     assert.ok(COMPANION_VERBS[verb], `${verb} is documented for the companion`);
   }
-});
-
-test("companion LLM timeout is below the product maximum", () => {
-  assert.ok(COMPANION_LLM_TIMEOUT_MS <= 10_000);
 });
 
 test("planner requires executable commands to act without chatter", () => {

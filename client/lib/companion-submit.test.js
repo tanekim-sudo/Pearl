@@ -20,6 +20,36 @@ describe("companion submit guard", () => {
     assert.ok(guard.begin("build a lens"), "the same intentional request works later");
   });
 
+  it("keeps a request active beyond ten seconds until it succeeds", () => {
+    let time = 100;
+    const guard = createCompanionSubmitGuard({ now: () => time });
+    const run = guard.begin("plan a complex multi-step lens");
+    time += 10_500;
+    assert.equal(guard.active()?.id, run.id);
+    assert.equal(run.signal.aborted, false);
+    guard.finish(run.id);
+    assert.equal(guard.active(), null);
+  });
+
+  it("cancels cleanly and returns the request text for recovery", () => {
+    const guard = createCompanionSubmitGuard();
+    const run = guard.begin("build a detailed research workflow");
+    const cancelled = guard.cancel(run.id);
+    assert.equal(cancelled.text, "build a detailed research workflow");
+    assert.equal(cancelled.signal.aborted, true);
+    assert.equal(guard.active(), null);
+    assert.ok(guard.begin(cancelled.text), "the recovered input can be retried");
+  });
+
+  it("does not cancel a newer request with a stale run id", () => {
+    const guard = createCompanionSubmitGuard();
+    const first = guard.begin("first");
+    guard.cancel(first.id);
+    const second = guard.begin("second");
+    assert.equal(guard.cancel(first.id), null);
+    assert.equal(guard.active()?.id, second.id);
+  });
+
   it("does not suppress a different intentional command after completion", () => {
     const guard = createCompanionSubmitGuard();
     const first = guard.begin("make a lens");

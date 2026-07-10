@@ -9,7 +9,6 @@ export { COMPANION_VERBS } from "./companion-capabilities.js";
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
 
 export const CLEARABLE_DOMAINS = ["paper", "ai", "lenses", "generators"];
-export const COMPANION_LLM_TIMEOUT_MS = 9000;
 
 /**
  * Deterministic fast path for high-confidence destructive workspace commands.

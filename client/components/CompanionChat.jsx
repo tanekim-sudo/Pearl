@@ -41,6 +41,7 @@ export default function CompanionChat({
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [director, setDirector] = useState(null);
@@ -109,13 +110,20 @@ export default function CompanionChat({
     setDraft("");
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
+    setPhase("understanding");
+    const commandOptions = {
+      signal: run.signal,
+      onPhase(nextPhase) {
+        if (!run.signal.aborted) setPhase(nextPhase);
+      },
+    };
     try {
       const interviewPrompt = nextInterviewPrompt(memory);
       if (interviewPrompt) {
         const field = !memory.identity ? "identity" : !memory.role ? "role" : "goal";
         const route = classifyInterviewInput(text, field);
         if (route.kind === "command") {
-          const commandReply = await onCommand(text);
+          const commandReply = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
           if (commandReply?.visible && commandReply.text) {
             setMessages((m) => [...m, { role: "companion", text: commandReply.text }]);
@@ -128,7 +136,7 @@ export default function CompanionChat({
         const prompt = nextInterviewPrompt(next);
         if (prompt) setMessages((m) => [...m, { role: "companion", text: prompt }]);
         if (field === "goal") {
-          const result = await onCommand(text);
+          const result = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
           if (result?.visible && result.text) {
             setMessages((m) => [...m, { role: "companion", text: result.text }]);
@@ -137,20 +145,36 @@ export default function CompanionChat({
         }
         return;
       }
-      const result = await onCommand(text);
+      const result = await onCommand(text, commandOptions);
       setMemory(rememberCompanionAction(userId, text));
       if (result?.visible && result.text) {
         setMessages((m) => [...m, { role: "companion", text: result.text }]);
         speak(result.text);
       }
     } catch (err) {
+      if (run.signal.aborted || err?.name === "AbortError") {
+        setDraft(text);
+        return;
+      }
       const msg = err?.message || "something went wrong — try again";
       setDraft(text);
       setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
     } finally {
+      const isCurrent = submitGuardRef.current.active()?.id === run.id;
       submitGuardRef.current.finish(run.id);
-      setBusy(false);
+      if (isCurrent) {
+        setBusy(false);
+        setPhase("");
+      }
     }
+  }
+
+  function cancelActiveWork() {
+    const cancelled = submitGuardRef.current.cancel();
+    if (cancelled) setDraft(cancelled.text);
+    setBusy(false);
+    setPhase("");
+    stopDirector();
   }
 
   /** How long a pause (after you've said something) means "I'm done". */
@@ -264,7 +288,13 @@ export default function CompanionChat({
     startVoiceSession();
   }
 
-  useEffect(() => () => stopListening(), []);
+  useEffect(
+    () => () => {
+      stopListening();
+      submitGuardRef.current.cancel();
+    },
+    []
+  );
 
   const playing = !!director?.running;
 
@@ -337,11 +367,16 @@ export default function CompanionChat({
             {m.text}
           </div>
         ))}
-        {busy && <div className="companion-msg companion thinking">working…</div>}
+        {busy && (
+          <div className="companion-progress" role="status" aria-live="polite" data-testid="companion-progress">
+            <span>{phase || "understanding"}…</span>
+            <button type="button" onClick={cancelActiveWork}>stop</button>
+          </div>
+        )}
         {playing && (
           <div className="companion-playing">
             <span>demonstrating{director?.scriptTitle ? ` — ${director.scriptTitle}` : ""}…</span>
-            <button type="button" onClick={() => stopDirector()}>stop</button>
+            <button type="button" onClick={cancelActiveWork}>stop</button>
           </div>
         )}
       </div>
