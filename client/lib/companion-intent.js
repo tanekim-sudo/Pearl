@@ -27,7 +27,7 @@ export function parseAdministrativeCommand(text) {
   if (!destructive || !bulk) return null;
 
   const domains = [];
-  if (/\b(white\s*board|whiteboard|paper|canvas|current page|drawings?|sketch(?:es)?)\b/.test(normalized)) domains.push("paper");
+  if (/\b(white\s*board|whiteboard|whitebaord|paper|canvas|current page|drawings?|sketch(?:es)?)\b/.test(normalized)) domains.push("paper");
   if (/\b(ai space|ai nodes?|ai stuff|artificial intelligence space)\b/.test(normalized)) domains.push("ai");
   if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.push("lenses");
   if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.push("generators");

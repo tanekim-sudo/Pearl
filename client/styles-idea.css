@@ -502,6 +502,7 @@ html[data-theme="chalk"] .canvas-column {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 6px 8px;
+  min-height: 32px;
   cursor: pointer;
   border-radius: 6px;
   white-space: nowrap;
@@ -528,6 +529,8 @@ html[data-theme="chalk"] .canvas-column {
   cursor: pointer;
   line-height: 0;
   flex-shrink: 0;
+  min-width: 32px;
+  min-height: 32px;
   color: rgba(0, 0, 0, 0.62);
 }
 
@@ -587,19 +590,32 @@ html[data-theme="chalk"] .canvas-column {
 }
 
 .zoom-micro-dot {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.zoom-micro-dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: none;
   background: rgba(0, 0, 0, 0.18);
-  cursor: pointer;
-  padding: 0;
+  transform: translate(-50%, -50%);
   transition: background 0.12s, transform 0.12s;
 }
 
-.zoom-micro-dot:hover {
+.zoom-micro-dot:hover::before {
   background: rgba(0, 0, 0, 0.35);
-  transform: scale(1.2);
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 .zoom-micro-panel {
@@ -625,6 +641,8 @@ html[data-theme="chalk"] .canvas-column {
   cursor: pointer;
   color: rgba(0, 0, 0, 0.5);
   font-size: 12px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .zoom-micro-panel button:hover {
@@ -727,6 +745,7 @@ html[data-theme="chalk"] .canvas-column {
   font-weight: 400;
   color: var(--faint);
   cursor: pointer;
+  min-height: 32px;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3288,8 +3307,8 @@ body.ai-strand-dragging {
 }
 
 .canvas-edge-top .page-tabs {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0.72;
+  pointer-events: auto;
   transition: opacity 0.18s ease;
 }
 
@@ -5193,8 +5212,10 @@ body.toolbox-dragging .toolbox-drag-row {
 .rail-create.cognition-git-new {
   align-self: center;
   margin: 0;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  flex: 0 0 32px;
   padding: 0;
   border: none;
   border-radius: 7px;
@@ -5225,6 +5246,7 @@ body.toolbox-dragging .toolbox-drag-row {
   border-radius: 8px;
   font-size: 12.5px;
   padding: 7px 10px;
+  min-height: 32px;
   transition: background 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
 }
 
@@ -5278,8 +5300,8 @@ body.toolbox-dragging .toolbox-drag-row {
 
 .rail-pane-heading-row .generator-new {
   margin-left: auto;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   line-height: 1;
   font-size: 13px;
   border-radius: 6px;
@@ -5585,6 +5607,7 @@ body.director-running .idea-app {
   border-radius: 999px;
   font-size: 11px;
   padding: 4px 10px;
+  min-height: 32px;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -5734,6 +5757,7 @@ body.director-running .idea-app {
   font-size: 13px;
   color: rgba(30, 28, 22, 0.95);
   padding: 6px 2px;
+  min-height: 32px;
 }
 
 .companion-input::placeholder {
@@ -5806,6 +5830,7 @@ body.director-running .idea-app {
   font-weight: 600;
   color: rgba(30, 28, 22, 0.88);
   width: 150px;
+  min-height: 32px;
   text-align: center;
   text-overflow: ellipsis;
 }
@@ -5820,8 +5845,8 @@ body.director-running .idea-app {
   background: transparent;
   color: rgba(139, 108, 27, 0.55);
   font-size: 13px;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   display: grid;

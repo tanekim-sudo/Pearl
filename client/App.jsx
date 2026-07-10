@@ -2253,6 +2253,7 @@ export default function App() {
   const pendingImageRef = useRef(null);
   const lastPointerRef = useRef(null);
   const editClickRef = useRef(null);
+  const lastBoardClickRef = useRef(null);
   const eraseAtPointerRef = useRef(() => false);
   const itemAtPointRef = useRef(() => null);
   const historyRef = useRef({ past: [], future: [] });
@@ -6555,7 +6556,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     };
     setLenses((arr) => [struct, ...arr]);
     focusRailPane(RAIL_LENSES);
-    showToast(`◇${num} — a placeholder for something not yet named. Drop material on it.`);
+    setLensSettingsId(struct.id);
+    showToast(`◇${num} — an open workspace for material you want to shape.`);
     return struct;
   }
 
@@ -8328,6 +8330,34 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const w = clientToWorld(cx, cy);
     const lp = vpLocal(cx, cy);
     let hit = itemAtPoint(cx, cy);
+
+    // A selection outline/resize handle can become the DOM target between two
+    // clicks, preventing the browser's native dblclick event from reaching the
+    // input layer. Recognize the human gesture by item, time, and distance so
+    // selected text still reliably enters editing on the second click.
+    if (t === "select" && hit && isEditableBlock(hit)) {
+      const now = performance.now();
+      const prev = lastBoardClickRef.current;
+      const repeated =
+        prev?.id === hit.id &&
+        now - prev.at <= 450 &&
+        Math.hypot(cx - prev.cx, cy - prev.cy) <= 10;
+      lastBoardClickRef.current = { id: hit.id, at: now, cx, cy };
+      if (repeated) {
+        e.preventDefault();
+        gesture.current = null;
+        setGesturing(false);
+        setSelection([hit.id]);
+        clearHighlightSelection();
+        editingRef.current = hit.id;
+        setEditing(hit.id);
+        editClickRef.current = { cx, cy };
+        lastBoardClickRef.current = null;
+        return;
+      }
+    } else {
+      lastBoardClickRef.current = null;
+    }
 
     if (e.shiftKey && toolRef.current === "select") {
       const paperSel = selRef.current;
@@ -10983,8 +11013,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 onNewTransformation={openCreateLens}
               />
               <div className="move-quick-add">
-                <input className="move-quick-input" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
-                <button type="button" className="move-quick-btn" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
+                <input className="move-quick-input" aria-label="Quick move" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
+                <button type="button" className="move-quick-btn" aria-label="Add quick move" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
               <div className="rail-scroll">
                 {transformationRepoGroups.length > 0 &&
@@ -11403,7 +11433,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             />
           )}
             </div>
-            <span className="paper-edge-label">8 × 11.5</span>
+            <span className="paper-edge-label">8.5 × 11</span>
           </div>
         </div>
 

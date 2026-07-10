@@ -1,7 +1,7 @@
 # Final adversarial audit
 
-- Run: 2026-07-10T02:57:12.263Z
-- Target: `http://localhost:5216`
+- Run: 2026-07-10T17:47:26.495Z
+- Target: `http://localhost:5233`
 - Browser scenarios: 7
 - Assertions: 32/32 passed
 - Screenshots: 10
@@ -43,7 +43,7 @@
 
 ### companion
 - PASS — fresh first run opens companion instead of blocking onboarding
-- PASS — typo-heavy clear command preempts identity under one second (13ms)
+- PASS — typo-heavy clear command preempts identity under one second (14ms)
 - PASS — confirmation reports counted requested domains (Clear this workspace content?1 whiteboard items · 1 AI nodes · 1 user-created lensesBuilt-in lens primitives will be kept.CancelClear listed content)
 - PASS — cancel preserves every domain
 - PASS — administrative command is never saved as identity

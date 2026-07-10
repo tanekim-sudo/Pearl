@@ -34,6 +34,7 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
         type="button"
         className="rail-create cognition-git-new"
         data-tour="create-function"
+        aria-label="Create lens"
         onClick={onNewTransformation}
       >
         +

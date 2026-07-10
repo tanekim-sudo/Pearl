@@ -42,6 +42,16 @@ test("typo-filled first-run clear request routes before profile capture", () => 
   assert.equal(classifyInterviewInput(text, "identity").kind, "command");
 });
 
+test("compound clear tolerates the common whiteboard transposition typo", () => {
+  const text =
+    "delete all the functions in my current function tab as well as all the generators and delete every single thing that's in my whitebaord as well as in my AI space";
+  assert.deepEqual(parseAdministrativeCommand(text), {
+    kind: "clear-workspace",
+    domains: ["paper", "ai", "lenses", "generators"],
+  });
+  assert.equal(classifyInterviewInput(text, "identity").kind, "command");
+});
+
 test("profile-shaped answers advance while commands interrupt setup", () => {
   assert.equal(looksLikeProfileAnswer("Tan", "identity"), true);
   assert.equal(looksLikeProfileAnswer("I run a research lab", "role"), true);

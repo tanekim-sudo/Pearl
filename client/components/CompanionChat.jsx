@@ -414,6 +414,7 @@ export default function CompanionChat({
         <input
           name="companionRequest"
           className="companion-input"
+          aria-label="Companion request"
           placeholder={listening ? "listening — pause when done, or tap the mic to send" : "ask, or tell me what to build…"}
           value={draft}
           onFocus={() => submitGuardRef.current.resetDedupe()}

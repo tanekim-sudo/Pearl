@@ -98,6 +98,10 @@ async function main() {
   console.log("generator lifecycle result:", JSON.stringify(r1));
   check("generator lifecycle script completed", r1.completed === true && !(r1.errors || []).length, (r1.errors || []).join("; "));
   await page.waitForTimeout(600);
+  check("companion-created generator opens its workspace", await page.locator(".lens-settings").isVisible().catch(() => false));
+  if (await page.locator(".lens-settings-close").isVisible().catch(() => false)) {
+    await page.locator(".lens-settings-close").click();
+  }
   let gens = await generatorsState(page);
   const graduated = gens.find((g) => g.title === "pressure release");
   check("empty ◇N generator created + graduated to name", !!graduated, gens.map((g) => g.title).join(", "));
@@ -111,6 +115,10 @@ async function main() {
     await page.waitForTimeout(500);
     gens = await generatorsState(page);
     check("+ button created ◇N placeholder", gens.some((g) => /^◇\d+$/.test(g.title || "")), gens.map((g) => g.title).join(", "));
+    check("+ button opens the new generator workspace", await page.locator(".lens-settings").isVisible().catch(() => false));
+    if (await page.locator(".lens-settings-close").isVisible().catch(() => false)) {
+      await page.locator(".lens-settings-close").click();
+    }
   }
   await page.screenshot({ path: `${OUT}/lg-generators-pane.png` });
 
