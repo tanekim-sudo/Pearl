@@ -15,6 +15,7 @@ import {
   layoutAfterAppend,
   fanStrandAngles,
   pickStrandIndex,
+  resolveIntentChildPosition,
   collectStrandChoices,
 } from "./ai-nodes.js";
 
@@ -110,6 +111,29 @@ describe("ai-nodes layout", () => {
     const angles = fanStrandAngles(3, Math.PI / 2);
     const idx = pickStrandIndex(Math.PI / 2, angles);
     assert.equal(idx, 1);
+  });
+
+  it("preserves all eight cursor rays across zoom-independent world intents", () => {
+    const parent = { id: "p", x: 120, y: -80, radius: 30 };
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const intent = {
+        x: parent.x + Math.cos(angle) * 620,
+        y: parent.y + Math.sin(angle) * 620,
+      };
+      const pos = resolveIntentChildPosition(parent, intent, [parent], "expanded");
+      assert.ok(pos.angleError <= 1e-8, `direction ${i} drifted`);
+      assert.ok(Math.cos(angle) * (pos.x - parent.x) + Math.sin(angle) * (pos.y - parent.y) > 0);
+    }
+  });
+
+  it("slides at most 20 degrees around a collision and stays cursor-facing", () => {
+    const parent = { id: "p", x: 0, y: 0, radius: 30 };
+    const blocker = { id: "b", x: 480, y: 0, radius: 30 };
+    const pos = resolveIntentChildPosition(parent, { x: 480, y: 0 }, [parent, blocker], "expanded");
+    assert.ok(pos.adjusted);
+    assert.ok(pos.angleError <= (20 * Math.PI) / 180 + 1e-8);
+    assert.ok(pos.x > parent.x, "collision adjustment must preserve the intended hemisphere");
   });
 
   it("collectStrandChoices includes expand ops and toolbox moves", () => {

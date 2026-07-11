@@ -1,13 +1,22 @@
 import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-constants.js";
 import {
+  angularDistance,
   layoutAfterAppend,
   relayoutAiConstellation,
+  resolveIntentChildPosition,
   suggestChildPosition,
   suggestRootPosition,
 } from "./ai-layout.js";
 
 export { AI_NODE_RADIUS, AI_SPAWN_MIN_DIST, AI_NODE_MIN_GAP };
-export { layoutAfterAppend, relayoutAiConstellation, suggestChildPosition, suggestRootPosition };
+export {
+  angularDistance,
+  layoutAfterAppend,
+  relayoutAiConstellation,
+  resolveIntentChildPosition,
+  suggestChildPosition,
+  suggestRootPosition,
+};
 
 export function nodePositionAt(existing, kind = "source", worldPos) {
   const radius = AI_NODE_RADIUS[kind] || 20;

@@ -144,6 +144,7 @@ import {
   truncateLabel,
   layoutAfterAppend,
   collectStrandChoices,
+  resolveIntentChildPosition,
   AI_SPAWN_MIN_DIST,
 } from "./lib/ai-nodes.js";
 import {
@@ -7055,16 +7056,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return { inputNode: node, ids: null, aiMaterial: null };
   }
 
-  function resolveExpandedDropWorld(sourceNode, dropWorld) {
+  function resolveExpandedDropWorld(sourceNode, dropWorld, placementResolved = false) {
     if (!dropWorld || !sourceNode) return dropWorld;
+    if (placementResolved) return dropWorld;
     const existing = aiNodesRef.current;
-    const overlap = Math.hypot(dropWorld.x - sourceNode.x, dropWorld.y - sourceNode.y);
-    const childRadius = nodePositionAt(existing, "expanded").radius || 20;
-    const minSep = (sourceNode.radius || 20) + childRadius + 12;
-    if (overlap < minSep * 0.9) {
-      return childNodePosition(sourceNode, "expanded", existing);
-    }
-    return dropWorld;
+    return resolveIntentChildPosition(sourceNode, dropWorld, existing, "expanded");
   }
 
   function applyOperatorToAiNode(targetNode, op, atClient, extraOpts = {}) {
@@ -7193,6 +7189,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (choice.op) {
       applyOperatorToAiNode(node, choice.op, atClient, {
         expandedAt: info.worldPos,
+        expandedAtResolved: info.placementResolved,
         stableCamera: true,
       });
       return;
@@ -7201,7 +7198,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (choice.kind === "interpret") {
       const bundle = aiPanel?.sketchBundle;
       if (bundle) {
-        interpretSketchBundle(bundle, info.worldPos, { fromClient: atClient });
+        interpretSketchBundle(bundle, info.worldPos, {
+          fromClient: atClient,
+          expandedAtResolved: info.placementResolved,
+        });
         return;
       }
       // No live panel bundle: rebuild from the node's own paper sources, or
@@ -7209,11 +7209,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const srcIds = node.sourceIds || [];
       const rebuilt = srcIds.length ? gatherSelectionSketchBundle(srcIds) : null;
       if (rebuilt) {
-        interpretSketchBundle(rebuilt, info.worldPos, { fromClient: atClient });
+        interpretSketchBundle(rebuilt, info.worldPos, {
+          fromClient: atClient,
+          expandedAtResolved: info.placementResolved,
+        });
         return;
       }
       if (srcIds.length) {
-        expandInAi(srcIds, { sourceNode: node, expandedAt: info.worldPos, stableCamera: true });
+        expandInAi(srcIds, {
+          sourceNode: node,
+          expandedAt: info.worldPos,
+          expandedAtResolved: info.placementResolved,
+          stableCamera: true,
+        });
         return;
       }
     }
@@ -9218,7 +9226,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return;
     }
 
-    const childWorld = resolveExpandedDropWorld(sourceNode, dropWorld);
+    const childWorld = resolveExpandedDropWorld(
+      sourceNode,
+      dropWorld,
+      opts.expandedAtResolved
+    );
     const expandedNode = createExpandedChild(
       sourceNode,
       {

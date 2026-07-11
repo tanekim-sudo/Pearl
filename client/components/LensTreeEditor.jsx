@@ -244,16 +244,37 @@ export default function LensTreeEditor({
       if (stepId === rootId) return;
       e.preventDefault();
       e.stopPropagation();
-      setStrandDrag({ stepId, x: e.clientX, y: e.clientY });
-      const onMove = (ev) => setStrandDrag({ stepId, x: ev.clientX, y: ev.clientY });
-      const onUp = () => {
+      const start = { x: e.clientX, y: e.clientY };
+      setStrandDrag({ stepId, ...start, active: false, branchSide: "after" });
+      const onMove = (ev) => {
+        const dx = ev.clientX - start.x;
+        const dy = ev.clientY - start.y;
+        const active = Math.hypot(dx, dy) > 8;
+        setStrandDrag({
+          stepId,
+          x: ev.clientX,
+          y: ev.clientY,
+          active,
+          branchSide: dy < 0 ? "before" : "after",
+        });
+      };
+      const cleanup = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
         setStrandDrag(null);
-        branchFromStep(stepId);
       };
+      const onUp = (ev) => {
+        const dx = ev.clientX - start.x;
+        const dy = ev.clientY - start.y;
+        cleanup();
+        if (Math.hypot(dx, dy) <= 8) return;
+        branchFromStep(stepId, { branchSide: dy < 0 ? "before" : "after" });
+      };
+      const onCancel = () => cleanup();
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
     },
     [branchFromStep, rootId]
   );
@@ -703,9 +724,9 @@ export default function LensTreeEditor({
           </aside>
         </div>
 
-        {strandDrag && (
+        {strandDrag?.active && (
           <div className="fn-strand-ghost" style={{ left: strandDrag.x + 10, top: strandDrag.y + 6 }}>
-            ⌁ new branch
+            ⌁ new branch {strandDrag.branchSide === "before" ? "above" : "below"}
           </div>
         )}
 

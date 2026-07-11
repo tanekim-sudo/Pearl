@@ -10,6 +10,19 @@ export function screenToWorld(camera, sx, sy) {
   };
 }
 
+/** Browser client coordinates → world coordinates inside a viewport rect. */
+export function clientToWorld(camera, viewportRect, clientX, clientY) {
+  return screenToWorld(camera, clientX - viewportRect.left, clientY - viewportRect.top);
+}
+
+/** A client-space drag vector expressed in world units (pan/offset invariant). */
+export function clientDragVectorToWorld(camera, start, end) {
+  return {
+    x: (end.x - start.x) / camera.scale,
+    y: (end.y - start.y) / camera.scale,
+  };
+}
+
 /** AI world → screen (viewport-local) coordinates. */
 export function worldToScreen(camera, wx, wy) {
   return {

@@ -6,6 +6,8 @@ import {
   AI_BLEND_ZOOM_START,
   AI_READING_ZOOM,
   AI_TEXT_ZOOM_FULL,
+  clientDragVectorToWorld,
+  clientToWorld,
   computeNodesBBox,
   fitAiConstellation,
   fitTextFontSize,
@@ -17,6 +19,16 @@ import {
 } from "./ai-space.js";
 
 describe("ai-space", () => {
+  it("converts client points and drag vectors independently of viewport and pan offsets", () => {
+    const camera = { x: -240, y: 170, scale: 0.25 };
+    const rect = { left: 320, top: 45 };
+    assert.deepEqual(clientToWorld(camera, rect, 180, 290), { x: 400, y: 300 });
+    assert.deepEqual(
+      clientDragVectorToWorld(camera, { x: 500, y: 400 }, { x: 525, y: 350 }),
+      { x: 100, y: -200 }
+    );
+  });
+
   it("computeNodesBBox includes node radii", () => {
     const bb = computeNodesBBox([
       { x: 100, y: 100, radius: 20 },

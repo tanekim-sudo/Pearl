@@ -168,6 +168,7 @@ export function addBranchAtStep(draftOps, stepId, partial, newId) {
   const parent = draftMap[parentId];
   const idx = parent.steps.indexOf(stepId);
   if (idx < 0) return { draftOps, stepId: null, forked: false };
+  const branchBefore = partial?.branchSide === "before";
 
   const leafId = newId();
   const leaf = {
@@ -211,7 +212,9 @@ export function addBranchAtStep(draftOps, stepId, partial, newId) {
   if (rest.length === 1 && draftMap[rest[0]]?.fork) {
     // A fork already follows this step: open one more branch on it.
     const next = [...draftOps, leaf].map((o) =>
-      o.id === rest[0] ? { ...o, steps: [...o.steps, leafId] } : o
+      o.id === rest[0]
+        ? { ...o, steps: branchBefore ? [leafId, ...o.steps] : [...o.steps, leafId] }
+        : o
     );
     return { draftOps: next, stepId: leafId, forked: true };
   }
@@ -225,7 +228,14 @@ export function addBranchAtStep(draftOps, stepId, partial, newId) {
     branchAId = newId();
     extra.push({ id: branchAId, kind: "pipeline", name: "branch", description: "", steps: rest });
   }
-  extra.push({ id: forkId, kind: "pipeline", fork: true, name: "fork", description: "", steps: [branchAId, leafId] });
+  extra.push({
+    id: forkId,
+    kind: "pipeline",
+    fork: true,
+    name: "fork",
+    description: "",
+    steps: branchBefore ? [leafId, branchAId] : [branchAId, leafId],
+  });
   const next = [...draftOps, ...extra].map((o) =>
     o.id === parentId ? { ...o, steps: [...o.steps.slice(0, idx + 1), forkId] } : o
   );

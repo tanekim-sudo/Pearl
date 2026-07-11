@@ -6682,9 +6682,9 @@ svg.gen-item-selected {
 
 .ai-node-viewport-embedded .ai-strand-choice-hud {
   background: rgba(255, 255, 255, 0.97);
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.1);
   color: #111;
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
 
 .ai-node-viewport-embedded .ai-strand-choice-hud-title,
@@ -6695,11 +6695,83 @@ svg.gen-item-selected {
 }
 
 .ai-node-viewport-embedded .ai-strand-choice-hud-item.active {
-  background: rgba(232, 185, 35, 0.18);
+  background: rgba(20, 20, 20, 0.08);
   color: #111;
 }
 
 .ai-node-viewport-embedded .ai-strand-choice-hud-key,
 .ai-node-viewport-embedded .ai-strand-choice-hud-item.active .ai-strand-choice-hud-key {
   background: rgba(0, 0, 0, 0.06);
+}
+
+/* The operation fan chooses behavior; this graphite preview is the actual
+   child position and uses the same collision-resolved point as commit. */
+.ai-node-viewport-embedded .ai-strand-placement-path {
+  fill: none;
+  stroke: rgba(20, 20, 20, 0.72);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 5;
+}
+
+.ai-node-viewport-embedded .ai-strand-placement-node {
+  fill: rgba(255, 255, 255, 0.94);
+  stroke: rgba(20, 20, 20, 0.86);
+  stroke-width: 2;
+}
+
+.ai-node-viewport-embedded .ai-strand-placement-preview.collision-adjusted .ai-strand-placement-node {
+  stroke-dasharray: 3 3;
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-origin {
+  fill: rgba(30, 30, 30, 0.9);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.18));
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-expand .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-interpret .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-move .ai-strand-drag-path {
+  stroke: rgba(30, 30, 30, 0.32);
+  stroke-width: 1.5;
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-strand.hovered .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-expand.hovered .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-interpret.hovered .ai-strand-drag-path,
+.ai-node-viewport-embedded .ai-strand-drag-kind-move.hovered .ai-strand-drag-path {
+  stroke: rgba(20, 20, 20, 0.78);
+  stroke-width: 2.25;
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-tip,
+.ai-node-viewport-embedded .ai-strand-drag-strand.hovered .ai-strand-drag-tip {
+  fill: rgba(255, 255, 255, 0.96);
+  stroke: rgba(20, 20, 20, 0.7);
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-label,
+.ai-node-viewport-embedded .ai-strand-drag-strand.hovered .ai-strand-drag-label {
+  fill: rgba(20, 20, 20, 0.82);
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.ai-node-viewport-embedded .ai-strand-drag-label {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-strand-drag-origin,
+  .ai-strand-drag-strand,
+  .ai-strand-drag-path,
+  .ai-strand-drag-label {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }

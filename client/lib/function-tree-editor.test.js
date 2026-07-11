@@ -151,6 +151,19 @@ describe("function-tree-editor", () => {
     assert.deepEqual(map[forkId].steps, ["b", stepId]);
   });
 
+  it("places an upward strand before the existing branch lane", () => {
+    const { ops, root } = sampleTree();
+    const { draftOps, stepId } = addBranchAtStep(
+      ops,
+      "a",
+      { name: "upward", branchSide: "before" },
+      id
+    );
+    const map = buildDraftMap(draftOps);
+    const fork = map[map[root].steps[1]];
+    assert.deepEqual(fork.steps, [stepId, "b"]);
+  });
+
   it("second branch from the same step joins the existing fork", () => {
     const { ops } = sampleTree();
     const first = addBranchAtStep(ops, "a", { name: "one pager" }, id);

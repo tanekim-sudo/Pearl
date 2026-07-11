@@ -78,6 +78,87 @@ function nudgeFromCollisions(x, y, radius, nodes, skipIds = new Set()) {
   return { x: nx, y: ny };
 }
 
+function collidesAt(x, y, radius, nodes, skipIds) {
+  return nodes.some((node) => {
+    if (skipIds.has(node.id)) return false;
+    const minDistance = radius + (node.radius || AI_NODE_RADIUS.source) + AI_NODE_MIN_GAP;
+    return Math.hypot(x - node.x, y - node.y) < minDistance;
+  });
+}
+
+export function angularDistance(a, b) {
+  let diff = Math.abs(a - b) % (Math.PI * 2);
+  if (diff > Math.PI) diff = Math.PI * 2 - diff;
+  return diff;
+}
+
+/**
+ * Resolve a cursor-directed child position without losing its intended ray.
+ * Collision avoidance searches small angular slides first, then extends the
+ * branch. It never silently jumps to the graph's default outward sector.
+ */
+export function resolveIntentChildPosition(parent, intentWorld, nodes, kind = "expanded", opts = {}) {
+  const radius = AI_NODE_RADIUS[kind] || AI_NODE_RADIUS.expanded;
+  const dx = (intentWorld?.x ?? parent.x) - parent.x;
+  const dy = (intentWorld?.y ?? parent.y) - parent.y;
+  const rawDistance = Math.hypot(dx, dy);
+  const fallbackAngle = outwardAngle(parent, nodes, opts.hintAngle);
+  const intentAngle = rawDistance > 1e-6 ? Math.atan2(dy, dx) : fallbackAngle;
+  const minDistance =
+    opts.minDistance ??
+    Math.max(
+      (parent.radius || AI_NODE_RADIUS.source) + radius + AI_NODE_MIN_GAP,
+      AI_SPAWN_MIN_DIST * 0.55
+    );
+  const maxDistance = Math.max(minDistance, opts.maxDistance ?? AI_SPAWN_MIN_DIST * 1.6);
+  const desiredDistance = Math.max(minDistance, Math.min(maxDistance, rawDistance || minDistance));
+  const maxDeflection = Math.max(0, Math.min(Math.PI / 2, opts.maxDeflection ?? (20 * Math.PI) / 180));
+  const angleStep = Math.max((1 * Math.PI) / 180, opts.angleStep ?? (4 * Math.PI) / 180);
+  const radialStep = Math.max(24, opts.radialStep ?? Math.max(radius * 2, AI_NODE_MIN_GAP * 0.28));
+  const skipIds = new Set([parent.id, ...(opts.skipIds || [])]);
+
+  const angleOffsets = [0];
+  for (let offset = angleStep; offset <= maxDeflection + 1e-8; offset += angleStep) {
+    angleOffsets.push(offset, -offset);
+  }
+
+  for (let distance = desiredDistance; distance <= maxDistance + 1e-8; distance += radialStep) {
+    for (const offset of angleOffsets) {
+      const angle = intentAngle + offset;
+      const x = parent.x + Math.cos(angle) * distance;
+      const y = parent.y + Math.sin(angle) * distance;
+      if (collidesAt(x, y, radius, nodes, skipIds)) continue;
+      return {
+        x,
+        y,
+        radius,
+        intentAngle,
+        angle,
+        angleError: angularDistance(intentAngle, angle),
+        distance,
+        adjusted: Math.abs(offset) > 1e-8 || Math.abs(distance - rawDistance) > 1e-6,
+      };
+    }
+  }
+
+  // A pathologically dense graph may have no free candidate in the bounded
+  // search. Preserve the cursor ray and hemisphere; overlap is preferable to
+  // an unexplained mirrored/default-sector jump.
+  const x = parent.x + Math.cos(intentAngle) * maxDistance;
+  const y = parent.y + Math.sin(intentAngle) * maxDistance;
+  return {
+    x,
+    y,
+    radius,
+    intentAngle,
+    angle: intentAngle,
+    angleError: 0,
+    distance: maxDistance,
+    adjusted: true,
+    collisionLimited: true,
+  };
+}
+
 /**
  * Place a child in the open sector that continues the thread outward from its parent.
  */

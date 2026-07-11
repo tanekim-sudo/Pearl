@@ -6,6 +6,7 @@ import {
   edgeGeometry,
   fanStrandAngles,
   pickStrandIndex,
+  resolveIntentChildPosition,
   truncateLabel,
 } from "../lib/ai-nodes.js";
 import {
@@ -13,6 +14,7 @@ import {
   AI_BLEND_ZOOM_START,
   clampAiCamera,
   clampAiScale,
+  clientToWorld,
   nodeTextLayoutAtBlend,
   screenToWorld,
   viewportCenterWorld,
@@ -218,14 +220,17 @@ export default function AiNodeCanvas({
         if (!choice) return;
         e.preventDefault();
         e.stopPropagation();
-        const angle = sd.angles?.[idx] ?? sd.baseAngle ?? 0;
-        const tipScreenX = sd.originX + Math.cos(angle) * sd.length;
-        const tipScreenY = sd.originY + Math.sin(angle) * sd.length;
-        const worldPos = screenToWorld(cameraRef.current, tipScreenX, tipScreenY);
+        const worldPos = sd.previewWorld;
+        if (!worldPos) return;
         strandDragRef.current = null;
         setStrandDrag(null);
         document.body.classList.remove("ai-strand-dragging");
-        onStrandSelectRef.current?.(sd.nodeId, choice, { worldPos });
+        onStrandSelectRef.current?.(sd.nodeId, choice, {
+          worldPos,
+          placementResolved: true,
+          intentAngle: sd.intentAngle,
+          angleError: sd.angleError || 0,
+        });
       }
     }
 
@@ -381,7 +386,13 @@ export default function AiNodeCanvas({
     window.addEventListener("pointercancel", handleLassoEnd);
   }
 
-  function startStrandDrag(e, node, seedX = e.clientX, seedY = e.clientY) {
+  function startStrandDrag(
+    e,
+    node,
+    seedX = e.clientX,
+    seedY = e.clientY,
+    initialPointer = null
+  ) {
     if (e.button !== 0) return;
     if (e.shiftKey && tool === "select" && selectedIds.length) {
       e.preventDefault();
@@ -451,7 +462,7 @@ export default function AiNodeCanvas({
       }
       window.removeEventListener("pointermove", handleStrandMove);
       window.removeEventListener("pointerup", handleStrandEnd);
-      window.removeEventListener("pointercancel", handleStrandEnd);
+      window.removeEventListener("pointercancel", handleStrandCancel);
     }
 
     function updateFromPointer(clientX, clientY, moveEv) {
@@ -466,10 +477,29 @@ export default function AiNodeCanvas({
         return;
       }
 
-      const px = clientX - state.rectLeft;
-      const py = clientY - state.rectTop;
-      const dx = px - state.originX;
-      const dy = py - state.originY;
+      const rectNow = viewportRef.current?.getBoundingClientRect();
+      const sourceNode = nodesRef.current.find((candidate) => candidate.id === state.nodeId);
+      if (!rectNow || !sourceNode) return;
+      const cam = cameraRef.current;
+      const pointerWorld = clientToWorld(cam, rectNow, clientX, clientY);
+      const previewWorld = resolveIntentChildPosition(
+        sourceNode,
+        pointerWorld,
+        nodesRef.current,
+        "expanded"
+      );
+      const attach = attachPointOnNode(sourceNode, previewWorld.x, previewWorld.y, {
+        invScale: 1 / cam.scale,
+        cellWeight:
+          1 +
+          Math.min(nodesRef.current.filter((candidate) => candidate.parentId === sourceNode.id).length, 3) *
+            0.14,
+      });
+      const attachScreen = worldToScreen(cam, attach.x, attach.y);
+      const px = clientX - rectNow.left;
+      const py = clientY - rectNow.top;
+      const dx = px - attachScreen.x;
+      const dy = py - attachScreen.y;
       const dist = Math.hypot(dx, dy);
       if (!state.active && dist <= STRAND_DRAG_THRESHOLD) return;
       if (moveEv) ensureCapture(moveEv);
@@ -497,6 +527,10 @@ export default function AiNodeCanvas({
       const next = {
         ...state,
         active: true,
+        originX: attachScreen.x,
+        originY: attachScreen.y,
+        rectLeft: rectNow.left,
+        rectTop: rectNow.top,
         length,
         baseAngle,
         angles,
@@ -504,6 +538,12 @@ export default function AiNodeCanvas({
         keyLockAt,
         pointerX: clientX,
         pointerY: clientY,
+        previewWorld,
+        previewScreen: worldToScreen(cam, previewWorld.x, previewWorld.y),
+        intentAngle: previewWorld.intentAngle,
+        placementAngle: previewWorld.angle,
+        angleError: previewWorld.angleError,
+        collisionAdjusted: previewWorld.adjusted,
       };
       if (!state.active) onTourEvent?.("strand-drag");
       strandDragRef.current = next;
@@ -523,12 +563,9 @@ export default function AiNodeCanvas({
       }
       window.removeEventListener("pointermove", handleStrandMove);
       window.removeEventListener("pointerup", handleStrandEnd);
-      window.removeEventListener("pointercancel", handleStrandEnd);
+      window.removeEventListener("pointercancel", handleStrandCancel);
 
       if (!state?.active) return;
-
-      const rectNow = viewportRef.current?.getBoundingClientRect();
-      if (!rectNow) return;
 
       let pickIdx =
         typeof state.hoverIdx === "number" && state.hoverIdx >= 0
@@ -556,14 +593,13 @@ export default function AiNodeCanvas({
       }
 
       const choice = state.choices[pickIdx];
-      if (choice) {
-        const cam = cameraRef.current;
-        const tipIdx = pickIdx >= 0 ? pickIdx : 0;
-        const angle = state.angles?.[tipIdx] ?? state.baseAngle ?? 0;
-        const tipScreenX = state.originX + Math.cos(angle) * state.length;
-        const tipScreenY = state.originY + Math.sin(angle) * state.length;
-        const worldPos = screenToWorld(cam, tipScreenX, tipScreenY);
-        onStrandSelect?.(state.nodeId, choice, { worldPos });
+      if (choice && state.previewWorld) {
+        onStrandSelect?.(state.nodeId, choice, {
+          worldPos: state.previewWorld,
+          placementResolved: true,
+          intentAngle: state.intentAngle,
+          angleError: state.angleError || 0,
+        });
       }
     }
 
@@ -575,9 +611,16 @@ export default function AiNodeCanvas({
       finishStrandDrag(ev);
     }
 
+    function handleStrandCancel(ev) {
+      abortStrandDrag(ev);
+    }
+
     window.addEventListener("pointermove", handleStrandMove);
     window.addEventListener("pointerup", handleStrandEnd);
-    window.addEventListener("pointercancel", handleStrandEnd);
+    window.addEventListener("pointercancel", handleStrandCancel);
+    if (initialPointer) {
+      updateFromPointer(initialPointer.x, initialPointer.y, initialPointer.event || null);
+    }
   }
 
   function startBranchStrandGesture(e, node) {
@@ -593,32 +636,11 @@ export default function AiNodeCanvas({
       if (dist <= STRAND_DRAG_THRESHOLD) return;
       activated = true;
       cleanup();
-      startStrandDrag(e, node, startX, startY);
-      const state = strandDragRef.current;
-      if (state) {
-        const px = ev.clientX - state.rectLeft;
-        const py = ev.clientY - state.rectTop;
-        const dx = px - state.originX;
-        const dy = py - state.originY;
-        const distNow = Math.hypot(dx, dy);
-        const length = Math.min(STRAND_MAX_LENGTH, Math.max(STRAND_MIN_LENGTH, distNow));
-        const baseAngle = Math.atan2(dy, dx);
-        const angles = fanStrandAngles(state.choices.length, baseAngle);
-        const hoverIdx = pickStrandIndex(baseAngle, angles);
-        const next = {
-          ...state,
-          active: true,
-          length,
-          baseAngle,
-          angles,
-          hoverIdx,
-          pointerX: ev.clientX,
-          pointerY: ev.clientY,
-        };
-        onTourEvent?.("strand-drag");
-        strandDragRef.current = next;
-        setStrandDrag(next);
-      }
+      startStrandDrag(e, node, startX, startY, {
+        x: ev.clientX,
+        y: ev.clientY,
+        event: ev,
+      });
     }
 
     function onUp() {
@@ -630,6 +652,10 @@ export default function AiNodeCanvas({
       }
     }
 
+    function onCancel() {
+      cleanup();
+    }
+
     function cleanup() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -638,7 +664,7 @@ export default function AiNodeCanvas({
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointercancel", onCancel);
   }
 
   function startHighlightTransfer(e, node, opts = {}) {
@@ -1209,6 +1235,9 @@ export default function AiNodeCanvas({
           return (
             <div
               key={node.id}
+              data-node-id={node.id}
+              data-world-x={node.x}
+              data-world-y={node.y}
               className={
                 "ai-node" +
                 ` ai-node-${node.nodeKind}` +
@@ -1451,6 +1480,30 @@ export default function AiNodeCanvas({
             cy={strandDrag.originY}
             r={6}
           />
+          {strandDrag.previewScreen && (
+            <g
+              className={
+                "ai-strand-placement-preview" +
+                (strandDrag.collisionAdjusted ? " collision-adjusted" : "")
+              }
+              data-world-x={strandDrag.previewWorld?.x}
+              data-world-y={strandDrag.previewWorld?.y}
+              data-intent-angle={strandDrag.intentAngle}
+              data-placement-angle={strandDrag.placementAngle}
+              data-angle-error={strandDrag.angleError || 0}
+            >
+              <path
+                className="ai-strand-placement-path"
+                d={`M ${strandDrag.originX} ${strandDrag.originY} L ${strandDrag.previewScreen.x} ${strandDrag.previewScreen.y}`}
+              />
+              <circle
+                className="ai-strand-placement-node"
+                cx={strandDrag.previewScreen.x}
+                cy={strandDrag.previewScreen.y}
+                r={Math.max(9, 24 * camera.scale)}
+              />
+            </g>
+          )}
           {strandDrag.choices.map((choice, i) => {
             const angle = strandDrag.angles?.[i] ?? 0;
             const len = strandDrag.length;
