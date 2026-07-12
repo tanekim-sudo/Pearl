@@ -20,18 +20,18 @@
     #faf9f6;
 }
 
-.unified-workspace-grid .paper-sheet,
-.unified-workspace-grid .paper-content {
+.three-column-grid.unified-workspace-grid .paper-sheet,
+.three-column-grid.unified-workspace-grid .paper-content {
   overflow: visible;
 }
 
-.unified-workspace-grid .paper-sheet {
+.three-column-grid.unified-workspace-grid .paper-sheet {
   background: #fff;
   border-color: rgba(0, 0, 0, 0.075);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035), 0 14px 40px rgba(0, 0, 0, 0.07);
 }
 
-.unified-workspace-grid .paper-content {
+.three-column-grid.unified-workspace-grid .paper-content {
   background-color: #fff;
   background-image: none;
 }

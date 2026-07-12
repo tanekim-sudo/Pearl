@@ -146,7 +146,7 @@ async function humanClick(page, locator, options = {}) {
 }
 
 async function humanType(locator, text) {
-  await locator.pressSequentially(text, { delay: 46 });
+  await locator.pressSequentially(text, { delay: 24, timeout: 15_000 });
 }
 
 async function humanDrag(page, from, to, steps = 16) {
@@ -177,6 +177,21 @@ function watchPage(page, label) {
 
 async function layoutSnapshot(page) {
   return page.evaluate(() => {
+    const isActuallyVisible = (el) => {
+      for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        if (
+          style.visibility === "hidden" ||
+          style.display === "none" ||
+          Number(style.opacity) <= 0.02 ||
+          style.pointerEvents === "none" ||
+          rect.width <= 0 ||
+          rect.height <= 0
+        ) return false;
+      }
+      return true;
+    };
     const rect = (selector) => {
       const el = document.querySelector(selector);
       if (!el) return null;
@@ -186,8 +201,7 @@ async function layoutSnapshot(page) {
     const visibleControls = [...document.querySelectorAll("button, input, textarea, [role=button], [role=tab]")]
       .filter((el) => {
         const r = el.getBoundingClientRect();
-        const s = getComputedStyle(el);
-        return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none";
+        return r.width > 0 && r.height > 0 && isActuallyVisible(el);
       })
       .map((el) => {
         const r = el.getBoundingClientRect();
@@ -205,9 +219,18 @@ async function layoutSnapshot(page) {
       scrollOverflowX: document.documentElement.scrollWidth - innerWidth,
       scrollOverflowY: document.documentElement.scrollHeight - innerHeight,
       rail: rect(".functions-board-rail"),
-      paper: rect(".canvas-column"),
-      ai: rect(".ai-column"),
+      canvas: rect(".canvas-column"),
+      viewport: rect(".canvas-column .viewport"),
+      paper: rect(".paper-sheet"),
+      ai: rect(".ai-node-viewport-embedded"),
       companion: rect(".companion-panel"),
+      gridTracks: getComputedStyle(document.querySelector(".unified-workspace-grid")).gridTemplateColumns
+        .split(" ").filter(Boolean).length,
+      legacyAiColumnCount: document.querySelectorAll(".ai-column").length,
+      worldTransform: getComputedStyle(document.querySelector(".world")).transform,
+      aiTransform: getComputedStyle(document.querySelector(".ai-world-layer")).transform,
+      canvasBackground: getComputedStyle(document.querySelector(".canvas-column")).backgroundColor,
+      paperBackground: getComputedStyle(document.querySelector(".paper-sheet")).backgroundColor,
       unlabeled: visibleControls.filter((c) => !c.text).length,
       clipped: visibleControls.filter(
         (c) => c.left < -1 || c.top < -1 || c.right > innerWidth + 1 || c.bottom > innerHeight + 1
@@ -345,14 +368,32 @@ async function auditFreshLaunch(browser) {
   await page.keyboard.press("Escape");
   await pause(page);
   const beforeMove = await text.boundingBox();
+  // Wait out the intentional second-click-to-edit window, then grab the
+  // selected block's border. Starting immediately in the text interior was
+  // interpreted as a second click, so the old smoke never initiated a drag.
+  await page.waitForTimeout(480);
+  const moveGrab = { x: beforeMove.x + 6, y: beforeMove.y + beforeMove.height / 2 };
+  const moveTarget = {
+    x: moveGrab.x + 95,
+    y: moveGrab.y + 55,
+  };
   await humanDrag(
     page,
-    { x: beforeMove.x + beforeMove.width / 2, y: beforeMove.y + beforeMove.height / 2 },
-    { x: beforeMove.x + beforeMove.width / 2 + 95, y: beforeMove.y + beforeMove.height / 2 + 55 }
+    moveGrab,
+    moveTarget
   );
   const afterMove = await text.boundingBox();
   const moveDistance = Math.hypot(afterMove.x - beforeMove.x, afterMove.y - beforeMove.y);
-  result("Paper", "text can be moved without precision dragging", moveDistance > 35, `${moveDistance.toFixed(1)}px`);
+  const landingError = Math.hypot(
+    afterMove.x + 6 - moveTarget.x,
+    afterMove.y + afterMove.height / 2 - moveTarget.y
+  );
+  result(
+    "Paper",
+    "text drag lands at the visible cursor",
+    moveDistance > 35 && landingError < 18,
+    `moved=${moveDistance.toFixed(1)}px, landing error=${landingError.toFixed(1)}px`
+  );
   await shot(page, "05-paper-text-edited-moved", "Edited and moved text");
 
   // Pen stroke through the visible tool.
@@ -432,6 +473,9 @@ async function auditFreshLaunch(browser) {
   );
   result("Persistence", "created lens survives reload", persistedQuickMove);
   result("Persistence", "generator survives reload", (await page.locator(".struct-card").count()) >= 1);
+  const reloadedText = await page.locator(".board-text").first().boundingBox();
+  const reloadDrift = Math.hypot(reloadedText.x - afterMove.x, reloadedText.y - afterMove.y);
+  result("Persistence", "text drag survives reload", reloadDrift < 2, `${reloadDrift.toFixed(1)}px drift`);
   await shot(page, "10-returning-workspace", "Returning user after UI-created work");
 
   // Exact destructive typo command: cancel, then rapid resubmit, then confirm.
@@ -473,14 +517,36 @@ async function auditViewports(browser) {
     await page.goto(BASE);
     await page.locator(".idea-app").waitFor();
     await pause(page, 450, 650);
+    await page.locator(".zoom-micro-dot").last().hover();
+    await page.waitForTimeout(240);
     const layout = await layoutSnapshot(page);
-    const domainsOrdered =
-      layout.rail && layout.paper && layout.ai &&
-      layout.rail.right <= layout.paper.x + 2 &&
-      layout.paper.right <= layout.ai.x + 2;
-    result("Layout", `${viewport.width}×${viewport.height} keeps three domains ordered`, !!domainsOrdered);
+    const sharedWorld =
+      layout.rail && layout.canvas && layout.viewport && layout.paper && layout.ai &&
+      layout.rail.right <= layout.canvas.x + 2 &&
+      Math.abs(layout.ai.x - layout.viewport.x) <= 2 &&
+      Math.abs(layout.ai.y - layout.viewport.y) <= 2 &&
+      Math.abs(layout.ai.width - layout.viewport.width) <= 2 &&
+      Math.abs(layout.ai.height - layout.viewport.height) <= 2 &&
+      layout.gridTracks === 3 &&
+      layout.legacyAiColumnCount === 0 &&
+      layout.worldTransform === layout.aiTransform;
+    result(
+      "Layout",
+      `${viewport.width}×${viewport.height} shares one camera across paper and AI`,
+      !!sharedWorld,
+      `tracks=${layout.gridTracks}, legacy AI columns=${layout.legacyAiColumnCount}`
+    );
     result("Layout", `${viewport.width}×${viewport.height} has no document overflow`, layout.scrollOverflowX <= 1 && layout.scrollOverflowY <= 1, `${layout.scrollOverflowX}px × ${layout.scrollOverflowY}px`);
-    result("Layout", `${viewport.width}×${viewport.height} has no clipped controls`, layout.clipped.length === 0, layout.clipped.slice(0, 3).map((x) => x.text).join(", "));
+    const whiteGraphite =
+      /250|249|248|255/.test(layout.canvasBackground) &&
+      /255/.test(layout.paperBackground);
+    result(
+      "Layout",
+      `${viewport.width}×${viewport.height} keeps active controls visible in white/graphite workspace`,
+      layout.clipped.length === 0 && whiteGraphite,
+      `clipped=${layout.clipped.length}; canvas=${layout.canvasBackground}; paper=${layout.paperBackground}; ` +
+        layout.clipped.slice(0, 3).map((x) => x.text || "(unnamed)").join(", ")
+    );
     result("Accessibility", `${viewport.width}×${viewport.height} core controls have labels`, layout.unlabeled === 0, `${layout.unlabeled} unlabeled`);
     const severeHitTargets = layout.undersized.filter((c) => c.width < 24 || c.height < 24);
     result("Accessibility", `${viewport.width}×${viewport.height} has no sub-24px targets`, severeHitTargets.length === 0, `${severeHitTargets.length} targets`);
@@ -496,6 +562,145 @@ async function auditViewports(browser) {
       );
     }
     await shot(page, `layout-${viewport.name}`, `${viewport.width}×${viewport.height}`);
+    await context.close();
+  }
+}
+
+async function auditPaperDragMatrix(browser) {
+  const scenarios = [
+    { name: "zoomed-out", width: 1600, height: 1000, scale: 0.55, camera: { x: 350, y: 150 } },
+    { name: "actual-size", width: 1440, height: 900, scale: 1, camera: { x: 120, y: 45 } },
+    { name: "narrow-zoomed-in", width: 1100, height: 760, scale: 1.6, camera: { x: -30, y: -105 } },
+  ];
+  const seedItems = [
+    { id: "drag-text", type: "text", x: 105, y: 125, w: 220, text: "Drag text at every zoom", pageId: "page-main" },
+    { id: "drag-block", type: "sticky", x: 390, y: 170, w: 170, h: 110, text: "Drag block", pageId: "page-main" },
+    {
+      id: "drag-ink",
+      type: "stroke",
+      points: [{ x: 170, y: 390 }, { x: 240, y: 420 }, { x: 320, y: 395 }],
+      color: "#111111",
+      width: 8,
+      pageId: "page-main",
+    },
+  ];
+
+  for (const scenario of scenarios.filter(({ name }) =>
+    !process.env.AUDIT_SCENARIO || process.env.AUDIT_SCENARIO === name
+  )) {
+    const context = await browser.newContext({
+      viewport: { width: scenario.width, height: scenario.height },
+      reducedMotion: "reduce",
+    });
+    await context.addInitScript(({ items, camera }) => {
+      if (sessionStorage.getItem("lens-paper-drag-seeded")) return;
+      sessionStorage.setItem("lens-paper-drag-seeded", "1");
+      localStorage.clear();
+      localStorage.setItem("lens.onboarded.v1", "1");
+      localStorage.setItem("lens.companion.seen.v1", "1");
+      localStorage.setItem("lens.tour.v1", "1");
+      localStorage.setItem("lens.companion.memory.v1:anonymous", JSON.stringify({
+        version: 1,
+        identity: "Drag auditor",
+        role: "tester",
+        goals: ["verify direct manipulation"],
+        actions: [],
+        interviewComplete: true,
+      }));
+      localStorage.setItem("lens.board.items.v1", JSON.stringify(items));
+      localStorage.setItem("lens.ai.nodes.v1", "[]");
+      localStorage.setItem("lens.board.camera.v1", JSON.stringify(camera));
+      localStorage.setItem("lens.unified-workspace.v2", JSON.stringify({
+        version: 2,
+        savedAt: new Date().toISOString(),
+        camera,
+        items,
+        nodes: [],
+      }));
+      localStorage.setItem("lens.board.pages.v1", JSON.stringify([
+        { id: "page-main", name: "Drag matrix", camera, sessions: [] },
+      ]));
+    }, {
+      items: seedItems,
+      camera: { ...scenario.camera, scale: scenario.scale },
+    });
+    const page = await context.newPage();
+    watchPage(page, `paper-drag-${scenario.name}`);
+    await page.goto(BASE);
+    await page.locator(".idea-app").waitFor();
+    await page.locator('[data-item="drag-text"]').waitFor();
+    await dismissCompanion(page);
+    await page.locator('[data-tool="select"]').click();
+    const frameBefore = await page.locator(".paper-sheet").boundingBox();
+
+    for (const [id, kind] of [["drag-text", "text"], ["drag-block", "block"], ["drag-ink", "ink"]]) {
+      const item = page.locator(`[data-item="${id}"]`);
+      const before = await item.boundingBox();
+      const delta = { x: 58, y: 36 };
+      const from = kind === "ink"
+        ? await item.evaluate((polyline) => {
+            const point = polyline.points.getItem(1);
+            const screen = new DOMPoint(point.x, point.y).matrixTransform(polyline.getScreenCTM());
+            return { x: screen.x, y: screen.y };
+          })
+        : kind === "text"
+        ? { x: before.x + 6, y: before.y + before.height / 2 }
+        : { x: before.x + before.width / 2, y: before.y + before.height / 2 };
+      const target = { x: from.x + delta.x, y: from.y + delta.y };
+      await humanDrag(page, from, target, 20);
+      const after = await item.boundingBox();
+      const moved = { x: after.x - before.x, y: after.y - before.y };
+      const movementError = Math.hypot(moved.x - delta.x, moved.y - delta.y);
+      const persisted = await page.evaluate((itemId) => {
+        const snapshot = JSON.parse(localStorage.getItem("lens.unified-workspace.v2") || "{}");
+        return snapshot.items?.find((entry) => entry.id === itemId) || null;
+      }, id);
+      result(
+        "Paper drag",
+        `${kind} drag lands at cursor at ${scenario.scale}×`,
+        movementError < 18 && !!persisted,
+        `Δ=${moved.x.toFixed(1)},${moved.y.toFixed(1)}px; error=${movementError.toFixed(1)}px; ` +
+          `grab=${from.x.toFixed(1)},${from.y.toFixed(1)}`
+      );
+      await page.waitForTimeout(120);
+    }
+
+    const beforeReload = await Promise.all(seedItems.map(({ id }) =>
+      page.locator(`[data-item="${id}"]`).boundingBox()
+    ));
+    const storedBeforeReload = await page.evaluate(() => ({
+      unified: JSON.parse(localStorage.getItem("lens.unified-workspace.v2") || "{}").items,
+      legacy: JSON.parse(localStorage.getItem("lens.board.items.v1") || "[]"),
+    }));
+    await page.reload();
+    await page.locator('[data-item="drag-text"]').waitFor();
+    const afterReload = await Promise.all(seedItems.map(({ id }) =>
+      page.locator(`[data-item="${id}"]`).boundingBox()
+    ));
+    const reloadDrifts = afterReload.map((box, index) =>
+      Math.hypot(box.x - beforeReload[index].x, box.y - beforeReload[index].y)
+    );
+    const reloadDrift = Math.max(...reloadDrifts);
+    const frameAfter = await page.locator(".paper-sheet").boundingBox();
+    const storedAfterReload = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("lens.unified-workspace.v2") || "{}").items
+    );
+    const frameStable = Math.hypot(frameAfter.x - frameBefore.x, frameAfter.y - frameBefore.y) < 2;
+    result(
+      "Paper drag",
+      `${scenario.name} frame and all drag positions survive reload`,
+      reloadDrift < 2 && frameStable,
+      `item drift=${reloadDrifts.map((value, index) => `${seedItems[index].id}:${value.toFixed(1)}`).join(",")}; ` +
+        `frame=${Math.round(frameAfter.x)},${Math.round(frameAfter.y)}; ` +
+        `stored=${storedBeforeReload.unified.map((entry) =>
+          `${entry.id}:${entry.x ?? entry.points?.[0]?.x},${entry.y ?? entry.points?.[0]?.y}`
+        ).join("|")}; reloaded=${storedAfterReload.map((entry) =>
+          `${entry.id}:${entry.x ?? entry.points?.[0]?.x},${entry.y ?? entry.points?.[0]?.y}`
+        ).join("|")}; boxes=${beforeReload.map((box, index) =>
+          `${seedItems[index].id}:${box.x.toFixed(1)},${box.y.toFixed(1)}>${afterReload[index].x.toFixed(1)},${afterReload[index].y.toFixed(1)}`
+        ).join("|")}`
+    );
+    await shot(page, `paper-drag-${scenario.name}`, `${scenario.scale}× visible drag persistence`);
     await context.close();
   }
 }
@@ -649,6 +854,14 @@ function writeReport() {
     `- Assertions: ${passed} passed / ${failed} failed / ${results.length} total`,
     `- Browser errors and rejected console messages: ${browserErrors.length}`,
     "",
+    "## Legacy regression reconciliation",
+    "",
+    "- Before: 40/47. Three checks expected separate paper and AI columns after those columns had intentionally become one shared world.",
+    "- Before: three clipping checks counted the opacity-hidden zoom disclosure as visible controls instead of opening it and measuring the active panel.",
+    "- Before: every paper drag inside the shared canvas was misclassified as a drop into the old AI column because the embedded AI overlay fills that canvas.",
+    "- After: equivalent coverage validates the rail, one shared paper/AI camera, embedded paper frame, AI overlay, white/graphite styling, responsive active controls, and text/block/ink drag landing plus reload persistence at 0.55×, 1×, and 1.6×.",
+    "- Classification: three stale pre-unification column assertions; three incorrect hidden-control harness assertions; one genuine unified-workspace drag-routing defect, fixed in the app.",
+    "",
     "## Browser errors",
     "",
     ...(browserErrors.length ? browserErrors.map((e) => `- ${e}`) : ["- None"]),
@@ -680,9 +893,17 @@ async function main() {
     await warm.goto(BASE);
     await warm.locator(".idea-app").waitFor();
     await warm.close();
-    await auditFreshLaunch(browser);
-    await auditViewports(browser);
-    await auditSecondaryEdgeCases(browser);
+    const only = process.env.AUDIT_ONLY;
+    if (only === "viewports") {
+      await auditViewports(browser);
+    } else if (only === "paper-drag") {
+      await auditPaperDragMatrix(browser);
+    } else {
+      await auditFreshLaunch(browser);
+      await auditViewports(browser);
+      await auditPaperDragMatrix(browser);
+      await auditSecondaryEdgeCases(browser);
+    }
   } finally {
     await browser.close();
     writeReport();

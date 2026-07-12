@@ -2707,7 +2707,11 @@ export default function App() {
   }
 
   function isOverAiColumn(clientX, clientY) {
-    const el = aiViewportRef.current?.closest?.(".ai-column") || aiViewportRef.current;
+    // In the unified workspace the embedded AI viewport fills the same canvas
+    // as paper. Treating that overlay as a separate destination makes every
+    // ordinary paper drag hand off to AI instead of moving the item.
+    const el = aiViewportRef.current?.closest?.(".ai-column");
+    if (!el) return false;
     const r = el?.getBoundingClientRect();
     return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
   }
