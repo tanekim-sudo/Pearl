@@ -1,14 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  LEGACY_AI_OFFSET,
   UNIFIED_WORKSPACE_VERSION,
+  clampAiNodeToPage,
+  clampWorkspaceItem,
+  workspaceItemBBox,
   hitUnifiedMaterial,
   migrateUnifiedWorkspace,
   routeUnifiedGesture,
 } from "./unified-workspace.js";
 
-test("legacy paper and AI records migrate without changing their contents", () => {
+test("legacy paper and AI records migrate inside page without losing metadata", () => {
   const item = { id: "paper-1", type: "text", x: 12, y: 24, text: "kept", history: ["a"] };
   const node = { id: "node-1", x: -40, y: 10, parentId: "root", expandedText: "kept", history: ["b"] };
   const migrated = migrateUnifiedWorkspace({
@@ -18,11 +20,38 @@ test("legacy paper and AI records migrate without changing their contents", () =
   });
 
   assert.equal(migrated.version, UNIFIED_WORKSPACE_VERSION);
-  assert.deepEqual(migrated.items[0], item);
-  assert.equal(migrated.nodes[0].x, node.x + LEGACY_AI_OFFSET.x);
-  assert.equal(migrated.nodes[0].y, node.y + LEGACY_AI_OFFSET.y);
+  assert.equal(migrated.items[0].text, item.text);
+  assert.ok(migrated.items[0].x >= 24);
+  assert.ok(migrated.nodes[0].x <= 768 - 24 - migrated.nodes[0].radius);
+  assert.ok(migrated.nodes[0].y >= 24 + migrated.nodes[0].radius);
   assert.deepEqual(migrated.nodes[0].history, ["b"]);
   assert.equal(migrated.nodes[0].parentId, "root");
+});
+
+test("node clamp uses compact defaults and preserves explicit custom radii", () => {
+  const compact = clampAiNodeToPage({ id: "n", nodeKind: "expanded", x: -99, y: 9999, radius: 30 });
+  assert.equal(compact.radius, 16);
+  assert.equal(compact.x, 40);
+  assert.equal(compact.y, 1104 - 24 - 16);
+  const custom = clampAiNodeToPage({
+    id: "custom",
+    nodeKind: "expanded",
+    x: 200,
+    y: 200,
+    radius: 25,
+    customRadius: true,
+  });
+  assert.equal(custom.radius, 25);
+});
+
+test("full item footprint clamps and oversized cards shrink", () => {
+  const item = clampWorkspaceItem({ id: "wide", type: "image", x: -100, y: -50, w: 2000, h: 1800 });
+  const box = workspaceItemBBox(item);
+  assert.ok(item.scale < 1);
+  assert.ok(box.minx >= 24 - 1e-8);
+  assert.ok(box.miny >= 24 - 1e-8);
+  assert.ok(box.maxx <= 768 - 24 + 1e-8);
+  assert.ok(box.maxy <= 1104 - 24 + 1e-8);
 });
 
 test("unified migration is idempotent", () => {

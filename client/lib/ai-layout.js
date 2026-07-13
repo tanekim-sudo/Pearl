@@ -4,10 +4,18 @@
  */
 
 import { AI_NODE_MIN_GAP, AI_NODE_RADIUS, AI_SPAWN_MIN_DIST } from "./ai-constants.js";
+import { PAPER_HEIGHT, PAPER_MARGIN, PAPER_WIDTH } from "./paper.js";
 
 const GOLDEN_ANGLE = 2.399963229728653;
 const DEFAULT_ITERATIONS = 96;
 const ORIGIN = { x: 480, y: 360 };
+
+function clampNodeCenter(x, y, radius) {
+  return {
+    x: Math.max(PAPER_MARGIN + radius, Math.min(PAPER_WIDTH - PAPER_MARGIN - radius, x)),
+    y: Math.max(PAPER_MARGIN + radius, Math.min(PAPER_HEIGHT - PAPER_MARGIN - radius, y)),
+  };
+}
 
 /** Roots on a golden spiral — each source/session gets its own territory. */
 export function goldenSpiralPosition(index, origin = ORIGIN) {
@@ -55,8 +63,7 @@ export function outwardAngle(parent, nodes, hintAngle = null) {
 }
 
 function nudgeFromCollisions(x, y, radius, nodes, skipIds = new Set()) {
-  let nx = x;
-  let ny = y;
+  let { x: nx, y: ny } = clampNodeCenter(x, y, radius);
   for (let pass = 0; pass < 20; pass++) {
     let moved = false;
     for (const n of nodes) {
@@ -70,6 +77,7 @@ function nudgeFromCollisions(x, y, radius, nodes, skipIds = new Set()) {
         const push = (minD - d) / d;
         nx += dx * push;
         ny += dy * push;
+        ({ x: nx, y: ny } = clampNodeCenter(nx, ny, radius));
         moved = true;
       }
     }
@@ -127,10 +135,11 @@ export function resolveIntentChildPosition(parent, intentWorld, nodes, kind = "e
       const angle = intentAngle + offset;
       const x = parent.x + Math.cos(angle) * distance;
       const y = parent.y + Math.sin(angle) * distance;
-      if (collidesAt(x, y, radius, nodes, skipIds)) continue;
+      const bounded = clampNodeCenter(x, y, radius);
+      if (collidesAt(bounded.x, bounded.y, radius, nodes, skipIds)) continue;
       return {
-        x,
-        y,
+        x: bounded.x,
+        y: bounded.y,
         radius,
         intentAngle,
         angle,
@@ -144,11 +153,14 @@ export function resolveIntentChildPosition(parent, intentWorld, nodes, kind = "e
   // A pathologically dense graph may have no free candidate in the bounded
   // search. Preserve the cursor ray and hemisphere; overlap is preferable to
   // an unexplained mirrored/default-sector jump.
-  const x = parent.x + Math.cos(intentAngle) * maxDistance;
-  const y = parent.y + Math.sin(intentAngle) * maxDistance;
+  const bounded = clampNodeCenter(
+    parent.x + Math.cos(intentAngle) * maxDistance,
+    parent.y + Math.sin(intentAngle) * maxDistance,
+    radius
+  );
   return {
-    x,
-    y,
+    x: bounded.x,
+    y: bounded.y,
     radius,
     intentAngle,
     angle: intentAngle,
@@ -310,6 +322,9 @@ export function layoutAiGraph(nodes, opts = {}) {
       if (!canMove(s)) continue;
       s.x += (cx - s.x) * 0.002 * alpha;
       s.y += (cy - s.y) * 0.002 * alpha;
+      const bounded = clampNodeCenter(s.x, s.y, s.radius);
+      s.x = bounded.x;
+      s.y = bounded.y;
     }
   }
 
@@ -317,7 +332,8 @@ export function layoutAiGraph(nodes, opts = {}) {
     const s = byId.get(n.id);
     const x = Number.isFinite(s.x) ? s.x : n.x || 0;
     const y = Number.isFinite(s.y) ? s.y : n.y || 0;
-    return { ...n, x, y };
+    const bounded = clampNodeCenter(x, y, s.radius);
+    return { ...n, x: bounded.x, y: bounded.y };
   });
 }
 

@@ -15,6 +15,7 @@ export default function HighlightToolbar({
   onExtend,
   onSameness,
   onSaveLens,
+  onMakeNode,
   onSendToAi,
   onClear,
 }) {
@@ -87,6 +88,14 @@ export default function HighlightToolbar({
       </button>
       <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into an open generator workspace">
         save as generator
+      </button>
+      <button
+        type="button"
+        className="omni-highlight-btn primary make-node"
+        onClick={onMakeNode}
+        title="Combine all highlighted material into one source node"
+      >
+        make node
       </button>
       <button
         type="button"

@@ -20,18 +20,19 @@ import {
 } from "./ai-nodes.js";
 
 describe("ai-nodes layout", () => {
-  it("uses planet-scale radius constants", () => {
-    assert.ok(AI_NODE_RADIUS.source >= 30);
-    assert.ok(AI_SPAWN_MIN_DIST >= 400);
-    assert.ok(AI_NODE_MIN_GAP >= 200);
+  it("uses page-scale compact radius constants", () => {
+    assert.ok(AI_NODE_RADIUS.source >= 14 && AI_NODE_RADIUS.source <= 18);
+    assert.ok(AI_NODE_RADIUS.expanded >= 14 && AI_NODE_RADIUS.expanded <= 18);
+    assert.ok(AI_SPAWN_MIN_DIST >= 90 && AI_SPAWN_MIN_DIST <= 140);
+    assert.ok(AI_NODE_MIN_GAP >= 12 && AI_NODE_MIN_GAP <= 24);
   });
 
   it("fans multiple children without overlap at spawn distance", () => {
-    const parent = { id: "p", x: 0, y: 0, radius: 22 };
+    const parent = { id: "p", x: 384, y: 552, radius: 18 };
     const positions = spawnChildPositions(parent, [], "expanded", 3);
     assert.equal(positions.length, 3);
     for (const pos of positions) {
-      const d = Math.sqrt(pos.x ** 2 + pos.y ** 2);
+      const d = Math.hypot(pos.x - parent.x, pos.y - parent.y);
       assert.ok(Math.abs(d - AI_SPAWN_MIN_DIST) < 1);
     }
     const d01 = Math.hypot(positions[0].x - positions[1].x, positions[0].y - positions[1].y);
@@ -57,10 +58,10 @@ describe("ai-nodes layout", () => {
   });
 
   it("childNodePosition accounts for existing siblings", () => {
-    const parent = { id: "p", x: 0, y: 0, radius: 22 };
-    const sib = { id: "s1", parentId: "p", x: 0, y: -240, radius: 20 };
+    const parent = { id: "p", x: 384, y: 552, radius: 18 };
+    const sib = { id: "s1", parentId: "p", x: 384, y: 440, radius: 16 };
     const pos = childNodePosition(parent, "expanded", [parent, sib]);
-    assert.ok(Math.hypot(pos.x, pos.y - parent.y) >= AI_SPAWN_MIN_DIST - 1);
+    assert.ok(Math.hypot(pos.x - parent.x, pos.y - parent.y) >= AI_SPAWN_MIN_DIST - 1);
   });
 
   it("collectAiEdges gathers parentId and sourceNodeIds links", () => {
@@ -114,12 +115,12 @@ describe("ai-nodes layout", () => {
   });
 
   it("preserves all eight cursor rays across zoom-independent world intents", () => {
-    const parent = { id: "p", x: 120, y: -80, radius: 30 };
+    const parent = { id: "p", x: 384, y: 552, radius: 18 };
     for (let i = 0; i < 8; i++) {
       const angle = (i * Math.PI) / 4;
       const intent = {
-        x: parent.x + Math.cos(angle) * 620,
-        y: parent.y + Math.sin(angle) * 620,
+        x: parent.x + Math.cos(angle) * 180,
+        y: parent.y + Math.sin(angle) * 180,
       };
       const pos = resolveIntentChildPosition(parent, intent, [parent], "expanded");
       assert.ok(pos.angleError <= 1e-8, `direction ${i} drifted`);
@@ -128,9 +129,9 @@ describe("ai-nodes layout", () => {
   });
 
   it("slides at most 20 degrees around a collision and stays cursor-facing", () => {
-    const parent = { id: "p", x: 0, y: 0, radius: 30 };
-    const blocker = { id: "b", x: 480, y: 0, radius: 30 };
-    const pos = resolveIntentChildPosition(parent, { x: 480, y: 0 }, [parent, blocker], "expanded");
+    const parent = { id: "p", x: 300, y: 400, radius: 18 };
+    const blocker = { id: "b", x: 412, y: 400, radius: 16 };
+    const pos = resolveIntentChildPosition(parent, { x: 480, y: 400 }, [parent, blocker], "expanded");
     assert.ok(pos.adjusted);
     assert.ok(pos.angleError <= (20 * Math.PI) / 180 + 1e-8);
     assert.ok(pos.x > parent.x, "collision adjustment must preserve the intended hemisphere");

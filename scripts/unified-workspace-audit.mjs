@@ -111,7 +111,7 @@ try {
       firstNode: unified?.nodes?.[0],
     };
   });
-  check("versioned migration created", migration.version === 2, `v${migration.version}`);
+  check("versioned migration created", migration.version === 3, `v${migration.version}`);
   check("paper records preserved", migration.itemCount === 8 && migration.legacyItems === 8);
   check("AI records and history preserved", migration.nodeCount === 10 && migration.firstNode?.history?.length === 1);
 
@@ -142,14 +142,16 @@ try {
   check("paper is a frame inside world", visual.paperRect.width < visual.canvasRect.width);
   await shot(page, "overview");
 
-  const node = page.locator(".ai-node").first();
+  const node = page.locator(".ai-node").last();
   const before = await node.boundingBox();
+  const paperForMove = await page.locator(".paper-sheet").boundingBox();
+  const direction = before.x + before.width / 2 > paperForMove.x + paperForMove.width / 2 ? -1 : 1;
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
-  await page.mouse.move(before.x + before.width / 2 + 80, before.y + before.height / 2 + 35, { steps: 10 });
+  await page.mouse.move(before.x + before.width / 2 + direction * 80, before.y + before.height / 2 + 35, { steps: 10 });
   await page.mouse.up();
   const after = await node.boundingBox();
-  check("node center drag moves without spawning", after.x > before.x + 50 && (await page.locator(".ai-node").count()) === 10);
+  check("node center drag moves without spawning", Math.abs(after.x - before.x) > 50 && (await page.locator(".ai-node").count()) === 10);
 
   const edgeHandle = await node.locator(".ai-node-edge-handle-w").boundingBox();
   const movedCenter = { x: after.x + after.width / 2, y: after.y + after.height / 2 };

@@ -357,6 +357,7 @@ async function auditFreshLaunch(browser) {
 
   // Edit, then move using direct manipulation.
   const text = page.locator(".board-text").first();
+  const textId = await text.getAttribute("data-item");
   await humanClick(page, text, { rx: 0.25 });
   if (!(await page.locator(".board-text.editing").isVisible().catch(() => false))) {
     await humanClick(page, text, { rx: 0.25 });
@@ -373,9 +374,11 @@ async function auditFreshLaunch(browser) {
   // interpreted as a second click, so the old smoke never initiated a drag.
   await page.waitForTimeout(480);
   const moveGrab = { x: beforeMove.x + 6, y: beforeMove.y + beforeMove.height / 2 };
+  const movePaper = await page.locator(".paper-sheet").boundingBox();
+  const moveDirection = moveGrab.y > movePaper.y + movePaper.height / 2 ? -1 : 1;
   const moveTarget = {
-    x: moveGrab.x + 95,
-    y: moveGrab.y + 55,
+    x: moveGrab.x,
+    y: moveGrab.y + moveDirection * 95,
   };
   await humanDrag(
     page,
@@ -463,6 +466,11 @@ async function auditFreshLaunch(browser) {
   if (await generatorClose.isVisible().catch(() => false)) await humanClick(page, generatorClose);
 
   // Persistence on a normal returning-user reload.
+  const beforeReloadTextWorld = await page.evaluate((id) => {
+    const workspace = JSON.parse(localStorage.getItem("lens.unified-workspace.v2") || "{}");
+    const item = (workspace.items || []).find((entry) => entry.id === id);
+    return item ? { x: item.x, y: item.y } : null;
+  }, textId);
   await page.reload();
   await page.locator(".idea-app").waitFor();
   await pause(page, 500, 700);
@@ -473,9 +481,24 @@ async function auditFreshLaunch(browser) {
   );
   result("Persistence", "created lens survives reload", persistedQuickMove);
   result("Persistence", "generator survives reload", (await page.locator(".struct-card").count()) >= 1);
-  const reloadedText = await page.locator(".board-text").first().boundingBox();
-  const reloadDrift = Math.hypot(reloadedText.x - afterMove.x, reloadedText.y - afterMove.y);
-  result("Persistence", "text drag survives reload", reloadDrift < 2, `${reloadDrift.toFixed(1)}px drift`);
+  const afterReloadTextWorld = await page.evaluate((id) => {
+    const workspace = JSON.parse(localStorage.getItem("lens.unified-workspace.v2") || "{}");
+    const item = (workspace.items || []).find((entry) => entry.id === id);
+    return item ? { x: item.x, y: item.y } : null;
+  }, textId);
+  const reloadDrift =
+    beforeReloadTextWorld && afterReloadTextWorld
+      ? Math.hypot(
+          afterReloadTextWorld.x - beforeReloadTextWorld.x,
+          afterReloadTextWorld.y - beforeReloadTextWorld.y
+        )
+      : Infinity;
+  result(
+    "Persistence",
+    "text drag survives reload",
+    reloadDrift < 2,
+    `${reloadDrift.toFixed(1)} world drift; ${JSON.stringify(beforeReloadTextWorld)} → ${JSON.stringify(afterReloadTextWorld)}`
+  );
   await shot(page, "10-returning-workspace", "Returning user after UI-created work");
 
   // Exact destructive typo command: cancel, then rapid resubmit, then confirm.

@@ -11,6 +11,7 @@ import {
   suggestRootPosition,
 } from "./ai-layout.js";
 import { AI_SPAWN_MIN_DIST, edgeGeometry, collectAiEdges, attachPointOnNode } from "./ai-nodes.js";
+import { PAPER_HEIGHT, PAPER_MARGIN, PAPER_WIDTH } from "./paper.js";
 
 describe("ai-layout spatial reasoning", () => {
   it("goldenSpiralPosition spreads roots apart", () => {
@@ -28,11 +29,11 @@ describe("ai-layout spatial reasoning", () => {
   });
 
   it("suggestChildPosition fans siblings apart", () => {
-    const parent = { id: "p", x: 0, y: 0, radius: 34, parentId: null };
+    const parent = { id: "p", x: 384, y: 552, radius: 18, parentId: null };
     const a = suggestChildPosition(parent, [parent], "expanded", { slotIndex: 0, totalSlots: 3 });
     const b = suggestChildPosition(parent, [parent], "expanded", { slotIndex: 1, totalSlots: 3 });
     const d = Math.hypot(a.x - b.x, a.y - b.y);
-    assert.ok(d > 180);
+    assert.ok(d > 60);
   });
 
   it("outwardAngle continues lineage away from grandparent", () => {
@@ -109,21 +110,21 @@ describe("ai-layout spatial reasoning", () => {
   });
 
   it("layoutAfterAppend keeps drop-pinned nodes at the release point", () => {
-    const parent = { id: "p", x: 0, y: 0, radius: 34, parentId: null, nodeKind: "source" };
+    const parent = { id: "p", x: 384, y: 552, radius: 18, parentId: null, nodeKind: "source" };
     const child = {
       id: "c",
       parentId: "p",
       sourceNodeIds: ["p"],
       nodeKind: "expanded",
-      x: 900,
+      x: 700,
       y: 120,
-      radius: 30,
+      radius: 16,
       _dropPinned: true,
     };
     const laid = layoutAfterAppend([parent], [child]);
     const placed = laid.find((n) => n.id === "c");
-    assert.ok(Math.abs(placed.x - 900) < 80);
-    assert.ok(Math.abs(placed.y - 120) < 80);
+    assert.ok(Math.abs(placed.x - 700) < 1);
+    assert.ok(Math.abs(placed.y - 120) < 1);
   });
 
   it("collectAiEdges and layout produce connected graph body", () => {
@@ -144,6 +145,12 @@ describe("ai-layout spatial reasoning", () => {
       laid.find((n) => n.id === "p"),
       laid.find((n) => n.id === "c")
     );
-    assert.ok(geom.len > 200);
+    assert.ok(geom.len > 40);
+    for (const node of laid) {
+      assert.ok(node.x - node.radius >= PAPER_MARGIN);
+      assert.ok(node.x + node.radius <= PAPER_WIDTH - PAPER_MARGIN);
+      assert.ok(node.y - node.radius >= PAPER_MARGIN);
+      assert.ok(node.y + node.radius <= PAPER_HEIGHT - PAPER_MARGIN);
+    }
   });
 });

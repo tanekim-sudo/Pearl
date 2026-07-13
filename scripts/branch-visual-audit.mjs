@@ -17,14 +17,14 @@ const directions = [
   ["north-east", -Math.PI / 4],
 ];
 const variants = [
-  { name: "min", scale: 0.05, pan: [-180, -100], source: [3600, 2500] },
-  { name: "dot", scale: 0.25, pan: [150, -90], source: [-800, 1800] },
-  { name: "transition", scale: 0.72, pan: [-160, 100], source: [1400, -500] },
-  { name: "default", scale: 0.85, pan: [130, 90], source: [-700, -600] },
-  { name: "read", scale: 2.35, pan: [-120, -70], source: [180, 220] },
-  { name: "max", scale: 3.2, pan: [110, 55], source: [-120, 90] },
-  { name: "page-positive", scale: 0.42, pan: [-190, 120], source: [900, 1180] },
-  { name: "page-negative", scale: 0.58, pan: [180, -120], source: [-450, -320] },
+  { name: "min", scale: 0.05, pan: [-180, -100], source: [384, 552] },
+  { name: "dot", scale: 0.25, pan: [150, -90], source: [384, 552] },
+  { name: "transition", scale: 0.72, pan: [-160, 100], source: [384, 552] },
+  { name: "default", scale: 0.85, pan: [130, 90], source: [384, 552] },
+  { name: "read", scale: 2.35, pan: [-120, -70], source: [384, 552] },
+  { name: "max", scale: 3.2, pan: [110, 55], source: [384, 552] },
+  { name: "page-positive", scale: 0.42, pan: [-190, 120], source: [384, 552] },
+  { name: "page-negative", scale: 0.58, pan: [180, -120], source: [384, 552] },
 ];
 
 const checks = [];
@@ -45,7 +45,7 @@ function workspace(variant, viewport) {
   const [x, y] = variant.source;
   const [panX, panY] = variant.pan;
   return {
-    version: 2,
+    version: 3,
     savedAt: new Date().toISOString(),
     camera: {
       scale: variant.scale,
@@ -73,7 +73,7 @@ function workspace(variant, viewport) {
         sourceNodeIds: [],
         x,
         y,
-        radius: 32,
+        radius: 18,
         label: "direction source",
         preview: "Directional branch audit source material",
       },

@@ -114,6 +114,10 @@ import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.js
 import AiNodeCanvas from "./components/AiNodeCanvas.jsx";
 import {
   UNIFIED_WORKSPACE_KEY,
+  clampAiNodeToPage,
+  clampAiNodesToPage,
+  clampWorkspaceItem,
+  clampWorkspaceItems,
   migrateUnifiedWorkspace,
   serializeUnifiedWorkspace,
 } from "./lib/unified-workspace.js";
@@ -231,6 +235,7 @@ import {
   bboxClampOffset,
   fitPaperInView,
   clampPaperCamera,
+  describeStroke,
   maxTextWidth,
 } from "./lib/paper.js";
 import { attachCanvasWheel } from "./lib/canvas-navigation.js";
@@ -1123,9 +1128,14 @@ function normalizeItem(it) {
   const base = { rotation: 0, scale: 1, pageId: DEFAULT_PAGE_ID, side: "paper", ...it };
   if (!base.bornAt) base.bornAt = Date.now();
   if (base.type === "text") {
-    base.w = base.text?.trim()
-      ? fitTextBoxWidth(base.text, { maxW: maxTextWidth() })
-      : clampTextWidth(base.w || TEXT_BOX_MIN_W);
+    // Persisted/user-sized widths are authoritative. Recomputing width from
+    // text on every reload changed the footprint and caused a bounds clamp
+    // jump even though the drag preview had already committed correctly.
+    base.w = Number.isFinite(base.w)
+      ? clampTextWidth(base.w)
+      : base.text?.trim()
+        ? fitTextBoxWidth(base.text, { maxW: maxTextWidth() })
+        : clampTextWidth(TEXT_BOX_MIN_W);
   }
   if (base.type === "sticky" || base.type === "callout" || base.type === "code" || base.type === "math") {
     if (base.text?.trim()) base.w = fitTextItemWidth(base);
@@ -1169,38 +1179,45 @@ function itemWorldBBox(it) {
     if (!it.points?.length) return null;
     const xs = it.points.map((p) => p.x);
     const ys = it.points.map((p) => p.y);
-    return { minx: Math.min(...xs), miny: Math.min(...ys), maxx: Math.max(...xs), maxy: Math.max(...ys) };
+    const half = Math.max(1, Number(it.width) || PEN_W) / 2;
+    return { minx: Math.min(...xs) - half, miny: Math.min(...ys) - half, maxx: Math.max(...xs) + half, maxy: Math.max(...ys) + half };
   }
+  let w;
+  let h;
   if (it.type === "image") {
-    const w = it.w || 200;
-    const h = it.h || Math.round(w * 0.75);
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+    w = it.w || 200;
+    h = it.h || Math.round(w * 0.75);
   }
-  if (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math") {
-    const w = blockWidth(it) || it.w || 360;
-    const h = itemHeight(it);
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  if (w == null && (it.type === "text" || it.type === "sticky" || it.type === "callout" || it.type === "code" || it.type === "math")) {
+    w = blockWidth(it) || it.w || 360;
+    h = itemHeight(it);
   }
-  if (it.type === "voice") {
-    const w = it.w || 260;
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + 56 };
+  if (w == null && it.type === "voice") {
+    w = it.w || 260;
+    h = 56;
   }
-  if (it.type === "diagram") {
-    const w = it.w || 320;
-    const h = it.h || 160;
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  if (w == null && it.type === "diagram") {
+    w = it.w || 320;
+    h = it.h || 160;
   }
-  if (it.type === "table") {
-    const w = it.w || 320;
-    const h = itemHeight(it);
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  if (w == null && it.type === "table") {
+    w = it.w || 320;
+    h = itemHeight(it);
   }
-  if (it.type === "video") {
-    const w = it.w || 280;
-    const h = it.h || 158;
-    return { minx: it.x, miny: it.y, maxx: it.x + w, maxy: it.y + h };
+  if (w == null && it.type === "video") {
+    w = it.w || 280;
+    h = it.h || 158;
   }
-  return null;
+  if (w == null || h == null) return null;
+  const scale = Math.max(0.05, Number(it.scale) || 1);
+  const sw = w * scale;
+  const sh = h * scale;
+  const angle = ((Number(it.rotation) || 0) * Math.PI) / 180;
+  const rw = Math.abs(Math.cos(angle)) * sw + Math.abs(Math.sin(angle)) * sh;
+  const rh = Math.abs(Math.sin(angle)) * sw + Math.abs(Math.cos(angle)) * sh;
+  const cx = (Number(it.x) || 0) + w / 2;
+  const cy = (Number(it.y) || 0) + h / 2;
+  return { minx: cx - rw / 2, miny: cy - rh / 2, maxx: cx + rw / 2, maxy: cy + rh / 2 };
 }
 
 function loadImage(src) {
@@ -2242,6 +2259,7 @@ export default function App() {
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
   const [cloneGhost, setCloneGhost] = useState(null);
   const [toolboxApplyGhost, setToolboxApplyGhost] = useState(null);
+  const [toolboxTargetAiNodeId, setToolboxTargetAiNodeId] = useState(null);
   const [growingAiEdgeIds, setGrowingAiEdgeIds] = useState(() => new Set());
   const [ideaOrbFlight, setIdeaOrbFlight] = useState(null);
   const [highlightGrabHover, setHighlightGrabHover] = useState(false);
@@ -2347,6 +2365,16 @@ export default function App() {
     return () => clearTimeout(t);
   }, [items]);
   useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
+  // Storage, cloud hydration, undo, generators, imports, and companion actions
+  // all converge here. The page is the authoritative persistence boundary.
+  useEffect(() => {
+    const bounded = clampWorkspaceItems(items, itemWorldBBox);
+    if (bounded.some((item, index) => item !== items[index])) setItems(bounded);
+  }, [items]);
+  useEffect(() => {
+    const bounded = clampAiNodesToPage(aiNodes);
+    if (bounded.some((node, index) => node !== aiNodes[index])) setAiNodes(bounded);
+  }, [aiNodes]);
 
   const paperCenteredRef = useRef(Boolean(initialUnifiedWorkspace.savedAt));
   useEffect(() => {
@@ -2707,13 +2735,9 @@ export default function App() {
   }
 
   function isOverAiColumn(clientX, clientY) {
-    // In the unified workspace the embedded AI viewport fills the same canvas
-    // as paper. Treating that overlay as a separate destination makes every
-    // ordinary paper drag hand off to AI instead of moving the item.
-    const el = aiViewportRef.current?.closest?.(".ai-column");
-    if (!el) return false;
-    const r = el?.getBoundingClientRect();
-    return !!(r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
+    // Unified mode has no AI column. An AI destination is an explicit node
+    // hit, never a nearest-node guess or the paper background.
+    return !!aiNodeAtClient(clientX, clientY);
   }
 
   function focusRailPane(pane) {
@@ -3424,15 +3448,44 @@ export default function App() {
         g.cy = cy;
         g.moved += Math.abs(dx) + Math.abs(dy);
         const ids = new Set(g.ids);
-        setItems((arr) =>
-          arr.map((it) => {
+        setItems((arr) => {
+          let movedItems = arr.map((it) => {
             if (!ids.has(it.id)) return it;
             if (it.type === "stroke") {
               return { ...it, points: it.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
             }
             return { ...it, x: it.x + dx, y: it.y + dy };
-          })
-        );
+          });
+          const boxes = movedItems.filter((item) => ids.has(item.id)).map(itemWorldBBox).filter(Boolean);
+          if (boxes.length) {
+            const union = {
+              minx: Math.min(...boxes.map((box) => box.minx)),
+              miny: Math.min(...boxes.map((box) => box.miny)),
+              maxx: Math.max(...boxes.map((box) => box.maxx)),
+              maxy: Math.max(...boxes.map((box) => box.maxy)),
+            };
+            const { dx: resistX, dy: resistY } = bboxClampOffset(union, PAPER_MARGIN, { forceBounds: true });
+            if (resistX || resistY) {
+              movedItems = movedItems.map((item) => {
+                if (!ids.has(item.id)) return item;
+                if (item.type === "stroke") {
+                  return {
+                    ...item,
+                    points: item.points.map((point) => ({
+                      ...point,
+                      x: point.x + resistX,
+                      y: point.y + resistY,
+                    })),
+                  };
+                }
+                return { ...item, x: item.x + resistX, y: item.y + resistY };
+              });
+            }
+          }
+          return movedItems.map((item) =>
+            ids.has(item.id) ? clampWorkspaceItem(item, itemWorldBBox) : item
+          );
+        });
       } else if (g.mode === "pending") {
         if (g.intent === "clone") {
           const dist = Math.hypot(cx - g.cx, cy - g.cy);
@@ -4233,6 +4286,125 @@ export default function App() {
     if (paperIds.length) expandInAi(paperIds, {});
   }
 
+  function makeHighlightedMaterialNode(atWorld = null) {
+    const paperIds = [...highlightSelectionRef.current];
+    const fragments = [...highlightFragmentsRef.current];
+    const nodeIds = [...highlightAiNodeIds];
+    const railLensIds = [...highlightRailLensIdsRef.current];
+    const railOpIds = [...highlightRailOpIdsRef.current];
+    const generatorIds = [...highlightRailGenIdsRef.current];
+    if (
+      !paperIds.length &&
+      !fragments.length &&
+      !nodeIds.length &&
+      !railLensIds.length &&
+      !railOpIds.length &&
+      !generatorIds.length
+    ) {
+      showToast("highlight something first");
+      return null;
+    }
+
+    const paper = paperIds
+      .map((id) => itemsRef.current.find((item) => item.id === id))
+      .filter(Boolean)
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        text: item.text?.trim() || null,
+        descriptor:
+          item.type === "stroke"
+            ? describeStroke(item)
+            : item.type === "image"
+              ? item.alt || item.name || "image"
+              : null,
+        historyEventIds: (item.history || []).map((event) => event.id).filter(Boolean),
+      }));
+    const phraseRefs = fragments.map((fragment) => ({
+      itemId: fragment.itemId,
+      start: fragment.start,
+      end: fragment.end,
+      quote: fragment.quote,
+      context:
+        fragment.context ||
+        itemsRef.current.find((item) => item.id === fragment.itemId)?.text ||
+        "",
+    }));
+    const ai = nodeIds
+      .map((id) => aiNodesRef.current.find((node) => node.id === id))
+      .filter(Boolean)
+      .map((node) => ({
+        nodeId: node.id,
+        label: node.label,
+        text: node.goldenFragment || node.expandedText || node.preview || "",
+        parentId: node.parentId || null,
+        sourceNodeIds: [...(node.sourceNodeIds || [])],
+      }));
+    const rails = [
+      ...railLensIds.map((id) => ({ kind: "lens", id, label: opMap[id]?.name || id })),
+      ...railOpIds.map((id) => ({ kind: "operator", id, label: opMap[id]?.name || id })),
+      ...generatorIds.map((id) => ({
+        kind: "generator",
+        id,
+        label: lensesRef.current.find((entry) => entry.id === id)?.title || id,
+      })),
+    ];
+    const previewParts = [
+      ...phraseRefs.map((entry) => entry.quote),
+      ...paper.map((entry) => entry.text || entry.descriptor),
+      ...ai.map((entry) => entry.text || entry.label),
+      ...rails.map((entry) => `${entry.kind}: ${entry.label}`),
+    ].filter(Boolean);
+    const material = previewParts.join("\n\n---\n\n").trim();
+    const centers = [
+      ...paperIds
+        .map((id) => itemsRef.current.find((item) => item.id === id))
+        .map((item) => item && itemWorldBBox(item))
+        .filter(Boolean)
+        .map((box) => ({ x: (box.minx + box.maxx) / 2, y: (box.miny + box.maxy) / 2 })),
+      ...nodeIds
+        .map((id) => aiNodesRef.current.find((node) => node.id === id))
+        .filter(Boolean)
+        .map((node) => ({ x: node.x, y: node.y })),
+    ];
+    const landing =
+      atWorld ||
+      (centers.length
+        ? {
+            x: centers.reduce((sum, point) => sum + point.x, 0) / centers.length,
+            y: centers.reduce((sum, point) => sum + point.y, 0) / centers.length,
+          }
+        : paperViewportCenterWorld());
+    const pos = nodePositionAt(aiNodesRef.current, "source", landing);
+    const node = makeAiNode({
+      nodeKind: "source",
+      label: truncateLabel(
+        previewParts[0] || `${paper.length + phraseRefs.length + ai.length + rails.length} highlighted sources`
+      ),
+      preview: truncatePreview(material, 240),
+      sourceBundleText: material,
+      sourceIds: paperIds,
+      referencedNodeIds: nodeIds,
+      sourceBundle: {
+        version: 1,
+        createdAt: new Date().toISOString(),
+        paper,
+        fragments: phraseRefs,
+        ai,
+        rail: rails,
+      },
+      x: pos.x,
+      y: pos.y,
+      radius: pos.radius,
+      _dropPinned: true,
+    });
+    appendAiNodes(node);
+    setSelectedAiNodeIds([node.id]);
+    clearHighlightSelection();
+    showToast("made one source node");
+    return node;
+  }
+
   function deleteSelection() {
     pushHistory();
     const ids = new Set(selRef.current);
@@ -4778,14 +4950,8 @@ export default function App() {
     if (!atClient) return;
     const op = opMap[opId];
     if (!op) return;
-    const env = toolboxDragEnvRef.current;
-    if (env.isOverAiColumn?.(atClient.x, atClient.y)) {
-      const world = env.getAiDropWorldFromClient(atClient.x, atClient.y);
-      const node = env.aiNodeAtWorld?.(world.x, world.y);
-      if (!node) {
-        showToast("drop onto a concept node");
-        return;
-      }
+    const node = aiNodeAtClient(atClient.x, atClient.y);
+    if (node) {
       applyOperatorToAiNode(node, op, atClient);
       return;
     }
@@ -4794,14 +4960,8 @@ export default function App() {
 
   function applyToolboxTransformationLensAt(lensId, atClient) {
     if (!atClient) return;
-    const env = toolboxDragEnvRef.current;
-    if (env.isOverAiColumn?.(atClient.x, atClient.y)) {
-      const world = env.getAiDropWorldFromClient(atClient.x, atClient.y);
-      const node = env.aiNodeAtWorld?.(world.x, world.y);
-      if (!node) {
-        showToast("drop onto a concept node");
-        return;
-      }
+    const node = aiNodeAtClient(atClient.x, atClient.y);
+    if (node) {
       const lens =
         transformationRepos.find((l) => l.id === lensId) ||
         displayTransformations.find((l) => l.id === lensId);
@@ -6828,6 +6988,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
     function syncDropTargets(cx, cy) {
       const env = toolboxDragEnvRef.current;
+      const aiTarget = aiNodeAtClient(cx, cy);
+      setToolboxTargetAiNodeId(aiTarget?.id || null);
       if (env.isOverPaperColumn?.(cx, cy)) {
         setDropReady(true);
         setCanvasDropOver(true);
@@ -6841,7 +7003,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         setDropTargetId(null);
         setCanvasDropOver(false);
       }
-      if (env.isOverAiColumn?.(cx, cy)) {
+      if (aiTarget) {
         setAiCanvasDropOver(true);
         setTransferDragActive(true);
       } else {
@@ -6852,7 +7014,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     function onMove(ev) {
       lastX = ev.clientX;
       lastY = ev.clientY;
-      setToolboxApplyGhost({ cx: lastX, cy: lastY, label, kind: payload.kind });
+      const target = aiNodeAtClient(lastX, lastY);
+      setToolboxApplyGhost({
+        cx: lastX,
+        cy: lastY,
+        label,
+        kind: payload.kind,
+        targetLabel: target?.label || null,
+      });
       syncDropTargets(lastX, lastY);
     }
 
@@ -6867,6 +7036,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       setDropTargetId(null);
       setCanvasDropOver(false);
       setAiCanvasDropOver(false);
+      setToolboxTargetAiNodeId(null);
       setTransferDragActive(false);
 
       const cx = ev?.clientX ?? lastX;
@@ -7035,7 +7205,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const fragment = node.goldenFragment?.trim() || "";
     const expanded = node.expandedText?.trim() || "";
     const preview = node.preview?.trim() || "";
-    const aiMaterial = fragment || expanded || (node.nodeKind === "source" ? "" : preview);
+    const bundleMaterial = node.sourceBundleText?.trim() || "";
+    const aiMaterial = fragment || expanded || bundleMaterial || (node.nodeKind === "source" ? "" : preview);
 
     // Expanded/session nodes: prefer this node's AI text over inherited paper ids.
     if (aiMaterial && node.nodeKind !== "source") {
@@ -8930,20 +9101,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     } else {
       aiMoveHistoryRef.current.at = now;
     }
-    setAiNodes((nodes) => nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
+    setAiNodes((nodes) =>
+      nodes.map((n) => (n.id === nodeId ? clampAiNodeToPage({ ...n, x, y }) : n))
+    );
   }
 
   function updateAiNode(nodeId, patch) {
-    setAiNodes((nodes) => nodes.map((n) => (n.id === nodeId ? { ...n, ...patch } : n)));
+    setAiNodes((nodes) =>
+      nodes.map((n) => (n.id === nodeId ? clampAiNodeToPage({ ...n, ...patch }) : n))
+    );
   }
 
   function appendAiNodes(...newNodes) {
     setAiNodes((nodes) => {
       try {
-        return layoutAfterAppend(nodes, newNodes);
+        return clampAiNodesToPage(layoutAfterAppend(nodes, newNodes));
       } catch (err) {
         console.error("appendAiNodes layout failed", err);
-        return [...nodes, ...newNodes];
+        return clampAiNodesToPage([...nodes, ...newNodes]);
       }
     });
     return newNodes;
@@ -9398,6 +9573,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
     } else if (g.origin === "paper" && target === "paper" && g.kind === "highlight") {
       const atWorld = clientToWorld(cx, cy);
+      if (!itemAtPointForDrop(cx, cy)) {
+        makeHighlightedMaterialNode(atWorld);
+        return;
+      }
       if (g.fragments?.length) transferFragmentsToPaper(g.fragments, atWorld);
       if (g.ids.length) transferHighlightSelectionToPaper(g.ids, atWorld);
     } else if (g.origin === "paper" && target === RAIL_TRANSFORMATIONS) {
@@ -9513,8 +9692,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   function applyPatternLensToAiNode(structId, atClient) {
     const struct = lensesRef.current.find((s) => s.id === structId);
     if (!struct) return;
-    const world = getAiDropWorldFromClient(atClient.x, atClient.y);
-    const node = aiNodeAtWorld(world.x, world.y);
+    const node = aiNodeAtClient(atClient.x, atClient.y);
     if (!node) {
       showToast("drop the lens onto a node");
       return;
@@ -9575,6 +9753,18 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const n = list[i];
       const r = (n.radius || 20) + 28;
       if ((n.x - wx) ** 2 + (n.y - wy) ** 2 <= r * r) return n;
+    }
+    return null;
+  }
+
+  function aiNodeAtClient(clientX, clientY) {
+    const stack = document.elementsFromPoint?.(clientX, clientY) || [];
+    for (const element of stack) {
+      const nodeElement = element.closest?.(".ai-node[data-node-id]");
+      const nodeId = nodeElement?.dataset?.nodeId;
+      if (!nodeId) continue;
+      const node = aiNodesRef.current.find((candidate) => candidate.id === nodeId);
+      if (node) return node;
     }
     return null;
   }
@@ -10360,6 +10550,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       tk.caption(a.caption || `apply “${op.name}” to the living cross-domain selection`);
       highlightToolbarOperate(op);
       await directorWaitForJobs(tk);
+    },
+    makeHighlightNode: async (a, tk, ctx) => {
+      const button = tk.elementCenter(".omni-highlight-btn.make-node");
+      if (button) {
+        await tk.moveTo(button.x, button.y);
+        await tk.press("make node");
+        await tk.release();
+      }
+      const node = makeHighlightedMaterialNode();
+      if (!node) throw new Error("nothing is highlighted");
+      ctx.vars.lastAiNodeId = node.id;
+      await tk.wait(350);
+      return { type: "ai-node", id: node.id, nodeId: node.id, record: node };
     },
     clearHighlight: async (a, tk) => {
       tk.caption(a.caption || "clear the living highlight selection");
@@ -11564,6 +11767,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }}
         landingNodeIds={aiLandingNodeIds}
         growingEdgeIds={growingAiEdgeIds}
+        operatorDropTargetId={toolboxTargetAiNodeId}
       />
       <div className="page-title-chip" data-tour="page-title" onPointerDown={(e) => e.stopPropagation()}>
         <input
@@ -12413,7 +12617,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           <span className="toolbox-apply-ghost-badge">
             {toolboxApplyGhost.kind === "operator" ? "ƒ" : "◇"}
           </span>
-          <span className="toolbox-apply-ghost-label">{toolboxApplyGhost.label}</span>
+          <span className="toolbox-apply-ghost-label">
+            {toolboxApplyGhost.label}
+            {toolboxApplyGhost.targetLabel ? ` → ${toolboxApplyGhost.targetLabel}` : ""}
+          </span>
         </div>
       )}
 
@@ -12474,6 +12681,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
         onSameness={() => runSamenessDiscovery(highlightSelectionIds)}
         onSaveLens={highlightSaveAsLens}
+        onMakeNode={() => makeHighlightedMaterialNode()}
         onSendToAi={highlightSendToAi}
         onClear={clearHighlightSelection}
       />

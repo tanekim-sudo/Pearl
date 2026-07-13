@@ -90,6 +90,7 @@ export default function AiNodeCanvas({
   onTourEvent,
   landingNodeIds,
   growingEdgeIds,
+  operatorDropTargetId,
   onPointerTrack,
   embedded = false,
 }) {
@@ -1138,7 +1139,11 @@ export default function AiNodeCanvas({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <clipPath id="ai-page-content-clip">
+              <rect x="24" y="24" width="720" height="1056" />
+            </clipPath>
           </defs>
+          <g clipPath="url(#ai-page-content-clip)">
           {edges.map(({ id, from, to, kind, label }) => {
             if (!from || !to) return null;
             const fromView = nodeEdgeView(from);
@@ -1218,6 +1223,7 @@ export default function AiNodeCanvas({
               strokeWidth={5 * invScale}
             />
           )}
+          </g>
         </svg>
 
         {nodes.map((node) => {
@@ -1251,6 +1257,7 @@ export default function AiNodeCanvas({
                 (node.loading ? " loading" : "") +
                 (node.error ? " error" : "") +
                 (isLanding ? " landing" : "") +
+                (operatorDropTargetId === node.id ? " operator-drop-target" : "") +
                 (bornIds.has(node.id) ? " born-gold" : "") +
                 (hoverPreview?.id === node.id ? " hover-preview" : "")
               }
@@ -1285,19 +1292,17 @@ export default function AiNodeCanvas({
                 onExploreNode?.(node.id);
               }}
             >
-              {(zoomTier === "dot" || zoomTier === "short") && (
-                <span
-                  className="ai-node-screen-hit-target"
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    inset: -Math.max(0, 12 / Math.max(0.01, camera.scale) - r),
-                    borderRadius: "50%",
-                    pointerEvents: "auto",
-                    zIndex: 5,
-                  }}
-                />
-              )}
+              <span
+                className="ai-node-screen-hit-target"
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: -Math.max(0, 12 / Math.max(0.01, camera.scale) - r),
+                  borderRadius: "50%",
+                  pointerEvents: nodeBlend > 0.6 ? "none" : "auto",
+                  zIndex: 5,
+                }}
+              />
               {tool === "select" &&
                 ["n", "e", "s", "w"].map((side) => (
                   <span

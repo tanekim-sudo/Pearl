@@ -92,6 +92,11 @@
   box-shadow: 0 0 0 3px rgba(232, 185, 35, 0.22);
 }
 
+.ai-node-viewport-embedded .ai-node.operator-drop-target .ai-node-ring {
+  border-color: #b48a16;
+  box-shadow: 0 0 0 2px rgba(232, 185, 35, 0.26);
+}
+
 .ai-node-viewport-embedded .ai-node-content-text {
   background: rgba(255, 255, 255, 0.97);
 }
