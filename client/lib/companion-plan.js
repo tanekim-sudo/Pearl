@@ -33,7 +33,13 @@ function parseType(spec) {
 }
 
 function validValue(value, type) {
-  if (type.includes("|")) return type.split("|").includes(String(value));
+  if (type.includes("|")) {
+    const options = type.split("|");
+    const valueTypes = new Set(["string", "number", "boolean", "array", "object", "{x,y}"]);
+    return options.every((option) => valueTypes.has(option))
+      ? options.some((option) => validValue(value, option))
+      : options.includes(String(value));
+  }
   if (type === "string") return typeof value === "string";
   if (type === "number") return typeof value === "number" && Number.isFinite(value);
   if (type === "boolean") return typeof value === "boolean";
@@ -177,7 +183,8 @@ function walk(step, state, path, depth) {
       `${path}.args`
     );
     validateCapabilityArgs(capability, step.args || {}, `${path}.args`, state.bindings);
-    if (capability.destructive && step.confirmed !== true) {
+    const confirmation = capability.confirmation || (capability.destructive ? "framework" : "none");
+    if (confirmation === "framework" && step.confirmed !== true) {
       fail(path, `${step.capability} requires explicit confirmation`);
     }
     if (step.saveAs != null) {
@@ -268,6 +275,12 @@ function repairPlanDataflow(plan, capabilities = COMPANION_CAPABILITIES) {
     }
     if (step.kind === "action") {
       const capability = capabilityMap.get(step.capability);
+      // `confirmed` is framework metadata. Models occasionally nest it in
+      // args even though capability schemas intentionally reject it.
+      if (typeof step.args?.confirmed === "boolean") {
+        if (step.confirmed == null) step.confirmed = step.args.confirmed;
+        delete step.args.confirmed;
+      }
       if (!step.saveAs && typeof step.args?.saveAs === "string" && step.args.saveAs.trim()) {
         step.saveAs = step.args.saveAs.trim();
       }

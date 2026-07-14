@@ -2,11 +2,11 @@
 
 ## Verdict
 
-**Release-ready for the locally verifiable product boundary.** The remaining AI reading-focus defect is fixed and its exact-word persistence, visible mark, source-node isolation, and transfer behavior pass at minimum, default, and maximum AI zoom. The production build, extension package, full unit suite, human walkthrough, integrated adversarial suite, and extension browser audit all pass.
+**Companion release gate reopened.** The AI reading-focus defect remains fixed, but the prior companion verdict overstated evidence: 108/108 manifest/name parity was not 108/108 natural-language → planner → real-handler → persisted-effect execution. The newly reported mixed-input destructive failure is fixed and browser-verified, while the deeper evidence and remaining per-capability execution status are tracked in `../companion-release-audit-2026-07/`.
 
 ## Coverage
 
-- Companion inventory: 108 canonical capabilities (96 app, 12 extension), with 108/108 manifest ↔ runtime parity covered by automated tests.
+- Companion inventory: 108 canonical capabilities (96 app, 12 extension). Canonical schema/name checks pass 108/108; do not interpret that as complete runtime-effect evidence. See the companion execution matrix for the narrower executed set.
 - Core/shared automated tests: 394/394 passed.
 - Extension automated tests: 16/16 passed; release contract tests: 4/4 passed.
 - Human browser walkthrough: 60/60 assertions passed.
@@ -23,7 +23,7 @@
 | AI nodes, branching, operators, pan/zoom, reading focus, dense graphs | Embedded AI world, edge branching, chooser, camera, reading-focus word marking | AI select/move/apply/focus/fit/materialize verbs | External result opens as app artifact; no fake in-panel graph editor | Unified version-3 page-coordinate store | AI layout/runtime tests; 32/32 final audit; 26/26 focused audit including min/default/max reading focus |
 | Functions/lenses, editor, branch, stack, grind, rack, version/fork/merge/output specs | Rail, tree editor, composition/grind/rack surfaces | Full create/edit/output/branch/stack/grind/rack/version verb set | Library import/export/sync and queued use | Stable IDs, versions, dependency closure, idempotent merge | Shared grammar/library/runtime/output tests; generator/final browser evidence |
 | Generators and spatial material | Rail + spatial generator workspace | New/attach/graduate/probe/craft-lens verbs | Generator library sync and destination queue | Saved lens/generator store and account snapshot merge | Human create/reload; final move/reload; extension import tests |
-| Companion planning, voice/text, confirmation, cancellation/checkpoint | Companion panel | 96 app verbs, bounded plans, destructive confirmation, exact checkpoint | 12 extension verbs with exact handler parity | Account-scoped memory; command state bounded | Intent/plan/executor/voice/parity tests; human onboarding and final destructive flow |
+| Companion planning, voice/text, confirmation, cancellation/checkpoint | Companion panel | 96 app verbs, bounded plans, handler-vs-framework confirmation metadata, exact checkpoint | 12 extension verbs with manifest parity | Account-scoped memory; command state bounded | Exact reported command and representative adaptive/compose/voice browser flows pass; full 108 runtime-effect matrix is not yet proven |
 | Account/auth/sync | Anonymous-first auth overlay and merge/adopt/skip logic | Administrative actions expose precise blockers | Local mode or sign-in; idempotent library import | Board snapshot merge/dedupe/account scope | Auth and board-sync unit tests; anonymous/returning browser flow; live credentials unavailable |
 | Import/export/share/handoff | Share bundles, extension library export, malformed recovery | Open export/download/path verbs | Signed bundle import, adapters, artifact handoff/fallback | Checksums, stable IDs, conflict metadata, idempotent imports | Bundle/library/security/release tests; malformed share and extension browser audits |
 | Distribution/privacy/security | Vercel production output and install UI | Download/export verbs | Chrome/Firefox/Safari artifacts; options/privacy; denylist | Versioned ZIP metadata/checksum | Production build, release tests, forbidden-file/package checks |

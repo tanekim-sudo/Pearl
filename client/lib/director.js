@@ -5,6 +5,11 @@
  * while a ghost cursor overlay shows the exact gesture a user would make.
  * Scripts are sequential async steps; any real pointer input aborts.
  */
+import {
+  COMPANION_CAPABILITIES,
+  COMPANION_DIRECTOR_ARG_METADATA,
+} from "./companion-capabilities.js";
+import { validateCapabilityArgs } from "./companion-plan.js";
 
 const listeners = new Set();
 
@@ -45,6 +50,9 @@ export function directorRunning() {
 
 let verbs = {};
 let activeAbortController = null;
+const capabilityByName = new Map(
+  COMPANION_CAPABILITIES.filter((entry) => entry.platform === "app").map((entry) => [entry.name, entry])
+);
 
 export function registerDirectorVerbs(map) {
   verbs = { ...verbs, ...map };
@@ -202,7 +210,23 @@ export async function runDirectorScript(steps, opts = {}) {
       if (state.abortRequested) break;
       const fn = verbs[step.verb];
       try {
-        const result = await fn(step.args || {}, toolkit, ctx);
+        const suppliedArgs = step.args || {};
+        const capability = capabilityByName.get(step.verb);
+        if (capability) {
+          const capabilityArgs = {};
+          const metadataArgs = {};
+          for (const [key, value] of Object.entries(suppliedArgs)) {
+            if (key in COMPANION_DIRECTOR_ARG_METADATA) metadataArgs[key] = value;
+            else capabilityArgs[key] = value;
+          }
+          validateCapabilityArgs(capability, capabilityArgs, `director.${step.verb}.args`);
+          validateCapabilityArgs(
+            { name: `${step.verb} director metadata`, args: COMPANION_DIRECTOR_ARG_METADATA },
+            metadataArgs,
+            `director.${step.verb}.metadata`
+          );
+        }
+        const result = await fn(suppliedArgs, toolkit, ctx);
         results.push(result);
         consecutiveFailures = 0;
       } catch (err) {

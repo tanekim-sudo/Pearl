@@ -3,7 +3,7 @@
  * Every entry must correspond to a real director verb registered by App.
  */
 const RAW_CAPABILITIES = [
-  ["caption", {}, false, ["interface"], "Explain an action while it happens"],
+  ["caption", { text: "string?" }, false, ["interface"], "Explain an action while it happens"],
   ["pause", { ms: "number?" }, false, ["interface"], "Pause between visible actions"],
   ["switchTool", { tool: "string" }, false, ["interface", "paper"], "Select a canvas tool"],
   ["fitPaper", {}, false, ["paper", "ai", "interface"], "Fit the paper frame in the unified workspace"],
@@ -113,6 +113,26 @@ const RAW_CAPABILITIES = [
   ["showExternalLibraryImport", {}, false, ["extension", "lens", "generator", "interface"], "Show pending library import status and review", "extension"],
 ];
 
+const HANDLER_CONFIRMED_CAPABILITIES = new Set([
+  "clearPaper",
+  "clearAiSpace",
+  "clearUserLenses",
+  "clearGenerators",
+  "clearWorkspaceDomains",
+]);
+
+export const COMPANION_ACTION_METADATA = Object.freeze({
+  confirmed: Object.freeze({
+    type: "boolean",
+    placement: "action",
+    purpose: "Framework confirmation metadata; never pass inside capability args",
+  }),
+});
+
+export const COMPANION_DIRECTOR_ARG_METADATA = Object.freeze({
+  caption: "string?",
+});
+
 const RESULT_TYPES = {
   spawnText: "paper-item",
   createFunction: "lens",
@@ -220,6 +240,11 @@ export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
     animation: "director",
     observation: domains.includes("interface") && domains.length === 1 ? [] : ["selection", "objects", "viewport"],
     risk: destructive ? "high" : ["transformMaterial", "arrangeItems", "groupItems"].includes(name) ? "medium" : "low",
+    confirmation: HANDLER_CONFIRMED_CAPABILITIES.has(name)
+      ? "handler"
+      : destructive
+        ? "framework"
+        : "none",
     testCaseId: `capability-${name}`,
     platform,
   })
@@ -237,8 +262,14 @@ export const COMPANION_VERBS = Object.fromEntries(
 export function capabilityPrompt(platform = "app") {
   return COMPANION_CAPABILITIES.filter((entry) => entry.platform === platform).map(
     (capability) =>
-      `- ${capability.name}(${Object.entries(capability.args).map(([key, type]) => `${key}: ${type}`).join(", ")}) -> ${capability.resultType} — ${capability.purpose}; e.g. “${capability.examples[0]}”${capability.destructive ? " [confirmation required]" : ""}`
+      `- ${capability.name}(${Object.entries(capability.args).map(([key, type]) => `${key}: ${type}`).join(", ")}) -> ${capability.resultType} — ${capability.purpose}; e.g. “${capability.examples[0]}”${capability.confirmation === "handler" ? " [handler stages confirmation; do not add confirmed]" : capability.confirmation === "framework" ? " [action.confirmed:true required; never put confirmed in args]" : ""}`
   ).join("\n");
+}
+
+export function companionActionMetadataPrompt() {
+  return Object.entries(COMPANION_ACTION_METADATA)
+    .map(([name, metadata]) => `- action.${name}: ${metadata.type} — ${metadata.purpose}`)
+    .join("\n");
 }
 
 export function validateCapabilityNames(registeredNames, capabilities = COMPANION_CAPABILITIES.filter((entry) => entry.platform === "app")) {
@@ -265,6 +296,9 @@ export function validateCapabilityManifest(registeredNames, capabilities = COMPA
   const missingRisk = capabilities
     .filter((entry) => !["low", "medium", "high"].includes(entry.risk))
     .map((entry) => entry.name);
+  const missingConfirmation = capabilities
+    .filter((entry) => !["none", "framework", "handler"].includes(entry.confirmation))
+    .map((entry) => entry.name);
   const missingObservation = capabilities
     .filter((entry) => !Array.isArray(entry.observation))
     .map((entry) => entry.name);
@@ -275,6 +309,7 @@ export function validateCapabilityManifest(registeredNames, capabilities = COMPA
     missingAnimation,
     missingArgumentSchema,
     missingRisk,
+    missingConfirmation,
     missingObservation,
     missingTestCase,
   };

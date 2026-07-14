@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   COMPANION_VERBS,
+  buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
   classifyInterviewInput,
   looksLikeProfileAnswer,
@@ -13,6 +14,18 @@ import {
   parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
+
+test("exact mixed identity question and typo clear resets only workspace domains", () => {
+  const text = "Who are you?\nclear everything let me start fomr scratch";
+  assert.deepEqual(parseAdministrativeCommand(text), {
+    kind: "clear-workspace",
+    domains: ["paper", "ai"],
+  });
+  assert.deepEqual(classifyInterviewInput(text, "identity"), {
+    kind: "command",
+    intent: { kind: "clear-workspace", domains: ["paper", "ai"] },
+  });
+});
 
 test("compound administrative command composes every requested clear domain", () => {
   const intent = parseAdministrativeCommand(
@@ -191,6 +204,13 @@ test("planner requires executable commands to act without chatter", () => {
   const prompt = buildCompanionSystemPrompt();
   assert.match(prompt, /for every executable request, set "say" to ""/);
   assert.match(prompt, /Do not acknowledge, praise, summarize, or announce/);
+});
+
+test("adaptive planner documents framework metadata outside capability args", () => {
+  const prompt = buildAdaptiveCompanionPrompt();
+  assert.match(prompt, /Framework action metadata \(never place these keys inside args\)/);
+  assert.match(prompt, /action\.confirmed/);
+  assert.match(prompt, /Handler-confirmed actions stage the app's normal counted confirmation/);
 });
 
 test("flat reply parser rejects fake verbs instead of silently dropping them", () => {

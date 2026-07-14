@@ -44,12 +44,18 @@ test("rejects unsupported capabilities and invalid arguments before execution", 
   );
 });
 
-test("requires confirmation for destructive actions and finite loops", () => {
+test("uses canonical confirmation modes and finite loops", () => {
+  assert.doesNotThrow(() =>
+    validateCompanionPlan({
+      version: 1,
+      root: { kind: "action", capability: "clearPaper", args: {} },
+    })
+  );
   assert.throws(
     () =>
       validateCompanionPlan({
         version: 1,
-        root: { kind: "action", capability: "clearPaper", args: {} },
+        root: { kind: "action", capability: "deleteItem", args: { target: "item-1" } },
       }),
     /explicit confirmation/
   );
@@ -61,6 +67,26 @@ test("requires confirmation for destructive actions and finite loops", () => {
       }),
     /1\.\.100/
   );
+});
+
+test("repairs misplaced confirmation metadata before capability validation", () => {
+  const plan = parseCompanionPlan(JSON.stringify({
+    version: 1,
+    root: {
+      kind: "sequence",
+      steps: [
+        { kind: "checkpoint", id: "confirm", mode: "confirm" },
+        {
+          kind: "action",
+          id: "clear",
+          capability: "clearPaper",
+          args: { confirmed: true },
+        },
+      ],
+    },
+  }));
+  assert.equal(plan.root.steps[1].confirmed, true);
+  assert.deepEqual(plan.root.steps[1].args, {});
 });
 
 test("complex and research plans request a preview by default", () => {

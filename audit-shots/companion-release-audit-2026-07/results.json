@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-07-14T15:25:49.627Z",
+  "command": "Who are you?\nclear everything let me start fomr scratch",
+  "latencyMs": 18,
+  "passed": 14,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "exact typo-containing multiline input reaches confirmation",
+      "ok": true,
+      "detail": "18ms"
+    },
+    {
+      "name": "current workspace means paper and AI",
+      "ok": true,
+      "detail": "Clear this workspace content? 3 whiteboard items · 2 AI nodes Built-in lens primitives will be kept. Cancel Clear listed content"
+    },
+    {
+      "name": "account libraries are outside unqualified clear",
+      "ok": true,
+      "detail": "Clear this workspace content? 3 whiteboard items · 2 AI nodes Built-in lens primitives will be kept. Cancel Clear listed content"
+    },
+    {
+      "name": "mixed identity question does not swallow executable command",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "executable request dispatches exactly once",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "deterministic planning reaches visible action under two seconds",
+      "ok": true,
+      "detail": "18ms"
+    },
+    {
+      "name": "reported schema error is absent",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "confirmation stages without early mutation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "confirmation performs real unified state mutation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unqualified clear preserves account library",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "cleared workspace survives refresh",
+      "ok": true,
+      "detail": "items=0, nodes=0, unified=0/0"
+    },
+    {
+      "name": "preserved library survives refresh",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no uncaught browser errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no material console or request errors",
+      "ok": true,
+      "detail": "{\"consoleErrors\":[\"Failed to load resource: the server responded with a status of 404 (Not Found)\"],\"failedResponses\":[]}"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failedResponses": []
+}

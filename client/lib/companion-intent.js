@@ -3,7 +3,11 @@
  * into a validated director script the app can perform and demonstrate.
  */
 
-import { capabilityPrompt, COMPANION_VERBS } from "./companion-capabilities.js";
+import {
+  capabilityPrompt,
+  companionActionMetadataPrompt,
+  COMPANION_VERBS,
+} from "./companion-capabilities.js";
 import { parseCompanionPlan } from "./companion-plan.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
@@ -58,6 +62,11 @@ export function parseAdministrativeCommand(text, { previousDomains = [], pending
   );
   if ((!destructive || !bulk) && !followup) return null;
   let domains = clearDomainsFromText(normalized);
+  if (!domains.length && destructive && bulk) {
+    // Unqualified "clear everything / start from scratch" means the current
+    // workspace, not the account library.
+    domains = ["paper", "ai"];
+  }
   if (followup) {
     if (/\bdo the rest\b/.test(normalized)) {
       domains = CLEARABLE_DOMAINS.filter((domain) => !previousDomains.includes(domain));
@@ -278,6 +287,9 @@ Step DSL:
 - {"kind":"checkpoint","mode":"save|confirm","label":"..."}
 - {"kind":"artifact","from":"savedResult","placement":"paper|ai|generator|beside-target","target":"stable-id"}
 
+Framework action metadata (never place these keys inside args):
+${companionActionMetadataPrompt()}
+
 Rules:
 - Action-first and silent. The plan itself is the response; do not add conversational text.
 - Every executable leaf step must have a unique id. If an action creates a lens, generator, block, node, path, or other resource used later, give that action a saveAs binding and use {"$ref":"binding"} in every dependent argument. Never guess a future camelCase name or refer to a resource before its creating step completes.
@@ -286,7 +298,7 @@ Rules:
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
-- Destructive capabilities require a prior confirm checkpoint and "confirmed":true on the action.
+- Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.
 - Preserve originals before broad revisions. Use finite loops/retries. Do not exceed 40 total steps, 100 iterations, or 3 research calls.
 - Current autonomy preference is "${autonomy}".
 
