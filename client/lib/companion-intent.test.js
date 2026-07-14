@@ -8,6 +8,7 @@ import {
   classifyInterviewInput,
   looksLikeProfileAnswer,
   parseAdministrativeCommand,
+  parseBeforeAfterCommand,
   parseExtensionDownloadCommand,
   parseFunctionOutputCommand,
   parseCompanionReply,
@@ -51,6 +52,25 @@ test("function output edits use deterministic real capability paths", () => {
     args: { op: "last", branch: 2, label: "table", machineKind: "table" },
   });
   assert.equal(parseFunctionOutputCommand("tell me about tables"), null);
+});
+
+test("before and after lens requests use deterministic real editor actions", () => {
+  assert.deepEqual(parseBeforeAfterCommand("make a lens from this before and after"), {
+    verb: "openBeforeAfterCreation",
+    args: {},
+  });
+  assert.deepEqual(parseBeforeAfterCommand("this image became that image—learn the transformation"), {
+    verb: "inferBeforeAfterTransformation",
+    args: {},
+  });
+  assert.deepEqual(parseBeforeAfterCommand("add another example"), {
+    verb: "addBeforeAfterExample",
+    args: {},
+  });
+  assert.deepEqual(parseBeforeAfterCommand("set the after text to a concise memo"), {
+    verb: "setBeforeAfterText",
+    args: { side: "after", text: "a concise memo" },
+  });
 });
 
 test("extension download requests use the deterministic local path", () => {

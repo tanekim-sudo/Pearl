@@ -28,6 +28,7 @@ import {
   reorderStep,
   stepIndexInParent,
 } from "../lib/function-tree-editor.js";
+import BeforeAfterLensEditor from "./BeforeAfterLensEditor.jsx";
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 
@@ -108,6 +109,7 @@ export default function LensTreeEditor({
   const [toast, setToast] = useState(null);
   const [strandDrag, setStrandDrag] = useState(null);
   const [outputAdvanced, setOutputAdvanced] = useState(false);
+  const [creationMode, setCreationMode] = useState(editor.creationMode === "before-after" ? "before-after" : "editor");
   const clipboardRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -466,8 +468,25 @@ export default function LensTreeEditor({
       root = { ...root, primitive: keepsName, top: !keepsName, move: false };
       ops = ops.map((o) => (o.id === rid ? root : o));
     }
-    const message = isCreate ? `created · ${root.name}` : `updated · ${root.name}`;
+    const learnedCount = Number(root.learnedFrom?.exampleCount) || root.learnedFrom?.examples?.length || 0;
+    const message = learnedCount
+      ? `${isCreate ? "created" : "updated"} · ${root.name} · learned from ${learnedCount} private example${learnedCount === 1 ? "" : "s"}`
+      : isCreate ? `created · ${root.name}` : `updated · ${root.name}`;
     onSaveTree(isCreate ? null : sourceRoot?.id, ops, { commitMessage: message });
+  }
+
+  function useInferredOperator(operator) {
+    const inferred = {
+      ...operator,
+      id: sourceRoot?.id || operator.id,
+      top: true,
+      role: sourceRoot?.role || operator.role || null,
+    };
+    setDraftOps([inferred]);
+    setRootId(inferred.id);
+    setFocusId(null);
+    setCreationMode("editor");
+    setToast("inferred lens loaded — review or edit before saving");
   }
 
   const canSave =
@@ -489,13 +508,21 @@ export default function LensTreeEditor({
         <div className="fn-head">
           <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
           <div className="fn-head-actions">
+            <button
+              className={"fn-head-btn" + (creationMode === "before-after" ? " active" : "")}
+              type="button"
+              aria-pressed={creationMode === "before-after"}
+              onClick={() => setCreationMode((mode) => mode === "before-after" ? "editor" : "before-after")}
+            >
+              Learn from before &amp; after
+            </button>
             <button className="fn-close" onClick={onClose} type="button">
               ×
             </button>
           </div>
         </div>
 
-        <div className="fn-editor-body fn-editor-body-flow">
+        <div className={"fn-editor-body fn-editor-body-flow" + (creationMode === "before-after" ? " before-after-mode" : "")}>
           <div className="fn-flow-main">
             {rootDraft && (
               <div className="fn-flow-overview">
@@ -523,7 +550,7 @@ export default function LensTreeEditor({
               </div>
             )}
 
-            <aside className="fn-palette fn-palette-strip">
+            {creationMode === "editor" && <aside className="fn-palette fn-palette-strip">
               <div className="fn-palette-blocks">
                 <button
                   type="button"
@@ -575,10 +602,10 @@ export default function LensTreeEditor({
                     </div>
                   ))}
               </div>
-            </aside>
+            </aside>}
 
             <div
-              className="fn-flow-scroll"
+              className={"fn-flow-scroll" + (creationMode === "before-after" ? " fn-flow-before-after" : "")}
               onClick={(e) => {
                 if (e.target === e.currentTarget) setFocusId(null);
               }}
@@ -599,7 +626,16 @@ export default function LensTreeEditor({
                 if (payload) applyDrop(rootId, 9999, payload);
               }}
             >
-              {rootDraft ? (
+              {creationMode === "before-after" ? (
+                <BeforeAfterLensEditor
+                  initial={rootDraft?.learnedFrom ? {
+                    version: rootDraft.learnedFrom.schemaVersion,
+                    private: true,
+                    examples: rootDraft.learnedFrom.examples,
+                  } : null}
+                  onUse={useInferredOperator}
+                />
+              ) : rootDraft ? (
                 <LensFlowView
                   rootOp={rootDraft}
                   rootId={rootId}
@@ -640,7 +676,7 @@ export default function LensTreeEditor({
             </div>
           </div>
 
-          <aside className="fn-editor-side fn-editor-inspector">
+          {creationMode === "editor" && <aside className="fn-editor-side fn-editor-inspector">
             {inspectorOp ? (
               <>
                 {focusPath.length > 0 && (
@@ -844,7 +880,7 @@ export default function LensTreeEditor({
                 )}
               </button>
             </div>
-          </aside>
+          </aside>}
         </div>
 
         {strandDrag?.active && (

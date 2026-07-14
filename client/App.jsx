@@ -193,6 +193,7 @@ import {
   buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
+  parseBeforeAfterCommand,
   parseExtensionDownloadCommand,
   parseFunctionOutputCommand,
   parseSaveChainCommand,
@@ -2225,7 +2226,12 @@ export default function App() {
   const [lasso, setLasso] = useState(null);
   const [jobs, setJobs] = useState([]); // background operations
   const [toast, setToast] = useState(null);
-  const [opEditor, setOpEditor] = useState(null);
+  const [opEditor, setOpEditor] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("learn") === "before-after"
+      ? { mode: "create", creationMode: "before-after" }
+      : null;
+  });
   const [expanded, setExpanded] = useState({});
   const [dropReady, setDropReady] = useState(false);
   const [dropTargetId, setDropTargetId] = useState(null);
@@ -5542,9 +5548,9 @@ export default function App() {
     showToast("Fresh start");
   }
 
-  function openCreateLens() {
+  function openCreateLens(creationMode = "editor") {
     emitTourEvent("open-function-editor");
-    setOpEditor({ mode: "create" });
+    setOpEditor({ mode: "create", creationMode: creationMode === "before-after" ? creationMode : "editor" });
   }
 
   function syncTransformationRepoForOperator(rootId, rootOp, { isNew = false, stepNames = [], commitMessage = "", commitKind = "commit" } = {}) {
@@ -7433,11 +7439,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
   function keepGrindExample(example) {
     try {
-      let added;
-      setGrindDraft((current) => {
-        added = addGrindExample(current, example);
-        return added;
-      });
+      const added = addGrindExample(grindDraft, example);
+      setGrindDraft(added);
       setGrindOpen(true);
       showToast(`${example.polarity === "negative" ? "negative " : ""}example kept`);
       return added;
@@ -11023,6 +11026,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     });
   }
 
+  function directBeforeAfter(detail) {
+    return new Promise((resolve, reject) => {
+      window.dispatchEvent(new CustomEvent("lens:before-after", {
+        detail: { ...detail, resolve, reject },
+      }));
+    });
+  }
+
   registerDirectorVerbs({
     caption: async (a, tk) => {
       tk.caption(a.text || "");
@@ -11810,6 +11821,118 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       ctx.vars.lastItemId = id;
       await tk.wait(500);
     },
+    openBeforeAfterCreation: async (a, tk) => {
+      const button = tk.elementCenter('[data-tour="new-transformation"]') || tk.elementCenter(".fn-head-btn");
+      if (button) await tk.click(button.x, button.y);
+      openCreateLens("before-after");
+      await tk.wait(650);
+      const target = tk.elementCenter("[data-before-after-editor]");
+      if (target) await tk.moveTo(target.x, target.y);
+      return { type: "before-after-draft", id: "active-before-after-draft" };
+    },
+    setBeforeAfterText: async (a, tk) => {
+      if (!document.querySelector("[data-before-after-editor]")) openCreateLens("before-after");
+      await tk.wait(300);
+      const selector = `textarea[aria-label="${a.side === "after" ? "After" : "Before"} text"]`;
+      const target = tk.elementCenter(selector);
+      if (target) await tk.click(target.x, target.y);
+      return directBeforeAfter({ type: "set-text", example: a.example, side: a.side, text: a.text });
+    },
+    attachSelectionToBeforeAfter: async (a, tk, ctx) => {
+      const item = directorResolveItem(a.target || "last", ctx);
+      const node = directorResolveAiNode(a.target || "last", ctx);
+      if (!item && !node) throw new Error("no selected object to attach");
+      if (!document.querySelector("[data-before-after-editor]")) openCreateLens("before-after");
+      await tk.wait(300);
+      const source = item || node;
+      const point = item ? directorItemClientCenter(item) : directorAiClientPoint(node.x, node.y);
+      await tk.moveTo(point.x, point.y);
+      await tk.press(source.text || source.label || "selection");
+      const slot = tk.elementCenter(`[aria-label="${a.side === "after" ? "After" : "Before"} example"]`);
+      if (slot) await tk.moveTo(slot.x, slot.y, 600);
+      await tk.release();
+      return directBeforeAfter({
+        type: "attach-object",
+        example: a.example,
+        side: a.side,
+        object: {
+          id: source.id,
+          type: item?.type || "ai-node",
+          label: source.label || String(source.text || source.preview || "").slice(0, 80),
+          text: source.text || source.expandedText || source.preview || "",
+        },
+      });
+    },
+    addBeforeAfterExample: async (a, tk) => {
+      const button = [...document.querySelectorAll("[data-before-after-editor] button")]
+        .find((entry) => entry.textContent?.includes("Add another example"));
+      const target = button ? tk.elementCenter(button) : null;
+      if (target) {
+        await tk.moveTo(target.x, target.y);
+        await tk.press();
+        await tk.release();
+      }
+      return directBeforeAfter({ type: "add-example" });
+    },
+    removeBeforeAfterExample: async (a, tk) => {
+      const result = await directBeforeAfter({ type: "remove-example", example: a.example });
+      await tk.wait(180);
+      return result;
+    },
+    inferBeforeAfterTransformation: async (a, tk) => {
+      const button = [...document.querySelectorAll("[data-before-after-editor] button")]
+        .find((entry) => /Infer transformation|Re-infer/.test(entry.textContent || ""));
+      const target = button ? tk.elementCenter(button) : null;
+      if (target) {
+        await tk.moveTo(target.x, target.y);
+        await tk.press();
+        await tk.release();
+      }
+      return directBeforeAfter({ type: "infer" });
+    },
+    chooseBeforeAfterAlternative: async (a, tk) => {
+      const alternatives = document.querySelectorAll(".ba-alternatives button");
+      const target = alternatives[Math.max(0, Number(a.alternative) - 1)];
+      const point = target ? tk.elementCenter(target) : null;
+      if (point) {
+        await tk.moveTo(point.x, point.y);
+        await tk.press();
+        await tk.release();
+      }
+      return directBeforeAfter({ type: "choose-alternative", alternative: Math.max(0, Number(a.alternative) - 1) });
+    },
+    editInferredFunctionSpec: async (a, tk) => {
+      const patch = {};
+      if (a.name != null) patch.name = a.name;
+      if (a.summary != null) patch.summary = a.summary;
+      if (a.operation != null) patch.operation = a.operation;
+      const target = tk.elementCenter(".ba-result");
+      if (target) await tk.moveTo(target.x, target.y);
+      return directBeforeAfter({ type: "edit-spec", patch });
+    },
+    useInferredFunction: async (a, tk, ctx) => {
+      const button = [...document.querySelectorAll(".ba-result-actions button")]
+        .find((entry) => entry.textContent?.includes("Use this"));
+      const target = button ? tk.elementCenter(button) : null;
+      if (target) {
+        await tk.moveTo(target.x, target.y);
+        await tk.press();
+        await tk.release();
+      }
+      const result = await directBeforeAfter({ type: "use" });
+      await tk.wait(450);
+      return result;
+    },
+    saveLearnedFunction: async (a, tk, ctx) => {
+      const save = [...document.querySelectorAll(".fn-foot button")]
+        .find((entry) => entry.textContent?.trim() === "Save");
+      if (!save) throw new Error("review and use an inferred transformation before saving");
+      const point = tk.elementCenter(save);
+      if (point) await tk.click(point.x, point.y);
+      else save.click();
+      await tk.wait(500);
+      return { type: "lens", id: "last", lensId: "last", name: "learned lens" };
+    },
     openFunctionEditor: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
       if (!op) throw new Error(`no function called “${a.op}”`);
@@ -12350,6 +12473,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (parseExtensionDownloadCommand(text)) {
       runDirectorScript([{ verb: "openExtensionDownload", args: {} }], {
         title: "open extension download",
+      });
+      return null;
+    }
+    const beforeAfterCommand = parseBeforeAfterCommand(text);
+    if (beforeAfterCommand) {
+      runDirectorScript([{ verb: beforeAfterCommand.verb, args: beforeAfterCommand.args }], {
+        title: "learn lens from examples",
       });
       return null;
     }

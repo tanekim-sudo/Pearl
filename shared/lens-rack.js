@@ -1,5 +1,6 @@
 import { contentFingerprint, stableOperatorContent } from "./lens-grammar.js";
 import { normalizeOutputSpec, outputContractLabel, suggestedOutputSpec } from "./output-specifications.js";
+import { examplesForPublicExport } from "./before-after-examples.js";
 
 export const LENS_PACK_VERSION = 1;
 export const RACK_RENDER_LIMIT = 120;
@@ -89,7 +90,7 @@ export function createLensPack(rootIds, operators, options = {}) {
   const packed = [...closure].map((id) => {
     const op = map[id];
     if (!op) throw new Error(`missing dependency ${id}`);
-    const portable = { ...op };
+    const portable = examplesForPublicExport(op, { includePrivateExamples: !!options.includePrivateExamples });
     if (!options.includePrivateExamples && portable.forgedFrom) {
       portable.forgedFrom = { ...portable.forgedFrom, exampleIds: [], examplesPrivate: true };
       delete portable.grindExamples;

@@ -3792,6 +3792,9 @@ body {
   max-height: none;
   border-radius: 14px;
 }
+body:has(.fn-editor-fullscreen) .companion-fab {
+  display: none;
+}
 .fn-head-sub {
   margin: 4px 0 0;
   font-size: 13px;
@@ -3811,6 +3814,237 @@ body {
   display: grid;
   grid-template-columns: 1fr min(380px, 34vw);
   min-height: 0;
+}
+.fn-editor-body-flow.before-after-mode {
+  grid-template-columns: 1fr;
+}
+.fn-editor-body-flow.before-after-mode .fn-flow-main {
+  border-right: 0;
+}
+.fn-head-btn.active {
+  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+.fn-flow-before-after {
+  padding: 18px;
+}
+.ba-editor {
+  display: grid;
+  gap: 14px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.ba-intro,
+.ba-example-head,
+.ba-actions,
+.ba-confidence,
+.ba-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ba-intro {
+  justify-content: space-between;
+}
+.ba-intro strong {
+  font-size: 18px;
+}
+.ba-intro p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.ba-intro > span,
+.ba-confidence span {
+  color: var(--faint);
+  font-size: 11px;
+}
+.ba-example-list {
+  display: grid;
+  gap: 12px;
+}
+.ba-example,
+.ba-result {
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+}
+.ba-example-head {
+  margin-bottom: 10px;
+}
+.ba-example-head > label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--faint);
+  font-size: 11px;
+}
+.ba-example-head > div {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.ba-example-head button,
+.ba-slot footer button,
+.ba-ink button,
+.ba-actions button,
+.ba-result-actions button {
+  border: 1px solid var(--line-2);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 7px;
+  padding: 6px 9px;
+  cursor: pointer;
+}
+.ba-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.ba-arrow {
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  color: var(--ink-2);
+}
+.ba-slot {
+  min-width: 0;
+  border: 1px dashed var(--line-2);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ba-slot:focus-within {
+  border-color: var(--ink);
+}
+.ba-slot header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ba-slot header span {
+  color: var(--faint);
+  font-size: 10px;
+}
+.ba-slot textarea,
+.ba-result input,
+.ba-result textarea {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 8px 10px;
+  resize: vertical;
+}
+.ba-slot footer {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+.ba-assets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ba-asset {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+  min-height: 42px;
+}
+.ba-asset img {
+  display: block;
+  width: 84px;
+  height: 62px;
+  object-fit: cover;
+}
+.ba-asset span {
+  display: block;
+  padding: 12px 34px 10px 9px;
+  color: var(--ink-2);
+  font-size: 11px;
+}
+.ba-asset button {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  border: 0;
+  background: var(--card);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ba-ink canvas {
+  display: block;
+  width: 100%;
+  height: 130px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.ba-ink > div {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+.ba-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.ba-actions > button:first-child {
+  margin-right: auto;
+}
+.ba-result {
+  display: grid;
+  gap: 10px;
+}
+.ba-result label {
+  display: grid;
+  gap: 5px;
+  color: var(--faint);
+  font-size: 11px;
+}
+.ba-result p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ba-confidence {
+  justify-content: space-between;
+}
+.ba-alternatives {
+  display: grid;
+  gap: 6px;
+}
+.ba-alternatives > b {
+  font-size: 12px;
+}
+.ba-alternatives button {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 8px;
+  cursor: pointer;
+}
+.ba-alternatives span {
+  color: var(--faint);
+  font-size: 11px;
+}
+.ba-result-actions {
+  justify-content: flex-end;
 }
 .fn-flow-main {
   display: flex;
@@ -5997,6 +6231,41 @@ body {
   color: var(--faint);
 }
 @media (max-width: 760px) {
+  .fn-scrim-full {
+    padding: 0;
+  }
+  .fn-editor-fullscreen {
+    border-radius: 0;
+  }
+  .fn-head {
+    flex-wrap: wrap;
+  }
+  .fn-head-actions {
+    width: 100%;
+  }
+  .fn-head-actions .fn-head-btn {
+    flex: 1;
+  }
+  .fn-flow-before-after {
+    padding: 10px;
+  }
+  .ba-pair {
+    grid-template-columns: 1fr;
+  }
+  .ba-arrow {
+    transform: rotate(90deg);
+    min-height: 20px;
+  }
+  .ba-intro {
+    align-items: flex-start;
+  }
+  .ba-example-head {
+    flex-wrap: wrap;
+  }
+  .ba-example-head > div {
+    width: 100%;
+    margin-left: 0;
+  }
   .fn-output-branch {
     flex-wrap: wrap;
   }

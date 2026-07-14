@@ -2,6 +2,7 @@
 
 import { extractCognitiveMeta } from "./cognitive-transfer.js";
 import { sourceDomainOf, transferUseCaseBullets } from "./cognitive-recognition.js";
+import { examplesForPublicExport } from "./before-after-examples.js";
 
 export const SHARE_BUNDLE_VERSION = 1;
 export const SHARE_QUERY_LIMIT = 1800;
@@ -16,11 +17,11 @@ export function createShareMeta(name, extra = {}) {
 
 export function createOperatorBundle(opTree, meta = {}) {
   if (!opTree) throw new Error("operator tree required");
-  const { cognitiveTransfer, ...restMeta } = meta;
+  const { cognitiveTransfer, includePrivateExamples, ...restMeta } = meta;
   const bundle = {
     v: SHARE_BUNDLE_VERSION,
     kind: "operator",
-    operators: [opTree],
+    operators: [examplesForPublicExport(opTree, { includePrivateExamples: !!includePrivateExamples })],
     meta: createShareMeta(meta.name || opTree.name, restMeta),
   };
   if (cognitiveTransfer) bundle.meta.cognitiveTransfer = cognitiveTransfer;
@@ -28,8 +29,13 @@ export function createOperatorBundle(opTree, meta = {}) {
 }
 
 export function createLensShareBundle(name, opTrees, meta = {}) {
-  const { version, parentName, forkedFromName, mergedFromNames, cognitiveTransfer, ...restMeta } = meta;
-  const lens = { name, opTrees };
+  const { version, parentName, forkedFromName, mergedFromNames, cognitiveTransfer, includePrivateExamples, ...restMeta } = meta;
+  const lens = {
+    name,
+    opTrees: (opTrees || []).map((tree) => examplesForPublicExport(tree, {
+      includePrivateExamples: !!includePrivateExamples,
+    })),
+  };
   if (version != null) lens.version = version;
   if (parentName) lens.parentName = parentName;
   if (forkedFromName) lens.forkedFromName = forkedFromName;

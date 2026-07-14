@@ -64,7 +64,7 @@ function extractMessageText(message) {
   return "";
 }
 
-async function chatCompletion({ model, messages, max_tokens, temperature, timeoutMs }) {
+async function chatCompletion({ model, messages, max_tokens, temperature, timeoutMs, signal }) {
   const hf = getClient();
   if (!hf) {
     const err = new Error("Server is missing HF_TOKEN.");
@@ -74,6 +74,8 @@ async function chatCompletion({ model, messages, max_tokens, temperature, timeou
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abort = () => controller.abort();
+  signal?.addEventListener?.("abort", abort, { once: true });
 
   try {
     const params = {
@@ -101,6 +103,7 @@ async function chatCompletion({ model, messages, max_tokens, temperature, timeou
     throw err;
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener?.("abort", abort);
   }
 }
 
@@ -109,12 +112,14 @@ export async function runPrompt({
   text,
   count = 1,
   image = null,
+  images = [],
   system = null,
   maxTokens = null,
   research = false,
   timeoutMs = PHASE_TIMEOUT.synthesizeComposite,
   temperature = null,
   compact = false,
+  signal = null,
 }) {
   if (!prompt || typeof prompt !== "string") {
     const err = new Error("A 'prompt' string is required.");
@@ -127,18 +132,21 @@ export async function runPrompt({
   const sys = buildSystem({ prompt, system, compact, research });
   const userText = buildUserText({ prompt, text, compact });
   const temp = temperature ?? (research ? 0.25 : compact ? 0.2 : 0.5);
-  const img = imageContent(image);
-  const model = img ? VISION_MODEL : MODEL;
+  const imageParts = [
+    imageContent(image),
+    ...(Array.isArray(images) ? images.slice(0, 8).map((entry) => imageContent(entry?.dataUrl || entry)) : []),
+  ].filter(Boolean);
+  const model = imageParts.length ? VISION_MODEL : MODEL;
 
   const makeOne = async () => {
     const userContent = [];
-    if (img) userContent.push(img);
+    userContent.push(...imageParts);
     userContent.push({ type: "text", text: userText });
 
     const messages = [{ role: "system", content: sys }];
     messages.push({
       role: "user",
-      content: img ? userContent : userText,
+      content: imageParts.length ? userContent : userText,
     });
 
     return chatCompletion({
@@ -147,6 +155,7 @@ export async function runPrompt({
       max_tokens,
       temperature: temp,
       timeoutMs,
+      signal,
     });
   };
 
@@ -160,5 +169,5 @@ export async function runPrompt({
     throw err;
   }
 
-  return { outputs, model: img ? VISION_MODEL : MODEL, research: !!research };
+  return { outputs, model: imageParts.length ? VISION_MODEL : MODEL, research: !!research };
 }

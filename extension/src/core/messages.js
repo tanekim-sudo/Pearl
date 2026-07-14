@@ -23,6 +23,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "library-import-preview",
   "library-import",
   "library-pending",
+  "infer-before-after",
 ]);
 
 const allowedKeys = new Set(["version", "type", "requestId", "payload"]);

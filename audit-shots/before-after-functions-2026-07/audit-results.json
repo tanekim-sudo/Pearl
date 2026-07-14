@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "flows": [
+    "empty",
+    "text",
+    "image",
+    "drawing",
+    "mixed",
+    "inference alternatives",
+    "editable output spec",
+    "saved function",
+    "narrow",
+    "retryable error",
+    "extension",
+    "companion execution"
+  ],
+  "modelNetwork": "Inference response mocked for deterministic visual audit; server integration is covered separately.",
+  "privateExamples": "Excluded from public packs by default."
+}

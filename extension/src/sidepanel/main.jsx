@@ -37,6 +37,10 @@ function App() {
   const [onboardingMode, setOnboardingMode] = useState("");
   const [auth, setAuth] = useState(false);
   const [readyMessage, setReadyMessage] = useState("");
+  const [learnOpen, setLearnOpen] = useState(false);
+  const [learnBefore, setLearnBefore] = useState("");
+  const [learnAfter, setLearnAfter] = useState("");
+  const [learning, setLearning] = useState(false);
   const fileRef = useRef(null);
 
   function applyLibrary(data) {
@@ -170,6 +174,39 @@ function App() {
     }
   }
 
+  function latestCapturedText() {
+    return session.fragments.map((fragment) => fragment.quote).join("\n\n").slice(0, 12_000);
+  }
+
+  async function inferBeforeAfter() {
+    if (!learnBefore.trim() || !learnAfter.trim()) return;
+    if (!auth) {
+      setError("Sign in to infer here, or open the web editor. Your draft stays in these fields.");
+      return;
+    }
+    setLearning(true);
+    setError("");
+    const value = await action("infer-before-after", {
+      version: 1,
+      private: true,
+      examples: [{
+        id: crypto.randomUUID(),
+        counterexample: false,
+        before: { text: learnBefore, assets: [], objectRefs: [] },
+        after: { text: learnAfter, assets: [], objectRefs: [] },
+      }],
+      idempotencyKey: crypto.randomUUID(),
+    });
+    if (value?.operator) {
+      applyLibrary(value.library);
+      setReadyMessage(`Learned lens “${value.operator.name}” is ready in the rack.`);
+      setLearnOpen(false);
+      setLearnBefore("");
+      setLearnAfter("");
+    }
+    setLearning(false);
+  }
+
   function continueLocal() {
     setOnboardingMode("local");
     setOnboardingStep(3);
@@ -217,6 +254,17 @@ function App() {
           await previewBundle(pending.bundle);
           return pending;
         },
+        openBeforeAfter: async () => {
+          setLearnOpen(true);
+          return { open: true };
+        },
+        setBeforeAfterText: async (side, text) => {
+          setLearnOpen(true);
+          if (side === "after") setLearnAfter(String(text || ""));
+          else setLearnBefore(String(text || ""));
+          return { side };
+        },
+        inferBeforeAfter,
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -285,6 +333,15 @@ function App() {
       <div className="fragments">{session.fragments.map((fragment) =>
         <article key={fragment.id}><q>{fragment.quote.slice(0, 180)}</q><small>{fragment.provenance.title} · {fragment.provenance.origin}</small><button aria-label="Remove fragment" onClick={() => action("remove-fragment", { id: fragment.id })}>×</button></article>
       )}</div>
+      <button className="learn-toggle" onClick={() => setLearnOpen((value) => !value)}>Learn from before/after</button>
+      {learnOpen && <div className="learn-panel" aria-label="Learn from before and after">
+        <p>Capture each selection explicitly, then place it in a slot.</p>
+        <label>Before<textarea rows="3" value={learnBefore} onChange={(event) => setLearnBefore(event.target.value)} placeholder="Paste text or use current capture" /></label>
+        <button onClick={() => setLearnBefore(latestCapturedText())} disabled={!characters}>Use current capture as Before</button>
+        <label>After<textarea rows="3" value={learnAfter} onChange={(event) => setLearnAfter(event.target.value)} placeholder="Paste text or use current capture" /></label>
+        <button onClick={() => setLearnAfter(latestCapturedText())} disabled={!characters}>Use current capture as After</button>
+        <div><button className="gold" disabled={learning || !learnBefore.trim() || !learnAfter.trim()} onClick={inferBeforeAfter}>{learning ? "Inferring…" : "Infer lens"}</button><a href="https://representation-eta.vercel.app/?learn=before-after" target="_blank" rel="noreferrer">Open full editor for images &amp; drawing</a></div>
+      </div>}
     </section>
     <section>
       <h2>Lens rack</h2>

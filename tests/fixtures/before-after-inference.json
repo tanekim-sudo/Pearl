@@ -1,0 +1,11 @@
+[
+  {"id":"prose-to-bullets","before":{"text":"A long prose status update with three decisions."},"after":{"text":"- Decision one\n- Decision two\n- Decision three"},"expect":["shared meaning","list"]},
+  {"id":"notes-to-investment-memo","before":{"text":"TAM 4b. founder ex-Stripe. churn 3%."},"after":{"text":"# Investment memo\n## Market\nThe market is estimated at $4B."},"expect":["memo structure","no invented facts"]},
+  {"id":"photo-to-line-drawing","before":{"visual":"photo fixture"},"after":{"visual":"line drawing fixture"},"expect":["image","style transformation","preserve composition"]},
+  {"id":"diagram-to-labeled-diagram","before":{"visual":"unlabeled diagram fixture"},"after":{"visual":"labeled diagram fixture"},"expect":["labels","preserve geometry"]},
+  {"id":"text-to-image","before":{"text":"a red chair beside a window"},"after":{"visual":"rendered scene fixture"},"expect":["text input","image output"]},
+  {"id":"ambiguous-one-pair","before":{"text":"Alpha"},"after":{"text":"ALPHA"},"expect":["low confidence","alternatives"]},
+  {"id":"shared-structure","examples":[{"before":{"text":"paragraph A"},"after":{"text":"- A"}},{"before":{"text":"paragraph B"},"after":{"text":"- B"}}],"expect":["shared operation","ignore subjects"]},
+  {"id":"content-substitution","examples":[{"before":{"text":"Alice likes tea."},"after":{"text":"Bob likes coffee."}}],"expect":["ambiguity","do not overgeneralize style"]},
+  {"id":"unsafe-upload","before":{"asset":{"mime":"image/svg+xml","body":"<svg><script/></svg>"}},"after":{"text":"x"},"expect":["reject before model"]}
+]

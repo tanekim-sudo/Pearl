@@ -108,6 +108,13 @@ test("extension companion manifest and real handlers have exact parity", async (
     action: async (type) => events.push(type),
   });
   assert.deepEqual(events, ["director-ghost-cursor", "capture-selection"]);
+  assert.equal(parseExtensionIntent("learn from before and after").name, "openExternalBeforeAfter");
+  let opened = false;
+  await executeExtensionVerb("openExternalBeforeAfter", {}, {
+    animate: async () => {},
+    openBeforeAfter: async () => { opened = true; },
+  });
+  assert.equal(opened, true);
 });
 
 test("specialist adapters use supported public integration boundaries", () => {

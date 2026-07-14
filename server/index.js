@@ -24,6 +24,7 @@ import {
   extensionGenerator,
   extensionLibrary,
 } from "./extension-api.js";
+import { inferBeforeAfterTransformation } from "./before-after-inference.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -37,7 +38,7 @@ if (!hasKey()) {
 const app = express();
 app.use(cors(corsOptions()));
 app.use(securityHeaders);
-app.use(express.json({ limit: "4mb" }));
+app.use(express.json({ limit: "7mb" }));
 app.use(attachLensUser);
 
 app.get("/api/health", (_req, res) => {
@@ -80,6 +81,18 @@ app.post("/api/run", async (req, res) => {
     console.error("[lens] /api/run failed:", err?.message || err);
     res.status(err?.status || 500).json({
       error: err?.error?.error?.message || err?.message || "Something went wrong calling the model.",
+    });
+  }
+});
+
+app.post("/api/infer-transformation", express.json({ limit: "7mb" }), async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  try {
+    res.json(await inferBeforeAfterTransformation(req.body || {}));
+  } catch (err) {
+    console.error("[lens] /api/infer-transformation failed:", err?.message || err);
+    res.status(err?.status || 500).json({
+      error: err?.message || "Could not infer the transformation. Your examples are preserved; retry.",
     });
   }
 });

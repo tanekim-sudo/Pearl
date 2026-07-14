@@ -227,6 +227,31 @@ export function parseFunctionOutputCommand(text) {
   return null;
 }
 
+/** Deterministic path for common before/after lens-authoring requests. */
+export function parseBeforeAfterCommand(text) {
+  const value = String(text || "").replace(/[’]/g, "'").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\b(?:add|give|show)\s+(?:me\s+)?another\s+(?:before\s*(?:\/|and)\s*after\s+)?example\b/i.test(value)) {
+    return { verb: "addBeforeAfterExample", args: {} };
+  }
+  if (/\b(?:infer|re-infer|learn|figure out)\b/i.test(value) && /\b(?:transformation|operation|lens|function|before|after)\b/i.test(value)) {
+    return { verb: "inferBeforeAfterTransformation", args: {} };
+  }
+  const set = value.match(/\b(?:set|make|use)\s+(?:the\s+)?(before|after)(?:\s+text)?\s+(?:to|as)\s+(.+)$/i);
+  if (set) return { verb: "setBeforeAfterText", args: { side: set[1].toLowerCase(), text: set[2].trim() } };
+  if (
+    /\b(?:make|create|build|learn)\b/i.test(value) &&
+    /\b(?:lens|function|transformation)\b/i.test(value) &&
+    /\bbefore\s*(?:\/|and|&)?\s*after\b/i.test(value)
+  ) {
+    return { verb: "openBeforeAfterCreation", args: {} };
+  }
+  if (/\bthis\s+(?:image|drawing|text|selection)\s+became\s+that\s+(?:image|drawing|text|selection)\b/i.test(value)) {
+    return { verb: "openBeforeAfterCreation", args: {} };
+  }
+  return null;
+}
+
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");

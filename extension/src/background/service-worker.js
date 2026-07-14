@@ -3,8 +3,9 @@ import { apiRequest, authStatus, login, openArtifact } from "./api-client.js";
 import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
-import { importLibraryFile, mergeRemoteLibrary, previewLibraryFile, readLocalLibrary } from "./library-store.js";
+import { importLibraryFile, mergeRemoteLibrary, previewLibraryFile, readLocalLibrary, writeLocalLibrary } from "./library-store.js";
 import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
+import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../../shared/before-after-examples.js";
 
 const runs = new Map();
 
@@ -148,6 +149,26 @@ async function handle(message) {
   if (type === "library-pending") {
     const stored = await BrowserPlatform.storage.get("local", ["pendingLibraryHandoff"]);
     return stored.pendingLibraryHandoff || null;
+  }
+  if (type === "infer-before-after") {
+    const examples = normalizeBeforeAfterExamples(payload);
+    const inferred = await apiRequest("/api/infer-transformation", {
+      method: "POST",
+      body: examples,
+      idempotencyKey: payload.idempotencyKey || crypto.randomUUID(),
+    });
+    const operator = inferenceResultToOperator(inferred.specification, examples, crypto.randomUUID());
+    const local = await readLocalLibrary();
+    const updated = await writeLocalLibrary({ ...local, operators: [...local.operators, operator] });
+    try {
+      await apiRequest("/api/extension/library", {
+        method: "POST",
+        body: { operators: updated.operators, generators: updated.generators, rack: updated.rack },
+      });
+    } catch {
+      // The learned lens remains local and merges on a later authenticated refresh.
+    }
+    return { operator, library: updated };
   }
   if (type === "open-artifact") {
     const created = await apiRequest("/api/extension/artifacts", { method: "POST", body: payload });
