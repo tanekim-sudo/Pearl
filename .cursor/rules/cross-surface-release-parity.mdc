@@ -1,0 +1,25 @@
+---
+description: Require every feature change to work across the app, companion, and extension
+alwaysApply: true
+---
+
+# Cross-Surface Release Parity
+
+A user-facing change is not complete until it is applied, usable, and verified on every relevant surface:
+
+- Web/Vercel app
+- Companion/director
+- Browser extension
+
+For each change:
+
+1. Identify which surfaces are relevant and implement the real behavior on each. Share runtime/state handlers where practical; do not create mock parity.
+2. Update the companion capability manifest, planner/director verb, and animation whenever the behavior can be performed or demonstrated by the companion.
+3. Update the extension UI, background/content bridge, storage/sync, and authenticated or anonymous flow whenever the capability is meaningful outside the web app.
+4. Preserve account-neutral IDs and idempotent synchronization so repeated login, import, reload, or handoff cannot duplicate or lose work.
+5. Verify direct manipulation and companion execution produce equivalent persisted results.
+6. Test the web app and extension at production-build settings, including narrow side-panel layout, anonymous and signed-in states, failure recovery, and relevant browser interaction.
+7. Add or update automated tests for cross-surface parity and perform a focused real-user flow before shipping.
+8. Never report completion for UI that is unreachable, a handler that is not wired, a companion verb that only pretends to act, or an extension feature that cannot use the resulting data.
+
+If a surface cannot support the capability because of a browser/platform restriction, implement the safest functional fallback and state the precise limitation.
