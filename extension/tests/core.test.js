@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { createMessage, validateMessage, assertTrustedSender } from "../src/core/messages.js";
 import { isOriginDenied, safeExternalUrl, sanitizeHtml, treatPageAsMaterial } from "../src/core/security.js";
 import { privacySafeGeneratorExport } from "../src/core/portable.js";
-import { createInsertionPlan, createLensRuntime, createMaterialFragment } from "../../shared/lens-runtime.js";
+import { createExecutionResult, createInsertionPlan, createLensRuntime, createMaterialFragment } from "../../shared/lens-runtime.js";
 import { executeExtensionVerb, parseExtensionIntent, validateExtensionVerbParity } from "../src/sidepanel/companion.js";
 import { adapterForUrl } from "../src/content/adapters/specialists.js";
 import { validateExternalAction, validateExternalHandoff } from "../src/core/external-handoff.js";
 import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle } from "../../shared/lens-library.js";
+import { normalizeOutputSpec, suggestedOutputSpec } from "../../shared/output-specifications.js";
 
 test("strict messages reject spoofed fields and oversized payloads", () => {
   assert.equal(validateMessage(createMessage("go", {})).ok, true);
@@ -64,10 +65,28 @@ test("generator export excludes source by default", () => {
 });
 
 test("preview actions are safe and conflict metadata is retained", () => {
-  const plan = createInsertionPlan({ operation: "replace", revision: "old", proposedText: "new", undo: { text: "old" } });
+  const outputSpec = normalizeOutputSpec({ ...suggestedOutputSpec({ name: "Comparison table" }), machineKind: "table" });
+  const plan = createInsertionPlan({ operation: "replace", revision: "old", proposedText: "new", undo: { text: "old" }, machineKind: "table", outputSpec });
   assert.equal(plan.operation, "replace");
   assert.equal(plan.revision, "old");
   assert.equal(plan.undo.text, "old");
+  assert.equal(plan.formatting, "rich");
+  assert.equal(plan.outputSpec.machineKind, "table");
+});
+
+test("extension execution results preserve staged branch types and stable provenance", () => {
+  const outputSpec = normalizeOutputSpec({
+    version: 1,
+    mode: "override",
+    machineKind: "multi",
+    branches: [
+      { id: "brief", label: "one-page brief", spec: suggestedOutputSpec({ name: "brief" }) },
+      { id: "memo", label: "investment memo", spec: suggestedOutputSpec({ name: "memo" }) },
+    ],
+  });
+  const result = createExecutionResult({ runId: "run", outputSpec, outputs: ["brief", "memo"] });
+  assert.deepEqual(result.outputs.map((output) => output.branchId), ["brief", "memo"]);
+  assert.deepEqual(result.outputs.map((output) => output.semanticType), ["one-page brief", "investment memo"]);
 });
 
 test("highlight and queue remain inert until GO", async () => {

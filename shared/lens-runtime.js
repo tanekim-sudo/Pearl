@@ -5,6 +5,7 @@ import {
   contentFingerprint,
   previewCompositionSequence,
 } from "./lens-grammar.js";
+import { normalizeOutputSpec, typedExecutionOutputs } from "./output-specifications.js";
 
 export const LENS_RUNTIME_VERSION = 1;
 export const MATERIAL_FRAGMENT_VERSION = 1;
@@ -147,7 +148,11 @@ export function createExecutionRequest({ fragments, queue, generator = null, ide
     version: EXECUTION_REQUEST_VERSION,
     idempotencyKey: String(idempotencyKey || globalThis.crypto?.randomUUID?.() || `run-${Date.now()}`),
     fragments: fragments.map((entry) => clone(entry)),
-    queue: queue.map((entry) => ({ id: entry.id, version: Number(entry.version) || 1 })),
+    queue: queue.map((entry) => ({
+      id: entry.id,
+      version: Number(entry.version) || 1,
+      ...(entry.outputSpec ? { outputSpec: normalizeOutputSpec(entry.outputSpec, entry) } : {}),
+    })),
     generator: generator ? { id: generator.id, mode: generator.mode || "source" } : null,
     disclosure: {
       characters,
@@ -157,11 +162,20 @@ export function createExecutionRequest({ fragments, queue, generator = null, ide
 }
 
 export function createExecutionResult(input = {}) {
-  const outputs = (input.outputs || []).slice(0, HARD_OUTPUT_CAP).map((entry, index) => immutable({
+  const rawOutputs = input.outputSpec
+    ? typedExecutionOutputs(input.outputs || [], input.outputSpec, {}, { runId: input.runId })
+    : (input.outputs || []);
+  const outputs = rawOutputs.slice(0, HARD_OUTPUT_CAP).map((entry, index) => immutable({
     id: String(entry.id || `output-${index}`),
     text: String(entry.text ?? entry.output ?? entry),
     html: String(entry.html || ""),
     lineage: clone(entry.lineage || []),
+    outputSpec: entry.outputSpec ? normalizeOutputSpec(entry.outputSpec, entry) : null,
+    semanticType: String(entry.semanticType || entry.outputSpec?.semanticType || ""),
+    machineKind: String(entry.machineKind || entry.outputSpec?.machineKind || "text"),
+    branchId: entry.branchId == null ? null : String(entry.branchId),
+    branchIndex: Number.isInteger(entry.branchIndex) ? entry.branchIndex : null,
+    branchProvenance: clone(entry.provenance || entry.branchProvenance || null),
   }));
   return immutable({
     kind: "lens-execution-result",
@@ -189,7 +203,9 @@ export function createInsertionPlan(input = {}) {
     originalHtml: String(input.originalHtml || ""),
     proposedText: String(input.proposedText || ""),
     operation,
-    formatting: input.formatting === "rich" ? "rich" : "plain",
+    formatting: input.formatting === "rich" || ["richText", "table"].includes(input.machineKind) ? "rich" : "plain",
+    machineKind: String(input.machineKind || "text"),
+    outputSpec: input.outputSpec ? normalizeOutputSpec(input.outputSpec) : null,
     undo: clone(input.undo || {}),
   });
 }

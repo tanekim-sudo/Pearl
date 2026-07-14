@@ -8,8 +8,14 @@ export const EXTENSION_VERBS = Object.freeze({
   previewExternalGo: ({ readPreview }) => Promise.resolve(readPreview()),
   pressExternalGo: ({ args, pressGo }) => pressGo(args),
   copyExternalResult: ({ args, resolveResult }) => navigator.clipboard.writeText(resolveResult(args.result).text),
-  insertExternalResult: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "insert" } }),
-  replaceExternalSelection: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "replace" } }),
+  insertExternalResult: ({ args, action, resolveResult }) => {
+    const result = resolveResult(args.result);
+    return action("result-action", { text: result.text, outputSpec: result.outputSpec, machineKind: result.machineKind, plan: { operation: "insert" } });
+  },
+  replaceExternalSelection: ({ args, action, resolveResult }) => {
+    const result = resolveResult(args.result);
+    return action("result-action", { text: result.text, outputSpec: result.outputSpec, machineKind: result.machineKind, plan: { operation: "replace" } });
+  },
   annotateExternalResult: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "annotate" } }),
   openExternalArtifact: ({ args, action, resolveResult }) => action("open-artifact", { result: resolveResult(args.result) }),
   showExternalLibraryImport: ({ showImport }) => showImport(),

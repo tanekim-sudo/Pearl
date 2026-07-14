@@ -1,9 +1,11 @@
 import { contentFingerprint, stableOperatorContent } from "./lens-grammar.js";
+import { normalizeOutputSpec, outputContractLabel, suggestedOutputSpec } from "./output-specifications.js";
 
 export const LENS_PACK_VERSION = 1;
 export const RACK_RENDER_LIMIT = 120;
 
 export function lensRackRecord(op, meta = {}) {
+  const outputSpec = op.outputSpec ? normalizeOutputSpec(op.outputSpec, op) : suggestedOutputSpec(op);
   return {
     id: op.id,
     opId: op.id,
@@ -16,6 +18,8 @@ export function lensRackRecord(op, meta = {}) {
     domains: [...new Set([...(op.domains || []), ...(meta.domains || [])])],
     componentNames: (op.composition?.components || []).map((entry) => entry.name).filter(Boolean),
     outputCount: Number(op.outputCount) || 1,
+    outputSpec,
+    outputContract: outputContractLabel(outputSpec),
     stepCount: op.kind === "pipeline" ? op.steps?.length || 0 : 1,
     pinned: !!meta.pinned,
     archivedAt: meta.archivedAt || null,

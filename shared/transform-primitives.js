@@ -2,6 +2,7 @@
 
 import { scaleEta } from "./eta.js";
 import { PRIMITIVE_SYSTEM } from "./primitive-output.js";
+import { migrateOperatorOutputSpecs } from "./output-specifications.js";
 
 export { PRIMITIVE_SYSTEM };
 
@@ -184,7 +185,7 @@ export function estimatePrimitiveMs(op, material) {
 
 /** Merge saved operators with canonical primitive definitions; keep user role/top functions. */
 export function migrateOperatorStore(saved) {
-  if (!Array.isArray(saved)) return TRANSFORM_PRIMITIVES.map((p) => ({ ...p }));
+  if (!Array.isArray(saved)) return migrateOperatorOutputSpecs(TRANSFORM_PRIMITIVES.map((p) => ({ ...p })));
 
   const userOps = saved.filter(
     (o) =>
@@ -231,12 +232,12 @@ export function migrateOperatorStore(saved) {
     (o) => keepIds.has(o.id) && !overrideByName.has(o.name) && !userOps.some((u) => u.id === o.id)
   );
 
-  return [
+  return migrateOperatorOutputSpecs([
     ...TRANSFORM_PRIMITIVES.map((p) => {
       const edited = overrideByName.get(p.name);
       return edited ? { ...edited } : { ...p };
     }),
     ...overrideSubtree,
     ...userOps,
-  ];
+  ]);
 }

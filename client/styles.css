@@ -5931,3 +5931,76 @@ body {
   border-color: var(--chalk-yellow-deep);
   opacity: 1;
 }
+
+.fn-output-controls {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.fn-output-title,
+.fn-output-branch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fn-output-title span {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.fn-output-contract {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.fn-output-branches {
+  display: grid;
+  gap: 5px;
+}
+.fn-output-branch input {
+  min-width: 0;
+  flex: 1;
+}
+.fn-output-branch select {
+  width: 92px;
+}
+.fn-output-branch button {
+  width: 25px;
+  padding: 4px 0;
+}
+.fn-output-advanced {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.fn-output-advanced textarea {
+  grid-column: 1 / -1;
+}
+.fn-output-advanced-toggle,
+.fn-output-reset {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font-size: 11px;
+  padding: 0;
+}
+.fn-output-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--faint);
+}
+@media (max-width: 760px) {
+  .fn-output-branch {
+    flex-wrap: wrap;
+  }
+  .fn-output-branch input {
+    flex-basis: calc(100% - 110px);
+  }
+}

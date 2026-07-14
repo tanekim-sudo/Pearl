@@ -8,6 +8,7 @@ import {
   looksLikeProfileAnswer,
   parseAdministrativeCommand,
   parseExtensionDownloadCommand,
+  parseFunctionOutputCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
@@ -22,6 +23,21 @@ test("compound administrative command composes every requested clear domain", ()
     kind: "clear-workspace",
     domains: ["paper", "ai", "lenses", "generators"],
   });
+});
+
+test("function output edits use deterministic real capability paths", () => {
+  assert.deepEqual(
+    parseFunctionOutputCommand("make this function output an investment memo and a one-page brief"),
+    {
+      verb: "editFunctionOutput",
+      args: { op: "last", outputs: ["investment memo", "one-page brief"] },
+    }
+  );
+  assert.deepEqual(parseFunctionOutputCommand("change the second branch to a table"), {
+    verb: "editFunctionBranchOutput",
+    args: { op: "last", branch: 2, label: "table", machineKind: "table" },
+  });
+  assert.equal(parseFunctionOutputCommand("tell me about tables"), null);
 });
 
 test("extension download requests use the deterministic local path", () => {

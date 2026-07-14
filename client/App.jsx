@@ -16,6 +16,15 @@ import {
   branchOutputNames,
 } from "../shared/operator-branching.js";
 import {
+  deriveOutputSpec,
+  migrateOperatorOutputSpecs,
+  normalizeOutputSpec,
+  outputContractFor,
+  outputContractPrompt,
+  outputContractLabel,
+  resetOutputSpec,
+} from "../shared/output-specifications.js";
+import {
   addBranchAtStep,
   addLeafStep as ftAddLeafStep,
   buildDraftMap as ftBuildDraftMap,
@@ -185,6 +194,7 @@ import {
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
   parseExtensionDownloadCommand,
+  parseFunctionOutputCommand,
   parseSaveChainCommand,
   parseCompanionPlan,
   parseCompanionReply,
@@ -901,7 +911,7 @@ function materializeTree(node, role, top, out, opts = {}) {
   const description = (node.description || "").trim();
   if (Array.isArray(node.steps) && node.steps.length) {
     const steps = node.steps.map((s) => materializeTree(s, role, false, out, opts));
-    const pipeline = { id, name, description, kind: "pipeline", steps, role, top };
+    const pipeline = { id, name, description, kind: "pipeline", steps, role, top, ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}) };
     if (node.fork) pipeline.fork = true;
     if (captured) pipeline.captured = true;
     if (captureMeta && top) pipeline.captureMeta = captureMeta;
@@ -917,11 +927,12 @@ function materializeTree(node, role, top, out, opts = {}) {
       top,
       captured,
       research: !!node.research,
+      ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}),
     });
   } else {
     const prompt = (node.prompt || "").trim() || buildDefaultLeafPrompt(name, description);
     const research = !!node.research;
-    const leaf = { id, name, description, kind: "prompt", prompt, role, top, research };
+    const leaf = { id, name, description, kind: "prompt", prompt, role, top, research, ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}) };
     if (node.moveRef) leaf.moveRef = node.moveRef;
     if (captured) leaf.captured = true;
     out.push(leaf);
@@ -973,7 +984,7 @@ function serializeTree(node, opMap, depth = 0) {
 
 function opToJsonTree(op, opMap) {
   if (!op) return null;
-  const base = { name: op.name || "function", description: op.description || "" };
+  const base = { name: op.name || "function", description: op.description || "", ...(op.outputSpec ? { outputSpec: op.outputSpec } : {}) };
   if (op.kind === "pipeline" && op.steps?.length) {
     return {
       ...base,
@@ -3130,6 +3141,10 @@ export default function App() {
           insertBlock(node.outputBlockType, {
             atWorld: { x: atWorld.x, y: atWorld.y + yOffset },
             text,
+            outputSpec: node.outputSpec,
+            semanticType: node.semanticType,
+            outputBranchId: node.outputBranchId,
+            outputId: node.outputId,
           });
         } else {
           spawnTextAtWorld(text, { x: atWorld.x, y: atWorld.y + yOffset }, {
@@ -3141,6 +3156,10 @@ export default function App() {
             // sequences rely on the per-step history recorded below.
             via: lineage.length === 1 ? lineage[0] : undefined,
             lineageVias: lineage,
+            outputSpec: node.outputSpec,
+            semanticType: node.semanticType,
+            outputBranchId: node.outputBranchId,
+            outputId: node.outputId,
           });
         }
         if (fragment) {
@@ -4906,6 +4925,13 @@ export default function App() {
         error: null,
         label: truncateLabel(via?.name || text.slice(0, 24) || "Output"),
         ...(via ? { via, opId: via.opId || node.opId || null, opLabel: via.name || node.opLabel || null } : {}),
+        ...(opts.outputSpec ? {
+          outputSpec: normalizeOutputSpec(opts.outputSpec),
+          semanticType: opts.semanticType || opts.outputSpec.semanticType,
+          outputMachineKind: opts.outputSpec.machineKind,
+          outputBranchId: opts.branchId || null,
+          outputId: opts.outputId || `${node.id}:${opts.branchId || "single"}`,
+        } : {}),
       });
       nodes.push(node);
       if (opts.blockType && opts.blockType !== "text") {
@@ -4930,6 +4956,7 @@ export default function App() {
     const plan = buildBranchPlan(execOp, map);
     const outputNames = branchOutputNames(execOp, map);
     const totalOutputs = outputNames.length;
+    const contract = outputContractFor(execOp, map);
     patchJob(jobId, {
       step: `${execOp.name} · ${totalOutputs} outputs`,
       startedAt: Date.now(),
@@ -4957,6 +4984,11 @@ export default function App() {
         return;
       }
       const lastOp = map[node.segments[node.segments.length - 1]] || execOp;
+      const branchSpec = contract.branches[produced - 1] || {
+        id: null,
+        label: contract.semanticType,
+        spec: contract,
+      };
       produced += 1;
       onProgress(`output ${produced}/${totalOutputs} · ${lastOp.name || "output"}`);
       let polished = isTransformPrimitive(lastOp)
@@ -4967,7 +4999,14 @@ export default function App() {
         [polished],
         targetIds,
         { ...viaFromOp(execOp, targetIds), name: `${execOp.name} · ${lastOp.name || "output"}` },
-        { sourcePreview: opts.sourcePreview, blockType: opts.blockType }
+        {
+          sourcePreview: opts.sourcePreview,
+          blockType: opts.blockType,
+          outputSpec: branchSpec.spec,
+          semanticType: branchSpec.label,
+          branchId: branchSpec.id,
+          outputId: `${jobId}:${branchSpec.id || produced}`,
+        }
       );
     }
 
@@ -5020,9 +5059,9 @@ export default function App() {
       }
       const count = operatorOutputCount(op, map) || 1;
       const contractInput =
-        count > 1
-          ? `${input}\n\n[OUTPUT CONTRACT: produce exactly ${count} distinct, self-contained outputs. Separate them with one blank line. No numbering or commentary.]`
-          : input;
+        `${input}\n\n${outputContractPrompt(op, map)}${count > 1
+          ? `\n[Produce exactly ${count} distinct, self-contained outputs. Separate them with one blank line. No numbering or commentary.]`
+          : ""}`;
       onProgress(`${op.name || "step"} · ${count} output${count === 1 ? "" : "s"}`);
       const raw = await runMoveSequenceStep(op, map, contractInput, firstImage, onProgress, operators);
       return splitDeclaredOutputs(raw, count).map((text, outputIndex) => ({
@@ -5043,7 +5082,11 @@ export default function App() {
         [output.text],
         targetIds,
         { ...viaFromOp(execOp, targetIds), componentLineage: output.lineage },
-        { sourcePreview: opts.sourcePreview, blockType: execOp.outputBlockType || null }
+        {
+          sourcePreview: opts.sourcePreview,
+          blockType: execOp.outputBlockType || null,
+          outputSpec: outputContractFor(execOp, map),
+        }
       );
     }
   }
@@ -5115,6 +5158,8 @@ export default function App() {
     // Declared output contract: a lens can ask for N distinct outputs.
     const wantedOutputs = Number(execOp.outputCount) > 1 ? Math.min(6, Number(execOp.outputCount)) : 1;
     const outputBlockType = execOp.outputBlockType || null;
+    const outputSpec = outputContractFor(execOp, map);
+    text = `${text}\n\n${outputContractPrompt(outputSpec)}`;
     if (wantedOutputs > 1) {
       text = `${text}\n\n[OUTPUT CONTRACT: produce exactly ${wantedOutputs} distinct, self-contained outputs. Separate them with one blank line between each. No numbering, no meta commentary.]`;
     }
@@ -5178,7 +5223,7 @@ export default function App() {
     }
 
     if (execOp.multi || wantedOutputs > 1) {
-      const spawnOpts = { sourcePreview: gathered.preview, blockType: outputBlockType };
+      const spawnOpts = { sourcePreview: gathered.preview, blockType: outputBlockType, outputSpec };
       const parts = out
         .split(/\n{2,}/)
         .map((p) => p.replace(/^\s*(?:\[[^\]]+\]|[-*•]|\d+[.)])\s*/m, "").trim())
@@ -5217,6 +5262,7 @@ export default function App() {
     spawnAiOutputs([out], targetIds, viaFromOp(execOp, targetIds), {
       sourcePreview: gathered.preview,
       blockType: outputBlockType,
+      outputSpec,
     });
   }
 
@@ -5673,6 +5719,7 @@ export default function App() {
   }
 
   function saveLensTree(oldRootId, newOps, { commitMessage = "" } = {}) {
+    newOps = migrateOperatorOutputSpecs(newOps);
     const draftRootId = newOps.length
       ? newOps.find((o) => o.top || o.kind === "pipeline")?.id || newOps[0]?.id
       : null;
@@ -10375,6 +10422,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       world: worldFilter || null,
       bornFrom: opts.sourceIds || undefined,
       via: opts.via || undefined,
+      outputSpec: opts.outputSpec || undefined,
+      semanticType: opts.semanticType || undefined,
+      outputBranchId: opts.outputBranchId || undefined,
+      outputId: opts.outputId || undefined,
     });
     setItems((arr) => [...arr, item]);
     setSelection([id]);
@@ -10384,6 +10435,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       textSnapshot: clean,
       aiNodeId: opts.aiNodeId,
       outputPreview: truncatePreview(clean, 120),
+      outputSpec: opts.outputSpec,
+      semanticType: opts.semanticType,
+      outputBranchId: opts.outputBranchId,
+      outputId: opts.outputId,
     });
     // The object carries the sequence of steps that produced it — and only that.
     for (const v of opts.lineageVias || []) {
@@ -11828,6 +11883,129 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       ctx.vars.lastOpId = op.id;
       await tk.wait(800);
     },
+    inspectFunctionOutput: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      const contract = outputContractFor(op, opMap);
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      openEditLens(op);
+      await tk.wait(700);
+      return {
+        type: "function-output-specification",
+        lensId: op.id,
+        id: op.id,
+        label: outputContractLabel(contract),
+        outputSpec: contract,
+      };
+    },
+    editFunctionOutput: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      const current = outputContractFor(op, opMap);
+      let outputSpec;
+      if (Array.isArray(a.outputs) && a.outputs.length > 1) {
+        const labels = a.outputs.map((label) => String(label || "").trim()).filter(Boolean).slice(0, 64);
+        if (labels.length < 2) throw new Error("provide at least two output types");
+        outputSpec = normalizeOutputSpec({
+          version: 1,
+          mode: "override",
+          machineKind: "multi",
+          branches: labels.map((label, index) => ({
+            id: current.branches[index]?.id || `branch:${op.id}:custom-${index + 1}`,
+            label,
+            spec: {
+              version: 1,
+              mode: "custom",
+              semanticType: label,
+              machineKind: "text",
+              cardinality: { min: 1, max: 1 },
+            },
+          })),
+        }, op);
+      } else {
+        outputSpec = normalizeOutputSpec({
+          ...current,
+          mode: "custom",
+          ...(a.semanticType?.trim() ? { semanticType: a.semanticType.trim() } : {}),
+          ...(a.machineKind ? { machineKind: a.machineKind } : {}),
+          ...(a.description != null ? { description: a.description } : {}),
+          ...(a.instructions != null ? { instructions: a.instructions } : {}),
+          ...(a.cardinality != null ? { cardinality: { min: Number(a.cardinality), max: Number(a.cardinality) } } : {}),
+          branches: [],
+        }, op);
+      }
+      const next = { ...op, outputSpec, outputCount: outputSpec.cardinality.max };
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      setOperators((items) => items.map((item) => item.id === op.id ? next : item));
+      openEditLens(next);
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(750);
+      return { type: "function-output-specification", lensId: op.id, id: op.id, outputSpec };
+    },
+    editFunctionBranchOutput: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      const current = outputContractFor(op, opMap);
+      if (!current.branches.length) throw new Error(`“${op.name}” does not have branch outputs`);
+      const index = typeof a.branch === "number"
+        ? Number(a.branch) - 1
+        : current.branches.findIndex((branch) => branch.id === a.branch || branch.label.toLowerCase() === String(a.branch).toLowerCase());
+      if (index < 0 || index >= current.branches.length) throw new Error("branch output was not found");
+      const branches = current.branches.map((branch, branchIndex) => branchIndex === index ? {
+        ...branch,
+        ...(a.label?.trim() ? { label: a.label.trim() } : {}),
+        spec: normalizeOutputSpec({
+          ...branch.spec,
+          mode: "custom",
+          ...(a.machineKind ? { machineKind: a.machineKind } : {}),
+          ...(a.label?.trim() ? { semanticType: a.label.trim() } : {}),
+        }, branch.spec, { nested: true }),
+      } : branch);
+      if (a.to != null) {
+        const [moved] = branches.splice(index, 1);
+        branches.splice(Math.max(0, Math.min(branches.length, Number(a.to) - 1)), 0, moved);
+      }
+      const outputSpec = normalizeOutputSpec({ ...current, mode: "override", machineKind: "multi", branches }, op);
+      const next = { ...op, outputSpec, outputCount: branches.length };
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      setOperators((items) => items.map((item) => item.id === op.id ? next : item));
+      openEditLens(next);
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(750);
+      return { type: "function-output-specification", lensId: op.id, id: op.id, outputSpec };
+    },
+    setFunctionOutputMode: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      if (!["derived", "override"].includes(a.mode)) throw new Error("output mode must be derived or override");
+      const outputSpec = a.mode === "derived"
+        ? { ...deriveOutputSpec({ ...op, outputSpec: undefined }, opMap), mode: "derived" }
+        : { ...outputContractFor(op, opMap), mode: "override" };
+      const next = { ...op, outputSpec, outputCount: outputSpec.cardinality.max };
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      setOperators((items) => items.map((item) => item.id === op.id ? next : item));
+      openEditLens(next);
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(700);
+      return { type: "function-output-specification", lensId: op.id, id: op.id, outputSpec };
+    },
+    resetFunctionOutput: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.op, ctx);
+      if (!op) throw new Error(`no function called “${a.op}”`);
+      const outputSpec = resetOutputSpec({ ...op, outputSpec: undefined }, opMap);
+      const next = { ...op, outputSpec, outputCount: outputSpec.cardinality.max };
+      const row = directorOpRowCenter(tk, op);
+      if (row) await tk.click(row.x, row.y);
+      setOperators((items) => items.map((item) => item.id === op.id ? next : item));
+      openEditLens(next);
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(700);
+      return { type: "function-output-specification", lensId: op.id, id: op.id, outputSpec };
+    },
     // ---- lens structure: steps + branches, same edits the tree editor makes ----
     addFunctionStep: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
@@ -12170,6 +12348,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (parseExtensionDownloadCommand(text)) {
       runDirectorScript([{ verb: "openExtensionDownload", args: {} }], {
         title: "open extension download",
+      });
+      return null;
+    }
+    const outputCommand = parseFunctionOutputCommand(text);
+    if (outputCommand) {
+      runDirectorScript([{ verb: outputCommand.verb, args: outputCommand.args }], {
+        title: "edit function output",
       });
       return null;
     }

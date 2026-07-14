@@ -5,6 +5,7 @@
  * trees are copied into the compound while their source ids, versions and
  * content hashes remain on the root for provenance and reproducibility.
  */
+import { deriveOutputSpec, normalizeOutputSpec, suggestedOutputSpec } from "./output-specifications.js";
 
 export const LENS_GRAMMAR_VERSION = 2;
 export const DEFAULT_OUTPUT_CONFIRM_CAP = 16;
@@ -24,6 +25,7 @@ export function stableOperatorContent(op, opMap, seen = new Set()) {
     outputType: op.outputType || op.outputBlockType || "text",
     inputArity: asCount(op.inputArity),
     outputCount: asCount(op.outputCount),
+    outputSpec: op.outputSpec ? normalizeOutputSpec(op.outputSpec, op) : suggestedOutputSpec(op),
     fork: !!op.fork,
   };
   if (op.kind === "pipeline") {
@@ -45,7 +47,7 @@ export function contentFingerprint(value) {
 export function operatorOutputCount(op, opMap, seen = new Set()) {
   if (!op || seen.has(op.id)) return 0;
   seen.add(op.id);
-  if (op.kind !== "pipeline") return asCount(op.outputCount);
+  if (op.kind !== "pipeline") return asCount(op.outputCount || op.outputSpec?.cardinality?.max);
   const steps = (op.steps || []).map((id) => opMap[id]).filter(Boolean);
   if (!steps.length) return asCount(op.outputCount);
   let count = 1;
@@ -66,7 +68,7 @@ export function operatorOutputCount(op, opMap, seen = new Set()) {
 export function operatorContract(op, opMap) {
   return {
     inputType: op?.inputType || "text",
-    outputType: op?.outputType || op?.outputBlockType || "text",
+    outputType: op?.outputType || (op?.outputSpec?.machineKind === "multi" ? "text" : op?.outputSpec?.machineKind) || op?.outputBlockType || "text",
     inputArity: asCount(op?.inputArity),
     outputCount: operatorOutputCount(op, opMap) || 1,
   };
@@ -199,6 +201,13 @@ export function createCompoundOperator(first, second, opMap, options = {}) {
     inputType: preview.inputContract.type,
     outputType: preview.outputContract.type,
     outputCount: preview.outputContract.count,
+    outputSpec: {
+      ...deriveOutputSpec(b.rootId ? b.ops.find((op) => op.id === b.rootId) : second, {
+        ...opMap,
+        ...Object.fromEntries([...a.ops, ...b.ops].map((op) => [op.id, op])),
+      }),
+      mode: "derived",
+    },
     createdAt: now,
     updatedAt: now,
     composition: {
@@ -221,6 +230,7 @@ export function migrateOperatorGrammar(op) {
     outputType: op.outputType || op.outputBlockType || "text",
     inputArity: asCount(op.inputArity),
     outputCount: asCount(op.outputCount),
+    outputSpec: op.outputSpec ? normalizeOutputSpec(op.outputSpec, op) : suggestedOutputSpec(op),
   };
   if (next.composition) {
     next.schemaVersion = LENS_GRAMMAR_VERSION;

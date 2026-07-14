@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { PRIMITIVE_NAMES } from "../../shared/transform-primitives.js";
 import { operatorHasFork, branchOutputCount } from "../../shared/operator-branching.js";
 import {
+  OUTPUT_MACHINE_KINDS,
+  deriveOutputSpec,
+  normalizeOutputSpec,
+  outputContractLabel,
+  resetOutputSpec,
+  validateOutputSpec,
+} from "../../shared/output-specifications.js";
+import {
   FN_PALETTE_MIME,
   FN_STEP_MIME,
   addBranchAtStep,
@@ -99,6 +107,7 @@ export default function LensTreeEditor({
   const [dropTarget, setDropTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [strandDrag, setStrandDrag] = useState(null);
+  const [outputAdvanced, setOutputAdvanced] = useState(false);
   const clipboardRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -122,6 +131,21 @@ export default function LensTreeEditor({
     () => (treeHasFork ? branchOutputCount(rootDraft, draftMap) : 1),
     [treeHasFork, rootDraft, draftMap]
   );
+  const rootOutput = useMemo(() => {
+    if (!rootDraft) return null;
+    if (rootDraft.outputSpec?.mode === "override" || rootDraft.outputSpec?.mode === "custom") {
+      try {
+        return normalizeOutputSpec(rootDraft.outputSpec, rootDraft);
+      } catch {
+        return rootDraft.outputSpec;
+      }
+    }
+    return deriveOutputSpec(rootDraft, draftMap);
+  }, [rootDraft, draftMap]);
+  const outputValidation = useMemo(
+    () => rootOutput ? validateOutputSpec(rootOutput) : { ok: true, errors: [] },
+    [rootOutput]
+  );
 
   useEffect(() => {
     if (!toast) return;
@@ -134,6 +158,37 @@ export default function LensTreeEditor({
   const patchOp = useCallback((id, patch) => {
     setDraftOps((ops) => ops.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   }, []);
+
+  const patchRootOutput = useCallback((patch) => {
+    if (!rootId || !rootOutput) return;
+    patchOp(rootId, {
+      outputSpec: {
+        ...rootOutput,
+        ...patch,
+        mode: rootOutput.branches.length ? "override" : "custom",
+      },
+    });
+  }, [patchOp, rootDraft, rootId, rootOutput]);
+
+  const patchBranchOutput = useCallback((index, patch) => {
+    if (!rootOutput?.branches?.[index]) return;
+    const branches = rootOutput.branches.map((branch, branchIndex) => branchIndex === index
+      ? {
+          ...branch,
+          ...("label" in patch ? { label: patch.label } : {}),
+          spec: normalizeOutputSpec({ ...branch.spec, ...(patch.spec || {}), mode: "custom" }, branch.spec, { nested: true }),
+        }
+      : branch);
+    patchRootOutput({ branches, machineKind: "multi" });
+  }, [patchRootOutput, rootOutput]);
+
+  const moveBranchOutput = useCallback((from, to) => {
+    if (!rootOutput?.branches?.length || to < 0 || to >= rootOutput.branches.length) return;
+    const branches = [...rootOutput.branches];
+    const [branch] = branches.splice(from, 1);
+    branches.splice(to, 0, branch);
+    patchRootOutput({ branches, machineKind: "multi" });
+  }, [patchRootOutput, rootOutput]);
 
   const applyDrop = useCallback(
     (parentId, index, payload) => {
@@ -402,7 +457,7 @@ export default function LensTreeEditor({
       ];
     }
     let root = ops.find((o) => o.id === rid);
-    if (!rid || !root?.name?.trim()) return;
+    if (!rid || !root?.name?.trim() || !outputValidation.ok) return;
     if (root.kind === "prompt" && !root.prompt?.trim()) return;
     // An edited primitive stays a primitive (it overrides the built-in) as
     // long as it keeps its canonical name; renamed, it becomes a new function.
@@ -458,6 +513,11 @@ export default function LensTreeEditor({
                       .join(" → ")}
                     {" · "}
                     {rootDraft.composition.algebra?.predictedOutputCount || rootDraft.outputCount || 1} predicted outputs
+                  </div>
+                )}
+                {rootOutput && (
+                  <div className="fn-flow-composition-meta" title={rootOutput.description || outputContractLabel(rootOutput)}>
+                    output · {outputContractLabel(rootOutput)}
                   </div>
                 )}
               </div>
@@ -619,36 +679,89 @@ export default function LensTreeEditor({
                       />
                     </>
                   )}
-                  {(!focusId || focusId === rootId) && (
-                    <div className="fn-output-controls">
-                      <label>outputs</label>
-                      <div className="fn-output-controls-row">
-                        {treeHasFork ? (
-                          <span className="fn-output-fork-note" title="Each leaf branch produces its own output">
-                            ⑂ {forkOutputs} outputs · one per branch
-                          </span>
-                        ) : (
-                          <select
-                            value={Number(inspectorOp.outputCount) > 1 ? Number(inspectorOp.outputCount) : 1}
-                            onChange={(e) => patchOp(inspectorOp.id, { outputCount: Number(e.target.value) })}
-                            title="How many distinct outputs this lens produces per run"
-                          >
-                            <option value={1}>1 output</option>
-                            <option value={2}>2 outputs</option>
-                            <option value={3}>3 outputs</option>
-                            <option value={4}>4 outputs</option>
-                          </select>
-                        )}
-                        <select
-                          value={inspectorOp.outputBlockType || "text"}
-                          onChange={(e) => patchOp(inspectorOp.id, { outputBlockType: e.target.value })}
-                          title="Block type outputs become when dragged onto paper"
-                        >
-                          <option value="text">as text</option>
-                          <option value="sticky">as sticky</option>
-                          <option value="callout">as callout</option>
-                        </select>
+                  {(!focusId || focusId === rootId) && rootOutput && (
+                    <div className="fn-output-controls" data-output-spec-editor>
+                      <div className="fn-output-title">
+                        <label>Output</label>
+                        <span>{rootOutput.mode === "derived" || rootOutput.mode === "suggested" ? "suggested" : "customized"}</span>
                       </div>
+                      {rootOutput.branches.length ? (
+                        <>
+                          <div className="fn-output-contract">{outputContractLabel(rootOutput)}</div>
+                          <div className="fn-output-branches">
+                            {rootOutput.branches.map((branch, index) => (
+                              <div className="fn-output-branch" key={branch.id}>
+                                <input
+                                  aria-label={`Branch ${index + 1} output type`}
+                                  value={branch.label}
+                                  onChange={(event) => patchBranchOutput(index, { label: event.target.value })}
+                                />
+                                <select
+                                  aria-label={`Branch ${index + 1} machine kind`}
+                                  value={branch.spec.machineKind}
+                                  onChange={(event) => patchBranchOutput(index, { spec: { machineKind: event.target.value } })}
+                                >
+                                  {OUTPUT_MACHINE_KINDS.filter((kind) => kind !== "multi").map((kind) => <option key={kind}>{kind}</option>)}
+                                </select>
+                                <button type="button" disabled={!index} onClick={() => moveBranchOutput(index, index - 1)}>↑</button>
+                                <button type="button" disabled={index === rootOutput.branches.length - 1} onClick={() => moveBranchOutput(index, index + 1)}>↓</button>
+                              </div>
+                            ))}
+                          </div>
+                          <label className="fn-output-mode">
+                            <input
+                              type="checkbox"
+                              checked={rootOutput.mode === "derived"}
+                              onChange={(event) => patchOp(rootId, {
+                                outputSpec: event.target.checked
+                                  ? { ...deriveOutputSpec({ ...rootDraft, outputSpec: undefined }, draftMap), mode: "derived" }
+                                  : { ...rootOutput, mode: "override" },
+                              })}
+                            />
+                            derive from branch outputs
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            aria-label="Semantic output type"
+                            value={rootOutput.semanticType}
+                            onChange={(event) => patchRootOutput({ semanticType: event.target.value })}
+                            placeholder="e.g. investment memo"
+                          />
+                          <button type="button" className="fn-output-advanced-toggle" onClick={() => setOutputAdvanced((value) => !value)}>
+                            {outputAdvanced ? "hide details" : "kind, cardinality & instructions"}
+                          </button>
+                          {outputAdvanced && (
+                            <div className="fn-output-advanced">
+                              <select value={rootOutput.machineKind} onChange={(event) => patchRootOutput({ machineKind: event.target.value })}>
+                                {OUTPUT_MACHINE_KINDS.filter((kind) => kind !== "multi").map((kind) => <option key={kind}>{kind}</option>)}
+                              </select>
+                              <select
+                                value={rootOutput.cardinality.max}
+                                onChange={(event) => patchRootOutput({ cardinality: { min: Number(event.target.value), max: Number(event.target.value) } })}
+                              >
+                                {[1, 2, 3, 4, 5, 6].map((count) => <option key={count} value={count}>{count} per run</option>)}
+                              </select>
+                              <textarea
+                                rows={3}
+                                value={rootOutput.instructions}
+                                onChange={(event) => patchRootOutput({ instructions: event.target.value })}
+                                placeholder="output instructions"
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="fn-output-reset"
+                        onClick={() => patchOp(rootId, { outputSpec: resetOutputSpec({ ...rootDraft, outputSpec: undefined }, draftMap) })}
+                      >
+                        Reset to suggested output
+                      </button>
+                      {!outputValidation.ok && <div className="fn-error">{outputValidation.errors[0]}</div>}
+                      {treeHasFork && <span className="fn-output-fork-note">⑂ {forkOutputs} branch outputs</span>}
                     </div>
                   )}
                 </div>
@@ -751,7 +864,7 @@ export default function LensTreeEditor({
           <button className="fn-secondary" type="button" onClick={onClose}>
             cancel
           </button>
-          <button className="fn-primary" type="button" disabled={!canSave} onClick={saveAll}>
+          <button className="fn-primary" type="button" disabled={!canSave || !outputValidation.ok} onClick={saveAll}>
             Save
           </button>
         </div>

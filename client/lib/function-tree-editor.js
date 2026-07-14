@@ -274,7 +274,11 @@ export function mergeStepsSequential(draftOps, stepIdA, stepIdB, newId) {
 /** @param {DraftOp} op @param {Record<string, DraftOp>} draftMap */
 export function opToClipboardTree(op, draftMap) {
   if (!op) return null;
-  const base = { name: op.name || "step", description: op.description || "" };
+  const base = {
+    name: op.name || "step",
+    description: op.description || "",
+    ...(op.outputSpec ? { outputSpec: op.outputSpec } : {}),
+  };
   if (op.kind === "pipeline" && op.steps?.length) {
     return {
       ...base,
@@ -295,7 +299,7 @@ export function materializeDraftTree(node, newId, out = []) {
   const description = (node.description || "").trim();
   if (Array.isArray(node.steps) && node.steps.length) {
     const steps = node.steps.map((s) => materializeDraftTree(s, newId, out));
-    out.push({ id, name, description, kind: "pipeline", steps, ...(node.fork ? { fork: true } : {}) });
+    out.push({ id, name, description, kind: "pipeline", steps, ...(node.fork ? { fork: true } : {}), ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}) });
     return id;
   }
   if (node.moveRef && !(node.prompt || "").trim()) {
@@ -306,11 +310,12 @@ export function materializeDraftTree(node, newId, out = []) {
       kind: "prompt",
       moveRef: node.moveRef,
       research: !!node.research,
+      ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}),
     });
     return id;
   }
   const prompt = (node.prompt || "").trim() || `${description || name}. Return ONLY the step output.`;
-  const leaf = { id, name, description, kind: "prompt", prompt, research: !!node.research };
+  const leaf = { id, name, description, kind: "prompt", prompt, research: !!node.research, ...(node.outputSpec ? { outputSpec: node.outputSpec } : {}) };
   if (node.moveRef) leaf.moveRef = node.moveRef;
   out.push(leaf);
   return id;

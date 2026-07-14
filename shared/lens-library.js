@@ -1,4 +1,5 @@
 import { createLensPack, importLensPack, previewLensPackImport } from "./lens-rack.js";
+import { migrateOperatorOutputSpecs } from "./output-specifications.js";
 
 export const LENS_LIBRARY_KIND = "lens-everywhere-library";
 export const LENS_LIBRARY_VERSION = 1;
@@ -80,7 +81,8 @@ export async function createLensLibraryBundle({
   includePrivateSources = false,
   name = "My Lens library",
 } = {}) {
-  const pack = createLensPack(userRoots(operators), operators, {
+  const normalizedOperators = migrateOperatorOutputSpecs(operators);
+  const pack = createLensPack(userRoots(normalizedOperators), normalizedOperators, {
     name,
     collections,
     includePrivateExamples: includePrivateSources,
@@ -181,7 +183,11 @@ export function importLensLibrary(bundle, existingOperators = [], existingGenera
     lensChoices[entry.id] = choices.lenses?.[entry.id]
       || (entry.status === "new" ? "add" : entry.status === "version-update" ? "replace" : "skip");
   }
-  const imported = importLensPack(bundle.lensPack, existingOperators, lensChoices, idFactory);
+  const migratedPack = {
+    ...bundle.lensPack,
+    operators: migrateOperatorOutputSpecs(bundle.lensPack.operators || []),
+  };
+  const imported = importLensPack(migratedPack, migrateOperatorOutputSpecs(existingOperators), lensChoices, idFactory);
   const generators = [...existingGenerators];
   const ids = new Set(generators.map((entry) => entry.id));
   for (const incoming of bundle.generators) {

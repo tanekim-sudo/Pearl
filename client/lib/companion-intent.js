@@ -176,6 +176,48 @@ export function parseExtensionDownloadCommand(text) {
   return null;
 }
 
+/** Deterministic path for common, high-confidence output-contract edits. */
+export function parseFunctionOutputCommand(text) {
+  const value = String(text || "").replace(/[’]/g, "'").replace(/\s+/g, " ").trim();
+  if (!value || !/\b(output|branch|suggested output|output contract)\b/i.test(value)) return null;
+  const op = value.match(/\b(?:function|lens)\s+(?:called|named)\s+["“]?([^"”]+?)["”]?(?:\s+(?:output|to|from)|$)/i)?.[1]?.trim() || "last";
+  if (/\b(?:show|inspect|what does|what is)\b/i.test(value) && /\boutput/i.test(value)) {
+    return { verb: "inspectFunctionOutput", args: { op } };
+  }
+  if (/\breset\b/i.test(value) && /\b(?:suggested|default)\s+output/i.test(value)) {
+    return { verb: "resetFunctionOutput", args: { op } };
+  }
+  if (/\bderive\b/i.test(value) && /\b(?:branch|child|step)/i.test(value)) {
+    return { verb: "setFunctionOutputMode", args: { op, mode: "derived" } };
+  }
+  if (/\b(?:override|explicit)\b/i.test(value) && /\boutput/i.test(value)) {
+    return { verb: "setFunctionOutputMode", args: { op, mode: "override" } };
+  }
+  const branch = value.match(/\b(?:change|make|set|edit)\s+(?:the\s+)?(first|second|third|\d+(?:st|nd|rd|th)?)\s+(?:output\s+)?branch(?:\s+output)?\s+(?:to|as)\s+(?:a|an)?\s*([^,.;]+)$/i);
+  if (branch) {
+    const positions = { first: 1, second: 2, third: 3 };
+    const branchNumber = positions[branch[1].toLowerCase()] || Number.parseInt(branch[1], 10);
+    const label = branch[2].trim();
+    const machineKind = /\btable\b/i.test(label) ? "table"
+      : /\blist\b/i.test(label) ? "list"
+        : /\bimage\b/i.test(label) ? "image"
+          : /\blink\b/i.test(label) ? "link"
+            : undefined;
+    return { verb: "editFunctionBranchOutput", args: { op, branch: branchNumber, label, ...(machineKind ? { machineKind } : {}) } };
+  }
+  const output = value.match(/\b(?:make|set|change|edit)\b.+?\boutput(?:s|\s+type)?\s+(?:to|as)?\s*(.+)$/i);
+  if (output) {
+    const labels = output[1]
+      .split(/\s+(?:and|AND)\s+|,\s*/)
+      .map((entry) => entry.replace(/^(?:an?|the)\s+/i, "").trim())
+      .filter(Boolean)
+      .slice(0, 12);
+    if (labels.length > 1) return { verb: "editFunctionOutput", args: { op, outputs: labels } };
+    if (labels.length === 1) return { verb: "editFunctionOutput", args: { op, semanticType: labels[0] } };
+  }
+  return null;
+}
+
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");

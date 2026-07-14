@@ -59,6 +59,8 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
       const plan = createInsertionPlan({
         ...payload.plan,
         proposedText,
+        machineKind: payload.machineKind,
+        outputSpec: payload.outputSpec,
         originalHtml: sanitizeHtml(payload.plan?.originalHtml || ""),
         adapter: payload.plan?.adapter || detectAdapter(),
       });

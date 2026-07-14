@@ -7,6 +7,7 @@ import { createMessage } from "../core/messages.js";
 import { trackFunnel } from "../core/funnel-analytics.js";
 import { portableLensPayload, writeDragPayload } from "../core/portable.js";
 import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
+import { outputContractFor, outputContractLabel } from "../../../shared/output-specifications.js";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {
@@ -273,7 +274,7 @@ function App() {
     </header>
     {!characters && !session.queue.length && <section className="quick-start">
       <p>Highlight anything, choose a lens, press GO</p>
-      {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens" } })}>
+      {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
         <b>{sampleLens.name}</b><small>Sample lens</small>
       </button>}
     </section>}
@@ -322,15 +323,15 @@ function App() {
       {readyMessage && !importPreview && <p className="ready-message" role="status">{readyMessage}</p>}
       <input aria-label="Search lenses" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search lenses" />
       <div className="rack">{visible.map((lens) =>
-        <button key={lens.id} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "lens" } })}>
-          <b>{lens.name}</b><small>{lens.description}</small>
+        <button key={lens.id} title={`Output: ${outputContractLabel(outputContractFor(lens.operator, map))}`} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "lens", outputSpec: outputContractFor(lens.operator, map) } })}>
+          <b>{lens.name}</b><small>{lens.description}</small><small className="output-contract">→ {outputContractLabel(outputContractFor(lens.operator, map))}</small>
         </button>
       )}</div>
     </section>
     <section>
       <h2>Ordered stack</h2>
       <ol className="queue">{session.queue.map((lens, index) =>
-        <li key={`${lens.id}-${index}`}><span>{lens.name}</span><button disabled={!index} onClick={() => action("reorder-queue", { from: index, to: index - 1 })}>↑</button><button disabled={index === session.queue.length - 1} onClick={() => action("reorder-queue", { from: index, to: index + 1 })}>↓</button><button onClick={() => action("remove-queue", { index })}>×</button></li>
+        <li key={`${lens.id}-${index}`}><span>{lens.name}<small>{lens.outputSpec ? outputContractLabel(lens.outputSpec) : ""}</small></span><button disabled={!index} onClick={() => action("reorder-queue", { from: index, to: index - 1 })}>↑</button><button disabled={index === session.queue.length - 1} onClick={() => action("reorder-queue", { from: index, to: index + 1 })}>↓</button><button onClick={() => action("remove-queue", { index })}>×</button></li>
       )}</ol>
       {preview && <p className={preview.ok ? "compat good" : "compat bad"}>{preview.ok ? `${preview.label} · ${preview.predictedOutputCount} output${preview.predictedOutputCount === 1 ? "" : "s"}` : preview.errors[0]}</p>}
       <label>Generator destination<select value={session.generator?.id || ""} onChange={(event) => action("set-generator", { generator: generators.find((item) => item.id === event.target.value) || null })}><option value="">None</option>{generators.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -342,7 +343,7 @@ function App() {
       <h2>Preview results</h2>
       {!session.results.length && <p className="muted">Results stage here. The page never changes automatically.</p>}
       {session.results.flatMap((run) => run.outputs.map((output) =>
-        <article className="result" key={output.id}><p>{output.text}</p><div><button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
+        <article className="result" key={output.id}><small className="result-type">{output.semanticType || "Output"}{output.branchIndex != null ? ` · branch ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p><div><button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
       ))}</section>
     <form className="companion" onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens companion command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="capture selection · preview GO · press GO" /><button>Do</button></form>
     {error && <aside role="alert">{error}</aside>}

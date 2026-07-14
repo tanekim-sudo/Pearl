@@ -4,6 +4,14 @@ import { lensRackRecord } from "../shared/lens-rack.js";
 import { createProvenance } from "../shared/lens-runtime.js";
 import { runExecutionPlan } from "./executor.js";
 import { sanitizeLibraryValue } from "../shared/lens-library.js";
+import { buildBranchPlan, operatorHasFork } from "../shared/operator-branching.js";
+import {
+  migrateOperatorOutputSpecs,
+  normalizeOutputSpec,
+  outputContractFor,
+  outputContractPrompt,
+  typedExecutionOutputs,
+} from "../shared/output-specifications.js";
 import { getAdminClient, isServerSupabaseConfigured, verifyRequestUser } from "./supabase-auth.js";
 import { readIdempotent, writeIdempotent } from "./http-security.js";
 
@@ -56,6 +64,13 @@ export async function extensionLibrary(req, res) {
     if (!Array.isArray(incomingOperators) || incomingOperators.length > 1000 || !Array.isArray(incomingGenerators) || incomingGenerators.length > 100) {
       return res.status(400).json({ error: "invalid library sync payload" });
     }
+    try {
+      for (const operator of incomingOperators) {
+        if (operator?.outputSpec) normalizeOutputSpec(operator.outputSpec, operator);
+      }
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
     const mergeByVersion = (remote, incoming) => {
       const merged = new Map(remote.map((entry) => [entry.id, entry]));
       for (const entry of incoming) {
@@ -87,7 +102,7 @@ export async function extensionLibrary(req, res) {
   const stored = parse(snapshot[OPERATORS_KEY], []);
   const rack = parse(snapshot[RACK_KEY], {});
   const byId = new Map([...TRANSFORM_PRIMITIVES, ...stored].map((op) => [op.id, op]));
-  const operators = [...byId.values()].map((operator) => ({
+  const operators = migrateOperatorOutputSpecs([...byId.values()]).map((operator) => ({
     ...operator,
     rack: lensRackRecord(operator, rack[operator.id] || {}),
   }));
@@ -122,24 +137,72 @@ export async function extensionExecute(req, res) {
   if (existing) return res.json(existing);
   validateExecutionBody(req.body);
   const snapshot = await snapshotFor(identity.user.id);
-  const operators = [...TRANSFORM_PRIMITIVES, ...parse(snapshot[OPERATORS_KEY], [])];
+  const operators = migrateOperatorOutputSpecs([...TRANSFORM_PRIMITIVES, ...parse(snapshot[OPERATORS_KEY], [])]);
   const opMap = Object.fromEntries(operators.map((op) => [op.id, op]));
   const queue = req.body.queue.map((entry) => opMap[entry.id]);
   if (queue.some((op) => !op)) return res.status(409).json({ error: "queued lens is unavailable or changed" });
-  let values = req.body.fragments.map((fragment) => fragment.quote);
-  const outputs = [];
+  let values = req.body.fragments.map((fragment) => ({ text: fragment.quote, lineage: [] }));
+  const runId = crypto.randomUUID();
+  async function executeOne(op, input) {
+    const contract = outputContractFor(op, opMap);
+    if (!(op.kind === "pipeline" && operatorHasFork(op, opMap))) {
+      const result = await runExecutionPlan({
+        op,
+        opMap,
+        operators,
+        material: `${input.text}\n\n${outputContractPrompt(contract)}`,
+      });
+      return [{ text: result.output, lineage: [...input.lineage, { opId: op.id }] }];
+    }
+    const plan = buildBranchPlan(op, opMap);
+    const branchValues = [];
+    async function runNode(node, material, lineage) {
+      let current = material;
+      let nextLineage = lineage;
+      for (const segmentId of node.segments) {
+        const segment = opMap[segmentId];
+        if (!segment) continue;
+        const result = await runExecutionPlan({
+          op: segment,
+          opMap,
+          operators,
+          material: current,
+        });
+        current = result.output;
+        nextLineage = [...nextLineage, { opId: segment.id }];
+      }
+      if (node.branches) {
+        for (const branch of node.branches) await runNode(branch, current, nextLineage);
+      } else {
+        branchValues.push({ text: current, lineage: nextLineage });
+      }
+    }
+    await runNode(plan, `${input.text}\n\n${outputContractPrompt(contract)}`, input.lineage);
+    return typedExecutionOutputs(branchValues, contract, {}, {
+      runId,
+      idFactory: (seed) => crypto.createHash("sha256").update(seed).digest("hex").slice(0, 24),
+    });
+  }
   for (let qi = 0; qi < queue.length; qi += 1) {
     const next = [];
     for (let vi = 0; vi < values.length; vi += 1) {
       if (req.signal?.aborted) throw Object.assign(new Error("execution cancelled"), { status: 499 });
-      const result = await runExecutionPlan({ op: queue[qi], opMap, operators, material: values[vi] });
-      next.push(result.output);
+      next.push(...await executeOne(queue[qi], values[vi]));
     }
     values = next;
   }
-  values.forEach((text, index) => outputs.push({ id: crypto.randomUUID(), text, lineage: [{ outputIndex: index, queue: req.body.queue.map((entry) => entry.id) }] }));
+  const finalContract = queue.length ? outputContractFor(queue[queue.length - 1], opMap) : null;
+  const outputs = finalContract
+    ? typedExecutionOutputs(values, finalContract, {}, {
+        runId,
+        idFactory: (seed) => crypto.createHash("sha256").update(seed).digest("hex").slice(0, 24),
+      }).map((output, index) => ({
+        ...output,
+        lineage: [...output.lineage, { outputIndex: index, queue: req.body.queue.map((entry) => entry.id) }],
+      }))
+    : [];
   const value = {
-    runId: crypto.randomUUID(),
+    runId,
     outputs,
     provenance: createProvenance(req.body.fragments, { actor: identity.user.id }),
     audit: { userId: identity.user.id, characters: req.body.disclosure.characters, lensCount: queue.length, createdAt: Date.now() },
