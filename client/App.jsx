@@ -173,6 +173,11 @@ import GhostCursor from "./components/GhostCursor.jsx";
 import CompanionChat from "./components/CompanionChat.jsx";
 import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
+import {
+  CompositionPreview,
+  GrindWorkspace,
+  LensRackToolbar,
+} from "./components/LensGrammarPanels.jsx";
 import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import {
   buildAdaptiveCompanionPrompt,
@@ -205,6 +210,24 @@ import {
 } from "../shared/sketch-bundle.js";
 import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
+import {
+  createCompoundOperator,
+  migrateOperatorGrammar,
+  operatorOutputCount,
+  previewComposition,
+} from "../shared/lens-grammar.js";
+import {
+  addGrindExample,
+  applyCompiledGrind,
+  buildGrindCompilationPrompt,
+  createGrindDraft,
+  forgedOperatorFromDraft,
+  manualForgedSkeleton,
+  removeGrindExample,
+  reorderGrindExample,
+  testForgedDraft,
+} from "../shared/lens-grinding.js";
+import { lensRackRecord, selectRack } from "../shared/lens-rack.js";
 import {
   blockWidth,
   blockHeight,
@@ -297,6 +320,8 @@ const OP_MIME = "application/lens-op";
 const STRUCT_MIME = "application/lens-structure";
 const SEL_MIME = "application/lens-selection";
 const LENS_MIME = "application/lens-lens";
+const GRIND_DRAFT_KEY = "lens.grind.draft.v1";
+const RACK_META_KEY = "lens.rack.meta.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
 const DROP_TARGET_PAD = 96; // px — generous snap when dragging functions onto ideas
 const BOUNDARY_MAGNET_PX = 48; // px — magnetic snap when dragging toward AI or toolbox columns
@@ -476,7 +501,8 @@ const RESEARCH_STEP_PROMPT =
 function migrateOperators(ops) {
   if (!Array.isArray(ops)) return ops;
   const map = Object.fromEntries(ops.map((o) => [o.id, o]));
-  const mapped = ops.map((o) => {
+  const mapped = ops.map((raw) => {
+    const o = migrateOperatorGrammar(raw);
     if (o.name === "research" && (o.kind === "prompt" || !o.kind || o.kind === "pipeline")) {
       const prompt = o.prompt?.toLowerCase().includes("web_search") || o.prompt?.toLowerCase().includes("web search")
         ? o.prompt
@@ -512,6 +538,8 @@ const LENS_STORAGE_KEYS = [
   OLD_SEEDS_KEY,
   TRANSFORMATION_REPOS_KEY,
   ACTIVE_TRANSFORMATION_KEY,
+  GRIND_DRAFT_KEY,
+  RACK_META_KEY,
   ONBOARDED_KEY,
   TOUR_STORAGE_KEY,
 ];
@@ -2147,6 +2175,18 @@ export default function App() {
   const [lensCompare, setLensCompare] = useState(null); // { aId, bId? }
   const [lensHistoryId, setLensHistoryId] = useState(null);
   const [pendingBranch, setPendingBranch] = useState(null); // { kind: 'branch'|'fork', sourceId }
+  const [compositionDraft, setCompositionDraft] = useState(null);
+  const [grindOpen, setGrindOpen] = useState(false);
+  const [grindDraft, setGrindDraft] = useState(() => {
+    try {
+      const saved = load(GRIND_DRAFT_KEY, null);
+      return createGrindDraft(saved || {});
+    } catch {
+      return createGrindDraft();
+    }
+  });
+  const [rackQuery, setRackQuery] = useState({ search: "", type: "all", sort: "recent" });
+  const [rackMeta, setRackMeta] = useState(() => load(RACK_META_KEY, {}));
 
   const [tool, setTool] = useState("select"); // select | highlight | pen | marker | eraser | image | text | sticky
   const [panning, setPanning] = useState(false);
@@ -2248,12 +2288,21 @@ export default function App() {
   const [highlightRailLensIds, setHighlightRailLensIds] = useState([]);
   const [highlightRailOpIds, setHighlightRailOpIds] = useState([]);
   const [highlightRailGenIds, setHighlightRailGenIds] = useState([]);
+  const [brushExecuting, setBrushExecuting] = useState(false);
+  const brushExecutingRef = useRef(false);
+  const [brushConfirmCount, setBrushConfirmCount] = useState(null);
+  const [pendingBrushStack, setPendingBrushStack] = useState([]);
+  const [pendingGeneratorMode, setPendingGeneratorMode] = useState(null);
+  const pendingBrushStackRef = useRef([]);
+  const pendingBrushGoRef = useRef(() => false);
+  const brushCommitKeysRef = useRef(new Set());
   const highlightRailGenIdsRef = useRef(highlightRailGenIds);
   highlightRailGenIdsRef.current = highlightRailGenIds;
   const highlightRailOpIdsRef = useRef(highlightRailOpIds);
   highlightRailOpIdsRef.current = highlightRailOpIds;
   const highlightRailLensIdsRef = useRef(highlightRailLensIds);
   highlightRailLensIdsRef.current = highlightRailLensIds;
+  pendingBrushStackRef.current = pendingBrushStack;
   const [highlightTransferringIds, setHighlightTransferringIds] = useState([]);
   const [aiLandingNodeIds, setAiLandingNodeIds] = useState(() => new Set());
   const [spaceTransferGhost, setSpaceTransferGhost] = useState(null);
@@ -2398,6 +2447,8 @@ export default function App() {
   }, [paperRecording]);
   useEffect(() => localStorage.setItem(OPERATORS_KEY, JSON.stringify(operators)), [operators]);
   useEffect(() => localStorage.setItem(PATTERN_LENSES_KEY, JSON.stringify(lenses)), [lenses]);
+  useEffect(() => localStorage.setItem(GRIND_DRAFT_KEY, JSON.stringify(grindDraft)), [grindDraft]);
+  useEffect(() => localStorage.setItem(RACK_META_KEY, JSON.stringify(rackMeta)), [rackMeta]);
   useEffect(() => {
     try {
       localStorage.setItem(AI_NODES_KEY, JSON.stringify(aiNodes));
@@ -2515,6 +2566,8 @@ export default function App() {
       Array.isArray(parsed.aiNodes) ? parsed.aiNodes.map((n) => ({ ...n, loading: false })) : []
     );
     setItemHistoryLog(parsed.itemHistory && typeof parsed.itemHistory === "object" ? parsed.itemHistory : {});
+    if (parsed.grindDraft) setGrindDraft(createGrindDraft(parsed.grindDraft));
+    setRackMeta(parsed.rackMeta && typeof parsed.rackMeta === "object" ? parsed.rackMeta : {});
     setSelectedAiNodeIds([]);
     setSelection([]);
     historyRef.current = { past: [], future: [] };
@@ -2545,6 +2598,8 @@ export default function App() {
       activeTransformationId,
       aiNodes,
       itemHistoryLog,
+      grindDraft,
+      rackMeta,
     ],
   });
 
@@ -2589,6 +2644,7 @@ export default function App() {
     if (action === "sign-in") setAuthOpen(true);
     if (action === "plans") setPlansOpen(true);
     if (action === "sign-out") {
+      setPendingBrushStack([]);
       // Local scope: signing out here leaves the user's other devices alone.
       getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
     }
@@ -3576,6 +3632,7 @@ export default function App() {
           const isHighlight = !!g.highlight;
           if (isHighlight) {
             const pts = g.points.slice();
+            const brushDelta = { paperIds: [], aiNodeIds: [], fragments: [] };
             const nodeBrush = 10 / Math.max(camRef.current.scale, 0.08);
             for (const node of aiNodesRef.current) {
               const radius = (node.radius || 20) + nodeBrush;
@@ -3608,6 +3665,7 @@ export default function App() {
             }
             if (frag) {
               addHighlightFragment(frag.itemId, frag);
+              brushDelta.fragments.push(frag);
             } else {
               let ideaIds = ideasFromHighlightGesture(
                 pts,
@@ -3618,6 +3676,7 @@ export default function App() {
               );
               const merged = [...new Set([...ideaIds, ...brushedDuring])];
               if (merged.length) {
+                brushDelta.paperIds.push(...merged);
                 if (isTap && !g.additive && merged.length === 1) {
                   const id = merged[0];
                   setHighlightSelectionIds((prev) =>
@@ -3632,7 +3691,9 @@ export default function App() {
             }
             if (brushedAiDuring.length) {
               setHighlightAiNodeIds((prev) => [...new Set([...prev, ...brushedAiDuring])]);
+              brushDelta.aiNodeIds.push(...brushedAiDuring);
             }
+            commitArmedBrushDelta(brushDelta, `paper:${g.strokeId || uid()}`);
           } else {
             const strokeItem = finishRecordedStroke(g, g.points, {
               color: INK,
@@ -3652,6 +3713,7 @@ export default function App() {
             setHighlightSelectionIds((prev) =>
               prev.includes(hit.id) ? prev.filter((x) => x !== hit.id) : [...prev, hit.id]
             );
+            commitArmedBrushDelta({ paperIds: [hit.id] }, `paper:${g.strokeId || uid()}`);
           }
         }
         setDraft(null);
@@ -3806,6 +3868,12 @@ export default function App() {
       const typing = e.target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target.tagName || "");
       if (typing) return;
       if (e.key === "Escape") {
+        if (pendingBrushStackRef.current.length) {
+          setPendingBrushStack([]);
+          setPendingGeneratorMode(null);
+          setBrushConfirmCount(null);
+          return;
+        }
         finishEditing();
         setSelection([]);
         setLasso(null);
@@ -3819,6 +3887,11 @@ export default function App() {
         clearHighlightSelection();
         pendingImageRef.current = null;
         setImageArmed(false);
+      }
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        pendingBrushGoRef.current();
+        return;
       }
       // Space: clear highlight marks, then toggle utensil (AI) or cycle tools (paper)
       if (e.key === " " && !e.repeat) {
@@ -4142,13 +4215,247 @@ export default function App() {
     }
   }, [tool]);
 
+  function brushSelectionSnapshot(delta = null) {
+    if (delta) {
+      return {
+        paperIds: [...new Set(delta.paperIds || [])],
+        aiNodeIds: [...new Set(delta.aiNodeIds || [])],
+        fragments: delta.fragments || [],
+      };
+    }
+    return {
+      paperIds: [...highlightSelectionRef.current],
+      aiNodeIds: [...highlightAiNodeIds],
+      fragments: [...highlightFragmentsRef.current],
+    };
+  }
+
+  function hasBrushMaterial(material) {
+    return Boolean(
+      material?.paperIds?.length || material?.aiNodeIds?.length || material?.fragments?.length
+    );
+  }
+
+  function resolveBrushOperator(target) {
+    if (!target || target.kind !== "lens") return null;
+    if (target.op) return target.op;
+    if (opMap[target.id]) return opMap[target.id];
+    const lens = transformationRepos.find((entry) => entry.id === target.id);
+    return lens ? opMap[lensRootOpId(lens)] || null : null;
+  }
+
+  /**
+   * One shared action path for lens-first and highlight-first interactions.
+   * `commitKey` makes repeated pointerup delivery harmless; a stroke supplies
+   * only its newly committed delta while a rail click supplies the full living
+   * selection.
+   */
+  function applyBrushTarget(target, material = brushSelectionSnapshot(), commitKey = null) {
+    if (!target || !hasBrushMaterial(material)) return false;
+    if (commitKey) {
+      if (brushCommitKeysRef.current.has(commitKey)) return false;
+      brushCommitKeysRef.current.add(commitKey);
+      if (brushCommitKeysRef.current.size > 500) {
+        brushCommitKeysRef.current = new Set([...brushCommitKeysRef.current].slice(-250));
+      }
+    }
+    try {
+      if (target.kind === "generator") {
+        const struct = lensesRef.current.find((entry) => entry.id === target.id);
+        if (!struct) throw new Error("generator is no longer available");
+        if (material.paperIds.length) mergeMaterialIntoSymbol(struct.id, material.paperIds);
+        if (material.fragments.length) {
+          saveQuotesAsLens(highlightFragmentQuotes(material.fragments), struct.id);
+        }
+        if (material.aiNodeIds.length) saveAiNodesAsSymbol(material.aiNodeIds, struct.id);
+        showToast(`collected in ${struct.title}`);
+      } else {
+        const op = resolveBrushOperator(target);
+        if (!op) throw new Error("lens is no longer available");
+        if (material.paperIds.length) runOperator(op, transformableDragIds(material.paperIds), { opMap: target.opMap });
+        for (const nodeId of material.aiNodeIds) {
+          const node = aiNodesRef.current.find((entry) => entry.id === nodeId);
+          if (node) applyOperatorToAiNode(node, op, null, { stableCamera: true, opMap: target.opMap });
+        }
+        for (const fragment of material.fragments) {
+          const node = createOutputNode(fragment.quote, null);
+          if (node) {
+            applyOperatorToAiNode(node, op, null, {
+              stableCamera: true,
+              aiMaterial: fragment.quote,
+              opMap: target.opMap,
+            });
+          }
+        }
+      }
+      return true;
+    } catch (error) {
+      if (commitKey) brushCommitKeysRef.current.delete(commitKey);
+      showToast(error?.message || "brush action failed");
+      return false;
+    }
+  }
+
+  function handleBrushAffordance(target) {
+    // Explicit brush affordance only queues. Highlighting, selecting a rack
+    // card, and adding material never execute; GO is the sole commit boundary.
+    setPendingBrushStack((current) => {
+      if (target.kind === "generator") {
+        const lensesOnly = current.filter((entry) => entry.kind !== "generator");
+        setPendingGeneratorMode(lensesOnly.length ? null : "source");
+        return [...lensesOnly, target];
+      }
+      const generator = current.find((entry) => entry.kind === "generator");
+      if (generator) setPendingGeneratorMode(null);
+      return [...current.filter((entry) => entry.kind !== "generator"), target, ...(generator ? [generator] : [])];
+    });
+    setBrushConfirmCount(null);
+    setTool("highlight");
+    toolRef.current = "highlight";
+  }
+
+  function commitArmedBrushDelta(delta, commitKey) {
+    // Stroke completion only extends the living material selection. It never
+    // crosses the execution boundary.
+    return false;
+  }
+
+  function removePendingBrush(index) {
+    setPendingBrushStack((current) => {
+      if (current[index]?.kind === "generator") setPendingGeneratorMode(null);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+    setBrushConfirmCount(null);
+  }
+
+  function reorderPendingBrush(from, to) {
+    setPendingBrushStack((current) => {
+      if (from < 0 || from >= current.length || to < 0 || to >= current.length) return current;
+      const next = [...current];
+      const [entry] = next.splice(from, 1);
+      next.splice(to, 0, entry);
+      return next;
+    });
+  }
+
+  function pendingBrushComposition() {
+    const queue = pendingBrushStackRef.current;
+    if (!queue.length) return { ok: false, errors: ["queue at least one lens"] };
+    const generator = queue.find((entry) => entry.kind === "generator") || null;
+    const lensQueue = queue.filter((entry) => entry.kind === "lens");
+    if (!lensQueue.length) {
+      return generator
+        ? { ok: true, target: generator, generator, count: 1, label: generator.name }
+        : { ok: false, errors: ["queue at least one lens"] };
+    }
+    if (generator && !pendingGeneratorMode) {
+      return { ok: false, errors: ["choose how the generator joins this stack"] };
+    }
+    const resolved = lensQueue.map(resolveBrushOperator);
+    if (resolved.some((op) => !op)) return { ok: false, errors: ["queued lens is missing"] };
+    let current = resolved[0];
+    let map = { ...opMap };
+    let count = Number(current.outputCount) || 1;
+    const errors = [];
+    const warnings = [];
+    for (let index = 1; index < resolved.length; index += 1) {
+      const next = resolved[index];
+      const preview = previewComposition(current, next, map);
+      errors.push(...preview.errors);
+      warnings.push(...preview.warnings);
+      if (!preview.ok) break;
+      const made = createCompoundOperator(current, next, map, {
+        name: `${current.name} → ${next.name}`,
+        confirmed: true,
+        idFactory: uid,
+      });
+      map = { ...map, ...Object.fromEntries(made.ops.map((op) => [op.id, op])) };
+      current = map[made.rootId];
+      count = made.preview.outputContract.count;
+    }
+    return {
+      ok: errors.length === 0,
+      errors,
+      warnings,
+      count,
+      label: [
+        ...resolved.map((op) => op.name),
+        ...(generator ? [`collect source in ${generator.name}`] : []),
+      ].join(" → "),
+      target: { kind: "lens", id: current.id, name: current.name, op: current, opMap: map },
+      generator,
+    };
+  }
+
+  function pressPendingBrushGo(commitKey = null) {
+    const material = brushSelectionSnapshot();
+    if (!hasBrushMaterial(material)) {
+      showToast("highlight material before GO");
+      return false;
+    }
+    const composition = pendingBrushComposition();
+    if (!composition.ok) {
+      showToast(composition.errors[0]);
+      return false;
+    }
+    const predicted = composition.count || 1;
+    if (predicted > 4 && brushConfirmCount !== predicted) {
+      setBrushConfirmCount(predicted);
+      return false;
+    }
+    const key =
+      commitKey ||
+      `brush-go:${pendingBrushStackRef.current.map((entry) => entry.id).join(">")}:${material.paperIds.join(",")}:${material.aiNodeIds.join(",")}:${material.fragments.map((entry) => entry.id || entry.quote).join(",")}`;
+    if (brushExecutingRef.current || brushCommitKeysRef.current.has(key)) return false;
+    brushExecutingRef.current = true;
+    brushCommitKeysRef.current.add(key);
+    setBrushExecuting(true);
+    let ok = true;
+    if (composition.generator) ok = applyBrushTarget(composition.generator, material, `${key}:generator`) && ok;
+    if (composition.target.kind === "lens") ok = applyBrushTarget(composition.target, material, `${key}:lens`) && ok;
+    brushExecutingRef.current = false;
+    setBrushExecuting(false);
+    if (ok) {
+      setPendingBrushStack([]);
+      setPendingGeneratorMode(null);
+      setBrushConfirmCount(null);
+    } else {
+      brushCommitKeysRef.current.delete(key);
+    }
+    return ok;
+  }
+  pendingBrushGoRef.current = pressPendingBrushGo;
+
+  function savePendingBrushAsLens() {
+    const queue = pendingBrushStackRef.current;
+    if (queue.length < 2 || queue.some((entry) => entry.kind !== "lens")) {
+      showToast("queue at least two lenses to save a stack");
+      return;
+    }
+    const first = resolveBrushOperator(queue[0]);
+    const second = resolveBrushOperator(queue[1]);
+    const preview = previewComposition(first, second, opMap);
+    setCompositionDraft({
+      first,
+      second,
+      preview,
+      name: queue.map((entry) => entry.name).join(" → ").slice(0, 72),
+      linkMode: "pinned",
+      pendingTail: queue.slice(2),
+    });
+  }
+
   /** AI-space highlight stroke finished: keep the ink, mark touched nodes. */
-  function completeAiHighlightStroke(points, touchedNodeIds) {
+  function completeAiHighlightStroke(points, touchedNodeIds, commitKey = `ai:${Date.now()}`) {
     if (points?.length > 1) {
       setAiHighlightStrokes((prev) => [...prev, { id: uid(), points }]);
     }
     if (touchedNodeIds?.length) {
       setHighlightAiNodeIds((prev) => [...new Set([...prev, ...touchedNodeIds])]);
+      commitArmedBrushDelta(
+        { aiNodeIds: touchedNodeIds },
+        commitKey
+      );
     }
   }
 
@@ -4189,6 +4496,7 @@ export default function App() {
    */
   function handleRailHighlightPointerDown(e) {
     if (toolRef.current !== "highlight" || e.button !== 0) return;
+    if (e.target.closest?.("button, input, textarea, [data-brush-affordance]")) return;
     e.preventDefault();
     e.stopPropagation();
     const startCard = railCardAtClient(e.clientX, e.clientY);
@@ -4420,6 +4728,16 @@ export default function App() {
 
   // ---- composed operators (functions made of functions) ----
   const opMap = useMemo(() => Object.fromEntries(operators.map((o) => [o.id, o])), [operators]);
+
+  useEffect(() => {
+    setPendingBrushStack((current) =>
+      current.filter((entry) =>
+        entry.kind === "generator"
+          ? lenses.some((generator) => generator.id === entry.id)
+          : Boolean(opMap[entry.id] || transformationRepos.some((lens) => lens.id === entry.id))
+      )
+    );
+  }, [lenses, opMap, transformationRepos]);
 
   // Built-in primitives offered inside the generator workspace.
   const generatorFunctionChips = useMemo(
@@ -5053,6 +5371,7 @@ export default function App() {
 
   function confirmStartFresh() {
     setFreshConfirm(false);
+    setPendingBrushStack([]);
     for (const key of LENS_STORAGE_KEYS) localStorage.removeItem(key);
     shareImportedRef.current = true;
     const clean = clearShareFromLocation(window.location);
@@ -5168,6 +5487,7 @@ export default function App() {
   }
 
   function openEditLens(op) {
+    setPendingBrushStack([]);
     emitTourEvent("open-function-editor");
     setOpEditor({ mode: "edit", op });
   }
@@ -5175,6 +5495,7 @@ export default function App() {
   /** Resolve a lens record to an editable operator tree (fixes multi-move lenses). */
   function openEditLensFromLens(lens) {
     if (!lens) return;
+    setPendingBrushStack([]);
     emitTourEvent("lens-evolve");
     const opId = lensRootOpId(lens);
     let op = opId ? opMap[opId] : null;
@@ -6338,7 +6659,13 @@ export default function App() {
       return;
     }
     const hl = highlightSelectionRef.current;
-    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    if (ids.some((id) => hl.includes(id))) {
+      const struct = lensesRef.current.find((entry) => entry.id === structId);
+      accumulateHighlightSelection(ids, true);
+      if (struct) handleBrushAffordance({ kind: "generator", id: struct.id, name: struct.title });
+      showToast("generator queued · press GO to commit");
+      return;
+    }
     addMaterialToLens(ids, { structId });
   }
 
@@ -6814,7 +7141,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const dropTarget = resolveLeftColumnDropTarget(clientX, clientY);
     const structId = dropTarget === RAIL_LENSES ? structCardAtClient(clientX, clientY) : null;
     const hl = highlightSelectionRef.current;
-    if (ids.some((id) => hl.includes(id))) finishHighlightTransfer(ids);
+    if (ids.some((id) => hl.includes(id)) && structId) {
+      const struct = lensesRef.current.find((entry) => entry.id === structId);
+      if (struct) handleBrushAffordance({ kind: "generator", id: struct.id, name: struct.title });
+      showToast("generator queued · press GO to commit");
+      return;
+    }
     if (dropTarget === RAIL_LENSES) addMaterialToLens(ids, { structId });
     else captureMaterialWithReplay(ids);
     launchToolboxTransfer(dropTarget);
@@ -6870,28 +7202,177 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     showToast(`saved lens · ${op.name}`);
   }
 
-  /** Merge: drop one operator onto another → a compound pipeline (A, then B). */
+  /** Stack invariant: dragged A onto target B always means A → B. */
   function composeOperators(draggedId, targetId) {
-    if (!draggedId || draggedId === targetId) return;
+    if (!draggedId || !targetId) return;
     const a = opMap[draggedId];
     const b = opMap[targetId];
     if (!a || !b) return;
-    const tree = {
-      name: `${a.name} → ${b.name}`.slice(0, 72),
-      description: `Compound move: ${a.name}, then ${b.name}.`,
-      steps: [opToAbstractTree(a, opMap, operators), opToAbstractTree(b, opMap, operators)],
-    };
-    const { ops, rootId } = treeToOperators(tree, { top: true });
-    const rootOp = ops.find((o) => o.id === rootId);
-    const draftMap = Object.fromEntries(ops.map((o) => [o.id, o]));
-    if (rootOp && !confirmLensNotDuplicate(rootOp, draftMap)) return;
-    setOperators((prev) => [
-      ...prev,
-      ...ops.map((o) => (o.id === rootId ? { ...o, mergedFrom: [a.id, b.id] } : o)),
-    ]);
-    if (rootOp) syncTransformationRepoForOperator(rootId, rootOp, { isNew: true });
     focusRailPane(RAIL_TRANSFORMATIONS);
-    showToast(`compound lens · ${a.name} → ${b.name}`);
+    const preview = previewComposition(a, b, opMap);
+    setCompositionDraft({
+      first: a,
+      second: b,
+      preview,
+      name: preview.nameSuggestion,
+      linkMode: "pinned",
+    });
+  }
+
+  function stackLensRecords(draggedLensId, targetLensId) {
+    const find = (id) => transformationRepos.find((lens) => lens.id === id) || displayTransformations.find((lens) => lens.id === id);
+    const first = find(draggedLensId);
+    const second = find(targetLensId);
+    const firstId = lensRootOpId(first);
+    const secondId = lensRootOpId(second);
+    if (!firstId || !secondId) {
+      showToast("one lens dependency is missing");
+      return;
+    }
+    composeOperators(firstId, secondId);
+  }
+
+  function startStackChooser(opOrId) {
+    const first = typeof opOrId === "string" ? opMap[opOrId] : opOrId;
+    if (!first) return;
+    setCompositionDraft({ first, second: null, preview: null, name: "", linkMode: "pinned" });
+  }
+
+  function chooseStackTarget(targetId) {
+    const first = compositionDraft?.first;
+    const second = opMap[targetId];
+    if (!first || !second) return;
+    const preview = previewComposition(first, second, opMap);
+    setCompositionDraft({ ...compositionDraft, second, preview, name: preview.nameSuggestion });
+  }
+
+  function saveComposition(openEditorAfter = false) {
+    const draft = compositionDraft;
+    if (!draft?.first || !draft?.second || !draft.preview?.ok) return null;
+    let made;
+    try {
+      made = createCompoundOperator(draft.first, draft.second, opMap, {
+        name: draft.name,
+        linkMode: draft.linkMode,
+        confirmed: draft.preview.requiresConfirmation,
+        idFactory: uid,
+      });
+      if (draft.pendingTail?.length) {
+        let map = { ...opMap, ...Object.fromEntries(made.ops.map((op) => [op.id, op])) };
+        let current = map[made.rootId];
+        for (const queued of draft.pendingTail) {
+          const next = resolveBrushOperator(queued);
+          if (!next) throw new Error(`queued lens ${queued.name || queued.id} is missing`);
+          const folded = createCompoundOperator(current, next, map, {
+            name: draft.name,
+            linkMode: draft.linkMode,
+            confirmed: true,
+            idFactory: uid,
+          });
+          map = { ...map, ...Object.fromEntries(folded.ops.map((op) => [op.id, op])) };
+          current = map[folded.rootId];
+          made = { ...folded, preview: { ...folded.preview, label: draft.name } };
+        }
+      }
+    } catch (error) {
+      showToast(error.message);
+      return null;
+    }
+    const root = made.ops.find((op) => op.id === made.rootId);
+    const map = Object.fromEntries(made.ops.map((op) => [op.id, op]));
+    if (!confirmLensNotDuplicate(root, map)) return null;
+    setOperators((previous) => [...previous, ...made.ops]);
+    syncTransformationRepoForOperator(made.rootId, root, {
+      isNew: true,
+      stepNames: made.preview.label.split(" → "),
+      commitMessage: `stack ${made.preview.label}`,
+      commitKind: "stack",
+    });
+    setCompositionDraft(null);
+    setRackMeta((meta) => ({
+      ...meta,
+      [made.rootId]: { ...(meta[made.rootId] || {}), updatedAt: Date.now() },
+    }));
+    if (openEditorAfter) setOpEditor({ mode: "edit", op: root });
+    showToast(`stacked · ${made.preview.label}`);
+    return root;
+  }
+
+  function keepGrindExample(example) {
+    try {
+      let added;
+      setGrindDraft((current) => {
+        added = addGrindExample(current, example);
+        return added;
+      });
+      setGrindOpen(true);
+      showToast(`${example.polarity === "negative" ? "negative " : ""}example kept`);
+      return added;
+    } catch (error) {
+      showToast(error.message);
+      return null;
+    }
+  }
+
+  async function compileCurrentGrind() {
+    const bounded = buildGrindCompilationPrompt(grindDraft);
+    let compiled;
+    try {
+      const raw = await runClaude(
+        `${bounded.prompt}\n\nJSON only. Map each rule index to the example ids it explains in ruleExampleMap.`,
+        "",
+        { maxTokens: 4096 }
+      );
+      compiled = parseJSON(raw);
+    } catch (error) {
+      setGrindDraft((current) => applyCompiledGrind(current, manualForgedSkeleton(current), { reason: "AI unavailable — manual fallback" }));
+      showToast("AI unavailable — draft preserved with a manual skeleton");
+      return null;
+    }
+    setGrindDraft((current) => applyCompiledGrind(current, compiled, { reason: "compile examples" }));
+    return compiled;
+  }
+
+  function useManualGrindFallback() {
+    setGrindDraft((current) => applyCompiledGrind(current, manualForgedSkeleton(current), { reason: "manual skeleton" }));
+  }
+
+  async function testCurrentGrind() {
+    const current = grindDraft;
+    return testForgedDraft(current, async (input, proposal) => {
+      return runClaude(proposal.generalizedPrompt, input, { maxTokens: 1600 });
+    });
+  }
+
+  async function refineCurrentGrind(instruction) {
+    const current = grindDraft;
+    if (!current.proposal) throw new Error("compile a proposal first");
+    const snapshot = JSON.stringify(current.proposal);
+    try {
+      const raw = await runClaude(
+        `Revise this proposed lens to ${instruction}. Preserve JSON shape and ruleExampleMap. JSON only.\n${snapshot}`,
+        "",
+        { maxTokens: 4096 }
+      );
+      const compiled = parseJSON(raw);
+      setGrindDraft((draftNow) => applyCompiledGrind(draftNow, compiled, { reason: instruction }));
+      return compiled;
+    } catch (error) {
+      showToast(`refinement unavailable — ${error.message}`);
+      throw error;
+    }
+  }
+
+  function shapeForgedLensInEditor() {
+    try {
+      const op = forgedOperatorFromDraft(grindDraft, uid);
+      setGrindOpen(false);
+      setOpEditor({ mode: "edit", op });
+      return op;
+    } catch (error) {
+      showToast(error.message);
+      return null;
+    }
   }
 
   function deletePatternLens(id) {
@@ -7143,7 +7624,27 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   }, [operators]);
   const moves = useMemo(() => operators.filter((o) => o.move && !o.primitive), [operators]);
   const primitives = useMemo(() => canonicalPrimitives, [canonicalPrimitives]);
-  const basics = operators.filter((o) => !o.role && !o.top && !o.primitive);
+  // Internal pipeline steps belong inside their lens tree, never as repeated
+  // "Library" cards in the rack.
+  const basics = [];
+  const rackRecords = useMemo(
+    () =>
+      operators
+        .filter((op) => op.top || op.move || op.primitive)
+        .map((op) => lensRackRecord(op, rackMeta[op.id] || {})),
+    [operators, rackMeta]
+  );
+  const rackSelection = useMemo(
+    () =>
+      selectRack(rackRecords, {
+        search: rackQuery.search,
+        type: ["all", "archived"].includes(rackQuery.type) ? null : rackQuery.type,
+        archived: rackQuery.type === "archived",
+        sort: rackQuery.sort,
+      }),
+    [rackRecords, rackQuery]
+  );
+  const visibleRackIds = useMemo(() => new Set(rackSelection.records.map((record) => record.opId)), [rackSelection]);
   // Editor palette: only the user's own top-level lenses, deduped by name —
   // never orphan sub-steps of saved functions.
   const paletteLenses = useMemo(() => {
@@ -7162,6 +7663,17 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   const activeTransformation =
     displayTransformations.find((l) => l.id === activeTransformationId || lensRootOpId(l) === activeTransformationId) || null;
   const transformationRepoGroups = useMemo(() => groupLensesByRepo(displayTransformations), [displayTransformations]);
+  const visibleTransformationRepoGroups = useMemo(
+    () =>
+      transformationRepoGroups
+        .map((repo) => ({
+          root: visibleRackIds.has(lensRootOpId(repo.root)) ? repo.root : null,
+          branches: repo.branches.filter((lens) => visibleRackIds.has(lensRootOpId(lens))),
+          forks: repo.forks.filter((lens) => visibleRackIds.has(lensRootOpId(lens))),
+        }))
+        .filter((repo) => repo.root || repo.branches.length || repo.forks.length),
+    [transformationRepoGroups, visibleRackIds]
+  );
 
   function renderLensCard(lens, { depth = 0 } = {}) {
     return (
@@ -7170,6 +7682,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         lens={lens}
         depth={depth}
         marked={highlightRailLensIds.includes(lens.id)}
+        brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === lens.id)}
+        brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === lens.id) + 1}
         active={lens.id === activeTransformationId || lensRootOpId(lens) === activeTransformationId}
         opMap={opMap}
         lenses={displayTransformations}
@@ -7180,6 +7694,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           setActiveTransformationId(id === activeTransformationId ? null : id);
           emitTourEvent("lens-use");
         }}
+        onBrush={() =>
+          handleBrushAffordance({ kind: "lens", id: lens.id, name: lens.name })
+        }
         onEvolve={() => openEditLensFromLens(lens)}
         onBranch={() => setPendingBranch({ kind: "branch", sourceId: lens.id, sourceName: lens.name })}
         onFork={() => setPendingBranch({ kind: "fork", sourceId: lens.id, sourceName: lens.name })}
@@ -7192,8 +7709,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             showToast("pick another lens to compare");
           }
         }}
-        onMergeDrop={(draggedId) => mergeLenses(draggedId, lens.id)}
-        onDelete={() => deleteTransformationRecord(lens.id)}
+        onStack={() => startStackChooser(opMap[lensRootOpId(lens)])}
+        onMergeDrop={(draggedId) => stackLensRecords(draggedId, lens.id)}
+        onDelete={() => archiveTransformationRecord(lens.id)}
       />
     );
   }
@@ -7527,6 +8045,26 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     setTransformationRepos((ls) => ls.filter((l) => l.id !== id));
     if (activeTransformationId === id || activeTransformationId === opId) setActiveTransformationId(null);
     setLensCompare(null);
+  }
+
+  function archiveTransformationRecord(id) {
+    const lens = transformationRepos.find((entry) => entry.id === id) || displayTransformations.find((entry) => entry.id === id);
+    const opId = lensRootOpId(lens) || id;
+    setRackMeta((meta) => ({
+      ...meta,
+      [opId]: { ...(meta[opId] || {}), archivedAt: Date.now(), updatedAt: Date.now() },
+    }));
+    setActiveTransformationId((active) => (active === id || active === opId ? null : active));
+    showToast("lens archived");
+  }
+
+  function restoreTransformationRecord(id) {
+    const opId = lensRootOpId(transformationRepos.find((entry) => entry.id === id)) || id;
+    setRackMeta((meta) => ({
+      ...meta,
+      [opId]: { ...(meta[opId] || {}), archivedAt: null, updatedAt: Date.now() },
+    }));
+    showToast("lens restored");
   }
 
   /** Share a lens: copy a link so anyone can upload it. */
@@ -9675,7 +10213,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         if (targetId && targetId !== g.payload.opId) composeOperators(g.payload.opId, targetId);
       } else if (g.payload.kind === "transformation-lens") {
         const targetId = transformationLensCardAtClient(cx, cy);
-        if (targetId && targetId !== g.payload.lensId) mergeLenses(g.payload.lensId, targetId);
+        if (targetId && targetId !== g.payload.lensId) stackLensRecords(g.payload.lensId, targetId);
       }
     }
   };
@@ -10547,9 +11085,97 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     operateHighlight: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
       if (!op) throw new Error(`no lens called “${a.op}”`);
-      tk.caption(a.caption || `apply “${op.name}” to the living cross-domain selection`);
-      highlightToolbarOperate(op);
-      await directorWaitForJobs(tk);
+      handleBrushAffordance({ kind: "lens", id: op.id, name: op.name });
+      await tk.wait(240);
+    },
+    armLensBrush: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.lens, ctx);
+      if (!op) throw new Error(`no lens called “${a.lens}”`);
+      const button = tk.elementCenter(`[data-op-id="${op.id}"] .rail-brush-btn`);
+      if (button) await tk.click(button.x, button.y);
+      else handleBrushAffordance({ kind: "lens", id: op.id, name: op.name });
+      await tk.wait(260);
+      return { type: "lens", id: op.id, lensId: op.id, name: op.name };
+    },
+    armGeneratorBrush: async (a, tk, ctx) => {
+      const struct = directorResolveGenerator(a.generator, ctx);
+      if (!struct) throw new Error(`no generator called “${a.generator}”`);
+      const button = tk.elementCenter(`[data-struct-id="${struct.id}"] .rail-brush-btn`);
+      if (button) await tk.click(button.x, button.y);
+      else handleBrushAffordance({ kind: "generator", id: struct.id, name: struct.title });
+      await tk.wait(260);
+      return { type: "generator", id: struct.id, generatorId: struct.id, name: struct.title };
+    },
+    disarmBrushTarget: async (a, tk) => {
+      const button = tk.elementCenter('[aria-label="Disarm brush target"]');
+      if (button) await tk.click(button.x, button.y);
+      else {
+        setPendingBrushStack([]);
+        setPendingGeneratorMode(null);
+      }
+      await tk.wait(180);
+    },
+    applyArmedBrush: async (a, tk) => {
+      if (!pendingBrushStackRef.current.length) throw new Error("no brush lens is queued");
+      const material = brushSelectionSnapshot();
+      if (!hasBrushMaterial(material)) throw new Error("nothing is highlighted");
+      const button = tk.elementCenter(".brush-go");
+      if (button) await tk.click(button.x, button.y);
+      else if (!pressPendingBrushGo()) {
+        throw new Error("the brush could not be applied");
+      }
+      await tk.wait(300);
+    },
+    queueBrushLens: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.lens, ctx);
+      if (!op) throw new Error(`no lens called “${a.lens}”`);
+      const button = tk.elementCenter(`[data-op-id="${op.id}"] .rail-brush-btn`);
+      if (button) await tk.click(button.x, button.y);
+      else handleBrushAffordance({ kind: "lens", id: op.id, name: op.name });
+      await tk.wait(180);
+      return { type: "brush-queue-item", id: op.id, lensId: op.id, index: pendingBrushStackRef.current.length - 1 };
+    },
+    setBrushGeneratorDestination: async (a, tk, ctx) => {
+      const struct = directorResolveGenerator(a.generator, ctx);
+      if (!struct) throw new Error(`no generator called “${a.generator}”`);
+      const button = tk.elementCenter(`[data-struct-id="${struct.id}"] .rail-brush-btn`);
+      if (button) await tk.click(button.x, button.y);
+      else handleBrushAffordance({ kind: "generator", id: struct.id, name: struct.title });
+      if (a.mode === "source") setPendingGeneratorMode("source");
+      await tk.wait(180);
+      return { type: "brush-generator", id: struct.id, generatorId: struct.id };
+    },
+    reorderBrushQueue: async (a, tk) => {
+      reorderPendingBrush(Number(a.from), Number(a.to));
+      await tk.wait(120);
+      return { type: "brush-queue", ids: pendingBrushStackRef.current.map((entry) => entry.id) };
+    },
+    removeBrushQueue: async (a, tk) => {
+      removePendingBrush(Number(a.index));
+      await tk.wait(120);
+      return { type: "brush-queue", ids: pendingBrushStackRef.current.map((entry) => entry.id) };
+    },
+    previewBrushQueue: async () => ({ type: "composition-preview", ...pendingBrushComposition() }),
+    pressBrushGo: async (a, tk) => {
+      const button = tk.elementCenter(".brush-go");
+      if (button) await tk.click(button.x, button.y);
+      else if (!pressPendingBrushGo()) throw new Error("GO could not commit");
+      await tk.wait(300);
+      return { type: "brush-run", queue: pendingBrushStackRef.current.map((entry) => entry.id) };
+    },
+    cancelPendingBrush: async (a, tk) => {
+      const button = tk.elementCenter('[aria-label="Disarm brush target"]');
+      if (button) await tk.click(button.x, button.y);
+      else {
+        setPendingBrushStack([]);
+        setPendingGeneratorMode(null);
+      }
+      await tk.wait(160);
+    },
+    saveBrushQueueAsLens: async (a, tk) => {
+      savePendingBrushAsLens();
+      await tk.wait(250);
+      return { type: "lens-preview", ids: pendingBrushStackRef.current.map((entry) => entry.id) };
     },
     makeHighlightNode: async (a, tk, ctx) => {
       const button = tk.elementCenter(".omni-highlight-btn.make-node");
@@ -11207,6 +11833,110 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ? { type: "lens", lensId: created.id, id: created.id, name: created.name, record: created }
         : null;
     },
+    previewLensComposition: async (a, tk, ctx) => {
+      const first = directorResolveOp(a.a, ctx);
+      const second = directorResolveOp(a.b, ctx);
+      if (!first || !second) throw new Error("need two available lenses");
+      return { type: "composition-preview", ...previewComposition(first, second, opMap) };
+    },
+    stackLenses: async (a, tk, ctx) => {
+      const first = directorResolveOp(a.a, ctx);
+      const second = directorResolveOp(a.b, ctx);
+      if (!first || !second) throw new Error("need two available lenses");
+      const firstRow = directorOpRowCenter(tk, first);
+      const secondRow = directorOpRowCenter(tk, second);
+      if (firstRow && secondRow) {
+        await tk.moveTo(firstRow.x, firstRow.y);
+        await tk.press(first.name);
+        await tk.moveTo(secondRow.x, secondRow.y, 600);
+        await tk.release();
+      }
+      const preview = previewComposition(first, second, opMap);
+      setCompositionDraft({
+        first,
+        second,
+        preview,
+        name: (a.name || preview.nameSuggestion).slice(0, 72),
+        linkMode: a.linkMode === "latest" ? "latest" : "pinned",
+      });
+      await tk.wait(250);
+      return { type: "lens-preview", id: `${first.id}->${second.id}`, componentIds: [first.id, second.id], ...preview };
+    },
+    saveCompoundLens: async (a, tk, ctx) => {
+      const root = saveComposition(!!a.edit);
+      if (!root) throw new Error("no valid composition preview to save");
+      ctx.vars.lastOpId = root.id;
+      await tk.wait(300);
+      return { type: "lens", id: root.id, lensId: root.id, name: root.name };
+    },
+    addGrindExample: async (a, tk) => {
+      const next = keepGrindExample(a);
+      if (!next) throw new Error("example needs input and output");
+      await tk.wait(160);
+      const example = next.examples[next.examples.length - 1];
+      return { type: "grind-example", id: example.id, exampleId: example.id };
+    },
+    removeGrindExample: async (a, tk) => {
+      setGrindDraft((draftNow) => removeGrindExample(draftNow, a.example));
+      await tk.wait(120);
+      return { type: "grind-draft", id: grindDraft.id };
+    },
+    reorderGrindExample: async (a, tk) => {
+      setGrindDraft((draftNow) => reorderGrindExample(draftNow, a.example, a.to));
+      await tk.wait(120);
+      return { type: "grind-draft", id: grindDraft.id };
+    },
+    compileGrindDraft: async (a, tk) => {
+      await compileCurrentGrind();
+      setGrindOpen(true);
+      await tk.wait(240);
+      return { type: "grind-draft", id: grindDraft.id };
+    },
+    testGrindDraft: async () => ({ type: "grind-test", id: grindDraft.id, results: await testCurrentGrind() }),
+    refineGrindDraft: async (a) => {
+      const proposal = await refineCurrentGrind(a.instruction || "tighten");
+      return { type: "grind-draft", id: grindDraft.id, proposal };
+    },
+    shapeForgedLens: async (a, tk, ctx) => {
+      const op = shapeForgedLensInEditor();
+      if (!op) throw new Error("forged draft is not ready");
+      ctx.vars.lastOpId = op.id;
+      await tk.wait(250);
+      return { type: "lens", id: op.id, lensId: op.id, name: op.name };
+    },
+    rackSearch: async (a, tk) => {
+      setRackQuery((query) => ({ ...query, search: a.query || "" }));
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      await tk.wait(180);
+      return { type: "rack-query", id: `search:${a.query || ""}` };
+    },
+    rackFilter: async (a, tk) => {
+      setRackQuery((query) => ({ ...query, type: a.type || "all", sort: a.sort || query.sort }));
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      await tk.wait(180);
+      return { type: "rack-query", id: `filter:${a.type || "all"}` };
+    },
+    pinLens: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.lens, ctx);
+      if (!op) throw new Error(`no lens called “${a.lens}”`);
+      setRackMeta((meta) => ({ ...meta, [op.id]: { ...(meta[op.id] || {}), pinned: a.pinned !== false } }));
+      await tk.wait(120);
+      return { type: "lens", id: op.id, lensId: op.id, pinned: a.pinned !== false };
+    },
+    archiveLens: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.lens, ctx);
+      if (!op) throw new Error(`no lens called “${a.lens}”`);
+      archiveTransformationRecord(op.id);
+      await tk.wait(120);
+      return { type: "lens", id: op.id, lensId: op.id, archived: true };
+    },
+    restoreLens: async (a, tk, ctx) => {
+      const op = directorResolveOp(a.lens, ctx);
+      if (!op) throw new Error(`no lens called “${a.lens}”`);
+      restoreTransformationRecord(op.id);
+      await tk.wait(120);
+      return { type: "lens", id: op.id, lensId: op.id, archived: false };
+    },
     editLensByInstruction: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
       if (!op) throw new Error(`no lens called “${a.op}”`);
@@ -11588,18 +12318,30 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 <input className="move-quick-input" aria-label="Quick move" placeholder="quick move — e.g. treat as garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" aria-label="Add quick move" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
+              <LensRackToolbar
+                query={rackQuery}
+                onQuery={setRackQuery}
+                total={rackSelection.total}
+                shown={rackSelection.records.length}
+                grindCount={grindDraft.examples?.length || 0}
+                onOpenGrind={() => setGrindOpen(true)}
+                onNewCollection={() => {
+                  const name = window.prompt("Collection name");
+                  if (name?.trim()) showToast(`collection ready · ${name.trim()}`);
+                }}
+              />
               <div className="rail-scroll">
-                {transformationRepoGroups.length > 0 &&
-                  transformationRepoGroups.map((repo) => (
-                    <div key={repo.root.id} className="git-repo-group">
-                      {renderLensCard(repo.root, { depth: 0 })}
+                {visibleTransformationRepoGroups.length > 0 &&
+                  visibleTransformationRepoGroups.map((repo, index) => (
+                    <div key={repo.root?.id || repo.branches[0]?.id || repo.forks[0]?.id || index} className="git-repo-group">
+                      {repo.root && renderLensCard(repo.root, { depth: 0 })}
                       {repo.branches.map((lens) => renderLensCard(lens, { depth: 1 }))}
                       {repo.forks.map((lens) => renderLensCard(lens, { depth: 1 }))}
                     </div>
                   ))}
-                {moves.length > 0 && (<><div className="rail-section">Quick moves</div>{moves.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
-                {primitives.length > 0 && (<><div className="rail-section">Built-in</div><div className="op-chip-grid">{primitives.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat chip />))}</div></>)}
-                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
+                {moves.some((op) => visibleRackIds.has(op.id)) && (<><div className="rail-section">Quick moves</div>{moves.filter((op) => visibleRackIds.has(op.id)).map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === op.id)} brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === op.id) + 1} onBrush={() => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
+                {primitives.some((op) => visibleRackIds.has(op.id)) && (<><div className="rail-section">Built-in</div><div className="op-chip-grid">{primitives.filter((op) => visibleRackIds.has(op.id)).map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === op.id)} brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === op.id) + 1} onBrush={() => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat chip />))}</div></>)}
+                {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === op.id)} brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === op.id) + 1} onBrush={() => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
               </div>
             </section>
             <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab">
@@ -11647,6 +12389,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                     key={struct.id}
                     struct={struct}
                     marked={highlightRailGenIds.includes(struct.id)}
+                    brushArmed={pendingBrushStack.some((entry) => entry.kind === "generator" && entry.id === struct.id)}
+                    brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "generator" && entry.id === struct.id) + 1}
+                    onBrush={() =>
+                      handleBrushAffordance({
+                        kind: "generator",
+                        id: struct.id,
+                        name: struct.title,
+                      })
+                    }
                     dropTarget={symbolDropTargetId === struct.id}
                     onMaterialDragOver={() => setSymbolDropTargetId(struct.id)}
                     onMaterialDragLeave={() =>
@@ -11656,7 +12407,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                     onDelete={() => deletePatternLens(struct.id)}
                     onShare={() => sharePatternLens(struct)}
                     onEditViewLens={() => openEditLensApplyPrompt(struct)}
-                    onSettings={() => setLensSettingsId(struct.id)}
+                    onSettings={() => {
+                      setPendingBrushStack([]);
+                      setLensSettingsId(struct.id);
+                    }}
                   />
                 ))}
               </div>
@@ -11735,7 +12489,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onHighlightTransferStart={(e, nodeIds, opts = {}) =>
           startAiHighlightTransfer(e, nodeIds, opts)
         }
-        onHighlightMark={toggleHighlightAiNode}
+        onHighlightMark={(nodeId) => {
+          toggleHighlightAiNode(nodeId);
+          commitArmedBrushDelta({ aiNodeIds: [nodeId] }, `ai-tap:${nodeId}:${Date.now()}`);
+        }}
         highlightMarkedIds={highlightAiNodeSet}
         highlightStrokes={aiHighlightStrokes}
         onHighlightStrokeComplete={completeAiHighlightStroke}
@@ -12673,17 +13430,68 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           ].filter((o) => !markedOps.some((m) => m.id === o.id));
           return [...markedOps, ...rest].slice(0, 24);
         })()}
-        onOperate={highlightToolbarOperate}
+        onOperate={(op) => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })}
         onExtend={() =>
-          highlightToolbarOperate(
-            opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand")
-          )
+          handleBrushAffordance({
+            kind: "lens",
+            id: (opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand")).id,
+            name: "expand",
+          })
         }
         onSameness={() => runSamenessDiscovery(highlightSelectionIds)}
         onSaveLens={highlightSaveAsLens}
         onMakeNode={() => makeHighlightedMaterialNode()}
         onSendToAi={highlightSendToAi}
         onClear={clearHighlightSelection}
+        pendingStack={pendingBrushStack}
+        stackPreview={pendingBrushComposition()}
+        generatorNeedsChoice={
+          pendingBrushStack.some((entry) => entry.kind === "generator") &&
+          pendingBrushStack.some((entry) => entry.kind === "lens") &&
+          !pendingGeneratorMode
+        }
+        generatorMode={pendingGeneratorMode}
+        onGeneratorMode={(mode) => {
+          if (mode === "none") {
+            setPendingBrushStack((current) => current.filter((entry) => entry.kind !== "generator"));
+            setPendingGeneratorMode(null);
+          } else {
+            setPendingGeneratorMode(mode);
+          }
+        }}
+        executing={brushExecuting}
+        confirmCount={brushConfirmCount}
+        onRemovePending={removePendingBrush}
+        onReorderPending={reorderPendingBrush}
+        onSavePending={savePendingBrushAsLens}
+        onDisarm={() => {
+          setPendingBrushStack([]);
+          setPendingGeneratorMode(null);
+          setBrushConfirmCount(null);
+        }}
+        onApplyArmed={() => pressPendingBrushGo()}
+      />
+      <CompositionPreview
+        composition={compositionDraft}
+        candidates={operators.filter((op) => op.top || op.move || op.primitive)}
+        onChooseSecond={chooseStackTarget}
+        onChange={setCompositionDraft}
+        onCancel={() => setCompositionDraft(null)}
+        onSave={() => saveComposition(false)}
+        onEdit={() => saveComposition(true)}
+      />
+      <GrindWorkspace
+        draft={grindOpen ? grindDraft : null}
+        onDraft={setGrindDraft}
+        onAddManual={keepGrindExample}
+        onRemove={(id) => setGrindDraft((draftNow) => removeGrindExample(draftNow, id))}
+        onReorder={(id, index) => setGrindDraft((draftNow) => reorderGrindExample(draftNow, id, index))}
+        onCompile={compileCurrentGrind}
+        onManualFallback={useManualGrindFallback}
+        onTest={testCurrentGrind}
+        onRefine={refineCurrentGrind}
+        onShape={shapeForgedLensInEditor}
+        onClose={() => setGrindOpen(false)}
       />
       <GhostCursor />
       <CompanionChat
@@ -13082,6 +13890,15 @@ function JobPanel({ jobs, onDismiss }) {
   );
 }
 
+function BrushIcon({ className = "" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <path d="M14.7 3.2 20.8 9.3 10.5 19.6 4.4 13.5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="m4.4 13.5-1.2 4.1 3.2 3.2 4.1-1.2M15.8 4.3l3.9 3.9" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const PRIMITIVE_GLYPHS = {
   compress: "⊖",
   expand: "⊕",
@@ -13092,7 +13909,7 @@ const PRIMITIVE_GLYPHS = {
   transcend: "△",
 };
 
-function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, flat, chip, marked }) {
+function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onShare, onExplore, onRun, onBrush, brushArmed, brushOrder = 0, flat, chip, marked }) {
   const [composeOver, setComposeOver] = useState(false);
   if (!op) return null;
   const steps = op.kind === "pipeline" && op.steps ? op.steps.map((id) => opMap[id]).filter(Boolean) : [];
@@ -13110,10 +13927,10 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
   return (
     <div className={"op-card-wrap" + (chip ? " op-chip-wrap" : "")}>
       <div
-        className={"op-card" + (composeOver ? " compose-over" : "") + (chip ? " op-chip" : "") + (marked ? " omni-rail-marked" : "")}
+        className={"op-card" + (composeOver ? " compose-over" : "") + (chip ? " op-chip" : "") + (marked ? " omni-rail-marked" : "") + (brushArmed ? " brush-armed" : "")}
         data-op-id={op.id}
         onDragOver={(e) => {
-          if (onCompose && e.dataTransfer.types.includes(OP_MIME)) {
+          if (e.dataTransfer.types.includes(SEL_MIME) || (onCompose && e.dataTransfer.types.includes(OP_MIME))) {
             e.preventDefault();
             e.stopPropagation();
             setComposeOver(true);
@@ -13121,6 +13938,13 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
         }}
         onDragLeave={() => setComposeOver(false)}
         onDrop={(e) => {
+          if (e.dataTransfer.types.includes(SEL_MIME)) {
+            e.preventDefault();
+            e.stopPropagation();
+            setComposeOver(false);
+            onBrush?.();
+            return;
+          }
           if (!onCompose) return;
           const draggedId = e.dataTransfer.getData(OP_MIME);
           if (draggedId) {
@@ -13148,10 +13972,25 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
           <div className="op-card-label">
             <span className="op-card-name">{op.name}</span>
           </div>
+          {brushOrder > 0 && <span className="rack-brush-order" title={`Queued ${brushOrder}`}>{brushOrder}</span>}
           {stepNames.length > 0 && !chip && (
             <span className="op-card-stepcount">{stepNames.length}</span>
           )}
           <span className="rail-row-actions">
+            <button
+              type="button"
+              className="rail-icon-btn rail-brush-btn"
+              data-brush-affordance
+              aria-pressed={brushArmed}
+              aria-label={`Queue ${op.name} in brush stack`}
+              title="Queue in pending brush stack — GO executes"
+              onClick={(e) => {
+                e.stopPropagation();
+                onBrush?.();
+              }}
+            >
+              <BrushIcon />
+            </button>
             {!flat && steps.length > 0 && (
               <button
                 className="rail-icon-btn"
@@ -13249,17 +14088,21 @@ function LensCard({
   depth = 0,
   active,
   marked,
+  brushArmed,
   opMap,
   lenses,
   comparing,
   comparePick,
   onUse,
+  onBrush,
+  brushOrder,
   onEvolve,
   onBranch,
   onFork,
   onHistory,
   onSend,
   onCompare,
+  onStack,
   onMergeDrop,
   onDelete,
 }) {
@@ -13276,6 +14119,7 @@ function LensCard({
       className={
         "lens-card" +
         (active ? " active" : "") +
+        (brushArmed ? " brush-armed" : "") +
         (marked ? " omni-rail-marked" : "") +
         (mergeOver ? " merge-over" : "") +
         (comparing ? " comparing" : "") +
@@ -13292,7 +14136,7 @@ function LensCard({
         onUse();
       }}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes(LENS_MIME)) {
+        if (e.dataTransfer.types.includes(LENS_MIME) || e.dataTransfer.types.includes(SEL_MIME)) {
           e.preventDefault();
           e.dataTransfer.dropEffect = "copy";
           setMergeOver(true);
@@ -13300,6 +14144,13 @@ function LensCard({
       }}
       onDragLeave={() => setMergeOver(false)}
       onDrop={(e) => {
+        if (e.dataTransfer.types.includes(SEL_MIME)) {
+          e.preventDefault();
+          e.stopPropagation();
+          setMergeOver(false);
+          onBrush?.();
+          return;
+        }
         const draggedId = e.dataTransfer.getData(LENS_MIME);
         setMergeOver(false);
         if (draggedId && draggedId !== lens.id) {
@@ -13309,6 +14160,7 @@ function LensCard({
         }
       }}
     >
+      {mergeOver && <div className="lens-stack-zone">dragged lens → {lens.name} · forge reusable</div>}
       <div
         className="lens-card-top toolbox-drag-row"
         onPointerDown={(e) => startToolboxTransformationLensDrag(e, lens)}
@@ -13319,8 +14171,23 @@ function LensCard({
           aria-hidden="true"
         />
         <span className="lens-card-name">{lens.name}</span>
+        {brushOrder > 0 && <span className="rack-brush-order" title={`Queued ${brushOrder}`}>{brushOrder}</span>}
         {moveNames.length > 0 && <span className="op-card-stepcount">{moveNames.length}</span>}
         <span className="rail-row-actions">
+          <button
+            type="button"
+            className="rail-icon-btn rail-brush-btn"
+            data-brush-affordance
+            aria-pressed={brushArmed}
+            aria-label={`Queue ${lens.name} in brush stack`}
+            title="Queue in pending brush stack — GO executes"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBrush?.();
+            }}
+          >
+            <BrushIcon />
+          </button>
           <button
             className="rail-icon-btn"
             onClick={(e) => {
@@ -13360,10 +14227,11 @@ function LensCard({
             <button type="button" onClick={() => { onBranch(); setMenuOpen(false); }}>Branch</button>
             <button type="button" onClick={() => { onFork(); setMenuOpen(false); }}>Fork</button>
             <button type="button" onClick={() => { onCompare(); setMenuOpen(false); }}>Compare</button>
+            <button type="button" onClick={() => { onStack(); setMenuOpen(false); }}>Stack with…</button>
             {onHistory && (
               <button type="button" onClick={() => { onHistory(); setMenuOpen(false); }}>History</button>
             )}
-            <button type="button" className="danger" onClick={() => { onDelete(); setMenuOpen(false); }}>Delete</button>
+            <button type="button" className="danger" onClick={() => { onDelete(); setMenuOpen(false); }}>Archive</button>
           </div>
         )}
       </div>
@@ -13493,6 +14361,8 @@ function LensComparePanel({ a, b, opMap, onClose, onMerge }) {
 function PatternLensCard({
   struct,
   marked,
+  brushArmed,
+  brushOrder = 0,
   dropTarget,
   onMaterialDragOver,
   onMaterialDragLeave,
@@ -13501,6 +14371,7 @@ function PatternLensCard({
   onShare,
   onEditViewLens,
   onSettings,
+  onBrush,
 }) {
   const preview = lensPreview(struct);
   const meaning = struct.interpretation?.meaning || preview;
@@ -13527,7 +14398,7 @@ function PatternLensCard({
       }}
     >
       <div
-        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "") + (marked ? " omni-rail-marked" : "")}
+        className={"struct-card" + (dropTarget ? " drop-target merge-target" : "") + (marked ? " omni-rail-marked" : "") + (brushArmed ? " brush-armed" : "")}
         data-struct-id={struct.id}
       >
         <div
@@ -13538,7 +14409,22 @@ function PatternLensCard({
           <div className="struct-card-body">
             <span className="struct-title">{struct.title || preview}</span>
           </div>
+          {brushOrder > 0 && <span className="rack-brush-order" title={`Queued ${brushOrder}`}>{brushOrder}</span>}
           <span className="rail-row-actions">
+            <button
+              type="button"
+              className="rail-icon-btn rail-brush-btn"
+              data-brush-affordance
+              aria-pressed={brushArmed}
+              aria-label={`Queue ${struct.title} as generator destination`}
+              title="Queue generator destination — GO commits"
+              onClick={(e) => {
+                e.stopPropagation();
+                onBrush?.();
+              }}
+            >
+              <BrushIcon />
+            </button>
             {onEditViewLens && (
               <button
                 type="button"

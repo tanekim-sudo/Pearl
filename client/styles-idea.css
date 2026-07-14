@@ -3730,7 +3730,7 @@ mark.hl-fragment-mark {
 
 /* Highlighter over the left rail: cards are selectable, marks glow gold. */
 .rail-highlight-mode {
-  cursor: crosshair;
+  cursor: default;
 }
 
 .omni-rail-marked {
@@ -3739,6 +3739,23 @@ mark.hl-fragment-mark {
     0 0 0 2px rgba(232, 185, 35, 0.5),
     0 0 12px rgba(232, 185, 35, 0.32) !important;
   border-radius: 10px;
+}
+
+.op-card.brush-armed,
+.lens-card.brush-armed,
+.struct-card.brush-armed {
+  background: rgba(201, 162, 39, 0.07);
+  box-shadow: inset 3px 0 0 var(--gold-stroke, #e8b923);
+}
+
+.brush-armed .rail-row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rail-brush-btn[aria-pressed="true"] {
+  color: #17140d;
+  background: rgba(232, 185, 35, 0.3);
 }
 
 /* AI space session highlight ink. */
@@ -5255,6 +5272,10 @@ body.toolbox-dragging .toolbox-drag-row {
   display: none;
 }
 
+.op-chip .rail-row-actions .rail-icon-btn.rail-brush-btn {
+  display: inline-flex;
+}
+
 /* --- lenses pane: symbol rows --- */
 .struct-card-wrap {
   margin: 0 6px;
@@ -6102,6 +6123,92 @@ body.director-running .idea-app {
 
 .omni-highlight-btn.quiet {
   color: rgba(248, 242, 220, 0.5);
+}
+
+.omni-highlight-stack {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(42vw, 520px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.omni-highlight-stack-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 3px 5px 3px 4px;
+  border: 1px solid rgba(245, 230, 163, 0.2);
+  border-radius: 999px;
+  color: rgba(248, 242, 220, 0.86);
+  font-size: 10.5px;
+}
+
+.omni-highlight-stack-chip b {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(232, 185, 35, 0.25);
+  font-size: 9px;
+}
+
+.omni-highlight-stack-chip button,
+.brush-generator-choice button {
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  padding: 1px 3px;
+  cursor: pointer;
+}
+
+.omni-highlight-stack-chip button:disabled {
+  opacity: 0.2;
+}
+
+.brush-generator-choice {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(248, 242, 220, 0.84);
+  font-size: 10.5px;
+}
+
+.brush-generator-choice button:hover,
+.brush-generator-choice button.active {
+  background: rgba(232, 185, 35, 0.2);
+}
+
+.brush-go {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  border: 1px solid rgba(245, 230, 163, 0.42);
+  color: #fff6d5;
+}
+
+.brush-go small {
+  font-size: 9px;
+  opacity: 0.65;
+}
+
+.rack-brush-order {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 50%;
+  background: var(--gold-stroke, #e8b923);
+  color: #17140d;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .omni-highlight-op-wrap {

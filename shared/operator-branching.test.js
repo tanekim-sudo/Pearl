@@ -8,6 +8,9 @@ import {
   branchOutputNames,
 } from "./operator-branching.js";
 import { migrateOperatorStore } from "./transform-primitives.js";
+import "./lens-grammar.test.js";
+import "./lens-grinding.test.js";
+import "./lens-rack.test.js";
 
 const mapOf = (ops) => Object.fromEntries(ops.map((o) => [o.id, o]));
 

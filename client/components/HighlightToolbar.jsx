@@ -18,6 +18,18 @@ export default function HighlightToolbar({
   onMakeNode,
   onSendToAi,
   onClear,
+  pendingStack = [],
+  stackPreview = null,
+  generatorNeedsChoice = false,
+  generatorMode = null,
+  onGeneratorMode,
+  executing = false,
+  confirmCount = null,
+  onDisarm,
+  onApplyArmed,
+  onRemovePending,
+  onReorderPending,
+  onSavePending,
 }) {
   const [opsOpen, setOpsOpen] = useState(false);
   const rootRef = useRef(null);
@@ -32,7 +44,7 @@ export default function HighlightToolbar({
     return () => window.removeEventListener("pointerdown", close, true);
   }, [opsOpen]);
 
-  if (!total) return null;
+  if (!total && !pendingStack.length) return null;
 
   const parts = [];
   if (paperCount) parts.push(`${paperCount} highlighted`);
@@ -45,8 +57,62 @@ export default function HighlightToolbar({
     <div className="omni-highlight-bar" ref={rootRef} onPointerDown={(e) => e.stopPropagation()}>
       <span className="omni-highlight-count">
         <span className="omni-highlight-dot" />
-        {countLabel}
+        {countLabel || "brush material"}
       </span>
+      {pendingStack.length > 0 && (
+        <span className="omni-highlight-stack">
+          {pendingStack.map((entry, index) => (
+            <span className="omni-highlight-stack-chip" key={`${entry.kind}:${entry.id}`}>
+              <b>{index + 1}</b> {entry.name}
+              {entry.kind === "lens" && (
+                <>
+                  <button type="button" disabled={index === 0} aria-label={`Move ${entry.name} earlier`} onClick={() => onReorderPending?.(index, index - 1)}>←</button>
+                  <button type="button" disabled={index >= pendingStack.filter((item) => item.kind === "lens").length - 1} aria-label={`Move ${entry.name} later`} onClick={() => onReorderPending?.(index, index + 1)}>→</button>
+                </>
+              )}
+              <button type="button" onClick={() => onRemovePending?.(index)}>×</button>
+            </span>
+          ))}
+        </span>
+      )}
+      {pendingStack.length > 1 && (
+        <button type="button" className="omni-highlight-btn quiet" onClick={onSavePending}>
+          save stack as lens
+        </button>
+      )}
+      {generatorNeedsChoice && (
+        <span className="brush-generator-choice" role="group" aria-label="Generator sequence">
+          <button type="button" className={generatorMode === "source" ? "active" : ""} onClick={() => onGeneratorMode?.("source")}>
+            collect source, then operate
+          </button>
+          <button type="button" onClick={() => onGeneratorMode?.("none")}>operate only</button>
+        </span>
+      )}
+      {pendingStack.length > 0 && total > 0 && !generatorNeedsChoice && (
+        <button
+          type="button"
+          className="omni-highlight-btn primary brush-go"
+          onClick={onApplyArmed}
+          disabled={executing || (stackPreview && !stackPreview.ok)}
+          aria-label={confirmCount ? `Confirm GO for ${confirmCount} outputs` : "GO — execute pending brush stack"}
+          title={stackPreview?.errors?.[0] || `Commit once · ${stackPreview?.count || 1} predicted output(s) · Command/Control+Enter`}
+        >
+          GO ➜ {stackPreview?.count > 1 ? <small>{stackPreview.count} outputs</small> : null}
+        </button>
+      )}
+      {pendingStack.length > 0 && (
+        <button
+          type="button"
+          className="omni-highlight-btn quiet"
+          onClick={onDisarm}
+          aria-label="Disarm brush target"
+          title="Clear pending stack (Escape)"
+        >
+          ×
+        </button>
+      )}
+      {total > 0 && (
+        <>
       <span className="omni-highlight-sep" />
       <div className="omni-highlight-op-wrap">
         <button type="button" className="omni-highlight-btn" onClick={() => setOpsOpen((o) => !o)}>
@@ -110,6 +176,8 @@ export default function HighlightToolbar({
       <button type="button" className="omni-highlight-btn quiet" onClick={onClear} title="Clear the selection (Esc)">
         ✕
       </button>
+        </>
+      )}
     </div>
   );
 }

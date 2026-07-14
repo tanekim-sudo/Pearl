@@ -5,12 +5,21 @@ import MicIcon from "./MicIcon.jsx";
 
 const TOOLS_COLLAPSED_KEY = "lens.canvas-tools.collapsed";
 
+function BrushIcon({ className = "" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+      <path d="M14.7 3.2 20.8 9.3 10.5 19.6 4.4 13.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="m4.4 13.5-1.2 4.1 3.2 3.2 4.1-1.2M15.8 4.3l3.9 3.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // Three cursors, Google Slides model: select doubles as the text cursor
 // (click empty paper to type), pen carries the eraser as a sub-mode.
 const CANVAS_TOOLS = [
   { id: "select", label: "Select — click empty paper to type", icon: "↖" },
   { id: "pen", label: "Pen — click again for eraser", icon: "✎" },
-  { id: "highlight", label: "Highlighter", icon: "▬" },
+  { id: "highlight", label: "Brush / highlight", icon: <BrushIcon /> },
 ];
 
 export default function CanvasColumn({
@@ -135,6 +144,7 @@ export default function CanvasColumn({
                     type="button"
                     className={"canvas-tool-btn" + (active ? " active" : "") + (erasing ? " erasing" : "")}
                     title={erasing ? "Eraser — click again for pen" : t.label}
+                    aria-label={erasing ? "Eraser — click again for pen" : t.label}
                     data-tool={t.id}
                     data-tour={"tool-" + t.id}
                     onClick={() => {

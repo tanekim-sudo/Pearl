@@ -857,6 +857,7 @@ export default function AiNodeCanvas({
     const toWorld = (ev) => screenToWorld(cameraRef.current, ev.clientX - rect.left, ev.clientY - rect.top);
     const points = [toWorld(e)];
     const touched = new Set();
+    const commitKey = `ai-brush-${Date.now()}-${e.pointerId}`;
     const startX = e.clientX;
     const startY = e.clientY;
 
@@ -888,7 +889,7 @@ export default function AiNodeCanvas({
         if (single.length === 1) onHighlightMark?.(single[0]);
         return;
       }
-      onHighlightStrokeComplete?.(points, [...touched]);
+      onHighlightStrokeComplete?.(points, [...touched], commitKey);
     }
 
     window.addEventListener("pointermove", onMovePt);
