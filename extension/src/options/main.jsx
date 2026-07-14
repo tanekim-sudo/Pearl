@@ -1,0 +1,61 @@
+import React, { useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { DEFAULT_DENYLIST } from "../core/security.js";
+
+function Options() {
+  const [settings, setSettings] = useState({
+    denylist: DEFAULT_DENYLIST.join("\n"),
+    retention: "session",
+    modelData: "selected-only",
+    apiOrigin: "",
+  });
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    chrome.storage.local.get(["denylist", "retention", "modelData", "apiOrigin"], (value) => {
+      setSettings((current) => ({
+        ...current,
+        ...value,
+        denylist: (value.denylist || DEFAULT_DENYLIST).join("\n"),
+      }));
+    });
+  }, []);
+
+  function update(key, value) {
+    setSaved(false);
+    setSettings((current) => ({ ...current, [key]: value }));
+  }
+
+  function save() {
+    chrome.storage.local.set({
+      ...settings,
+      denylist: settings.denylist.split(/\n+/).map((item) => item.trim()).filter(Boolean),
+    }, () => setSaved(true));
+  }
+
+  function deleteData() {
+    if (!confirm("Delete extension selections, pending work, settings, and session credentials?")) return;
+    chrome.storage.session.clear();
+    chrome.storage.local.clear(() => location.reload());
+  }
+
+  return <main>
+    <h1>Lens Everywhere settings</h1>
+    <p>Highlighting stays in extension session storage. Nothing is sent until you press GO.</p>
+    <label>Never capture on these domains<textarea rows="9" value={settings.denylist} onChange={(event) => update("denylist", event.target.value)} /></label>
+    <label>Raw selection retention<select value={settings.retention} onChange={(event) => update("retention", event.target.value)}><option value="session">Until browser session ends</option><option value="navigation">Until page navigation</option></select></label>
+    <label>Model data<select value={settings.modelData} onChange={(event) => update("modelData", event.target.value)}><option value="selected-only">Selected text only</option><option value="selected-context">Selected text plus requested context</option></select></label>
+    <label>API origin (development only)<input value={settings.apiOrigin} placeholder="https://lens.app" onChange={(event) => update("apiOrigin", event.target.value)} /></label>
+    <div><button onClick={save}>Save settings</button>{saved && <span> Saved</span>}</div>
+    <hr />
+    <h2>Site access</h2>
+    <p>Lens requests access only when you activate it on a site. Remove access any time in your browser’s extension settings.</p>
+    <h2>Delete data</h2>
+    <button onClick={deleteData}>Delete all extension data</button>
+  </main>;
+}
+
+const style = document.createElement("style");
+style.textContent = "body{font:15px system-ui;max-width:720px;margin:40px auto;padding:0 20px;color:#222}main,label{display:grid;gap:12px}label{font-weight:600}input,textarea,select,button{font:inherit;padding:9px}button{width:max-content}";
+document.head.append(style);
+createRoot(document.getElementById("root")).render(<Options />);

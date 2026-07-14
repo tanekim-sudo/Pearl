@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head><base target="_top"><style>body{font:14px Arial;padding:12px}textarea{box-sizing:border-box;width:100%;min-height:180px}button{margin-top:8px;padding:8px 12px}</style></head>
+  <body>
+    <p>Paste a previewed Lens result. The add-on inserts only after you click Insert.</p>
+    <textarea id="result" aria-label="Lens result"></textarea>
+    <button id="insert">Insert at cursor</button>
+    <p id="status" role="status"></p>
+    <script>
+      document.getElementById("insert").addEventListener("click", function () {
+        var status = document.getElementById("status");
+        status.textContent = "Inserting…";
+        google.script.run
+          .withSuccessHandler(function (value) { status.textContent = "Inserted " + value.inserted + " characters."; })
+          .withFailureHandler(function (error) { status.textContent = error.message; })
+          .insertLensResult(document.getElementById("result").value);
+      });
+    </script>
+  </body>
+</html>

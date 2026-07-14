@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Lens editor fixtures</title><style>body{font:16px system-ui;max-width:800px;margin:30px auto}section{margin:24px 0;padding:16px;border:1px solid #bbb}textarea,[contenteditable]{display:block;width:100%;min-height:80px;border:1px solid #777;padding:8px}.gmail,.notion{min-height:60px}</style></head>
+  <body>
+    <h1>Lens extension editor fixtures</h1>
+    <section><h2>Text field</h2><textarea id="field">Alpha selected material omega.</textarea></section>
+    <section><h2>Nested contenteditable</h2><div id="editable" contenteditable="true"><p>Editable <strong>nested selection</strong> and suffix.</p></div></section>
+    <section><h2>Gmail semantic compose</h2><div class="gmail" contenteditable="true" role="textbox" aria-label="Message Body">Compose body.<br><br>— Signature</div></section>
+    <section><h2>Notion current block</h2><div class="notion" contenteditable="true" data-content-editable-leaf="true">Current Notion-like block.</div></section>
+    <section><h2>Open shadow DOM</h2><div id="shadow"></div></section>
+    <iframe id="same-origin" srcdoc="<p>Same-origin frame selection.</p>"></iframe>
+    <script>const root=document.getElementById("shadow").attachShadow({mode:"open"});root.innerHTML="<p>Open shadow selection.</p>";</script>
+  </body>
+</html>

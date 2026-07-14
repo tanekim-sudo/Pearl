@@ -1,0 +1,12 @@
+{
+  "passed": 4,
+  "failed": 0,
+  "checks": [
+    "persistent selection",
+    "queue has no auto-run",
+    "preview before mutation",
+    "field insertion verification"
+  ],
+  "browser": "149.0.7827.55",
+  "generatedAt": "2026-07-14T02:08:47.731Z"
+}

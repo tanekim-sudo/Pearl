@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Lens Everywhere",
+  "version": "1.0.0",
+  "description": "Capture page material, queue ordered lenses, and run only when you press GO.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel", "contextMenus", "identity", "clipboardWrite"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "assets/background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Open Lens Everywhere"
+  },
+  "commands": {
+    "toggle-highlighter": {
+      "suggested_key": {
+        "default": "Alt+Shift+L"
+      },
+      "description": "Toggle the page highlighter"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+  },
+  "incognito": "not_allowed"
+}

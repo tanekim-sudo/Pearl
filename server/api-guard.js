@@ -9,8 +9,14 @@ import { verifyRequestUser, isServerSupabaseConfigured } from "./supabase-auth.j
  * @returns {Promise<boolean>} true when the handler should continue
  */
 export async function guardAiRequest(req, res) {
-  if (!isServerSupabaseConfigured() || process.env.SUPABASE_REQUIRE_AUTH !== "true") {
+  const production = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+  const mustAuthenticate = production || process.env.SUPABASE_REQUIRE_AUTH === "true";
+  if (!mustAuthenticate) {
     return true;
+  }
+  if (!isServerSupabaseConfigured()) {
+    res.status(503).json({ error: "Authentication service is not configured." });
+    return false;
   }
   const verified = await verifyRequestUser(req);
   if (!verified) {

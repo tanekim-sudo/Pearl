@@ -218,6 +218,11 @@ import {
   previewComposition,
 } from "../shared/lens-grammar.js";
 import {
+  composeBrushStack,
+  hasBrushMaterial,
+  materialSelectionSnapshot,
+} from "../shared/lens-runtime.js";
+import {
   addGrindExample,
   applyCompiledGrind,
   buildGrindCompilationPrompt,
@@ -228,7 +233,13 @@ import {
   reorderGrindExample,
   testForgedDraft,
 } from "../shared/lens-grinding.js";
-import { lensRackRecord, selectRack } from "../shared/lens-rack.js";
+import {
+  createLensPack,
+  importLensPack,
+  lensRackRecord,
+  previewLensPackImport,
+  selectRack,
+} from "../shared/lens-rack.js";
 import {
   blockWidth,
   blockHeight,
@@ -321,6 +332,8 @@ const OP_MIME = "application/lens-op";
 const STRUCT_MIME = "application/lens-structure";
 const SEL_MIME = "application/lens-selection";
 const LENS_MIME = "application/lens-lens";
+const EXTERNAL_LENS_PACK_MIME = "application/vnd.lens.pack+json";
+const EXTERNAL_GENERATOR_MIME = "application/vnd.lens.generator+json";
 const GRIND_DRAFT_KEY = "lens.grind.draft.v1";
 const RACK_META_KEY = "lens.rack.meta.v1";
 const COMBINE_THRESHOLD = 14; // px moved before drop-on-item triggers combine
@@ -4218,23 +4231,17 @@ export default function App() {
 
   function brushSelectionSnapshot(delta = null) {
     if (delta) {
-      return {
+      return materialSelectionSnapshot({
         paperIds: [...new Set(delta.paperIds || [])],
         aiNodeIds: [...new Set(delta.aiNodeIds || [])],
         fragments: delta.fragments || [],
-      };
+      });
     }
-    return {
+    return materialSelectionSnapshot({
       paperIds: [...highlightSelectionRef.current],
       aiNodeIds: [...highlightAiNodeIds],
       fragments: [...highlightFragmentsRef.current],
-    };
-  }
-
-  function hasBrushMaterial(material) {
-    return Boolean(
-      material?.paperIds?.length || material?.aiNodeIds?.length || material?.fragments?.length
-    );
+    });
   }
 
   function resolveBrushOperator(target) {
@@ -4342,50 +4349,10 @@ export default function App() {
   function pendingBrushComposition() {
     const queue = pendingBrushStackRef.current;
     if (!queue.length) return { ok: false, errors: ["queue at least one lens"] };
-    const generator = queue.find((entry) => entry.kind === "generator") || null;
-    const lensQueue = queue.filter((entry) => entry.kind === "lens");
-    if (!lensQueue.length) {
-      return generator
-        ? { ok: true, target: generator, generator, count: 1, label: generator.name }
-        : { ok: false, errors: ["queue at least one lens"] };
-    }
-    if (generator && !pendingGeneratorMode) {
-      return { ok: false, errors: ["choose how the generator joins this stack"] };
-    }
-    const resolved = lensQueue.map(resolveBrushOperator);
-    if (resolved.some((op) => !op)) return { ok: false, errors: ["queued lens is missing"] };
-    let current = resolved[0];
-    let map = { ...opMap };
-    let count = Number(current.outputCount) || 1;
-    const errors = [];
-    const warnings = [];
-    for (let index = 1; index < resolved.length; index += 1) {
-      const next = resolved[index];
-      const preview = previewComposition(current, next, map);
-      errors.push(...preview.errors);
-      warnings.push(...preview.warnings);
-      if (!preview.ok) break;
-      const made = createCompoundOperator(current, next, map, {
-        name: `${current.name} → ${next.name}`,
-        confirmed: true,
-        idFactory: uid,
-      });
-      map = { ...map, ...Object.fromEntries(made.ops.map((op) => [op.id, op])) };
-      current = map[made.rootId];
-      count = made.preview.outputContract.count;
-    }
-    return {
-      ok: errors.length === 0,
-      errors,
-      warnings,
-      count,
-      label: [
-        ...resolved.map((op) => op.name),
-        ...(generator ? [`collect source in ${generator.name}`] : []),
-      ].join(" → "),
-      target: { kind: "lens", id: current.id, name: current.name, op: current, opMap: map },
-      generator,
-    };
+    return composeBrushStack(queue, resolveBrushOperator, opMap, {
+      generatorMode: pendingGeneratorMode,
+      idFactory: uid,
+    });
   }
 
   function pressPendingBrushGo(commitKey = null) {
@@ -4444,6 +4411,39 @@ export default function App() {
       linkMode: "pinned",
       pendingTail: queue.slice(2),
     });
+  }
+
+  function importPortableLensPack(raw) {
+    let pack;
+    try {
+      pack = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const preview = previewLensPackImport(pack, operators);
+      const summary = [
+        `${preview.newCount} new`,
+        `${preview.entries.filter((entry) => entry.status.startsWith("duplicate")).length} duplicate`,
+        `${preview.conflicts.length} conflict`,
+      ].join(" · ");
+      if (!window.confirm(`Preview ${pack.name || "Lens pack"}\n${summary}\n\nContinue to import choices?`)) return false;
+      const choices = {};
+      for (const entry of preview.entries) {
+        if (entry.status === "new") choices[entry.id] = "add";
+        else if (entry.status.startsWith("duplicate")) choices[entry.id] = "skip";
+        else {
+          const choice = window.prompt(
+            `${entry.name || entry.id} conflicts with an existing lens.\nEnter replace, keep-both, or skip.`,
+            "keep-both"
+          );
+          choices[entry.id] = ["replace", "keep-both", "skip"].includes(choice) ? choice : "skip";
+        }
+      }
+      const imported = importLensPack(pack, operators, choices, uid);
+      setOperators(imported.operators);
+      showToast(`imported ${preview.newCount} new lens${preview.newCount === 1 ? "" : "es"}`);
+      return true;
+    } catch (error) {
+      showToast(error?.message || "invalid Lens pack");
+      return false;
+    }
   }
 
   /** AI-space highlight stroke finished: keep the ink, mark touched nodes. */
@@ -13011,7 +13011,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             e.preventDefault();
             setDropReady(true);
             setCanvasDropOver(true);
-            if (e.dataTransfer.types.includes(OP_MIME) || e.dataTransfer.types.includes(LENS_MIME)) {
+            if (e.dataTransfer.types.includes(OP_MIME) || e.dataTransfer.types.includes(LENS_MIME) || e.dataTransfer.types.includes(EXTERNAL_LENS_PACK_MIME) || e.dataTransfer.types.includes(EXTERNAL_GENERATOR_MIME)) {
               e.dataTransfer.dropEffect = "copy";
               const hit = itemAtPointForDrop(e.clientX, e.clientY);
               const sel = selRef.current;
@@ -13030,11 +13030,35 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             setCanvasDropOver(false);
           }
         }}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           setDropReady(false);
           setDropTargetId(null);
           setCanvasDropOver(false);
           e.preventDefault();
+          const portablePack = e.dataTransfer.getData(EXTERNAL_LENS_PACK_MIME);
+          if (portablePack) {
+            importPortableLensPack(portablePack);
+            return;
+          }
+          const portableGenerator = e.dataTransfer.getData(EXTERNAL_GENERATOR_MIME);
+          if (portableGenerator) {
+            try {
+              const value = JSON.parse(portableGenerator);
+              if (value.kind !== "lens-generator-export" || value.version !== 1) throw new Error("unsupported generator export");
+              setLenses((current) => [...current, {
+                id: uid(),
+                title: value.name || "Imported generator",
+                description: value.summary || "",
+                objects: value.privacy?.sourceIncluded ? value.items || [] : [],
+                importedFrom: value.id,
+                createdAt: Date.now(),
+              }]);
+              showToast(`imported ${value.name || "generator"}`);
+            } catch (error) {
+              showToast(error?.message || "invalid generator export");
+            }
+            return;
+          }
           const aiOut = e.dataTransfer.getData(AI_OUTPUT_MIME);
           if (aiOut) {
             const w = clientToWorld(e.clientX, e.clientY);
@@ -13057,8 +13081,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             return;
           }
           if (e.dataTransfer.files?.length) {
+            const file = e.dataTransfer.files[0];
+            if (file.name.toLowerCase().endsWith(".lens.json")) {
+              importPortableLensPack(await file.text());
+              return;
+            }
             const w = clientToWorld(e.clientX, e.clientY);
-            addImage(e.dataTransfer.files[0], w);
+            addImage(file, w);
           }
         }}
       />
@@ -13851,7 +13880,7 @@ function startOpDrag(e, op) {
 }
 
 function startToolboxOperatorDrag(e, op) {
-  if (e.target.closest?.("button, input, textarea, a")) return;
+  if (e.target.closest?.("button, input, textarea, a, [data-external-drag]")) return;
   toolboxApplyDragRef.current?.(e, { kind: "operator", opId: op.id, label: op.name });
 }
 
@@ -13865,7 +13894,7 @@ function startToolboxTransformationLensDrag(e, lens) {
 }
 
 function startToolboxPatternLensDrag(e, struct) {
-  if (e.target.closest?.("button, input, textarea, a, .struct-card-actions")) return;
+  if (e.target.closest?.("button, input, textarea, a, .struct-card-actions, [data-external-drag]")) return;
   toolboxApplyDragRef.current?.(e, {
     kind: "pattern-lens",
     structId: struct.id,
@@ -14084,15 +14113,27 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
       >
         <div
           className="op-card-row toolbox-drag-row"
+          draggable
+          onDragStart={(e) => {
+            const href = `${window.location.origin}/?lens=${encodeURIComponent(op.id)}`;
+            const pack = createLensPack([op.id], Object.values(opMap), { name: op.name });
+            const escape = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+            e.dataTransfer.setData(OP_MIME, op.id);
+            e.dataTransfer.setData("text/plain", `${op.name}\n${op.description || ""}\n${href}`);
+            e.dataTransfer.setData("text/html", `<p><strong>${escape(op.name)}</strong></p><p>${escape(op.description)}</p><p><a href="${href}">Open in Lens</a></p>`);
+            e.dataTransfer.setData("text/uri-list", href);
+            e.dataTransfer.setData(EXTERNAL_LENS_PACK_MIME, JSON.stringify(pack));
+            e.dataTransfer.effectAllowed = "copy";
+          }}
           onPointerDown={(e) => startToolboxOperatorDrag(e, op)}
           title={rowTitle}
         >
           {glyph ? (
-            <span className="op-chip-glyph" aria-hidden="true">
+            <span className="op-chip-glyph" aria-hidden="true" draggable data-external-drag title="Drag outside Lens">
               {glyph}
             </span>
           ) : (
-            <span className="op-drag-grip" aria-hidden="true">
+            <span className="op-drag-grip" aria-hidden="true" draggable data-external-drag title="Drag outside Lens">
               ⠿
             </span>
           )}
@@ -14534,9 +14575,29 @@ function PatternLensCard({
       >
         <div
           className="struct-card-row toolbox-drag-row"
+          onDragStart={(e) => {
+            const name = struct.title || preview || "Generator";
+            const href = `${window.location.origin}/?generator=${encodeURIComponent(struct.id)}`;
+            const payload = {
+              kind: "lens-generator-export",
+              version: 1,
+              id: struct.id,
+              name,
+              summary: meaning || "",
+              itemCount: (struct.objects || []).length,
+              items: [],
+              privacy: { sourceIncluded: false },
+              exportedAt: Date.now(),
+            };
+            e.dataTransfer.setData("text/plain", `${name}\n${meaning || ""}\n${href}`);
+            e.dataTransfer.setData("text/uri-list", href);
+            e.dataTransfer.setData(EXTERNAL_GENERATOR_MIME, JSON.stringify(payload));
+            e.dataTransfer.effectAllowed = "copy";
+          }}
           onPointerDown={(e) => startToolboxPatternLensDrag(e, struct)}
           title={[meaning, "drag onto paper or AI · drop material here to deepen"].filter(Boolean).join("\n")}
         >
+          <span className="op-drag-grip" draggable data-external-drag title="Drag privacy-safe generator outline">⠿</span>
           <div className="struct-card-body">
             <span className="struct-title">{struct.title || preview}</span>
           </div>

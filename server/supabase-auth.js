@@ -16,7 +16,7 @@ export function isServerSupabaseConfigured() {
   return readServerSupabaseConfig() !== null;
 }
 
-function getAdminClient() {
+export function getAdminClient() {
   const config = readServerSupabaseConfig();
   if (!config) return null;
   if (!adminClient) {

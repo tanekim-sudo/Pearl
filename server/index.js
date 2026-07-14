@@ -17,6 +17,13 @@ import {
 } from "../shared/share-bundle.js";
 import { attachLensUser } from "./supabase-auth.js";
 import { guardAiRequest } from "./api-guard.js";
+import { corsOptions, rateLimit, securityHeaders } from "./http-security.js";
+import {
+  extensionArtifact,
+  extensionExecute,
+  extensionGenerator,
+  extensionLibrary,
+} from "./extension-api.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -28,13 +35,29 @@ if (!hasKey()) {
 }
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: "16mb" }));
+app.use(cors(corsOptions()));
+app.use(securityHeaders);
+app.use(express.json({ limit: "4mb" }));
 app.use(attachLensUser);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL });
 });
+
+const extensionLimiter = rateLimit({ windowMs: 60_000, limit: 24 });
+const extensionHandler = (handler) => async (req, res) => {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    console.error(`[lens] ${req.path} failed:`, err?.message || err);
+    res.status(err?.status || 500).json({ error: err?.message || "Extension request failed." });
+  }
+};
+app.get("/api/extension/library", extensionLimiter, extensionHandler(extensionLibrary));
+app.post("/api/extension/execute", extensionLimiter, express.json({ limit: "512kb" }), extensionHandler(extensionExecute));
+app.post("/api/extension/artifacts", extensionLimiter, express.json({ limit: "512kb" }), extensionHandler(extensionArtifact));
+app.delete("/api/extension/artifacts/:id", extensionLimiter, extensionHandler(extensionArtifact));
+app.post("/api/extension/generators", extensionLimiter, express.json({ limit: "256kb" }), extensionHandler(extensionGenerator));
 
 app.post("/api/run", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="MailApp">
+  <Id>8e31db16-5365-4d6d-a96c-417a377e42cf</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Lens</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Lens for Outlook"/>
+  <Description DefaultValue="Insert a previewed Lens result into the active message."/>
+  <IconUrl DefaultValue="https://lens.app/integrations/outlook/icon-64.png"/>
+  <SupportUrl DefaultValue="https://lens.app/privacy/lens-everywhere"/>
+  <AppDomains><AppDomain>https://lens.app</AppDomain></AppDomains>
+  <Hosts><Host Name="Mailbox"/></Hosts>
+  <Requirements><Sets><Set Name="Mailbox" MinVersion="1.5"/></Sets></Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemEdit">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://lens.app/integrations/outlook/taskpane.html"/>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or"><Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/></Rule>
+</OfficeApp>

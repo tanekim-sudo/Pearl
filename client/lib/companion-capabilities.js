@@ -92,6 +92,17 @@ const RAW_CAPABILITIES = [
   ["clearUserLenses", {}, true, ["lens"], "Clear user lenses after confirmation"],
   ["clearGenerators", {}, true, ["generator"], "Clear generators after confirmation"],
   ["clearWorkspaceDomains", { domains: "array" }, true, ["paper", "ai", "lens", "generator"], "Clear chosen domains after confirmation"],
+  ["capturePageSelection", {}, false, ["extension", "highlight"], "Capture the current external page selection", "extension"],
+  ["togglePageHighlighter", { enabled: "boolean?" }, false, ["extension", "highlight", "interface"], "Toggle the external page highlighter", "extension"],
+  ["queueExternalLens", { lens: "string" }, false, ["extension", "highlight", "lens"], "Queue a lens in the external page stack without running it", "extension"],
+  ["setExternalGenerator", { generator: "string" }, false, ["extension", "generator"], "Set the external generator destination without mutating it", "extension"],
+  ["previewExternalGo", {}, false, ["extension", "highlight", "lens"], "Preview external-page disclosure and output count", "extension"],
+  ["pressExternalGo", {}, false, ["extension", "highlight", "lens"], "Run the external stack only at the explicit GO boundary", "extension"],
+  ["copyExternalResult", { result: "string" }, false, ["extension"], "Copy a staged external-page result", "extension"],
+  ["insertExternalResult", { result: "string" }, false, ["extension"], "Insert a staged result through the verified page adapter", "extension"],
+  ["replaceExternalSelection", { result: "string" }, false, ["extension"], "Replace an unchanged page selection through the verified adapter", "extension"],
+  ["annotateExternalResult", { result: "string" }, false, ["extension", "highlight"], "Annotate a staged result without replacing page material", "extension"],
+  ["openExternalArtifact", { result: "string" }, false, ["extension", "paper"], "Open a staged extension artifact in Lens", "extension"],
 ];
 
 const RESULT_TYPES = {
@@ -179,7 +190,7 @@ const INTENT_EXAMPLES = {
 };
 
 export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
-  ([name, args, destructive, domains, purpose]) => ({
+  ([name, args, destructive, domains, purpose, platform = "app"]) => ({
     name,
     args,
     destructive,
@@ -192,8 +203,11 @@ export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
     observation: domains.includes("interface") && domains.length === 1 ? [] : ["selection", "objects", "viewport"],
     risk: destructive ? "high" : ["transformMaterial", "arrangeItems", "groupItems"].includes(name) ? "medium" : "low",
     testCaseId: `capability-${name}`,
+    platform,
   })
 );
+
+export const EXTENSION_COMPANION_CAPABILITIES = COMPANION_CAPABILITIES.filter((entry) => entry.platform === "extension");
 
 export const COMPANION_VERBS = Object.fromEntries(
   COMPANION_CAPABILITIES.map(({ name, args, destructive, domains, purpose }) => [
@@ -202,15 +216,15 @@ export const COMPANION_VERBS = Object.fromEntries(
   ])
 );
 
-export function capabilityPrompt() {
-  return COMPANION_CAPABILITIES.map(
+export function capabilityPrompt(platform = "app") {
+  return COMPANION_CAPABILITIES.filter((entry) => entry.platform === platform).map(
     (capability) =>
       `- ${capability.name}(${Object.entries(capability.args).map(([key, type]) => `${key}: ${type}`).join(", ")}) -> ${capability.resultType} — ${capability.purpose}; e.g. “${capability.examples[0]}”${capability.destructive ? " [confirmation required]" : ""}`
   ).join("\n");
 }
 
-export function validateCapabilityNames(registeredNames) {
-  const documented = new Set(COMPANION_CAPABILITIES.map((entry) => entry.name));
+export function validateCapabilityNames(registeredNames, capabilities = COMPANION_CAPABILITIES.filter((entry) => entry.platform === "app")) {
+  const documented = new Set(capabilities.map((entry) => entry.name));
   const registered = new Set(registeredNames);
   return {
     undocumented: [...registered].filter((name) => !documented.has(name)),
@@ -219,7 +233,10 @@ export function validateCapabilityNames(registeredNames) {
 }
 
 export function validateCapabilityManifest(registeredNames, capabilities = COMPANION_CAPABILITIES) {
-  const names = validateCapabilityNames.call(null, registeredNames);
+  const registeredCapabilities = capabilities === COMPANION_CAPABILITIES
+    ? capabilities.filter((entry) => entry.platform === "app")
+    : capabilities;
+  const names = validateCapabilityNames.call(null, registeredNames, registeredCapabilities);
   const missingExamples = capabilities.filter((entry) => !entry.examples?.length).map((entry) => entry.name);
   const missingAnimation = capabilities
     .filter((entry) => entry.animation !== "director")
