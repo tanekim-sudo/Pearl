@@ -97,6 +97,7 @@ import InteractiveTour from "./components/InteractiveTour.jsx";
 import TopToolbar from "./components/TopToolbar.jsx";
 import AuthOverlay from "./components/AuthOverlay.jsx";
 import PlansOverlay from "./components/PlansOverlay.jsx";
+import ExtensionDownloadModal from "./components/ExtensionDownloadModal.jsx";
 import { useSupabaseSession } from "./lib/auth-session.js";
 import { isSupabaseConfigured, getSupabase } from "./lib/supabase.js";
 import { planBadgeLabel } from "./lib/plans.js";
@@ -183,6 +184,7 @@ import {
   buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
+  parseExtensionDownloadCommand,
   parseSaveChainCommand,
   parseCompanionPlan,
   parseCompanionReply,
@@ -2257,6 +2259,7 @@ export default function App() {
     () => isSupabaseConfigured() && Boolean(supaAuth.bootAuthError)
   );
   const [plansOpen, setPlansOpen] = useState(false);
+  const [extensionDownloadOpen, setExtensionDownloadOpen] = useState(false);
   const userPlan = useUserPlan({
     session: supaAuth.session,
     sessionResolved: supaAuth.sessionResolved,
@@ -10603,6 +10606,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     else if (action === "setup-role") setOnboard({ step: "role" });
     else if (action === "new-function") openCreateLens();
     else if (action === "open-plans") setPlansOpen(true);
+    else if (action === "get-extension") setExtensionDownloadOpen(true);
   }
 
   function handleShareBoard() {
@@ -11341,6 +11345,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (pane) await tk.moveTo(pane.x, pane.y);
       tk.caption(a.caption || "generators collect material in open spatial workspaces");
       await tk.wait(520);
+    },
+    openExtensionDownload: async (a, tk) => {
+      const menu = tk.elementCenter('[data-tour="toolbar-menu"] > button');
+      if (menu) await tk.click(menu.x, menu.y);
+      await tk.wait(120);
+      const entry = tk.elementCenter('[data-action="get-extension"]');
+      if (entry) await tk.click(entry.x, entry.y);
+      else setExtensionDownloadOpen(true);
+      await tk.wait(420);
+    },
+    openExtensionLibraryExport: async (a, tk) => {
+      const menu = tk.elementCenter('[data-tour="toolbar-menu"] > button');
+      if (menu) await tk.click(menu.x, menu.y);
+      await tk.wait(120);
+      const entry = tk.elementCenter('[data-action="get-extension"]');
+      if (entry) await tk.click(entry.x, entry.y);
+      else setExtensionDownloadOpen(true);
+      await tk.wait(420);
     },
     waitForJobs: async (a, tk) => directorWaitForJobs(tk),
     savePageAsLens: async (a, tk) => {
@@ -12145,6 +12167,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       return null;
     }
+    if (parseExtensionDownloadCommand(text)) {
+      runDirectorScript([{ verb: "openExtensionDownload", args: {} }], {
+        title: "open extension download",
+      });
+      return null;
+    }
     const chain = parseSaveChainCommand(text);
     if (chain) {
       if (!chain.name) {
@@ -12435,6 +12463,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 shown={rackSelection.records.length}
                 grindCount={grindDraft.examples?.length || 0}
                 onOpenGrind={() => setGrindOpen(true)}
+                onExportLibrary={() => setExtensionDownloadOpen(true)}
                 onNewCollection={() => {
                   const name = window.prompt("Collection name");
                   if (name?.trim()) showToast(`collection ready · ${name.trim()}`);
@@ -13383,6 +13412,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         <PlansOverlay
           session={supaAuth.session}
           onClose={() => setPlansOpen(false)}
+        />
+      )}
+
+      {extensionDownloadOpen && !supaAuth.passwordRecovery && (
+        <ExtensionDownloadModal
+          onClose={() => setExtensionDownloadOpen(false)}
+          operators={operators}
+          generators={lenses}
+          rackMeta={rackMeta}
         />
       )}
 

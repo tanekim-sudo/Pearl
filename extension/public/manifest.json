@@ -28,5 +28,12 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; frame-ancestors 'none'"
   },
+  "externally_connectable": {
+    "matches": [
+      "https://representation-eta.vercel.app/*",
+      "http://localhost:5173/*",
+      "http://127.0.0.1:5173/*"
+    ]
+  },
   "incognito": "not_allowed"
 }

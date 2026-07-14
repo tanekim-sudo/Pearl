@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DEFAULT_DENYLIST } from "../core/security.js";
+import { createMessage } from "../core/messages.js";
 
 function Options() {
   const [settings, setSettings] = useState({
@@ -10,6 +11,7 @@ function Options() {
     apiOrigin: "",
   });
   const [saved, setSaved] = useState(false);
+  const [libraryStatus, setLibraryStatus] = useState("");
 
   useEffect(() => {
     chrome.storage.local.get(["denylist", "retention", "modelData", "apiOrigin"], (value) => {
@@ -39,6 +41,25 @@ function Options() {
     chrome.storage.local.clear(() => location.reload());
   }
 
+  async function importLibrary(file) {
+    if (!file || file.size > 10 * 1024 * 1024) {
+      setLibraryStatus("Choose a library file up to 10 MB.");
+      return;
+    }
+    try {
+      const bundle = JSON.parse(await file.text());
+      const preview = await chrome.runtime.sendMessage(createMessage("library-import-preview", { bundle }));
+      if (!preview?.ok) throw new Error(preview?.error);
+      const counts = preview.value.counts;
+      if (!confirm(`Import ${counts.lenses} lenses and ${counts.generators} generators? Duplicates are skipped and newer versions replace older versions.`)) return;
+      const result = await chrome.runtime.sendMessage(createMessage("library-import", { bundle }));
+      if (!result?.ok) throw new Error(result?.error);
+      setLibraryStatus("Library imported.");
+    } catch (error) {
+      setLibraryStatus(error.message || "Invalid library file.");
+    }
+  }
+
   return <main>
     <h1>Lens Everywhere settings</h1>
     <p>Highlighting stays in extension session storage. Nothing is sent until you press GO.</p>
@@ -50,6 +71,9 @@ function Options() {
     <hr />
     <h2>Site access</h2>
     <p>Lens requests access only when you activate it on a site. Remove access any time in your browser’s extension settings.</p>
+    <h2>Library</h2>
+    <label>Import .lens-library.json or .lens.json<input type="file" accept=".json,.lens.json,.lens-library.json,application/json" onChange={(event) => importLibrary(event.target.files?.[0])} /></label>
+    {libraryStatus && <p role="status">{libraryStatus}</p>}
     <h2>Delete data</h2>
     <button onClick={deleteData}>Delete all extension data</button>
   </main>;

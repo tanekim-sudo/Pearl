@@ -7,6 +7,7 @@ import {
   classifyInterviewInput,
   looksLikeProfileAnswer,
   parseAdministrativeCommand,
+  parseExtensionDownloadCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
@@ -21,6 +22,13 @@ test("compound administrative command composes every requested clear domain", ()
     kind: "clear-workspace",
     domains: ["paper", "ai", "lenses", "generators"],
   });
+});
+
+test("extension download requests use the deterministic local path", () => {
+  assert.deepEqual(parseExtensionDownloadCommand("download the Lens Everywhere Chrome extension"), {
+    kind: "open-extension-download",
+  });
+  assert.equal(parseExtensionDownloadCommand("download this page"), null);
 });
 
 test("administrative parser recognizes user-facing and legacy domain names", () => {

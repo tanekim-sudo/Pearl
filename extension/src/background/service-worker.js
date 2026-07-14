@@ -3,6 +3,8 @@ import { apiRequest, login, openArtifact } from "./api-client.js";
 import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
+import { importLibraryFile, mergeRemoteLibrary, previewLibraryFile, readLocalLibrary } from "./library-store.js";
+import { validateExternalHandoff } from "../core/external-handoff.js";
 
 const runs = new Map();
 
@@ -103,7 +105,40 @@ async function handle(message) {
   }
   if (type === "result-action") return sendPage(type, payload);
   if (type === "auth-login") return { authenticated: await login() };
-  if (type === "library-refresh") return apiRequest("/api/extension/library");
+  if (type === "library-refresh") {
+    const local = await readLocalLibrary();
+    try {
+      const remote = await apiRequest("/api/extension/library");
+      const merged = await mergeRemoteLibrary(remote);
+      if (local.operators.length || local.generators.length) {
+        await apiRequest("/api/extension/library", {
+          method: "POST",
+          body: { operators: merged.operators, generators: merged.generators, rack: merged.rack },
+        });
+      }
+      return merged;
+    } catch {
+      return local;
+    }
+  }
+  if (type === "library-import-preview") return previewLibraryFile(payload.bundle);
+  if (type === "library-import") {
+    const imported = await importLibraryFile(payload.bundle, payload.choices || {});
+    try {
+      await apiRequest("/api/extension/library", {
+        method: "POST",
+        body: { operators: imported.operators, generators: imported.generators, rack: imported.rack },
+        idempotencyKey: payload.bundle?.integrity?.payloadHash,
+      });
+    } catch {
+      // Anonymous imports remain local and are merged on a later authenticated refresh.
+    }
+    return imported;
+  }
+  if (type === "library-pending") {
+    const stored = await BrowserPlatform.storage.get("local", ["pendingLibraryHandoff"]);
+    return stored.pendingLibraryHandoff || null;
+  }
   if (type === "open-artifact") {
     const created = await apiRequest("/api/extension/artifacts", { method: "POST", body: payload });
     await BrowserPlatform.tabs.create(await openArtifact(created.id));
@@ -138,5 +173,22 @@ globalThis.chrome?.runtime?.onMessage.addListener((raw, sender, respond) => {
   } catch (error) {
     respond({ ok: false, error: error.message });
   }
+  return true;
+});
+
+globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond) => {
+  (async () => {
+    const handoff = validateExternalHandoff(raw, sender);
+    const preview = await previewLibraryFile(handoff.bundle);
+    await BrowserPlatform.storage.set("local", {
+      pendingLibraryHandoff: {
+        bundle: preview.bundle,
+        counts: preview.counts,
+        receivedAt: Date.now(),
+        origin: handoff.origin,
+      },
+    });
+    return { accepted: true, requiresConfirmation: true, counts: preview.counts };
+  })().then((value) => respond({ ok: true, value }), (error) => respond({ ok: false, error: error.message }));
   return true;
 });

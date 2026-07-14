@@ -36,6 +36,8 @@ const RAW_CAPABILITIES = [
   ["clearHighlight", {}, false, ["highlight", "paper", "ai", "lens", "generator"], "Clear the persistent cross-domain highlight selection"],
   ["captureThread", { target: "string?", name: "string?" }, false, ["lens", "paper", "ai"], "Save the selected node's full lineage as a lens"],
   ["showLenses", {}, false, ["generator", "interface"], "Open the generators rail"],
+  ["openExtensionDownload", {}, false, ["extension", "interface"], "Open Lens Everywhere download and installation help"],
+  ["openExtensionLibraryExport", {}, false, ["extension", "lens", "generator", "interface"], "Open the explicit library privacy review and export surface"],
   ["savePageAsLens", {}, false, ["generator", "paper"], "Capture the page as a generator"],
   ["waitForJobs", {}, false, ["interface"], "Wait for running transformations"],
   ["moveItem", { target: "string", to: "{x,y}?", dx: "number?", dy: "number?" }, false, ["paper"], "Move a paper object"],
@@ -103,6 +105,7 @@ const RAW_CAPABILITIES = [
   ["replaceExternalSelection", { result: "string" }, false, ["extension"], "Replace an unchanged page selection through the verified adapter", "extension"],
   ["annotateExternalResult", { result: "string" }, false, ["extension", "highlight"], "Annotate a staged result without replacing page material", "extension"],
   ["openExternalArtifact", { result: "string" }, false, ["extension", "paper"], "Open a staged extension artifact in Lens", "extension"],
+  ["showExternalLibraryImport", {}, false, ["extension", "lens", "generator", "interface"], "Show pending library import status and review", "extension"],
 ];
 
 const RESULT_TYPES = {

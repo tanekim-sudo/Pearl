@@ -6,12 +6,33 @@ import { privacySafeGeneratorExport } from "../src/core/portable.js";
 import { createInsertionPlan, createLensRuntime, createMaterialFragment } from "../../shared/lens-runtime.js";
 import { executeExtensionVerb, parseExtensionIntent, validateExtensionVerbParity } from "../src/sidepanel/companion.js";
 import { adapterForUrl } from "../src/content/adapters/specialists.js";
+import { validateExternalHandoff } from "../src/core/external-handoff.js";
+import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle } from "../../shared/lens-library.js";
 
 test("strict messages reject spoofed fields and oversized payloads", () => {
   assert.equal(validateMessage(createMessage("go", {})).ok, true);
   assert.equal(validateMessage({ ...createMessage("go", {}), token: "secret" }).ok, false);
   assert.equal(validateMessage(createMessage("go", { text: "x".repeat(513_000) })).ok, false);
   assert.throws(() => assertTrustedSender({ id: "attacker" }, "lens"));
+});
+
+test("external library handoff requires trusted exact origin and nonce", () => {
+  const message = { type: "lens-library-handoff", version: 1, nonce: "1234567890abcdef", bundle: {} };
+  assert.equal(validateExternalHandoff(message, { url: "https://representation-eta.vercel.app/install" }).origin, "https://representation-eta.vercel.app");
+  assert.throws(() => validateExternalHandoff(message, { url: "https://representation-eta.vercel.app.attacker.test/" }), /untrusted/);
+  assert.throws(() => validateExternalHandoff({ ...message, token: "secret" }, { url: "http://localhost:5173/" }), /invalid/);
+});
+
+test("library import validates, remaps keep-both, and repeats idempotently", async () => {
+  const incoming = [{ id: "lens", name: "Incoming", version: 1 }];
+  const bundle = await createLensLibraryBundle({ operators: incoming, generators: [{ id: "g", name: "Generator" }] });
+  assert.equal((await validateLensLibraryBundle(bundle)).ok, true);
+  const first = importLensLibrary(bundle, [{ id: "lens", name: "Existing", version: 1 }], [], {
+    lenses: { lens: "keep-both" },
+  }, () => "lens-copy");
+  assert.equal(first.operators.some((entry) => entry.id === "lens-copy"), true);
+  const repeated = importLensLibrary(bundle, first.operators, first.generators, {}, () => "unused");
+  assert.equal(repeated.generators.length, first.generators.length);
 });
 
 test("denylist and SSRF policy block sensitive targets", () => {

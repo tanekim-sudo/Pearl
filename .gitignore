@@ -12,3 +12,5 @@ supabase/.branches
 .env*
 .pw-browsers/
 audit-shots/
+extension/release/*.zip
+client/public/downloads/

@@ -19,6 +19,9 @@ export const MESSAGE_TYPES = Object.freeze([
   "open-artifact",
   "auth-login",
   "library-refresh",
+  "library-import-preview",
+  "library-import",
+  "library-pending",
 ]);
 
 const allowedKeys = new Set(["version", "type", "requestId", "payload"]);
@@ -36,7 +39,8 @@ export function validateMessage(value) {
   if (value.payload != null && (typeof value.payload !== "object" || Array.isArray(value.payload))) {
     return { ok: false, error: "payload must be an object" };
   }
-  if (JSON.stringify(value).length > 512_000) return { ok: false, error: "message too large" };
+  const limit = value.type.startsWith("library-import") ? 10 * 1024 * 1024 : 512_000;
+  if (JSON.stringify(value).length > limit) return { ok: false, error: "message too large" };
   return { ok: true, value };
 }
 

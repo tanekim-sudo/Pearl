@@ -3,6 +3,7 @@ import { TRANSFORM_PRIMITIVES } from "../shared/transform-primitives.js";
 import { lensRackRecord } from "../shared/lens-rack.js";
 import { createProvenance } from "../shared/lens-runtime.js";
 import { runExecutionPlan } from "./executor.js";
+import { sanitizeLibraryValue } from "../shared/lens-library.js";
 import { getAdminClient, isServerSupabaseConfigured, verifyRequestUser } from "./supabase-auth.js";
 import { readIdempotent, writeIdempotent } from "./http-security.js";
 
@@ -48,7 +49,41 @@ async function snapshotFor(userId) {
 export async function extensionLibrary(req, res) {
   const identity = await requireExtensionUser(req, res);
   if (!identity) return;
-  const snapshot = await snapshotFor(identity.user.id);
+  let snapshot = await snapshotFor(identity.user.id);
+  if (req.method === "POST") {
+    const incomingOperators = req.body?.operators;
+    const incomingGenerators = req.body?.generators;
+    if (!Array.isArray(incomingOperators) || incomingOperators.length > 1000 || !Array.isArray(incomingGenerators) || incomingGenerators.length > 100) {
+      return res.status(400).json({ error: "invalid library sync payload" });
+    }
+    const mergeByVersion = (remote, incoming) => {
+      const merged = new Map(remote.map((entry) => [entry.id, entry]));
+      for (const entry of incoming) {
+        if (!entry?.id) continue;
+        const prior = merged.get(entry.id);
+        if (!prior || (Number(entry.version) || 1) >= (Number(prior.version) || 1)) merged.set(entry.id, sanitizeLibraryValue(entry));
+      }
+      return [...merged.values()];
+    };
+    const operators = mergeByVersion(parse(snapshot[OPERATORS_KEY], []), incomingOperators.filter((entry) => !entry.primitive));
+    const generators = mergeByVersion(parse(snapshot[GENERATORS_KEY], []), incomingGenerators);
+    const next = {
+      ...snapshot,
+      [OPERATORS_KEY]: operators,
+      [GENERATORS_KEY]: generators,
+      [RACK_KEY]: { ...parse(snapshot[RACK_KEY], {}), ...sanitizeLibraryValue(req.body?.rack || {}) },
+    };
+    const client = getAdminClient();
+    if (!client || identity.user.id === "local-development") snapshot = next;
+    else {
+      const { error } = await client.from("board_snapshots").upsert(
+        { user_id: identity.user.id, data: next, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+      if (error) throw new Error("Unable to sync Lens library.");
+      snapshot = next;
+    }
+  }
   const stored = parse(snapshot[OPERATORS_KEY], []);
   const rack = parse(snapshot[RACK_KEY], {});
   const byId = new Map([...TRANSFORM_PRIMITIVES, ...stored].map((op) => [op.id, op]));
@@ -56,13 +91,17 @@ export async function extensionLibrary(req, res) {
     ...operator,
     rack: lensRackRecord(operator, rack[operator.id] || {}),
   }));
-  const generators = parse(snapshot[GENERATORS_KEY], []).map((entry) => ({
-    id: entry.id,
-    name: entry.title || entry.name || "Generator",
-    summary: entry.description || entry.interpretation?.summary || "",
-    itemCount: (entry.objects || entry.items || []).length,
-    updatedAt: entry.updatedAt || entry.createdAt || 0,
-  }));
+  const generators = parse(snapshot[GENERATORS_KEY], []).map((entry) => {
+    const safe = sanitizeLibraryValue(entry);
+    return {
+      ...safe,
+      id: entry.id,
+      name: entry.title || entry.name || "Generator",
+      summary: entry.description || entry.interpretation?.summary || "",
+      itemCount: (entry.objects || entry.items || []).length,
+      updatedAt: entry.updatedAt || entry.createdAt || 0,
+    };
+  });
   res.json({ version: 1, operators, generators });
 }
 

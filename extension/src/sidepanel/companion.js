@@ -12,6 +12,7 @@ export const EXTENSION_VERBS = Object.freeze({
   replaceExternalSelection: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "replace" } }),
   annotateExternalResult: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "annotate" } }),
   openExternalArtifact: ({ args, action, resolveResult }) => action("open-artifact", { result: resolveResult(args.result) }),
+  showExternalLibraryImport: ({ showImport }) => showImport(),
 });
 
 export function validateExtensionVerbParity() {
@@ -39,8 +40,9 @@ export function parseExtensionIntent(text) {
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
   if (/^preview( the)? (stack|go)$/i.test(value)) return { name: "previewExternalGo", args: {} };
+  if (/^(show|open|review)( the)? (library )?import$/i.test(value)) return { name: "showExternalLibraryImport", args: {} };
   if (/^copy (result )?(.+)$/i.test(value)) return { name: "copyExternalResult", args: { result: value.match(/^copy (?:result )?(.+)$/i)[1] } };
   if (/^insert (result )?(.+)$/i.test(value)) return { name: "insertExternalResult", args: { result: value.match(/^insert (?:result )?(.+)$/i)[1] } };
   if (/^replace (with )?(.+)$/i.test(value)) return { name: "replaceExternalSelection", args: { result: value.match(/^replace (?:with )?(.+)$/i)[1] } };
-  throw new Error("Use capture selection, preview GO, press GO, copy, insert, or replace.");
+  throw new Error("Use capture selection, review library import, preview GO, press GO, copy, insert, or replace.");
 }

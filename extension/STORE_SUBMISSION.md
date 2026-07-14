@@ -1,5 +1,18 @@
 # Chrome Web Store submission
 
+## Direct developer download
+
+Production builds publish the current package at
+`/downloads/lens-everywhere-chrome-v1.0.0.zip` and the moving alias
+`/downloads/lens-everywhere-chrome-latest.zip` on the deployed Vercel app.
+The versioned filename is generated from `extension/package.json`.
+
+This is a developer-mode distribution, not one-click installation. Chrome
+cannot install an unsigned ZIP directly from a website. Users must unzip it,
+open `chrome://extensions`, enable Developer mode, choose **Load unpacked**,
+and select the unzipped folder until the Chrome Web Store release is signed
+and published.
+
 ## Single purpose
 
 Capture user-selected page material, apply an explicitly queued Lens transformation only after GO, preview results, and let the user copy, open, or conservatively insert them.

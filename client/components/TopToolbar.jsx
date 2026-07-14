@@ -16,6 +16,7 @@ function MenuDropdown({ label, items, onAction, dataTour }) {
                 key={item.id}
                 type="button"
                 className="menu-panel-item"
+                data-action={item.id}
                 disabled={item.disabled}
                 onClick={() => {
                   setOpen(false);
@@ -67,6 +68,7 @@ export default function TopToolbar({
     { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
     { id: "new-function", label: "Create lens" },
+    { id: "get-extension", label: "Get Lens Everywhere" },
   ];
   if (showPlans) allItems.push({ id: "open-plans", label: "Plans" });
 

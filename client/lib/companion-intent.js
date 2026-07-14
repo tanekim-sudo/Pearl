@@ -164,6 +164,18 @@ export function parseSaveChainCommand(text) {
   return { kind: "save-chain", name: name || null };
 }
 
+/** Local fast path for the public extension download surface. */
+export function parseExtensionDownloadCommand(text) {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (
+    /\b(?:download|get|install|export|send|transfer)\b/i.test(normalized) &&
+    /\b(?:lens everywhere|chrome extension|browser extension|library)\b/i.test(normalized)
+  ) {
+    return { kind: "open-extension-download" };
+  }
+  return null;
+}
+
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");

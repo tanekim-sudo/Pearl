@@ -3,7 +3,7 @@ import { sanitizeHtml } from "./security.js";
 
 export const LENS_MIME = "application/vnd.lens.pack+json";
 
-export function portableLensPayload(lens, operators, appOrigin = "https://lens.app") {
+export function portableLensPayload(lens, operators, appOrigin = "https://representation-eta.vercel.app") {
   const link = `${appOrigin}/?lens=${encodeURIComponent(lens.id)}`;
   const pack = createLensPack([lens.id], operators, { name: lens.name });
   const plain = `${lens.name}\n${lens.description || "Lens transformation"}\n${link}`;

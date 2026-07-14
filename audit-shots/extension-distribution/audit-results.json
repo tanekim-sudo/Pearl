@@ -1,0 +1,13 @@
+{
+  "passed": 5,
+  "failed": 0,
+  "checks": [
+    "library import preview",
+    "persistent selection",
+    "queue has no auto-run",
+    "preview before mutation",
+    "field insertion verification"
+  ],
+  "browser": "149.0.7827.55",
+  "generatedAt": "2026-07-14T04:45:14.568Z"
+}

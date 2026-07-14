@@ -1,7 +1,7 @@
 import { safeExternalUrl } from "../core/security.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
 
-const DEFAULT_WEB_ORIGIN = "https://lens.app";
+const DEFAULT_WEB_ORIGIN = "https://representation-eta.vercel.app";
 
 async function settings() {
   const stored = await BrowserPlatform.storage.get("local", ["apiOrigin"]);

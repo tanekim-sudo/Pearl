@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lens Everywhere documentation</title>
+    <style>
+      body{margin:0;background:#f6f2e8;color:#211f19;font:16px/1.6 system-ui,sans-serif}
+      main{max-width:680px;margin:auto;padding:48px 22px 80px}h1{line-height:1.15}h2{margin-top:2em}
+      .note{border:1px solid #c9bfa8;border-radius:10px;padding:12px 14px;background:#fffaf0}
+      a{color:inherit}code{font-size:.9em}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Lens</a></p>
+      <h1>Lens Everywhere</h1>
+      <p>Capture selected page material, queue ordered lenses, preview the disclosure, and run only when you press GO.</p>
+      <div class="note"><strong>Developer install:</strong> until Chrome Web Store publication, Chrome cannot install the unsigned ZIP directly from this website.</div>
+      <h2>Install on desktop Chrome</h2>
+      <ol>
+        <li>Download the ZIP from the Lens app and unzip it.</li>
+        <li>Open <code>chrome://extensions</code>.</li>
+        <li>Enable <strong>Developer mode</strong>.</li>
+        <li>Choose <strong>Load unpacked</strong> and select the unzipped folder.</li>
+      </ol>
+      <h2>Using the extension</h2>
+      <p>Open Lens Everywhere from Chrome, grant access only to the current site, select page text, and capture it. Queue lenses or a generator destination, review the disclosure, then press GO. Results remain previews until you explicitly copy, insert, replace, annotate, or open them in Lens.</p>
+      <h2>Move your library</h2>
+      <p>Choose <strong>Get Lens Everywhere</strong> in the Lens app, review the lens, generator, dependency, and material counts, then download your <code>.lens-library.json</code> file. In the extension side panel choose <strong>Import library</strong> or drop the file on the import target. Review new items, exact duplicates, updates, and ID conflicts before confirming. Re-importing the same library is idempotent.</p>
+      <p>If a stable installed extension ID is configured, <strong>Send library to extension</strong> stages the same checksummed bundle for review. Otherwise the app automatically downloads the file. Full private source/provenance fields are excluded unless separately enabled during export.</p>
+      <p><a href="/extension/privacy.html">Read the privacy policy</a></p>
+    </main>
+  </body>
+</html>

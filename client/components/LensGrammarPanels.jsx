@@ -8,6 +8,7 @@ export function LensRackToolbar({
   grindCount,
   onOpenGrind,
   onNewCollection,
+  onExportLibrary,
 }) {
   return (
     <div className="lens-rack-toolbar" data-lens-rack-toolbar>
@@ -49,6 +50,7 @@ export function LensRackToolbar({
           <option value="version">version</option>
         </select>
         <button type="button" onClick={onNewCollection} title="Create a collection">+ pack</button>
+        <button type="button" onClick={onExportLibrary} title="Use this library in Lens Everywhere">↗ extension</button>
         <span className="lens-rack-count">{shown < total ? `${shown}/${total}` : total}</span>
       </div>
     </div>

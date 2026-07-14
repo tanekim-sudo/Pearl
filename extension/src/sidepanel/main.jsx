@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { previewCompositionSequence } from "../../../shared/lens-grammar.js";
@@ -28,6 +28,19 @@ function App() {
   const [running, setRunning] = useState(false);
   const [companion, setCompanion] = useState("");
   const [ghost, setGhost] = useState(false);
+  const [importPreview, setImportPreview] = useState(null);
+  const [importChoices, setImportChoices] = useState({ lenses: {}, generators: {} });
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef(null);
+
+  function applyLibrary(data) {
+    const byId = new Map(builtIns.map((entry) => [entry.id, entry]));
+    for (const operator of data?.operators || []) {
+      byId.set(operator.id, { ...lensRackRecord(operator, operator.rack), operator });
+    }
+    setLibrary([...byId.values()]);
+    setGenerators(data?.generators || []);
+  }
 
   async function refresh() {
     const value = await call("get-session");
@@ -36,14 +49,59 @@ function App() {
 
   useEffect(() => {
     refresh().catch((e) => setError(e.message));
-    call("library-refresh").then((data) => {
-      if (data.operators?.length) setLibrary(data.operators.map((operator) => ({ ...lensRackRecord(operator, operator.rack), operator })));
-      setGenerators(data.generators || []);
+    call("library-refresh").then(applyLibrary).catch(() => {});
+    call("library-pending").then((pending) => {
+      if (pending?.bundle) previewBundle(pending.bundle);
     }).catch(() => {});
     const listener = () => refresh().catch(() => {});
     chrome.storage?.onChanged.addListener(listener);
     return () => chrome.storage?.onChanged.removeListener(listener);
   }, []);
+
+  async function previewBundle(bundle) {
+    setError("");
+    try {
+      const value = await call("library-import-preview", { bundle });
+      setImportPreview(value);
+      setImportChoices({ lenses: {}, generators: {} });
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function readImportFile(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Library file exceeds 10 MB.");
+      return;
+    }
+    try {
+      await previewBundle(JSON.parse(await file.text()));
+    } catch {
+      setError("Choose a valid .lens-library.json or .lens.json file.");
+    }
+  }
+
+  async function commitImport() {
+    setImporting(true);
+    try {
+      const value = await call("library-import", { bundle: importPreview.bundle, choices: importChoices });
+      applyLibrary(value);
+      setImportPreview(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function choiceFor(kind, entry) {
+    const selected = importChoices[kind]?.[entry.id];
+    if (selected) return selected;
+    if (entry.status === "new") return "add";
+    if (entry.status === "version-update") return "replace";
+    return "skip";
+  }
 
   const visible = useMemo(() => selectRack(library, { search: query, limit: 60 }).records, [library, query]);
   const map = useMemo(() => Object.fromEntries(library.map((entry) => [entry.id, entry.operator])), [library]);
@@ -96,6 +154,12 @@ function App() {
           if (!result) throw new Error("result not found");
           return result;
         },
+        showImport: async () => {
+          const pending = await call("library-pending");
+          if (!pending?.bundle) throw new Error("no pending library import");
+          await previewBundle(pending.bundle);
+          return pending;
+        },
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -123,6 +187,38 @@ function App() {
     </section>
     <section>
       <h2>Lens rack</h2>
+      <div
+        className="library-import"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          readImportFile(event.dataTransfer.files?.[0]);
+        }}
+      >
+        <input ref={fileRef} hidden type="file" accept=".json,.lens.json,.lens-library.json,application/json" onChange={(event) => readImportFile(event.target.files?.[0])} />
+        <button onClick={() => fileRef.current?.click()}>Import library</button>
+        <small>or drop a Lens library file here</small>
+      </div>
+      {importPreview && <div className="import-preview" role="dialog" aria-label="Library import preview">
+        <b>Review import</b>
+        <p>{importPreview.counts.lenses} lenses · {importPreview.counts.generators} generators · {importPreview.counts.generatorItems} material items</p>
+        {[["lenses", importPreview.conflicts.lenses], ["generators", importPreview.conflicts.generators]].map(([kind, entries]) =>
+          entries.length ? <div key={kind}><small>{kind}</small>{entries.map((entry) =>
+            <label key={`${kind}-${entry.id}`}><span>{entry.name || entry.id} · {entry.status}</span>
+              <select value={choiceFor(kind, entry)} onChange={(event) => setImportChoices((current) => ({
+                ...current,
+                [kind]: { ...current[kind], [entry.id]: event.target.value },
+              }))}>
+                {entry.status === "new" && <option value="add">add</option>}
+                <option value="skip">skip</option>
+                {entry.status !== "exact-duplicate" && <option value="replace">replace/update</option>}
+                <option value="keep-both">keep both</option>
+              </select>
+            </label>
+          )}</div> : null
+        )}
+        <div><button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Importing…" : "Import"}</button><button onClick={() => setImportPreview(null)}>Cancel</button></div>
+      </div>}
       <input aria-label="Search lenses" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search lenses" />
       <div className="rack">{visible.map((lens) =>
         <button key={lens.id} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "lens" } })}>
