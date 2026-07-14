@@ -450,6 +450,16 @@ export default function LensTreeEditor({
                   </span>
                   {flowSummary && <span className="fn-flow-summary">{flowSummary}</span>}
                 </div>
+                {rootDraft.composition && (
+                  <div className="fn-flow-composition-meta">
+                    compound · {rootDraft.composition.linkMode === "latest" ? "follows latest" : "pinned snapshots"} ·{" "}
+                    {(rootDraft.composition.components || [])
+                      .map((component) => `${component.name} v${component.version || 1}`)
+                      .join(" → ")}
+                    {" · "}
+                    {rootDraft.composition.algebra?.predictedOutputCount || rootDraft.outputCount || 1} predicted outputs
+                  </div>
+                )}
               </div>
             )}
 

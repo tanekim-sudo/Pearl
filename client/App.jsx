@@ -212,6 +212,7 @@ import BoardBlockItem from "./components/BoardBlockItem.jsx";
 import { DEFAULT_PAGE_ID } from "./lib/worlds.js";
 import {
   createCompoundOperator,
+  HARD_OUTPUT_CAP,
   migrateOperatorGrammar,
   operatorOutputCount,
   previewComposition,
@@ -4971,6 +4972,79 @@ export default function App() {
     if (!produced) throw new Error("forked lens produced no outputs");
   }
 
+  function splitDeclaredOutputs(raw, count) {
+    const cleaned = String(raw || "").trim();
+    if (count <= 1) return cleaned ? [cleaned] : [];
+    let parts = cleaned
+      .split(/\n{2,}/)
+      .map((part) => part.replace(/^\s*(?:\[[^\]]+\]|[-*•]|\d+[.)])\s*/m, "").trim())
+      .filter((part) => part.length > 3);
+    if (parts.length < 2) {
+      parts = cleaned.split(/\n+/).map((line) => line.trim()).filter((line) => line.length > 3);
+    }
+    return parts.length > 1 ? parts.slice(0, count) : cleaned ? [cleaned] : [];
+  }
+
+  /** Execute a pinned compound with the same map/cartesian algebra as preview. */
+  async function runCompoundOperatorJob(jobId, execOp, map, material, image, targetIds, opts = {}) {
+    const onProgress = (step) => patchJob(jobId, { step });
+    const cap = HARD_OUTPUT_CAP;
+
+    async function runOpOutputs(op, input, firstImage, lineage = []) {
+      if (!op) throw new Error("compound component is missing");
+      if (op.kind === "pipeline") {
+        let values = [{ text: input, lineage }];
+        for (const stepId of op.steps || []) {
+          const step = map[stepId];
+          if (!step) throw new Error(`missing compound step ${stepId}`);
+          const next = [];
+          if (step.fork) {
+            for (const value of values) {
+              for (const branchId of step.steps || []) {
+                next.push(...await runOpOutputs(map[branchId], value.text, null, value.lineage));
+              }
+            }
+          } else {
+            for (const value of values) {
+              next.push(...await runOpOutputs(step, value.text, firstImage, value.lineage));
+              firstImage = null;
+            }
+          }
+          values = next;
+          if (values.length > cap) throw new Error(`output cap ${cap} exceeded`);
+        }
+        return values;
+      }
+      const count = operatorOutputCount(op, map) || 1;
+      const contractInput =
+        count > 1
+          ? `${input}\n\n[OUTPUT CONTRACT: produce exactly ${count} distinct, self-contained outputs. Separate them with one blank line. No numbering or commentary.]`
+          : input;
+      onProgress(`${op.name || "step"} · ${count} output${count === 1 ? "" : "s"}`);
+      const raw = await runMoveSequenceStep(op, map, contractInput, firstImage, onProgress, operators);
+      return splitDeclaredOutputs(raw, count).map((text, outputIndex) => ({
+        text,
+        lineage: [...lineage, { opId: op.sourceComponent?.opId || op.id, name: op.name, outputIndex }],
+      }));
+    }
+
+    patchJob(jobId, {
+      step: `${execOp.name} · ${execOp.outputCount || 1} predicted outputs`,
+      startedAt: Date.now(),
+      estimatedMs: scaleEta(ETA.default * Math.max(2, Number(execOp.outputCount) || 1)),
+    });
+    const outputs = await runOpOutputs(execOp, material, image);
+    if (!outputs.length) throw new Error("compound produced no outputs");
+    for (const output of outputs) {
+      spawnAiOutputs(
+        [output.text],
+        targetIds,
+        { ...viaFromOp(execOp, targetIds), componentLineage: output.lineage },
+        { sourcePreview: opts.sourcePreview, blockType: execOp.outputBlockType || null }
+      );
+    }
+  }
+
   async function executeOperatorJob(jobId, op, targetIds, atClient, opts = {}, mapOverride = null) {
     const idSet = new Set(targetIds);
     const itemList = itemsRef.current.filter((it) => idSet.has(it.id));
@@ -5015,6 +5089,13 @@ export default function App() {
 
     if (opts.highlightQuote) {
       text = `HIGHLIGHTED:\n"""\n${opts.highlightQuote.trim()}\n"""\n\nFULL TEXT:\n"""\n${(opts.highlightContext || text).trim()}\n"""`;
+    }
+
+    if (execOp.composition?.mode === "sequential") {
+      await runCompoundOperatorJob(jobId, execOp, map, text, image, targetIds, {
+        sourcePreview: gathered.preview,
+      });
+      return;
     }
 
     // Branched lens: the shared prefix runs once, each branch continues from
@@ -7684,6 +7765,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         marked={highlightRailLensIds.includes(lens.id)}
         brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === lens.id)}
         brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === lens.id) + 1}
+        pinned={!!rackMeta[lensRootOpId(lens)]?.pinned}
+        archived={!!rackMeta[lensRootOpId(lens)]?.archivedAt}
         active={lens.id === activeTransformationId || lensRootOpId(lens) === activeTransformationId}
         opMap={opMap}
         lenses={displayTransformations}
@@ -7710,8 +7793,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           }
         }}
         onStack={() => startStackChooser(opMap[lensRootOpId(lens)])}
+        onPin={() => {
+          const opId = lensRootOpId(lens);
+          setRackMeta((meta) => ({
+            ...meta,
+            [opId]: { ...(meta[opId] || {}), pinned: !meta[opId]?.pinned, updatedAt: Date.now() },
+          }));
+        }}
         onMergeDrop={(draggedId) => stackLensRecords(draggedId, lens.id)}
-        onDelete={() => archiveTransformationRecord(lens.id)}
+        onDelete={() =>
+          rackMeta[lensRootOpId(lens)]?.archivedAt
+            ? restoreTransformationRecord(lens.id)
+            : archiveTransformationRecord(lens.id)
+        }
       />
     );
   }
@@ -8336,6 +8430,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       l.mergedFrom?.length === 2
         ? l.mergedFrom.map((mid) => transformationRepos.find((x) => x.id === mid)?.name).filter(Boolean)
         : l.mergedFromNames || null;
+    const sharedRoot = opMap[lensRootOpId(l)];
     copyShareLink(
       createLensShareBundle(l.name, opTrees, {
         name: l.name,
@@ -8343,6 +8438,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         parentName: parent?.name || l.parentName || undefined,
         forkedFromName: forked?.name || l.forkedFromName || undefined,
         mergedFromNames: mergedFromNames?.length === 2 ? mergedFromNames : undefined,
+        composition: sharedRoot?.composition || undefined,
+        outputContract: sharedRoot
+          ? {
+              inputType: sharedRoot.inputType || "text",
+              outputType: sharedRoot.outputType || sharedRoot.outputBlockType || "text",
+              outputCount: operatorOutputCount(sharedRoot, opMap) || 1,
+            }
+          : undefined,
+        forgedFrom: sharedRoot?.forgedFrom
+          ? {
+              positiveCount: sharedRoot.forgedFrom.positiveCount || 0,
+              negativeCount: sharedRoot.forgedFrom.negativeCount || 0,
+              examplesPrivate: true,
+            }
+          : undefined,
         cognitiveTransfer,
       })
     );
@@ -12512,6 +12622,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         shouldHandoffNodeDrag={() => false}
         viewportRef={aiViewportRef}
         onExploreNode={(nodeId) => exploreAiNode(nodeId, { runExpand: false })}
+        onKeepExample={(nodeId) => {
+          const node = aiNodesRef.current.find((entry) => entry.id === nodeId);
+          const parent = aiNodesRef.current.find((entry) => entry.id === node?.parentId);
+          const input =
+            parent?.expandedText?.trim() ||
+            parent?.sourceBundleText?.trim() ||
+            parent?.preview?.trim() ||
+            node?.sourcePreview?.trim();
+          const output = node?.expandedText?.trim() || node?.goldenFragment?.trim();
+          keepGrindExample({
+            input,
+            output,
+            domain: inferDomainFromMaterial(input || output || ""),
+            source: { lensId: node?.opId || node?.via?.opId || null, nodeId, historyId: node?.history?.at(-1)?.id || null },
+            sourceKind: "ai-output",
+          });
+        }}
         onFocusFromZoom={focusAiNodeFromZoom}
         onReturnToConstellation={returnAiToConstellation}
         focusedNodeId={aiFocusedNodeId}
@@ -14096,6 +14223,8 @@ function LensCard({
   onUse,
   onBrush,
   brushOrder,
+  pinned,
+  archived,
   onEvolve,
   onBranch,
   onFork,
@@ -14103,6 +14232,7 @@ function LensCard({
   onSend,
   onCompare,
   onStack,
+  onPin,
   onMergeDrop,
   onDelete,
 }) {
@@ -14228,10 +14358,11 @@ function LensCard({
             <button type="button" onClick={() => { onFork(); setMenuOpen(false); }}>Fork</button>
             <button type="button" onClick={() => { onCompare(); setMenuOpen(false); }}>Compare</button>
             <button type="button" onClick={() => { onStack(); setMenuOpen(false); }}>Stack with…</button>
+            <button type="button" onClick={() => { onPin(); setMenuOpen(false); }}>{pinned ? "Unpin" : "Pin"}</button>
             {onHistory && (
               <button type="button" onClick={() => { onHistory(); setMenuOpen(false); }}>History</button>
             )}
-            <button type="button" className="danger" onClick={() => { onDelete(); setMenuOpen(false); }}>Archive</button>
+            <button type="button" className={archived ? "" : "danger"} onClick={() => { onDelete(); setMenuOpen(false); }}>{archived ? "Restore" : "Archive"}</button>
           </div>
         )}
       </div>

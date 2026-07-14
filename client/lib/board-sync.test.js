@@ -44,6 +44,18 @@ describe("snapshotHasContent", () => {
 });
 
 describe("mergeBoardSnapshots", () => {
+  it("merges rack metadata idempotently without losing local usage or collections", () => {
+    const key = "lens.rack.meta.v1";
+    const remote = { keys: { [key]: JSON.stringify({ lens: { usageCount: 7, collectionIds: ["shared"], pinned: false } }) } };
+    const local = { keys: { [key]: JSON.stringify({ lens: { usageCount: 3, collectionIds: ["mine"], pinned: true } }) } };
+    const once = mergeBoardSnapshots(local, remote);
+    const twice = mergeBoardSnapshots(local, once);
+    const record = JSON.parse(twice.keys[key]).lens;
+    assert.equal(record.usageCount, 7);
+    assert.equal(record.pinned, true);
+    assert.deepEqual(record.collectionIds.sort(), ["mine", "shared"]);
+  });
+
   it("merges id arrays with local winning conflicts and keeps both sides", () => {
     const local = {
       keys: {

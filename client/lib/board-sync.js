@@ -343,6 +343,25 @@ export function mergeBoardSnapshots(local, remote) {
       } catch {
         keys[key] = localKeys[key];
       }
+    } else if (key === RACK_META_KEY) {
+      try {
+        const remoteMeta = JSON.parse(keys[key]) || {};
+        const localMeta = JSON.parse(localKeys[key]) || {};
+        const merged = { ...remoteMeta };
+        for (const [id, record] of Object.entries(localMeta)) {
+          const previous = merged[id] || {};
+          merged[id] = {
+            ...previous,
+            ...record,
+            usageCount: Math.max(previous.usageCount || 0, record?.usageCount || 0),
+            lastUsedAt: Math.max(previous.lastUsedAt || 0, record?.lastUsedAt || 0),
+            collectionIds: [...new Set([...(previous.collectionIds || []), ...(record?.collectionIds || [])])],
+          };
+        }
+        keys[key] = JSON.stringify(merged);
+      } catch {
+        keys[key] = localKeys[key];
+      }
     } else {
       keys[key] = localKeys[key];
     }

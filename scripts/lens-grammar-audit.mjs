@@ -55,10 +55,10 @@ await page.screenshot({ path: path.join(OUT, "rack-search.png"), fullPage: true 
 const beforeNodes = await page.locator(".ai-node").count();
 const beforeOps = JSON.parse(await page.evaluate(() => localStorage.getItem("lens.board.operators.v2"))).length;
 const brushButtons = page.locator(".rail-brush-btn");
-await brushButtons.nth(0).click();
+await brushButtons.nth(0).click({ force: true });
 await page.getByLabel("Search lens rack").fill("ground audit");
 await page.waitForTimeout(120);
-await page.locator(".rail-brush-btn").first().click();
+await page.locator(".rail-brush-btn").first().click({ force: true });
 await page.waitForTimeout(120);
 check("queueing lenses causes zero execution", (await page.locator(".ai-node").count()) === beforeNodes);
 check("queueing does not save compound", JSON.parse(await page.evaluate(() => localStorage.getItem("lens.board.operators.v2"))).length === beforeOps);

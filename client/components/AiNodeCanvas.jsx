@@ -66,6 +66,7 @@ export default function AiNodeCanvas({
   onMove,
   onExpandNode,
   onExploreNode,
+  onKeepExample,
   onReturnToConstellation,
   onFocusFromZoom,
   focusedNodeId,
@@ -1402,6 +1403,16 @@ export default function AiNodeCanvas({
           >
             <div className="ai-explore-overlay-head">
               <div className="ai-explore-overlay-label">{focusedNode.label || "AI output"}</div>
+              {focusedNode.expandedText?.trim() && (
+                <button
+                  type="button"
+                  className="ai-explore-keep-example"
+                  onClick={() => onKeepExample?.(focusedNode.id)}
+                  title="Explicitly keep this input → output transformation in the grinding tray"
+                >
+                  ◇ keep as example
+                </button>
+              )}
               <button
                 type="button"
                 className="ai-explore-overlay-close"
