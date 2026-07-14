@@ -1,6 +1,6 @@
 # Human product audit
 
-Completed: 2026-07-14T06:39:37.817Z
+Completed: 2026-07-14T07:35:04.576Z
 Target: http://127.0.0.1:5190
 
 ## Honest verdict
@@ -24,7 +24,7 @@ This was driven with visible pointer, keyboard, wheel, and drag actions. Storage
 ## Results
 
 ### First 10 minutes
-- PASS — fresh app becomes interactive under 1s (599ms)
+- PASS — fresh app becomes interactive under 1s (768ms)
 - PASS — companion opens automatically
 - PASS — legacy tour overlay is absent
 - PASS — identity prompt is understandable
@@ -146,7 +146,7 @@ This was driven with visible pointer, keyboard, wheel, and drag actions. Storage
 
 ## Measurements
 
-- Fresh interactive time: 599ms
+- Fresh interactive time: 768ms
 - Assertions: 60 passed / 0 failed / 60 total
 - Browser errors and rejected console messages: 4
 

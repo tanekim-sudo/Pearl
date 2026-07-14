@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  aiNodeEdgeHandlesInteractive,
   attachPointOnNode,
   collectAiEdges,
   edgeBundleOffsets,
@@ -1306,6 +1307,7 @@ export default function AiNodeCanvas({
                 }}
               />
               {tool === "select" &&
+                aiNodeEdgeHandlesInteractive(r, camera.scale) &&
                 ["n", "e", "s", "w"].map((side) => (
                   <span
                     key={side}
@@ -1424,8 +1426,28 @@ export default function AiNodeCanvas({
                 ×
               </button>
             </div>
-            <div className="ai-explore-overlay-text" data-testid="ai-full-output">
-              {renderNodeText(focusedNode, nodeDetailText(focusedNode))}
+            <div className="ai-explore-overlay-text-wrap">
+              <div className="ai-explore-overlay-text" data-testid="ai-full-output">
+                {renderNodeText(focusedNode, nodeDetailText(focusedNode))}
+              </div>
+              {tool === "highlight" && focusedNode.expandedText?.trim() && (
+                <FragmentHighlightLayer
+                  active
+                  text={focusedNode.expandedText}
+                  lockedQuote={focusedNode.goldenFragment?.trim() || null}
+                  onFragmentReplace={(fragment, opts) =>
+                    onFragmentReplace?.(fragment, opts, focusedNode.id)
+                  }
+                  onTransferStart={(ev, quote) =>
+                    onHighlightTransferStart?.(ev, [focusedNode.id], {
+                      immediate: true,
+                      fragment: quote,
+                      fromNode: true,
+                    })
+                  }
+                  className="ai-explore-fragment-highlight"
+                />
+              )}
             </div>
           </div>
         </div>

@@ -308,6 +308,7 @@ import {
   itemsFromHighlightGesture,
 } from "./lib/highlight-ink.js";
 import { extractFragmentRangeFromStroke } from "./lib/highlight-text.js";
+import { resolveAiFragmentNodeId } from "./lib/highlight-tool.js";
 import { renderTextWithFragmentMarks } from "./components/FragmentMarks.jsx";
 import {
   appendItemHistory,
@@ -3364,6 +3365,7 @@ export default function App() {
     const updated =
       idx >= 0 ? text.slice(0, idx) + `⟦${q}⟧` + text.slice(idx + q.length) : `${text}\n\n⟦${q}⟧`;
     updateAiNode(nodeId, { expandedText: updated, goldenFragment: q });
+    setHighlightAiNodeIds((ids) => (ids.includes(nodeId) ? ids : [...ids, nodeId]));
     setAiPanel((prev) =>
       prev?.activeNodeId === nodeId ? { ...prev, expandedText: updated } : prev
     );
@@ -10242,8 +10244,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   };
   transferFragmentReplaceRef.current = (fragment, nodeId = null) => {
     emitTourEvent("fragment-highlight");
-    const targetNodeId =
-      nodeId || selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
+    const targetNodeId = resolveAiFragmentNodeId(nodeId, selectedAiNodeIdsRef.current);
     replaceFragmentInAiNode(targetNodeId, fragment);
   };
   spaceTransferCompleteRef.current = (g, cx, cy) => {

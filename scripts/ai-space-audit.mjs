@@ -58,22 +58,31 @@ async function settleAndSeed(page, seeded) {
   await page.waitForTimeout(900);
 }
 
-async function setNodes(page, seeded) {
-  await page.evaluate((value) => {
+async function setNodes(page, seeded, cameraOverride = null) {
+  await page.evaluate(({ value, cameraOverride: nextCamera }) => {
     // Seed the current page-coordinate contract directly. Legacy coordinates
     // intentionally migrate with an offset and are not valid density fixtures.
     localStorage.setItem("lens.unified-workspace.v2", JSON.stringify({
       version: 3,
       savedAt: new Date().toISOString(),
-      camera: { x: 80, y: 56, scale: 0.72 },
+      camera: nextCamera || { x: 80, y: 56, scale: 0.72 },
       items: [],
       nodes: value,
     }));
     localStorage.removeItem("lens.board.pages.v1");
     localStorage.setItem("lens.ai.nodes.v1", JSON.stringify(value));
-  }, seeded);
+  }, { value: seeded, cameraOverride });
   await page.reload();
   await page.waitForTimeout(800);
+}
+
+async function centeredCamera(page, node, scale) {
+  const vp = await page.locator(".ai-node-viewport").boundingBox();
+  return {
+    x: vp.width / 2 - node.x * scale,
+    y: vp.height / 2 - node.y * scale,
+    scale,
+  };
 }
 
 async function pick(page, tool) {
@@ -171,7 +180,7 @@ async function textHighlightAudit(page) {
   await node.dblclick();
   await page.waitForTimeout(650);
   await pick(page, "highlight");
-  const overlay = page.locator(".fragment-highlight-text");
+  const overlay = page.locator(".ai-explore-overlay .fragment-highlight-text");
   await overlay.waitFor();
   await screenshot(page, "text-before-word-mark");
   const words = await overlay.evaluate((el) => {
@@ -197,7 +206,7 @@ async function textHighlightAudit(page) {
   check("AI text: toolbar counts living node selection", /1 node/.test((await page.locator(".omni-highlight-count").textContent()) || ""));
   await screenshot(page, "text-after-word-mark");
 
-  const mark = page.locator(".fragment-highlight-preview");
+  const mark = page.locator(".ai-explore-overlay .fragment-highlight-preview");
   const mb = await mark.boundingBox();
   const paper = await page.locator(".canvas-column-main").boundingBox();
   const drop = { x: paper.x + paper.width * 0.58, y: paper.y + paper.height * 0.62 };
@@ -214,6 +223,84 @@ async function textHighlightAudit(page) {
   }, { drop, marked });
   check("AI text: marked phrase drags to paper", landed !== null && landed < 90, landed === null ? "not found" : `landing error=${landed.toFixed(1)}px`);
   await screenshot(page, "text-fragment-to-paper");
+}
+
+async function readingFocusZoomMatrixAudit(page) {
+  const wrapped =
+    "Alpha context leads into the controlled release of pressure across a deliberately wrapped line, " +
+    "then continues with Unicode evidence العربية 日本語 🚀 and enough trailing material for multiple rows.";
+  const sibling =
+    "A separate sibling node contains unrelated market evidence and must never receive the focused fragment.";
+  const seeded = [
+    {
+      id: "zoom-text-a",
+      nodeKind: "expanded",
+      x: 180,
+      y: 528,
+      radius: 30,
+      label: "wrapped primary",
+      opLabel: "expand",
+      expandedText: wrapped,
+      createdAt: 1,
+    },
+    {
+      id: "zoom-text-b",
+      nodeKind: "expanded",
+      x: 700,
+      y: 528,
+      radius: 30,
+      label: "sibling evidence",
+      opLabel: "compare",
+      expandedText: sibling,
+      createdAt: 2,
+    },
+  ];
+
+  for (const [name, scale] of [["min", 0.05], ["default", 0.72], ["max", 3.2]]) {
+    const cameraAtScale = await centeredCamera(page, seeded[0], scale);
+    await setNodes(page, seeded, cameraAtScale);
+    await pick(page, "select");
+    const hit = scale >= 1
+      ? page.locator('[data-node-id="zoom-text-a"]')
+      : page.locator('[data-node-id="zoom-text-a"] .ai-node-screen-hit-target');
+    await hit.dblclick();
+    await page.locator(".ai-explore-overlay").waitFor();
+    await pick(page, "highlight");
+
+    const overlay = page.locator(".ai-explore-overlay .fragment-highlight-text");
+    const words = await overlay.evaluate((el) => {
+      const text = el.firstChild;
+      const source = text?.nodeValue || "";
+      return [...source.matchAll(/\S+/g)].slice(5, 9).map((match) => {
+        const range = document.createRange();
+        range.setStart(text, match.index);
+        range.setEnd(text, match.index + match[0].length);
+        const rect = range.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      });
+    });
+    await drag(
+      page,
+      { x: words[0].x + 2, y: words[0].y + words[0].height / 2 },
+      { x: words.at(-1).x + words.at(-1).width - 2, y: words.at(-1).y + words.at(-1).height / 2 },
+      18
+    );
+
+    const state = await page.evaluate(() => {
+      const nodes = JSON.parse(localStorage.getItem("lens.ai.nodes.v1") || "[]");
+      return Object.fromEntries(nodes.map((node) => [node.id, node.goldenFragment || ""]));
+    });
+    check(
+      `reading focus ${name} zoom: wrapped phrase persists on exact node`,
+      /controlled release of pressure/i.test(state["zoom-text-a"]) && !state["zoom-text-b"],
+      JSON.stringify(state)
+    );
+    check(
+      `reading focus ${name} zoom: persistent mark renders`,
+      await page.locator(".ai-explore-overlay .fragment-highlight-preview").isVisible().catch(() => false)
+    );
+    await screenshot(page, `reading-focus-${name}-zoom-wrapped-multinode`);
+  }
 }
 
 async function compactNodeAndStressAudit(page) {
@@ -280,6 +367,7 @@ async function main() {
 
   await densityAudit(page);
   await textHighlightAudit(page);
+  await readingFocusZoomMatrixAudit(page);
   await compactNodeAndStressAudit(page);
   check("no page errors", pageErrors.length === 0, pageErrors.join(" | "));
 

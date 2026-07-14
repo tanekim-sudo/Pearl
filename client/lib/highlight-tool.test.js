@@ -6,6 +6,7 @@ import {
   aiNodeTransferText,
   highlightTransferPreview,
   isHighlightTool,
+  resolveAiFragmentNodeId,
 } from "./highlight-tool.js";
 
 describe("highlight-tool", () => {
@@ -35,6 +36,13 @@ describe("highlight-tool", () => {
     assert.equal(aiNodeHighlightMarkable(node, 0), false);
     assert.equal(aiNodeHighlightMarkable(node, 0.2), true);
     assert.equal(aiNodeHighlightMarkable({ preview: "x" }, 1), false);
+  });
+
+  it("reading-focus fragments retain their explicit source node", () => {
+    assert.equal(resolveAiFragmentNodeId("focused-node", []), "focused-node");
+    assert.equal(resolveAiFragmentNodeId("focused-node", ["stale-selection"]), "focused-node");
+    assert.equal(resolveAiFragmentNodeId(null, ["a", "selected-node"]), "selected-node");
+    assert.equal(resolveAiFragmentNodeId(null, []), null);
   });
 
   it("highlightTransferPreview clips long strings", () => {

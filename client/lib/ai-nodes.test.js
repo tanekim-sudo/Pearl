@@ -4,6 +4,7 @@ import {
   AI_NODE_RADIUS,
   AI_SPAWN_MIN_DIST,
   AI_NODE_MIN_GAP,
+  aiNodeEdgeHandlesInteractive,
   attachPointOnNode,
   edgeGeometry,
   spawnChildPositions,
@@ -25,6 +26,12 @@ describe("ai-nodes layout", () => {
     assert.ok(AI_NODE_RADIUS.expanded >= 14 && AI_NODE_RADIUS.expanded <= 18);
     assert.ok(AI_SPAWN_MIN_DIST >= 90 && AI_SPAWN_MIN_DIST <= 140);
     assert.ok(AI_NODE_MIN_GAP >= 12 && AI_NODE_MIN_GAP <= 24);
+  });
+
+  it("keeps branch handles off the fixed dot-tier selection target", () => {
+    assert.equal(aiNodeEdgeHandlesInteractive(16, 0.05), false);
+    assert.equal(aiNodeEdgeHandlesInteractive(16, 0.72), true);
+    assert.equal(aiNodeEdgeHandlesInteractive(16, 3.2), true);
   });
 
   it("fans multiple children without overlap at spawn distance", () => {

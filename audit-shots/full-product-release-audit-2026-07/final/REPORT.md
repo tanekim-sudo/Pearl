@@ -1,6 +1,6 @@
 # Final adversarial audit
 
-- Run: 2026-07-14T06:48:07.265Z
+- Run: 2026-07-14T07:37:04.934Z
 - Target: `http://127.0.0.1:5190`
 - Browser scenarios: 7
 - Assertions: 32/32 passed
@@ -43,7 +43,7 @@
 
 ### companion
 - PASS — fresh first run opens companion instead of blocking onboarding
-- PASS — typo-heavy clear command preempts identity under one second (15ms)
+- PASS — typo-heavy clear command preempts identity under one second (13ms)
 - PASS — confirmation reports counted requested domains (Clear this workspace content?1 whiteboard items · 1 AI nodes · 1 user-created lensesBuilt-in lens primitives will be kept.CancelClear listed content)
 - PASS — cancel preserves every domain
 - PASS — administrative command is never saved as identity
@@ -58,8 +58,8 @@
 ## Focused AI-space suite
 
 - Run separately with `AUDIT_URL=<url> node scripts/ai-space-audit.mjs`.
-- Last integrated run: 20/20 checks passed across 1, 10, 50, and 150 nodes.
-- Exact phrase marking, 0.0px point-to-card landing, 24×24px compact-node targets, additive dot-tier sweeps, and 105 rapid gestures passed.
+- Last integrated run: 26/26 checks passed across 1, 10, 50, and 150 nodes.
+- Exact phrase marking at 0.05×/0.72×/3.2×, wrapped multi-node isolation, 0.0px point-to-card landing, 24×24px compact-node targets, additive dot-tier sweeps, and 105 rapid gestures passed.
 
 ## AI-space gesture matrix
 
@@ -83,20 +83,24 @@
 - [highlighter-word-fragments.png](./highlighter-word-fragments.png)
 - [companion-counted-confirmation.png](./companion-counted-confirmation.png)
 - [share-malformed-safe-failure.png](./share-malformed-safe-failure.png)
-- [density-10-dot.png](./ai-space/density-10-dot.png)
-- [density-50-dot.png](./ai-space/density-50-dot.png)
-- [density-150-dot.png](./ai-space/density-150-dot.png)
-- [text-before-word-mark.png](./ai-space/text-before-word-mark.png)
-- [text-after-word-mark.png](./ai-space/text-after-word-mark.png)
-- [text-fragment-to-paper.png](./ai-space/text-fragment-to-paper.png)
-- [dot-node-hit-target-marked.png](./ai-space/dot-node-hit-target-marked.png)
-- [after-105-gesture-stress.png](./ai-space/after-105-gesture-stress.png)
+- [density-10-dot.png](../ai-space/density-10-dot.png)
+- [density-50-dot.png](../ai-space/density-50-dot.png)
+- [density-150-dot.png](../ai-space/density-150-dot.png)
+- [text-before-word-mark.png](../ai-space/text-before-word-mark.png)
+- [text-after-word-mark.png](../ai-space/text-after-word-mark.png)
+- [text-fragment-to-paper.png](../ai-space/text-fragment-to-paper.png)
+- [reading-focus-min-zoom-wrapped-multinode.png](../ai-space/reading-focus-min-zoom-wrapped-multinode.png)
+- [reading-focus-default-zoom-wrapped-multinode.png](../ai-space/reading-focus-default-zoom-wrapped-multinode.png)
+- [reading-focus-max-zoom-wrapped-multinode.png](../ai-space/reading-focus-max-zoom-wrapped-multinode.png)
+- [dot-node-hit-target-marked.png](../ai-space/dot-node-hit-target-marked.png)
+- [after-105-gesture-stress.png](../ai-space/after-105-gesture-stress.png)
 
 ## Defects and limitations
 
 - No reproducible functional or visual-geometry defect remained after the final rerun.
 - Fixed: an initial AI text stroke incorrectly became a drag-transfer on pointer-up; marking and transfer are now separate gestures.
 - Fixed: compact dot-tier nodes had sub-16px practical targets; their invisible target now measures 24×24px.
+- Fixed: reading focus omitted the fragment layer and lost source identity; exact wrapped word marks now persist and render at minimum, default, and maximum entry zoom.
 - Fixed: an immediate retry after cancelling companion clear could be swallowed by duplicate-submit protection.
 - Model-generated content was not claimed as live: deterministic API stubs are used by `scripts/debug-lens-branching.mjs`.
 - Auth/account merge behavior is covered at the snapshot and user-scope layer because this environment has no configured Supabase credentials.

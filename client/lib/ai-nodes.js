@@ -18,6 +18,11 @@ export {
   suggestRootPosition,
 };
 
+/** Branch handles must not cover the fixed 24px dot-tier selection target. */
+export function aiNodeEdgeHandlesInteractive(radius, scale, minimumScreenRadius = 10) {
+  return (Number(radius) || 0) * (Number(scale) || 0) >= minimumScreenRadius;
+}
+
 export function nodePositionAt(existing, kind = "source", worldPos) {
   const radius = AI_NODE_RADIUS[kind] || 20;
   if (worldPos) {

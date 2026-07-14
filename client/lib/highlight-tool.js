@@ -15,6 +15,12 @@ export function isHighlightTool(tool) {
   return tool === "highlight";
 }
 
+/** Resolve a fragment mutation to its originating node before selection fallback. */
+export function resolveAiFragmentNodeId(explicitNodeId, selectedNodeIds = []) {
+  if (String(explicitNodeId || "").trim()) return explicitNodeId;
+  return Array.isArray(selectedNodeIds) ? selectedNodeIds.at(-1) || null : null;
+}
+
 /** Text payload transferred from an AI node (prefers marked fragment). */
 export function aiNodeTransferText(node, fragmentOverride = null) {
   const override = String(fragmentOverride || "").trim();

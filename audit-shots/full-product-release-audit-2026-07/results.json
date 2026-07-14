@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-14T07:00:00.000Z",
-  "verdict": "conditional-no-go",
+  "generatedAt": "2026-07-14T07:17:00.000Z",
+  "verdict": "release-ready-local-boundary",
   "capabilities": {
     "total": 108,
     "app": 96,
@@ -8,16 +8,23 @@
     "manifestRuntimeParity": 108
   },
   "verification": {
-    "unit": { "passed": 392, "failed": 0 },
+    "unit": { "passed": 394, "failed": 0 },
     "extensionUnitAndRelease": { "passed": 20, "failed": 0 },
     "humanBrowser": { "passed": 60, "failed": 0 },
     "integratedBrowser": { "passed": 32, "failed": 0 },
     "extensionBrowser": { "passed": 11, "failed": 0 },
-    "aiStressLastComplete": { "passed": 19, "failed": 1 }
+    "aiStressLastComplete": { "passed": 26, "failed": 0 },
+    "readingFocusZoomMatrix": {
+      "passed": 6,
+      "failed": 0,
+      "scales": [0.05, 0.72, 3.2],
+      "wrappedText": true,
+      "multiNodeIsolation": true
+    }
   },
   "performance": {
-    "freshInteractiveMs": 599,
-    "localDestructiveIntentMs": 15,
+    "freshInteractiveMs": 768,
+    "localDestructiveIntentMs": 13,
     "maxDensityNodes": 150,
     "rapidGestures": 105
   },
@@ -26,15 +33,11 @@
     "AI fragment replacement lost source node identity",
     "initial AI text stroke was misclassified as paper transfer",
     "audit outputs overwrote historical evidence",
-    "stale split-column and legacy-coordinate audit fixtures"
+    "stale split-column and legacy-coordinate audit fixtures",
+    "reading focus omitted the fragment interaction layer",
+    "minimum-zoom branch handles intercepted the dot-tier target"
   ],
-  "unresolved": [
-    {
-      "severity": "high",
-      "area": "ai-text-highlight",
-      "summary": "Reading-focus word stroke does not persist goldenFragment in focused stress audit"
-    }
-  ],
+  "unresolved": [],
   "externalLimitations": [
     "Supabase credentials and multiple real accounts unavailable",
     "Hosted model credentials unavailable",
