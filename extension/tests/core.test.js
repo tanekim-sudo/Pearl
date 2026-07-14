@@ -6,7 +6,7 @@ import { privacySafeGeneratorExport } from "../src/core/portable.js";
 import { createInsertionPlan, createLensRuntime, createMaterialFragment } from "../../shared/lens-runtime.js";
 import { executeExtensionVerb, parseExtensionIntent, validateExtensionVerbParity } from "../src/sidepanel/companion.js";
 import { adapterForUrl } from "../src/content/adapters/specialists.js";
-import { validateExternalHandoff } from "../src/core/external-handoff.js";
+import { validateExternalAction, validateExternalHandoff } from "../src/core/external-handoff.js";
 import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle } from "../../shared/lens-library.js";
 
 test("strict messages reject spoofed fields and oversized payloads", () => {
@@ -21,6 +21,15 @@ test("external library handoff requires trusted exact origin and nonce", () => {
   assert.equal(validateExternalHandoff(message, { url: "https://representation-eta.vercel.app/install" }).origin, "https://representation-eta.vercel.app");
   assert.throws(() => validateExternalHandoff(message, { url: "https://representation-eta.vercel.app.attacker.test/" }), /untrusted/);
   assert.throws(() => validateExternalHandoff({ ...message, token: "secret" }, { url: "http://localhost:5173/" }), /invalid/);
+});
+
+test("external install handshake permits only trusted status and open actions", () => {
+  const sender = { url: "https://representation-eta.vercel.app/" };
+  const base = { version: 1, nonce: "1234567890abcdef" };
+  assert.equal(validateExternalAction({ ...base, type: "lens-install-check" }, sender).type, "lens-install-check");
+  assert.equal(validateExternalAction({ ...base, type: "lens-extension-open" }, sender).type, "lens-extension-open");
+  assert.throws(() => validateExternalAction({ ...base, type: "install-extension" }, sender), /invalid/);
+  assert.throws(() => validateExternalAction({ ...base, type: "lens-install-check" }, { url: "https://attacker.test" }), /untrusted/);
 });
 
 test("library import validates, remaps keep-both, and repeats idempotently", async () => {

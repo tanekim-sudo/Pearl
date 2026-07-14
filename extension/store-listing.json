@@ -1,0 +1,15 @@
+{
+  "name": "Lens Everywhere",
+  "summary": "Highlight anything. Choose a lens. Press GO.",
+  "description": "Use your Lens library on the pages where you already read and write. Capture only what you select, choose a lens, and preview the result before anything changes. Sign in to sync your library or continue locally without an account.",
+  "category": "productivity",
+  "language": "en",
+  "promotionalCopy": "Turn selected text into useful output—without leaving the page.",
+  "privacyUrl": "https://representation-eta.vercel.app/extension/privacy.html",
+  "supportUrl": "https://representation-eta.vercel.app/extension/docs.html",
+  "requiredAssets": {
+    "icon": "public/icons/icon-128.png",
+    "screenshots": "audit-shots/extension-distribution/easy-onboarding/",
+    "smallPromoTile": "pending store-account upload"
+  }
+}

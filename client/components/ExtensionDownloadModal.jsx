@@ -1,22 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createLensLibraryBundle } from "../../shared/lens-library.js";
+import { detectExtensionBrowser, trackExtensionFunnel, validChromeStoreUrl } from "../lib/extension-funnel.js";
 
 const release = __LENS_EXTENSION_RELEASE__;
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes)) return null;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function browserSupport() {
-  if (typeof window === "undefined") return { supported: false, name: "browser" };
-  const narrow = window.matchMedia("(max-width: 719px)").matches;
-  const ua = navigator.userAgent;
-  if (/Edg\//.test(ua) && !narrow) return { supported: true, name: "Edge" };
-  if (/Chrome\//.test(ua) && !/(OPR\/|CriOS\/|Android|Mobile)/.test(ua) && !narrow) return { supported: true, name: "Chrome" };
-  if (/Firefox\//.test(ua)) return { supported: false, name: "Firefox" };
-  if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return { supported: false, name: "Safari" };
-  return { supported: false, name: "browser" };
 }
 
 function downloadJson(bundle) {
@@ -30,22 +20,27 @@ function downloadJson(bundle) {
 }
 
 export default function ExtensionDownloadModal({ onClose, operators = [], generators = [], rackMeta = {} }) {
-  const [support, setSupport] = useState(browserSupport);
+  const support = detectExtensionBrowser(typeof navigator === "undefined" ? "" : navigator.userAgent);
   const [includePrivate, setIncludePrivate] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [handoffStatus, setHandoffStatus] = useState("");
+  const [installState, setInstallState] = useState("unknown");
+  const [checking, setChecking] = useState(false);
+  const [instructions, setInstructions] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState("");
   const closeRef = useRef(null);
   const size = formatBytes(release.bytes);
   const lensCount = operators.filter((operator) => operator?.id && !operator.primitive).length;
   const generatorItemCount = generators.reduce((sum, generator) => sum + (generator.items || generator.objects || []).length, 0);
-  const storeUrl = import.meta.env.VITE_CHROME_WEB_STORE_URL;
+  const storeUrl = validChromeStoreUrl(import.meta.env.VITE_CHROME_WEB_STORE_URL);
+  const extensionId = import.meta.env.VITE_LENS_EXTENSION_ID;
+  const extensionsUrl = support.name === "Edge" ? "edge://extensions" : "chrome://extensions";
+  const folderName = `lens-everywhere-chrome-v${release.version}`;
 
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 719px)");
-    const update = () => setSupport(browserSupport());
-    query.addEventListener("change", update);
     closeRef.current?.focus();
-    return () => query.removeEventListener("change", update);
+    trackExtensionFunnel("view_install", { mode: storeUrl ? "store" : "manual" });
+    checkInstallation(false);
   }, []);
 
   function onKeyDown(event) {
@@ -62,45 +57,110 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
     });
   }
 
-  async function exportLibrary() {
+  function externalMessage(type, extra = {}) {
+    if (!extensionId || !globalThis.chrome?.runtime?.sendMessage) return Promise.reject(new Error("unavailable"));
+    const nonce = crypto.randomUUID().replaceAll("-", "");
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(extensionId, { type, version: 1, nonce, ...extra }, (value) => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else if (!value?.ok) reject(new Error(value?.error || "Lens did not respond"));
+        else resolve(value.value);
+      });
+    });
+  }
+
+  async function checkInstallation(announce = true) {
+    setChecking(true);
+    if (announce) {
+      setHandoffStatus("Checking for Lens…");
+      trackExtensionFunnel("check_installed");
+    }
+    try {
+      await externalMessage("lens-install-check");
+      setInstallState("installed");
+      if (announce) setHandoffStatus("Lens is installed and ready.");
+    } catch {
+      setInstallState("unknown");
+      if (announce) setHandoffStatus("We couldn’t confirm it. Lens may still be installed.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function downloadExtension(event) {
+    event.preventDefault();
+    setInstructions(true);
+    setDownloadStatus("Starting download…");
+    trackExtensionFunnel("install_cta", { mode: "manual" });
+    trackExtensionFunnel("instructions_viewed");
+    try {
+      const response = await fetch(release.versionedUrl);
+      if (!response.ok) throw new Error("Download failed");
+      const total = Number(response.headers.get("content-length")) || release.bytes || 0;
+      const reader = response.body?.getReader();
+      const chunks = [];
+      let received = 0;
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          setDownloadStatus(total ? `Downloading… ${Math.min(100, Math.round(received / total * 100))}%` : "Downloading…");
+        }
+      }
+      const blob = reader ? new Blob(chunks, { type: "application/zip" }) : await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = release.versionedUrl.split("/").pop();
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setDownloadStatus("Downloaded. Finish the 3 steps below.");
+      trackExtensionFunnel("download");
+    } catch {
+      const anchor = document.createElement("a");
+      anchor.href = release.versionedUrl;
+      anchor.download = "";
+      anchor.click();
+      setDownloadStatus("Download started. If it did not, use Re-download.");
+    }
+  }
+
+  async function copy(value, label) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setDownloadStatus(`${label} copied.`);
+    } catch {
+      setDownloadStatus(`Copy failed. Select and copy ${value}.`);
+    }
+  }
+
+  async function moveLibrary() {
     setExporting(true);
     setHandoffStatus("");
+    const bundle = await makeBundle();
     try {
-      downloadJson(await makeBundle());
-      setHandoffStatus("Library downloaded. Import it from the extension side panel.");
-    } catch (error) {
-      setHandoffStatus(error.message);
+      const response = await externalMessage("lens-library-handoff", { bundle });
+      setInstallState("installed");
+      setHandoffStatus(response.imported
+        ? `${response.counts.lenses} lenses and ${response.counts.generators} generators are ready.`
+        : "Open Lens to review one import choice.");
+    } catch {
+      downloadJson(bundle);
+      setHandoffStatus("Next: open Lens and drop this file.");
     } finally {
+      trackExtensionFunnel("library_transferred", { mode: installState === "installed" ? "direct" : "download" });
       setExporting(false);
     }
   }
 
-  async function sendLibrary() {
-    setExporting(true);
-    setHandoffStatus("");
-    const bundle = await makeBundle();
-    const extensionId = import.meta.env.VITE_LENS_EXTENSION_ID;
-    if (!extensionId || !globalThis.chrome?.runtime?.sendMessage) {
-      downloadJson(bundle);
-      setHandoffStatus("Direct handoff is unavailable for this install. Library downloaded instead.");
-      setExporting(false);
-      return;
-    }
-    const nonce = crypto.randomUUID().replaceAll("-", "");
+  async function openLens() {
     try {
-      const response = await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(extensionId, { type: "lens-library-handoff", version: 1, nonce, bundle }, (value) => {
-          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-          else resolve(value);
-        });
-      });
-      if (!response?.ok) throw new Error(response?.error || "handoff was rejected");
-      setHandoffStatus("Sent. Open Lens Everywhere to review and confirm the import.");
+      await externalMessage("lens-extension-open");
+      setHandoffStatus("Lens opened.");
     } catch {
-      downloadJson(bundle);
-      setHandoffStatus("Extension handoff was unavailable. Library downloaded instead.");
-    } finally {
-      setExporting(false);
+      setHandoffStatus("Click the Lens icon in Chrome to open it.");
     }
   }
 
@@ -134,49 +194,76 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
           Capture selected material and send it through your Lens workspace from desktop Chrome.
         </p>
 
-        {support.supported ? (
-          <a className="extension-download-button" href={storeUrl || release.versionedUrl} download={!storeUrl}>
-            {storeUrl ? `Add to ${support.name}` : `Download for ${support.name}`}
-          </a>
+        {installState === "installed" ? (
+          <div className="extension-installed-actions">
+            <button className="extension-download-button" type="button" onClick={openLens}>Open Lens</button>
+            <button type="button" onClick={moveLibrary} disabled={exporting}>{exporting ? "Sending…" : "Send my library"}</button>
+          </div>
+        ) : support.supported ? (
+          storeUrl ? (
+            <a className="extension-download-button" href={storeUrl} onClick={() => trackExtensionFunnel("install_cta", { mode: "store" })}>
+              Add Lens to Chrome
+            </a>
+          ) : (
+            <a className="extension-download-button" href={release.versionedUrl} onClick={downloadExtension}>
+              Download for Chrome
+            </a>
+          )
         ) : (
           <div className="extension-download-desktop" role="status">
             {support.name === "Firefox" || support.name === "Safari"
-              ? `${support.name} package is not signed or ready yet. Use desktop Chrome or Edge for the verified manual build.`
-              : "Installation requires desktop Chrome or Edge. Open this page there to download the extension."}
+              ? `Lens is not available for ${support.name} yet. Use desktop Chrome or Edge.`
+              : "Open this page in desktop Chrome or Edge to install Lens."}
           </div>
         )}
+        {support.name === "Edge" && <p className="extension-browser-note">Using Edge? The same Chrome extension works there.</p>}
 
-        <div className="extension-download-warning">
-          Developer install: Chrome cannot install an unsigned ZIP directly from a website. Chrome Web Store
-          installation will be offered after publication.
-        </div>
+        {!storeUrl && support.supported && !instructions && (
+          <p className="extension-manual-note">Chrome requires a short manual setup until Lens is published in the Chrome Web Store.</p>
+        )}
 
-        <ol className="extension-download-steps" aria-label="Developer installation steps">
-          <li>Download the ZIP.</li>
-          <li>Unzip it.</li>
-          <li>Open <code>{support.name === "Edge" ? "edge://extensions" : "chrome://extensions"}</code>.</li>
-          <li>Enable <strong>Developer mode</strong>.</li>
-          <li>Choose <strong>Load unpacked</strong> and select the unzipped folder.</li>
-        </ol>
+        {instructions && installState !== "installed" && <section className="extension-setup-card" aria-labelledby="extension-setup-title">
+          <div className="extension-setup-heading">
+            <div><span>2 minutes</span><h4 id="extension-setup-title">Finish setup</h4></div>
+            <button type="button" onClick={() => setInstructions(false)} aria-label="Collapse setup instructions">−</button>
+          </div>
+          <div className="extension-walkthrough" aria-hidden="true">
+            <i>ZIP</i><b>→</b><i>▣</i><b>→</b><i className="extension-walkthrough-pin">Lens</i>
+          </div>
+          <ol className="extension-download-steps" aria-label="Developer installation steps">
+            <li><b>Unzip</b> the downloaded file.</li>
+            <li><b>Copy and paste</b> <code>{extensionsUrl}</code> into the address bar.</li>
+            <li>Turn on <b>Developer mode</b>, choose <b>Load unpacked</b>, then select <code>{folderName}</code>.</li>
+          </ol>
+          <p className="extension-security-note">Chrome blocks websites from opening its settings page, so we copy the address for you.</p>
+          <div className="extension-setup-actions">
+            <button type="button" onClick={() => copy(extensionsUrl, extensionsUrl)}>Copy extension settings</button>
+            <button type="button" onClick={() => copy(folderName, "Folder name")}>Copy folder name</button>
+            <a href={release.versionedUrl} download onClick={() => trackExtensionFunnel("download")}>Re-download</a>
+            <button type="button" onClick={() => checkInstallation()} disabled={checking}>{checking ? "Checking…" : "Check installation"}</button>
+          </div>
+          {downloadStatus && <p role="status" className="extension-download-status">{downloadStatus}</p>}
+        </section>}
 
         <section className="extension-library-export">
-          <h4>Use my library in the extension</h4>
-          <p>{lensCount} user lens{lensCount === 1 ? "" : "es"} · {generators.length} generator{generators.length === 1 ? "" : "s"} · {generatorItemCount} material item{generatorItemCount === 1 ? "" : "s"}</p>
-          <p>Exports dependency closure, versions, composition/output contracts, rack metadata, generator structure and user-owned material. Tokens, board sync, companion memory, private grind examples, provenance, and raw captured pages are excluded by default.</p>
-          <label>
-            <input type="checkbox" checked={includePrivate} onChange={(event) => setIncludePrivate(event.target.checked)} />
-            Include source provenance and private source fields after privacy review
-          </label>
-          <div>
-            <button type="button" disabled={exporting} onClick={exportLibrary}>{exporting ? "Preparing…" : "Download library"}</button>
-            <button type="button" disabled={exporting} onClick={sendLibrary}>Send library to extension</button>
-          </div>
+          <div><h4>Take your library with you</h4><p>{lensCount} lens{lensCount === 1 ? "" : "es"} and {generators.length} generator{generators.length === 1 ? "" : "s"} ready to move.</p></div>
+          <button className={installState === "installed" ? "extension-library-primary" : ""} type="button" disabled={exporting} onClick={moveLibrary}>{exporting ? "Preparing…" : "Move my library to Lens"}</button>
+          <details>
+            <summary>Privacy options</summary>
+            <p>Your account, private examples, and captured pages are never included. {generatorItemCount} saved material item{generatorItemCount === 1 ? "" : "s"} may be included.</p>
+            <label>
+              <input type="checkbox" checked={includePrivate} onChange={(event) => setIncludePrivate(event.target.checked)} />
+              Include saved source details
+            </label>
+          </details>
           {handoffStatus && <p role="status">{handoffStatus}</p>}
+          {handoffStatus.startsWith("Next:") && <div className="extension-drop-next" aria-label="Next step: drop the library file into Lens"><span>↓</span><b>Drop .lens-library.json in Lens</b></div>}
         </section>
 
         <nav className="extension-download-links" aria-label="Extension resources">
+          <button type="button" onClick={() => checkInstallation()} disabled={checking}>{checking ? "Checking installation…" : "Check installation"}</button>
           <a href="/extension/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a>
-          <a href="/extension/docs.html" target="_blank" rel="noreferrer">Extension documentation</a>
+          <a href="/extension/docs.html" target="_blank" rel="noreferrer">Help</a>
         </nav>
         {release.sha256 && <p className="extension-download-checksum">SHA-256 {release.sha256}</p>}
       </section>

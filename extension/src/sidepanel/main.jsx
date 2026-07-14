@@ -4,6 +4,7 @@ import { TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { previewCompositionSequence } from "../../../shared/lens-grammar.js";
 import { lensRackRecord, selectRack } from "../../../shared/lens-rack.js";
 import { createMessage } from "../core/messages.js";
+import { trackFunnel } from "../core/funnel-analytics.js";
 import { portableLensPayload, writeDragPayload } from "../core/portable.js";
 import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
 import "./sidepanel.css";
@@ -31,6 +32,10 @@ function App() {
   const [importPreview, setImportPreview] = useState(null);
   const [importChoices, setImportChoices] = useState({ lenses: {}, generators: {} });
   const [importing, setImporting] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(null);
+  const [onboardingMode, setOnboardingMode] = useState("");
+  const [auth, setAuth] = useState(false);
+  const [readyMessage, setReadyMessage] = useState("");
   const fileRef = useRef(null);
 
   function applyLibrary(data) {
@@ -53,6 +58,11 @@ function App() {
     call("library-pending").then((pending) => {
       if (pending?.bundle) previewBundle(pending.bundle);
     }).catch(() => {});
+    call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
+    chrome.storage.local.get(["onboardingComplete", "onboardingMode"], (value) => {
+      setOnboardingMode(value.onboardingMode || "");
+      setOnboardingStep(value.onboardingComplete ? 0 : 1);
+    });
     const listener = () => refresh().catch(() => {});
     chrome.storage?.onChanged.addListener(listener);
     return () => chrome.storage?.onChanged.removeListener(listener);
@@ -88,6 +98,8 @@ function App() {
       const value = await call("library-import", { bundle: importPreview.bundle, choices: importChoices });
       applyLibrary(value);
       setImportPreview(null);
+      setReadyMessage(`${value.operators.length} lenses and ${value.generators.length} generators are ready.`);
+      trackFunnel("library_transferred", "file");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -108,6 +120,11 @@ function App() {
   const queuedOps = session.queue.map((entry) => map[entry.id]).filter(Boolean);
   const preview = queuedOps.length ? previewCompositionSequence(queuedOps, map) : null;
   const characters = session.fragments.reduce((sum, entry) => sum + entry.quote.length, 0);
+  const sampleLens = library.find((entry) => /summar/i.test(entry.name)) || library[0];
+  const importConflicts = importPreview
+    ? [...importPreview.conflicts.lenses, ...importPreview.conflicts.generators]
+      .filter((entry) => entry.status === "id-conflict")
+    : [];
 
   async function action(type, payload) {
     setError("");
@@ -127,7 +144,46 @@ function App() {
     if ((preview?.requiresConfirmation || characters > 50_000) && !confirm(`Send ${characters.toLocaleString()} selected characters and produce up to ${preview?.predictedOutputCount || 1} outputs?`)) return;
     setRunning(true);
     await action("go", { disclosedCharacters: characters, idempotencyKey: crypto.randomUUID() });
+    chrome.storage.local.get(["firstGoTracked"], (value) => {
+      if (!value.firstGoTracked) {
+        trackFunnel("first_go");
+        chrome.storage.local.set({ firstGoTracked: true });
+      }
+    });
     setRunning(false);
+  }
+
+  async function signIn() {
+    setError("");
+    try {
+      const value = await call("auth-login");
+      setAuth(true);
+      applyLibrary(value.library);
+      setReadyMessage(`${value.counts.lenses} lenses and ${value.counts.generators} generators are ready.`);
+      setOnboardingMode("signed-in");
+      setOnboardingStep(3);
+      chrome.storage.local.set({ onboardingMode: "signed-in" });
+      trackFunnel("sign_in");
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  function continueLocal() {
+    setOnboardingMode("local");
+    setOnboardingStep(3);
+    chrome.storage.local.set({ onboardingMode: "local" });
+    trackFunnel("continue_local");
+  }
+
+  function finishOnboarding() {
+    chrome.storage.local.set({ onboardingComplete: true, onboardingMode });
+    setOnboardingStep(0);
+  }
+
+  function skipOnboarding() {
+    chrome.storage.local.set({ onboardingComplete: true, onboardingMode: onboardingMode || "local" });
+    setOnboardingStep(0);
   }
 
   async function directCompanion(event) {
@@ -173,10 +229,54 @@ function App() {
   }
 
   return <main>
+    {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
+      {onboardingStep === 1 && <>
+        <div className="onboarding-mark" aria-hidden="true">L</div>
+        <h1 id="onboarding-title">Lens, anywhere you read</h1>
+        <p>Highlight something on a page, choose a lens, and press GO to transform it.</p>
+        <button className="gold onboarding-primary" onClick={() => setOnboardingStep(2)}>Get started</button>
+      </>}
+      {onboardingStep === 2 && <>
+        <h1 id="onboarding-title">Choose how to continue</h1>
+        <p>Sign in to bring over your web library automatically, or keep everything on this browser.</p>
+        <div className="onboarding-choices">
+          <button className="gold" onClick={signIn}><b>Sign in</b><small>Sync my Lens library</small></button>
+          <button onClick={continueLocal}><b>Continue locally</b><small>No account needed</small></button>
+        </div>
+        <a href="https://representation-eta.vercel.app/extension/privacy.html" target="_blank" rel="noreferrer">How Lens handles data</a>
+      </>}
+      {onboardingStep === 3 && <>
+        <h1 id="onboarding-title">{onboardingMode === "signed-in" ? "Your library is ready" : "Bring your library—or start now"}</h1>
+        {onboardingMode === "signed-in" ? <p role="status">{readyMessage || "Your web library syncs automatically when you sign in."}</p> : <div
+          className="onboarding-drop"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => { event.preventDefault(); readImportFile(event.dataTransfer.files?.[0]); }}
+        >
+          <span aria-hidden="true">↓</span>
+          <b>Drop .lens-library.json here</b>
+          <button onClick={() => fileRef.current?.click()}>Choose file</button>
+        </div>}
+        {importPreview && <div className="onboarding-import" role="status">
+          <b>{importPreview.counts.lenses} lenses and {importPreview.counts.generators} generators found</b>
+          <button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Review choices below" : "Add library"}</button>
+        </div>}
+        {readyMessage && <p role="status">{readyMessage}</p>}
+        <div className="onboarding-demo"><span>1. Highlight</span><span>2. Choose {sampleLens?.name || "a lens"}</span><span>3. GO</span></div>
+        <button className="gold onboarding-primary" onClick={finishOnboarding}>Try it now</button>
+      </>}
+      {error && <p role="alert">{error}</p>}
+    </div>}
     <header>
       <div><b>Lens</b><span>Everywhere</span></div>
-      <button onClick={() => action("auth-login")}>Sign in</button>
+      {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
     </header>
+    {!characters && !session.queue.length && <section className="quick-start">
+      <p>Highlight anything, choose a lens, press GO</p>
+      {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens" } })}>
+        <b>{sampleLens.name}</b><small>Sample lens</small>
+      </button>}
+    </section>}
     <section className="capture">
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
@@ -200,10 +300,10 @@ function App() {
         <small>or drop a Lens library file here</small>
       </div>
       {importPreview && <div className="import-preview" role="dialog" aria-label="Library import preview">
-        <b>Review import</b>
+        <b>{importConflicts.length ? "Choose what to keep" : "Add this library?"}</b>
         <p>{importPreview.counts.lenses} lenses · {importPreview.counts.generators} generators · {importPreview.counts.generatorItems} material items</p>
         {[["lenses", importPreview.conflicts.lenses], ["generators", importPreview.conflicts.generators]].map(([kind, entries]) =>
-          entries.length ? <div key={kind}><small>{kind}</small>{entries.map((entry) =>
+          importConflicts.length && entries.some((entry) => entry.status === "id-conflict") ? <div key={kind}><small>{kind}</small>{entries.filter((entry) => entry.status === "id-conflict").map((entry) =>
             <label key={`${kind}-${entry.id}`}><span>{entry.name || entry.id} · {entry.status}</span>
               <select value={choiceFor(kind, entry)} onChange={(event) => setImportChoices((current) => ({
                 ...current,
@@ -217,8 +317,9 @@ function App() {
             </label>
           )}</div> : null
         )}
-        <div><button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Importing…" : "Import"}</button><button onClick={() => setImportPreview(null)}>Cancel</button></div>
+        <div><button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Continue" : "Add library"}</button><button onClick={() => setImportPreview(null)}>Cancel</button></div>
       </div>}
+      {readyMessage && !importPreview && <p className="ready-message" role="status">{readyMessage}</p>}
       <input aria-label="Search lenses" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search lenses" />
       <div className="rack">{visible.map((lens) =>
         <button key={lens.id} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "lens" } })}>

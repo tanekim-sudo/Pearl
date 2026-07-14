@@ -18,6 +18,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "copy-result",
   "open-artifact",
   "auth-login",
+  "auth-status",
   "library-refresh",
   "library-import-preview",
   "library-import",

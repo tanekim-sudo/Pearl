@@ -14,6 +14,10 @@ async function authToken() {
   return stored.accessToken || "";
 }
 
+export async function authStatus() {
+  return { authenticated: !!(await authToken()) };
+}
+
 export async function login() {
   const { origin } = await settings();
   const redirect = BrowserPlatform.identity.redirectUrl("auth");

@@ -1,10 +1,10 @@
 import { createExecutionRequest, createExecutionResult, createProvenance } from "../../../shared/lens-runtime.js";
-import { apiRequest, login, openArtifact } from "./api-client.js";
+import { apiRequest, authStatus, login, openArtifact } from "./api-client.js";
 import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
 import { importLibraryFile, mergeRemoteLibrary, previewLibraryFile, readLocalLibrary } from "./library-store.js";
-import { validateExternalHandoff } from "../core/external-handoff.js";
+import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
 
 const runs = new Map();
 
@@ -104,7 +104,16 @@ async function handle(message) {
     return writeSession({ activeRunId: null });
   }
   if (type === "result-action") return sendPage(type, payload);
-  if (type === "auth-login") return { authenticated: await login() };
+  if (type === "auth-status") return authStatus();
+  if (type === "auth-login") {
+    await login();
+    const library = await handle({ type: "library-refresh", payload: {} });
+    return {
+      authenticated: true,
+      library,
+      counts: { lenses: library.operators.length, generators: library.generators.length },
+    };
+  }
   if (type === "library-refresh") {
     const local = await readLocalLibrary();
     try {
@@ -124,6 +133,7 @@ async function handle(message) {
   if (type === "library-import-preview") return previewLibraryFile(payload.bundle);
   if (type === "library-import") {
     const imported = await importLibraryFile(payload.bundle, payload.choices || {});
+    await BrowserPlatform.storage.remove("local", ["pendingLibraryHandoff"]);
     try {
       await apiRequest("/api/extension/library", {
         method: "POST",
@@ -178,8 +188,34 @@ globalThis.chrome?.runtime?.onMessage.addListener((raw, sender, respond) => {
 
 globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond) => {
   (async () => {
+    if (raw?.type === "lens-install-check" || raw?.type === "lens-extension-open") {
+      const action = validateExternalAction(raw, sender);
+      if (action.type === "lens-extension-open") {
+        const tab = await activeTab();
+        await BrowserPlatform.sidePanel.open(tab.windowId);
+      }
+      const library = await readLocalLibrary();
+      const auth = await authStatus();
+      return {
+        installed: true,
+        opened: action.type === "lens-extension-open",
+        authenticated: auth.authenticated,
+        counts: { lenses: library.operators.length, generators: library.generators.length },
+      };
+    }
     const handoff = validateExternalHandoff(raw, sender);
     const preview = await previewLibraryFile(handoff.bundle);
+    const conflicts = [...preview.conflicts.lenses, ...preview.conflicts.generators]
+      .filter((entry) => !["new", "exact-duplicate", "version-update"].includes(entry.status));
+    if (!conflicts.length && !preview.bundle.privacy?.privateSourcesIncluded) {
+      const imported = await importLibraryFile(preview.bundle);
+      return {
+        accepted: true,
+        imported: true,
+        requiresConfirmation: false,
+        counts: { lenses: imported.operators.length, generators: imported.generators.length },
+      };
+    }
     await BrowserPlatform.storage.set("local", {
       pendingLibraryHandoff: {
         bundle: preview.bundle,
@@ -188,7 +224,7 @@ globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond)
         origin: handoff.origin,
       },
     });
-    return { accepted: true, requiresConfirmation: true, counts: preview.counts };
+    return { accepted: true, imported: false, requiresConfirmation: true, counts: preview.counts };
   })().then((value) => respond({ ok: true, value }), (error) => respond({ ok: false, error: error.message }));
   return true;
 });

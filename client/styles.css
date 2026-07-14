@@ -5430,7 +5430,7 @@ body {
 
 /* ---- Lens Everywhere download ---- */
 .extension-download-scrim {
-  z-index: 92;
+  z-index: 5200;
   padding: 16px;
 }
 .extension-download-modal {
@@ -5486,6 +5486,34 @@ body {
   font-weight: 600;
   padding: 10px 15px;
   text-decoration: none;
+  min-height: 44px;
+}
+.extension-installed-actions,
+.extension-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.extension-installed-actions button,
+.extension-setup-actions button,
+.extension-setup-actions a,
+.extension-library-primary {
+  min-height: 42px;
+}
+.extension-installed-actions > button:not(.extension-download-button),
+.extension-setup-actions button,
+.extension-setup-actions a {
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 11px;
+  text-decoration: none;
 }
 .extension-download-desktop,
 .extension-download-warning {
@@ -5496,17 +5524,80 @@ body {
   line-height: 1.5;
   padding: 10px 12px;
 }
-.extension-download-warning {
+.extension-manual-note,
+.extension-browser-note,
+.extension-security-note {
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+.extension-setup-card {
   background: var(--paper);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
   margin-top: 14px;
+  padding: 14px;
+}
+.extension-setup-heading {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+}
+.extension-setup-heading h4,
+.extension-setup-heading span {
+  margin: 0;
+}
+.extension-setup-heading span {
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.extension-setup-heading button {
+  background: transparent;
+  border: 0;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 20px;
+}
+.extension-walkthrough {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  min-height: 58px;
+}
+.extension-walkthrough i {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  display: flex;
+  font-size: 11px;
+  font-style: normal;
+  height: 42px;
+  justify-content: center;
+  width: 58px;
+}
+.extension-walkthrough-pin {
+  animation: extension-install-demo 2.8s ease-in-out infinite;
+  border-color: var(--gold) !important;
+}
+@keyframes extension-install-demo {
+  0%, 18% { transform: translateX(-22px); opacity: .45; }
+  48%, 100% { transform: translateX(0); opacity: 1; }
 }
 .extension-download-steps {
   color: var(--ink-2);
   font-size: 13px;
   line-height: 1.6;
-  margin: 15px 0;
+  margin: 0;
   padding-left: 22px;
 }
+.extension-download-steps li + li { margin-top: 7px; }
 .extension-download-steps code {
   color: var(--ink);
   font-size: 12px;
@@ -5548,10 +5639,9 @@ body {
 .extension-library-export label input {
   margin-top: 2px;
 }
-.extension-library-export > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.extension-library-export > div:first-child {
+  display: grid;
+  gap: 4px;
 }
 .extension-library-export button {
   border: 1px solid var(--line-2);
@@ -5560,7 +5650,45 @@ body {
   color: var(--ink);
   cursor: pointer;
   font-size: 12px;
+  min-height: 42px;
   padding: 8px 11px;
+}
+.extension-library-primary {
+  background: var(--ink) !important;
+  color: var(--card) !important;
+  font-weight: 650;
+  justify-self: start;
+}
+.extension-library-export details {
+  color: var(--faint);
+  font-size: 11px;
+}
+.extension-library-export summary {
+  cursor: pointer;
+  min-height: 34px;
+  padding-top: 8px;
+}
+.extension-drop-next {
+  align-items: center;
+  background: var(--paper);
+  border: 1px dashed var(--line-2);
+  border-radius: 9px;
+  display: flex !important;
+  gap: 9px !important;
+  padding: 10px;
+}
+.extension-drop-next span { font-size: 20px; }
+.extension-download-status { margin: 0; color: var(--ink-2); font-size: 12px; }
+.extension-download-links button {
+  background: transparent;
+  border: 0;
+  color: var(--faint);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .extension-download-checksum {
   overflow-wrap: anywhere;
@@ -5578,6 +5706,10 @@ body {
     border-radius: 16px 16px 0 0;
     padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .extension-walkthrough-pin { animation: none; }
 }
 
 /* ---- plans overlay ---- */

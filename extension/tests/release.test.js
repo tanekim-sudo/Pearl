@@ -109,11 +109,16 @@ test("download UI is linked, responsive, and exposes accessible install guidance
   const toolbar = fs.readFileSync(path.join(repo, "client/components/TopToolbar.jsx"), "utf8");
   assert.match(toolbar, /Get Lens Everywhere/);
   assert.match(component, /release\.versionedUrl/);
+  assert.match(component, /VITE_CHROME_WEB_STORE_URL/);
+  assert.match(component, /Add Lens to Chrome/);
+  assert.match(component, /Download for Chrome/);
   assert.match(component, /role="dialog"/);
   assert.match(component, /aria-modal="true"/);
   assert.match(component, /Developer installation steps/);
   assert.match(component, /desktop Chrome or Edge/);
-  assert.match(component, /Send library to extension/);
+  assert.match(component, /Move my library to Lens/);
+  assert.match(component, /Check installation/);
+  assert.match(component, /Chrome blocks websites from opening its settings page/);
   assert.match(component, /\/extension\/privacy\.html/);
   assert.match(component, /\/extension\/docs\.html/);
   assert.match(styles, /@media \(max-width: 719px\)/);

@@ -3,6 +3,12 @@
   "name": "Lens Everywhere",
   "version": "1.0.0",
   "description": "Capture page material, queue ordered lenses, and run only when you press GO.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "minimum_chrome_version": "116",
   "permissions": ["activeTab", "storage", "scripting", "sidePanel", "contextMenus", "identity", "clipboardWrite"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
@@ -15,7 +21,11 @@
   },
   "options_page": "options.html",
   "action": {
-    "default_title": "Open Lens Everywhere"
+    "default_title": "Open Lens Everywhere",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
   },
   "commands": {
     "toggle-highlighter": {

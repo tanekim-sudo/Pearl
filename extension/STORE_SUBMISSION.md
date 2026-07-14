@@ -13,6 +13,15 @@ open `chrome://extensions`, enable Developer mode, choose **Load unpacked**,
 and select the unzipped folder until the Chrome Web Store release is signed
 and published.
 
+Set `VITE_CHROME_WEB_STORE_URL` to the final HTTPS Chrome Web Store listing URL
+at web build time. The web funnel then makes **Add Lens to Chrome** the primary
+action and keeps the ZIP as a recovery path. Until that URL exists, the product
+honestly presents **Download for Chrome** followed by the three developer-mode
+steps. `VITE_LENS_EXTENSION_ID` enables the trusted install check and direct
+library handoff. Optional funnel analytics are a no-op unless
+`VITE_LENS_ANALYTICS_ENDPOINT` is configured; events contain only event name,
+surface/mode, and timestamp.
+
 ## Single purpose
 
 Capture user-selected page material, apply an explicitly queued Lens transformation only after GO, preview results, and let the user copy, open, or conservatively insert them.
