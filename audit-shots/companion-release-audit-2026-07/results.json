@@ -1,14 +1,27 @@
 {
-  "generatedAt": "2026-07-14T15:25:49.627Z",
+  "generatedAt": "2026-07-14T17:01:30.537Z",
   "command": "Who are you?\nclear everything let me start fomr scratch",
-  "latencyMs": 18,
+  "latencyMs": 26,
+  "runtimeEffectMatrix": {
+    "total": 121,
+    "app": 106,
+    "extension": 15,
+    "passed": 121,
+    "failed": 0,
+    "skipped": 0
+  },
+  "representativeBrowser": {
+    "adaptive": { "passed": 8, "failed": 0 },
+    "compose": { "passed": 10, "failed": 0 },
+    "voice": { "passed": 10, "failed": 0 }
+  },
   "passed": 14,
   "failed": 0,
   "checks": [
     {
       "name": "exact typo-containing multiline input reaches confirmation",
       "ok": true,
-      "detail": "18ms"
+      "detail": "26ms"
     },
     {
       "name": "current workspace means paper and AI",
@@ -33,7 +46,7 @@
     {
       "name": "deterministic planning reaches visible action under two seconds",
       "ok": true,
-      "detail": "18ms"
+      "detail": "26ms"
     },
     {
       "name": "reported schema error is absent",

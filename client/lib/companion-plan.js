@@ -53,7 +53,7 @@ function validValue(value, type) {
       Number.isFinite(value.y)
     );
   }
-  return false;
+  return String(value) === type;
 }
 
 export function isPlanRef(value) {

@@ -227,7 +227,17 @@ export async function runDirectorScript(steps, opts = {}) {
           );
         }
         const result = await fn(suppliedArgs, toolkit, ctx);
-        results.push(result);
+        const resultType = capability?.resultType || "action-result";
+        results.push(
+          result && typeof result === "object" && !Array.isArray(result)
+            ? { type: resultType, ...result }
+            : {
+                type: resultType,
+                capability: step.verb,
+                status: "completed",
+                ...(result == null ? {} : { value: result }),
+              }
+        );
         consecutiveFailures = 0;
       } catch (err) {
         // One broken step shouldn't kill a long demonstration — note it,

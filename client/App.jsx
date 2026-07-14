@@ -11303,7 +11303,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (!hasBrushMaterial(material)) throw new Error("nothing is highlighted");
       const button = tk.elementCenter(".brush-go");
       if (button) await tk.click(button.x, button.y);
-      else if (!pressPendingBrushGo()) {
+      if (!pressPendingBrushGo()) {
         throw new Error("the brush could not be applied");
       }
       await tk.wait(300);
@@ -11341,7 +11341,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     pressBrushGo: async (a, tk) => {
       const button = tk.elementCenter(".brush-go");
       if (button) await tk.click(button.x, button.y);
-      else if (!pressPendingBrushGo()) throw new Error("GO could not commit");
+      if (!pressPendingBrushGo()) throw new Error("GO could not commit");
       await tk.wait(300);
       return { type: "brush-run", queue: pendingBrushStackRef.current.map((entry) => entry.id) };
     },
@@ -11927,11 +11927,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const save = [...document.querySelectorAll(".fn-foot button")]
         .find((entry) => entry.textContent?.trim() === "Save");
       if (!save) throw new Error("review and use an inferred transformation before saving");
+      const beforeIds = new Set(operators.map((operator) => operator.id));
       const point = tk.elementCenter(save);
       if (point) await tk.click(point.x, point.y);
-      else save.click();
-      await tk.wait(500);
-      return { type: "lens", id: "last", lensId: "last", name: "learned lens" };
+      save.click();
+      let created = null;
+      for (let attempt = 0; attempt < 20 && !created; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const stored = JSON.parse(localStorage.getItem(OPERATORS_KEY) || "[]");
+        created = stored.find((operator) => !beforeIds.has(operator.id) && !operator.primitive) || null;
+      }
+      if (!created) throw new Error("the learned lens was not saved");
+      ctx.vars.lastOpId = created.id;
+      return { type: "lens", id: created.id, lensId: created.id, name: created.name, record: created };
     },
     openFunctionEditor: async (a, tk, ctx) => {
       const op = directorResolveOp(a.op, ctx);
@@ -12312,14 +12320,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "grind-example", id: example.id, exampleId: example.id };
     },
     removeGrindExample: async (a, tk) => {
-      setGrindDraft((draftNow) => removeGrindExample(draftNow, a.example));
+      const exampleId = a.example === "last" ? grindDraft.examples.at(-1)?.id : a.example;
+      if (!exampleId || !grindDraft.examples.some((example) => example.id === exampleId)) {
+        throw new Error("grind example was not found");
+      }
+      const next = removeGrindExample(grindDraft, exampleId);
+      setGrindDraft(next);
       await tk.wait(120);
-      return { type: "grind-draft", id: grindDraft.id };
+      return { type: "grind-draft", id: next.id, exampleIds: next.examples.map((example) => example.id) };
     },
     reorderGrindExample: async (a, tk) => {
-      setGrindDraft((draftNow) => reorderGrindExample(draftNow, a.example, a.to));
+      const exampleId = a.example === "last" ? grindDraft.examples.at(-1)?.id : a.example;
+      if (!exampleId || !grindDraft.examples.some((example) => example.id === exampleId)) {
+        throw new Error("grind example was not found");
+      }
+      const next = reorderGrindExample(grindDraft, exampleId, a.to);
+      setGrindDraft(next);
       await tk.wait(120);
-      return { type: "grind-draft", id: grindDraft.id };
+      return { type: "grind-draft", id: next.id, exampleIds: next.examples.map((example) => example.id) };
     },
     compileGrindDraft: async (a, tk) => {
       await compileCurrentGrind();

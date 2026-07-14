@@ -1,0 +1,128 @@
+# Companion capability runtime-effect matrix
+
+- Total: 121
+- Passed: 121
+- Failed: 0
+- Skipped: 0
+
+- PASS — `caption` (app): state-or-visible-artifact-changed
+- PASS — `pause` (app): state-or-visible-artifact-changed
+- PASS — `switchTool` (app): state-or-visible-artifact-changed
+- PASS — `fitPaper` (app): state-or-visible-artifact-changed
+- PASS — `zoomPaper` (app): state-or-visible-artifact-changed
+- PASS — `panPaper` (app): state-or-visible-artifact-changed
+- PASS — `spawnText` (app): state-or-visible-artifact-changed
+- PASS — `createFunction` (app): state-or-visible-artifact-changed
+- PASS — `openBeforeAfterCreation` (app): state-or-visible-artifact-changed
+- PASS — `setBeforeAfterText` (app): state-or-visible-artifact-changed
+- PASS — `attachSelectionToBeforeAfter` (app): state-or-visible-artifact-changed
+- PASS — `addBeforeAfterExample` (app): state-or-visible-artifact-changed
+- PASS — `removeBeforeAfterExample` (app): state-or-visible-artifact-changed
+- PASS — `inferBeforeAfterTransformation` (app): state-or-visible-artifact-changed
+- PASS — `chooseBeforeAfterAlternative` (app): state-or-visible-artifact-changed
+- PASS — `editInferredFunctionSpec` (app): state-or-visible-artifact-changed
+- PASS — `useInferredFunction` (app): state-or-visible-artifact-changed
+- PASS — `saveLearnedFunction` (app): state-or-visible-artifact-changed
+- PASS — `applyFunction` (app): state-or-visible-artifact-changed
+- PASS — `dragItemToAi` (app): state-or-visible-artifact-changed
+- PASS — `applyFunctionToAiNode` (app): state-or-visible-artifact-changed
+- PASS — `focusAiResult` (app): state-or-visible-artifact-changed
+- PASS — `fitAiSpace` (app): state-or-visible-artifact-changed
+- PASS — `selectAiNode` (app): state-or-visible-artifact-changed
+- PASS — `dragAiResultToPaper` (app): state-or-visible-artifact-changed
+- PASS — `highlight` (app): state-or-visible-artifact-changed
+- PASS — `operateHighlight` (app): state-or-visible-artifact-changed
+- PASS — `armLensBrush` (app): state-or-visible-artifact-changed
+- PASS — `armGeneratorBrush` (app): state-or-visible-artifact-changed
+- PASS — `disarmBrushTarget` (app): state-or-visible-artifact-changed
+- PASS — `applyArmedBrush` (app): state-or-visible-artifact-changed
+- PASS — `queueBrushLens` (app): state-or-visible-artifact-changed
+- PASS — `setBrushGeneratorDestination` (app): state-or-visible-artifact-changed
+- PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
+- PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
+- PASS — `saveBrushQueueAsLens` (app): state-or-visible-artifact-changed
+- PASS — `makeHighlightNode` (app): state-or-visible-artifact-changed
+- PASS — `clearHighlight` (app): state-or-visible-artifact-changed
+- PASS — `captureThread` (app): state-or-visible-artifact-changed
+- PASS — `showLenses` (app): state-or-visible-artifact-changed
+- PASS — `openExtensionDownload` (app): state-or-visible-artifact-changed
+- PASS — `openExtensionLibraryExport` (app): state-or-visible-artifact-changed
+- PASS — `savePageAsLens` (app): state-or-visible-artifact-changed
+- PASS — `waitForJobs` (app): state-or-visible-artifact-changed
+- PASS — `moveItem` (app): state-or-visible-artifact-changed
+- PASS — `editItem` (app): state-or-visible-artifact-changed
+- PASS — `deleteItem` (app): state-or-visible-artifact-changed
+- PASS — `selectItems` (app): state-or-visible-artifact-changed
+- PASS — `organizePage` (app): state-or-visible-artifact-changed
+- PASS — `addBlock` (app): state-or-visible-artifact-changed
+- PASS — `renamePage` (app): state-or-visible-artifact-changed
+- PASS — `zoomToItem` (app): state-or-visible-artifact-changed
+- PASS — `walkItemPath` (app): state-or-visible-artifact-changed
+- PASS — `stepSharedPath` (app): state-or-visible-artifact-changed
+- PASS — `noteSharedPath` (app): state-or-visible-artifact-changed
+- PASS — `branchSharedPath` (app): state-or-visible-artifact-changed
+- PASS — `materializeSharedPath` (app): state-or-visible-artifact-changed
+- PASS — `leaveSharedPath` (app): state-or-visible-artifact-changed
+- PASS — `moveAiNode` (app): state-or-visible-artifact-changed
+- PASS — `arrangeItems` (app): state-or-visible-artifact-changed
+- PASS — `groupItems` (app): state-or-visible-artifact-changed
+- PASS — `linkItems` (app): state-or-visible-artifact-changed
+- PASS — `transformMaterial` (app): state-or-visible-artifact-changed
+- PASS — `annotateFeedback` (app): state-or-visible-artifact-changed
+- PASS — `openFunctionEditor` (app): state-or-visible-artifact-changed
+- PASS — `editFunction` (app): state-or-visible-artifact-changed
+- PASS — `inspectFunctionOutput` (app): state-or-visible-artifact-changed
+- PASS — `editFunctionOutput` (app): state-or-visible-artifact-changed
+- PASS — `editFunctionBranchOutput` (app): state-or-visible-artifact-changed
+- PASS — `setFunctionOutputMode` (app): state-or-visible-artifact-changed
+- PASS — `resetFunctionOutput` (app): state-or-visible-artifact-changed
+- PASS — `addFunctionStep` (app): state-or-visible-artifact-changed
+- PASS — `addFunctionBranch` (app): state-or-visible-artifact-changed
+- PASS — `setFunctionStep` (app): state-or-visible-artifact-changed
+- PASS — `saveFunction` (app): state-or-visible-artifact-changed
+- PASS — `forkLens` (app): state-or-visible-artifact-changed
+- PASS — `mergeLenses` (app): state-or-visible-artifact-changed
+- PASS — `previewLensComposition` (app): state-or-visible-artifact-changed
+- PASS — `stackLenses` (app): state-or-visible-artifact-changed
+- PASS — `saveCompoundLens` (app): state-or-visible-artifact-changed
+- PASS — `addGrindExample` (app): state-or-visible-artifact-changed
+- PASS — `removeGrindExample` (app): state-or-visible-artifact-changed
+- PASS — `reorderGrindExample` (app): state-or-visible-artifact-changed
+- PASS — `compileGrindDraft` (app): state-or-visible-artifact-changed
+- PASS — `testGrindDraft` (app): bounded model execution dispatched and returned
+- PASS — `refineGrindDraft` (app): state-or-visible-artifact-changed
+- PASS — `shapeForgedLens` (app): state-or-visible-artifact-changed
+- PASS — `rackSearch` (app): state-or-visible-artifact-changed
+- PASS — `rackFilter` (app): state-or-visible-artifact-changed
+- PASS — `pinLens` (app): state-or-visible-artifact-changed
+- PASS — `archiveLens` (app): state-or-visible-artifact-changed
+- PASS — `restoreLens` (app): state-or-visible-artifact-changed
+- PASS — `editLensByInstruction` (app): state-or-visible-artifact-changed
+- PASS — `newGenerator` (app): state-or-visible-artifact-changed
+- PASS — `attachToGenerator` (app): state-or-visible-artifact-changed
+- PASS — `graduateGenerator` (app): state-or-visible-artifact-changed
+- PASS — `probeGenerator` (app): state-or-visible-artifact-changed
+- PASS — `makeLensFromGenerator` (app): state-or-visible-artifact-changed
+- PASS — `clearPaper` (app): state-or-visible-artifact-changed
+- PASS — `clearAiSpace` (app): state-or-visible-artifact-changed
+- PASS — `clearUserLenses` (app): state-or-visible-artifact-changed
+- PASS — `clearGenerators` (app): state-or-visible-artifact-changed
+- PASS — `clearWorkspaceDomains` (app): state-or-visible-artifact-changed
+- PASS — `capturePageSelection` (extension): controlled extension state changed
+- PASS — `togglePageHighlighter` (extension): controlled extension state changed
+- PASS — `queueExternalLens` (extension): controlled extension state changed
+- PASS — `setExternalGenerator` (extension): controlled extension state changed
+- PASS — `previewExternalGo` (extension): controlled extension state changed
+- PASS — `pressExternalGo` (extension): controlled extension state changed
+- PASS — `copyExternalResult` (extension): controlled extension state changed
+- PASS — `insertExternalResult` (extension): controlled extension state changed
+- PASS — `replaceExternalSelection` (extension): controlled extension state changed
+- PASS — `annotateExternalResult` (extension): controlled extension state changed
+- PASS — `openExternalArtifact` (extension): controlled extension state changed
+- PASS — `showExternalLibraryImport` (extension): controlled extension state changed
+- PASS — `openExternalBeforeAfter` (extension): controlled extension state changed
+- PASS — `setExternalBeforeAfterText` (extension): controlled extension state changed
+- PASS — `inferExternalBeforeAfter` (extension): controlled extension state changed
