@@ -1369,7 +1369,9 @@ export default function AiNodeCanvas({
                           lineHeight={textLayout.lineHeight}
                           width={textLayout.w}
                           fontFamily="inherit"
-                          onFragmentReplace={onFragmentReplace}
+                          onFragmentReplace={(fragment, opts) =>
+                            onFragmentReplace?.(fragment, opts, node.id)
+                          }
                           onFragmentToPaper={onFragmentToPaper}
                           onTransferStart={(ev, quote) =>
                             onHighlightTransferStart?.(ev, [node.id], {

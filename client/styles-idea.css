@@ -702,7 +702,8 @@ html[data-theme="chalk"] .canvas-column {
 .canvas-edge-bottom {
   position: absolute;
   bottom: 12px;
-  right: 14px;
+  /* Keep zoom controls clear of the fixed companion launcher. */
+  right: 124px;
   z-index: 30;
   display: flex;
   align-items: center;
@@ -5575,7 +5576,7 @@ body.director-running .idea-app {
 .companion-fab {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 64px;
   z-index: 3600;
   display: flex;
   align-items: center;

@@ -10240,10 +10240,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       animateCameraTo(atWorld, Math.min(camRef.current.scale, 1.1));
     }
   };
-  transferFragmentReplaceRef.current = (fragment) => {
+  transferFragmentReplaceRef.current = (fragment, nodeId = null) => {
     emitTourEvent("fragment-highlight");
-    const nodeId = selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
-    replaceFragmentInAiNode(nodeId, fragment);
+    const targetNodeId =
+      nodeId || selectedAiNodeIdsRef.current[selectedAiNodeIdsRef.current.length - 1];
+    replaceFragmentInAiNode(targetNodeId, fragment);
   };
   spaceTransferCompleteRef.current = (g, cx, cy) => {
     emitTourEvent("transfer");
@@ -12830,7 +12831,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             fragment: opts.fragment || null,
           });
         }}
-        onFragmentReplace={(fragment) => transferFragmentReplaceRef.current(fragment)}
+        onFragmentReplace={(fragment, _opts, nodeId) =>
+          transferFragmentReplaceRef.current(fragment, nodeId)
+        }
         onFragmentToPaper={(fragment, opts) => transferFragmentToPaperRef.current(fragment, opts)}
         isPaperDestination={() => true}
         shouldHandoffNodeDrag={() => false}

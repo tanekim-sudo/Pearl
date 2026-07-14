@@ -1,0 +1,19 @@
+{
+  "passed": 11,
+  "failed": 0,
+  "checks": [
+    "three-step onboarding",
+    "local no-account path",
+    "clean one-confirm import",
+    "360px panel",
+    "library ready result",
+    "useful empty state",
+    "persistent selection",
+    "queue has no auto-run",
+    "preview before mutation",
+    "field insertion verification",
+    "reduced-motion CSS"
+  ],
+  "browser": "149.0.7827.55",
+  "generatedAt": "2026-07-14T06:37:27.630Z"
+}

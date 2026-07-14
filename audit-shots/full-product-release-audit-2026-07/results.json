@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-07-14T07:00:00.000Z",
+  "verdict": "conditional-no-go",
+  "capabilities": {
+    "total": 108,
+    "app": 96,
+    "extension": 12,
+    "manifestRuntimeParity": 108
+  },
+  "verification": {
+    "unit": { "passed": 392, "failed": 0 },
+    "extensionUnitAndRelease": { "passed": 20, "failed": 0 },
+    "humanBrowser": { "passed": 60, "failed": 0 },
+    "integratedBrowser": { "passed": 32, "failed": 0 },
+    "extensionBrowser": { "passed": 11, "failed": 0 },
+    "aiStressLastComplete": { "passed": 19, "failed": 1 }
+  },
+  "performance": {
+    "freshInteractiveMs": 599,
+    "localDestructiveIntentMs": 15,
+    "maxDensityNodes": 150,
+    "rapidGestures": 105
+  },
+  "fixedDefects": [
+    "companion launcher occluded zoom controls",
+    "AI fragment replacement lost source node identity",
+    "initial AI text stroke was misclassified as paper transfer",
+    "audit outputs overwrote historical evidence",
+    "stale split-column and legacy-coordinate audit fixtures"
+  ],
+  "unresolved": [
+    {
+      "severity": "high",
+      "area": "ai-text-highlight",
+      "summary": "Reading-focus word stroke does not persist goldenFragment in focused stress audit"
+    }
+  ],
+  "externalLimitations": [
+    "Supabase credentials and multiple real accounts unavailable",
+    "Hosted model credentials unavailable",
+    "Microphone hardware permission unavailable",
+    "Chrome Web Store publication unavailable"
+  ],
+  "evidence": {
+    "humanReport": "human/REPORT.md",
+    "integratedReport": "final/REPORT.md",
+    "extensionResults": "extension/audit-results.json",
+    "aiStress": "ai-space/"
+  }
+}

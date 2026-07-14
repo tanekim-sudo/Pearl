@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const BASE = process.env.AUDIT_URL || "http://localhost:5173";
-const OUT = path.resolve("audit-shots/human-audit");
+const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/human-audit");
 const REPORT = path.join(OUT, "REPORT.md");
 const VIEWPORTS = [
   { name: "wide", width: 1600, height: 1000 },

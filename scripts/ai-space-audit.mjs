@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const BASE = process.env.AUDIT_URL || "http://localhost:5173";
-const OUT = path.resolve("audit-shots/final-audit/ai-space");
+const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/final-audit/ai-space");
 fs.mkdirSync(OUT, { recursive: true });
 
 const results = [];
@@ -21,14 +21,14 @@ function nodes(count, shape = "scatter") {
   return Array.from({ length: count }, (_, i) => {
     const parentId = i ? `stress-${Math.floor((i - 1) / (shape === "fan" ? count : 2))}` : null;
     const angle = count === 1 ? 0 : (i / Math.max(1, count - 1)) * Math.PI * 8;
-    const distance = shape === "fan" ? 650 : 90 * Math.sqrt(i);
+    const distance = shape === "fan" ? 280 : 24 * Math.sqrt(i);
     return {
       id: `stress-${i}`,
       nodeKind: i ? "expanded" : "source",
       parentId,
       sourceNodeIds: parentId ? [parentId] : [],
-      x: i ? Math.cos(angle) * distance : 0,
-      y: i ? Math.sin(angle) * distance : 0,
+      x: 408 + (i ? Math.cos(angle) * distance : 0),
+      y: 528 + (i ? Math.sin(angle) * distance : 0),
       radius: i ? 22 : 30,
       label: i ? `node ${i}` : "source",
       opLabel: i ? ["expand", "invert", "reframe"][i % 3] : null,
@@ -59,7 +59,19 @@ async function settleAndSeed(page, seeded) {
 }
 
 async function setNodes(page, seeded) {
-  await page.evaluate((value) => localStorage.setItem("lens.ai.nodes.v1", JSON.stringify(value)), seeded);
+  await page.evaluate((value) => {
+    // Seed the current page-coordinate contract directly. Legacy coordinates
+    // intentionally migrate with an offset and are not valid density fixtures.
+    localStorage.setItem("lens.unified-workspace.v2", JSON.stringify({
+      version: 3,
+      savedAt: new Date().toISOString(),
+      camera: { x: 80, y: 56, scale: 0.72 },
+      items: [],
+      nodes: value,
+    }));
+    localStorage.removeItem("lens.board.pages.v1");
+    localStorage.setItem("lens.ai.nodes.v1", JSON.stringify(value));
+  }, seeded);
   await page.reload();
   await page.waitForTimeout(800);
 }
@@ -137,8 +149,8 @@ async function textHighlightAudit(page) {
   const seeded = [{
     id: "text-node",
     nodeKind: "expanded",
-    x: 0,
-    y: 0,
+    x: 408,
+    y: 528,
     radius: 30,
     label: "reading node",
     opLabel: "expand",
@@ -146,13 +158,19 @@ async function textHighlightAudit(page) {
     createdAt: 1,
   }];
   await setNodes(page, seeded);
-  const vp = await page.locator(".ai-node-viewport").boundingBox();
-  await wheel(page, -90, 11, { x: vp.x + vp.width / 2, y: vp.y + vp.height / 2 });
+  await page.locator(".zoom-micro-dot").hover();
+  await page.locator(".zoom-label").click();
+  await page.waitForTimeout(650);
   await pick(page, "highlight");
   const node = page.locator(".ai-node").first();
   await node.click();
   await page.waitForTimeout(150);
   check("AI text: tap persistently marks whole node", await node.evaluate((el) => el.classList.contains("omni-marked")));
+  await page.keyboard.press("Escape");
+  await pick(page, "select");
+  await node.dblclick();
+  await page.waitForTimeout(650);
+  await pick(page, "highlight");
   const overlay = page.locator(".fragment-highlight-text");
   await overlay.waitFor();
   await screenshot(page, "text-before-word-mark");

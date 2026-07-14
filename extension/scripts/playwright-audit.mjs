@@ -8,7 +8,9 @@ const extensionRoot = path.resolve(import.meta.dirname, "..");
 const dist = path.join(extensionRoot, "dist/chrome");
 const auditDist = path.join(extensionRoot, ".audit-extension");
 const fixture = fs.readFileSync(path.join(extensionRoot, "tests/fixtures/editors.html"));
-const evidence = path.resolve(extensionRoot, "../audit-shots/extension-distribution/easy-onboarding");
+const evidence = path.resolve(
+  process.env.AUDIT_OUT || path.join(extensionRoot, "../audit-shots/extension-distribution/easy-onboarding")
+);
 fs.rmSync(evidence, { recursive: true, force: true });
 fs.mkdirSync(evidence, { recursive: true });
 if (!fs.existsSync(path.join(dist, "manifest.json"))) throw new Error("Run the extension build before the audit.");

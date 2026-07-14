@@ -16,9 +16,7 @@ export default function FragmentHighlightLayer({
   fontFamily,
   lockedQuote,
   onFragmentReplace,
-  onFragmentToPaper,
   onTransferStart,
-  isPaperDestination,
   className = "",
 }) {
   const surfaceRef = useRef(null);
@@ -45,14 +43,13 @@ export default function FragmentHighlightLayer({
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  function finishStroke(clientPoints, clientX, clientY, toPaper) {
+  function finishStroke(clientPoints, clientX, clientY) {
     const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
     if (!el || clientPoints.length < 2) return;
     const extracted = extractFragmentRangeFromStroke(el, clientPoints, HIGHLIGHT_W);
     if (!extracted?.quote) return;
     const opts = { clientX, clientY };
-    if (toPaper) onFragmentToPaper?.(extracted.quote, opts);
-    else onFragmentReplace?.(extracted.quote, opts);
+    onFragmentReplace?.(extracted.quote, opts);
   }
 
   function updatePreview(clientPoints) {
@@ -154,12 +151,6 @@ export default function FragmentHighlightLayer({
       }, 0);
       if (len < HIGHLIGHT_MARK_MIN_PX) return;
 
-      const overPaper = isPaperDestination?.(ev.clientX, ev.clientY);
-      if (overPaper) {
-        finishStroke(g.points, ev.clientX, ev.clientY, true);
-        return;
-      }
-
       const el = surfaceRef.current?.querySelector(".fragment-highlight-text");
       const extracted = el
         ? extractFragmentRangeFromStroke(el, g.points, HIGHLIGHT_W)
@@ -168,7 +159,7 @@ export default function FragmentHighlightLayer({
       if (!quote) return;
 
       if (ev.shiftKey) {
-        finishStroke(g.points, ev.clientX, ev.clientY, false);
+        finishStroke(g.points, ev.clientX, ev.clientY);
         return;
       }
 
@@ -176,7 +167,7 @@ export default function FragmentHighlightLayer({
       // separate, intentional gesture that starts from the locked mark on the
       // next pointer-down; conflating the two made ordinary highlighting fire
       // a cross-domain drag on pointer-up.
-      finishStroke(g.points, ev.clientX, ev.clientY, false);
+      finishStroke(g.points, ev.clientX, ev.clientY);
       setPreviewQuote(null);
     }
 

@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const BASE = process.env.AUDIT_URL || "http://localhost:5173";
-const OUT = path.resolve("audit-shots/final-audit");
+const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/final-audit");
 fs.mkdirSync(OUT, { recursive: true });
 
 const checks = [];
@@ -191,13 +191,13 @@ async function auditLayout(page) {
     await page.waitForTimeout(250);
     const geometry = await page.evaluate(() => {
       const root = document.documentElement;
-      const cols = [".functions-board-rail", ".canvas-column", ".ai-column"].map((s) => {
-        const r = document.querySelector(s)?.getBoundingClientRect();
-        return r ? { left: r.left, right: r.right, width: r.width } : null;
-      });
+      const grid = document.querySelector(".unified-workspace-grid");
       return {
         overflowX: root.scrollWidth - root.clientWidth,
-        cols,
+        gridTracks: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length : 0,
+        hasRail: Boolean(document.querySelector(".functions-board-rail")),
+        hasCanvas: Boolean(document.querySelector(".canvas-column")),
+        legacyAiColumns: document.querySelectorAll(".ai-column").length,
         toolbars: [...document.querySelectorAll(".canvas-tools-bar, .companion-fab")].every((el) => {
           const r = el.getBoundingClientRect();
           return r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1;
@@ -205,7 +205,11 @@ async function auditLayout(page) {
       };
     });
     check(scenario, `${viewport.width}×${viewport.height} has no page overflow`, geometry.overflowX <= 1, `overflow=${geometry.overflowX}px`);
-    check(scenario, `${viewport.width}×${viewport.height} keeps three ordered domains`, geometry.cols.every(Boolean) && geometry.cols[0].right <= geometry.cols[1].left + 2 && geometry.cols[1].right <= geometry.cols[2].left + 2);
+    check(
+      scenario,
+      `${viewport.width}×${viewport.height} keeps the unified three-track workspace`,
+      geometry.gridTracks === 3 && geometry.hasRail && geometry.hasCanvas && geometry.legacyAiColumns === 0
+    );
     check(scenario, `${viewport.width}×${viewport.height} keeps primary controls visible`, geometry.toolbars);
     await shot(page, `layout-${viewport.width}x${viewport.height}`);
   }
@@ -271,6 +275,9 @@ async function auditAi(page) {
 
 async function auditHighlighter(page) {
   const scenario = "highlighter";
+  await page.locator(".zoom-micro-dot").hover();
+  await page.locator(".zoom-label").click();
+  await page.waitForTimeout(650);
   await selectTool(page, "highlight");
   const wordRects = await page.evaluate(() => {
     const el = document.querySelector('[data-item="audit-paper-1"]');
