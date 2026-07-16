@@ -106,6 +106,8 @@ The primary Primitive Moves are:
 
 People may promote any Move to the Primitive shelf, demote a built-in, and reorder the shelf. Preferences are separate from canonical Move definitions so upgrades do not erase user organization.
 
+Primitive defaults are editable and versioned. A user override replaces the matching canonical card without changing its stable identity, losing nested steps, or creating duplicates. Historical transforms such as Research, Compress, and Reframe remain ordinary editable Moves; migration changes their classification only where an explicit alias maps them to Branch, Merge, Deepen, Challenge, or Embody.
+
 ### Proximity Merge
 
 Dragging one compatible item toward another reveals a non-destructive Merge preview. The preview:
@@ -113,9 +115,9 @@ Dragging one compatible item toward another reveals a non-destructive Merge prev
 1. identifies every proposed input;
 2. shows the resulting placement and output contract;
 3. distinguishes grouping from execution;
-4. arms only after a visible dwell inside the target’s proximity field;
+4. arms only after a visible 420 ms dwell inside a 72 CSS-pixel screen-space target field;
 5. treats release while armed as an explicit Merge command equivalent to pressing GO;
-6. disarms if the pointer leaves a wider release boundary, preventing flicker and accidental commits;
+6. disarms if the pointer leaves the 96 CSS-pixel hysteresis boundary, preventing flicker and accidental commits across workspace zoom levels;
 7. preserves originals, creates a midpoint source node containing both source IDs, and runs Merge from that node;
 8. offers immediate undo and refuses unreadable, incompatible, or ambiguous inputs until a bridge or explicit selection resolves them.
 
@@ -256,6 +258,8 @@ Moves and Functions persist versioned generation defaults:
 
 Each branch specification contains a stable ID/order, name, instruction, perspective, constraints, requested model, optional output override, Lens bindings, diversity, seed, provider options, count, and group.
 
+The Function editor exposes every BranchSpec directly. Users can add up to 20 branch perspectives, rename them, edit instructions, select a compatible model independently for each branch, reorder, duplicate, or remove them, and retain at least one branch. Changing candidate count preserves existing specifications by stable ID and creates deterministic defaults only for new slots. A branch count greater than one expands that specification into sibling candidates without losing the shared branch identity.
+
 ### Candidates and comparison
 
 Starting a batch creates all candidate placeholders before model calls. Each candidate independently transitions through pending, running, streaming, completed, failed, or cancelled.
@@ -275,6 +279,13 @@ Blurbs are comparative, sibling-aware, non-duplicative, and about substantive di
 ### Taste branching
 
 The user can accept, reject, or leave a candidate undecided, add a private reason, and explicitly choose whether feedback should be remembered. Focus advances through undecided siblings.
+
+Taste controls also support **Keep all**, **Extend selected**, **Stop generation**, and **Retry candidate**:
+
+- Keep all accepts every recoverable sibling while keeping the feedback private and unpublished.
+- Extend selected starts one bounded child batch from each explicitly selected candidate, including candidates from different parent branches.
+- Stop generation cancels only pending/running siblings and preserves every completed candidate.
+- Retry candidate reruns only the focused failed candidate under a new idempotent attempt and retains its parent/branch lineage.
 
 “More like this” may start from one or several accepted candidates across different branches. The next plan carries:
 
@@ -507,6 +518,8 @@ The companion is a complete alternate command interface for every meaningful dir
 - representative intent and test identity.
 
 The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
+
+The canonical parity baseline is **174 executable capabilities**: **146 app/director effects** and **28 extension effects**. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
 
 ### Interaction model
 
@@ -776,6 +789,8 @@ npm run release:check
 ```
 
 The release gate must also prove that its mutation sanity check fails when a required handler is intentionally removed, scan release artifacts for secrets, and run model-safe browser audits for transcript learning, before/after learning, account adoption, companion effects, branch geometry, explicit GO, and page/node integration.
+
+Parallel-cognition release evidence must additionally cover continuous natural-language command dispatch, stale-confirmation arbitration, ledger-backed retry, reversible demonstrations, BranchSpec persistence after reload, unique 3–8 word labels, all taste controls, Primitive Move migration/overrides, screen-space proximity Merge, and the complete 174-capability effect matrix.
 
 ## Architecture and safe changes
 
