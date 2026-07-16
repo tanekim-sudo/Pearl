@@ -16,7 +16,7 @@ const historical = Array.from({ length: 45 }, (_, index) => {
 });
 
 const postAudit = [
-  ["Gateway streaming, catalog, preferences, provenance", ["server/model-gateway.js", "server/model-gateway.test.js", "api/models.js", "client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"]],
+  ["Gateway streaming, catalog, preferences, provenance", ["server/model-gateway.js", "server/model-gateway.test.js", "api/run.js", "client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"]],
   ["Voice provider and VAD parity", ["client/lib/companion-voice.js", "client/components/CompanionChat.jsx", "extension/src/sidepanel/main.jsx"]],
   ["Checkpointed critique sessions", ["shared/critique-session.js", "client/App.jsx", "extension/src/background/service-worker.js"]],
   ["Canonical companion command parity", ["client/lib/companion-capabilities.js", "scripts/companion-capability-runtime-audit.mjs"]],
@@ -26,7 +26,7 @@ const postAudit = [
   ["Instruction execution journal", ["shared/instruction-events.js", "shared/instruction-events.test.js"]],
   ["Inspectable perceptual Lens encoding", ["shared/lens-perceptual-model.js", "server/lens-encoder.js", "client/components/LensSettingsDialog.jsx"]],
   ["Candidate plan and live model assignment", ["shared/generation-plan.js", "client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"]],
-  ["Streaming candidate branches", ["server/generation-runner.js", "server/generation-runner.test.js", "api/generate-batch.js"]],
+  ["Streaming candidate branches", ["server/generation-runner.js", "server/generation-runner.test.js", "api/run.js"]],
   ["Taste navigation and child generation", ["shared/generation-plan.js", "client/App.jsx", "extension/src/background/service-worker.js"]],
   ["Semantic screen and paper interpretation", ["shared/workspace-observation.js", "client/lib/companion-observation.js", "client/App.jsx"]],
   ["Authorized ephemeral visual capture", ["client/App.jsx", "extension/src/background/service-worker.js"]],

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T06:42:09.753Z",
+  "generatedAt": "2026-07-16T07:05:54.720Z",
   "counts": {
     "total": 60,
     "historicalImplemented": 38,
@@ -331,7 +331,7 @@
       "evidence": [
         "server/model-gateway.js",
         "server/model-gateway.test.js",
-        "api/models.js",
+        "api/run.js",
         "client/components/LensTreeEditor.jsx",
         "extension/src/sidepanel/main.jsx"
       ],
@@ -441,7 +441,7 @@
       "evidence": [
         "server/generation-runner.js",
         "server/generation-runner.test.js",
-        "api/generate-batch.js"
+        "api/run.js"
       ],
       "localUnresolved": false
     },

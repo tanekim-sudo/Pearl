@@ -9,6 +9,11 @@
       "maxDuration": 300
     }
   },
+  "rewrites": [
+    { "source": "/api/models", "destination": "/api/run?route=models" },
+    { "source": "/api/lens-encode", "destination": "/api/run?route=lens-encode" },
+    { "source": "/api/generate-batch", "destination": "/api/run?route=generate-batch" }
+  ],
   "headers": [
     {
       "source": "/downloads/lens-everywhere-chrome-v(.*).zip",
