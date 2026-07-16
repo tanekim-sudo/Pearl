@@ -125,7 +125,7 @@ test("validates typed create-use-compose references in dependency order", () => 
         {
           kind: "action",
           id: "combine",
-          capability: "mergeLenses",
+          capability: "mergeFunctions",
           args: { a: { $ref: "memoLens" }, b: { $ref: "evaluationLens" } },
           saveAs: "teamLens",
         },
@@ -146,7 +146,7 @@ test("rejects forward references, duplicate bindings, and resource type mismatch
             {
               kind: "action",
               id: "merge",
-              capability: "mergeLenses",
+              capability: "mergeFunctions",
               args: { a: { $ref: "future" }, b: "existing" },
             },
             {
@@ -168,17 +168,17 @@ test("rejects forward references, duplicate bindings, and resource type mismatch
         root: {
           kind: "sequence",
           steps: [
-            { kind: "action", id: "g", capability: "newGenerator", args: {}, saveAs: "resource" },
+            { kind: "action", id: "g", capability: "createMove", args: { name: "Atomic", prompt: "Do one thing." }, saveAs: "resource" },
             {
               kind: "action",
               id: "m",
-              capability: "mergeLenses",
+              capability: "mergeFunctions",
               args: { a: { $ref: "resource" }, b: "existing" },
             },
           ],
         },
       }),
-    /expects lens.*produces generator/
+    /expects function.*produces move/
   );
 });
 
@@ -233,24 +233,24 @@ test("validates generalized create-then-use plans across workspace domains", () 
     sequence([
       createLens("a", "a"),
       createLens("b", "b"),
-      { kind: "action", id: "merge", capability: "mergeLenses", args: { a: { $ref: "a" }, b: { $ref: "b" } }, saveAs: "merged" },
+      { kind: "action", id: "merge", capability: "mergeFunctions", args: { a: { $ref: "a" }, b: { $ref: "b" } }, saveAs: "merged" },
     ]),
     sequence([
       createLens(),
-      { kind: "action", id: "fork", capability: "forkLens", args: { lens: { $ref: "lens" } }, saveAs: "fork" },
+      { kind: "action", id: "fork", capability: "forkFunction", args: { function: { $ref: "lens" } }, saveAs: "fork" },
     ]),
     sequence([
       createLens(),
-      { kind: "action", id: "edit", capability: "editLensByInstruction", args: { op: { $ref: "lens" }, instruction: "Add a counterevidence branch" } },
+      { kind: "action", id: "edit", capability: "editFunctionByInstruction", args: { function: { $ref: "lens" }, instruction: "Add a counterevidence branch" } },
     ]),
     sequence([
-      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
+      { kind: "action", id: "generator", capability: "createLens", args: {}, saveAs: "generator" },
       spawn(),
-      { kind: "action", id: "attach", capability: "attachToGenerator", args: { generator: { $ref: "generator" }, target: { $ref: "item" } } },
+      { kind: "action", id: "attach", capability: "addLensMaterial", args: { lens: { $ref: "generator" }, target: { $ref: "item" } } },
     ]),
     sequence([
-      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
-      { kind: "action", id: "craft", capability: "makeLensFromGenerator", args: { generator: { $ref: "generator" } }, saveAs: "crafted" },
+      { kind: "action", id: "generator", capability: "createLens", args: {}, saveAs: "generator" },
+      { kind: "action", id: "craft", capability: "inferFunctionFromLens", args: { lens: { $ref: "generator" } }, saveAs: "crafted" },
     ]),
     sequence([
       { kind: "action", id: "block-a", capability: "addBlock", args: { type: "text", text: "A" }, saveAs: "a" },
@@ -271,12 +271,12 @@ test("validates generalized create-then-use plans across workspace domains", () 
       { kind: "action", id: "extend", capability: "addFunctionStep", args: { op: { $ref: "lens" }, name: "Decide" } },
     ]),
     sequence([
-      { kind: "action", id: "capture", capability: "captureThread", args: { target: "existing-node", name: "Captured path" }, saveAs: "captured" },
-      { kind: "action", id: "fork", capability: "forkLens", args: { lens: { $ref: "captured" } } },
+      { kind: "action", id: "capture", capability: "captureThreadAsFunction", args: { target: "existing-node", name: "Captured path" }, saveAs: "captured" },
+      { kind: "action", id: "fork", capability: "forkFunction", args: { function: { $ref: "captured" } } },
     ]),
     sequence([
-      { kind: "action", id: "generator", capability: "newGenerator", args: {}, saveAs: "generator" },
-      { kind: "action", id: "graduate", capability: "graduateGenerator", args: { generator: { $ref: "generator" }, name: "Named generator" } },
+      { kind: "action", id: "generator", capability: "createLens", args: {}, saveAs: "generator" },
+      { kind: "action", id: "graduate", capability: "nameLens", args: { lens: { $ref: "generator" }, name: "Named Lens" } },
     ]),
   ];
   assert.equal(plans.length, 12);

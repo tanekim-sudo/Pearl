@@ -133,8 +133,8 @@ export const COMPANION_DEMOS = [
       { verb: "applyFunction", args: { op: "expand", target: "g" } },
       { verb: "dragAiResultToPaper", args: {} },
       { verb: "caption", args: { text: "every object remembers the exact steps that produced it.", ms: 2200 } },
-      { verb: "captureThread", args: { target: "last" } },
-      { verb: "caption", args: { text: "that whole path is now one lens on your rail — replay it on anything.", ms: 2600 } },
+      { verb: "captureThreadAsFunction", args: { target: "last" } },
+      { verb: "caption", args: { text: "that whole path is now one Function on your rail — replay it on anything.", ms: 2600 } },
     ],
   },
   {

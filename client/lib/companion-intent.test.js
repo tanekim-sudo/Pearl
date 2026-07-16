@@ -11,10 +11,33 @@ import {
   parseBeforeAfterCommand,
   parseExtensionDownloadCommand,
   parseFunctionOutputCommand,
+  parseLibraryObjectCommand,
+  parseTranscriptLearningCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
+
+test("Move, Function, and Lens save intents stay distinct", () => {
+  assert.deepEqual(parseLibraryObjectCommand("save this text as a move"), {
+    verb: "saveCurrentAsMove",
+    args: {},
+  });
+  assert.deepEqual(parseLibraryObjectCommand("save how I got here as a function"), {
+    verb: "captureLineageAsFunction",
+    args: {},
+  });
+  assert.deepEqual(parseLibraryObjectCommand("collect these in a lens"), {
+    verb: "openSaveAsChooser",
+    args: {},
+    followup: { verb: "chooseSaveAsKind", args: { kind: "lens" } },
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("make all three from this chat transcript"), {
+    verb: "chooseTranscriptArtifacts",
+    args: { kind: "all" },
+    followup: { verb: "generateTranscriptArtifacts", args: {} },
+  });
+});
 
 test("exact mixed identity question and typo clear resets only workspace domains", () => {
   const text = "Who are you?\nclear everything let me start fomr scratch";
@@ -30,7 +53,7 @@ test("exact mixed identity question and typo clear resets only workspace domains
 
 test("compound administrative command composes every requested clear domain", () => {
   const intent = parseAdministrativeCommand(
-    "delete all the functions in my current function tab as well as all the generators and delete every single thing that's in my whiteboard as well as in my AI space"
+    "delete all the functions in my current function tab as well as all the lenses and delete every single thing that's in my whiteboard as well as in my AI space"
   );
 
   assert.deepEqual(intent, {
@@ -80,12 +103,12 @@ test("extension download requests use the deterministic local path", () => {
   assert.equal(parseExtensionDownloadCommand("download this page"), null);
 });
 
-test("administrative parser recognizes user-facing and legacy domain names", () => {
+test("administrative parser recognizes canonical domain names", () => {
   assert.deepEqual(parseAdministrativeCommand("wipe the entire canvas and all AI nodes"), {
     kind: "clear-workspace",
     domains: ["paper", "ai"],
   });
-  assert.deepEqual(parseAdministrativeCommand("remove all operators and structures"), {
+  assert.deepEqual(parseAdministrativeCommand("remove all functions and lenses"), {
     kind: "clear-workspace",
     domains: ["lenses", "generators"],
   });
@@ -109,7 +132,7 @@ test("destructive follow-ups amend recent clear context without becoming profile
   });
   assert.equal(classifyInterviewInput("including the notes delete the nodes", "identity").kind, "command");
   assert.deepEqual(
-    parseAdministrativeCommand("also the generators, not the lenses", {
+    parseAdministrativeCommand("also the lenses, not the functions", {
       previousDomains: ["paper", "ai"],
       pending: true,
     }),
@@ -139,7 +162,7 @@ test("typo-filled first-run clear request routes before profile capture", () => 
 
 test("compound clear tolerates the common whiteboard transposition typo", () => {
   const text =
-    "delete all the functions in my current function tab as well as all the generators and delete every single thing that's in my whitebaord as well as in my AI space";
+    "delete all the functions in my current function tab as well as all the lenses and delete every single thing that's in my whitebaord as well as in my AI space";
   assert.deepEqual(parseAdministrativeCommand(text), {
     kind: "clear-workspace",
     domains: ["paper", "ai", "lenses", "generators"],
@@ -190,7 +213,7 @@ test("mixed onboarding utterances retain short profile facts and execute the rem
 
 test("administrative parser rejects non-bulk and non-destructive requests", () => {
   assert.equal(parseAdministrativeCommand("delete the function named memo"), null);
-  assert.equal(parseAdministrativeCommand("show me all generators"), null);
+  assert.equal(parseAdministrativeCommand("show me all lenses"), null);
   assert.equal(parseAdministrativeCommand("clear this up for me"), null);
 });
 
@@ -212,8 +235,8 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
   for (const verb of [
     "clearPaper",
     "clearAiSpace",
-    "clearUserLenses",
-    "clearGenerators",
+    "clearFunctions",
+    "clearLenses",
     "clearWorkspaceDomains",
   ]) {
     assert.ok(COMPANION_VERBS[verb], `${verb} is documented for the companion`);

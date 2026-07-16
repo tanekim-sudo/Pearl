@@ -28,10 +28,10 @@ function clearDomainsFromText(normalized) {
     unifiedCanvas ||
     /\b(ai space|ai nodes?|nodes?|ai stuff|artificial intelligence space|edges?)\b/.test(normalized)
   ) domains.add("ai");
-  if (/\b(lenses?|functions?|operators?|function tab|lens tab)\b/.test(normalized)) domains.add("lenses");
-  if (/\b(generators?|structures?|generator tab)\b/.test(normalized)) domains.add("generators");
-  if (/\bnot (?:the )?(?:lenses?|functions?|operators?)\b/.test(normalized)) domains.delete("lenses");
-  if (/\bnot (?:the )?(?:generators?|structures?)\b/.test(normalized)) domains.delete("generators");
+  if (/\b(moves?|functions?|operators?|move tab|function tab)\b/.test(normalized)) domains.add("lenses");
+  if (/\b(lenses?|context structures?|lens tab)\b/.test(normalized)) domains.add("generators");
+  if (/\bnot (?:the )?(?:moves?|functions?|operators?)\b/.test(normalized)) domains.delete("lenses");
+  if (/\bnot (?:the )?(?:lenses?|context structures?)\b/.test(normalized)) domains.delete("generators");
   if (/\bnot (?:the )?(?:ai|nodes?|ai stuff)\b/.test(normalized)) domains.delete("ai");
   if (/\bnot (?:the )?(?:paper|notes?|drawings?)\b/.test(normalized)) domains.delete("paper");
   return [...domains];
@@ -58,7 +58,7 @@ export function parseAdministrativeCommand(text, { previousDomains = [], pending
   const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized) || /\bget rid (?:of|fo)\b/.test(normalized);
   const bulk = /\b(all|everything|every single thing|entire|whole)\b/.test(normalized);
   const followup = pending && (
-    /\b(also|including?|plus|and the|do the rest|nodes?|notes?|lenses?|functions?|generators?)\b/.test(normalized)
+    /\b(also|including?|plus|and the|do the rest|nodes?|notes?|moves?|functions?|lenses?)\b/.test(normalized)
   );
   if ((!destructive || !bulk) && !followup) return null;
   let domains = clearDomainsFromText(normalized);
@@ -72,11 +72,43 @@ export function parseAdministrativeCommand(text, { previousDomains = [], pending
       domains = CLEARABLE_DOMAINS.filter((domain) => !previousDomains.includes(domain));
     } else {
       domains = [...new Set([...previousDomains, ...domains])];
-      if (/\bnot (?:the )?(?:lenses?|functions?|operators?)\b/.test(normalized)) domains = domains.filter((d) => d !== "lenses");
-      if (/\bnot (?:the )?(?:generators?|structures?)\b/.test(normalized)) domains = domains.filter((d) => d !== "generators");
+      if (/\bnot (?:the )?(?:moves?|functions?|operators?)\b/.test(normalized)) domains = domains.filter((d) => d !== "lenses");
+      if (/\bnot (?:the )?(?:lenses?|context structures?)\b/.test(normalized)) domains = domains.filter((d) => d !== "generators");
     }
   }
   return domains.length ? { kind: "clear-workspace", domains } : null;
+}
+
+export function parseLibraryObjectCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/^(?:open )?(?:the )?save as(?: chooser)?$/i.test(value) || /^save this as(?:…|\.\.\.)?$/i.test(value)) {
+    return { verb: "openSaveAsChooser", args: {} };
+  }
+  if (/^(?:save|make|use) (?:this|the selected|selected) (?:text|content|selection)? ?as (?:a )?move$/i.test(value)) {
+    return { verb: "saveCurrentAsMove", args: {} };
+  }
+  if (/^(?:save|capture) (?:how i got here|how (?:this|it) was made|this (?:result'?s )?lineage) as (?:a )?function$/i.test(value)) {
+    return { verb: "captureLineageAsFunction", args: {} };
+  }
+  if (/^(?:collect|save) (?:these|this|the selected|selected) (?:items|material|content)? ?(?:in|as) (?:a )?lens$/i.test(value)) {
+    return { verb: "openSaveAsChooser", args: {}, followup: { verb: "chooseSaveAsKind", args: { kind: "lens" } } };
+  }
+  return null;
+}
+
+export function parseTranscriptLearningCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value || !/\b(chat|conversation|transcript)\b/i.test(value)) return null;
+  if (/\b(?:open|show|start)\b/i.test(value) && /\b(?:learn|extract|turn|make)\b/i.test(value)) {
+    return { verb: "openTranscriptLearning", args: {} };
+  }
+  const all = /\b(?:all three|move,? function,? and lens|everything)\b/i.test(value);
+  const kind = all ? "all" : /\blens\b/i.test(value) ? "lens" : /\bfunction\b/i.test(value) ? "function" : /\bmove\b/i.test(value) ? "move" : null;
+  if (kind && /\b(?:turn|extract|make|generate|learn)\b/i.test(value)) {
+    return { verb: "chooseTranscriptArtifacts", args: { kind }, followup: { verb: "generateTranscriptArtifacts", args: {} } };
+  }
+  return null;
 }
 
 const COMMAND_LEAD =
@@ -255,12 +287,12 @@ export function parseBeforeAfterCommand(text) {
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [] } = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");
-  return `You are the companion inside "lens", a thinking tool with three layers: a rail (left) holding LENSES and GENERATORS, a paper notebook page (middle), and an AI space (right). LENSES are reusable cognitive transformations — executable pipelines the user applies to ideas; results bloom as nodes in the AI layer. Lenses support "git for perception": fork, merge, branch, capture a whole thread as one lens, and rewrite by instruction. GENERATORS are open spatial workspaces: the user collects and arranges material, selects subsets, runs lenses, probes other domains, and crafts a reusable lens from the result. Everything you do is DEMONSTRATED live with an animated ghost cursor so the user learns the tool by watching.
+  return `You are the companion inside "lens", a thinking tool with a library rail, paper workspace, and AI space. The canonical library order and meaning are: MOVES are one atomic action and exactly one model call; FUNCTIONS are reusable ordered or branched processes made from Moves or Functions; LENSES are bounded contextual worldviews and emerging material structures that scope how Moves and Functions interpret work. Primitive Moves appear first in branch selection; Lenses are context and never branch actions. Everything executable is demonstrated live with an animated ghost cursor so the user learns by watching.
 
 You translate the user's request into a JSON script of director verbs. Available verbs:
 ${verbDoc}
 
-Existing lenses on the user's rail: ${functionNames.length ? functionNames.join(", ") : "(none yet)"}
+Existing Moves and Functions on the user's rail: ${functionNames.length ? functionNames.join(", ") : "(none yet)"}
 Objects currently on the page: ${itemPreviews.length ? itemPreviews.map((p) => `"${p}"`).join(", ") : "(empty page)"}
 
 Prebuilt demonstrations you can play instead of writing a script:
@@ -273,14 +305,13 @@ Rules:
 - Action-first: for every executable request, set "say" to "" and emit the steps immediately. Do not acknowledge, praise, summarize, or announce what you will do.
 - Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
-- If the user asks you to DO something concrete (e.g. "make an investment memo lens with steps A, B, C and run it on Gimlet Labs"), write steps: createFunction with their steps, spawnText for their subject, then applyFunction with op "last" and target "last", then focusAiResult.
+- Move means one atomic instruction and exactly one model call. Use createMove/applyMove. Function means an ordered, branched, or nested process. Use createFunction/applyFunction for multi-step work. Lens means bounded context/a way of seeing; it is not an action.
 - Never promise unsupported actions. Only claim an action was done when a listed verb executes it. For a missing capability, say exactly which action is unavailable and return no steps.
-- Lens lifecycle: forkLens copies a lens to evolve separately; mergeLenses composes two into one compound; captureThread turns the path that produced an object (paper item or AI node) into a lens.
-- Lens structure: lenses are step pipelines that can FORK into multiple outputs — a branch point runs the shared steps once, then each branch continues from that intermediate result and produces its own output node (e.g. input → expand → branch "one pager" + branch "investment memo" = two outputs per run). Build with addFunctionStep (new step, or use an existing lens/primitive via "use"), addFunctionBranch (fork at a step), setFunctionStep (rename/rewrite a step's prompt), saveFunction (commit). These are the same edits the lens editor makes, so you can build a branched lens end to end.
-- Generator lifecycle: newGenerator creates an open workspace; attachToGenerator collects observations; graduateGenerator names it; probeGenerator tests its material in another domain; makeLensFromGenerator crafts a reusable lens.
+- Function structure can FORK into multiple typed outputs — a branch point runs shared steps once, then each branch continues from that intermediate result. Build with createFunction/addFunctionStep/addFunctionBranch/setFunctionStep/saveFunction.
+- Lens lifecycle: createLens creates an empty or emerging context workspace; addLensMaterial collects contextual evidence; nameLens names it; probeLens tests its perspective in another domain; inferFunctionFromLens may derive a process while preserving the Lens.
 - For bulk deletion, call clearWorkspaceDomains once with every requested domain. It only stages a confirmation; destructive clearing never happens without the user's explicit confirmation. "Functions" means user-created lenses.
 - Multi-part and hard requests are plans: compose as many available verbs as needed in dependency order (for example create material → create/apply a lens → focus or transfer the AI result). Prefer a valid sequence over claiming no single verb exists. A failed nonfatal step is skipped and the rest continue.
-- Selection is cross-domain: the persistent highlighter can include paper material, AI nodes, lenses, functions, generators, and exact text fragments. Lenses are executable transformation trees (including branch outputs); generators are spatial collections for arranging material and crafting lenses. Shared paths can be walked, annotated, branched, returned to, or materialized by the direct UI; do not claim those path operations unless a matching registered capability is listed.
+- Selection is cross-domain: the persistent highlighter can include paper material, AI nodes, Moves, Functions, Lenses, and exact text fragments. Moves and Functions are executable actions; Lenses are spatial bounded context and never branch actions.
 - Do not add conversational caption steps. The animation itself is the response.
 - Use "last" to refer to the thing just created. Use text fragments to refer to existing items/functions.
 - Keep scripts under 40 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
@@ -310,15 +341,15 @@ Step DSL:
 - {"kind":"evaluate","target":"$savedOrStableId","criteria":["criterion"],"saveAs":"evaluation"}
 - {"kind":"research","question":"...","scope":"web","recency":"...","maxSources":5,"saveAs":"research"}
 - {"kind":"checkpoint","mode":"save|confirm","label":"..."}
-- {"kind":"artifact","from":"savedResult","placement":"paper|ai|generator|beside-target","target":"stable-id"}
+- {"kind":"artifact","from":"savedResult","placement":"paper|ai|lens|beside-target","target":"stable-id"}
 
 Framework action metadata (never place these keys inside args):
 ${companionActionMetadataPrompt()}
 
 Rules:
 - Action-first and silent. The plan itself is the response; do not add conversational text.
-- Every executable leaf step must have a unique id. If an action creates a lens, generator, block, node, path, or other resource used later, give that action a saveAs binding and use {"$ref":"binding"} in every dependent argument. Never guess a future camelCase name or refer to a resource before its creating step completes.
-- Lenses/functions are executable transformation trees. Generators are uncertain spatial collections; do not call a lens a generator. Use createFunction for a requested workflow/function/lens.
+- Every executable leaf step must have a unique id. If an action creates a Move, Function, Lens, block, node, path, or other resource used later, give it a saveAs binding and use {"$ref":"binding"} in dependent arguments.
+- Never treat Move, Function, and Lens as synonyms. “Save this text as a Move” means saveCurrentAsMove and preserves text verbatim. “Save how I got here as a Function” means captureLineageAsFunction and uses only contributing lineage. “Collect these in a Lens” means bounded context material.
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
@@ -330,20 +361,20 @@ Rules:
 Dependency examples:
 Create A + B + combine + demonstrate:
 {"version":1,"title":"Build team investment workflow","root":{"kind":"sequence","steps":[
-  {"kind":"action","id":"create-memo","capability":"createFunction","args":{"name":"Investment memo workflow","description":"Automate an evidence-grounded investment memo","steps":[{"name":"Collect thesis and evidence"},{"name":"Assess risks"},{"name":"Draft memo"}]},"saveAs":"memoLens"},
-  {"kind":"action","id":"create-evaluation","capability":"createFunction","args":{"name":"Company evaluation workflow","description":"Evaluate a company consistently","steps":[{"name":"Market"},{"name":"Team"},{"name":"Traction"},{"name":"Risks"}]},"saveAs":"evaluationLens"},
-  {"kind":"action","id":"combine","capability":"mergeLenses","args":{"a":{"$ref":"memoLens"},"b":{"$ref":"evaluationLens"},"name":"Investment workflow for teams"},"saveAs":"teamLens"},
+  {"kind":"action","id":"create-memo","capability":"createFunction","args":{"name":"Investment memo workflow","description":"Automate an evidence-grounded investment memo","steps":[{"name":"Collect thesis and evidence"},{"name":"Assess risks"},{"name":"Draft memo"}]},"saveAs":"memoFunction"},
+  {"kind":"action","id":"create-evaluation","capability":"createFunction","args":{"name":"Company evaluation workflow","description":"Evaluate a company consistently","steps":[{"name":"Market"},{"name":"Team"},{"name":"Traction"},{"name":"Risks"}]},"saveAs":"evaluationFunction"},
+  {"kind":"action","id":"combine","capability":"mergeFunctions","args":{"a":{"$ref":"memoFunction"},"b":{"$ref":"evaluationFunction"},"name":"Investment workflow for teams"},"saveAs":"teamFunction"},
   {"kind":"action","id":"sample","capability":"spawnText","args":{"text":"Demo input — Northstar Analytics, a sample B2B analytics company with early revenue and limited retention data."},"saveAs":"sampleCompany"},
-  {"kind":"action","id":"run","capability":"applyFunction","args":{"op":{"$ref":"teamLens"},"target":{"$ref":"sampleCompany"}}},
+  {"kind":"action","id":"run","capability":"applyFunction","args":{"op":{"$ref":"teamFunction"},"target":{"$ref":"sampleCompany"}}},
   {"kind":"action","id":"focus","capability":"focusAiResult","args":{}}
 ]}}
 
-Create generator + attach + craft:
-{"version":1,"title":"Craft a lens","root":{"kind":"sequence","steps":[
-  {"kind":"action","id":"generator","capability":"newGenerator","args":{},"saveAs":"generator"},
+Create Lens + attach + infer:
+{"version":1,"title":"Build contextual Lens","root":{"kind":"sequence","steps":[
+  {"kind":"action","id":"lens","capability":"createLens","args":{"contextPolicy":"bounded"},"saveAs":"lens"},
   {"kind":"action","id":"material","capability":"spawnText","args":{"text":"New observation"},"saveAs":"material"},
-  {"kind":"action","id":"attach","capability":"attachToGenerator","args":{"generator":{"$ref":"generator"},"target":{"$ref":"material"}}},
-  {"kind":"action","id":"craft","capability":"makeLensFromGenerator","args":{"generator":{"$ref":"generator"}},"saveAs":"craftedLens"}
+  {"kind":"action","id":"attach","capability":"addLensMaterial","args":{"lens":{"$ref":"lens"},"target":{"$ref":"material"}}},
+  {"kind":"action","id":"craft","capability":"inferFunctionFromLens","args":{"lens":{"$ref":"lens"}},"saveAs":"craftedFunction"}
 ]}}
 
 Create blocks + operate:

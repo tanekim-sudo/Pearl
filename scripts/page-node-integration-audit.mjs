@@ -148,22 +148,32 @@ try {
   if (primitiveCount === 8 && nodeBox) {
     let targeted = true;
     let branched = 0;
+    const primitiveResults = [];
     for (let index = 0; index < primitiveCount; index++) {
-      const operatorBox = await operators.nth(index).boundingBox();
+      if (index > 0) {
+        await page.reload();
+        await page.waitForSelector('.ai-node[data-node-id="node-49"]');
+      }
+      await operators.nth(index).scrollIntoViewIfNeeded();
+      const currentNodeBox = await node.boundingBox();
+      const operatorBox = await operators.nth(index).locator(".op-card-label").boundingBox();
       const before = await page.locator(".ai-node").count();
       await page.mouse.move(operatorBox.x + operatorBox.width / 2, operatorBox.y + operatorBox.height / 2);
       await page.mouse.down();
-      await page.mouse.move(nodeBox.x + nodeBox.width / 2, nodeBox.y + nodeBox.height / 2, { steps: 8 });
+      await page.mouse.move(currentNodeBox.x + currentNodeBox.width / 2, currentNodeBox.y + currentNodeBox.height / 2, { steps: 8 });
       await page.waitForTimeout(35);
-      targeted &&= await node.evaluate((element) => element.classList.contains("operator-drop-target"));
+      const identified = await node.evaluate((element) => element.classList.contains("operator-drop-target"));
+      targeted &&= identified;
       if (index === 0) await screenshot("02-operator-node-drop-target");
       await page.mouse.up();
       await page.waitForTimeout(80);
       const after = await page.locator(".ai-node").count();
-      if (after === before + 1) branched += 1;
+      const didBranch = after === before + 1;
+      if (didBranch) branched += 1;
+      primitiveResults.push({ index, name: await operators.nth(index).innerText(), identified, didBranch });
     }
-    check("all 8 primitives identify the exact node", targeted);
-    check("all 8 primitives branch the targeted node", branched === 8, `${branched}/8`);
+    check("all 8 primitives identify the exact node", targeted, JSON.stringify(primitiveResults));
+    check("all 8 primitives branch the targeted node", branched === 8, `${branched}/8 · ${JSON.stringify(primitiveResults)}`);
   } else {
     check("all 8 primitives identify the exact node", false, `${primitiveCount}/8 rows`);
     check("all 8 primitives branch the targeted node", false, `${primitiveCount}/8 rows`);

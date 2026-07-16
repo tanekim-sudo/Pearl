@@ -144,7 +144,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
       const response = await externalMessage("lens-library-handoff", { bundle });
       setInstallState("installed");
       setHandoffStatus(response.imported
-        ? `${response.counts.lenses} lenses and ${response.counts.generators} generators are ready.`
+        ? `${response.counts.lenses} Moves/Functions and ${response.counts.generators} Lenses are ready.`
         : "Open Lens to review one import choice.");
     } catch {
       downloadJson(bundle);
@@ -246,7 +246,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
         </section>}
 
         <section className="extension-library-export">
-          <div><h4>Take your library with you</h4><p>{lensCount} lens{lensCount === 1 ? "" : "es"} and {generators.length} generator{generators.length === 1 ? "" : "s"} ready to move.</p></div>
+          <div><h4>Take your library with you</h4><p>{lensCount} Move/Function record{lensCount === 1 ? "" : "s"} and {generators.length} Lens{generators.length === 1 ? "" : "es"} ready to move.</p></div>
           <button className={installState === "installed" ? "extension-library-primary" : ""} type="button" disabled={exporting} onClick={moveLibrary}>{exporting ? "Preparing…" : "Move my library to Lens"}</button>
           <details>
             <summary>Privacy options</summary>

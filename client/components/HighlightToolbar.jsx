@@ -77,18 +77,18 @@ export default function HighlightToolbar({
       )}
       {pendingStack.length > 1 && (
         <button type="button" className="omni-highlight-btn quiet" onClick={onSavePending}>
-          save stack as lens
+          save stack as Function
         </button>
       )}
       {generatorNeedsChoice && (
-        <span className="brush-generator-choice" role="group" aria-label="Generator sequence">
+        <span className="brush-generator-choice" role="group" aria-label="Lens context">
           <button type="button" className={generatorMode === "source" ? "active" : ""} onClick={() => onGeneratorMode?.("source")}>
             collect source, then operate
           </button>
           <button type="button" onClick={() => onGeneratorMode?.("none")}>operate only</button>
         </span>
       )}
-      {pendingStack.length > 0 && total > 0 && !generatorNeedsChoice && (
+      {pendingStack.some((entry) => entry.kind === "lens") && total > 0 && !generatorNeedsChoice && (
         <button
           type="button"
           className="omni-highlight-btn primary brush-go"
@@ -152,8 +152,8 @@ export default function HighlightToolbar({
       >
         find sameness
       </button>
-      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into an open generator workspace">
-        save as generator
+      <button type="button" className="omni-highlight-btn" onClick={onSaveLens} title="Save the whole selection into an emerging Lens workspace">
+        save as Lens
       </button>
       <button
         type="button"

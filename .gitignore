@@ -11,6 +11,7 @@ supabase/.temp
 supabase/.branches
 .env*
 .pw-browsers/
+.cache/ms-playwright/
 audit-shots/
 extension/release/*.zip
 client/public/downloads/

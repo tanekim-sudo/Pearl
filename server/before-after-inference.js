@@ -5,13 +5,14 @@ import {
   validateBeforeAfterExamples,
 } from "../shared/before-after-examples.js";
 
-const SYSTEM = `You infer reusable Lens functions from private before/after examples.
+const SYSTEM = `You infer canonical reusable artifacts from private before/after examples.
 Return ONLY one JSON object. Infer the general operation shared by positive examples. Counterexamples show behavior the function must not perform.
 Do not copy example-specific subjects, names, entities, facts, or wording into the operation unless they are an invariant required by every example.
 Distinguish content substitution from structural, semantic, and style changes. If one pair permits multiple explanations, lower confidence and return up to 3 materially different alternatives.
 The operation must work on unseen inputs and must explicitly state what to preserve. Never claim visual evidence you cannot observe.
+Classify an atomic one-call transformation as artifactKind "move". Use "function" only when evidence requires multiple distinct ordered or branched operations; include supported steps. A Lens is contextual evidence rather than a transformation and should only be selected when the examples clearly collect a worldview rather than demonstrate an action.
 Schema:
-{"name":"concise lens name","summary":"I think this transformation is…","operation":"exact reusable instructions","invariants":["..."],"changes":["..."],"inputRequirements":["..."],"outputSpec":{"version":1,"mode":"custom","semanticType":"...","machineKind":"text|richText|list|table|image|link|material","description":"...","instructions":"...","schema":null,"cardinality":{"min":1,"max":1},"branches":[]},"modality":{"input":["text|image|drawing|object"],"output":["text|image|drawing|object"],"constraints":["..."]},"confidence":0.0,"ambiguity":"...","alternatives":[{"name":"...","operation":"...","rationale":"..."}]}`;
+{"artifactKind":"move|function|lens","name":"concise name","summary":"I think this transformation is…","operation":"exact reusable instructions","steps":[{"name":"...","prompt":"...","optional":false}],"invariants":["..."],"changes":["..."],"inputRequirements":["..."],"outputSpec":{"version":1,"mode":"custom","semanticType":"...","machineKind":"text|richText|list|table|image|link|material","description":"...","instructions":"...","schema":null,"cardinality":{"min":1,"max":1},"branches":[]},"modality":{"input":["text|image|drawing|object"],"output":["text|image|drawing|object"],"constraints":["..."]},"confidence":0.0,"ambiguity":"...","alternatives":[{"name":"...","operation":"...","rationale":"..."}]}`;
 
 function assetLabel(asset) {
   if (asset.kind === "drawing") return `drawing (${asset.strokes?.length || 0} editable strokes)`;
@@ -52,7 +53,7 @@ export async function inferBeforeAfterTransformation(raw, { signal } = {}) {
   const normalized = normalizeBeforeAfterExamples(validation.value);
   const examples = validation.complete;
   const images = visualAssets(examples);
-  const prompt = `Infer one subject-independent reusable Lens from these ${examples.length} private example${examples.length === 1 ? "" : "s"}.
+  const prompt = `Infer one subject-independent canonical Move or Function from these ${examples.length} private example${examples.length === 1 ? "" : "s"}.
 Use all examples to find the shared operation. Visuals are supplied in the same order they are listed below.
 
 ${examplesPrompt(examples)}`;

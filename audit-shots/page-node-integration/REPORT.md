@@ -11,8 +11,8 @@
 - PASS — legacy default node radii migrate to 14–18 (18, 16)
 - PASS — rendered persistent footprints stay inside page (max overflow 0.00px · "none")
 - PASS — compact node keeps 24px screen hit target (26.6×26.6)
-- PASS — all 8 primitives identify the exact node
-- PASS — all 8 primitives branch the targeted node (8/8)
+- PASS — all 8 primitives identify the exact node ([{"index":0,"name":"⊖\ncompress","identified":true,"didBranch":true},{"index":1,"name":"⊕\nexpand","identified":true,"didBranch":true},{"index":2,"name":"✧\nexplore","identified":true,"didBranch":true},{"index":3,"name":"⌕\nresearch","identified":true,"didBranch":true},{"index":4,"name":"⇅\ninvert","identified":true,"didBranch":true},{"index":5,"name":"⟲\nreframe","identified":true,"didBranch":true},{"index":6,"name":"◦\nmerge","identified":true,"didBranch":true},{"index":7,"name":"△\ntranscend","identified":true,"didBranch":true}])
+- PASS — all 8 primitives branch the targeted node (8/8 · [{"index":0,"name":"⊖\ncompress","identified":true,"didBranch":true},{"index":1,"name":"⊕\nexpand","identified":true,"didBranch":true},{"index":2,"name":"✧\nexplore","identified":true,"didBranch":true},{"index":3,"name":"⌕\nresearch","identified":true,"didBranch":true},{"index":4,"name":"⇅\ninvert","identified":true,"didBranch":true},{"index":5,"name":"⟲\nreframe","identified":true,"didBranch":true},{"index":6,"name":"◦\nmerge","identified":true,"didBranch":true},{"index":7,"name":"△\ntranscend","identified":true,"didBranch":true}])
 - PASS — mixed material produces persistent highlight (3 marked)
 - PASS — make node creates exactly one source
 - PASS — source retains structured provenance (2 paper · 1 AI)

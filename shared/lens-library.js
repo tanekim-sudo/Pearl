@@ -1,8 +1,9 @@
 import { createLensPack, importLensPack, previewLensPackImport } from "./lens-rack.js";
 import { migrateOperatorOutputSpecs } from "./output-specifications.js";
+import { migrateLibraryObjects, validateLibraryObjects } from "./library-objects.js";
 
 export const LENS_LIBRARY_KIND = "lens-everywhere-library";
-export const LENS_LIBRARY_VERSION = 1;
+export const LENS_LIBRARY_VERSION = 2;
 export const LENS_LIBRARY_LIMITS = Object.freeze({
   bytes: 10 * 1024 * 1024,
   operators: 1000,
@@ -88,6 +89,7 @@ export async function createLensLibraryBundle({
     includePrivateExamples: includePrivateSources,
   });
   const safeGenerators = generators.map((generator) => scrub(generator, { includePrivateSources }));
+  const libraryObjects = migrateLibraryObjects([...pack.operators, ...safeGenerators]);
   const bundle = {
     kind: LENS_LIBRARY_KIND,
     version: LENS_LIBRARY_VERSION,
@@ -96,13 +98,14 @@ export async function createLensLibraryBundle({
     name: String(name).slice(0, 120),
     lensPack: pack,
     generators: safeGenerators,
+    libraryObjects,
     rack: scrub(rackMeta),
     collections: scrub(collections),
     privacy: {
       privateSourcesIncluded: !!includePrivateSources,
       excludedByDefault: ["auth tokens", "board sync metadata", "companion memory", "private grind examples", "raw captured pages"],
     },
-    migration: { minimumReaderVersion: 1 },
+    migration: { minimumReaderVersion: 1, canonicalObjectVersion: 1 },
   };
   const serialized = stableLibraryStringify(bundle);
   if (new TextEncoder().encode(serialized).byteLength > LENS_LIBRARY_LIMITS.bytes) throw new Error("library exceeds 10 MB");
@@ -117,7 +120,7 @@ export async function validateLensLibraryBundle(raw) {
     const bytes = new TextEncoder().encode(JSON.stringify(bundle)).byteLength;
     if (bytes > LENS_LIBRARY_LIMITS.bytes) throw new Error("library exceeds 10 MB");
     if (bundle?.kind !== LENS_LIBRARY_KIND) throw new Error("not a Lens Everywhere library");
-    if (bundle.version !== LENS_LIBRARY_VERSION) throw new Error("unsupported library version");
+    if (![1, LENS_LIBRARY_VERSION].includes(bundle.version)) throw new Error("unsupported library version");
     if (bundle.integrity?.algorithm !== "SHA-256" || !/^[a-f0-9]{64}$/.test(bundle.integrity?.payloadHash || "")) {
       throw new Error("missing library checksum");
     }
@@ -126,6 +129,12 @@ export async function validateLensLibraryBundle(raw) {
     }
     if (!Array.isArray(bundle.generators) || bundle.generators.length > LENS_LIBRARY_LIMITS.generators) {
       throw new Error("invalid generator count");
+    }
+    if (bundle.version >= 2) {
+      if (!Array.isArray(bundle.libraryObjects)) throw new Error("missing canonical library objects");
+      validateLibraryObjects(bundle.libraryObjects);
+      const canonicalIds = new Set(bundle.libraryObjects.map((object) => `${object.id}@${object.version}`));
+      if (canonicalIds.size !== bundle.libraryObjects.length) throw new Error("duplicate canonical object versions");
     }
     const generatorItems = bundle.generators.reduce((sum, generator) => sum + (generator.items || generator.objects || []).length, 0);
     if (generatorItems > LENS_LIBRARY_LIMITS.generatorItems) throw new Error("too many generator items");
@@ -141,7 +150,18 @@ export async function validateLensLibraryBundle(raw) {
     }
     const actual = await sha256(stableLibraryStringify(payloadForHash(bundle)));
     if (actual !== bundle.integrity.payloadHash) throw new Error("library checksum does not match");
-    return { ok: true, bundle, bytes, counts: { lenses: bundle.lensPack.operators.length, generators: bundle.generators.length, generatorItems } };
+    const canonical = bundle.libraryObjects || migrateLibraryObjects([...bundle.lensPack.operators, ...bundle.generators]);
+    return {
+      ok: true,
+      bundle: { ...bundle, libraryObjects: canonical },
+      bytes,
+      counts: {
+        functions: canonical.filter((object) => object.kind === "function").length,
+        lenses: canonical.filter((object) => object.kind === "lens").length,
+        generators: canonical.filter((object) => object.kind === "generator").length,
+        generatorItems,
+      },
+    };
   } catch (error) {
     return { ok: false, error: error?.message || "invalid library" };
   }
@@ -208,7 +228,18 @@ export function importLensLibrary(bundle, existingOperators = [], existingGenera
 }
 
 export function normalizeLibraryInput(raw) {
-  if (raw?.kind === LENS_LIBRARY_KIND) return raw;
+  if (raw?.kind === LENS_LIBRARY_KIND) {
+    if (raw.version === 1) {
+      const { integrity: _legacyIntegrity, ...legacy } = raw;
+      return {
+        ...legacy,
+        version: LENS_LIBRARY_VERSION,
+        libraryObjects: migrateLibraryObjects([...(raw.lensPack?.operators || []), ...(raw.generators || [])]),
+        migration: { ...(raw.migration || {}), sourceVersion: 1, canonicalObjectVersion: 1 },
+      };
+    }
+    return raw;
+  }
   if (raw?.kind === "lens-pack") {
     return {
       kind: LENS_LIBRARY_KIND,
@@ -218,6 +249,7 @@ export function normalizeLibraryInput(raw) {
       name: raw.name || "Imported lens pack",
       lensPack: raw,
       generators: [],
+      libraryObjects: migrateLibraryObjects(raw.operators || []),
       rack: {},
       collections: raw.collections || [],
       privacy: { privateSourcesIncluded: !!raw.privacy?.examplesIncluded },
@@ -256,6 +288,7 @@ export function normalizeLibraryInput(raw) {
       name: raw.meta?.name || raw.lens?.name || "Shared Lens library",
       lensPack: { kind: "lens-pack", version: 1, name: raw.meta?.name || "Shared lenses", roots, operators, collections: [] },
       generators,
+      libraryObjects: migrateLibraryObjects([...operators, ...generators]),
       rack: {},
       collections: [],
       privacy: { privateSourcesIncluded: false },

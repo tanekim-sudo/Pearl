@@ -116,7 +116,7 @@ test("binds structured creation results and resolves live stable IDs", async () 
         {
           kind: "action",
           id: "merge",
-          capability: "mergeLenses",
+          capability: "mergeFunctions",
           args: { a: { $ref: "a" }, b: { $ref: "b" } },
           saveAs: "combined",
         },
@@ -166,7 +166,7 @@ test("retry resumes after the exact checkpoint without duplicating completed cre
         {
           kind: "action",
           id: "merge",
-          capability: "mergeLenses",
+          capability: "mergeFunctions",
           args: { a: { $ref: "a" }, b: { $ref: "b" } },
         },
       ],

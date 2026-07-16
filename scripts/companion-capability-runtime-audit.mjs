@@ -50,17 +50,18 @@ const multiOutputSpec = {
   ],
 };
 const operators = [
-  { id: "op-a", name: "Audit lens", kind: "prompt", prompt: "Transform.", top: true, outputSpec: { version: 1, mode: "suggested", semanticType: "text", machineKind: "text", cardinality: { min: 1, max: 1 }, branches: [] } },
-  { id: "op-b", name: "Second lens", kind: "prompt", prompt: "Compare.", top: true },
-  { id: "op-branch", name: "Branch lens", kind: "prompt", prompt: "Branch.", top: true, outputSpec: multiOutputSpec, outputCount: 2 },
-  { id: "op-pipeline", name: "Pipeline lens", kind: "pipeline", steps: ["op-step"], top: true },
-  { id: "op-step", name: "First step", kind: "prompt", prompt: "First.", parentId: "op-pipeline" },
+  { id: "op-a", name: "Audit Move", kind: "prompt", libraryKind: "move", prompt: "Transform.", top: true, primitiveMove: true, primitiveRank: 0, outputSpec: { version: 1, mode: "suggested", semanticType: "text", machineKind: "text", cardinality: { min: 1, max: 1 }, branches: [] } },
+  { id: "op-b", name: "Second Move", kind: "prompt", libraryKind: "move", prompt: "Compare.", top: true },
+  { id: "op-branch", name: "Branch Move", kind: "prompt", libraryKind: "move", prompt: "Branch.", top: true, outputSpec: multiOutputSpec, outputCount: 2 },
+  { id: "op-pipeline", name: "Pipeline Function", kind: "pipeline", libraryKind: "function", steps: ["op-step"], top: true },
+  { id: "op-step", name: "First step", kind: "prompt", libraryKind: "move", prompt: "First.", parentId: "op-pipeline" },
+  { id: "op-pipeline-b", name: "Second Function", kind: "pipeline", libraryKind: "function", steps: ["op-b"], top: true },
 ];
 const repos = operators
   .filter((entry) => entry.top)
   .map((entry) => ({ id: `repo-${entry.id}`, opId: entry.id, name: entry.name, moveIds: [entry.id], version: 1, commits: [] }));
 const generators = [
-  { id: "generator-a", title: "Audit generator", kind: "idea", items: [], savedAt: 1 },
+  { id: "generator-a", title: "Audit Lens", name: "Audit Lens", kind: "lens", contextPolicy: "bounded", items: [], savedAt: 1 },
 ];
 
 function seedScript(payload) {
@@ -74,6 +75,7 @@ function seedScript(payload) {
   localStorage.setItem("lens.board.pages.v1", JSON.stringify([{ id: "page-main", name: "Runtime audit" }]));
   localStorage.setItem("lens.doc.title.v1", "Runtime audit");
   localStorage.setItem("lens.board.items.v1", JSON.stringify(items));
+  localStorage.setItem("lens.item.history.v1", JSON.stringify([{ id: "history-derived", itemId: "derived", type: "transform", opId: "op-a", opName: "Audit Move" }]));
   localStorage.setItem("lens.ai.nodes.v1", JSON.stringify(nodes));
   localStorage.setItem("lens.unified-workspace.v2", JSON.stringify({
     version: 3,
@@ -82,6 +84,7 @@ function seedScript(payload) {
     nodes,
   }));
   localStorage.setItem("lens.board.operators.v2", JSON.stringify(operators));
+  localStorage.setItem("lens.primitive-moves.v1", JSON.stringify({ version: 1, promoted: ["op-b"], demoted: [], rank: ["op-a", "op-b"] }));
   localStorage.setItem("lens.transformation-repos.v1", JSON.stringify(repos));
   localStorage.setItem("lens.lenses.v2", JSON.stringify(generators));
   localStorage.setItem("lens.companion.memory.v1:anonymous", JSON.stringify({
@@ -121,7 +124,26 @@ const argsByName = {
   zoomPaper: { direction: "in" },
   panPaper: { dx: 24, dy: 16 },
   spawnText: { text: "Runtime-created note" },
-  createFunction: { name: "Runtime-created lens", steps: [{ name: "Observe" }, { name: "Synthesize" }] },
+  createMove: { name: "Runtime-created Move", prompt: "Transform once." },
+  editMove: { move: "op-a", name: "Edited Move" },
+  forkMove: { move: "op-a", name: "Forked Move" },
+  applyMove: { move: "op-a", target: "claim", wait: true },
+  saveCurrentAsMove: { target: "claim", name: "Captured Move" },
+  captureLineageAsFunction: { target: "derived", name: "Captured Function" },
+  openSaveAsChooser: { target: "claim" },
+  promotePrimitiveMove: { move: "op-b" },
+  demotePrimitiveMove: { move: "op-a" },
+  reorderPrimitiveMove: { move: "op-expand", to: 0 },
+  wrapMoveAsFunction: { move: "op-a", name: "Wrapped Move" },
+  flattenFunctionToMove: { function: "op-pipeline", name: "Flattened Function" },
+  createFunction: { name: "Runtime-created Function", steps: [{ name: "Observe" }, { name: "Synthesize" }] },
+  setTranscriptDraft: { text: "User: Verify sources.\nAssistant: Compare evidence.", source: "runtime-audit" },
+  chooseTranscriptArtifacts: { kind: "all" },
+  excludeTranscriptMessages: { messages: [2] },
+  redactTranscriptText: { text: "sources", replacement: "[REDACTED]" },
+  selectTranscriptAlternative: { kind: "move", alternative: 1 },
+  editTranscriptArtifact: { kind: "move", name: "Edited transcript Move", content: "Verify primary sources." },
+  saveTranscriptArtifacts: { kinds: ["move", "function", "lens"] },
   setBeforeAfterText: { side: "before", text: "Raw runtime notes" },
   attachSelectionToBeforeAfter: { side: "after", target: "claim" },
   removeBeforeAfterExample: { example: 2 },
@@ -133,13 +155,13 @@ const argsByName = {
   selectAiNode: { target: "node-root" },
   highlight: { targets: ["claim", "evidence"] },
   operateHighlight: { op: "op-a" },
-  armLensBrush: { lens: "op-a" },
-  armGeneratorBrush: { generator: "generator-a" },
-  queueBrushLens: { lens: "op-a" },
-  setBrushGeneratorDestination: { generator: "generator-a", mode: "source" },
+  armFunctionBrush: { function: "op-pipeline" },
+  armLensContext: { lens: "generator-a" },
+  queueBrushAction: { action: "op-a" },
+  setBrushLensContext: { lens: "generator-a" },
   reorderBrushQueue: { from: 0, to: 1 },
   removeBrushQueue: { index: 0 },
-  captureThread: { target: "derived", name: "Captured runtime path" },
+  captureThreadAsFunction: { target: "derived", name: "Captured runtime path" },
   moveItem: { target: "claim", dx: 80, dy: 30 },
   editItem: { target: "claim", text: "Edited by runtime audit" },
   deleteItem: { target: "evidence" },
@@ -167,30 +189,64 @@ const argsByName = {
   addFunctionBranch: { op: "op-pipeline", from: "First step", name: "Runtime branch" },
   setFunctionStep: { op: "op-pipeline", step: "First step", name: "Edited first step" },
   saveFunction: { op: "op-pipeline", message: "runtime save" },
-  forkLens: { lens: "Audit lens", message: "runtime fork" },
-  mergeLenses: { a: "Audit lens", b: "Second lens", name: "Runtime merged lens" },
-  previewLensComposition: { a: "op-a", b: "op-b" },
-  stackLenses: { a: "op-a", b: "op-b", name: "Runtime stack" },
-  saveCompoundLens: { edit: false },
+  forkFunction: { function: "Pipeline Function", message: "runtime fork" },
+  mergeFunctions: { a: "Pipeline Function", b: "Second Function", name: "Runtime merged Function" },
+  previewFunctionComposition: { a: "op-a", b: "op-b" },
+  stackFunctions: { a: "op-a", b: "op-b", name: "Runtime stack" },
+  saveCompoundFunction: { edit: false },
   addGrindExample: { input: "Before example", output: "After example", note: "runtime" },
   removeGrindExample: { example: "last" },
   reorderGrindExample: { example: "last", to: 0 },
   refineGrindDraft: { instruction: "Tighten the rule" },
   rackSearch: { query: "Audit" },
   rackFilter: { type: "all", sort: "recent" },
-  pinLens: { lens: "op-a", pinned: true },
-  archiveLens: { lens: "op-a" },
-  restoreLens: { lens: "op-a" },
-  editLensByInstruction: { op: "op-a", instruction: "Make the lens compare evidence" },
-  newGenerator: {},
-  attachToGenerator: { generator: "generator-a", target: "claim" },
-  graduateGenerator: { generator: "generator-a", name: "Graduated runtime generator" },
-  probeGenerator: { generator: "generator-a", domain: "music" },
-  makeLensFromGenerator: { generator: "generator-a" },
+  pinFunction: { function: "op-pipeline", pinned: true },
+  archiveFunction: { function: "op-pipeline" },
+  restoreFunction: { function: "op-pipeline" },
+  editFunctionByInstruction: { function: "op-pipeline", instruction: "Make the Function compare evidence" },
+  createLens: {},
+  addLensMaterial: { lens: "generator-a", target: "claim" },
+  nameLens: { lens: "generator-a", name: "Named runtime Lens" },
+  probeLens: { lens: "generator-a", domain: "music" },
+  inferFunctionFromLens: { lens: "generator-a" },
   clearWorkspaceDomains: { domains: ["paper", "ai"] },
 };
 
 const setupByName = {
+  chooseSaveAsKind: [{ verb: "openSaveAsChooser", args: { target: "claim" } }],
+  setTranscriptDraft: [{ verb: "openTranscriptLearning", args: {} }],
+  chooseTranscriptArtifacts: [{ verb: "openTranscriptLearning", args: {} }],
+  excludeTranscriptMessages: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+  ],
+  redactTranscriptText: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+  ],
+  generateTranscriptArtifacts: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+    { verb: "chooseTranscriptArtifacts", args: { kind: "all" } },
+  ],
+  selectTranscriptAlternative: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+    { verb: "chooseTranscriptArtifacts", args: { kind: "all" } },
+    { verb: "generateTranscriptArtifacts", args: {} },
+  ],
+  editTranscriptArtifact: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+    { verb: "chooseTranscriptArtifacts", args: { kind: "all" } },
+    { verb: "generateTranscriptArtifacts", args: {} },
+  ],
+  saveTranscriptArtifacts: [
+    { verb: "openTranscriptLearning", args: {} },
+    { verb: "setTranscriptDraft", args: { text: "User: Verify sources.\nAssistant: Compare evidence." } },
+    { verb: "chooseTranscriptArtifacts", args: { kind: "all" } },
+    { verb: "generateTranscriptArtifacts", args: {} },
+  ],
   setBeforeAfterText: [{ verb: "openBeforeAfterCreation", args: {} }],
   attachSelectionToBeforeAfter: [{ verb: "openBeforeAfterCreation", args: {} }],
   addBeforeAfterExample: [{ verb: "openBeforeAfterCreation", args: {} }],
@@ -230,26 +286,26 @@ const setupByName = {
   ],
   applyArmedBrush: [
     { verb: "highlight", args: { targets: ["claim"] } },
-    { verb: "queueBrushLens", args: { lens: "op-a" } },
+    { verb: "queueBrushAction", args: { action: "op-a" } },
   ],
   reorderBrushQueue: [
-    { verb: "queueBrushLens", args: { lens: "op-a" } },
-    { verb: "queueBrushLens", args: { lens: "op-b" } },
+    { verb: "queueBrushAction", args: { action: "op-a" } },
+    { verb: "queueBrushAction", args: { action: "op-b" } },
   ],
-  removeBrushQueue: [{ verb: "queueBrushLens", args: { lens: "op-a" } }],
-  previewBrushQueue: [{ verb: "queueBrushLens", args: { lens: "op-a" } }],
+  removeBrushQueue: [{ verb: "queueBrushAction", args: { action: "op-a" } }],
+  previewBrushQueue: [{ verb: "queueBrushAction", args: { action: "op-a" } }],
   pressBrushGo: [
     { verb: "highlight", args: { targets: ["claim"] } },
-    { verb: "queueBrushLens", args: { lens: "op-a" } },
+    { verb: "queueBrushAction", args: { action: "op-a" } },
   ],
-  cancelPendingBrush: [{ verb: "queueBrushLens", args: { lens: "op-a" } }],
-  saveBrushQueueAsLens: [
-    { verb: "queueBrushLens", args: { lens: "op-a" } },
-    { verb: "queueBrushLens", args: { lens: "op-b" } },
+  cancelPendingBrush: [{ verb: "queueBrushAction", args: { action: "op-a" } }],
+  saveBrushQueueAsFunction: [
+    { verb: "queueBrushAction", args: { action: "op-a" } },
+    { verb: "queueBrushAction", args: { action: "op-b" } },
   ],
   makeHighlightNode: [{ verb: "highlight", args: { targets: ["claim", "evidence"] } }],
   clearHighlight: [{ verb: "highlight", args: { targets: ["claim"] } }],
-  saveCompoundLens: [{ verb: "stackLenses", args: { a: "op-a", b: "op-b", name: "Runtime stack" } }],
+  saveCompoundFunction: [{ verb: "stackFunctions", args: { a: "op-a", b: "op-b", name: "Runtime stack" } }],
   removeGrindExample: [{ verb: "addGrindExample", args: { input: "Before", output: "After" } }],
   reorderGrindExample: [
     { verb: "addGrindExample", args: { input: "Before one", output: "After one" } },
@@ -269,12 +325,12 @@ const setupByName = {
     { verb: "addGrindExample", args: { input: "Before two", output: "After two" } },
     { verb: "compileGrindDraft", args: {} },
   ],
-  shapeForgedLens: [
+  shapeForgedFunction: [
     { verb: "addGrindExample", args: { input: "Before one", output: "After one" } },
     { verb: "addGrindExample", args: { input: "Before two", output: "After two" } },
     { verb: "compileGrindDraft", args: {} },
   ],
-  restoreLens: [{ verb: "archiveLens", args: { lens: "op-a" } }],
+  restoreFunction: [{ verb: "archiveFunction", args: { function: "op-pipeline" } }],
 };
 
 const readOnlyJustification = {
@@ -325,12 +381,15 @@ async function snapshot(page) {
       if (key?.startsWith("lens.")) storage[key] = localStorage.getItem(key);
     }
     const visible = [...document.querySelectorAll(
-      ".page-title-input,.page-title-chip,.companion-confirmation,.extension-download-modal,.lens-editor-overlay,.path-walk,.walk-overlay,.brush-status,.highlight-toolbar,[aria-pressed='true'],.selected"
+      ".page-title-input,.page-title-chip,.companion-confirmation,.extension-download-modal,.lens-editor-overlay,.path-walk,.walk-overlay,.brush-status,.highlight-toolbar,.omni-highlight-bar,[aria-pressed='true'],.selected"
     )].map((node) => `${node.tagName}:${node.className}:${node.textContent?.trim().slice(0, 120)}`);
     const beforeAfter = [...document.querySelectorAll(
       "[data-before-after-editor] input,[data-before-after-editor] textarea,[data-before-after-editor] button,.ba-result,.ba-example"
     )].map((node) => `${node.tagName}:${node.getAttribute("aria-label") || ""}:${"value" in node ? node.value : node.textContent?.trim().slice(0, 160)}`);
-    return { storage, visible, beforeAfter, url: location.href };
+    const transcript = [...document.querySelectorAll(
+      ".learn-chat-modal input,.learn-chat-modal textarea,.learn-chat-modal button,.learn-chat-results,.learn-chat-stats"
+    )].map((node) => `${node.tagName}:${node.getAttribute("aria-label") || ""}:${"value" in node ? node.value : node.textContent?.trim().slice(0, 160)}`);
+    return { storage, visible, beforeAfter, transcript, url: location.href };
   });
 }
 
@@ -339,6 +398,20 @@ function stable(value) {
 }
 
 async function installModelRoute(page, stats) {
+  await page.route("**/api/infer-transcript-artifacts", async (route) => {
+    stats.calls += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        transcript: { source: "runtime-audit", messageCount: 2, fingerprint: "runtime-transcript" },
+        candidates: {
+          move: { supported: true, name: "Verify", prompt: "Verify primary sources.", confidence: .9, evidenceRefs: [1], alternatives: [{ name: "Source check", prompt: "Check cited sources." }] },
+          function: { supported: true, name: "Research", steps: [{ name: "Collect" }, { name: "Compare" }], confidence: .8, evidenceRefs: [1, 2] },
+          lens: { supported: true, name: "Evidence-first", material: [{ content: "Prefer primary evidence." }], confidence: .8, evidenceRefs: [2] },
+        },
+      }),
+    });
+  });
   await page.route("**/api/infer-transformation", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -414,8 +487,14 @@ async function runAppCapability(browser, capability) {
   try {
     validateCapabilityArgs(capability, args);
     parseCompanionPlan(JSON.stringify(canonicalPlan(capability, args)));
-    await page.goto(sharedPathCapabilities.has(capability.name) && sharedPathUrl ? sharedPathUrl : BASE);
-    await page.waitForSelector(".canvas-column-main");
+    const targetUrl = sharedPathCapabilities.has(capability.name) && sharedPathUrl ? sharedPathUrl : BASE;
+    await page.goto(targetUrl);
+    try {
+      await page.waitForSelector(".canvas-column-main", { timeout: 15_000 });
+    } catch {
+      await page.goto(targetUrl);
+      await page.waitForSelector(".canvas-column-main");
+    }
     await page.waitForFunction(() => window.__lensDirector?.run);
     const setup = setupByName[capability.name] || [];
     if (setup.length) {
@@ -549,6 +628,14 @@ async function runExtensionCapabilities() {
       inferBeforeAfter: () => {
         state.operation = "infer-before-after";
         return { type: "extension-before-after-inference" };
+      },
+      openSaveAs: () => {
+        state.operation = "open-save-as";
+        return { type: "extension-save-as" };
+      },
+      saveCaptureAs: (kind) => {
+        state.operation = `save-${kind}`;
+        return { type: kind, id: `saved-${kind}` };
       },
     };
     const originalNavigator = globalThis.navigator;

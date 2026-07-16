@@ -8,6 +8,7 @@ import {
   snapshotContainedIn,
   AI_NODES_KEY,
 } from "./board-sync.js";
+import { migrateLibraryObjects } from "../../shared/library-objects.js";
 
 const OPERATORS_KEY = "lens.board.operators.v2";
 const LENSES_KEY = "lens.lenses.v2";
@@ -182,5 +183,30 @@ describe("snapshotContainedIn", () => {
 
   it("empty local is always contained", () => {
     assert.equal(snapshotContainedIn({ keys: {} }, { keys: {} }), true);
+  });
+});
+
+describe("canonical adoption migration", () => {
+  it("adopts anonymous legacy taxonomy into signed-in state without duplicates on retry", () => {
+    const anonymous = {
+      version: 1,
+      keys: {
+        [OPERATORS_KEY]: [
+          { id: "atomic", kind: "function", name: "Rewrite", prompt: "Rewrite clearly." },
+          { id: "process", kind: "lens", name: "Research", steps: ["atomic"] },
+        ],
+        [LENSES_KEY]: [{ id: "context", kind: "generator", title: "Evidence", items: [{ id: "m", text: "Primary sources" }] }],
+      },
+    };
+    const remote = { version: 1, keys: {} };
+    const adopted = mergeBoardSnapshots(anonymous, remote);
+    const retried = mergeBoardSnapshots(anonymous, adopted);
+    assert.deepEqual(retried, adopted);
+    const migrated = migrateLibraryObjects([
+      ...adopted.keys[OPERATORS_KEY],
+      ...adopted.keys[LENSES_KEY],
+    ], { now: 1 });
+    assert.deepEqual(migrated.map((entry) => entry.kind), ["move", "function", "lens"]);
+    assert.equal(new Set(migrated.map((entry) => entry.id)).size, 3);
   });
 });

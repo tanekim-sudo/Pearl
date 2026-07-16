@@ -25,6 +25,7 @@ import {
   extensionLibrary,
 } from "./extension-api.js";
 import { inferBeforeAfterTransformation } from "./before-after-inference.js";
+import { inferTranscriptArtifacts } from "./transcript-inference.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -93,6 +94,18 @@ app.post("/api/infer-transformation", express.json({ limit: "7mb" }), async (req
     console.error("[lens] /api/infer-transformation failed:", err?.message || err);
     res.status(err?.status || 500).json({
       error: err?.message || "Could not infer the transformation. Your examples are preserved; retry.",
+    });
+  }
+});
+
+app.post("/api/infer-transcript-artifacts", express.json({ limit: "8mb" }), async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  try {
+    res.json(await inferTranscriptArtifacts(req.body || {}));
+  } catch (err) {
+    console.error("[lens] /api/infer-transcript-artifacts failed:", err?.message || err);
+    res.status(err?.status || 500).json({
+      error: err?.message || "Could not learn from this chat. Your private draft is preserved; retry.",
     });
   }
 });

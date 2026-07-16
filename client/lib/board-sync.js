@@ -368,6 +368,13 @@ export function mergeBoardSnapshots(local, remote) {
   }
 
   keys = dedupeBoardKeys(keys);
+  const remoteKeys = remote?.keys || {};
+  const keyNames = Object.keys(keys);
+  const remoteKeyNames = Object.keys(remoteKeys);
+  const unchanged =
+    keyNames.length === remoteKeyNames.length &&
+    keyNames.every((key) => Object.prototype.hasOwnProperty.call(remoteKeys, key) && remoteKeys[key] === keys[key]);
+  if (unchanged && remote?.version === BOARD_SYNC_VERSION) return remote;
 
   return { version: BOARD_SYNC_VERSION, savedAt: new Date().toISOString(), keys };
 }

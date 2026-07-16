@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "result": {
+    "idempotent": true,
+    "operators": 1,
+    "lenses": 1
+  },
+  "reloadPersisted": true,
+  "screenshot": "account-adoption-reload.png"
+}

@@ -153,6 +153,7 @@ export function normalizeInferenceResult(raw = {}) {
   const fallback = { name: clean(raw.name, 80) || "Learned lens", description: clean(raw.summary, 600), prompt: operation };
   return {
     version: 1,
+    artifactKind: raw.artifactKind === "function" ? "function" : raw.artifactKind === "lens" ? "lens" : "move",
     name: clean(raw.name, 80) || "Learned lens",
     summary: clean(raw.summary || raw.description, 600),
     operation,
@@ -172,19 +173,24 @@ export function normalizeInferenceResult(raw = {}) {
       operation: clean(alternative?.operation, 4_000),
       rationale: clean(alternative?.rationale, 400),
     })).filter((alternative) => alternative.name && alternative.operation),
+    steps: (raw.steps || []).slice(0, 24).map((step) => ({
+      name: clean(step?.name || step, 100),
+      prompt: clean(step?.prompt || step?.operation || step, 4_000),
+      optional: !!step?.optional,
+    })).filter((step) => step.name && step.prompt),
   };
 }
 
 export function inferenceResultToOperator(result, examples, operatorId = id()) {
   const spec = normalizeInferenceResult(result);
   const normalizedExamples = normalizeBeforeAfterExamples(examples);
-  return {
+  const common = {
     id: operatorId,
-    kind: "prompt",
+    stableId: operatorId,
+    version: 1,
     top: true,
     name: spec.name,
     description: spec.summary,
-    prompt: spec.operation,
     outputSpec: { ...spec.outputSpec, mode: "custom" },
     learnedFrom: {
       schemaVersion: BEFORE_AFTER_SCHEMA_VERSION,
@@ -201,4 +207,15 @@ export function inferenceResultToOperator(result, examples, operatorId = id()) {
       },
     },
   };
+  if (spec.artifactKind === "function" && spec.steps.length > 1) {
+    return {
+      ...common,
+      kind: "pipeline",
+      libraryKind: "function",
+      steps: spec.steps.map((step, index) => `${operatorId}:step:${index + 1}`),
+      inferredSteps: spec.steps,
+      processInstructions: spec.operation,
+    };
+  }
+  return { ...common, kind: "prompt", libraryKind: "move", prompt: spec.operation };
 }

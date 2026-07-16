@@ -27,8 +27,8 @@ function itemBox(it) {
 }
 
 /**
- * Generator workspace — an open-ended holding space, like a piece of paper.
- * It renders everything the generator has accumulated at its stored
+ * Lens workspace — an open-ended contextual holding space, like a piece of paper.
+ * It renders everything the Lens has accumulated at its stored
  * placements; the user moves things around, selects a few, runs functions on
  * the selection to look for structure, and — when ready — crafts a lens
  * themselves. The AI affordances (probe, re-read, auto-lens) stay available
@@ -292,8 +292,8 @@ export default function LensSettingsDialog({
             className="lens-settings-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={isPlaceholder ? "graduate — give it its real name" : "name this generator"}
-            aria-label="Generator name"
+            placeholder={isPlaceholder ? "name this emerging Lens" : "name this Lens"}
+            aria-label="Lens name"
           />
           <button type="button" className="lens-settings-close" onClick={onClose} aria-label="Close">
             ×
@@ -307,11 +307,11 @@ export default function LensSettingsDialog({
         )}
 
         <div className="lens-settings-label">
-          the space — everything this generator holds
+          context space — everything this Lens holds
           <div className="gen-space" ref={spaceRef}>
             {items.length === 0 && (
               <div className="gen-space-empty">
-                nothing here yet — drop material onto this generator's card to collect it, then
+                nothing here yet — drop material onto this Lens card to collect context, then
                 arrange and experiment with it here.
               </div>
             )}
@@ -481,7 +481,7 @@ export default function LensSettingsDialog({
                 type="button"
                 className="lens-settings-quiet lens-settings-make-lens"
                 onClick={onMakeLens}
-                title="Ask the AI to draft a lens from this generator — crafting one yourself keeps you in charge"
+                title="Ask the AI to draft a Function from this Lens — crafting one yourself keeps you in charge"
               >
                 ƒ ai-draft a lens
               </button>

@@ -111,7 +111,7 @@ export async function extensionLibrary(req, res) {
     return {
       ...safe,
       id: entry.id,
-      name: entry.title || entry.name || "Generator",
+      name: entry.title || entry.name || "Lens",
       summary: entry.description || entry.interpretation?.summary || "",
       itemCount: (entry.objects || entry.items || []).length,
       updatedAt: entry.updatedAt || entry.createdAt || 0,

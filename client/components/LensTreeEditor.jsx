@@ -94,14 +94,15 @@ export default function LensTreeEditor({
   treeToOperators,
 }) {
   const isCreate = editor.mode === "create";
-  const sourceRoot = editor.op || null;
+  const isMoveMode = editor.objectKind === "move";
+  const sourceRoot = editor.op || editor.seedRoot || null;
 
-  const [draftOps, setDraftOps] = useState(() => (isCreate ? [] : collectDraftOps(sourceRoot, opMap)));
+  const [draftOps, setDraftOps] = useState(() => editor.seedOps ? editor.seedOps.map((op) => ({ ...op })) : (isCreate ? [] : collectDraftOps(sourceRoot, opMap)));
   const [rootId, setRootId] = useState(() => sourceRoot?.id || null);
   const [focusId, setFocusId] = useState(null);
-  const [createName, setCreateName] = useState("");
-  const [createDesc, setCreateDesc] = useState("");
-  const [createPrompt, setCreatePrompt] = useState("");
+  const [createName, setCreateName] = useState(editor.seed?.name || "");
+  const [createDesc, setCreateDesc] = useState(editor.seed?.description || "");
+  const [createPrompt, setCreatePrompt] = useState(editor.seed?.prompt || "");
   const [prose, setProse] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -453,7 +454,7 @@ export default function LensTreeEditor({
           kind: "prompt",
           name: createName.trim(),
           description: createDesc.trim(),
-          prompt: createPrompt.trim(),
+          prompt: createPrompt,
           top: true,
         },
       ];
@@ -476,17 +477,31 @@ export default function LensTreeEditor({
   }
 
   function useInferredOperator(operator) {
-    const inferred = {
+    let inferred = {
       ...operator,
       id: sourceRoot?.id || operator.id,
       top: true,
       role: sourceRoot?.role || operator.role || null,
     };
-    setDraftOps([inferred]);
+    const inferredChildren = inferred.kind === "pipeline"
+      ? (inferred.inferredSteps || []).map((step, index) => ({
+          id: inferred.steps[index],
+          stableId: inferred.steps[index],
+          version: 1,
+          kind: "prompt",
+          libraryKind: "move",
+          top: false,
+          name: step.name,
+          prompt: step.prompt,
+          description: step.optional ? "Optional evidenced step" : "Evidenced step",
+        }))
+      : [];
+    inferred = { ...inferred, steps: inferredChildren.map((step) => step.id) };
+    setDraftOps([inferred, ...inferredChildren]);
     setRootId(inferred.id);
     setFocusId(null);
     setCreationMode("editor");
-    setToast("inferred lens loaded — review or edit before saving");
+    setToast(`inferred ${inferred.libraryKind || "Move"} loaded — review or edit before saving`);
   }
 
   const canSave =
@@ -501,21 +516,21 @@ export default function LensTreeEditor({
     <div className="modal-scrim fn-scrim-full" onClick={onClose}>
       <div
         ref={editorRef}
-        className="fn-editor fn-editor-fullscreen fn-editor-programmable fn-editor-flow"
+        className={"fn-editor fn-editor-fullscreen fn-editor-programmable fn-editor-flow" + (isMoveMode ? " fn-editor-atomic" : "")}
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
         <div className="fn-head">
-          <h3>{isCreate ? "Create lens" : "Edit lens"}</h3>
+          <h3>{isMoveMode ? "Create Move" : isCreate ? "Create Function" : "Edit Function"}</h3>
           <div className="fn-head-actions">
-            <button
+            {!isMoveMode && <button
               className={"fn-head-btn" + (creationMode === "before-after" ? " active" : "")}
               type="button"
               aria-pressed={creationMode === "before-after"}
               onClick={() => setCreationMode((mode) => mode === "before-after" ? "editor" : "before-after")}
             >
               Learn from before &amp; after
-            </button>
+            </button>}
             <button className="fn-close" onClick={onClose} type="button">
               ×
             </button>
@@ -550,7 +565,7 @@ export default function LensTreeEditor({
               </div>
             )}
 
-            {creationMode === "editor" && <aside className="fn-palette fn-palette-strip">
+            {creationMode === "editor" && !isMoveMode && <aside className="fn-palette fn-palette-strip">
               <div className="fn-palette-blocks">
                 <button
                   type="button"
@@ -652,11 +667,12 @@ export default function LensTreeEditor({
                 />
               ) : (
                 <div className="fn-create-panel">
-                  <label>name</label>
+                  <div className="fn-flow-composition-meta">{isMoveMode ? "one action · one model call · no child graph" : "a reusable process"}</div>
+                  <label>{isMoveMode ? "Move name" : "Function name"}</label>
                   <input
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
-                    placeholder="e.g. Build Full Investment Thesis"
+                    placeholder={isMoveMode ? "e.g. Summarize for an executive" : "e.g. Build Full Investment Thesis"}
                   />
                   <label>description</label>
                   <input
@@ -664,7 +680,7 @@ export default function LensTreeEditor({
                     onChange={(e) => setCreateDesc(e.target.value)}
                     placeholder="what goes in, what comes out"
                   />
-                  <label>prompt</label>
+                  <label>{isMoveMode ? "instructions (preserved verbatim from the drop)" : "process prompt"}</label>
                   <textarea
                     rows={6}
                     value={createPrompt}
@@ -676,7 +692,7 @@ export default function LensTreeEditor({
             </div>
           </div>
 
-          {creationMode === "editor" && <aside className="fn-editor-side fn-editor-inspector">
+          {creationMode === "editor" && !isMoveMode && <aside className="fn-editor-side fn-editor-inspector">
             {inspectorOp ? (
               <>
                 {focusPath.length > 0 && (

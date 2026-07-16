@@ -186,6 +186,25 @@ export default function AiNodeCanvas({
       setStrandDrag(nextState);
     }
 
+    function switchStrandLevel(sd, delta) {
+      const levels = sd.levels || [];
+      if (!levels.length) return;
+      const levelIndex = Math.max(0, Math.min(levels.length - 1, (sd.levelIndex || 0) + delta));
+      if (levelIndex === sd.levelIndex) return;
+      const level = levels[levelIndex];
+      const nextState = {
+        ...sd,
+        levelIndex,
+        levelLabel: level.label,
+        choices: level.choices,
+        hoverIdx: 0,
+        angles: null,
+        keyLockAt: { x: sd.pointerX ?? 0, y: sd.pointerY ?? 0 },
+      };
+      strandDragRef.current = nextState;
+      setStrandDrag(nextState);
+    }
+
     function onKeyDown(e) {
       const typing = e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
       if (typing) return;
@@ -194,14 +213,26 @@ export default function AiNodeCanvas({
       if (!sd?.active) return;
       if (!sd.choices?.length) return;
 
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        switchStrandLevel(sd, -1);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        switchStrandLevel(sd, 1);
+        return;
+      }
+      if (e.key === "ArrowLeft") {
         e.preventDefault();
         e.stopPropagation();
         const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
         cycleStrandHover(sd, cur - 1);
         return;
       }
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      if (e.key === "ArrowRight") {
         e.preventDefault();
         e.stopPropagation();
         const cur = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
@@ -217,7 +248,15 @@ export default function AiNodeCanvas({
         }
         return;
       }
-      if (e.key === "Enter") {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        strandDragRef.current = null;
+        setStrandDrag(null);
+        document.body.classList.remove("ai-strand-dragging");
+        return;
+      }
+      if (e.key === "Enter" || e.key === " ") {
         const idx = typeof sd.hoverIdx === "number" && sd.hoverIdx >= 0 ? sd.hoverIdx : 0;
         const choice = sd.choices[idx];
         if (!choice) return;
@@ -409,7 +448,15 @@ export default function AiNodeCanvas({
     if (!rect) return;
 
     const pool = getStrandChoices?.(node) || [];
-    const choices = pool;
+    const levelDefs = [
+      { key: "primitive-moves", label: "Primitive Moves" },
+      { key: "moves", label: "Moves" },
+      { key: "functions", label: "Functions" },
+    ];
+    const levels = levelDefs
+      .map((level) => ({ ...level, choices: pool.filter((choice) => choice.level === level.key) }))
+      .filter((level) => level.choices.length);
+    const choices = levels[0]?.choices || [];
     if (!choices.length) return;
 
     const startX = seedX;
@@ -431,6 +478,9 @@ export default function AiNodeCanvas({
       rectLeft: rect.left,
       rectTop: rect.top,
       choices,
+      levels,
+      levelIndex: 0,
+      levelLabel: levels[0]?.label || "Primitive Moves",
       length: 0,
       baseAngle: 0,
       hoverIdx: -1,
@@ -1488,7 +1538,7 @@ export default function AiNodeCanvas({
 
       {strandDrag?.active && (
         <div className="ai-strand-choice-hud" role="listbox" aria-label="Branch operation">
-          <span className="ai-strand-choice-hud-title">Choose operation</span>
+          <span className="ai-strand-choice-hud-title">{strandDrag.levelLabel || "Primitive Moves"} · {(strandDrag.hoverIdx || 0) + 1}/{strandDrag.choices.length}</span>
           {strandDrag.choices.map((choice, i) => (
             <div
               key={choice.id}
@@ -1500,7 +1550,19 @@ export default function AiNodeCanvas({
               <span className="ai-strand-choice-hud-label">{choice.label}</span>
             </div>
           ))}
-          <span className="ai-strand-choice-hud-hint">← → or 1–9 · release to apply · Alt+drag to move node</span>
+          <span className="ai-strand-choice-hud-hint">← → choose · ↑ ↓ level · Enter/Space apply · Esc cancel</span>
+          {(strandDrag.levelIndex || 0) < (strandDrag.levels?.length || 0) - 1 && <button
+            type="button"
+            className="ai-strand-more"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => {
+              const levelIndex = (strandDrag.levelIndex || 0) + 1;
+              const level = strandDrag.levels[levelIndex];
+              const next = { ...strandDrag, levelIndex, levelLabel: level.label, choices: level.choices, hoverIdx: 0, angles: null, keyLockAt: { x: strandDrag.pointerX || 0, y: strandDrag.pointerY || 0 } };
+              strandDragRef.current = next;
+              setStrandDrag(next);
+            }}
+          >More ↓</button>}
         </div>
       )}
 

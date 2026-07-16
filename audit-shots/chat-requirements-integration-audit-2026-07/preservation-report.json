@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "verdict": "passed",
+  "unresolvedLocal": 0,
+  "counts": {
+    "featureContracts": 14,
+    "domainCommands": 6,
+    "companionCapabilities": 146,
+    "companionRuntimePassed": 146,
+    "requirementsActiveImplemented": 38,
+    "requirementsSuperseded": 3,
+    "requirementsExternal": 4
+  },
+  "checks": {
+    "canonicalSchemaAndMigrations": "passed",
+    "commandEffectsAndRollback": "passed",
+    "featureRegistryIntrospection": "passed",
+    "mutationSanity": "passed-expected-failure",
+    "terminologyAndDeadEntries": "passed",
+    "appTestsAndProductionBuild": "passed",
+    "extensionTestsBuildPackageChecksum": "passed",
+    "transcriptBrowserJourneys": "passed",
+    "beforeAfterClassificationJourneys": "passed",
+    "accountAdoptionReload": "passed",
+    "companionRuntimeMatrix": "146/146",
+    "branchAndNodePreservation": "passed",
+    "lensContextExplicitGo": "passed"
+  },
+  "externalBoundaries": [
+    "hosted provider availability and quality",
+    "multiple real Supabase accounts",
+    "physical microphone permissions",
+    "Chrome Web Store publication"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "journeys": [
+    {
+      "id": "R-025-move",
+      "artifactKind": "move",
+      "editorReached": true,
+      "screenshot": "before-after-move-desktop.png"
+    },
+    {
+      "id": "R-025-function",
+      "artifactKind": "function",
+      "editorReached": true,
+      "screenshot": "before-after-function-narrow.png"
+    }
+  ]
+}

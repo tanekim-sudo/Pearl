@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-15T06:45:02.638Z",
+  "counts": {
+    "features": 14,
+    "companion": 146,
+    "extension": 18,
+    "commands": 6
+  },
+  "features": [
+    {
+      "id": "library.move",
+      "commands": [
+        "createMoveFromContent",
+        "upsertCanonicalObject"
+      ],
+      "companion": [
+        "createMove",
+        "editMove",
+        "applyMove",
+        "saveCurrentAsMove"
+      ],
+      "extension": [
+        "saveExternalCaptureAsMove",
+        "queueExternalAction"
+      ],
+      "tests": [
+        "shared/library-objects.test.js",
+        "client/lib/companion-verb-coverage.test.js"
+      ]
+    },
+    {
+      "id": "library.function",
+      "commands": [
+        "captureFunctionFromLineage",
+        "upsertCanonicalObject"
+      ],
+      "companion": [
+        "createFunction",
+        "captureLineageAsFunction",
+        "applyFunction",
+        "forkFunction",
+        "mergeFunctions"
+      ],
+      "extension": [
+        "queueExternalAction"
+      ],
+      "tests": [
+        "shared/library-objects.test.js",
+        "client/lib/function-tree-editor.test.js"
+      ]
+    },
+    {
+      "id": "library.lens",
+      "commands": [
+        "collectLensMaterial",
+        "upsertCanonicalObject"
+      ],
+      "companion": [
+        "createLens",
+        "addLensMaterial",
+        "armLensContext"
+      ],
+      "extension": [
+        "saveExternalCaptureAsLens",
+        "setExternalLensContext"
+      ],
+      "tests": [
+        "shared/library-objects.test.js",
+        "shared/lens-context.test.js"
+      ]
+    },
+    {
+      "id": "library.save-as",
+      "commands": [
+        "createMoveFromContent",
+        "captureFunctionFromLineage",
+        "collectLensMaterial"
+      ],
+      "companion": [
+        "openSaveAsChooser",
+        "chooseSaveAsKind"
+      ],
+      "extension": [
+        "openExternalSaveAs"
+      ],
+      "tests": [
+        "shared/domain-commands.test.js"
+      ]
+    },
+    {
+      "id": "library.primitive-moves",
+      "commands": [
+        "setPrimitiveMove",
+        "reorderPrimitiveMove"
+      ],
+      "companion": [
+        "promotePrimitiveMove",
+        "demotePrimitiveMove",
+        "reorderPrimitiveMove"
+      ],
+      "extension": [],
+      "tests": [
+        "shared/primitive-moves.test.js"
+      ]
+    },
+    {
+      "id": "ai.branch-chooser",
+      "commands": [],
+      "companion": [
+        "applyFunctionToAiNode"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/ai-nodes.test.js"
+      ]
+    },
+    {
+      "id": "execution.lens-context",
+      "commands": [],
+      "companion": [
+        "armLensContext",
+        "setBrushLensContext",
+        "pressBrushGo"
+      ],
+      "extension": [
+        "setExternalLensContext",
+        "pressExternalGo"
+      ],
+      "tests": [
+        "shared/lens-context.test.js",
+        "shared/library-objects.test.js"
+      ]
+    },
+    {
+      "id": "learning.before-after",
+      "commands": [
+        "upsertCanonicalObject"
+      ],
+      "companion": [
+        "openBeforeAfterCreation",
+        "inferBeforeAfterTransformation",
+        "saveLearnedFunction"
+      ],
+      "extension": [
+        "openExternalBeforeAfter",
+        "inferExternalBeforeAfter"
+      ],
+      "tests": [
+        "shared/before-after-examples.test.js"
+      ]
+    },
+    {
+      "id": "learning.transcript",
+      "commands": [
+        "upsertCanonicalObject"
+      ],
+      "companion": [
+        "openTranscriptLearning",
+        "generateTranscriptArtifacts",
+        "saveTranscriptArtifacts"
+      ],
+      "extension": [],
+      "tests": [
+        "shared/transcript-learning.test.js"
+      ]
+    },
+    {
+      "id": "highlight.explicit-go",
+      "commands": [],
+      "companion": [
+        "pressBrushGo",
+        "cancelPendingBrush"
+      ],
+      "extension": [
+        "pressExternalGo"
+      ],
+      "tests": [
+        "shared/lens-runtime.test.js"
+      ]
+    },
+    {
+      "id": "ai.node-gestures",
+      "commands": [],
+      "companion": [
+        "moveAiNode"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/ai-nodes.test.js",
+        "client/lib/ai-layout.test.js"
+      ]
+    },
+    {
+      "id": "persistence.account-adoption",
+      "commands": [
+        "upsertCanonicalObject"
+      ],
+      "companion": [],
+      "extension": [
+        "showExternalLibraryImport"
+      ],
+      "tests": [
+        "client/lib/board-sync.test.js",
+        "shared/lens-library.test.js"
+      ]
+    },
+    {
+      "id": "extension.distribution",
+      "commands": [],
+      "companion": [
+        "openExtensionDownload"
+      ],
+      "extension": [
+        "showExternalLibraryImport"
+      ],
+      "tests": [
+        "extension/tests/release.test.js"
+      ]
+    },
+    {
+      "id": "companion.destructive-clear",
+      "commands": [],
+      "companion": [
+        "clearWorkspaceDomains",
+        "clearFunctions",
+        "clearLenses"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/companion-intent.test.js",
+        "client/lib/companion-plan.test.js"
+      ]
+    }
+  ],
+  "checks": {
+    "duplicateHandlers": [],
+    "stale": [],
+    "errors": []
+  }
+}

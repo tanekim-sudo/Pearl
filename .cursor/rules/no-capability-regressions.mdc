@@ -1,0 +1,17 @@
+---
+description: Prevent feature work from deleting or diverging existing capabilities
+alwaysApply: true
+---
+
+# No Capability Regressions
+
+Before editing a user-facing feature:
+
+1. Map affected feature IDs in `shared/feature-contracts.js`, domain commands, UI entries, companion verbs, extension adapters, persistence keys, migrations, and tests.
+2. Add or run characterization tests before extracting a high-conflict seam.
+3. Route shared mutations through `shared/domain-commands.js`; UI/companion/extension may adapt presentation but must not duplicate effects.
+4. Update the feature contract and generated matrix for every added or changed capability.
+5. Never delete or rename a capability without explicit user approval, a migration/deprecation entry, and preservation tests.
+6. Preserve stable IDs, versions, lineage, output specs, undo semantics, and idempotent sync/import behavior.
+7. Run focused tests after each extraction, inspect the diff for lost handlers, then run `npm run release:check`.
+8. Do not commit or push if the release gate, cross-surface parity, terminology scan, browser evidence, or requirements ledger has a local gap.

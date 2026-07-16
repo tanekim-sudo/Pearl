@@ -19,6 +19,7 @@ async function call(type, payload = {}) {
 const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   ...lensRackRecord(operator),
   operator,
+  objectKind: "move",
 }));
 
 function App() {
@@ -41,12 +42,22 @@ function App() {
   const [learnBefore, setLearnBefore] = useState("");
   const [learnAfter, setLearnAfter] = useState("");
   const [learning, setLearning] = useState(false);
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatKind, setChatKind] = useState("all");
+  const [chatResult, setChatResult] = useState(null);
+  const [chatRunning, setChatRunning] = useState(false);
   const fileRef = useRef(null);
 
   function applyLibrary(data) {
     const byId = new Map(builtIns.map((entry) => [entry.id, entry]));
     for (const operator of data?.operators || []) {
-      byId.set(operator.id, { ...lensRackRecord(operator, operator.rack), operator });
+      byId.set(operator.id, {
+        ...lensRackRecord(operator, operator.rack),
+        operator,
+        objectKind: operator.libraryKind || (operator.kind === "pipeline" ? "function" : "move"),
+      });
     }
     setLibrary([...byId.values()]);
     setGenerators(data?.generators || []);
@@ -103,7 +114,7 @@ function App() {
       const value = await call("library-import", { bundle: importPreview.bundle, choices: importChoices });
       applyLibrary(value);
       setImportPreview(null);
-      setReadyMessage(`${value.operators.length} lenses and ${value.generators.length} generators are ready.`);
+      setReadyMessage(`${value.operators.length} Moves/Functions and ${value.generators.length} Lenses are ready.`);
       trackFunnel("library_transferred", "file");
     } catch (e) {
       setError(e.message);
@@ -121,6 +132,8 @@ function App() {
   }
 
   const visible = useMemo(() => selectRack(library, { search: query, limit: 60 }).records, [library, query]);
+  const visibleMoves = visible.filter((record) => library.find((entry) => entry.id === record.id)?.objectKind === "move");
+  const visibleFunctions = visible.filter((record) => library.find((entry) => entry.id === record.id)?.objectKind === "function");
   const map = useMemo(() => Object.fromEntries(library.map((entry) => [entry.id, entry.operator])), [library]);
   const queuedOps = session.queue.map((entry) => map[entry.id]).filter(Boolean);
   const preview = queuedOps.length ? previewCompositionSequence(queuedOps, map) : null;
@@ -164,7 +177,7 @@ function App() {
       const value = await call("auth-login");
       setAuth(true);
       applyLibrary(value.library);
-      setReadyMessage(`${value.counts.lenses} lenses and ${value.counts.generators} generators are ready.`);
+      setReadyMessage(`${value.counts.lenses} Moves/Functions and ${value.counts.generators} Lenses are ready.`);
       setOnboardingMode("signed-in");
       setOnboardingStep(3);
       chrome.storage.local.set({ onboardingMode: "signed-in" });
@@ -199,12 +212,48 @@ function App() {
     });
     if (value?.operator) {
       applyLibrary(value.library);
-      setReadyMessage(`Learned lens “${value.operator.name}” is ready in the rack.`);
+      setReadyMessage(`Learned Move “${value.operator.name}” is ready in the rack.`);
       setLearnOpen(false);
       setLearnBefore("");
       setLearnAfter("");
     }
     setLearning(false);
+  }
+
+  async function saveCaptureAs(kind) {
+    if (!characters) return;
+    if (kind === "function") {
+      setError("This page capture has no transformation lineage. Open the web process editor to make a Function.");
+      return;
+    }
+    const value = await action(kind === "move" ? "save-capture-as-move" : "save-capture-as-lens", {});
+    if (value?.library) applyLibrary(value.library);
+    if (value?.object) {
+      setReadyMessage(kind === "move"
+        ? `${value.duplicate ? "Existing" : "New"} Move “${value.object.name}” is ready.`
+        : `Lens “${value.object.name}” collected ${value.object.material.length} context items.`);
+    }
+    setSaveAsOpen(false);
+  }
+
+  async function learnFromChat() {
+    setChatRunning(true);
+    setError("");
+    try {
+      const result = await call("infer-transcript-artifacts", { transcript: chatDraft, requested: chatKind, idempotencyKey: crypto.randomUUID() });
+      setChatResult(result);
+    } catch (nextError) {
+      setError(nextError.message);
+    } finally {
+      setChatRunning(false);
+    }
+  }
+
+  async function saveChatArtifacts() {
+    const kinds = chatKind === "all" ? ["move", "function", "lens"] : [chatKind];
+    const value = await call("save-transcript-artifacts", { result: chatResult, kinds });
+    applyLibrary(value);
+    setReadyMessage(`Saved ${kinds.join(" + ")} from private transcript evidence.`);
   }
 
   function continueLocal() {
@@ -240,7 +289,7 @@ function App() {
         },
         resolveGenerator: (name) => {
           const generator = generators.find((entry) => entry.id === name || entry.name.toLowerCase().includes(String(name).toLowerCase()));
-          if (!generator) throw new Error("generator not found");
+          if (!generator) throw new Error("Lens not found");
           return generator;
         },
         resolveResult: (name) => {
@@ -265,6 +314,11 @@ function App() {
           return { side };
         },
         inferBeforeAfter,
+        openSaveAs: async () => {
+          setSaveAsOpen(true);
+          return { open: true };
+        },
+        saveCaptureAs,
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -307,7 +361,7 @@ function App() {
           <button onClick={() => fileRef.current?.click()}>Choose file</button>
         </div>}
         {importPreview && <div className="onboarding-import" role="status">
-          <b>{importPreview.counts.lenses} lenses and {importPreview.counts.generators} generators found</b>
+          <b>{importPreview.counts.lenses} Moves/Functions and {importPreview.counts.generators} Lenses found</b>
           <button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Review choices below" : "Add library"}</button>
         </div>}
         {readyMessage && <p role="status">{readyMessage}</p>}
@@ -321,14 +375,20 @@ function App() {
       {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
     </header>
     {!characters && !session.queue.length && <section className="quick-start">
-      <p>Highlight anything, choose a lens, press GO</p>
+      <p>Highlight anything, choose a Move or Function, optionally add Lens context, then press GO</p>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
-        <b>{sampleLens.name}</b><small>Sample lens</small>
+        <b>{sampleLens.name}</b><small>Sample Primitive Move</small>
       </button>}
     </section>}
     <section className="capture">
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
+      <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
+      {saveAsOpen && <div className="save-as-chooser" role="dialog" aria-label="Save capture as">
+        <button onClick={() => saveCaptureAs("move")}><b>↦ Move</b><small>Use selected text verbatim as one instruction</small></button>
+        <button disabled title="Page text has no process lineage" onClick={() => saveCaptureAs("function")}><b>⛓ Function</b><small>Unavailable · no transformation lineage</small></button>
+        <button onClick={() => saveCaptureAs("lens")}><b>✦ Lens</b><small>Collect each capture as bounded context material</small></button>
+      </div>}
       <p>{session.fragments.length} fragment{session.fragments.length === 1 ? "" : "s"} · {characters.toLocaleString()} characters</p>
       <div className="fragments">{session.fragments.map((fragment) =>
         <article key={fragment.id}><q>{fragment.quote.slice(0, 180)}</q><small>{fragment.provenance.title} · {fragment.provenance.origin}</small><button aria-label="Remove fragment" onClick={() => action("remove-fragment", { id: fragment.id })}>×</button></article>
@@ -340,11 +400,23 @@ function App() {
         <button onClick={() => setLearnBefore(latestCapturedText())} disabled={!characters}>Use current capture as Before</button>
         <label>After<textarea rows="3" value={learnAfter} onChange={(event) => setLearnAfter(event.target.value)} placeholder="Paste text or use current capture" /></label>
         <button onClick={() => setLearnAfter(latestCapturedText())} disabled={!characters}>Use current capture as After</button>
-        <div><button className="gold" disabled={learning || !learnBefore.trim() || !learnAfter.trim()} onClick={inferBeforeAfter}>{learning ? "Inferring…" : "Infer lens"}</button><a href="https://representation-eta.vercel.app/?learn=before-after" target="_blank" rel="noreferrer">Open full editor for images &amp; drawing</a></div>
+        <div><button className="gold" disabled={learning || !learnBefore.trim() || !learnAfter.trim()} onClick={inferBeforeAfter}>{learning ? "Inferring…" : "Infer Move / Function"}</button><a href="https://representation-eta.vercel.app/?learn=before-after" target="_blank" rel="noreferrer">Open full editor for images &amp; drawing</a></div>
+      </div>}
+      <button className="learn-toggle" onClick={() => setChatOpen((value) => !value)}>Learn from chat</button>
+      {chatOpen && <div className="learn-panel" aria-label="Learn from chat transcript">
+        <p>Paste only the chat content you explicitly want analyzed. It stays private and is sent only when Generate is pressed.</p>
+        <textarea rows="5" value={chatDraft} onChange={(event) => { setChatDraft(event.target.value); setChatResult(null); }} placeholder="User: …&#10;Assistant: …" />
+        <select aria-label="Transcript artifact type" value={chatKind} onChange={(event) => setChatKind(event.target.value)}>
+          <option value="move">Move only</option><option value="function">Function only</option><option value="lens">Lens only</option><option value="all">All three</option>
+        </select>
+        <button className="gold" disabled={chatRunning || !chatDraft.trim()} onClick={learnFromChat}>{chatRunning ? "Generating…" : "Generate preview"}</button>
+        {chatResult && <div><p>{Object.entries(chatResult.candidates || {}).map(([kind, candidate]) => `${kind}: ${candidate.supported ? candidate.name || "candidate" : "unsupported"}`).join(" · ")}</p><button onClick={saveChatArtifacts}>Save generated artifacts</button></div>}
+        {chatDraft.length > 40_000 && <a href="https://representation-eta.vercel.app/?learn=chat" target="_blank" rel="noreferrer">Use full editor for long chats, exclusions, and redaction</a>}
       </div>}
     </section>
     <section>
-      <h2>Lens rack</h2>
+      <h2>Library</h2>
+      <p className="kind-guide">Move = one action.<br />Function = a process.<br />Lens = a way of seeing.</p>
       <div
         className="library-import"
         onDragOver={(event) => event.preventDefault()}
@@ -359,7 +431,7 @@ function App() {
       </div>
       {importPreview && <div className="import-preview" role="dialog" aria-label="Library import preview">
         <b>{importConflicts.length ? "Choose what to keep" : "Add this library?"}</b>
-        <p>{importPreview.counts.lenses} lenses · {importPreview.counts.generators} generators · {importPreview.counts.generatorItems} material items</p>
+        <p>{importPreview.counts.lenses} Moves/Functions · {importPreview.counts.generators} Lenses · {importPreview.counts.generatorItems} context items</p>
         {[["lenses", importPreview.conflicts.lenses], ["generators", importPreview.conflicts.generators]].map(([kind, entries]) =>
           importConflicts.length && entries.some((entry) => entry.status === "id-conflict") ? <div key={kind}><small>{kind}</small>{entries.filter((entry) => entry.status === "id-conflict").map((entry) =>
             <label key={`${kind}-${entry.id}`}><span>{entry.name || entry.id} · {entry.status}</span>
@@ -378,20 +450,32 @@ function App() {
         <div><button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Continue" : "Add library"}</button><button onClick={() => setImportPreview(null)}>Cancel</button></div>
       </div>}
       {readyMessage && !importPreview && <p className="ready-message" role="status">{readyMessage}</p>}
-      <input aria-label="Search lenses" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search lenses" />
-      <div className="rack">{visible.map((lens) =>
-        <button key={lens.id} title={`Output: ${outputContractLabel(outputContractFor(lens.operator, map))}`} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "lens", outputSpec: outputContractFor(lens.operator, map) } })}>
-          <b>{lens.name}</b><small>{lens.description}</small><small className="output-contract">→ {outputContractLabel(outputContractFor(lens.operator, map))}</small>
+      <input aria-label="Search library" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Moves, Functions, Lenses" />
+      <h3 className="library-subhead">↦ Primitive Moves and Moves · one action</h3>
+      <div className="rack">{visibleMoves.map((fn) =>
+        <button key={fn.id} title={`One model call · Output: ${outputContractLabel(outputContractFor(fn.operator, map))}`} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(fn.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: fn.id, name: fn.name, version: fn.version, kind: "move", outputSpec: outputContractFor(fn.operator, map) } })}>
+          <b>{fn.name}</b><small>{fn.description}</small><small className="output-contract">one call → {outputContractLabel(outputContractFor(fn.operator, map))}</small>
         </button>
+      )}</div>
+      <h3 className="library-subhead">⛓ Functions · a process</h3>
+      {!visibleFunctions.length && <p className="muted">No Functions yet. Capture actual lineage in the web app.</p>}
+      <div className="rack">{visibleFunctions.map((lens) =>
+        <button key={lens.id} title={`Process · Output: ${outputContractLabel(outputContractFor(lens.operator, map))}`} draggable onDragStart={(event) => writeDragPayload(event.dataTransfer, portableLensPayload(lens.operator, library.map((entry) => entry.operator)))} onClick={() => action("queue-lens", { lens: { id: lens.id, name: lens.name, version: lens.version, kind: "function", outputSpec: outputContractFor(lens.operator, map) } })}>
+          <b>{lens.name}</b><small>{lens.stepCount} connected step{lens.stepCount === 1 ? "" : "s"}</small><small className="output-contract">process → {outputContractLabel(outputContractFor(lens.operator, map))}</small>
+        </button>
+      )}</div>
+      <h3 className="library-subhead">✦ Lenses · a way of seeing</h3>
+      <div className="generator-rack">{generators.map((generator) =>
+        <button key={generator.id} onClick={() => action("set-generator", { generator })}><b>{generator.name || generator.title}</b><small>{(generator.material || generator.items || []).length} material items</small></button>
       )}</div>
     </section>
     <section>
-      <h2>Ordered stack</h2>
+      <h2>Action stack</h2>
       <ol className="queue">{session.queue.map((lens, index) =>
         <li key={`${lens.id}-${index}`}><span>{lens.name}<small>{lens.outputSpec ? outputContractLabel(lens.outputSpec) : ""}</small></span><button disabled={!index} onClick={() => action("reorder-queue", { from: index, to: index - 1 })}>↑</button><button disabled={index === session.queue.length - 1} onClick={() => action("reorder-queue", { from: index, to: index + 1 })}>↓</button><button onClick={() => action("remove-queue", { index })}>×</button></li>
       )}</ol>
       {preview && <p className={preview.ok ? "compat good" : "compat bad"}>{preview.ok ? `${preview.label} · ${preview.predictedOutputCount} output${preview.predictedOutputCount === 1 ? "" : "s"}` : preview.errors[0]}</p>}
-      <label>Generator destination<select value={session.generator?.id || ""} onChange={(event) => action("set-generator", { generator: generators.find((item) => item.id === event.target.value) || null })}><option value="">None</option>{generators.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Lens context<select value={session.generator?.id || ""} onChange={(event) => action("set-generator", { generator: generators.find((item) => item.id === event.target.value) || null })}><option value="">New chat · no context</option>{generators.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <div className="disclosure">GO sends exactly <b>{characters.toLocaleString()}</b> selected characters from {[...new Set(session.fragments.map((item) => item.provenance.origin))].join(", ") || "no origin"}.</div>
       <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go}>{running ? "Running…" : "GO"}</button>
       {running && <button onClick={() => action("cancel-run", { runId: session.activeRunId })}>Cancel</button>}

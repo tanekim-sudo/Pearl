@@ -390,11 +390,11 @@ export function collectStrandChoices(
       if (child.nodeKind !== "move" || !child.opId) continue;
       if (child.parentId !== node.id && !child.sourceNodeIds?.includes(node.id)) continue;
       const op = opMap[child.opId];
-      if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", op });
+      if (op) push({ id: `move-${op.id}`, label: child.label || op.name, kind: "move", level: op.primitiveMove ? "primitive-moves" : "moves", op });
     }
 
     if (node.nodeKind === "session") {
-      push({ id: "interpret", label: "interpret", kind: "interpret" });
+      push({ id: "interpret", label: "interpret", kind: "interpret", level: "primitive-moves" });
     }
   }
 
@@ -413,17 +413,17 @@ export function collectStrandChoices(
 
   if (canExpand) {
     for (const op of expansionPrimitives) {
-      push({ id: op.id, label: op.name, kind: "expand", op });
+      push({ id: op.id, label: op.name, kind: "expand", level: "primitive-moves", op });
     }
   }
 
   if (!exploreOnly) {
     for (const op of topFunctions) {
-      push({ id: op.id, label: op.name, kind: "function", op });
+      push({ id: op.id, label: op.name, kind: "function", level: "functions", op });
     }
 
     for (const op of moves) {
-      push({ id: `move-${op.id}`, label: op.name, kind: "move", op });
+      push({ id: `move-${op.id}`, label: op.name, kind: "move", level: op.primitiveMove ? "primitive-moves" : "moves", op });
     }
   }
 

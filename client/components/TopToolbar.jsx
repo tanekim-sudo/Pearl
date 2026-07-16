@@ -64,7 +64,7 @@ export default function TopToolbar({
     { id: "insert-callout-q", label: "Question" },
     { id: "insert-diagram", label: "Diagram" },
     { id: "open-transformations", label: "Lenses" },
-    { id: "open-lenses", label: "Generators" },
+    { id: "open-lenses", label: "Lenses" },
     { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
     { id: "new-function", label: "Create lens" },

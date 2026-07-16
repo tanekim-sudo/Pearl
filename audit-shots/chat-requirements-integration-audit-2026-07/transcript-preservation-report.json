@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "journeys": [
+    {
+      "id": "R-022-move",
+      "kind": "move",
+      "candidateCount": 1,
+      "alternativeSelected": true,
+      "editorOrSaveAssertion": true,
+      "screenshot": "transcript-move.png"
+    },
+    {
+      "id": "R-022-function",
+      "kind": "function",
+      "candidateCount": 1,
+      "alternativeSelected": true,
+      "editorOrSaveAssertion": true,
+      "screenshot": "transcript-function.png"
+    },
+    {
+      "id": "R-022-lens",
+      "kind": "lens",
+      "candidateCount": 1,
+      "alternativeSelected": true,
+      "editorOrSaveAssertion": true,
+      "screenshot": "transcript-lens.png"
+    },
+    {
+      "id": "R-022-all",
+      "kind": "all",
+      "candidateCount": 3,
+      "alternativeSelected": true,
+      "editorOrSaveAssertion": true,
+      "screenshot": "transcript-all-narrow.png"
+    }
+  ]
+}

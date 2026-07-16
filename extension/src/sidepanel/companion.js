@@ -3,9 +3,12 @@ import { validateCapabilityArgs } from "../../../client/lib/companion-plan.js";
 
 export const EXTENSION_VERBS = Object.freeze({
   capturePageSelection: ({ action }) => action("capture-selection"),
+  openExternalSaveAs: ({ openSaveAs }) => openSaveAs(),
+  saveExternalCaptureAsMove: ({ saveCaptureAs }) => saveCaptureAs("move"),
+  saveExternalCaptureAsLens: ({ saveCaptureAs }) => saveCaptureAs("lens"),
   togglePageHighlighter: ({ args, action }) => action("toggle-highlighter", { enabled: args.enabled }),
-  queueExternalLens: ({ args, action, resolveLens }) => action("queue-lens", { lens: resolveLens(args.lens) }),
-  setExternalGenerator: ({ args, action, resolveGenerator }) => action("set-generator", { generator: resolveGenerator(args.generator) }),
+  queueExternalAction: ({ args, action, resolveLens }) => action("queue-lens", { lens: resolveLens(args.action) }),
+  setExternalLensContext: ({ args, action, resolveGenerator }) => action("set-generator", { generator: resolveGenerator(args.lens) }),
   previewExternalGo: ({ readPreview }) => Promise.resolve(readPreview()),
   pressExternalGo: ({ args, pressGo }) => pressGo(args),
   copyExternalResult: ({ args, resolveResult }) => navigator.clipboard.writeText(resolveResult(args.result).text),
@@ -47,6 +50,9 @@ export async function executeExtensionVerb(name, args, context) {
 export function parseExtensionIntent(text) {
   const value = String(text || "").trim();
   if (/^(capture|highlight) (this |the )?(selection|text)$/i.test(value)) return { name: "capturePageSelection", args: {} };
+  if (/^save (?:this|the selection) as(?:…|\.\.\.)?$/i.test(value)) return { name: "openExternalSaveAs", args: {} };
+  if (/^save (?:this|the selected|selected) (?:text|content|selection)? ?as (?:a )?move$/i.test(value)) return { name: "saveExternalCaptureAsMove", args: {} };
+  if (/^(?:collect|save) (?:this|these|the selected|selected) (?:items|material|content)? ?(?:in|as) (?:a )?lens$/i.test(value)) return { name: "saveExternalCaptureAsLens", args: {} };
   if (/^(turn on|enable|start) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: true } };
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
@@ -55,7 +61,7 @@ export function parseExtensionIntent(text) {
   if (/\b(?:open|make|create|learn)\b/i.test(value) && /\bbefore\s*(?:\/|and|&)?\s*after\b/i.test(value)) return { name: "openExternalBeforeAfter", args: {} };
   const setExample = value.match(/^(?:set|use) (before|after)(?: text)? (?:to|as) (.+)$/i);
   if (setExample) return { name: "setExternalBeforeAfterText", args: { side: setExample[1].toLowerCase(), text: setExample[2] } };
-  if (/^(?:infer|learn)(?: the)? (?:transformation|lens)$/i.test(value)) return { name: "inferExternalBeforeAfter", args: {} };
+  if (/^(?:infer|learn)(?: the)? (?:transformation|move|function)$/i.test(value)) return { name: "inferExternalBeforeAfter", args: {} };
   if (/^copy (result )?(.+)$/i.test(value)) return { name: "copyExternalResult", args: { result: value.match(/^copy (?:result )?(.+)$/i)[1] } };
   if (/^insert (result )?(.+)$/i.test(value)) return { name: "insertExternalResult", args: { result: value.match(/^insert (?:result )?(.+)$/i)[1] } };
   if (/^replace (with )?(.+)$/i.test(value)) return { name: "replaceExternalSelection", args: { result: value.match(/^replace (?:with )?(.+)$/i)[1] } };

@@ -8,8 +8,8 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
   return (
     <div className="cognition-git-header" data-tour="cognition-git">
       <div className="cognition-git-brand">
-        <div className="cognition-git-title">lenses</div>
-        <div className="rail-pane-sub">ways of transforming — reusable cognitive operations</div>
+        <div className="cognition-git-title">functions</div>
+        <div className="rail-pane-sub">processes — ordered, branched, or nested Moves and Functions</div>
       </div>
       <div className="cognition-git-status">
         {activeTransformation ? (
@@ -26,7 +26,7 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
           </>
         ) : (
           <span className="cognition-git-idle">
-            {transformationCount} lens{transformationCount === 1 ? "" : "es"}
+            {transformationCount} function{transformationCount === 1 ? "" : "s"}
           </span>
         )}
       </div>
@@ -34,7 +34,7 @@ export default function CognitionGitHeader({ activeTransformation, transformatio
         type="button"
         className="rail-create cognition-git-new"
         data-tour="create-function"
-        aria-label="Create lens"
+        aria-label="Create Function"
         onClick={onNewTransformation}
       >
         +

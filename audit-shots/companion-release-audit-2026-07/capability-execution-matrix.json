@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-14T17:01:15.532Z",
+  "generatedAt": "2026-07-16T00:44:53.047Z",
   "harness": "controlled real director/extension handler execution",
   "counts": {
-    "total": 121,
-    "passed": 121,
+    "total": 146,
+    "passed": 146,
     "failed": 0,
     "skipped": 0,
-    "app": 106,
-    "extension": 15
+    "app": 128,
+    "extension": 18
   },
   "rows": [
     {
@@ -25,7 +25,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1439,
+      "durationMs": 1371,
       "errors": []
     },
     {
@@ -43,7 +43,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1438,
+      "durationMs": 1237,
       "errors": []
     },
     {
@@ -61,7 +61,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1813,
+      "durationMs": 1619,
       "errors": []
     },
     {
@@ -77,7 +77,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1546,
+      "durationMs": 1357,
       "errors": []
     },
     {
@@ -95,7 +95,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1778,
+      "durationMs": 1534,
       "errors": []
     },
     {
@@ -114,7 +114,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1582,
+      "durationMs": 1407,
       "errors": []
     },
     {
@@ -132,15 +132,428 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1662,
+      "durationMs": 1540,
+      "errors": []
+    },
+    {
+      "name": "createMove",
+      "platform": "app",
+      "utterance": "make a Move called executive summary with this one action",
+      "args": {
+        "name": "Runtime-created Move",
+        "prompt": "Transform once."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1556,
+      "errors": []
+    },
+    {
+      "name": "editMove",
+      "platform": "app",
+      "utterance": "please edit and version an atomic Move",
+      "args": {
+        "move": "op-a",
+        "name": "Edited Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1345,
+      "errors": []
+    },
+    {
+      "name": "forkMove",
+      "platform": "app",
+      "utterance": "please fork a Move without mutating its source",
+      "args": {
+        "move": "op-a",
+        "name": "Forked Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1342,
+      "errors": []
+    },
+    {
+      "name": "applyMove",
+      "platform": "app",
+      "utterance": "please apply a Move as exactly one model call",
+      "args": {
+        "move": "op-a",
+        "target": "claim",
+        "wait": true
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1377,
+      "errors": []
+    },
+    {
+      "name": "saveCurrentAsMove",
+      "platform": "app",
+      "utterance": "save this text as a Move",
+      "args": {
+        "target": "claim",
+        "name": "Captured Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1374,
+      "errors": []
+    },
+    {
+      "name": "promotePrimitiveMove",
+      "platform": "app",
+      "utterance": "add summarize to Primitive Moves",
+      "args": {
+        "move": "op-b"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1331,
+      "errors": []
+    },
+    {
+      "name": "demotePrimitiveMove",
+      "platform": "app",
+      "utterance": "remove invert from Primitive Moves",
+      "args": {
+        "move": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1320,
+      "errors": []
+    },
+    {
+      "name": "reorderPrimitiveMove",
+      "platform": "app",
+      "utterance": "move expand to the first Primitive Move",
+      "args": {
+        "move": "op-expand",
+        "to": 0
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1277,
+      "errors": []
+    },
+    {
+      "name": "captureLineageAsFunction",
+      "platform": "app",
+      "utterance": "save how I got here as a Function",
+      "args": {
+        "target": "derived",
+        "name": "Captured Function"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1525,
+      "errors": []
+    },
+    {
+      "name": "openSaveAsChooser",
+      "platform": "app",
+      "utterance": "save this as…",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "save-as-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1348,
+      "errors": []
+    },
+    {
+      "name": "chooseSaveAsKind",
+      "platform": "app",
+      "utterance": "collect these in a Lens",
+      "args": {
+        "kind": "move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1813,
+      "errors": []
+    },
+    {
+      "name": "openTranscriptLearning",
+      "platform": "app",
+      "utterance": "open Learn from a chat",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1418,
+      "errors": []
+    },
+    {
+      "name": "setTranscriptDraft",
+      "platform": "app",
+      "utterance": "use this pasted chat transcript",
+      "args": {
+        "text": "User: Verify sources.\nAssistant: Compare evidence.",
+        "source": "runtime-audit"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1675,
+      "errors": []
+    },
+    {
+      "name": "chooseTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "make all three from this chat",
+      "args": {
+        "kind": "all"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1582,
+      "errors": []
+    },
+    {
+      "name": "excludeTranscriptMessages",
+      "platform": "app",
+      "utterance": "exclude messages two and five",
+      "args": {
+        "messages": [
+          2
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1945,
+      "errors": []
+    },
+    {
+      "name": "redactTranscriptText",
+      "platform": "app",
+      "utterance": "redact this token before analysis",
+      "args": {
+        "text": "sources",
+        "replacement": "[REDACTED]"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1938,
+      "errors": []
+    },
+    {
+      "name": "generateTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "turn this chat into a Move",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "transcript-generation",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 2160,
+      "errors": []
+    },
+    {
+      "name": "selectTranscriptAlternative",
+      "platform": "app",
+      "utterance": "use the second Function candidate",
+      "args": {
+        "kind": "move",
+        "alternative": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 2483,
+      "errors": []
+    },
+    {
+      "name": "editTranscriptArtifact",
+      "platform": "app",
+      "utterance": "rename the inferred Lens",
+      "args": {
+        "kind": "move",
+        "name": "Edited transcript Move",
+        "content": "Verify primary sources."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 2319,
+      "errors": []
+    },
+    {
+      "name": "saveTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "save the Move and Lens from this chat",
+      "args": {
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "library-artifacts",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 2356,
+      "errors": []
+    },
+    {
+      "name": "wrapMoveAsFunction",
+      "platform": "app",
+      "utterance": "turn this Move into a one-step Function",
+      "args": {
+        "move": "op-a",
+        "name": "Wrapped Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1333,
+      "errors": []
+    },
+    {
+      "name": "flattenFunctionToMove",
+      "platform": "app",
+      "utterance": "explicitly flatten this single-step Function into a Move",
+      "args": {
+        "function": "op-pipeline",
+        "name": "Flattened Function"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1364,
       "errors": []
     },
     {
       "name": "createFunction",
       "platform": "app",
-      "utterance": "build a diligence lens with three steps",
+      "utterance": "build a diligence Function with three steps",
       "args": {
-        "name": "Runtime-created lens",
+        "name": "Runtime-created Function",
         "steps": [
           {
             "name": "Observe"
@@ -158,13 +571,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2308,
+      "durationMs": 2072,
       "errors": []
     },
     {
       "name": "openBeforeAfterCreation",
       "platform": "app",
-      "utterance": "make a lens from this before and after",
+      "utterance": "learn a Move or Function from this before and after",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -174,7 +587,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1645,
+      "durationMs": 1441,
       "errors": []
     },
     {
@@ -193,7 +606,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2141,
+      "durationMs": 1883,
       "errors": []
     },
     {
@@ -212,7 +625,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2069,
+      "durationMs": 1948,
       "errors": []
     },
     {
@@ -228,7 +641,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1937,
+      "durationMs": 1782,
       "errors": []
     },
     {
@@ -246,7 +659,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2278,
+      "durationMs": 2118,
       "errors": []
     },
     {
@@ -262,7 +675,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2962,
+      "durationMs": 2816,
       "errors": []
     },
     {
@@ -280,7 +693,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 3338,
+      "durationMs": 3148,
       "errors": []
     },
     {
@@ -300,7 +713,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 3295,
+      "durationMs": 3110,
       "errors": []
     },
     {
@@ -311,18 +724,18 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens-preview",
+      "typedResult": "function-preview",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 3504,
+      "durationMs": 3337,
       "errors": []
     },
     {
       "name": "saveLearnedFunction",
       "platform": "app",
-      "utterance": "save this learned lens",
+      "utterance": "save this learned Function",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -332,13 +745,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 5870,
+      "durationMs": 5699,
       "errors": []
     },
     {
       "name": "applyFunction",
       "platform": "app",
-      "utterance": "run my diligence lens on this note",
+      "utterance": "run my diligence Function on this note",
       "args": {
         "op": "op-a",
         "target": "claim",
@@ -352,7 +765,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1828,
+      "durationMs": 1663,
       "errors": []
     },
     {
@@ -370,7 +783,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1947,
+      "durationMs": 1748,
       "errors": []
     },
     {
@@ -388,7 +801,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1631,
+      "durationMs": 1616,
       "errors": []
     },
     {
@@ -404,7 +817,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1627,
+      "durationMs": 1469,
       "errors": []
     },
     {
@@ -420,7 +833,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1501,
+      "durationMs": 1349,
       "errors": []
     },
     {
@@ -438,7 +851,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1642,
+      "durationMs": 1471,
       "errors": []
     },
     {
@@ -454,7 +867,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1778,
+      "durationMs": 1626,
       "errors": []
     },
     {
@@ -475,13 +888,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2155,
+      "durationMs": 1924,
       "errors": []
     },
     {
       "name": "operateHighlight",
       "platform": "app",
-      "utterance": "please queue a lens for the cross-domain highlight selection",
+      "utterance": "please queue a Move or Function for the cross-domain highlight selection",
       "args": {
         "op": "op-a"
       },
@@ -493,15 +906,33 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1487,
+      "durationMs": 1264,
       "errors": []
     },
     {
-      "name": "armLensBrush",
+      "name": "armFunctionBrush",
       "platform": "app",
-      "utterance": "use my diligence lens as a brush",
+      "utterance": "use my diligence Function as a brush",
       "args": {
-        "lens": "op-a"
+        "function": "op-pipeline"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "durationMs": 1442,
+      "errors": []
+    },
+    {
+      "name": "armLensContext",
+      "platform": "app",
+      "utterance": "use the evidence Lens as context",
+      "args": {
+        "lens": "generator-a"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -511,25 +942,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1395,
-      "errors": []
-    },
-    {
-      "name": "armGeneratorBrush",
-      "platform": "app",
-      "utterance": "collect what I brush into the evidence generator",
-      "args": {
-        "generator": "generator-a"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "generator",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
-      "status": "passed",
-      "durationMs": 1646,
+      "durationMs": 1507,
       "errors": []
     },
     {
@@ -545,7 +958,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1406,
+      "durationMs": 1305,
       "errors": []
     },
     {
@@ -561,15 +974,15 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 4516,
+      "durationMs": 4378,
       "errors": []
     },
     {
-      "name": "queueBrushLens",
+      "name": "queueBrushAction",
       "platform": "app",
       "utterance": "queue invert then ground, but do not run yet",
       "args": {
-        "lens": "op-a"
+        "action": "op-a"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -579,26 +992,25 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1428,
+      "durationMs": 1250,
       "errors": []
     },
     {
-      "name": "setBrushGeneratorDestination",
+      "name": "setBrushLensContext",
       "platform": "app",
-      "utterance": "collect the highlighted source in my evidence generator when GO runs",
+      "utterance": "scope the pending action with my evidence Lens",
       "args": {
-        "generator": "generator-a",
-        "mode": "source"
+        "lens": "generator-a"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-generator",
+      "typedResult": "brush-lens-context",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1614,
+      "durationMs": 1445,
       "errors": []
     },
     {
@@ -617,7 +1029,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2006,
+      "durationMs": 1843,
       "errors": []
     },
     {
@@ -635,7 +1047,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1706,
+      "durationMs": 1577,
       "errors": []
     },
     {
@@ -651,7 +1063,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1669,
+      "durationMs": 1480,
       "errors": []
     },
     {
@@ -667,7 +1079,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 4591,
+      "durationMs": 4431,
       "errors": []
     },
     {
@@ -683,23 +1095,23 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1919,
+      "durationMs": 1734,
       "errors": []
     },
     {
-      "name": "saveBrushQueueAsLens",
+      "name": "saveBrushQueueAsFunction",
       "platform": "app",
-      "utterance": "save this pending stack as a lens",
+      "utterance": "save this pending stack as a Function",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens-preview",
+      "typedResult": "function-preview",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2112,
+      "durationMs": 1915,
       "errors": []
     },
     {
@@ -715,7 +1127,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2639,
+      "durationMs": 2496,
       "errors": []
     },
     {
@@ -731,13 +1143,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2235,
+      "durationMs": 2036,
       "errors": []
     },
     {
-      "name": "captureThread",
+      "name": "captureThreadAsFunction",
       "platform": "app",
-      "utterance": "save how I got here as a lens",
+      "utterance": "save how I got here as a Function",
       "args": {
         "target": "derived",
         "name": "Captured runtime path"
@@ -745,18 +1157,18 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1726,
+      "durationMs": 1514,
       "errors": []
     },
     {
       "name": "showLenses",
       "platform": "app",
-      "utterance": "please open the generators rail",
+      "utterance": "please open the Lenses rail",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -766,7 +1178,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1638,
+      "durationMs": 1499,
       "errors": []
     },
     {
@@ -782,7 +1194,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1737,
+      "durationMs": 1638,
       "errors": []
     },
     {
@@ -798,13 +1210,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1778,
+      "durationMs": 1633,
       "errors": []
     },
     {
       "name": "savePageAsLens",
       "platform": "app",
-      "utterance": "please capture the page as a generator",
+      "utterance": "please capture the page as contextual Lens material",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -814,7 +1226,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1656,
+      "durationMs": 1511,
       "errors": []
     },
     {
@@ -830,7 +1242,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1593,
+      "durationMs": 1384,
       "errors": []
     },
     {
@@ -850,7 +1262,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1789,
+      "durationMs": 1556,
       "errors": []
     },
     {
@@ -869,7 +1281,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1735,
+      "durationMs": 1662,
       "errors": []
     },
     {
@@ -887,7 +1299,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1719,
+      "durationMs": 1493,
       "errors": []
     },
     {
@@ -908,7 +1320,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1712,
+      "durationMs": 1496,
       "errors": []
     },
     {
@@ -924,7 +1336,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2202,
+      "durationMs": 2303,
       "errors": []
     },
     {
@@ -943,7 +1355,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1659,
+      "durationMs": 1505,
       "errors": []
     },
     {
@@ -961,7 +1373,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1677,
+      "durationMs": 1493,
       "errors": []
     },
     {
@@ -979,7 +1391,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1613,
+      "durationMs": 1418,
       "errors": []
     },
     {
@@ -997,7 +1409,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1623,
+      "durationMs": 1486,
       "errors": []
     },
     {
@@ -1015,7 +1427,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1584,
+      "durationMs": 1392,
       "errors": []
     },
     {
@@ -1033,7 +1445,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1682,
+      "durationMs": 1499,
       "errors": []
     },
     {
@@ -1049,7 +1461,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1703,
+      "durationMs": 1566,
       "errors": []
     },
     {
@@ -1065,7 +1477,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1710,
+      "durationMs": 1526,
       "errors": []
     },
     {
@@ -1081,7 +1493,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1805,
+      "durationMs": 1542,
       "errors": []
     },
     {
@@ -1101,7 +1513,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1788,
+      "durationMs": 1609,
       "errors": []
     },
     {
@@ -1128,7 +1540,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2195,
+      "durationMs": 1962,
       "errors": []
     },
     {
@@ -1150,7 +1562,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1610,
+      "durationMs": 1529,
       "errors": []
     },
     {
@@ -1170,7 +1582,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1679,
+      "durationMs": 1545,
       "errors": []
     },
     {
@@ -1193,7 +1605,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1599,
+      "durationMs": 1434,
       "errors": []
     },
     {
@@ -1213,13 +1625,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1569,
+      "durationMs": 1414,
       "errors": []
     },
     {
       "name": "openFunctionEditor",
       "platform": "app",
-      "utterance": "please open a lens in the editor",
+      "utterance": "please open a Function in the editor",
       "args": {
         "op": "op-a"
       },
@@ -1231,13 +1643,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1514,
+      "durationMs": 1345,
       "errors": []
     },
     {
       "name": "editFunction",
       "platform": "app",
-      "utterance": "please edit lens metadata or prompt",
+      "utterance": "please edit Function metadata or instructions",
       "args": {
         "op": "op-a",
         "name": "Edited audit lens"
@@ -1250,7 +1662,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1477,
+      "durationMs": 1381,
       "errors": []
     },
     {
@@ -1268,7 +1680,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1545,
+      "durationMs": 1332,
       "errors": []
     },
     {
@@ -1290,7 +1702,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1514,
+      "durationMs": 1344,
       "errors": []
     },
     {
@@ -1311,7 +1723,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1492,
+      "durationMs": 1377,
       "errors": []
     },
     {
@@ -1330,7 +1742,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1492,
+      "durationMs": 1373,
       "errors": []
     },
     {
@@ -1348,13 +1760,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1480,
+      "durationMs": 1609,
       "errors": []
     },
     {
       "name": "addFunctionStep",
       "platform": "app",
-      "utterance": "please add a step to a lens",
+      "utterance": "please add a step to a Function",
       "args": {
         "op": "op-pipeline",
         "name": "Added runtime step"
@@ -1367,13 +1779,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1503,
+      "durationMs": 1339,
       "errors": []
     },
     {
       "name": "addFunctionBranch",
       "platform": "app",
-      "utterance": "please add a branch to a lens",
+      "utterance": "please add a branch to a Function",
       "args": {
         "op": "op-pipeline",
         "name": "Runtime branch",
@@ -1387,13 +1799,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1498,
+      "durationMs": 1384,
       "errors": []
     },
     {
       "name": "setFunctionStep",
       "platform": "app",
-      "utterance": "please edit a lens step",
+      "utterance": "please edit a Function step",
       "args": {
         "op": "op-pipeline",
         "step": "First step",
@@ -1407,13 +1819,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1542,
+      "durationMs": 1350,
       "errors": []
     },
     {
       "name": "saveFunction",
       "platform": "app",
-      "utterance": "please commit edits to a lens",
+      "utterance": "please commit edits to a Function",
       "args": {
         "op": "op-pipeline",
         "message": "runtime save"
@@ -1426,52 +1838,52 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1528,
+      "durationMs": 1376,
       "errors": []
     },
     {
-      "name": "forkLens",
+      "name": "forkFunction",
       "platform": "app",
-      "utterance": "please fork a lens",
+      "utterance": "please fork a Function",
       "args": {
-        "lens": "Audit lens",
+        "function": "Pipeline Function",
         "message": "runtime fork"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1756,
+      "durationMs": 1544,
       "errors": []
     },
     {
-      "name": "mergeLenses",
+      "name": "mergeFunctions",
       "platform": "app",
-      "utterance": "please merge two lenses",
+      "utterance": "please merge two Functions",
       "args": {
-        "a": "Audit lens",
-        "b": "Second lens",
-        "name": "Runtime merged lens"
+        "a": "Pipeline Function",
+        "b": "Second Function",
+        "name": "Runtime merged Function"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1764,
+      "durationMs": 1607,
       "errors": []
     },
     {
-      "name": "previewLensComposition",
+      "name": "previewFunctionComposition",
       "platform": "app",
-      "utterance": "please preview ordered lens composition",
+      "utterance": "please preview ordered Function composition",
       "args": {
         "a": "op-a",
         "b": "op-b"
@@ -1484,13 +1896,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1363,
+      "durationMs": 1199,
       "errors": []
     },
     {
-      "name": "stackLenses",
+      "name": "stackFunctions",
       "platform": "app",
-      "utterance": "stack invert then ground as a reusable lens",
+      "utterance": "stack invert then ground as a reusable Function",
       "args": {
         "a": "op-a",
         "b": "op-b",
@@ -1499,30 +1911,30 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens-preview",
+      "typedResult": "function-preview",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1445,
+      "durationMs": 1286,
       "errors": []
     },
     {
-      "name": "saveCompoundLens",
+      "name": "saveCompoundFunction",
       "platform": "app",
-      "utterance": "please save the reviewed compound lens",
+      "utterance": "please save the reviewed compound Function",
       "args": {
         "edit": false
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1842,
+      "durationMs": 1609,
       "errors": []
     },
     {
@@ -1542,7 +1954,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1472,
+      "durationMs": 1249,
       "errors": []
     },
     {
@@ -1560,7 +1972,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1783,
+      "durationMs": 1550,
       "errors": []
     },
     {
@@ -1579,13 +1991,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1979,
+      "durationMs": 2103,
       "errors": []
     },
     {
       "name": "compileGrindDraft",
       "platform": "app",
-      "utterance": "use these five transformations to forge a lens",
+      "utterance": "use these five transformations to forge a Function",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1595,13 +2007,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2026,
+      "durationMs": 1895,
       "errors": []
     },
     {
       "name": "testGrindDraft",
       "platform": "app",
-      "utterance": "test the forged lens",
+      "utterance": "test the forged Function",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1611,7 +2023,7 @@
       "persistence": "not-applicable",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2320,
+      "durationMs": 2069,
       "errors": []
     },
     {
@@ -1629,29 +2041,29 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2259,
+      "durationMs": 2104,
       "errors": []
     },
     {
-      "name": "shapeForgedLens",
+      "name": "shapeForgedFunction",
       "platform": "app",
-      "utterance": "please open the forged lens in the tree editor",
+      "utterance": "please open the forged Function in the process editor",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 2349,
+      "durationMs": 2215,
       "errors": []
     },
     {
       "name": "rackSearch",
       "platform": "app",
-      "utterance": "find my argument lenses",
+      "utterance": "find my argument Functions",
       "args": {
         "query": "Audit"
       },
@@ -1663,13 +2075,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1410,
+      "durationMs": 1257,
       "errors": []
     },
     {
       "name": "rackFilter",
       "platform": "app",
-      "utterance": "please filter and sort the lens rack",
+      "utterance": "please filter and sort the library rack",
       "args": {
         "type": "all",
         "sort": "recent"
@@ -1682,71 +2094,71 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1429,
+      "durationMs": 1297,
       "errors": []
     },
     {
-      "name": "pinLens",
+      "name": "pinFunction",
       "platform": "app",
-      "utterance": "please pin or unpin a rack lens",
+      "utterance": "please pin or unpin a rack Function",
       "args": {
-        "lens": "op-a",
+        "function": "op-pipeline",
         "pinned": true
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1397,
+      "durationMs": 1296,
       "errors": []
     },
     {
-      "name": "archiveLens",
+      "name": "archiveFunction",
       "platform": "app",
-      "utterance": "please archive a lens without deleting it",
+      "utterance": "please archive a Function without deleting it",
       "args": {
-        "lens": "op-a"
+        "function": "op-pipeline"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1455,
+      "durationMs": 1264,
       "errors": []
     },
     {
-      "name": "restoreLens",
+      "name": "restoreFunction",
       "platform": "app",
-      "utterance": "please restore an archived lens",
+      "utterance": "please restore an archived Function",
       "args": {
-        "lens": "op-a"
+        "function": "op-pipeline"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1714,
+      "durationMs": 2286,
       "errors": []
     },
     {
-      "name": "editLensByInstruction",
+      "name": "editFunctionByInstruction",
       "platform": "app",
-      "utterance": "please rewrite a lens from an instruction",
+      "utterance": "please rewrite a Function from an instruction",
       "args": {
-        "op": "op-a",
-        "instruction": "Make the lens compare evidence"
+        "function": "op-pipeline",
+        "instruction": "Make the Function compare evidence"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1756,31 +2168,31 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1546,
+      "durationMs": 1407,
       "errors": []
     },
     {
-      "name": "newGenerator",
+      "name": "createLens",
       "platform": "app",
-      "utterance": "create a new generator",
+      "utterance": "create a New Chat Lens with no context",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "generator",
+      "typedResult": "lens",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1645,
+      "durationMs": 1619,
       "errors": []
     },
     {
-      "name": "attachToGenerator",
+      "name": "addLensMaterial",
       "platform": "app",
-      "utterance": "attach this observation to my generator",
+      "utterance": "attach this observation to my Lens",
       "args": {
-        "generator": "generator-a",
+        "lens": "generator-a",
         "target": "claim"
       },
       "planner": "canonical adaptive plan parsed and validated",
@@ -1791,16 +2203,16 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1777,
+      "durationMs": 1644,
       "errors": []
     },
     {
-      "name": "graduateGenerator",
+      "name": "nameLens",
       "platform": "app",
-      "utterance": "please name a mature generator",
+      "utterance": "name this emerging Lens evidence-first",
       "args": {
-        "generator": "generator-a",
-        "name": "Graduated runtime generator"
+        "lens": "generator-a",
+        "name": "Named runtime Lens"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1810,15 +2222,15 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1665,
+      "durationMs": 1772,
       "errors": []
     },
     {
-      "name": "probeGenerator",
+      "name": "probeLens",
       "platform": "app",
-      "utterance": "please probe a generator in another domain",
+      "utterance": "view this Lens in the healthcare domain",
       "args": {
-        "generator": "generator-a",
+        "lens": "generator-a",
         "domain": "music"
       },
       "planner": "canonical adaptive plan parsed and validated",
@@ -1829,25 +2241,25 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1630,
+      "durationMs": 1653,
       "errors": []
     },
     {
-      "name": "makeLensFromGenerator",
+      "name": "inferFunctionFromLens",
       "platform": "app",
-      "utterance": "please craft a lens from a generator",
+      "utterance": "infer a reusable Function from this Lens",
       "args": {
-        "generator": "generator-a"
+        "lens": "generator-a"
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1663,
+      "durationMs": 1640,
       "errors": []
     },
     {
@@ -1863,7 +2275,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1340,
+      "durationMs": 1435,
       "errors": []
     },
     {
@@ -1879,13 +2291,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1381,
+      "durationMs": 1250,
       "errors": []
     },
     {
-      "name": "clearUserLenses",
+      "name": "clearFunctions",
       "platform": "app",
-      "utterance": "please clear user lenses after confirmation",
+      "utterance": "please clear user Functions after confirmation",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1895,13 +2307,13 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1395,
+      "durationMs": 1229,
       "errors": []
     },
     {
-      "name": "clearGenerators",
+      "name": "clearLenses",
       "platform": "app",
-      "utterance": "please clear generators after confirmation",
+      "utterance": "please clear contextual Lenses after confirmation",
       "args": {},
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
@@ -1911,7 +2323,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1412,
+      "durationMs": 1448,
       "errors": []
     },
     {
@@ -1932,7 +2344,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": "director-ghost-cursor completed",
       "status": "passed",
-      "durationMs": 1339,
+      "durationMs": 1187,
       "errors": []
     },
     {
@@ -1944,6 +2356,51 @@
       "schema": "pass",
       "runtimeHandler": "invoked",
       "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalSaveAs",
+      "platform": "extension",
+      "utterance": "save this page selection as…",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-save-as",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsMove",
+      "platform": "extension",
+      "utterance": "save this text as a Move",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsLens",
+      "platform": "extension",
+      "utterance": "collect these in a Lens",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -1966,11 +2423,11 @@
       "errors": []
     },
     {
-      "name": "queueExternalLens",
+      "name": "queueExternalAction",
       "platform": "extension",
-      "utterance": "please queue a lens in the external page stack without running it",
+      "utterance": "please queue a Move or Function in the external action stack without running it",
       "args": {
-        "lens": "fixture"
+        "action": "fixture"
       },
       "planner": "canonical extension plan",
       "schema": "pass",
@@ -1983,11 +2440,11 @@
       "errors": []
     },
     {
-      "name": "setExternalGenerator",
+      "name": "setExternalLensContext",
       "platform": "extension",
-      "utterance": "please set the external generator destination without mutating it",
+      "utterance": "use the evidence Lens as context",
       "args": {
-        "generator": "fixture"
+        "lens": "fixture"
       },
       "planner": "canonical extension plan",
       "schema": "pass",
@@ -2132,7 +2589,7 @@
     {
       "name": "openExternalBeforeAfter",
       "platform": "extension",
-      "utterance": "please open the compact external before-and-after capture workflow",
+      "utterance": "please open compact external before-and-after learning",
       "args": {},
       "planner": "canonical extension plan",
       "schema": "pass",
@@ -2165,7 +2622,7 @@
     {
       "name": "inferExternalBeforeAfter",
       "platform": "extension",
-      "utterance": "please infer and sync a lens from the explicit external before-and-after slots",
+      "utterance": "please infer and sync a Move or Function from explicit external examples",
       "args": {},
       "planner": "canonical extension plan",
       "schema": "pass",

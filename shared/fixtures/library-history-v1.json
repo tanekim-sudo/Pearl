@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "objects": [
+    {
+      "id": "legacy-atomic",
+      "kind": "function",
+      "name": "Rewrite",
+      "prompt": "Rewrite clearly.",
+      "outputSpec": {"version": 1, "machineKind": "text", "semanticType": "clear text"}
+    },
+    {
+      "id": "legacy-process",
+      "kind": "lens",
+      "name": "Research then summarize",
+      "steps": ["legacy-atomic"],
+      "historicalUnknown": {"preserve": true}
+    },
+    {
+      "id": "legacy-context",
+      "kind": "generator",
+      "title": "Evidence",
+      "items": [{"id": "e1", "text": "Prefer primary evidence."}],
+      "spatial": {"e1": {"x": 10, "y": 20}}
+    }
+  ]
+}

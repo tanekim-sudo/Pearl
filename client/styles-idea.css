@@ -5635,6 +5635,14 @@ body.director-running .idea-app {
     transform 0.22s var(--ease-out, ease);
 }
 
+/* Editors and decision modals own input while open; the companion remains
+   visible but must never intercept their controls. */
+body:has(.modal-scrim) .companion-panel,
+body:has(.fn-editor-fullscreen) .companion-panel {
+  z-index: 50;
+  pointer-events: none;
+}
+
 .companion-panel.playing {
   width: min(220px, calc(100vw - 24px));
   max-height: 54px;

@@ -67,3 +67,101 @@ export async function mergeRemoteLibrary(remote = {}) {
   }
   return writeLocalLibrary({ ...current, operators, generators });
 }
+
+export async function saveCapturedMove(fragments = [], input = {}) {
+  const current = await readLocalLibrary();
+  const prompt = fragments.map((fragment) => String(fragment.quote || "")).join(input.separator ?? "\n\n");
+  if (!prompt) throw new Error("capture text before making a Move");
+  const normalized = prompt.replace(/\r\n/g, "\n").trim();
+  const duplicate = current.operators.find((operator) =>
+    (operator.libraryKind === "move" || operator.kind !== "pipeline")
+    && String(operator.prompt || "").replace(/\r\n/g, "\n").trim() === normalized
+  );
+  if (duplicate) return { library: current, object: duplicate, duplicate: true };
+  const now = Date.now();
+  const id = crypto.randomUUID();
+  const object = {
+    id,
+    stableId: id,
+    version: 1,
+    kind: "prompt",
+    libraryKind: "move",
+    schemaVersion: 2,
+    name: String(input.name || prompt.split(/\r?\n/)[0] || "Captured Move").slice(0, 80),
+    prompt,
+    description: "One instruction · captured verbatim from page text",
+    inputRequirements: { type: "text", arity: 1 },
+    outputSpec: input.outputSpec || { version: 1, mode: "override", semanticType: "text", machineKind: "text", cardinality: { min: 1, max: 1 } },
+    provenance: { private: true, fragmentIds: fragments.map((fragment) => fragment.id) },
+    createdAt: now,
+    updatedAt: now,
+  };
+  const library = await writeLocalLibrary({ ...current, operators: [...current.operators, object] });
+  return { library, object, duplicate: false };
+}
+
+export async function saveCapturedLens(fragments = [], input = {}) {
+  if (!fragments.length) throw new Error("capture material before making a Lens");
+  const current = await readLocalLibrary();
+  const now = Date.now();
+  const id = crypto.randomUUID();
+  const object = {
+    id,
+    stableId: id,
+    version: 1,
+    kind: "lens",
+    libraryKind: "lens",
+    schemaVersion: 2,
+    name: String(input.name || fragments[0]?.quote || "Page material").slice(0, 80),
+    material: fragments.map((fragment) => ({
+      id: fragment.id,
+      content: fragment.quote,
+      provenance: fragment.provenance,
+    })),
+    contextPolicy: "bounded",
+    contextBudget: 24_000,
+    contextGraph: { material: fragments.map((fragment) => ({ id: fragment.id, content: fragment.quote, provenance: fragment.provenance })), placements: [], relationships: [] },
+    inclusionPolicy: { private: true, includeSources: true, excludeSensitive: true },
+    structure: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+  const library = await writeLocalLibrary({ ...current, generators: [...current.generators, object] });
+  return { library, object };
+}
+
+export async function saveTranscriptCandidates(result = {}, kinds = []) {
+  const current = await readLocalLibrary();
+  const selected = new Set(kinds);
+  const operators = [...current.operators];
+  const lenses = [...current.generators];
+  const fingerprint = result.transcript?.fingerprint || "";
+  const learnedFrom = { kind: "llm-transcript", fingerprint, messageCount: result.transcript?.messageCount || 0, private: true };
+  const move = result.candidates?.move;
+  if (selected.has("move") && move?.supported && move.prompt) {
+    if (!operators.some((entry) => entry.learnedFrom?.fingerprint === fingerprint && entry.libraryKind === "move")) {
+      const id = crypto.randomUUID();
+      operators.push({ id, stableId: id, version: 1, kind: "prompt", libraryKind: "move", schemaVersion: 2, top: true, name: move.name || "Learned Move", prompt: move.prompt, outputSpec: move.outputSpec, learnedFrom, createdAt: Date.now(), updatedAt: Date.now() });
+    }
+  }
+  const fn = result.candidates?.function;
+  if (selected.has("function") && fn?.supported && fn.steps?.length) {
+    if (!operators.some((entry) => entry.learnedFrom?.fingerprint === fingerprint && entry.libraryKind === "function")) {
+      const children = fn.steps.map((step) => {
+        const id = crypto.randomUUID();
+        return { id, stableId: id, version: 1, kind: "prompt", libraryKind: "move", top: false, name: step.name || "Step", prompt: step.prompt || step.name };
+      });
+      const id = crypto.randomUUID();
+      operators.push(...children, { id, stableId: id, version: 1, kind: "pipeline", libraryKind: "function", schemaVersion: 2, top: true, name: fn.name || "Learned Function", steps: children.map((entry) => entry.id), outputSpec: fn.outputSpec, learnedFrom, createdAt: Date.now(), updatedAt: Date.now() });
+    }
+  }
+  const lens = result.candidates?.lens;
+  if (selected.has("lens") && lens?.supported) {
+    if (!lenses.some((entry) => entry.learnedFrom?.fingerprint === fingerprint)) {
+      const id = crypto.randomUUID();
+      const material = (lens.material || []).map((entry, index) => ({ id: `${id}:m:${index}`, content: typeof entry === "string" ? entry : entry.content || "" }));
+      lenses.push({ id, stableId: id, version: 1, kind: "lens", libraryKind: "lens", schemaVersion: 2, name: lens.name || "Learned Lens", contextPolicy: lens.contextPolicy || "bounded", contextBudget: lens.contextBudget || 24_000, material, contextGraph: { material, placements: [], relationships: [] }, learnedFrom, createdAt: Date.now(), updatedAt: Date.now() });
+    }
+  }
+  return writeLocalLibrary({ ...current, operators, generators: lenses });
+}

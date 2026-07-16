@@ -3,7 +3,16 @@ import { apiRequest, authStatus, login, openArtifact } from "./api-client.js";
 import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
-import { importLibraryFile, mergeRemoteLibrary, previewLibraryFile, readLocalLibrary, writeLocalLibrary } from "./library-store.js";
+import {
+  importLibraryFile,
+  mergeRemoteLibrary,
+  previewLibraryFile,
+  readLocalLibrary,
+  saveCapturedMove,
+  saveCapturedLens,
+  saveTranscriptCandidates,
+  writeLocalLibrary,
+} from "./library-store.js";
 import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
 import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../../shared/before-after-examples.js";
 
@@ -37,7 +46,7 @@ async function sendPage(type, payload = {}) {
 async function executeGo(payload) {
   const session = await readSession();
   if (!session.fragments.length) throw new Error("highlight material before GO");
-  if (!session.queue.length && !session.generator) throw new Error("queue a lens or generator before GO");
+  if (!session.queue.length && !session.generator) throw new Error("queue a Move/Function action or Lens context before GO");
   const runId = payload.runId || crypto.randomUUID();
   const controller = new AbortController();
   runs.set(runId, controller);
@@ -85,6 +94,17 @@ async function handle(message) {
     return clearPageMaterial();
   }
   if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
+  if (type === "save-capture-as-move") return saveCapturedMove(session.fragments, payload);
+  if (type === "save-capture-as-lens") return saveCapturedLens(session.fragments, payload);
+  if (type === "infer-transcript-artifacts") {
+    if (!String(payload.transcript || "").trim()) throw new Error("paste transcript text explicitly");
+    return apiRequest("/api/infer-transcript-artifacts", {
+      method: "POST",
+      body: { transcript: payload.transcript, requested: payload.requested || "all", source: "extension-explicit" },
+      idempotencyKey: payload.idempotencyKey || crypto.randomUUID(),
+    });
+  }
+  if (type === "save-transcript-artifacts") return saveTranscriptCandidates(payload.result, payload.kinds || []);
   if (type === "queue-lens") {
     if (!payload.lens?.id) throw new Error("lens id required");
     const queue = [...session.queue.filter((entry) => entry.id !== payload.lens.id), payload.lens];

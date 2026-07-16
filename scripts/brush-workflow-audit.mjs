@@ -2,12 +2,13 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 
-const BASE = process.env.AUDIT_URL || "http://localhost:5173";
+const BASE = process.env.AUDIT_URL || "http://127.0.0.1:5173";
 const OUT = path.resolve("audit-shots/brush-workflow");
 fs.mkdirSync(OUT, { recursive: true });
 
 const checks = [];
 const errors = [];
+let executionCalls = 0;
 const check = (name, ok, detail = "") => {
   checks.push({ name, ok: Boolean(ok), detail });
   console.log(`${ok ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
@@ -32,6 +33,14 @@ const page = await context.newPage();
 page.on("pageerror", (error) => errors.push(error.message));
 
 try {
+  await page.route("**/api/run", async (route) => {
+    executionCalls += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ outputs: ["Contextual runtime output"] }),
+    });
+  });
   await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("lens.onboarded.v1", "1");
@@ -56,7 +65,22 @@ try {
     localStorage.setItem("lens.board.camera.v1", JSON.stringify({ x: 100, y: 50, scale: 0.78 }));
     localStorage.setItem(
       "lens.lenses.v2",
-      JSON.stringify([{ id: "audit-generator", title: "Evidence garden", items: [], createdAt: Date.now() }])
+      JSON.stringify([{
+        id: "audit-generator",
+        stableId: "audit-generator",
+        version: 1,
+        schemaVersion: 2,
+        kind: "lens",
+        libraryKind: "lens",
+        title: "Evidence garden",
+        name: "Evidence garden",
+        contextPolicy: "bounded",
+        contextBudget: 24000,
+        inclusionPolicy: { private: true, includeSources: true, excludeSensitive: true },
+        contextGraph: { material: [], relationships: [], placements: [] },
+        items: [],
+        createdAt: Date.now()
+      }])
     );
   });
   await page.goto(BASE);
@@ -87,6 +111,10 @@ try {
 
   await page.keyboard.press("Escape");
   check("Escape clears pending before marks", !(await primitive.evaluate((el) => el.classList.contains("brush-armed"))) && (await page.locator(".omni-highlight-bar").count()) === 1);
+  if (await page.getByLabel("Disarm brush target").isVisible().catch(() => false)) {
+    await page.getByLabel("Disarm brush target").click();
+    await page.waitForTimeout(120);
+  }
   await page.keyboard.press("Escape");
 
   await brushTool.click();
@@ -101,13 +129,22 @@ try {
     const records = JSON.parse(localStorage.getItem("lens.lenses.v2") || "[]");
     return records.find((entry) => entry.id === "audit-generator")?.items?.length || 0;
   });
-  check("generator waits before GO", (await readGeneratorItems()) === 0);
-  check("generator destination shows GO", await page.locator(".brush-go").isVisible());
+  const queuedLabels = () => page.locator(".omni-highlight-stack-chip").allTextContents();
+  check("Lens context remains immutable while queued", (await readGeneratorItems()) === 0);
+  const contextOnlyGoCount = await page.locator(".brush-go:visible").count();
+  check("Lens context alone cannot execute", contextOnlyGoCount === 0, `${contextOnlyGoCount} GO · ${(await queuedLabels()).join(" | ")}`);
+  await primitive.hover();
+  await primitive.locator(".rail-brush-btn").click();
+  await page.waitForTimeout(120);
+  const contextualActionGoCount = await page.locator(".brush-go:visible").count();
+  check("Move plus Lens context shows GO", contextualActionGoCount === 1, `${contextualActionGoCount} GO · ${(await queuedLabels()).join(" | ")}`);
   await shot(page, "highlight-first-generator-queued");
-  await page.locator(".brush-go").click();
-  await page.waitForTimeout(180);
+  const callsBeforeContextRun = executionCalls;
+  await page.locator(".brush-go:visible").click();
+  await page.waitForTimeout(500);
   const generatorItems = await readGeneratorItems();
-  check("GO commits generator exactly once", generatorItems === 1, `${generatorItems} item`);
+  check("GO applies action without mutating Lens context", generatorItems === 0, `${generatorItems} context mutations`);
+  check("contextual action commits exactly once", executionCalls === callsBeforeContextRun + 1, `${callsBeforeContextRun} → ${executionCalls} model calls`);
   check("successful GO clears pending stack", (await page.locator(".omni-highlight-stack-chip").count()) === 0);
   await shot(page, "generator-after-go");
 
@@ -116,7 +153,10 @@ try {
   await generator.hover();
   await generator.locator(".rail-brush-btn").focus();
   await page.keyboard.press("Enter");
-  check("keyboard can queue generator", await generator.evaluate((el) => el.classList.contains("brush-armed")));
+  check("keyboard can queue Lens context", await generator.evaluate((el) => el.classList.contains("brush-armed")));
+  await primitive.hover();
+  await primitive.locator(".rail-brush-btn").click();
+  await page.waitForTimeout(120);
 
   await page.setViewportSize({ width: 1080, height: 720 });
   await page.waitForTimeout(150);
@@ -140,7 +180,7 @@ ${passed}/${checks.length} visible-UI checks passed.
 - Lens-first and highlight-first only build one pending state; neither a card click nor stroke executes.
 - GO appears only with material plus a valid pending action and is the sole mutation boundary.
 - Escape clears pending operations before following the established selection-clear contract.
-- A generator remains unchanged until GO, then receives the selected source exactly once.
+- Lens context remains immutable; GO requires and executes a Move/Function action with that context.
 - Keyboard activation, SVG accessible naming, narrow layout, and runtime page errors are checked.
 - GO commits are keyed in the application pipeline, so duplicate delivery is idempotent.
 - AI output content/latency remains model-provider dependent and is covered structurally by the repository transform/branch tests.
