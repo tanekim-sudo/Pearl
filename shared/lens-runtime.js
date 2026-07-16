@@ -6,6 +6,7 @@ import {
   previewCompositionSequence,
 } from "./lens-grammar.js";
 import { normalizeOutputSpec, typedExecutionOutputs } from "./output-specifications.js";
+import { normalizeGenerationPlan } from "./generation-plan.js";
 
 export const LENS_RUNTIME_VERSION = 1;
 export const MATERIAL_FRAGMENT_VERSION = 1;
@@ -137,7 +138,7 @@ export function composeBrushStack(queue, resolveOperator, opMap, options = {}) {
   };
 }
 
-export function createExecutionRequest({ fragments, queue, generator = null, idempotencyKey, disclosedCharacters }) {
+export function createExecutionRequest({ fragments, queue, generator = null, idempotencyKey, disclosedCharacters, generationPlan }) {
   if (!fragments?.length) throw new Error("at least one fragment is required");
   if (!queue?.length && !generator) throw new Error("at least one lens or generator is required");
   const characters = fragments.reduce((sum, entry) => sum + entry.quote.length, 0);
@@ -154,6 +155,7 @@ export function createExecutionRequest({ fragments, queue, generator = null, ide
       ...(entry.outputSpec ? { outputSpec: normalizeOutputSpec(entry.outputSpec, entry) } : {}),
     })),
     generator: generator ? { id: generator.id, mode: generator.mode || "source" } : null,
+    generationPlan: normalizeGenerationPlan(generationPlan || queue.at(-1)?.generationPlan || {}),
     disclosure: {
       characters,
       origins: [...new Set(fragments.map((entry) => entry.provenance.origin))],

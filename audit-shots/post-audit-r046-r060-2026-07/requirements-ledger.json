@@ -1,0 +1,491 @@
+{
+  "generatedAt": "2026-07-16T06:42:09.753Z",
+  "counts": {
+    "total": 60,
+    "historicalImplemented": 38,
+    "superseded": 3,
+    "external": 4,
+    "postAuditImplemented": 15,
+    "localUnresolved": 0
+  },
+  "requirements": [
+    {
+      "id": "R-001",
+      "title": "Historical requirement 1",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-002",
+      "title": "Historical requirement 2",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-003",
+      "title": "Historical requirement 3",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-004",
+      "title": "Historical requirement 4",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-005",
+      "title": "Historical requirement 5",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-006",
+      "title": "Historical requirement 6",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-007",
+      "title": "Historical requirement 7",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-008",
+      "title": "Historical requirement 8",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-009",
+      "title": "Historical requirement 9",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-010",
+      "title": "Historical requirement 10",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-011",
+      "title": "Historical requirement 11",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-012",
+      "title": "Historical requirement 12",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-013",
+      "title": "Historical requirement 13",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-014",
+      "title": "Historical requirement 14",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-015",
+      "title": "Historical requirement 15",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-016",
+      "title": "Historical requirement 16",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-017",
+      "title": "Historical requirement 17",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-018",
+      "title": "Historical requirement 18",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-019",
+      "title": "Historical requirement 19",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-020",
+      "title": "Historical requirement 20",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-021",
+      "title": "Historical requirement 21",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-022",
+      "title": "Historical requirement 22",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-023",
+      "title": "Historical requirement 23",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-024",
+      "title": "Historical requirement 24",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-025",
+      "title": "Historical requirement 25",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-026",
+      "title": "Historical requirement 26",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-027",
+      "title": "Historical requirement 27",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-028",
+      "title": "Historical requirement 28",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-029",
+      "title": "Historical requirement 29",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-030",
+      "title": "Historical requirement 30",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-031",
+      "title": "Historical requirement 31",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-032",
+      "title": "Historical requirement 32",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-033",
+      "title": "Historical requirement 33",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-034",
+      "title": "Historical requirement 34",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-035",
+      "title": "Historical requirement 35",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-036",
+      "title": "Historical requirement 36",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-037",
+      "title": "Historical requirement 37",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-038",
+      "title": "Historical requirement 38",
+      "status": "implemented",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-039",
+      "title": "Historical requirement 39",
+      "status": "superseded",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-040",
+      "title": "Historical requirement 40",
+      "status": "superseded",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-041",
+      "title": "Historical requirement 41",
+      "status": "superseded",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-042",
+      "title": "Historical requirement 42",
+      "status": "external",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-043",
+      "title": "Historical requirement 43",
+      "status": "external",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-044",
+      "title": "Historical requirement 44",
+      "status": "external",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-045",
+      "title": "Historical requirement 45",
+      "status": "external",
+      "source": "classification retained from completed independent forensic audit",
+      "localUnresolved": false
+    },
+    {
+      "id": "R-046",
+      "title": "Gateway streaming, catalog, preferences, provenance",
+      "status": "implemented",
+      "evidence": [
+        "server/model-gateway.js",
+        "server/model-gateway.test.js",
+        "api/models.js",
+        "client/components/LensTreeEditor.jsx",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-047",
+      "title": "Voice provider and VAD parity",
+      "status": "implemented",
+      "evidence": [
+        "client/lib/companion-voice.js",
+        "client/components/CompanionChat.jsx",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-048",
+      "title": "Checkpointed critique sessions",
+      "status": "implemented",
+      "evidence": [
+        "shared/critique-session.js",
+        "client/App.jsx",
+        "extension/src/background/service-worker.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-049",
+      "title": "Canonical companion command parity",
+      "status": "implemented",
+      "evidence": [
+        "client/lib/companion-capabilities.js",
+        "scripts/companion-capability-runtime-audit.mjs"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-050",
+      "title": "Reachable universal 3×3 composition",
+      "status": "implemented",
+      "evidence": [
+        "shared/composition-algebra.js",
+        "shared/domain-commands.js",
+        "client/App.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-051",
+      "title": "Material bridges in execution",
+      "status": "implemented",
+      "evidence": [
+        "shared/material.js",
+        "server/executor.js",
+        "shared/lens-runtime.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-052",
+      "title": "Move capture from real use",
+      "status": "implemented",
+      "evidence": [
+        "shared/instruction-events.js",
+        "client/App.jsx",
+        "extension/src/background/library-store.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-053",
+      "title": "Instruction execution journal",
+      "status": "implemented",
+      "evidence": [
+        "shared/instruction-events.js",
+        "shared/instruction-events.test.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-054",
+      "title": "Inspectable perceptual Lens encoding",
+      "status": "implemented",
+      "evidence": [
+        "shared/lens-perceptual-model.js",
+        "server/lens-encoder.js",
+        "client/components/LensSettingsDialog.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-055",
+      "title": "Candidate plan and live model assignment",
+      "status": "implemented",
+      "evidence": [
+        "shared/generation-plan.js",
+        "client/components/LensTreeEditor.jsx",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-056",
+      "title": "Streaming candidate branches",
+      "status": "implemented",
+      "evidence": [
+        "server/generation-runner.js",
+        "server/generation-runner.test.js",
+        "api/generate-batch.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-057",
+      "title": "Taste navigation and child generation",
+      "status": "implemented",
+      "evidence": [
+        "shared/generation-plan.js",
+        "client/App.jsx",
+        "extension/src/background/service-worker.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-058",
+      "title": "Semantic screen and paper interpretation",
+      "status": "implemented",
+      "evidence": [
+        "shared/workspace-observation.js",
+        "client/lib/companion-observation.js",
+        "client/App.jsx"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-059",
+      "title": "Authorized ephemeral visual capture",
+      "status": "implemented",
+      "evidence": [
+        "client/App.jsx",
+        "extension/src/background/service-worker.js"
+      ],
+      "localUnresolved": false
+    },
+    {
+      "id": "R-060",
+      "title": "Integrated release verification",
+      "status": "implemented",
+      "evidence": [
+        "scripts/release-check.mjs",
+        "scripts/companion-capability-runtime-audit.mjs"
+      ],
+      "localUnresolved": false
+    }
+  ]
+}

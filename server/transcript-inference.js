@@ -23,6 +23,8 @@ export async function inferTranscriptArtifacts(input = {}) {
   );
   const prompt = transcriptInferencePrompt(transcript, requested);
   const response = await runPrompt({
+    profile: "transcript_extraction",
+    model: input.modelPreference || "auto",
     system: prompt.system,
     prompt: "Analyze the bounded transcript evidence and return the requested canonical artifact candidates as strict JSON.",
     text: JSON.stringify({ requested, chunks: prompt.transcript }),
@@ -34,6 +36,9 @@ export async function inferTranscriptArtifacts(input = {}) {
   const result = validateTranscriptInference(extractJson(raw), requested);
   return {
     ...result,
+    model: response.model,
+    provenance: response.provenance,
+    usage: response.usage,
     transcript: {
       source: transcript.source,
       format: transcript.format,

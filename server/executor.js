@@ -10,7 +10,7 @@ import { RESOLVE_SYSTEM, RESEARCH_SYSTEM, SYNTHESIZE_SYSTEM } from "./prompts.js
 
 export { compileExecutionPlan, shouldEnableResearch } from "./plan.js";
 
-export async function runPhase(phaseId, plan, context, { operators, op, image, onStep } = {}) {
+export async function runPhase(phaseId, plan, context, { operators, op, image, onStep, modelPreference } = {}) {
   const phase = plan.phases.find((p) => p.id === phaseId);
   if (!phase) {
     const err = new Error(`Unknown phase: ${phaseId}`);
@@ -22,6 +22,8 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
 
   if (phaseId === "resolve") {
     const { outputs } = await runPrompt({
+      profile: "function_execution",
+      model: modelPreference || op?.modelPreference || "auto",
       prompt: phase.prompt,
       text: buildPhaseMaterial("resolve", context),
       image,
@@ -41,6 +43,8 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
   if (phaseId === "research") {
     const prompt = buildResearchPrompt(context, plan);
     const { outputs } = await runPrompt({
+      profile: "function_execution",
+      model: modelPreference || op?.modelPreference || "auto",
       prompt,
       text: buildPhaseMaterial("research", context),
       image: null,
@@ -68,7 +72,9 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
       ? buildFastMaterial(context) || buildSimpleMaterial(context.material)
       : buildPhaseMaterial("synthesize", context);
 
-    const { outputs } = await runPrompt({
+    const response = await runPrompt({
+      profile: plan.fastPath ? "move_execution" : "function_execution",
+      model: modelPreference || op?.modelPreference || "auto",
       prompt: phase.prompt,
       text,
       image,
@@ -79,7 +85,12 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
       temperature: fast ? 0.2 : 0.4,
       compact: fast,
     });
-    return { output: outputs[0] || "" };
+    return {
+      output: response.outputs[0] || "",
+      model: response.model,
+      usage: response.usage,
+      provenance: response.provenance,
+    };
   }
 
   const err = new Error(`Unhandled phase: ${phaseId}`);
@@ -88,7 +99,7 @@ export async function runPhase(phaseId, plan, context, { operators, op, image, o
 }
 
 /** Run full compiled plan — one server-side loop, no per-phase HTTP hops. */
-export async function runExecutionPlan({ op, opMap, operators, material, image, onStep }) {
+export async function runExecutionPlan({ op, opMap, operators, material, image, onStep, modelPreference }) {
   const plan = compileExecutionPlan(op, opMap, material);
   const context = {
     material: material || "",
@@ -99,7 +110,7 @@ export async function runExecutionPlan({ op, opMap, operators, material, image, 
 
   for (const phase of plan.phases) {
     try {
-      const result = await runPhase(phase.id, plan, context, { operators, op, image, onStep });
+      const result = await runPhase(phase.id, plan, context, { operators, op, image, onStep, modelPreference });
       if (phase.id === "resolve") {
         context.subject = result.subject || context.subject;
         context.resolveRaw = result.resolveRaw || result.output;
@@ -110,7 +121,14 @@ export async function runExecutionPlan({ op, opMap, operators, material, image, 
       if (phase.id === "synthesize") {
         const output = (result.output || "").trim();
         if (!output) throw Object.assign(new Error("Empty deliverable."), { status: 500 });
-        return { output, plan, phasesRun: plan.phases.map((p) => p.id) };
+        return {
+          output,
+          plan,
+          phasesRun: plan.phases.map((p) => p.id),
+          model: result.model,
+          usage: result.usage,
+          provenance: result.provenance,
+        };
       }
     } catch (err) {
       if (phase.id === "research") {

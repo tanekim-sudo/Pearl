@@ -5,6 +5,7 @@ import { assertTrustedSender, createMessage, validateMessage } from "../core/mes
 import { BrowserPlatform } from "../platform/browser-platform.js";
 import {
   importLibraryFile,
+  composeLocalLibraryObjects,
   mergeRemoteLibrary,
   previewLibraryFile,
   readLocalLibrary,
@@ -15,6 +16,8 @@ import {
 } from "./library-store.js";
 import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
 import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../../shared/before-after-examples.js";
+import { normalizeTasteFeedback } from "../../../shared/generation-plan.js";
+import { createCritiqueSession } from "../../../shared/critique-session.js";
 
 const runs = new Map();
 
@@ -56,6 +59,7 @@ async function executeGo(payload) {
     generator: session.generator,
     idempotencyKey: payload.idempotencyKey || runId,
     disclosedCharacters: payload.disclosedCharacters,
+    generationPlan: payload.generationPlan,
   });
   await writeSession({ activeRunId: runId });
   try {
@@ -80,6 +84,8 @@ async function handle(message) {
   const { type, payload } = message;
   const session = await readSession();
   if (type === "get-session") return session;
+  if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
+  if (type === "compose-library-objects") return composeLocalLibraryObjects(payload.a, payload.b, { name: payload.name });
   if (type === "fragments-changed") {
     const byId = new Map(session.fragments.map((entry) => [entry.id, entry]));
     for (const fragment of payload.fragments || []) byId.set(fragment.id, fragment);
@@ -94,6 +100,49 @@ async function handle(message) {
     return clearPageMaterial();
   }
   if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
+  if (type === "capture-visible-tab") {
+    if (payload.authorized !== true) throw new Error("visible-tab capture requires explicit user authorization");
+    const tab = await activeTab(payload.targetTabId);
+    const capture = (globalThis.browser || globalThis.chrome)?.tabs?.captureVisibleTab;
+    if (!capture) throw new Error("visible-tab capture is unavailable in this browser");
+    const image = await capture.call((globalThis.browser || globalThis.chrome).tabs, tab.windowId, { format: "png" });
+    return {
+      version: 1,
+      scope: "visibleTab",
+      ephemeral: true,
+      capturedAt: new Date().toISOString(),
+      tab: { id: tab.id, title: tab.title || "", url: tab.url || "" },
+      image,
+    };
+  }
+  if (type === "critique-start") {
+    const targets = [
+      ...session.fragments.map((entry) => ({ id: entry.id, domain: "visibleTab" })),
+      ...session.results.flatMap((run) => run.outputs.map((entry) => ({ id: entry.id, domain: "ai" }))),
+    ];
+    if (!targets.length) throw new Error("capture material or generate candidates before critique");
+    const critique = createCritiqueSession({ targets });
+    critique.start({ fragments: session.fragments, resultIds: targets.map((entry) => entry.id) });
+    return writeSession({ critiqueSession: critique.snapshot() });
+  }
+  if (type === "critique-ingest") {
+    if (!session.critiqueSession) throw new Error("start critique mode first");
+    const critique = createCritiqueSession({
+      id: session.critiqueSession.id,
+      targets: session.critiqueSession.targets,
+      rememberPreferences: session.critiqueSession.rememberPreferences,
+      snapshot: session.critiqueSession,
+    });
+    const result = critique.ingest(payload.text, { source: "voice", targetSnapshot: payload.targetSnapshot || null });
+    await writeSession({ critiqueSession: critique.snapshot() });
+    return { session: critique.snapshot(), result };
+  }
+  if (type === "critique-stop") {
+    if (!session.critiqueSession) throw new Error("no critique session is active");
+    const critique = createCritiqueSession({ id: session.critiqueSession.id, targets: session.critiqueSession.targets, snapshot: session.critiqueSession });
+    critique.stop();
+    return writeSession({ critiqueSession: critique.snapshot() });
+  }
   if (type === "save-capture-as-move") return saveCapturedMove(session.fragments, payload);
   if (type === "save-capture-as-lens") return saveCapturedLens(session.fragments, payload);
   if (type === "infer-transcript-artifacts") {
@@ -123,6 +172,20 @@ async function handle(message) {
   if (type === "cancel-run") {
     runs.get(payload.runId || session.activeRunId)?.abort();
     return writeSession({ activeRunId: null });
+  }
+  if (type === "taste-feedback") {
+    const feedback = payload.decision === "undecided" ? null : normalizeTasteFeedback(payload);
+    let found = false;
+    const results = session.results.map((run) => ({
+      ...run,
+      outputs: run.outputs.map((output) => {
+        if (output.id !== payload.outputId) return output;
+        found = true;
+        return { ...output, tasteFeedback: feedback };
+      }),
+    }));
+    if (!found) throw new Error("staged candidate not found");
+    return writeSession({ results });
   }
   if (type === "result-action") return sendPage(type, payload);
   if (type === "auth-status") return authStatus();

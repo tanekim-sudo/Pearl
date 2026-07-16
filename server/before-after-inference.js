@@ -58,6 +58,8 @@ Use all examples to find the shared operation. Visuals are supplied in the same 
 
 ${examplesPrompt(examples)}`;
   const response = await runPrompt({
+    profile: "before_after_inference",
+    model: raw.modelPreference || "auto",
     prompt,
     text: "",
     system: SYSTEM,
@@ -81,5 +83,7 @@ ${examplesPrompt(examples)}`;
     exampleCount: examples.length,
     examplesPrivate: normalized.private,
     model: response.model,
+    provenance: response.provenance,
+    usage: response.usage,
   };
 }

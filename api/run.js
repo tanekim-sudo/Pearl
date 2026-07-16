@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     const body =
       typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact } = body;
+    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact, profile, modelPreference } = body;
     const data = await runPrompt({
       prompt,
       text,
@@ -22,6 +22,8 @@ export default async function handler(req, res) {
       research,
       timeoutMs,
       compact,
+      profile,
+      model: modelPreference,
     });
     res.status(200).json(data);
   } catch (err) {

@@ -1,3 +1,5 @@
+import { createWorkspaceObservation, sceneRelationships } from "../../shared/workspace-observation.js";
+
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
@@ -52,6 +54,10 @@ export function buildWorkspaceSnapshot({
   page = null,
   recentHistory = [],
   user = null,
+  scope = "paper",
+  stateRevision = null,
+  focused = null,
+  openEditor = null,
 } = {}) {
   const selected = new Set([...selectedItemIds, ...selectedNodeIds]);
   const highlighted = new Set(highlightedIds);
@@ -59,9 +65,41 @@ export function buildWorkspaceSnapshot({
     ...items.map((value) => conciseObject(value, "paper")),
     ...nodes.map((value) => conciseObject(value, "ai")),
   ];
+  const edges = nodes.slice(0, 250).flatMap((node) => [
+    ...(node.parentId ? [{ id: `${node.parentId}->${node.id}`, fromId: node.parentId, toId: node.id, kind: "parent" }] : []),
+    ...(node.sourceNodeIds || []).map((sourceId) => ({ id: `${sourceId}->${node.id}`, fromId: sourceId, toId: node.id, kind: "source" })),
+  ]);
+  const observationInput = {
+    scope,
+    stateRevision,
+    objects,
+    edges,
+    selectedIds: [...selected],
+    highlightedIds: [...highlighted],
+    camera,
+    viewport,
+    pageRef: page ? { id: page.id, version: page.version || 1 } : null,
+    focus: focused,
+    openEditor,
+    source: { surface: "web", authorizedScope: scope },
+  };
+  const observation = createWorkspaceObservation(observationInput);
+  const viewportObservation = createWorkspaceObservation({ ...observationInput, scope: "viewport" });
+  const paperObservation = createWorkspaceObservation({ ...observationInput, scope: "paper" });
+  const selectionObservation = createWorkspaceObservation({ ...observationInput, scope: "selection" });
   return {
     version: 1,
     observedAt: new Date().toISOString(),
+    observation,
+    observations: {
+      selection: selectionObservation,
+      viewport: viewportObservation,
+      paper: paperObservation,
+    },
+    scene: {
+      viewport: sceneRelationships(viewportObservation),
+      paper: sceneRelationships(paperObservation),
+    },
     objects: objects.slice(0, 500),
     selection: objects.filter((object) => selected.has(object.id)).slice(0, MAX_LIMIT),
     highlighted: objects.filter((object) => highlighted.has(object.id)).slice(0, MAX_LIMIT),
@@ -140,7 +178,9 @@ export function queryWorkspace(snapshot, query, filter = {}) {
     const source = filter.highlighted ? snapshot.highlighted : snapshot.selection;
     return source.slice(0, limit);
   }
-  if (query === "viewport") return snapshot.context;
+  if (query === "viewport") return snapshot.observations?.viewport || snapshot.context;
+  if (query === "paper") return snapshot.observations?.paper || snapshot.objects;
+  if (query === "observation") return snapshot.observations?.[filter.scope || "viewport"] || snapshot.observation;
   if (query === "library") {
     return {
       lenses: snapshot.lenses.slice(0, limit),
@@ -204,6 +244,13 @@ export function workspacePromptContext(snapshot, maxObjects = 30) {
     lenses: snapshot.lenses,
     generators: snapshot.generators,
     context: snapshot.context,
+    observations: {
+      selection: snapshot.observations?.selection,
+      viewport: snapshot.observations?.viewport,
+      paper: snapshot.observations?.paper
+        ? { ...snapshot.observations.paper, objects: snapshot.observations.paper.objects.slice(0, maxObjects) }
+        : null,
+    },
     recentHistory: snapshot.recentHistory,
     user: snapshot.user,
   });

@@ -26,6 +26,15 @@ export const EXTENSION_VERBS = Object.freeze({
   openExternalBeforeAfter: ({ openBeforeAfter }) => openBeforeAfter(),
   setExternalBeforeAfterText: ({ args, setBeforeAfterText }) => setBeforeAfterText(args.side, args.text),
   inferExternalBeforeAfter: ({ inferBeforeAfter }) => inferBeforeAfter(),
+  captureExternalVisibleTab: ({ action }) => action("capture-visible-tab", { authorized: true }),
+  tasteExternalCandidate: ({ args, action, resolveResult }) => action("taste-feedback", {
+    outputId: resolveResult(args.result).id,
+    decision: args.decision === "yes" ? "accepted" : args.decision === "no" ? "rejected" : "undecided",
+  }),
+  startExternalCritique: ({ action }) => action("critique-start"),
+  ingestExternalCritique: ({ args, action }) => action("critique-ingest", { text: args.text }),
+  stopExternalCritique: ({ action }) => action("critique-stop"),
+  composeExternalObjects: ({ args, action }) => action("compose-library-objects", { a: args.a, b: args.b, name: args.name }),
 });
 
 export function validateExtensionVerbParity() {
@@ -62,6 +71,11 @@ export function parseExtensionIntent(text) {
   const setExample = value.match(/^(?:set|use) (before|after)(?: text)? (?:to|as) (.+)$/i);
   if (setExample) return { name: "setExternalBeforeAfterText", args: { side: setExample[1].toLowerCase(), text: setExample[2] } };
   if (/^(?:infer|learn)(?: the)? (?:transformation|move|function)$/i.test(value)) return { name: "inferExternalBeforeAfter", args: {} };
+  if (/^(?:capture|interpret) (?:what is|what's) visible(?: in this tab)?$/i.test(value)) return { name: "captureExternalVisibleTab", args: {} };
+  if (/^start critique(?: mode)?$/i.test(value)) return { name: "startExternalCritique", args: {} };
+  if (/^stop critique(?: mode)?$/i.test(value)) return { name: "stopExternalCritique", args: {} };
+  const critique = value.match(/^critique:\s*(.+)$/i);
+  if (critique) return { name: "ingestExternalCritique", args: { text: critique[1] } };
   if (/^copy (result )?(.+)$/i.test(value)) return { name: "copyExternalResult", args: { result: value.match(/^copy (?:result )?(.+)$/i)[1] } };
   if (/^insert (result )?(.+)$/i.test(value)) return { name: "insertExternalResult", args: { result: value.match(/^insert (?:result )?(.+)$/i)[1] } };
   if (/^replace (with )?(.+)$/i.test(value)) return { name: "replaceExternalSelection", args: { result: value.match(/^replace (?:with )?(.+)$/i)[1] } };

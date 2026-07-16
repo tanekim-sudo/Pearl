@@ -1,12 +1,50 @@
 import { contentFingerprint } from "./lens-grammar.js";
 import { validateLibraryObject } from "./library-objects.js";
+import { LENS_PERCEPTUAL_SECTIONS, normalizePerceptualModel } from "./lens-perceptual-model.js";
 
 export const LENS_CONTEXT_VERSION = 1;
 export const DEFAULT_CONTEXT_BUDGET = 24_000;
 const SENSITIVE = /\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|authorization|cookie)\b/i;
 
 function materialText(item) {
-  return String(item?.content ?? item?.text ?? item?.quote ?? "");
+  const value = item?.content ?? item?.text ?? item?.quote ?? "";
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+const SECTION_LABELS = Object.freeze({
+  notice: "Notice",
+  questions: "Ask",
+  relationships: "Inspect relationships",
+  concepts: "Vocabulary",
+  assumptions: "Assumptions",
+  evidenceStandards: "Evidence standards",
+  scales: "Scales",
+  transformations: "Interpretation",
+  tensions: "Tensions and tradeoffs",
+  blindSpots: "Blind spots and boundaries",
+  counterLenses: "Counter-lenses and falsifiers",
+  preserve: "Preserve and exclude",
+});
+
+function perceptualEntries(lens) {
+  const model = normalizePerceptualModel(lens.perceptualModel);
+  const entries = [];
+  for (const section of LENS_PERCEPTUAL_SECTIONS) {
+    for (const facet of model.sections[section]) {
+      if (!facet.enabled || facet.reviewStatus === "rejected") continue;
+      entries.push({
+        lensId: lens.id,
+        lensVersion: lens.version,
+        section,
+        id: facet.id,
+        priority: (facet.reviewStatus === "confirmed" ? -1_000_000 : 0) + facet.priority,
+        confirmed: facet.reviewStatus === "confirmed",
+        evidenceRefs: facet.evidenceRefs,
+        text: `${SECTION_LABELS[section]}: ${facet.text}${facet.definition ? ` — ${facet.definition}` : ""}`,
+      });
+    }
+  }
+  return entries;
 }
 
 export function compileLensContext(lenses = [], options = {}) {
@@ -19,6 +57,8 @@ export function compileLensContext(lenses = [], options = {}) {
       version: LENS_CONTEXT_VERSION,
       mode: "isolated",
       text: "",
+      sections: [],
+      enabledFacets: [],
       sources: [],
       conflicts: ordered.length > 1 ? [{ type: "empty-overrides", lensId: empty.id, ignoredLensIds: ordered.filter((lens) => lens.id !== empty.id).map((lens) => lens.id) }] : [],
       excluded: [],
@@ -35,7 +75,26 @@ export function compileLensContext(lenses = [], options = {}) {
   const included = [];
   const excluded = [];
   const sources = [];
+  const enabledFacets = [];
   let used = 0;
+  const facets = ordered.flatMap(perceptualEntries).sort((a, b) => a.priority - b.priority);
+  for (const facet of facets) {
+    const remaining = requestedBudget - used;
+    if (remaining <= 0 || facet.text.length > remaining) {
+      excluded.push({ lensId: facet.lensId, facetId: facet.id, section: facet.section, reason: "budget" });
+      continue;
+    }
+    included.push(`[Lens: ${ordered.find((lens) => lens.id === facet.lensId)?.name || "Emerging lens"} · ${facet.section}]\n${facet.text}`);
+    enabledFacets.push({
+      lensId: facet.lensId,
+      lensVersion: facet.lensVersion,
+      facetId: facet.id,
+      section: facet.section,
+      confirmed: facet.confirmed,
+      evidenceRefs: facet.evidenceRefs,
+    });
+    used += facet.text.length;
+  }
   for (const lens of ordered) {
     const material = [...lens.contextGraph.material].sort((a, b) => (Number(a.priority) || 0) - (Number(b.priority) || 0));
     for (const item of material) {
@@ -80,6 +139,11 @@ export function compileLensContext(lenses = [], options = {}) {
     version: LENS_CONTEXT_VERSION,
     mode: "bounded",
     text: included.join("\n\n"),
+    sections: LENS_PERCEPTUAL_SECTIONS.map((section) => ({
+      section,
+      facets: enabledFacets.filter((facet) => facet.section === section),
+    })).filter((entry) => entry.facets.length),
+    enabledFacets,
     characters: used,
     budget: requestedBudget,
     sources,
@@ -87,7 +151,7 @@ export function compileLensContext(lenses = [], options = {}) {
     excluded,
     provenance: {
       lenses: lensRefs,
-      fingerprint: contentFingerprint({ lenses: lensRefs, included, sources, conflicts }),
+      fingerprint: contentFingerprint({ lenses: lensRefs, included, enabledFacets, sources, conflicts }),
     },
   };
 }

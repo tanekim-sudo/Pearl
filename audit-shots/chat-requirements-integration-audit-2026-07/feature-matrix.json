@@ -1,13 +1,87 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-15T06:45:02.638Z",
+  "generatedAt": "2026-07-16T06:45:07.447Z",
   "counts": {
-    "features": 14,
-    "companion": 146,
-    "extension": 18,
-    "commands": 6
+    "features": 18,
+    "companion": 166,
+    "extension": 24,
+    "commands": 17
   },
   "features": [
+    {
+      "id": "observation.workspace",
+      "commands": [
+        "observeWorkspace",
+        "interpretObservationThroughLens"
+      ],
+      "companion": [
+        "transformMaterial",
+        "selectItems",
+        "zoomToItem"
+      ],
+      "extension": [
+        "capturePageSelection",
+        "openExternalArtifact"
+      ],
+      "tests": [
+        "shared/workspace-observation.test.js",
+        "client/lib/companion-observation.test.js"
+      ]
+    },
+    {
+      "id": "generation.taste-branching",
+      "commands": [
+        "setGenerationPlan",
+        "startGenerationBatch",
+        "updateGenerationCandidate",
+        "recordTasteFeedback",
+        "prepareMoreLikeThis"
+      ],
+      "companion": [],
+      "extension": [
+        "pressExternalGo"
+      ],
+      "tests": [
+        "shared/generation-plan.test.js"
+      ]
+    },
+    {
+      "id": "lens.perceptual-encoding",
+      "commands": [
+        "encodeMaterialAsLens",
+        "updateLensPerceptualModel",
+        "applyLensInference"
+      ],
+      "companion": [
+        "createLens",
+        "addLensMaterial",
+        "inferFunctionFromLens"
+      ],
+      "extension": [
+        "saveExternalCaptureAsLens",
+        "setExternalLensContext"
+      ],
+      "tests": [
+        "shared/lens-perceptual-model.test.js"
+      ]
+    },
+    {
+      "id": "composition.universal",
+      "commands": [
+        "composeCanonicalObjects"
+      ],
+      "companion": [
+        "stackFunctions",
+        "saveCompoundFunction"
+      ],
+      "extension": [
+        "queueExternalAction"
+      ],
+      "tests": [
+        "shared/composition-algebra.test.js",
+        "shared/material.test.js"
+      ]
+    },
     {
       "id": "library.move",
       "commands": [

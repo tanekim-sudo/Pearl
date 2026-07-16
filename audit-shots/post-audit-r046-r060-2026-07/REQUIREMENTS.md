@@ -1,0 +1,69 @@
+# Post-audit requirements ledger
+
+- Total groups: 60
+- Historical implemented: 38
+- Superseded: 3
+- Genuinely external: 4
+- Post-audit implemented: 15
+- Local unresolved: 0
+
+- PASS — R-001: Historical requirement 1
+- PASS — R-002: Historical requirement 2
+- PASS — R-003: Historical requirement 3
+- PASS — R-004: Historical requirement 4
+- PASS — R-005: Historical requirement 5
+- PASS — R-006: Historical requirement 6
+- PASS — R-007: Historical requirement 7
+- PASS — R-008: Historical requirement 8
+- PASS — R-009: Historical requirement 9
+- PASS — R-010: Historical requirement 10
+- PASS — R-011: Historical requirement 11
+- PASS — R-012: Historical requirement 12
+- PASS — R-013: Historical requirement 13
+- PASS — R-014: Historical requirement 14
+- PASS — R-015: Historical requirement 15
+- PASS — R-016: Historical requirement 16
+- PASS — R-017: Historical requirement 17
+- PASS — R-018: Historical requirement 18
+- PASS — R-019: Historical requirement 19
+- PASS — R-020: Historical requirement 20
+- PASS — R-021: Historical requirement 21
+- PASS — R-022: Historical requirement 22
+- PASS — R-023: Historical requirement 23
+- PASS — R-024: Historical requirement 24
+- PASS — R-025: Historical requirement 25
+- PASS — R-026: Historical requirement 26
+- PASS — R-027: Historical requirement 27
+- PASS — R-028: Historical requirement 28
+- PASS — R-029: Historical requirement 29
+- PASS — R-030: Historical requirement 30
+- PASS — R-031: Historical requirement 31
+- PASS — R-032: Historical requirement 32
+- PASS — R-033: Historical requirement 33
+- PASS — R-034: Historical requirement 34
+- PASS — R-035: Historical requirement 35
+- PASS — R-036: Historical requirement 36
+- PASS — R-037: Historical requirement 37
+- PASS — R-038: Historical requirement 38
+- SUPERSEDED — R-039: Historical requirement 39
+- SUPERSEDED — R-040: Historical requirement 40
+- SUPERSEDED — R-041: Historical requirement 41
+- EXTERNAL — R-042: Historical requirement 42
+- EXTERNAL — R-043: Historical requirement 43
+- EXTERNAL — R-044: Historical requirement 44
+- EXTERNAL — R-045: Historical requirement 45
+- PASS — R-046: Gateway streaming, catalog, preferences, provenance
+- PASS — R-047: Voice provider and VAD parity
+- PASS — R-048: Checkpointed critique sessions
+- PASS — R-049: Canonical companion command parity
+- PASS — R-050: Reachable universal 3×3 composition
+- PASS — R-051: Material bridges in execution
+- PASS — R-052: Move capture from real use
+- PASS — R-053: Instruction execution journal
+- PASS — R-054: Inspectable perceptual Lens encoding
+- PASS — R-055: Candidate plan and live model assignment
+- PASS — R-056: Streaming candidate branches
+- PASS — R-057: Taste navigation and child generation
+- PASS — R-058: Semantic screen and paper interpretation
+- PASS — R-059: Authorized ephemeral visual capture
+- PASS — R-060: Integrated release verification

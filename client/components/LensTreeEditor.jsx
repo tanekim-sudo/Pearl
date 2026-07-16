@@ -9,6 +9,7 @@ import {
   resetOutputSpec,
   validateOutputSpec,
 } from "../../shared/output-specifications.js";
+import { normalizeGenerationPlan } from "../../shared/generation-plan.js";
 import {
   FN_PALETTE_MIME,
   FN_STEP_MIME,
@@ -85,6 +86,7 @@ export default function LensTreeEditor({
   editor,
   opMap,
   operators,
+  modelCatalog = { models: [] },
   paletteGroups = [],
   onClose,
   onSaveTree,
@@ -110,6 +112,7 @@ export default function LensTreeEditor({
   const [toast, setToast] = useState(null);
   const [strandDrag, setStrandDrag] = useState(null);
   const [outputAdvanced, setOutputAdvanced] = useState(false);
+  const [generationAdvanced, setGenerationAdvanced] = useState(false);
   const [creationMode, setCreationMode] = useState(editor.creationMode === "before-after" ? "before-after" : "editor");
   const clipboardRef = useRef(null);
   const editorRef = useRef(null);
@@ -148,6 +151,10 @@ export default function LensTreeEditor({
   const outputValidation = useMemo(
     () => rootOutput ? validateOutputSpec(rootOutput) : { ok: true, errors: [] },
     [rootOutput]
+  );
+  const generationPlan = useMemo(
+    () => normalizeGenerationPlan(rootDraft?.generationPlan || {}),
+    [rootDraft?.generationPlan]
   );
 
   useEffect(() => {
@@ -814,6 +821,170 @@ export default function LensTreeEditor({
                       </button>
                       {!outputValidation.ok && <div className="fn-error">{outputValidation.errors[0]}</div>}
                       {treeHasFork && <span className="fn-output-fork-note">⑂ {forkOutputs} branch outputs</span>}
+                    </div>
+                  )}
+                  {(!focusId || focusId === rootId) && rootDraft && (
+                    <div className="fn-output-controls" data-generation-plan-editor>
+                      <div className="fn-output-title">
+                        <label>Candidates</label>
+                        <span>{generationPlan.assignment.mode === "auto" ? "Auto model" : generationPlan.assignment.mode}</span>
+                      </div>
+                      <label className="fn-output-mode">
+                        variations per run
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={generationPlan.candidateCount}
+                          onChange={(event) => {
+                            const candidateCount = Number(event.target.value);
+                            const assignment = generationPlan.assignment.mode === "exact"
+                              ? {
+                                  ...generationPlan.assignment,
+                                  slots: Array.from({ length: candidateCount }, (_, index) => generationPlan.assignment.slots[index] || generationPlan.assignment.slots[0] || "auto"),
+                                }
+                              : generationPlan.assignment;
+                            patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, candidateCount, assignment }) });
+                          }}
+                          aria-label="Candidate variations per run"
+                        />
+                      </label>
+                      <button type="button" className="fn-output-advanced-toggle" onClick={() => setGenerationAdvanced((value) => !value)}>
+                        {generationAdvanced ? "hide candidate details" : "model, more-like-this & budget"}
+                      </button>
+                      {generationAdvanced && (
+                        <div className="fn-output-advanced">
+                          <select
+                            value={generationPlan.assignment.mode}
+                            onChange={(event) => {
+                              const mode = event.target.value;
+                              const firstModel = modelCatalog.models?.[0]?.id || "auto";
+                              const slots = Array.from({ length: generationPlan.candidateCount }, () => firstModel);
+                              patchOp(rootId, {
+                                generationPlan: normalizeGenerationPlan({
+                                  ...generationPlan,
+                                  assignment: {
+                                    mode,
+                                    model: firstModel,
+                                    slots: mode === "compare" ? slots.slice(0, Math.max(2, Math.min(slots.length, 4))) : slots,
+                                    groups: [{ model: firstModel, count: generationPlan.candidateCount, weight: 1 }],
+                                  },
+                                }),
+                              });
+                            }}
+                            aria-label="Candidate model strategy"
+                          >
+                            <option value="auto">Auto compatible model</option>
+                            <option value="single">One selected model</option>
+                            <option value="exact">Choose each candidate model</option>
+                            <option value="weighted">Weighted model groups</option>
+                            <option value="compare">Compare selected models</option>
+                          </select>
+                          {generationPlan.assignment.mode === "single" && (
+                            <label>
+                              model
+                              <select
+                                value={generationPlan.assignment.model}
+                                onChange={(event) => patchOp(rootId, {
+                                  generationPlan: normalizeGenerationPlan({
+                                    ...generationPlan,
+                                    assignment: { ...generationPlan.assignment, model: event.target.value },
+                                  }),
+                                })}
+                                aria-label="Candidate model"
+                              >
+                                <option value="auto">Auto compatible</option>
+                                {(modelCatalog.models || []).map((model) => <option key={model.id} value={model.id}>{model.name || model.id}</option>)}
+                              </select>
+                            </label>
+                          )}
+                          {["exact", "compare"].includes(generationPlan.assignment.mode) && generationPlan.assignment.slots.map((modelId, index) => (
+                            <label key={`${generationPlan.assignment.mode}-${index}`}>
+                              candidate {index + 1}
+                              <select
+                                value={modelId}
+                                onChange={(event) => {
+                                  const slots = [...generationPlan.assignment.slots];
+                                  slots[index] = event.target.value;
+                                  patchOp(rootId, { generationPlan: normalizeGenerationPlan({
+                                    ...generationPlan,
+                                    assignment: { ...generationPlan.assignment, slots },
+                                  }) });
+                                }}
+                              >
+                                <option value="auto">Auto compatible</option>
+                                {(modelCatalog.models || []).map((model) => <option key={model.id} value={model.id}>{model.name || model.id}</option>)}
+                              </select>
+                            </label>
+                          ))}
+                          {generationPlan.assignment.mode === "weighted" && generationPlan.assignment.groups.map((group, index) => (
+                            <div key={`weighted-${index}`} className="fn-generation-model-group">
+                              <select
+                                value={group.model}
+                                onChange={(event) => {
+                                  const groups = generationPlan.assignment.groups.map((entry, groupIndex) => groupIndex === index ? { ...entry, model: event.target.value } : entry);
+                                  patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, assignment: { ...generationPlan.assignment, groups } }) });
+                                }}
+                                aria-label={`Weighted model ${index + 1}`}
+                              >
+                                <option value="auto">Auto compatible</option>
+                                {(modelCatalog.models || []).map((model) => <option key={model.id} value={model.id}>{model.name || model.id}</option>)}
+                              </select>
+                              <input
+                                type="number"
+                                min="1"
+                                max="20"
+                                value={group.count}
+                                aria-label={`Weighted model candidate count ${index + 1}`}
+                                onChange={(event) => {
+                                  const groups = generationPlan.assignment.groups.map((entry, groupIndex) => groupIndex === index ? { ...entry, count: Number(event.target.value) } : entry);
+                                  patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, assignment: { ...generationPlan.assignment, groups } }) });
+                                }}
+                              />
+                            </div>
+                          ))}
+                          <label>
+                            more like this
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={generationPlan.moreLikeThis.count}
+                              onChange={(event) => patchOp(rootId, {
+                                generationPlan: normalizeGenerationPlan({
+                                  ...generationPlan,
+                                  moreLikeThis: { ...generationPlan.moreLikeThis, count: Number(event.target.value) },
+                                }),
+                              })}
+                              aria-label="More-like-this candidate count"
+                            />
+                          </label>
+                          <label>
+                            run budget (USD)
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.10"
+                              value={generationPlan.budget.maxUsd}
+                              onChange={(event) => patchOp(rootId, {
+                                generationPlan: normalizeGenerationPlan({
+                                  ...generationPlan,
+                                  budget: { ...generationPlan.budget, maxUsd: Number(event.target.value) },
+                                }),
+                              })}
+                              aria-label="Candidate run budget in USD"
+                            />
+                          </label>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="fn-output-reset"
+                        onClick={() => patchOp(rootId, { generationPlan: normalizeGenerationPlan({}) })}
+                      >
+                        Reset candidate defaults
+                      </button>
                     </div>
                   )}
                 </div>

@@ -1,6 +1,21 @@
 import React, { useMemo, useRef, useState } from "react";
+import { LENS_PERCEPTUAL_SECTIONS, normalizePerceptualModel } from "../../shared/lens-perceptual-model.js";
 
 const PROBE_DOMAINS = ["music", "books", "prayers", "paintings"];
+const SECTION_LABELS = {
+  notice: "What to notice",
+  questions: "Questions to ask",
+  relationships: "Relationships to trace",
+  concepts: "Concepts to use",
+  assumptions: "Assumptions to surface",
+  evidenceStandards: "Evidence standards",
+  scales: "Scales to examine",
+  transformations: "Transformations to try",
+  tensions: "Tensions to hold",
+  blindSpots: "Possible blind spots",
+  counterLenses: "Alternative lenses",
+  preserve: "What to preserve",
+};
 
 const TEXT_CARD_W = 190;
 const TEXT_CARD_MAX_H = 110;
@@ -40,6 +55,7 @@ export default function LensSettingsDialog({
   functionChips = [],
   onSave,
   onReread,
+  onEncode,
   onProbe,
   onKeepProbe,
   onMakeLens,
@@ -51,9 +67,9 @@ export default function LensSettingsDialog({
 }) {
   const [title, setTitle] = useState(String(struct.title || ""));
   const [meaning, setMeaning] = useState(struct.interpretation?.meaning || "");
-  const [viewPrompt, setViewPrompt] = useState(
-    struct.interpretation?.viewPrompt || struct.viewLens?.prompt || ""
-  );
+  const [perceptualModel, setPerceptualModel] = useState(() => normalizePerceptualModel(struct.perceptualModel || {}));
+  const [encoding, setEncoding] = useState(false);
+  const [encodingError, setEncodingError] = useState("");
   const [elements, setElements] = useState(() =>
     (Array.isArray(struct.interpretation?.elements) ? struct.interpretation.elements : []).map(
       (el) => ({
@@ -175,7 +191,7 @@ export default function LensSettingsDialog({
     onSave?.({
       title: title.trim() || struct.title,
       meaning: meaning.trim(),
-      viewPrompt: viewPrompt.trim(),
+      perceptualModel: normalizePerceptualModel(perceptualModel),
       elements: elements.filter((el) => el.element.trim() || el.reading.trim()),
     });
   }
@@ -370,19 +386,71 @@ export default function LensSettingsDialog({
           />
         </label>
 
+        <section className="lens-perceptual-editor" data-lens-perceptual-editor>
+          <div className="lens-settings-label">
+            perceptual model — explicit context, never an action
+            <p className="gen-space-hint">Edit one facet per line. Your edits are confirmed and always override inferred hypotheses.</p>
+          </div>
+          {LENS_PERCEPTUAL_SECTIONS.map((section) => (
+            <label className="lens-settings-label" key={section}>
+              {SECTION_LABELS[section]}
+              <textarea
+                className="lens-settings-text"
+                rows={Math.max(2, Math.min(5, (perceptualModel.sections[section]?.length || 0) + 1))}
+                value={(perceptualModel.sections[section] || []).map((facet) => facet.text).join("\n")}
+                onChange={(event) => {
+                  const previous = perceptualModel.sections[section] || [];
+                  const facets = event.target.value.split("\n").map((text) => text.trim()).filter(Boolean).map((text, index) => ({
+                    ...(previous[index] || {}),
+                    id: previous[index]?.id || `${section}:user:${Date.now()}:${index}`,
+                    text,
+                    status: "confirmed",
+                    source: "user",
+                    confidence: 1,
+                    updatedAt: Date.now(),
+                  }));
+                  setPerceptualModel(normalizePerceptualModel({
+                    ...perceptualModel,
+                    sections: { ...perceptualModel.sections, [section]: facets },
+                  }));
+                }}
+                aria-label={SECTION_LABELS[section]}
+                placeholder={`Add ${SECTION_LABELS[section].toLowerCase()}…`}
+              />
+            </label>
+          ))}
+          {!!struct.encoding?.diff?.length && (
+            <details className="gen-quiet-tools">
+              <summary>{struct.encoding.diff.length} inference changes</summary>
+              <ul>{struct.encoding.diff.slice(0, 50).map((change, index) => <li key={change.id || index}>{change.section}: {change.after?.text || change.before?.text || change.type}</li>)}</ul>
+            </details>
+          )}
+          {onEncode && (
+            <button
+              type="button"
+              className="lens-settings-quiet"
+              disabled={encoding}
+              onClick={async () => {
+                setEncoding(true);
+                setEncodingError("");
+                try {
+                  const result = await onEncode(perceptualModel);
+                  if (result?.proposedPerceptualModel) setPerceptualModel(normalizePerceptualModel(result.proposedPerceptualModel));
+                } catch (error) {
+                  setEncodingError(error.message || "Lens encoding failed");
+                } finally {
+                  setEncoding(false);
+                }
+              }}
+            >
+              {encoding ? "inferring facets…" : "infer alternative hypotheses"}
+            </button>
+          )}
+          {encodingError && <div className="lens-settings-probe-status error">{encodingError}</div>}
+        </section>
+
         <details className="gen-quiet-tools">
           <summary>quiet tools — reading, probing, ai assists</summary>
-
-          <label className="lens-settings-label">
-            what applying it generates
-            <textarea
-              className="lens-settings-text"
-              rows={2}
-              value={viewPrompt}
-              onChange={(e) => setViewPrompt(e.target.value)}
-              placeholder="instruction for operating on new material from this workspace…"
-            />
-          </label>
 
           {elements.length > 0 && (
             <div className="lens-settings-label">

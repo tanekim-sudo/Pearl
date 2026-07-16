@@ -8,6 +8,7 @@ import { trackFunnel } from "../core/funnel-analytics.js";
 import { portableLensPayload, writeDragPayload } from "../core/portable.js";
 import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
 import { outputContractFor, outputContractLabel } from "../../../shared/output-specifications.js";
+import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {
@@ -31,6 +32,9 @@ function App() {
   const [running, setRunning] = useState(false);
   const [companion, setCompanion] = useState("");
   const [ghost, setGhost] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const voiceRecognizerRef = useRef(null);
+  const voiceVadTimerRef = useRef(null);
   const [importPreview, setImportPreview] = useState(null);
   const [importChoices, setImportChoices] = useState({ lenses: {}, generators: {} });
   const [importing, setImporting] = useState(false);
@@ -48,6 +52,8 @@ function App() {
   const [chatKind, setChatKind] = useState("all");
   const [chatResult, setChatResult] = useState(null);
   const [chatRunning, setChatRunning] = useState(false);
+  const [generationPlan, setGenerationPlan] = useState(() => normalizeGenerationPlan({}));
+  const [modelCatalog, setModelCatalog] = useState([]);
   const fileRef = useRef(null);
 
   function applyLibrary(data) {
@@ -75,14 +81,20 @@ function App() {
       if (pending?.bundle) previewBundle(pending.bundle);
     }).catch(() => {});
     call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
-    chrome.storage.local.get(["onboardingComplete", "onboardingMode"], (value) => {
+    call("model-catalog").then((value) => setModelCatalog(value.models || [])).catch(() => {});
+    chrome.storage.local.get(["onboardingComplete", "onboardingMode", "generationPlan"], (value) => {
       setOnboardingMode(value.onboardingMode || "");
       setOnboardingStep(value.onboardingComplete ? 0 : 1);
+      if (value.generationPlan) setGenerationPlan(normalizeGenerationPlan(value.generationPlan));
     });
     const listener = () => refresh().catch(() => {});
     chrome.storage?.onChanged.addListener(listener);
     return () => chrome.storage?.onChanged.removeListener(listener);
   }, []);
+
+  useEffect(() => {
+    chrome.storage.local.set({ generationPlan });
+  }, [generationPlan]);
 
   async function previewBundle(bundle) {
     setError("");
@@ -161,7 +173,7 @@ function App() {
     if (!characters || (!session.queue.length && !session.generator)) return;
     if ((preview?.requiresConfirmation || characters > 50_000) && !confirm(`Send ${characters.toLocaleString()} selected characters and produce up to ${preview?.predictedOutputCount || 1} outputs?`)) return;
     setRunning(true);
-    await action("go", { disclosedCharacters: characters, idempotencyKey: crypto.randomUUID() });
+    await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID() });
     chrome.storage.local.get(["firstGoTracked"], (value) => {
       if (!value.firstGoTracked) {
         trackFunnel("first_go");
@@ -331,6 +343,49 @@ function App() {
     }
   }
 
+  function toggleCompanionVoice() {
+    if (voiceListening) {
+      voiceRecognizerRef.current?.stop?.();
+      setVoiceListening(false);
+      return;
+    }
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setError("voice recognition is unavailable in this browser");
+      return;
+    }
+    const recognizer = new Recognition();
+    recognizer.continuous = true;
+    recognizer.interimResults = true;
+    recognizer.lang = navigator.language || "en-US";
+    let stable = "";
+    recognizer.onresult = (event) => {
+      let interim = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const text = event.results[index]?.[0]?.transcript || "";
+        if (event.results[index].isFinal) stable = `${stable} ${text}`.trim();
+        else interim = `${interim} ${text}`.trim();
+      }
+      setCompanion(`${stable} ${interim}`.trim());
+      clearTimeout(voiceVadTimerRef.current);
+      if (stable) {
+        voiceVadTimerRef.current = setTimeout(() => {
+          recognizer.stop();
+          setVoiceListening(false);
+          document.querySelector("form.companion")?.requestSubmit();
+        }, 1200);
+      }
+    };
+    recognizer.onerror = (event) => {
+      if (event.error !== "aborted") setError(`voice recognition failed: ${event.error}`);
+      setVoiceListening(false);
+    };
+    recognizer.onend = () => setVoiceListening(false);
+    voiceRecognizerRef.current = recognizer;
+    recognizer.start();
+    setVoiceListening(true);
+  }
+
   return <main>
     {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
@@ -476,6 +531,29 @@ function App() {
       )}</ol>
       {preview && <p className={preview.ok ? "compat good" : "compat bad"}>{preview.ok ? `${preview.label} · ${preview.predictedOutputCount} output${preview.predictedOutputCount === 1 ? "" : "s"}` : preview.errors[0]}</p>}
       <label>Lens context<select value={session.generator?.id || ""} onChange={(event) => action("set-generator", { generator: generators.find((item) => item.id === event.target.value) || null })}><option value="">New chat · no context</option>{generators.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Candidates
+        <input
+          type="number"
+          min="1"
+          max="20"
+          value={generationPlan.candidateCount}
+          onChange={(event) => setGenerationPlan(normalizeGenerationPlan({ ...generationPlan, candidateCount: Number(event.target.value) }))}
+          aria-label="Candidate variations"
+        />
+        <select
+          aria-label="Candidate model"
+          value={generationPlan.assignment.mode === "single" ? generationPlan.assignment.model : "auto"}
+          onChange={(event) => setGenerationPlan(normalizeGenerationPlan({
+            ...generationPlan,
+            assignment: event.target.value === "auto"
+              ? { mode: "auto", model: "auto", slots: [], groups: [] }
+              : { mode: "single", model: event.target.value, slots: [], groups: [] },
+          }))}
+        >
+          <option value="auto">Auto compatible model</option>
+          {modelCatalog.map((model) => <option key={model.id} value={model.id}>{model.name || model.id}</option>)}
+        </select>
+      </label>
       <div className="disclosure">GO sends exactly <b>{characters.toLocaleString()}</b> selected characters from {[...new Set(session.fragments.map((item) => item.provenance.origin))].join(", ") || "no origin"}.</div>
       <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go}>{running ? "Running…" : "GO"}</button>
       {running && <button onClick={() => action("cancel-run", { runId: session.activeRunId })}>Cancel</button>}
@@ -484,9 +562,9 @@ function App() {
       <h2>Preview results</h2>
       {!session.results.length && <p className="muted">Results stage here. The page never changes automatically.</p>}
       {session.results.flatMap((run) => run.outputs.map((output) =>
-        <article className="result" key={output.id}><small className="result-type">{output.semanticType || "Output"}{output.branchIndex != null ? ` · branch ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p><div><button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
+        <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
       ))}</section>
-    <form className="companion" onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens companion command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="capture selection · preview GO · press GO" /><button>Do</button></form>
+    <form className="companion" onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens companion command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="capture selection · preview GO · press GO" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Do</button></form>
     {error && <aside role="alert">{error}</aside>}
   </main>;
 }

@@ -1,6 +1,7 @@
 import { companionRequestFingerprint, normalizeCompanionRequest } from "./companion-submit.js";
+import { normalizeUtterance } from "../../shared/utterance-normalizer.js";
 
-const DEFAULT_SILENCE_MS = 2600;
+const DEFAULT_SILENCE_MS = 1800;
 
 /**
  * Owns one logical utterance across recognition restarts. Browser callbacks
@@ -14,6 +15,10 @@ export function createCompanionVoiceSession({
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  now = () => Date.now(),
+  captureSnapshot = () => null,
+  sessionId = null,
+  speakerId = "local-user",
 } = {}) {
   const utteranceId = `voice-${generation}-${makeId()}`;
   const recognizers = new Set();
@@ -23,12 +28,19 @@ export function createCompanionVoiceSession({
   let active = true;
   let consumed = false;
   let lastFinalFingerprint = "";
+  let sequence = 0;
+  const segments = [];
+  const startedAt = now();
 
-  const text = () => normalizeCompanionRequest([...finals, interim].filter(Boolean).join(" "));
+  const rawText = () => normalizeCompanionRequest([...finals, interim].filter(Boolean).join(" "));
+  const normalized = () => normalizeUtterance(rawText(), { source: "voice" });
+  const text = () => normalized().cleanedText;
 
   const arm = () => {
     if (timer) clearTimer(timer);
-    if (!active || !text()) return;
+    // Interim words are preview-only. Silence dispatches only after an ASR
+    // final; explicit mic stop can still commit the current preview.
+    if (!active || !finals.length || !text()) return;
     timer = setTimer(() => finish({ send: true, reason: "silence" }), silenceMs);
   };
 
@@ -45,13 +57,25 @@ export function createCompanionVoiceSession({
         if (fingerprint && fingerprint !== lastFinalFingerprint) {
           finals.push(transcript);
           lastFinalFingerprint = fingerprint;
+          segments.push({
+            id: `${utteranceId}:${++sequence}`,
+            sequence,
+            text: transcript,
+            final: true,
+            confidence: Number(result?.[0]?.confidence) || null,
+            startedAt,
+            endedAt: now(),
+            sessionId: sessionId || utteranceId,
+            speakerId,
+            targetSnapshot: captureSnapshot(),
+          });
         }
       } else {
         nextInterim = transcript;
       }
     }
     interim = nextInterim;
-    updateDraft(text());
+    updateDraft(rawText(), { normalized: normalized(), stableSegments: [...segments] });
     arm();
     return true;
   };
@@ -62,7 +86,7 @@ export function createCompanionVoiceSession({
     return true;
   };
 
-  function finish({ send = true } = {}) {
+  function finish({ send = true, reason = "explicit" } = {}) {
     if (!active && consumed) return false;
     active = false;
     if (timer) clearTimer(timer);
@@ -78,7 +102,9 @@ export function createCompanionVoiceSession({
       }
     }
     recognizers.clear();
-    const said = text();
+    const raw = rawText();
+    const semantic = normalizeUtterance(raw, { source: "voice" });
+    const said = semantic.cleanedText;
     if (send && said && !consumed) {
       consumed = true;
       dispatch(said, {
@@ -86,6 +112,17 @@ export function createCompanionVoiceSession({
         utteranceId,
         requestId: `request-${utteranceId}`,
         sessionGeneration: generation,
+        voice: {
+          version: 1,
+          sessionId: sessionId || utteranceId,
+          speakerId,
+          rawText: raw,
+          semantic,
+          segments: [...segments],
+          startedAt,
+          endedAt: now(),
+          reason,
+        },
       });
     }
     return Boolean(said);
@@ -98,6 +135,9 @@ export function createCompanionVoiceSession({
     registerRecognizer,
     finish,
     text,
+    rawText,
+    normalized,
+    segments: () => [...segments],
     isActive: () => active,
     isConsumed: () => consumed,
   };

@@ -14,7 +14,7 @@ import {
 } from "../extension/src/sidepanel/companion.js";
 
 const BASE = process.env.AUDIT_URL || "http://127.0.0.1:5190";
-const OUT = path.resolve("audit-shots/companion-release-audit-2026-07");
+const OUT = path.resolve("audit-shots/post-audit-r046-r060-2026-07/companion-runtime");
 fs.mkdirSync(OUT, { recursive: true });
 
 const appCapabilities = COMPANION_CAPABILITIES.filter((entry) => entry.platform === "app");
@@ -37,6 +37,7 @@ const items = [
 const nodes = [
   { id: "node-root", nodeKind: "source", x: 810, y: 220, radius: 28, label: "AI source", expandedText: "AI source material" },
   { id: "node-child", nodeKind: "expanded", parentId: "node-root", x: 970, y: 320, radius: 24, label: "AI child", expandedText: "AI child material" },
+  { id: "node-candidate", nodeKind: "expanded", parentId: "node-root", x: 1080, y: 430, radius: 24, label: "Candidate", expandedText: "Candidate material", generationBatchId: "batch-a", candidateIndex: 0, opId: "op-a" },
 ];
 const multiOutputSpec = {
   version: 1,
@@ -61,11 +62,12 @@ const repos = operators
   .filter((entry) => entry.top)
   .map((entry) => ({ id: `repo-${entry.id}`, opId: entry.id, name: entry.name, moveIds: [entry.id], version: 1, commits: [] }));
 const generators = [
-  { id: "generator-a", title: "Audit Lens", name: "Audit Lens", kind: "lens", contextPolicy: "bounded", items: [], savedAt: 1 },
+  { id: "generator-a", title: "Audit Lens", name: "Audit Lens", kind: "lens", contextPolicy: "bounded", items: [items[0]], savedAt: 1 },
 ];
 
 function seedScript(payload) {
   const { items, nodes, operators, repos, generators } = payload;
+  window.__LENS_TEST_CAPTURE_IMAGE__ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   if (localStorage.getItem("lens.runtime-audit.seeded") === "1") return;
   localStorage.clear();
   localStorage.setItem("lens.runtime-audit.seeded", "1");
@@ -209,6 +211,18 @@ const argsByName = {
   nameLens: { lens: "generator-a", name: "Named runtime Lens" },
   probeLens: { lens: "generator-a", domain: "music" },
   inferFunctionFromLens: { lens: "generator-a" },
+  composeObjects: { a: "op-a", b: "op-b", name: "Runtime composition" },
+  encodeLens: { lens: "generator-a" },
+  inspectGenerationPlan: { artifact: "op-a" },
+  setGenerationPlan: { artifact: "op-a", count: 3, model: "auto", mode: "single" },
+  resetGenerationPlan: { artifact: "op-a" },
+  tasteCandidate: { decision: "yes" },
+  moreLikeThis: { count: 2 },
+  observeWorkspace: { scope: "viewport" },
+  interpretThroughLens: { lens: "generator-a", scope: "viewport" },
+  interpretVisibleScreenThroughLens: { lens: "generator-a" },
+  captureInstructionAsMove: { text: "Verify every primary source", source: "voice" },
+  ingestCritique: { text: "Keep the first claim but rewrite the second." },
   clearWorkspaceDomains: { domains: ["paper", "ai"] },
 };
 
@@ -331,6 +345,17 @@ const setupByName = {
     { verb: "compileGrindDraft", args: {} },
   ],
   restoreFunction: [{ verb: "archiveFunction", args: { function: "op-pipeline" } }],
+  tasteCandidate: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
+  moreLikeThis: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
+  startCritiqueSession: [{ verb: "selectItems", args: { targets: ["claim", "evidence"] } }],
+  ingestCritique: [
+    { verb: "selectItems", args: { targets: ["claim", "evidence"] } },
+    { verb: "startCritiqueSession", args: {} },
+  ],
+  stopCritiqueSession: [
+    { verb: "selectItems", args: { targets: ["claim", "evidence"] } },
+    { verb: "startCritiqueSession", args: {} },
+  ],
 };
 
 const readOnlyJustification = {
@@ -340,6 +365,8 @@ const readOnlyJustification = {
   previewBrushQueue: "Read-only compatibility preview; typed preview is the expected artifact.",
   previewLensComposition: "Read-only composition preview; typed preview is the expected artifact.",
   testGrindDraft: "Read-only holdout evaluation; typed test results are the expected artifact.",
+  inspectGenerationPlan: "Read-only generation-plan inspection; typed plan and visible editor are the expected artifacts.",
+  observeWorkspace: "Read-only bounded semantic observation; the typed snapshot is the expected artifact.",
 };
 const sharedPathCapabilities = new Set([
   "stepSharedPath",
@@ -398,6 +425,23 @@ function stable(value) {
 }
 
 async function installModelRoute(page, stats) {
+  await page.route("**/api/lens-encode", async (route) => {
+    stats.calls += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        name: "Audit Lens",
+        description: "Grounded runtime Lens",
+        contextPolicy: "bounded",
+        proposedPerceptualModel: {
+          version: 1,
+          sections: { notice: [{ id: "notice-runtime", text: "Primary claims", status: "provisional", source: "inferred", confidence: 0.9 }] },
+        },
+        diff: [{ id: "notice-runtime", section: "notice", type: "added", after: { text: "Primary claims" } }],
+        provenance: { requestedModel: "auto", resolvedModel: "runtime/model", providerRoute: "mock" },
+      }),
+    });
+  });
   await page.route("**/api/infer-transcript-artifacts", async (route) => {
     stats.calls += 1;
     await route.fulfill({

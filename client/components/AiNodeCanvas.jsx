@@ -1476,6 +1476,14 @@ export default function AiNodeCanvas({
                 ×
               </button>
             </div>
+            {(focusedNode.modelProvenance || focusedNode.resolvedModel) && (
+              <div className="ai-model-provenance" data-model-provenance>
+                <span>{focusedNode.modelProvenance?.requestedModel || "auto"} → {focusedNode.modelProvenance?.resolvedModel || focusedNode.resolvedModel}</span>
+                {focusedNode.modelProvenance?.providerRoute && <span> via {focusedNode.modelProvenance.providerRoute}</span>}
+                {focusedNode.modelProvenance?.fallback && <span> · fallback</span>}
+                {focusedNode.modelProvenance?.latencyMs != null && <span> · {focusedNode.modelProvenance.latencyMs} ms</span>}
+              </div>
+            )}
             <div className="ai-explore-overlay-text-wrap">
               <div className="ai-explore-overlay-text" data-testid="ai-full-output">
                 {renderNodeText(focusedNode, nodeDetailText(focusedNode))}

@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (!(await guardAiRequest(req, res))) return;
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    const { op, opMap, operators, material, image } = body;
+    const { op, opMap, operators, material, image, modelPreference } = body;
     if (!op) {
       res.status(400).json({ error: "op is required" });
       return;
@@ -21,6 +21,7 @@ export default async function handler(req, res) {
       operators: operators || [],
       material: material || "",
       image: image || null,
+      modelPreference,
     });
     res.status(200).json(data);
   } catch (err) {

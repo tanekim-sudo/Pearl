@@ -26,13 +26,17 @@ import {
 } from "./extension-api.js";
 import { inferBeforeAfterTransformation } from "./before-after-inference.js";
 import { inferTranscriptArtifacts } from "./transcript-inference.js";
+import { getModelCatalog } from "./model-catalog.js";
+import { modelGateway } from "./model-gateway.js";
+import { encodeLens } from "./lens-encoder.js";
+import { startGenerationBatch } from "./generation-runner.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
 
 if (!hasKey()) {
   console.warn(
-    "\n[lens] WARNING: HF_TOKEN is not set. Copy .env.example to .env and add your Hugging Face token.\n"
+    "\n[lens] WARNING: AI Gateway is not configured. Set AI_GATEWAY_API_KEY locally or deploy with Vercel OIDC.\n"
   );
 }
 
@@ -43,7 +47,11 @@ app.use(express.json({ limit: "7mb" }));
 app.use(attachLensUser);
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL });
+  res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL, modelGateway: modelGateway.configuration() });
+});
+app.get("/api/models", async (_req, res) => {
+  const catalog = await getModelCatalog();
+  res.json(catalog);
 });
 
 const extensionLimiter = rateLimit({ windowMs: 60_000, limit: 24 });
@@ -64,7 +72,7 @@ app.post("/api/extension/generators", extensionLimiter, express.json({ limit: "2
 app.post("/api/run", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;
   try {
-    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact } =
+    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact, profile, modelPreference } =
       req.body ?? {};
     const data = await runPrompt({
       prompt,
@@ -76,6 +84,8 @@ app.post("/api/run", async (req, res) => {
       research,
       timeoutMs,
       compact,
+      profile,
+      model: modelPreference,
     });
     res.json(data);
   } catch (err) {
@@ -83,6 +93,37 @@ app.post("/api/run", async (req, res) => {
     res.status(err?.status || 500).json({
       error: err?.error?.error?.message || err?.message || "Something went wrong calling the model.",
     });
+  }
+});
+
+app.post("/api/lens-encode", express.json({ limit: "7mb" }), async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  try {
+    res.json(await encodeLens(req.body || {}));
+  } catch (err) {
+    console.error("[lens] /api/lens-encode failed:", err?.message || err);
+    res.status(err?.status || 500).json({ error: err?.message || "Lens encoding failed.", code: err?.code || "LENS_ENCODING_FAILED" });
+  }
+});
+
+app.post("/api/generate-batch", async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  res.status(200);
+  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.flushHeaders?.();
+  const send = (event) => res.write(`${JSON.stringify(event)}\n`);
+  try {
+    const handle = startGenerationBatch(req.body || {}, {
+      onCandidate: async (event, batch) => send({ ...event, batchId: batch.id }),
+    });
+    req.on("close", () => handle.cancelRemaining());
+    send({ type: "batch-created", batch: handle.batch });
+    send({ type: "batch-completed", batch: await handle.done });
+  } catch (err) {
+    send({ type: "batch-failed", error: { code: err?.code || "BATCH_FAILED", message: err?.message || "Generation batch failed" } });
+  } finally {
+    res.end();
   }
 });
 
@@ -124,10 +165,10 @@ app.post("/api/plan", async (req, res) => {
 app.post("/api/phase", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;
   try {
-    const { phaseId, plan, op, opMap, operators, context, image } = req.body ?? {};
+    const { phaseId, plan, op, opMap, operators, context, image, modelPreference } = req.body ?? {};
     if (!phaseId) return res.status(400).json({ error: "phaseId is required" });
     const executionPlan = plan || compileExecutionPlan(op, opMap || {}, context?.material || "");
-    const result = await runPhase(phaseId, executionPlan, context || {}, { operators, op, image });
+    const result = await runPhase(phaseId, executionPlan, context || {}, { operators, op, image, modelPreference });
     res.json({ phaseId, ...result });
   } catch (err) {
     console.error("[lens] /api/phase failed:", err?.message || err);
@@ -138,7 +179,7 @@ app.post("/api/phase", async (req, res) => {
 app.post("/api/execute", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;
   try {
-    const { op, opMap, operators, material, image } = req.body ?? {};
+    const { op, opMap, operators, material, image, modelPreference } = req.body ?? {};
     if (!op) return res.status(400).json({ error: "op is required" });
     const data = await runExecutionPlan({
       op,
@@ -146,6 +187,7 @@ app.post("/api/execute", async (req, res) => {
       operators: operators || [],
       material: material || "",
       image: image || null,
+      modelPreference,
     });
     res.json(data);
   } catch (err) {
@@ -157,7 +199,7 @@ app.post("/api/execute", async (req, res) => {
 app.post("/api/pipeline", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;
   try {
-    const { op, opMap, operators, material, image } = req.body ?? {};
+    const { op, opMap, operators, material, image, modelPreference } = req.body ?? {};
     const steps = [];
     const data = await runPipeline({
       op,
@@ -165,6 +207,7 @@ app.post("/api/pipeline", async (req, res) => {
       operators: operators || [],
       material: material || "",
       image: image || null,
+      modelPreference,
       onStep: (name, i, total) => steps.push({ name, index: i, total }),
     });
     res.json({ ...data, steps });

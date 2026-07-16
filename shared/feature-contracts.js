@@ -3,6 +3,34 @@ export const FEATURE_CONTRACT_VERSION = 1;
 const feature = (id, value) => Object.freeze({ id, status: "active", migrationVersion: 2, ...value });
 
 export const FEATURE_CONTRACTS = Object.freeze([
+  feature("observation.workspace", {
+    domains: ["paper", "ai", "lens", "extension"],
+    commands: ["observeWorkspace", "interpretObservationThroughLens"],
+    ui: ["client/lib/companion-observation.js"], companion: ["transformMaterial", "selectItems", "zoomToItem"],
+    extension: ["capturePageSelection", "openExternalArtifact"], persistence: [],
+    tests: ["shared/workspace-observation.test.js", "client/lib/companion-observation.test.js"], owner: "shared/workspace-observation.js",
+  }),
+  feature("generation.taste-branching", {
+    domains: ["move", "function", "ai", "extension"],
+    commands: ["setGenerationPlan", "startGenerationBatch", "updateGenerationCandidate", "recordTasteFeedback", "prepareMoreLikeThis"],
+    ui: ["client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"], companion: [],
+    extension: ["pressExternalGo"], persistence: ["lens.unified-workspace.v2"],
+    tests: ["shared/generation-plan.test.js"], owner: "shared/generation-plan.js",
+  }),
+  feature("lens.perceptual-encoding", {
+    domains: ["lens", "paper", "ai", "extension"],
+    commands: ["encodeMaterialAsLens", "updateLensPerceptualModel", "applyLensInference"],
+    ui: ["client/components/LensSettingsDialog.jsx"], companion: ["createLens", "addLensMaterial", "inferFunctionFromLens"],
+    extension: ["saveExternalCaptureAsLens", "setExternalLensContext"], persistence: ["lens.lenses.v2"],
+    tests: ["shared/lens-perceptual-model.test.js"], owner: "shared/lens-perceptual-model.js",
+  }),
+  feature("composition.universal", {
+    domains: ["move", "function", "lens"],
+    commands: ["composeCanonicalObjects"],
+    ui: ["client/components/LensGrammarPanels.jsx"], companion: ["stackFunctions", "saveCompoundFunction"],
+    extension: ["queueExternalAction"], persistence: ["lens.board.operators.v2", "lens.lenses.v2"],
+    tests: ["shared/composition-algebra.test.js", "shared/material.test.js"], owner: "shared/composition-algebra.js",
+  }),
   feature("library.move", {
     domains: ["move"], commands: ["createMoveFromContent", "upsertCanonicalObject"],
     ui: ["client/App.jsx:↦ Moves"], companion: ["createMove", "editMove", "applyMove", "saveCurrentAsMove"],

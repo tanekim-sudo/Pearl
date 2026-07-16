@@ -1,6 +1,6 @@
 # Lens
 
-Create prompt **symbols**, then drag a symbol onto your text to transform it with open models via Hugging Face Inference Providers.
+Create reusable Moves, Functions, and contextual Lenses, then apply them to material through a server-only model gateway.
 
 - **Make a symbol** — give it a name, icon, color, and a prompt (e.g. "Summarize", "Fix grammar", "Translate to French").
 - **Drop it on text** — type/paste text, optionally select part of it, then drag a symbol onto the text box. The model runs the prompt on that text.
@@ -16,11 +16,11 @@ Symbols are saved in your browser (localStorage). Your API token stays on the se
    npm install
    ```
 
-2. Add your Hugging Face token (create one at https://huggingface.co/settings/tokens/new with "Make calls to Inference Providers"):
+2. Create a Vercel AI Gateway API key in the Vercel dashboard and add it locally:
 
    ```bash
    cp .env.example .env
-   # then edit .env and set HF_TOKEN=hf_...
+   # then edit .env and set AI_GATEWAY_API_KEY=...
    ```
 
 3. Run it (starts the API server + the web app):
@@ -44,16 +44,16 @@ This repo is Vercel-ready. The web app is built statically and the backend runs
 as serverless functions in `api/` (`/api/run`, `/api/health`).
 
 1. Import the GitHub repo into Vercel (or run `vercel`).
-2. Add an Environment Variable in **Project Settings → Environment Variables**:
+2. Enable Vercel OIDC for the project (recommended; `VERCEL_OIDC_TOKEN` is injected automatically), or add an AI Gateway API key:
 
    | Name       | Value                        |
    | ---------- | ---------------------------- |
-   | `HF_TOKEN` | your Hugging Face API token  |
+   | `AI_GATEWAY_API_KEY` | optional when deployment OIDC is enabled; useful for explicit key budgets |
    | `VITE_SUPABASE_URL` | _(optional)_ Supabase project URL |
    | `VITE_SUPABASE_PUBLISHABLE_KEY` | _(optional)_ `sb_publishable_…` key |
    | `SUPABASE_SECRET_KEY` | _(optional)_ server secret for JWT auth |
 
-   (Optionally also set `HF_MODEL`, `HF_VISION_MODEL`, `HF_PROVIDER`, or `SUPABASE_REQUIRE_AUTH=true`.)
+   (Optionally set task profile preferences such as `AI_GATEWAY_MODEL_MOVE`, `AI_GATEWAY_MODEL_FUNCTION`, `AI_GATEWAY_MODEL_LENS_ENCODING`, or `SUPABASE_REQUIRE_AUTH=true`.)
 3. Deploy. Vercel uses `vercel.json`: build command `npm run build`, output `dist`.
 
 **Production URL:** [https://representation-eta.vercel.app](https://representation-eta.vercel.app)
@@ -71,10 +71,11 @@ Set these in `.env`:
 
 | Variable          | Default                              | Description                                        |
 | ----------------- | ------------------------------------ | -------------------------------------------------- |
-| `HF_TOKEN`        | _(required)_                         | Your Hugging Face API token                        |
-| `HF_MODEL`        | `Qwen/Qwen2.5-72B-Instruct:fastest`  | Text model (policy suffixes: `:fastest` etc.)      |
-| `HF_VISION_MODEL` | `Qwen/Qwen2.5-VL-7B-Instruct:fastest`| Model used when a canvas item includes an image    |
-| `HF_PROVIDER`     | _(auto)_                             | Force a specific inference provider (e.g. `groq`)  |
+| `AI_GATEWAY_API_KEY` | _(local/self-hosted)_             | Vercel AI Gateway key; server only                 |
+| `VERCEL_OIDC_TOKEN` | _(automatic on Vercel)_            | Deployment identity used when no API key is set    |
+| `AI_GATEWAY_MODEL_*` | `Auto`                            | Optional compatible model preference per task      |
+| `MODEL_GATEWAY_ALLOW_DIRECT_FALLBACK` | `false`          | Explicitly permit the legacy direct provider adapter |
+| `HF_TOKEN`        | _(fallback only)_                    | Used only when direct fallback is explicitly enabled |
 | `PORT`            | `8787`                               | API server port                                    |
 | `VITE_SUPABASE_URL` | _(optional)_                       | Supabase project URL (client accounts & cloud sync)|
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | _(optional)_           | Supabase publishable key (`sb_publishable_…`)    |

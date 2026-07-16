@@ -1,5 +1,7 @@
 import { contentFingerprint } from "./lens-grammar.js";
 import { normalizeOutputSpec, suggestedOutputSpec } from "./output-specifications.js";
+import { emptyPerceptualModel, normalizePerceptualModel } from "./lens-perceptual-model.js";
+import { normalizeGenerationPlan } from "./generation-plan.js";
 
 export const LIBRARY_OBJECT_VERSION = 2;
 export const LIBRARY_OBJECT_KINDS = Object.freeze(["move", "function", "lens"]);
@@ -22,7 +24,8 @@ const KNOWN_FIELDS = new Set([
   "processGraph", "processInstructions", "invariants", "historyFingerprint", "steps", "stepVersions", "outputSelections",
   "outputSelection", "composition", "contextPolicy", "contextGraph", "material", "items", "objects", "relationships",
   "placements", "spatial", "inclusionPolicy", "contextBudget", "priority", "symbols", "pattern", "branches", "pipeline",
-  "captured", "sessionHistory", "move", "role", "top"
+  "captured", "sessionHistory", "move", "role", "top", "contextBindings", "modelPreference", "composition",
+  "perceptualModel", "encoding", "promptTemplate", "sourceInstruction", "generationPlan"
 ]);
 const clone = (value) => globalThis.structuredClone
   ? globalThis.structuredClone(value)
@@ -137,10 +140,13 @@ export function normalizeLibraryObject(value, options = {}) {
     return {
       ...common,
       prompt: text(value.prompt ?? value.instructions, LIBRARY_OBJECT_LIMITS.promptCharacters),
+      promptTemplate: text(value.promptTemplate ?? value.prompt ?? value.instructions, LIBRARY_OBJECT_LIMITS.promptCharacters),
+      sourceInstruction: text(value.sourceInstruction ?? value.prompt ?? value.instructions, LIBRARY_OBJECT_LIMITS.promptCharacters),
       primitiveMove: value.primitiveMove ?? !!value.primitive,
       primitiveRank: value.primitiveRank == null ? null : Number.isFinite(Number(value.primitiveRank)) ? Number(value.primitiveRank) : null,
       inputRequirements: clone(value.inputRequirements || { type: value.inputType || "text", arity: Math.max(1, Number(value.inputArity) || 1) }),
       outputSpec: normalizeOutputSpec(value.outputSpec || suggestedOutputSpec(value), value),
+      generationPlan: normalizeGenerationPlan(value.generationPlan || {}),
       privateExamples: clone(value.privateExamples || []),
       provenance: clone(value.provenance || null),
     };
@@ -149,9 +155,13 @@ export function normalizeLibraryObject(value, options = {}) {
     return {
       ...common,
       processGraph: normalizeProcessGraph(value),
+      contextBindings: clone(value.contextBindings || []),
+      composition: clone(value.composition || null),
+      modelPreference: clone(value.modelPreference || null),
       instructions: text(value.instructions || value.processInstructions || "", 20_000),
       invariants: clone(value.invariants || []),
       outputSpec: normalizeOutputSpec(value.outputSpec || suggestedOutputSpec(value), value),
+      generationPlan: normalizeGenerationPlan(value.generationPlan || {}),
       provenance: clone(value.provenance || { historyFingerprint: value.historyFingerprint || "" }),
     };
   }
@@ -163,10 +173,20 @@ export function normalizeLibraryObject(value, options = {}) {
       material: normalizeLensMaterial(value),
       relationships: clone(value.contextGraph?.relationships || value.relationships || []),
       placements: clone(value.contextGraph?.placements || value.placements || value.spatial || {}),
+      layers: clone(value.contextGraph?.layers || []),
+      conflicts: clone(value.contextGraph?.conflicts || {}),
     },
     inclusionPolicy: clone(value.inclusionPolicy || { private: true, includeSources: true, excludeSensitive: true }),
     contextBudget: Math.max(0, Math.min(Number(value.contextBudget) || 24_000, LIBRARY_OBJECT_LIMITS.contextCharacters)),
     priority: Number.isFinite(Number(value.priority)) ? Number(value.priority) : 0,
+    perceptualModel: normalizePerceptualModel(value.perceptualModel || value.contextGraph?.perceptualModel || emptyPerceptualModel()),
+    encoding: clone(value.encoding || {
+      status: policy === "empty" ? "empty" : "provisional",
+      includedSourceCount: normalizeLensMaterial(value).length,
+      excludedSourceCount: 0,
+    }),
+    composition: clone(value.composition || null),
+    modelPreference: clone(value.modelPreference || null),
     provenance: clone(value.provenance || null),
   };
 }
@@ -182,6 +202,8 @@ export function createNewChatLens(options = {}) {
     contextPolicy: "empty",
     contextBudget: 0,
     material: [],
+    perceptualModel: emptyPerceptualModel(),
+    encoding: { status: "empty", includedSourceCount: 0, excludedSourceCount: 0 },
     inclusionPolicy: { private: true, includeSources: false, excludeSensitive: true },
     metadata: { tags: ["built-in", "isolation"], description: "Fresh isolated model context." },
   }, options);
@@ -242,6 +264,11 @@ export function validateLibraryObject(object, objectMap = new Map()) {
       const target = objectMap.get(`${node.ref.id}@${node.ref.version}`);
       if (target && !["move", "function"].includes(target.kind)) throw new Error("function may only reference Moves or Functions");
     }
+    for (const binding of object.contextBindings || []) {
+      if (!binding?.lens?.id || !Number.isInteger(Number(binding.lens.version))) throw new Error("function context binding requires a versioned Lens reference");
+      const target = objectMap.get(`${binding.lens.id}@${binding.lens.version}`);
+      if (target && target.kind !== "lens") throw new Error("function context binding must reference a Lens");
+    }
     assertAcyclic(graph);
   } else {
     if (!["empty", "bounded", "rich"].includes(object.contextPolicy)) throw new Error("lens context policy is invalid");
@@ -284,10 +311,29 @@ export function createLensFromDrop(items, options = {}) {
     contextBudget: options.contextBudget,
     material: list.map((item, index) => ({
       id: text(item?.id || `material-${index + 1}`, 256),
-      content: text(item?.text ?? item?.quote ?? item?.content, LIBRARY_OBJECT_LIMITS.promptCharacters),
+      type: text(item?.type || item?.machineKind || "text", 80),
+      content: clone(item?.content ?? item?.text ?? item?.quote ?? item?.src ?? ""),
       priority: Number(item?.priority) || index,
+      group: text(item?.group || item?.pageId || "", 256),
+      private: item?.private !== false,
       provenance: clone(item?.provenance || null),
     })),
+    perceptualModel: options.perceptualModel || emptyPerceptualModel(),
+    encoding: {
+      status: "provisional",
+      includedSourceCount: list.length,
+      excludedSourceCount: 0,
+      sourceOrder: list.map((item, index) => text(item?.id || `material-${index + 1}`, 256)),
+    },
+    provenance: {
+      kind: "lens-encoding",
+      privateSources: true,
+      sourceStructureFingerprint: contentFingerprint(list.map((item, index) => ({
+        id: text(item?.id || `material-${index + 1}`, 256),
+        type: text(item?.type || item?.machineKind || "text", 80),
+        group: text(item?.group || item?.pageId || "", 256),
+      }))),
+    },
   }, options);
 }
 
@@ -341,6 +387,7 @@ export function canonicalObjectFingerprint(object) {
     prompt: object.prompt.trim().replace(/\r\n/g, "\n"),
     inputRequirements: object.inputRequirements,
     outputSpec: object.outputSpec,
+    generationPlan: object.generationPlan,
   });
   if (object.kind === "function") return contentFingerprint({
     kind: "function",
@@ -349,6 +396,9 @@ export function canonicalObjectFingerprint(object) {
     outputs: object.processGraph.outputs || [],
     instructions: object.instructions,
     outputSpec: object.outputSpec,
+    generationPlan: object.generationPlan,
+    contextBindings: object.contextBindings || [],
+    composition: object.composition || null,
   });
   return contentFingerprint({
     kind: "lens",
@@ -357,6 +407,8 @@ export function canonicalObjectFingerprint(object) {
     inclusionPolicy: object.inclusionPolicy,
     budget: object.contextBudget,
     priority: object.priority,
+    perceptualModel: object.perceptualModel,
+    composition: object.composition,
   });
 }
 

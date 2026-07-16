@@ -1,8 +1,11 @@
 import { importLensLibrary, prepareLibraryInput, previewLibraryImport } from "../../../shared/lens-library.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
+import { captureMoveFromInstruction, mergeInstructionEventJournal } from "../../../shared/instruction-events.js";
+import { composeLibraryObjects } from "../../../shared/composition-algebra.js";
+import { normalizeLibraryObject } from "../../../shared/library-objects.js";
 
 const KEY = "lensEverywhereLibrary";
-const empty = () => ({ operators: [], generators: [], rack: {}, importedBundles: [], updatedAt: 0 });
+const empty = () => ({ operators: [], generators: [], instructionEvents: [], rack: {}, importedBundles: [], updatedAt: 0 });
 
 export async function readLocalLibrary() {
   const stored = await BrowserPlatform.storage.get("local", [KEY]);
@@ -80,23 +83,28 @@ export async function saveCapturedMove(fragments = [], input = {}) {
   if (duplicate) return { library: current, object: duplicate, duplicate: true };
   const now = Date.now();
   const id = crypto.randomUUID();
+  const capture = captureMoveFromInstruction({
+    role: "unknown",
+    instruction: prompt,
+    status: "succeeded",
+    inputRefs: fragments.map((fragment) => ({ id: fragment.id, type: "text" })),
+    source: { surface: "extension", objectId: fragments[0]?.id || "" },
+  }, { id, name: input.name, confirmInstruction: true });
   const object = {
-    id,
-    stableId: id,
-    version: 1,
+    ...capture.move,
     kind: "prompt",
     libraryKind: "move",
-    schemaVersion: 2,
-    name: String(input.name || prompt.split(/\r?\n/)[0] || "Captured Move").slice(0, 80),
-    prompt,
     description: "One instruction · captured verbatim from page text",
-    inputRequirements: { type: "text", arity: 1 },
-    outputSpec: input.outputSpec || { version: 1, mode: "override", semanticType: "text", machineKind: "text", cardinality: { min: 1, max: 1 } },
-    provenance: { private: true, fragmentIds: fragments.map((fragment) => fragment.id) },
+    outputSpec: input.outputSpec || capture.move.outputSpec,
+    provenance: { ...capture.move.provenance, private: true, fragmentIds: fragments.map((fragment) => fragment.id) },
     createdAt: now,
     updatedAt: now,
   };
-  const library = await writeLocalLibrary({ ...current, operators: [...current.operators, object] });
+  const library = await writeLocalLibrary({
+    ...current,
+    operators: [...current.operators, object],
+    instructionEvents: mergeInstructionEventJournal(current.instructionEvents || [], [capture.event]),
+  });
   return { library, object, duplicate: false };
 }
 
@@ -128,6 +136,41 @@ export async function saveCapturedLens(fragments = [], input = {}) {
   };
   const library = await writeLocalLibrary({ ...current, generators: [...current.generators, object] });
   return { library, object };
+}
+
+export async function composeLocalLibraryObjects(aId, bId, options = {}) {
+  const current = await readLocalLibrary();
+  const resolve = (id) => current.operators.find((entry) => entry.id === id)
+    || current.generators.find((entry) => entry.id === id);
+  const leftRaw = resolve(aId);
+  const rightRaw = resolve(bId);
+  if (!leftRaw || !rightRaw) throw new Error("choose two synced Moves, Functions, or Lenses");
+  const canonical = (value) => normalizeLibraryObject({
+    ...value,
+    kind: value.contextPolicy || value.kind === "lens" ? "lens" : value.kind === "pipeline" || value.libraryKind === "function" ? "function" : "move",
+    name: value.name || value.title,
+    material: value.material || value.items || [],
+    processGraph: value.processGraph || (value.steps ? {
+      nodes: value.steps.map((id, index) => ({ id: `step-${index + 1}`, ref: { id, version: 1 } })),
+      edges: value.steps.slice(1).map((_, index) => ({ from: `step-${index + 1}`, to: `step-${index + 2}` })),
+      outputs: value.steps.length ? [{ from: `step-${value.steps.length}` }] : [],
+    } : undefined),
+  });
+  const compilation = composeLibraryObjects(canonical(leftRaw), canonical(rightRaw), { name: options.name });
+  const object = compilation.object;
+  if (object.kind === "lens") {
+    const stored = { ...object, title: object.name, items: object.contextGraph.material, updatedAt: Date.now() };
+    return { compilation, library: await writeLocalLibrary({ ...current, generators: [...current.generators, stored] }), object: stored };
+  }
+  const stored = {
+    ...object,
+    kind: "pipeline",
+    libraryKind: "function",
+    top: true,
+    steps: object.processGraph.nodes.map((node) => node.ref.id),
+    updatedAt: Date.now(),
+  };
+  return { compilation, library: await writeLocalLibrary({ ...current, operators: [...current.operators, stored] }), object: stored };
 }
 
 export async function saveTranscriptCandidates(result = {}, kinds = []) {
