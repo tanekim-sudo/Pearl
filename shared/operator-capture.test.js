@@ -11,10 +11,10 @@ import {
 
 describe("operator capture abstraction", () => {
   it("stamps compact via metadata on transforms", () => {
-    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
+    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch");
     const via = viaFromOp(expand, ["n1"]);
     assert.equal(via.moveRef.kind, "primitive");
-    assert.equal(via.moveRef.name, "expand");
+    assert.equal(via.moveRef.name, "Branch");
     assert.equal(via.inputShape, "single");
     assert.equal(via.parentCount, 1);
   });
@@ -29,14 +29,14 @@ describe("operator capture abstraction", () => {
   });
 
   it("hydrates moveRef leaves at execution time", () => {
-    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
+    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch");
     const id = "leaf1";
     const map = {
       root: { id: "root", kind: "pipeline", steps: [id] },
-      [id]: { id, kind: "prompt", name: "expand", moveRef: { kind: "primitive", id: expand.id, name: "expand" } },
+      [id]: { id, kind: "prompt", name: "Branch", moveRef: { kind: "primitive", id: expand.id, name: "Branch" } },
     };
     const hydrated = hydrateOperatorMap(map, TRANSFORM_PRIMITIVES, "root");
-    assert.match(hydrated[id].prompt, /Unfold/i);
+    assert.match(hydrated[id].prompt, /possibilities/i);
     assert.ok(hydrated[id].primitive);
   });
 
@@ -64,7 +64,7 @@ describe("operator capture abstraction", () => {
   it("resolves canonical primitive by name when id is stale", () => {
     const ref = { kind: "primitive", id: "old-id", name: "invert" };
     const resolved = resolveMoveRef(ref, []);
-    assert.equal(resolved.name, "invert");
-    assert.equal(resolved.prompt, "Opposite view.");
+    assert.equal(resolved.name, "Challenge");
+    assert.match(resolved.prompt, /weak assumptions/);
   });
 });

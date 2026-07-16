@@ -1,6 +1,6 @@
 /** Portable operator abstraction — move refs + structure, not source text bleed. */
 
-import { TRANSFORM_PRIMITIVES, PRIMITIVE_NAMES } from "./transform-primitives.js";
+import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES, PRIMITIVE_NAMES } from "./transform-primitives.js";
 
 /** Compact move ID for capture, lenses, and recombination. */
 export function moveRefFromOp(op) {
@@ -14,7 +14,7 @@ export function moveRefFromOp(op) {
 export function viaFromOp(op, sourceIds = []) {
   const parentCount = sourceIds?.length || 1;
   const merge =
-    parentCount > 1 || op?.needsSelection >= 2 || op?.name === "merge";
+    parentCount > 1 || op?.needsSelection >= 2 || op?.name?.toLowerCase() === "merge";
   return {
     opId: op.id,
     name: op.name,
@@ -25,7 +25,8 @@ export function viaFromOp(op, sourceIds = []) {
 }
 
 function canonicalPrimitive(name) {
-  return TRANSFORM_PRIMITIVES.find((p) => p.name === name) || null;
+  const canonicalName = canonicalPrimitiveName(name);
+  return TRANSFORM_PRIMITIVES.find((p) => p.name === canonicalName) || null;
 }
 
 /** Resolve a moveRef to the live operator definition (canonical primitives win). */
@@ -34,7 +35,7 @@ export function resolveMoveRef(ref, operators = []) {
   const byId = ref.id ? operators.find((o) => o.id === ref.id) : null;
   const byName = operators.find((o) => o.name === ref.name);
 
-  if (ref.kind === "primitive" || PRIMITIVE_NAMES.has(ref.name)) {
+  if (ref.kind === "primitive" || PRIMITIVE_NAMES.has(canonicalPrimitiveName(ref.name))) {
     const canon = canonicalPrimitive(ref.name);
     if (canon) return { ...canon, ...(byId || byName || {}) };
   }

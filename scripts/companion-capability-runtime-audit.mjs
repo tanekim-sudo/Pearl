@@ -135,7 +135,7 @@ const argsByName = {
   openSaveAsChooser: { target: "claim" },
   promotePrimitiveMove: { move: "op-b" },
   demotePrimitiveMove: { move: "op-a" },
-  reorderPrimitiveMove: { move: "op-expand", to: 0 },
+  reorderPrimitiveMove: { move: "op-branch", to: 0 },
   wrapMoveAsFunction: { move: "op-a", name: "Wrapped Move" },
   flattenFunctionToMove: { function: "op-pipeline", name: "Flattened Function" },
   createFunction: { name: "Runtime-created Function", steps: [{ name: "Observe" }, { name: "Synthesize" }] },
@@ -347,6 +347,7 @@ const setupByName = {
   restoreFunction: [{ verb: "archiveFunction", args: { function: "op-pipeline" } }],
   tasteCandidate: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
   moreLikeThis: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
+  extendSelectedCandidates: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
   startCritiqueSession: [{ verb: "selectItems", args: { targets: ["claim", "evidence"] } }],
   ingestCritique: [
     { verb: "selectItems", args: { targets: ["claim", "evidence"] } },
@@ -532,14 +533,14 @@ async function runAppCapability(browser, capability) {
     validateCapabilityArgs(capability, args);
     parseCompanionPlan(JSON.stringify(canonicalPlan(capability, args)));
     const targetUrl = sharedPathCapabilities.has(capability.name) && sharedPathUrl ? sharedPathUrl : BASE;
-    await page.goto(targetUrl);
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     try {
       await page.waitForSelector(".canvas-column-main", { timeout: 15_000 });
     } catch {
-      await page.goto(targetUrl);
-      await page.waitForSelector(".canvas-column-main");
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      await page.waitForSelector(".canvas-column-main", { timeout: 60_000 });
     }
-    await page.waitForFunction(() => window.__lensDirector?.run);
+    await page.waitForFunction(() => window.__lensDirector?.run, null, { timeout: 60_000 });
     const setup = setupByName[capability.name] || [];
     if (setup.length) {
       for (const step of setup) {
@@ -748,8 +749,8 @@ async function createSharedPathUrl(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   try {
     await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
-    await page.goto(BASE);
-    await page.waitForFunction(() => window.__lensPathShare?.share);
+    await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.waitForFunction(() => window.__lensPathShare?.share, null, { timeout: 60_000 });
     return await page.evaluate(() => window.__lensPathShare.share("node-child"));
   } finally {
     await page.close();

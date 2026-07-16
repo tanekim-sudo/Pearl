@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 import { classifyInterviewInput } from "../lib/companion-intent.js";
 import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
+import { publicCompanionError } from "../lib/companion-command-ledger.js";
 import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import {
   adoptAnonymousCompanionMemory,
@@ -200,7 +201,7 @@ export default function CompanionChat({
         setDraft(text);
         return;
       }
-      const msg = err?.message || "something went wrong — try again";
+      const msg = publicCompanionError(err);
       setDraft(text);
       setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
     } finally {

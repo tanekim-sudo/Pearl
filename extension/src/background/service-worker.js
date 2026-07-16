@@ -16,7 +16,8 @@ import {
 } from "./library-store.js";
 import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
 import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../../shared/before-after-examples.js";
-import { normalizeTasteFeedback } from "../../../shared/generation-plan.js";
+import { normalizeGenerationPlan, normalizeTasteFeedback } from "../../../shared/generation-plan.js";
+import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { createCritiqueSession } from "../../../shared/critique-session.js";
 
 const runs = new Map();
@@ -86,6 +87,50 @@ async function handle(message) {
   if (type === "get-session") return session;
   if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
   if (type === "compose-library-objects") return composeLocalLibraryObjects(payload.a, payload.b, { name: payload.name });
+  if (type === "invoke-primitive") {
+    const name = canonicalPrimitiveName(payload.primitive);
+    const primitive = TRANSFORM_PRIMITIVES.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
+    if (!primitive?.primitiveMove) throw new Error("choose Branch, Merge, Deepen, Challenge, or Embody");
+    if (primitive.name === "merge" && (payload.targets || []).length < 2) throw new Error("Merge requires at least two explicit Material inputs");
+    return writeSession({
+      queue: [...session.queue, {
+        id: primitive.id,
+        name: primitive.name,
+        prompt: primitive.prompt,
+        targets: (payload.targets || []).slice(0, 20),
+        generationPlan: normalizeGenerationPlan({
+          ...(primitive.generationPlan || {}),
+          ...(payload.branchSpecs ? { branchSpecs: payload.branchSpecs } : {}),
+        }),
+      }],
+    });
+  }
+  if (type === "set-generation-branches") {
+    const library = await readLocalLibrary();
+    const index = library.operators.findIndex((entry) => entry.id === payload.artifact);
+    if (index < 0) throw new Error("synced Move or Function not found");
+    const operators = [...library.operators];
+    operators[index] = {
+      ...operators[index],
+      version: (Number(operators[index].version) || 1) + 1,
+      generationPlan: normalizeGenerationPlan({ ...(operators[index].generationPlan || {}), branchSpecs: payload.branchSpecs }),
+      updatedAt: Date.now(),
+    };
+    return writeLocalLibrary({ ...library, operators });
+  }
+  if (type === "reorder-primitive") {
+    const library = await readLocalLibrary();
+    const primitiveId = library.operators.find((entry) => entry.id === payload.primitive || entry.name === payload.primitive)?.id || payload.primitive;
+    const rank = [...new Set([...(library.rack?.primitiveRank || []), primitiveId])];
+    const from = rank.indexOf(primitiveId);
+    rank.splice(from, 1);
+    rank.splice(Math.max(0, Math.min(Number(payload.to) || 0, rank.length)), 0, primitiveId);
+    return writeLocalLibrary({ ...library, rack: { ...library.rack, primitiveRank: rank } });
+  }
+  if (type === "arm-merge-preview") {
+    if ((payload.targets || []).length < 2) throw new Error("Merge requires at least two explicit Material inputs");
+    return writeSession({ mergePreview: { targets: payload.targets.slice(0, 20), armedAt: Date.now(), destructive: false } });
+  }
   if (type === "fragments-changed") {
     const byId = new Map(session.fragments.map((entry) => [entry.id, entry]));
     for (const fragment of payload.fragments || []) byId.set(fragment.id, fragment);

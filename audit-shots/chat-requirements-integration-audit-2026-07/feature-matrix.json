@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-16T06:45:07.447Z",
+  "generatedAt": "2026-07-16T14:24:28.902Z",
   "counts": {
     "features": 18,
-    "companion": 166,
-    "extension": 24,
+    "companion": 174,
+    "extension": 28,
     "commands": 17
   },
   "features": [
@@ -37,9 +37,19 @@
         "recordTasteFeedback",
         "prepareMoreLikeThis"
       ],
-      "companion": [],
+      "companion": [
+        "setGenerationPlan",
+        "tasteCandidate",
+        "moreLikeThis",
+        "keepAllCandidates",
+        "extendSelectedCandidates",
+        "stopGenerationBatch",
+        "retryGenerationCandidate"
+      ],
       "extension": [
-        "pressExternalGo"
+        "pressExternalGo",
+        "setExternalGenerationBranches",
+        "tasteExternalCandidate"
       ],
       "tests": [
         "shared/generation-plan.test.js"
@@ -173,9 +183,14 @@
         "demotePrimitiveMove",
         "reorderPrimitiveMove"
       ],
-      "extension": [],
+      "extension": [
+        "invokeExternalPrimitive",
+        "reorderExternalPrimitive",
+        "armExternalMerge"
+      ],
       "tests": [
-        "shared/primitive-moves.test.js"
+        "shared/primitive-moves.test.js",
+        "client/lib/companion-geometry.test.js"
       ]
     },
     {

@@ -13,8 +13,9 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("generation.taste-branching", {
     domains: ["move", "function", "ai", "extension"],
     commands: ["setGenerationPlan", "startGenerationBatch", "updateGenerationCandidate", "recordTasteFeedback", "prepareMoreLikeThis"],
-    ui: ["client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"], companion: [],
-    extension: ["pressExternalGo"], persistence: ["lens.unified-workspace.v2"],
+    ui: ["client/components/LensTreeEditor.jsx", "client/components/AiNodeCanvas.jsx", "extension/src/sidepanel/main.jsx"],
+    companion: ["setGenerationPlan", "tasteCandidate", "moreLikeThis", "keepAllCandidates", "extendSelectedCandidates", "stopGenerationBatch", "retryGenerationCandidate"],
+    extension: ["pressExternalGo", "setExternalGenerationBranches", "tasteExternalCandidate"], persistence: ["lens.unified-workspace.v2"],
     tests: ["shared/generation-plan.test.js"], owner: "shared/generation-plan.js",
   }),
   feature("lens.perceptual-encoding", {
@@ -58,7 +59,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("library.primitive-moves", {
     domains: ["move"], commands: ["setPrimitiveMove", "reorderPrimitiveMove"],
     ui: ["client/App.jsx:Primitive Moves"], companion: ["promotePrimitiveMove", "demotePrimitiveMove", "reorderPrimitiveMove"],
-    extension: [], persistence: ["lens.primitive-moves.v1"], tests: ["shared/primitive-moves.test.js"], owner: "shared/primitive-moves.js",
+    extension: ["invokeExternalPrimitive", "reorderExternalPrimitive", "armExternalMerge"], persistence: ["lens.primitive-moves.v1"], tests: ["shared/primitive-moves.test.js", "client/lib/companion-geometry.test.js"], owner: "shared/primitive-moves.js",
   }),
   feature("ai.branch-chooser", {
     domains: ["move", "function", "ai"], commands: [],

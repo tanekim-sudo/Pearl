@@ -1,7 +1,10 @@
 export const PRIMITIVE_MOVE_PREFERENCES_VERSION = 1;
 
 export function normalizePrimitiveMovePreferences(value = {}, canonicalMoves = []) {
-  const canonicalIds = canonicalMoves.filter((move) => move.primitive || move.primitiveMove).map((move) => move.id);
+  const canonicalIds = canonicalMoves
+    .filter((move) => move.primitiveMove === true)
+    .sort((a, b) => (a.primitiveRankDefault ?? Infinity) - (b.primitiveRankDefault ?? Infinity))
+    .map((move) => move.id);
   const demoted = [...new Set(value.demoted || [])];
   const promoted = [...new Set(value.promoted || [])].filter((id) => !demoted.includes(id));
   const active = [...new Set([...canonicalIds.filter((id) => !demoted.includes(id)), ...promoted])];
@@ -22,7 +25,7 @@ export function applyPrimitiveMovePreferences(moves = [], preferences = {}) {
 export function promotePrimitiveMove(preferences, moveId, canonicalMoves = []) {
   const next = normalizePrimitiveMovePreferences(preferences, canonicalMoves);
   next.demoted = next.demoted.filter((id) => id !== moveId);
-  if (!next.promoted.includes(moveId) && !canonicalMoves.some((move) => move.id === moveId && (move.primitive || move.primitiveMove))) next.promoted.push(moveId);
+  if (!next.promoted.includes(moveId) && !canonicalMoves.some((move) => move.id === moveId && move.primitiveMove === true)) next.promoted.push(moveId);
   if (!next.rank.includes(moveId)) next.rank.push(moveId);
   return normalizePrimitiveMovePreferences(next, canonicalMoves);
 }

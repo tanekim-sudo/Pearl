@@ -2,7 +2,8 @@ const buckets = new Map();
 const idempotency = new Map();
 
 export function configuredOrigins(env = process.env) {
-  const local = ["http://localhost:5173", "http://localhost:8787"];
+  const localPort = String(env.PORT || "8787");
+  const local = ["http://localhost:5173", "http://localhost:8787", `http://localhost:${localPort}`];
   const configured = String(env.CORS_ALLOWED_ORIGINS || env.APP_ORIGIN || "")
     .split(",")
     .map((item) => item.trim().replace(/\/$/, ""))

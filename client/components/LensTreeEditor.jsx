@@ -838,13 +838,20 @@ export default function LensTreeEditor({
                           value={generationPlan.candidateCount}
                           onChange={(event) => {
                             const candidateCount = Number(event.target.value);
+                            const branchSpecs = Array.from({ length: candidateCount }, (_, index) => generationPlan.branchSpecs[index] || {
+                              id: `branch-${index + 1}`,
+                              order: index,
+                              name: `Candidate branch ${index + 1}`,
+                              instruction: "",
+                              requestedModel: "auto",
+                            });
                             const assignment = generationPlan.assignment.mode === "exact"
                               ? {
                                   ...generationPlan.assignment,
                                   slots: Array.from({ length: candidateCount }, (_, index) => generationPlan.assignment.slots[index] || generationPlan.assignment.slots[0] || "auto"),
                                 }
                               : generationPlan.assignment;
-                            patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, candidateCount, assignment }) });
+                            patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, candidateCount, assignment, branchSpecs }) });
                           }}
                           aria-label="Candidate variations per run"
                         />
@@ -943,6 +950,58 @@ export default function LensTreeEditor({
                               />
                             </div>
                           ))}
+                          <div className="fn-generation-branches" data-branch-spec-editor>
+                            <strong>Branch-specific perspectives</strong>
+                            {generationPlan.branchSpecs.map((branch, index) => {
+                              const updateBranch = (patch) => {
+                                const branchSpecs = generationPlan.branchSpecs.map((entry, branchIndex) =>
+                                  branchIndex === index ? { ...entry, ...patch } : entry
+                                );
+                                patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, branchSpecs }) });
+                              };
+                              const moveBranch = (delta) => {
+                                const to = index + delta;
+                                if (to < 0 || to >= generationPlan.branchSpecs.length) return;
+                                const branchSpecs = [...generationPlan.branchSpecs];
+                                [branchSpecs[index], branchSpecs[to]] = [branchSpecs[to], branchSpecs[index]];
+                                patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, branchSpecs }) });
+                              };
+                              return (
+                                <fieldset key={branch.id}>
+                                  <legend>{branch.name || `Branch ${index + 1}`}</legend>
+                                  <input aria-label={`Branch ${index + 1} name`} value={branch.name} onChange={(event) => updateBranch({ name: event.target.value })} />
+                                  <textarea aria-label={`Branch ${index + 1} instruction`} rows={2} value={branch.instruction} placeholder="perspective, instruction, and constraints" onChange={(event) => updateBranch({ instruction: event.target.value })} />
+                                  <select aria-label={`Branch ${index + 1} model`} value={branch.requestedModel} onChange={(event) => updateBranch({ requestedModel: event.target.value })}>
+                                    <option value="auto">Auto compatible</option>
+                                    {(modelCatalog.models || []).map((model) => <option key={model.id} value={model.id}>{model.name || model.id}</option>)}
+                                  </select>
+                                  <div>
+                                    <button type="button" disabled={index === 0} onClick={() => moveBranch(-1)}>↑</button>
+                                    <button type="button" disabled={index === generationPlan.branchSpecs.length - 1} onClick={() => moveBranch(1)}>↓</button>
+                                    <button type="button" onClick={() => {
+                                      const copy = { ...branch, id: `${branch.id}-copy-${Date.now()}`, name: `${branch.name} copy` };
+                                      const branchSpecs = [...generationPlan.branchSpecs.slice(0, index + 1), copy, ...generationPlan.branchSpecs.slice(index + 1)];
+                                      patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, branchSpecs }) });
+                                    }}>duplicate</button>
+                                    <button type="button" disabled={generationPlan.branchSpecs.length === 1} onClick={() => {
+                                      const branchSpecs = generationPlan.branchSpecs.filter((_, branchIndex) => branchIndex !== index);
+                                      patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, branchSpecs }) });
+                                    }}>remove</button>
+                                  </div>
+                                </fieldset>
+                              );
+                            })}
+                            <button type="button" disabled={generationPlan.branchSpecs.length >= 20} onClick={() => {
+                              const index = generationPlan.branchSpecs.length;
+                              const branchSpecs = [...generationPlan.branchSpecs, {
+                                id: `branch-${Date.now()}`,
+                                name: `Candidate branch ${index + 1}`,
+                                instruction: "",
+                                requestedModel: "auto",
+                              }];
+                              patchOp(rootId, { generationPlan: normalizeGenerationPlan({ ...generationPlan, branchSpecs }) });
+                            }}>+ branch perspective</button>
+                          </div>
                           <label>
                             more like this
                             <input

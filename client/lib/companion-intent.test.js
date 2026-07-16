@@ -10,13 +10,23 @@ import {
   parseAdministrativeCommand,
   parseBeforeAfterCommand,
   parseExtensionDownloadCommand,
+  parseFunctionCreationCommand,
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
+  parseParallelBranchCommand,
+  parseSafeDemonstrationCommand,
   parseTranscriptLearningCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
+import {
+  beginCommand,
+  isRetryRequest,
+  lastRecoverableCommand,
+  publicCompanionError,
+  updateCommand,
+} from "./companion-command-ledger.js";
 
 test("Move, Function, and Lens save intents stay distinct", () => {
   assert.deepEqual(parseLibraryObjectCommand("save this text as a move"), {
@@ -149,6 +159,63 @@ test("confirmation and cancellation are grounded in a pending clear", () => {
     kind: "cancel-clear",
     domains: ["paper"],
   });
+});
+
+test("pending clear accepts only explicit confirmation, denial, or clear-domain amendments", () => {
+  assert.equal(parseAdministrativeCommand("create an investment memo function", {
+    previousDomains: ["generators"],
+    pending: true,
+  }), null);
+  assert.equal(parseAdministrativeCommand("show me what you can do", {
+    previousDomains: ["generators"],
+    pending: true,
+  }), null);
+});
+
+test("screenshot Function requests use canonical deterministic steps without gateway planning", () => {
+  const parsed = parseFunctionCreationCommand(
+    "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg"
+  );
+  assert.equal(parsed.steps.length, 2);
+  assert.deepEqual(parsed.steps.map((step) => step.verb), ["createFunction", "createFunction"]);
+  assert.ok(parsed.steps.every((step) => step.args.steps.length >= 5));
+  assert.match(parsed.steps[1].args.description, /without claiming his private judgment/);
+  assert.equal(parseFunctionCreationCommand("create an investment memo function").steps.length, 1);
+});
+
+test("three named branch perspectives parse exactly and vague safe requests choose a reversible demo", () => {
+  const parsed = parseParallelBranchCommand(
+    "Branch A: optimistic, Branch B: conservative, Branch C: inverted opposition perspective"
+  );
+  assert.deepEqual(parsed.args.branchSpecs.map((branch) => branch.instruction), [
+    "optimistic",
+    "conservative",
+    "inverted opposition perspective",
+  ]);
+  assert.equal(parseSafeDemonstrationCommand("do anything give me anything show me what you can do", true).demoId, "safe-capability-sample");
+});
+
+test("command ledger retries only the last failed or unexecuted executable command", () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value) };
+  const first = beginCommand("create an investment memo function", {}, storage);
+  updateCommand(first.id, { status: "failed", failure: "planner unavailable", plan: { version: 1 } }, storage);
+  const second = beginCommand("show me what you can do", {}, storage);
+  updateCommand(second.id, { status: "executed", effects: ["demo"] }, storage);
+  assert.equal(lastRecoverableCommand(storage).id, first.id);
+  assert.equal(isRetryRequest("you didn't execute my last command"), true);
+  assert.equal(isRetryRequest("do it again"), true);
+});
+
+test("raw planner, schema, gateway, and ReferenceError details never become user copy", () => {
+  for (const error of [
+    new Error("plan.root.steps[0].query: is not a supported workspace query"),
+    new ReferenceError("y is not defined"),
+    new Error("fetch failed"),
+  ]) {
+    const copy = publicCompanionError(error);
+    assert.doesNotMatch(copy, /plan\.root|supported workspace query|y is not defined|fetch failed/);
+  }
 });
 
 test("typo-filled first-run clear request routes before profile capture", () => {

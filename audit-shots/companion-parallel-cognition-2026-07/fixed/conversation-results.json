@@ -1,0 +1,1235 @@
+{
+  "results": [
+    {
+      "command": "get rid of all the lenses as well",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well"
+      ],
+      "confirmation": true,
+      "operators": [
+        {
+          "id": "op-compress",
+          "name": "compress",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-branch",
+          "name": "Branch",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-deepen",
+          "name": "Deepen",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-research",
+          "name": "research",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-challenge",
+          "name": "Challenge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-reframe",
+          "name": "reframe",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-merge",
+          "name": "Merge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-embody",
+          "name": "Embody",
+          "kind": "prompt"
+        }
+      ],
+      "items": [],
+      "ledger": {
+        "version": 1,
+        "entries": [
+          {
+            "id": "1c4e6140-ae76-4f1d-8a8a-bf590997d732",
+            "rawInput": "get rid of all the lenses as well",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": {
+              "domains": [
+                "generators"
+              ]
+            },
+            "status": "awaiting-confirmation",
+            "effects": [],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211748925,
+            "updatedAt": 1784211748928
+          }
+        ]
+      }
+    },
+    {
+      "command": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well",
+        "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg"
+      ],
+      "confirmation": false,
+      "operators": [
+        {
+          "id": "op-compress",
+          "name": "compress",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-branch",
+          "name": "Branch",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-deepen",
+          "name": "Deepen",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-research",
+          "name": "research",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-challenge",
+          "name": "Challenge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-reframe",
+          "name": "reframe",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-merge",
+          "name": "Merge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-embody",
+          "name": "Embody",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-xwn1ilj",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-v1bwf0s",
+            "s-pno5739",
+            "s-ny3ewt8",
+            "s-zu63m9w",
+            "s-60nfptg"
+          ]
+        },
+        {
+          "id": "s-v1bwf0s",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pno5739",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-ny3ewt8",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-zu63m9w",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-60nfptg",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-2wtz0r1",
+          "name": "Spielberg film evaluation",
+          "kind": "pipeline",
+          "steps": [
+            "s-bjpy6ij",
+            "s-dt5awyl",
+            "s-03ulu8c",
+            "s-0d8zhlx",
+            "s-1wrhhx3"
+          ]
+        },
+        {
+          "id": "s-bjpy6ij",
+          "name": "Audience identification",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-dt5awyl",
+          "name": "Visual storytelling",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-03ulu8c",
+          "name": "Character and moral tension",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-0d8zhlx",
+          "name": "Set-piece construction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-1wrhhx3",
+          "name": "Synthesize evaluation",
+          "kind": "prompt"
+        }
+      ],
+      "items": [],
+      "ledger": {
+        "version": 1,
+        "entries": [
+          {
+            "id": "1c4e6140-ae76-4f1d-8a8a-bf590997d732",
+            "rawInput": "get rid of all the lenses as well",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": {
+              "domains": [
+                "generators"
+              ]
+            },
+            "status": "awaiting-confirmation",
+            "effects": [],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211748925,
+            "updatedAt": 1784211748928
+          },
+          {
+            "id": "36b27fa1-68ed-425f-b439-c2ad1df31788",
+            "rawInput": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create two Functions",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                },
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Spielberg film evaluation",
+                    "description": "Analyze a film using observable criteria associated with Steven Spielberg's body of work, without claiming his private judgment.",
+                    "steps": [
+                      {
+                        "name": "Audience identification",
+                        "description": "Evaluate emotional access, wonder, fear, and point of view."
+                      },
+                      {
+                        "name": "Visual storytelling",
+                        "description": "Assess staging, blocking, suspense, and information revealed through images."
+                      },
+                      {
+                        "name": "Character and moral tension",
+                        "description": "Examine relationships, ethical stakes, and earned sentiment."
+                      },
+                      {
+                        "name": "Set-piece construction",
+                        "description": "Evaluate escalation, clarity, rhythm, and consequence."
+                      },
+                      {
+                        "name": "Synthesize evaluation",
+                        "description": "Summarize strengths, weaknesses, and the most useful revision."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211749369,
+            "updatedAt": 1784211754643
+          }
+        ]
+      }
+    },
+    {
+      "command": "you didn't execute my last command",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well",
+        "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+        "you didn't execute my last command",
+        "There is no failed or unexecuted command to retry."
+      ],
+      "confirmation": false,
+      "operators": [
+        {
+          "id": "op-compress",
+          "name": "compress",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-branch",
+          "name": "Branch",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-deepen",
+          "name": "Deepen",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-research",
+          "name": "research",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-challenge",
+          "name": "Challenge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-reframe",
+          "name": "reframe",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-merge",
+          "name": "Merge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-embody",
+          "name": "Embody",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-xwn1ilj",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-v1bwf0s",
+            "s-pno5739",
+            "s-ny3ewt8",
+            "s-zu63m9w",
+            "s-60nfptg"
+          ]
+        },
+        {
+          "id": "s-v1bwf0s",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pno5739",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-ny3ewt8",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-zu63m9w",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-60nfptg",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-2wtz0r1",
+          "name": "Spielberg film evaluation",
+          "kind": "pipeline",
+          "steps": [
+            "s-bjpy6ij",
+            "s-dt5awyl",
+            "s-03ulu8c",
+            "s-0d8zhlx",
+            "s-1wrhhx3"
+          ]
+        },
+        {
+          "id": "s-bjpy6ij",
+          "name": "Audience identification",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-dt5awyl",
+          "name": "Visual storytelling",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-03ulu8c",
+          "name": "Character and moral tension",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-0d8zhlx",
+          "name": "Set-piece construction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-1wrhhx3",
+          "name": "Synthesize evaluation",
+          "kind": "prompt"
+        }
+      ],
+      "items": [],
+      "ledger": {
+        "version": 1,
+        "entries": [
+          {
+            "id": "1c4e6140-ae76-4f1d-8a8a-bf590997d732",
+            "rawInput": "get rid of all the lenses as well",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": {
+              "domains": [
+                "generators"
+              ]
+            },
+            "status": "awaiting-confirmation",
+            "effects": [],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211748925,
+            "updatedAt": 1784211748928
+          },
+          {
+            "id": "36b27fa1-68ed-425f-b439-c2ad1df31788",
+            "rawInput": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create two Functions",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                },
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Spielberg film evaluation",
+                    "description": "Analyze a film using observable criteria associated with Steven Spielberg's body of work, without claiming his private judgment.",
+                    "steps": [
+                      {
+                        "name": "Audience identification",
+                        "description": "Evaluate emotional access, wonder, fear, and point of view."
+                      },
+                      {
+                        "name": "Visual storytelling",
+                        "description": "Assess staging, blocking, suspense, and information revealed through images."
+                      },
+                      {
+                        "name": "Character and moral tension",
+                        "description": "Examine relationships, ethical stakes, and earned sentiment."
+                      },
+                      {
+                        "name": "Set-piece construction",
+                        "description": "Evaluate escalation, clarity, rhythm, and consequence."
+                      },
+                      {
+                        "name": "Synthesize evaluation",
+                        "description": "Summarize strengths, weaknesses, and the most useful revision."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211749369,
+            "updatedAt": 1784211754643
+          }
+        ]
+      }
+    },
+    {
+      "command": "create an investment memo function",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well",
+        "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+        "you didn't execute my last command",
+        "There is no failed or unexecuted command to retry.",
+        "create an investment memo function"
+      ],
+      "confirmation": false,
+      "operators": [
+        {
+          "id": "op-compress",
+          "name": "compress",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-branch",
+          "name": "Branch",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-deepen",
+          "name": "Deepen",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-research",
+          "name": "research",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-challenge",
+          "name": "Challenge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-reframe",
+          "name": "reframe",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-merge",
+          "name": "Merge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-embody",
+          "name": "Embody",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-xwn1ilj",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-v1bwf0s",
+            "s-pno5739",
+            "s-ny3ewt8",
+            "s-zu63m9w",
+            "s-60nfptg"
+          ]
+        },
+        {
+          "id": "s-v1bwf0s",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pno5739",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-ny3ewt8",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-zu63m9w",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-60nfptg",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-2wtz0r1",
+          "name": "Spielberg film evaluation",
+          "kind": "pipeline",
+          "steps": [
+            "s-bjpy6ij",
+            "s-dt5awyl",
+            "s-03ulu8c",
+            "s-0d8zhlx",
+            "s-1wrhhx3"
+          ]
+        },
+        {
+          "id": "s-bjpy6ij",
+          "name": "Audience identification",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-dt5awyl",
+          "name": "Visual storytelling",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-03ulu8c",
+          "name": "Character and moral tension",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-0d8zhlx",
+          "name": "Set-piece construction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-1wrhhx3",
+          "name": "Synthesize evaluation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-5zxo5jo",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-ylvmmfr",
+            "s-v8vs34v",
+            "s-pyibrdn",
+            "s-piysqug",
+            "s-eq9sap1"
+          ]
+        },
+        {
+          "id": "s-ylvmmfr",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-v8vs34v",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pyibrdn",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-piysqug",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-eq9sap1",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        }
+      ],
+      "items": [],
+      "ledger": {
+        "version": 1,
+        "entries": [
+          {
+            "id": "1c4e6140-ae76-4f1d-8a8a-bf590997d732",
+            "rawInput": "get rid of all the lenses as well",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": {
+              "domains": [
+                "generators"
+              ]
+            },
+            "status": "awaiting-confirmation",
+            "effects": [],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211748925,
+            "updatedAt": 1784211748928
+          },
+          {
+            "id": "36b27fa1-68ed-425f-b439-c2ad1df31788",
+            "rawInput": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create two Functions",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                },
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Spielberg film evaluation",
+                    "description": "Analyze a film using observable criteria associated with Steven Spielberg's body of work, without claiming his private judgment.",
+                    "steps": [
+                      {
+                        "name": "Audience identification",
+                        "description": "Evaluate emotional access, wonder, fear, and point of view."
+                      },
+                      {
+                        "name": "Visual storytelling",
+                        "description": "Assess staging, blocking, suspense, and information revealed through images."
+                      },
+                      {
+                        "name": "Character and moral tension",
+                        "description": "Examine relationships, ethical stakes, and earned sentiment."
+                      },
+                      {
+                        "name": "Set-piece construction",
+                        "description": "Evaluate escalation, clarity, rhythm, and consequence."
+                      },
+                      {
+                        "name": "Synthesize evaluation",
+                        "description": "Summarize strengths, weaknesses, and the most useful revision."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211749369,
+            "updatedAt": 1784211754643
+          },
+          {
+            "id": "3d32f04d-2b79-4954-8ebf-18e2b752c98e",
+            "rawInput": "create an investment memo function",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create Investment memo",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211755421,
+            "updatedAt": 1784211758160
+          }
+        ]
+      }
+    },
+    {
+      "command": "do anything give me anything show me what you can do",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well",
+        "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+        "you didn't execute my last command",
+        "There is no failed or unexecuted command to retry.",
+        "create an investment memo function",
+        "do anything give me anything show me what you can do"
+      ],
+      "confirmation": false,
+      "operators": [
+        {
+          "id": "op-compress",
+          "name": "compress",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-branch",
+          "name": "Branch",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-deepen",
+          "name": "Deepen",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-research",
+          "name": "research",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-challenge",
+          "name": "Challenge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-reframe",
+          "name": "reframe",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-merge",
+          "name": "Merge",
+          "kind": "prompt"
+        },
+        {
+          "id": "op-embody",
+          "name": "Embody",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-xwn1ilj",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-v1bwf0s",
+            "s-pno5739",
+            "s-ny3ewt8",
+            "s-zu63m9w",
+            "s-60nfptg"
+          ]
+        },
+        {
+          "id": "s-v1bwf0s",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pno5739",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-ny3ewt8",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-zu63m9w",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-60nfptg",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-2wtz0r1",
+          "name": "Spielberg film evaluation",
+          "kind": "pipeline",
+          "steps": [
+            "s-bjpy6ij",
+            "s-dt5awyl",
+            "s-03ulu8c",
+            "s-0d8zhlx",
+            "s-1wrhhx3"
+          ]
+        },
+        {
+          "id": "s-bjpy6ij",
+          "name": "Audience identification",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-dt5awyl",
+          "name": "Visual storytelling",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-03ulu8c",
+          "name": "Character and moral tension",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-0d8zhlx",
+          "name": "Set-piece construction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-1wrhhx3",
+          "name": "Synthesize evaluation",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-5zxo5jo",
+          "name": "Investment memo",
+          "kind": "pipeline",
+          "steps": [
+            "s-ylvmmfr",
+            "s-v8vs34v",
+            "s-pyibrdn",
+            "s-piysqug",
+            "s-eq9sap1"
+          ]
+        },
+        {
+          "id": "s-ylvmmfr",
+          "name": "Frame the thesis",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-v8vs34v",
+          "name": "Assess market and moat",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-pyibrdn",
+          "name": "Evaluate team and traction",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-piysqug",
+          "name": "Build risk ledger",
+          "kind": "prompt"
+        },
+        {
+          "id": "s-eq9sap1",
+          "name": "Write recommendation",
+          "kind": "prompt"
+        }
+      ],
+      "items": [
+        {
+          "rotation": 0,
+          "scale": 1,
+          "pageId": "page-1",
+          "side": "paper",
+          "id": "s-mbtnsj0",
+          "type": "text",
+          "x": 24,
+          "y": 388.8,
+          "text": "A thought can become branches, a synthesis, deeper principles, a challenge, or a concrete example.",
+          "w": 520,
+          "world": null,
+          "bornAt": 1784211759199
+        }
+      ],
+      "ledger": {
+        "version": 1,
+        "entries": [
+          {
+            "id": "1c4e6140-ae76-4f1d-8a8a-bf590997d732",
+            "rawInput": "get rid of all the lenses as well",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": {
+              "domains": [
+                "generators"
+              ]
+            },
+            "status": "awaiting-confirmation",
+            "effects": [],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211748925,
+            "updatedAt": 1784211748928
+          },
+          {
+            "id": "36b27fa1-68ed-425f-b439-c2ad1df31788",
+            "rawInput": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create two Functions",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                },
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Spielberg film evaluation",
+                    "description": "Analyze a film using observable criteria associated with Steven Spielberg's body of work, without claiming his private judgment.",
+                    "steps": [
+                      {
+                        "name": "Audience identification",
+                        "description": "Evaluate emotional access, wonder, fear, and point of view."
+                      },
+                      {
+                        "name": "Visual storytelling",
+                        "description": "Assess staging, blocking, suspense, and information revealed through images."
+                      },
+                      {
+                        "name": "Character and moral tension",
+                        "description": "Examine relationships, ethical stakes, and earned sentiment."
+                      },
+                      {
+                        "name": "Set-piece construction",
+                        "description": "Evaluate escalation, clarity, rhythm, and consequence."
+                      },
+                      {
+                        "name": "Synthesize evaluation",
+                        "description": "Summarize strengths, weaknesses, and the most useful revision."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211749369,
+            "updatedAt": 1784211754643
+          },
+          {
+            "id": "3d32f04d-2b79-4954-8ebf-18e2b752c98e",
+            "rawInput": "create an investment memo function",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": {
+              "title": "Create Investment memo",
+              "steps": [
+                {
+                  "verb": "createFunction",
+                  "args": {
+                    "name": "Investment memo",
+                    "description": "Produce an evidence-grounded investment memo with an explicit recommendation.",
+                    "steps": [
+                      {
+                        "name": "Frame the thesis",
+                        "description": "State the opportunity, timing, and key underwriting question."
+                      },
+                      {
+                        "name": "Assess market and moat",
+                        "description": "Evaluate market structure, differentiation, and durability."
+                      },
+                      {
+                        "name": "Evaluate team and traction",
+                        "description": "Assess execution capability and evidence of demand."
+                      },
+                      {
+                        "name": "Build risk ledger",
+                        "description": "Name disconfirming evidence, failure modes, and mitigations."
+                      },
+                      {
+                        "name": "Write recommendation",
+                        "description": "Synthesize an invest or pass memo with confidence and open questions."
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "function-created"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211755421,
+            "updatedAt": 1784211758160
+          },
+          {
+            "id": "559b5bc7-75e1-4226-be76-13d960b92df9",
+            "rawInput": "do anything give me anything show me what you can do",
+            "normalizedClauses": [],
+            "source": "companion",
+            "plan": null,
+            "argsSnapshot": null,
+            "confirmation": null,
+            "status": "executed",
+            "effects": [
+              "reversible-demonstration-played"
+            ],
+            "failure": null,
+            "undoCheckpoint": null,
+            "references": [],
+            "retryOf": null,
+            "createdAt": 1784211758556,
+            "updatedAt": 1784211759960
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

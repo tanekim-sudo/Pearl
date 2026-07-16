@@ -1,0 +1,169 @@
+{
+  "before": {
+    "id": "s-lkxpyco",
+    "plan": {
+      "version": 2,
+      "candidateCount": 3,
+      "assignment": {
+        "mode": "auto",
+        "model": "auto",
+        "slots": [],
+        "groups": []
+      },
+      "branchSpecs": [
+        {
+          "version": 1,
+          "id": "branch-a",
+          "order": 0,
+          "name": "Optimistic growth perspective",
+          "instruction": "optimistic",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        },
+        {
+          "version": 1,
+          "id": "branch-b",
+          "order": 1,
+          "name": "Conservative downside perspective",
+          "instruction": "conservative",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        },
+        {
+          "version": 1,
+          "id": "branch-c",
+          "order": 2,
+          "name": "Opposition inverted perspective",
+          "instruction": "inverted opposition perspective",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        }
+      ],
+      "temperature": null,
+      "diversity": 0.5,
+      "seed": null,
+      "parallelism": 1,
+      "budget": {
+        "maxUsd": 1,
+        "maxLatencyMs": 120000
+      },
+      "perStructuralOutputVariants": null,
+      "stopPolicy": "complete",
+      "moreLikeThis": {
+        "count": 3,
+        "diversity": 0.35,
+        "modelStrategy": "inherit",
+        "model": null
+      },
+      "fingerprint": "fnv1a-494e1d9a"
+    }
+  },
+  "after": {
+    "id": "s-lkxpyco",
+    "plan": {
+      "version": 2,
+      "candidateCount": 3,
+      "assignment": {
+        "mode": "auto",
+        "model": "auto",
+        "slots": [],
+        "groups": []
+      },
+      "branchSpecs": [
+        {
+          "version": 1,
+          "id": "branch-a",
+          "order": 0,
+          "name": "Optimistic growth perspective",
+          "instruction": "optimistic",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        },
+        {
+          "version": 1,
+          "id": "branch-b",
+          "order": 1,
+          "name": "Conservative downside perspective",
+          "instruction": "conservative",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        },
+        {
+          "version": 1,
+          "id": "branch-c",
+          "order": 2,
+          "name": "Opposition inverted perspective",
+          "instruction": "inverted opposition perspective",
+          "perspective": "",
+          "constraints": [],
+          "requestedModel": "auto",
+          "outputSpecOverride": null,
+          "lensContextBindings": [],
+          "diversity": null,
+          "seed": null,
+          "providerOptions": {},
+          "count": 1,
+          "group": null
+        }
+      ],
+      "temperature": null,
+      "diversity": 0.5,
+      "seed": null,
+      "parallelism": 1,
+      "budget": {
+        "maxUsd": 1,
+        "maxLatencyMs": 120000
+      },
+      "perStructuralOutputVariants": null,
+      "stopPolicy": "complete",
+      "moreLikeThis": {
+        "count": 3,
+        "diversity": 0.35,
+        "modelStrategy": "inherit",
+        "model": null
+      },
+      "fingerprint": "fnv1a-494e1d9a"
+    }
+  },
+  "errors": []
+}

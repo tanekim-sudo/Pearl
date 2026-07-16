@@ -97,6 +97,45 @@
   box-shadow: 0 0 0 2px rgba(232, 185, 35, 0.26);
 }
 
+.ai-node.merge-proximity .ai-node-ring {
+  box-shadow: 0 0 0 10px rgba(181, 134, 48, 0.14);
+  border-color: rgba(181, 134, 48, 0.72);
+}
+
+.ai-node.merge-proximity.armed .ai-node-ring {
+  box-shadow: 0 0 0 14px rgba(181, 134, 48, 0.24);
+  border-color: #9b6a15;
+}
+
+.ai-node-merge-label {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  transform: translateX(-50%);
+  z-index: 12;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff7df;
+  color: #765016;
+  border: 1px solid rgba(155, 106, 21, 0.35);
+  font: 600 11px/1.2 Inter, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.modal-scrim.companion-confirmation-popover {
+  pointer-events: none;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 0 24px 24px;
+  background: rgba(20, 16, 8, 0.08);
+}
+
+.companion-confirmation-popover .modal {
+  pointer-events: auto;
+  width: min(420px, calc(100vw - 32px));
+}
+
 .ai-node-viewport-embedded .ai-node-content-text {
   background: rgba(255, 255, 255, 0.97);
 }

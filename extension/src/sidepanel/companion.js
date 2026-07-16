@@ -35,6 +35,17 @@ export const EXTENSION_VERBS = Object.freeze({
   ingestExternalCritique: ({ args, action }) => action("critique-ingest", { text: args.text }),
   stopExternalCritique: ({ action }) => action("critique-stop"),
   composeExternalObjects: ({ args, action }) => action("compose-library-objects", { a: args.a, b: args.b, name: args.name }),
+  invokeExternalPrimitive: ({ args, action }) => action("invoke-primitive", {
+    primitive: args.primitive,
+    targets: args.targets,
+    branchSpecs: args.branchSpecs,
+  }),
+  reorderExternalPrimitive: ({ args, action }) => action("reorder-primitive", { primitive: args.primitive, to: args.to }),
+  setExternalGenerationBranches: ({ args, action }) => action("set-generation-branches", {
+    artifact: args.artifact,
+    branchSpecs: args.branchSpecs,
+  }),
+  armExternalMerge: ({ args, action }) => action("arm-merge-preview", { targets: args.targets, destructive: false }),
 });
 
 export function validateExtensionVerbParity() {
@@ -76,6 +87,8 @@ export function parseExtensionIntent(text) {
   if (/^stop critique(?: mode)?$/i.test(value)) return { name: "stopExternalCritique", args: {} };
   const critique = value.match(/^critique:\s*(.+)$/i);
   if (critique) return { name: "ingestExternalCritique", args: { text: critique[1] } };
+  const primitive = value.match(/^(branch|merge|deepen|challenge|embody) (?:these|this|the selection)$/i);
+  if (primitive) return { name: "invokeExternalPrimitive", args: { primitive: primitive[1][0].toUpperCase() + primitive[1].slice(1).toLowerCase(), targets: ["selection"] } };
   if (/^copy (result )?(.+)$/i.test(value)) return { name: "copyExternalResult", args: { result: value.match(/^copy (?:result )?(.+)$/i)[1] } };
   if (/^insert (result )?(.+)$/i.test(value)) return { name: "insertExternalResult", args: { result: value.match(/^insert (?:result )?(.+)$/i)[1] } };
   if (/^replace (with )?(.+)$/i.test(value)) return { name: "replaceExternalSelection", args: { result: value.match(/^replace (?:with )?(.+)$/i)[1] } };

@@ -1,0 +1,24 @@
+{
+  "url": "https://representation-eta.vercel.app/",
+  "results": [
+    {
+      "command": "get rid of all the lenses as well",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well"
+      ],
+      "confirmation": 1
+    },
+    {
+      "command": "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg",
+      "messages": [
+        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        "get rid of all the lenses as well",
+        "Cancelled. Nothing changed.",
+        "create me a function that gives me an investment memo and decompose all the steps that would go into that and also one that analyzes a movie from the evaluation criteria of Steven Spielberg"
+      ],
+      "confirmation": 1
+    }
+  ],
+  "errors": []
+}

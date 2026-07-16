@@ -168,7 +168,7 @@ try {
       await page.mouse.up();
       await page.waitForTimeout(80);
       const after = await page.locator(".ai-node").count();
-      const didBranch = after === before + 1;
+      const didBranch = after > before;
       if (didBranch) branched += 1;
       primitiveResults.push({ index, name: await operators.nth(index).innerText(), identified, didBranch });
     }

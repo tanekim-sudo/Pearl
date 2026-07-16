@@ -6,6 +6,16 @@
 
 export const COMPANION_DEMOS = [
   {
+    id: "safe-capability-sample",
+    title: "A reversible capability sample",
+    blurb: "create and organize a local thought without a model call",
+    keywords: ["anything", "what can you do", "show me"],
+    steps: [
+      { verb: "spawnText", args: { text: "A thought can become branches, a synthesis, deeper principles, a challenge, or a concrete example.", saveAs: "sample" } },
+      { verb: "zoomToItem", args: { target: "sample" } },
+    ],
+  },
+  {
     id: "three-layers",
     title: "The three layers",
     blurb: "lenses rail, paper page, AI space — what each is for",
@@ -22,12 +32,12 @@ export const COMPANION_DEMOS = [
     id: "first-idea",
     title: "Put down an idea and transform it",
     blurb: "spawn a thought on paper and apply a built-in move",
-    keywords: ["idea", "first", "begin", "transform", "apply", "invert", "text", "write"],
+    keywords: ["idea", "first", "begin", "transform", "apply", "challenge", "text", "write"],
     steps: [
       { verb: "caption", args: { text: "click anywhere on the page and type — that's a thought.", ms: 2000 } },
       { verb: "spawnText", args: { text: "Forgiveness is the controlled release of pressure", saveAs: "idea" } },
       { verb: "caption", args: { text: "now drag a move from the rail onto it.", ms: 1800 } },
-      { verb: "applyFunction", args: { op: "invert", target: "idea" } },
+      { verb: "applyFunction", args: { op: "Challenge", target: "idea" } },
       { verb: "focusAiResult", args: {} },
       { verb: "caption", args: { text: "nothing touched your paper — results live in the AI space until you pull them across.", ms: 2600 } },
     ],
@@ -105,7 +115,7 @@ export const COMPANION_DEMOS = [
       { verb: "spawnText", args: { text: "Markets are conversations", saveAs: "seed" } },
       { verb: "dragItemToAi", args: { target: "seed" } },
       { verb: "caption", args: { text: "drop another lens on a node and it branches — the original stays put.", ms: 2200 } },
-      { verb: "applyFunctionToAiNode", args: { op: "reframe" } },
+      { verb: "applyFunctionToAiNode", args: { op: "Branch" } },
       { verb: "focusAiResult", args: {} },
       { verb: "caption", args: { text: "you can also pull a strand straight out of a node with your cursor and pick an operation mid-drag.", ms: 2800 } },
     ],
@@ -130,7 +140,7 @@ export const COMPANION_DEMOS = [
     keywords: ["capture", "thread", "history", "path", "record", "sequence", "save steps"],
     steps: [
       { verb: "spawnText", args: { text: "Grace is unearned favor", saveAs: "g" } },
-      { verb: "applyFunction", args: { op: "expand", target: "g" } },
+      { verb: "applyFunction", args: { op: "Deepen", target: "g" } },
       { verb: "dragAiResultToPaper", args: {} },
       { verb: "caption", args: { text: "every object remembers the exact steps that produced it.", ms: 2200 } },
       { verb: "captureThreadAsFunction", args: { target: "last" } },

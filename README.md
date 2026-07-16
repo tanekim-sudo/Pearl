@@ -1,128 +1,965 @@
 # Lens
 
-Create reusable Moves, Functions, and contextual Lenses, then apply them to material through a server-only model gateway.
+Lens is a spatial operating environment for reusable cognition. It lets people act on any material with atomic **Moves**, compose those actions into repeatable **Functions**, and shape the context and perceptual stance of the work through **Lenses**. Paper, AI generations, web selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
 
-- **Make a symbol** — give it a name, icon, color, and a prompt (e.g. "Summarize", "Fix grammar", "Translate to French").
-- **Drop it on text** — type/paste text, optionally select part of it, then drag a symbol onto the text box. The model runs the prompt on that text.
-- **Apply the result** — replace the text (or just the selection) with the model's output, or copy it.
+This README is the canonical product and engineering contract for the fully realized product. “Must” and “shall” describe required behavior. Optional future extensions are isolated in [Expansion roadmap](#expansion-roadmap).
 
-Symbols are saved in your browser (localStorage). Your API token stays on the server.
+## Product thesis
 
-## Setup
+Most AI products make the prompt, model response, and conversation the primary unit. Lens makes the user’s evolving way of thinking the primary unit:
 
-1. Install dependencies:
+- Work begins as material, not as a mandatory chat.
+- Instructions become reusable objects instead of disposable prompt history.
+- Processes remain editable, inspectable, composable, and versioned.
+- Context is explicit and bounded instead of silently accumulating.
+- Generation creates navigable alternatives rather than replacing the source.
+- The spatial arrangement, transformation history, and user’s taste remain part of the artifact.
+- Direct manipulation, voice, companion execution, and browser-extension execution must produce equivalent durable effects.
 
-   ```bash
-   npm install
-   ```
+### Experience principles
 
-2. Create a Vercel AI Gateway API key in the Vercel dashboard and add it locally:
+1. **Paper first.** A person can write, draw, arrange, and highlight before invoking a model.
+2. **Explicit execution.** Selecting, highlighting, queueing, or previewing never runs a model. Only explicit **GO** or an equally explicit command executes.
+3. **Preserve sources.** Branching and interpretation create lineage-linked outputs; they do not silently overwrite source material.
+4. **Progressive disclosure.** Common actions stay immediate. Graphs, model assignments, schemas, provenance, and advanced composition remain inspectable without crowding the default surface.
+5. **One semantic system.** Web app, companion, voice, and extension share object schemas, domain commands, validation, persistence, and undo semantics.
+6. **Visible agency.** The companion demonstrates real actions with a ghost cursor and reports precise blockers; it does not narrate success without effects.
+7. **Bounded autonomy.** Plans, context, research, generation, cost, retries, and iteration are finite, cancellable, and checkpointed.
+8. **Private by default.** Local work stays local unless the user signs in, exports, shares, captures a screen, or presses GO with disclosed material.
+9. **Accessible equivalence.** Pointer, touch, keyboard, and voice paths reach the same core outcomes.
+10. **Terminological discipline.** Move means atomic action, Function means process, and Lens means way of seeing/context everywhere.
 
-   ```bash
-   cp .env.example .env
-   # then edit .env and set AI_GATEWAY_API_KEY=...
-   ```
+## Core ontology
 
-3. Run it (starts the API server + the web app):
+### Material
 
-   ```bash
-   npm run dev
-   ```
+Material is the universal input and output envelope. It carries a stable ID, machine kind, MIME type, content, alternate representations, output contract, fingerprint, and provenance.
 
-   Open the app at http://localhost:5173
+Required kinds are text, rich text, list, table, image, link, drawing, JSON, multimodal bundles, and Lens material. Deterministic bridges convert compatible representations—such as rich text to text, table to JSON, drawing to image, or text/image to multimodal. When no safe deterministic bridge exists, Lens proposes an editable bridge Move and identifies required model capabilities. Conversion never happens invisibly.
 
-## Production (self-hosted)
+### Move
+
+A **Move** is one atomic, reusable action:
+
+- one instruction or prompt template;
+- explicit input type and arity;
+- semantic and machine-readable output specification;
+- optional generation plan and model recommendation;
+- stable identity, version, private examples, and provenance.
+
+A Move can be authored directly, captured from an ordinary instruction event, inferred from examples, imported, forked, or promoted into the Primitive Moves shelf. It cannot contain process children.
+
+### Function
+
+A **Function** is a reusable process:
+
+- an acyclic graph of versioned Move or Function references;
+- ordered, branching, and converging edges;
+- explicit selected outputs;
+- optional Lens context bindings;
+- invariants, model preferences, output specification, and generation plan;
+- exact checkpoints after each completed node.
+
+Functions may return one or multiple typed outputs. A Function can be captured from material lineage, assembled in the editor, composed from library objects, learned from before/after examples, or inferred from a transcript. Editing a Function creates a version; historical outputs retain the exact referenced versions.
+
+### Lens object
+
+A **Lens** is a reusable way of seeing and a bounded context:
+
+- source material and relationships;
+- spatial placements, layers, conflicts, and priorities;
+- inclusion and privacy policy;
+- context budget;
+- perceptual facets that determine what to notice, ask, relate, preserve, challenge, or exclude;
+- model and encoding provenance.
+
+A Lens is context, not an action. Applying a Lens means binding it to a Move or Function, composing it with another object, or interpreting material through it. An empty Lens resets context; a rich Lens can combine evidence, a perceptual model, and composed Lens layers.
+
+The historical primary “Generator” object must not appear in current product vocabulary. Its useful behavior—collecting emerging spatial structure and generating from it—belongs to Lens material, Lens encoding, and Lens application.
+
+Legacy data migrates idempotently under these rules:
+
+- an old atomic `function` becomes a Move;
+- an old process/pipeline `lens` becomes a Function;
+- an old contextual `generator` becomes a Lens;
+- legacy `primitive` becomes `primitiveMove`;
+- old commands and storage names remain read-only migration adapters, never current UI terminology.
+
+Ambiguous records default to reversible Lens/context classification and retain source kind, aliases, migration reason, confidence, and original extension fields.
+
+### Page, node, candidate, and companion
+
+- A **Page** is the single bounded 8.5×11-inch paper and world coordinate system for human and AI material.
+- A **node** is lineage-bearing AI material on that page. It can be moved, read, highlighted, branched, linked, or returned to paper.
+- A **candidate** is one typed output in a generation batch, with its requested/resolved model, branch specification, differentiation blurb, status, provenance, and taste feedback.
+- The **companion** is a capability-complete command interface over the same domain actions as direct manipulation. It plans, observes, animates, executes, checkpoints, confirms, and recovers.
+
+## Primitive Moves
+
+The primary Primitive Moves are:
+
+- **Branch** — preserve the source and create distinct useful possibilities. Each branch may carry its own perspective, instruction, constraints, Lens bindings, model, diversity, and seed.
+- **Merge** — fuse two or more explicit Material inputs into one coherent structure while retaining all source links.
+- **Deepen** — surface assumptions, mechanisms, principles, and underlying structure grounded in the source.
+- **Challenge** — identify weak assumptions, counterevidence, failure modes, and the strongest opposition case without destroying the source.
+- **Embody** — make an abstraction concrete through examples, observable behavior, situations, and artifacts traceable to the source.
+
+People may promote any Move to the Primitive shelf, demote a built-in, and reorder the shelf. Preferences are separate from canonical Move definitions so upgrades do not erase user organization.
+
+### Proximity Merge
+
+Dragging one compatible item toward another reveals a non-destructive Merge preview. The preview:
+
+1. identifies every proposed input;
+2. shows the resulting placement and output contract;
+3. distinguishes grouping from execution;
+4. arms only after a visible dwell inside the target’s proximity field;
+5. treats release while armed as an explicit Merge command equivalent to pressing GO;
+6. disarms if the pointer leaves a wider release boundary, preventing flicker and accidental commits;
+7. preserves originals, creates a midpoint source node containing both source IDs, and runs Merge from that node;
+8. offers immediate undo and refuses unreadable, incompatible, or ambiguous inputs until a bridge or explicit selection resolves them.
+
+Mere proximity never executes, deletes, or replaces material. The visual target, dwell, and armed-release gesture are mandatory.
+
+## Universal composition algebra
+
+Every pair of canonical objects composes through one ordered 3×3 algebra:
+
+- Move × Move → Function
+- Move × Function → Function
+- Function × Move → Function
+- Function × Function → Function
+- Move/Function × Lens, or Lens × Move/Function → Function with ordered context binding
+- Lens × Lens → layered Lens
+
+Composition records operand IDs and versions, left/right order, relation (`then`, `before`, `through`, `scope`, or `merge`), grouping, user intent, drag geometry, fingerprint, and whether the result is ephemeral or saved.
+
+The user sees a preview before persistence. Action composition derives an acyclic process graph and terminal output contract. Lens composition merges perceptual models, budgets, material, privacy policy, priorities, and conflicts. A later empty Lens resets prior context layers. Multi-selection composition is a bounded left fold with a visible order and a maximum selection size.
+
+## Spatial workspace
+
+### One page and one world
+
+The canonical workspace is one 8.5×11-inch sheet at 96 DPI (768×1104 world units), with a 24-unit content margin. Paper objects and AI nodes share page coordinates, one camera, one selection system, and one persistence model.
+
+All persistent content remains inside page bounds. Oversized objects scale to fit; strokes scale and translate without losing shape; text width is clamped; nodes retain their complete visible footprint. Zooming out stops when the full page is visible. Zooming in is cursor-centered. Pan is available only when useful and cannot lose the page off-screen.
+
+Pages may be named and organized as document-level tabs, but each active page obeys the same single-sheet contract. Page creation, rename, reorder, switching, and deletion are undoable.
+
+### Layers and domains
+
+The page supports interoperable domains:
+
+- paper text and blocks;
+- images, links, voice/video references, diagrams, and drawings;
+- pen, marker, and highlighter ink;
+- AI source, result, process, and session nodes;
+- relationships and arrows;
+- Lens material and composition previews;
+- transient selections, lasso, brush queues, ghost cursor, and job overlays.
+
+Transient UI is never serialized as content. Domain routing is deterministic: drawing tools draw; eraser erases; highlighter marks; Alt/Option or empty-space drag pans; Shift-drag lassos; a node center moves/opens; a node edge branches; paper objects move; an empty click creates text.
+
+### Paper interaction
+
+Users can:
+
+- click to create editable text;
+- paste or drop supported material;
+- add sticky notes, voice notes, images, diagrams, equations, tables, code blocks, video references, and typed callouts;
+- draw pressure-aware pen and marker strokes;
+- create visible highlighter marks;
+- select, lasso, multi-select, move, resize, rotate, group, link, duplicate, and delete;
+- add structured blocks;
+- undo and redo edits;
+- move material between paper and AI while preserving provenance;
+- inspect item stages and exact transformation history;
+- fit the page, zoom to an item, and return to the full sheet.
+
+Dragging must preserve the pointer’s grab offset at every zoom. Touch targets are at least 24 CSS pixels and gestures cannot create accidental nodes.
+
+### AI nodes, arrows, and zoom morph
+
+Every node stores its kind, content, source IDs, source-node IDs, parent, operation, output specification, candidate and model provenance, position, radius, loading/error state, and history.
+
+Required behavior:
+
+- New nodes appear near the intended pointer direction, collision-adjusted while preserving directional meaning.
+- Children fan around parents; dense constellations resolve overlaps without breaking lineage.
+- Curved arrows attach to the visible silhouette, point radially into the target, separate sibling strands, and show operation labels on hover.
+- At distant zoom, nodes are compact cells with stable screen hit targets.
+- During zoom, a node continuously morphs from circle to readable card; text and ring share one silhouette.
+- Clicking or double-clicking enters reading focus with the complete output, provenance, and fragment selection.
+- Returning restores constellation context.
+- The center of a node always moves it. Dragging from its edge opens a hierarchical chooser: Primitive Moves, Moves, then Functions.
+- Pointer direction chooses branch placement; arrow keys change level/choice, number keys choose, Enter/Space applies, and Escape cancels.
+- Branching never mutates the source node. Indefinitely extensible branching is user-driven across batches, while each batch enforces candidate, parallelism, latency, cost, and nesting limits.
+
+## Cross-domain highlighter and brush
+
+The highlighter is an operation surface, not decoration. It can mark complete paper items, exact text fragments, AI nodes, exact phrases inside AI outputs, and library cards.
+
+### Selection contract
+
+- Marks remain visible until cleared or committed.
+- The living selection reports counts by domain.
+- A mark can be dragged separately after it is created; initial marking never becomes an accidental transfer.
+- Exact fragment identity survives wrapping, zoom, reading focus, and transfer.
+- Mixed selections retain per-source provenance.
+- “Make node” creates one combined source node.
+- “Send to AI” creates source-linked AI material.
+- “Find sameness” requires multiple inputs and produces a grounded shared-structure result.
+- “Save as Lens” collects the bounded selection into Lens material.
+
+### Brush and explicit GO
+
+A Move/Function queue and Lens-context stack can be armed from the rail, selection toolbar, companion, or extension:
+
+1. Select or highlight explicit material.
+2. Add ordered action objects and Lens context.
+3. Reorder or remove entries.
+4. Resolve whether ambiguous Lens material is source collection or context.
+5. Preview the exact stack, input count, output count, bridges, cost policy, and validation errors.
+6. Optionally save the action queue as a Function.
+7. Press **GO** or Command/Control+Enter.
+
+Queueing does not execute. Lens context alone does not execute. GO is shown only when at least one action and valid material exist. Escape first disarms the pending stack, then clears marks. A successful run executes once under an idempotency key, preserves sources, creates typed outputs, and clears only the committed transient state. Failure retains material and queue for correction or retry.
+
+## Generation and taste navigation
+
+### Output specifications
+
+Every Move and Function has an output specification:
+
+- semantic type;
+- machine kind: text, rich text, list, table, image, link, material, or multi;
+- description and exact instructions;
+- optional JSON schema;
+- minimum/maximum cardinality;
+- stable branch IDs and labels for multiple outputs.
+
+Function output specifications derive from terminal graph leaves unless explicitly overridden. Multi-output Functions return separately typed outputs in exact order, never a flattened prose blob. Every output carries branch, terminal, run, lineage, and Lens-context provenance.
+
+### Generation plans
+
+Moves and Functions persist versioned generation defaults:
+
+- candidate count;
+- automatic, single-model, exact-slot, weighted-group, or compare assignment;
+- branch-specific specifications;
+- temperature, diversity, and seed;
+- parallelism;
+- maximum cost and latency;
+- structural-output variants;
+- stop policy;
+- “more like this” strategy.
+
+Each branch specification contains a stable ID/order, name, instruction, perspective, constraints, requested model, optional output override, Lens bindings, diversity, seed, provider options, count, and group.
+
+### Candidates and comparison
+
+Starting a batch creates all candidate placeholders before model calls. Each candidate independently transitions through pending, running, streaming, completed, failed, or cancelled.
+
+Every candidate must display:
+
+- a unique **3–8 word differentiation blurb** explaining how it differs from siblings;
+- requested and resolved model;
+- provider route and fallback marker;
+- streamed content and typed result;
+- cost/usage and latency when available;
+- source and parent candidate;
+- private taste decision and reason.
+
+Blurbs are comparative, sibling-aware, non-duplicative, and about substantive differences—not generic quality claims.
+
+### Taste branching
+
+The user can accept, reject, or leave a candidate undecided, add a private reason, and explicitly choose whether feedback should be remembered. Focus advances through undecided siblings.
+
+“More like this” may start from one or several accepted candidates across different branches. The next plan carries:
+
+- positive exemplars from chosen branches;
+- bounded negative examples and rejection reasons;
+- explicit properties to preserve and change;
+- inherited or newly selected models;
+- a new finite candidate/cost/latency budget;
+- parent links to every contributing candidate.
+
+The user can repeat this indefinitely as a lineage of bounded batches. Cancellation stops remaining work without deleting completed candidates. When some candidates fail, successful outputs and exact retry checkpoints remain intact.
+
+## Lens system
+
+### Perceptual schema
+
+A Lens perceptual model contains ordered, individually enabled facets in:
+
+- notice;
+- questions;
+- relationships;
+- concepts;
+- assumptions;
+- evidence standards;
+- scales;
+- transformations;
+- tensions;
+- blind spots;
+- counter-Lenses and falsifiers;
+- preserve/exclude rules.
+
+Each facet has stable identity, definition, priority, confidence, review state, evidence references, and origin. User-edited sections are protected from later inference unless explicitly replaced.
+
+### Creating and encoding Lenses
+
+Any explicit bounded material can become Lens evidence: paper objects, spatial arrangements, drawings, images, AI nodes, paths, Functions, transcripts, before/after examples, imported context, visible-screen observations, or external web selections.
+
+The flow is:
+
+1. collect material without inference;
+2. inspect included/excluded sources and privacy policy;
+3. choose empty, bounded, or rich context;
+4. encode a provisional perceptual model with a compatible model;
+5. review confidence, ambiguity, alternatives, source references, and diff;
+6. edit facets and protect user-authored sections;
+7. save a version.
+
+Encoding never grants permission to unrelated local or screen data.
+
+### Empty New Chat Lens
+
+**New Chat** is an empty, zero-budget Lens. It contains no source material, excludes private carryover, and resets earlier composed context. It provides a fresh isolated model context without creating a second conversational product model.
+
+### Applying and composing context
+
+Context compilation:
+
+- sorts Lenses by priority;
+- lets an empty Lens reset earlier layers;
+- emits enabled perceptual facets before source material;
+- excludes sensitive and non-consented private material;
+- clips deterministically to the smallest applicable context budget;
+- records exclusions, truncation, conflicts, sources, enabled facets, and a fingerprint.
+
+Conflicting Lens values remain visible. Lens × Lens composition preserves layers and conflict policy; it does not silently blend incompatible instructions.
+
+### Spatial and symbolic Lens authoring
+
+A Lens may be authored as a spatial surface rather than a form. Users place text, notes, images, drawings, and a hand-drawn glyph; preserve relative placement and grouping; and ask Lens to identify the recurring structure expressed by those elements.
+
+The editor provides an immediate deterministic structural reading, then optionally enriches it with a model. The review exposes:
+
+- underlying meaning and recurring pattern;
+- the contribution of each element;
+- a reusable “view through this structure” instruction;
+- object roles, glyph description, and source sample;
+- local heuristic versus model-derived fields.
+
+Model enrichment fills gaps and never overwrites user-customized interpretation. Saving produces normal Lens material and a perceptual model, not a separate Symbol or Generator object. Reapplication preserves the structural pattern while rebinding content.
+
+## Learning reusable cognition
+
+### Capture from ordinary use
+
+Every user-owned instruction can create a private instruction event containing exact text, role, input/output references, requirements, output spec, model provenance, Lens fingerprint, result status, source surface, and time.
+
+The user may save that event as a Move. System/private context cannot be captured. Assistant output or unknown-role text requires choosing between “use this text as instruction” and “infer the Move that produced it.” Failed/cancelled runs can be saved only with a visible warning. Equivalent instructions deduplicate by normalized fingerprint. Repeated successful instructions can prompt a non-blocking “save as Move” suggestion.
+
+### Before → after learning
+
+Users can provide one or more ordered examples containing text, PNG/JPEG/WebP images, pressure-aware drawings, referenced workspace objects, mixed modalities, and counterexamples.
+
+The system validates size and completeness, sends only explicit examples, and infers:
+
+- the reusable operation;
+- name and summary;
+- invariants and changes;
+- confidence and ambiguity;
+- plausible alternatives;
+- input requirements and output specification.
+
+The result is an editable preview. Users may select an alternative, add disambiguating examples, re-infer, then save an atomic Move or a multi-step Function according to the inferred structure. Examples remain private by default and survive retry/cancellation.
+
+### Transcript learning
+
+Users paste or explicitly select a transcript, choose Move, Function, Lens, or all three, exclude messages, redact text, and run inference.
+
+The system:
+
+- parses roles without treating system/private context as user intent;
+- extracts repeated atomic instructions into Moves;
+- extracts ordered/branching workflows into Functions;
+- extracts durable context and perceptual stance into Lenses;
+- provides alternatives and editable previews;
+- validates references before saving;
+- saves all selected artifacts atomically and deduplicates repeated imports.
+
+No passive conversation scraping is allowed.
+
+### Example cultivation and Function forging
+
+Users may deliberately cultivate a Move or Function from kept input→output examples gathered during ordinary work. The workshop supports positive and negative examples, domain labels, why-the-user-kept-it notes, source item/node/history references, reorder/remove, explicit rules, constraints, failure modes, and test cases.
+
+Compilation:
+
+- requires at least two complete examples;
+- redacts credential-shaped strings;
+- selects examples within a visible token budget and reports omissions;
+- generalizes behavior rather than memorizing subject vocabulary;
+- creates an editable proposal and version snapshot;
+- provides a manual skeleton when model compilation is unavailable;
+- tests a holdout or all examples and labels deterministic overlap as overlap—not as a quality score;
+- saves the reviewed result as an atomic Move or structured Function with private example provenance.
+
+The companion can add, remove, reorder, compile, test, refine, shape, and save through the same workshop actions. Undo restores the previous draft/proposal version.
+
+### Voice, drawing, and sketch learning
+
+The paper can record voice and drawing together after one explicit microphone action. A recording session timestamps speech segments, stroke points, created items, and waveform level. Strokes are associated with overlapping speech segments so spatial marks and spoken explanation form one multimodal sketch bundle.
+
+Stopping:
+
+- stops recognition, recorder, audio tracks, animation frames, and audio context;
+- preserves transcript, segment timing, stroke/item IDs, annotations, and paper size;
+- exposes audio retention separately from the derived transcript and geometry;
+- allows the bundle to become Lens evidence, Move/Function learning evidence, or interpreted material.
+
+Microphone denial leaves paper editing intact. Speech recognition is optional; drawing-only bundles remain valid. Raw audio is local and ephemeral unless the user explicitly saves or exports it.
+
+### Portable cognition and cross-domain transfer
+
+Moves, Functions, Lenses, journeys, and spatial patterns can carry a portable cognitive-transfer record. It separates:
+
+- domain-invariant operation, phase grammar, input/output shape, and relational pattern;
+- source-domain exemplars and slot roles;
+- abstract Move references and process tree;
+- fidelity constraints and checksums;
+- optional glyph and material template.
+
+“Explore elsewhere” shows the learned domain, current inferred domain, cognitive phases, output shape, and suggested target domains. Testing rebinds exemplar slots to explicit target material. Applying in the source domain restores fidelity anchors; applying cross-domain adapts the invariant pattern. Deterministic structural fallback remains available when model enrichment is unavailable. Sharing preserves transfer metadata without copying private source text or prompt internals.
+
+### Role-guided Function architecture
+
+The companion may use an explicitly supplied role—such as investor, founder, researcher, or writer—to propose deep Function trees. These are editable starting points, never hidden identity-based automation.
+
+Complex deliverables use named cognitive phases, meaningful nested structure, at most one verified-research leaf when factual grounding is required, and a final polished deliverable leaf. Internal subject-resolution metadata is runtime-only and must never appear as a user-facing output. A user can inspect, replace, flatten, branch, or delete every generated step.
+
+Function quality rules require action-oriented 3–7 word phase names, one-sentence sparse-input→deliverable descriptions, precise leaf prompts with one output shape, and polished sectioned final outputs. If execution leaks entity/search metadata instead of a deliverable, Lens detects it and routes the draft through a visible deliverable-rewrite step rather than presenting internals.
+
+## Library, history, and sharing
+
+The library provides searchable, filterable, bounded rendering across Moves, Functions, and Lenses. Records include stable ID, version, type, tags, domains, component names, output contract, step/output counts, pin/archive state, collections, usage, recency, sharing, forks, and content hash.
+
+Users can:
+
+- search by name, description, tags, domains, and components;
+- filter pinned, archived, collection, type, shared, or forked objects;
+- sort by recency, name, frequency, or version;
+- pin, archive, restore, fork, merge, and inspect dependencies/dependents;
+- edit by direct form or instruction;
+- preview composition before saving;
+- retain immutable historical versions.
+
+Every paper item, node, candidate, and generated artifact keeps transformation lineage. History supports stage inspection, path walking, branching from a prior stage, undo, and exact replay when referenced versions and model availability permit.
+
+### Cognitive version control
+
+Object evolution uses repository-like semantics without exposing source-control jargon as a prerequisite:
+
+- every save records a message, ordered step checksum, parent, kind, and time;
+- versions may branch, fork, and merge while retaining lineage breadcrumbs;
+- Function diffs align step-name sequences and show shared, removed, and added phases;
+- merge previews identify structural conflicts before creating a new version;
+- historical versions remain executable and shareable by exact reference.
+
+The interface labels the current Function, branch/fork/merge relationship, save count, and lineage. “Commit” means save a new cognitive-object version; it never writes to the software repository.
+
+### Ideas, worlds, and paths
+
+The workspace provides a chronological ideas feed grouped by today, yesterday, and this week. Text, notes, voice, callouts, diagrams, tables, code, math, video, images, and sketches receive readable titles/icons and can be focused from the feed.
+
+Users may assign explicit “world” tags (for example life, startup, writing, or philosophy), filter the page by world, and return to all material without moving or deleting hidden items. Worlds are user-editable organizational metadata, not separate storage silos.
+
+Lineage paths can be shared and walked one step at a time. Recipients can annotate a step, branch from it, materialize the path in AI space, or leave without altering the original bundle.
+
+### Import and export
+
+Library bundles are versioned, size/depth/count bounded, plain-data-only, and SHA-256 checksummed. Exports include dependency closure, composition metadata, rack metadata, collections, Lens structure, and user-owned material.
+
+By default exports exclude credentials, board-sync metadata, companion memory, private grind/before-after examples, raw page captures, and source provenance. Private sources require separate explicit opt-in.
+
+Import validates schema, checksum, unsafe keys, duplicate IDs, dependency closure, and supported versions. It previews new, exact duplicate, version update, and ID conflict outcomes. Users may add, replace, skip, or keep both. Remapping updates every dependency. Repeated import is idempotent.
+
+### Sharing
+
+Versioned share bundles support canonical objects, journeys, paper paths, and AI paths. Small bundles use query parameters; larger bundles use URL fragments so the payload is not sent as an HTTP request path. Recipients preview the object, dependencies, destination, privacy, and use cases before materialization. Malformed or unsupported shares do not mutate local state.
+
+## Companion and voice director
+
+### Command contract
+
+The companion is a complete alternate command interface for every meaningful direct action. Each capability declares:
+
+- canonical name and typed argument schema;
+- domains and purpose;
+- observation requirements;
+- risk/destructive state and confirmation policy;
+- undo/checkpoint behavior;
+- expected effect evidence;
+- representative intent and test identity.
+
+The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
+
+### Interaction model
+
+- Text and voice use the same normalized intent and planner.
+- Common, high-confidence commands execute immediately.
+- Complex requests compile into a finite visual plan of query, action, sequence, parallel, conditional, and bounded iteration nodes.
+- Every capability and argument validates before execution.
+- Queries operate on a bounded workspace snapshot and may save references for later steps.
+- Created resources resolve by actual IDs, not guessed names.
+- The plan remains cancellable and checkpoints after every durable effect.
+- Executable commands begin real ghost-cursor/director animation immediately and emit no conversational praise or redundant narration.
+- Text appears only for destructive confirmation, required choice, or precise blocker.
+- Speech output is off unless explicitly enabled.
+- Vague requests such as “show me what you can do” run a reversible demonstration chosen for the current workspace instead of inventing or deleting user work.
+- Deterministic high-value intents—Function creation, parallel branch setup, taste navigation, learning, and administration—run through typed scripts before open-ended planning.
+
+### Voice
+
+Voice sessions handle interim and final recognition, semantic repair, duplicate final suppression, interruption, cancellation, and one dispatch per utterance. Microphone permission is requested only on explicit activation. Raw audio is not retained by default.
+
+The companion’s onboarding interview gathers only useful role, vocabulary, preferences, and autonomy boundaries. Administrative commands interrupt onboarding and are never misclassified as identity. Memory is inspectable, editable, account-scoped, adoptable from anonymous use, and clearable.
+
+### Observation and understanding
+
+With explicit scope the companion can understand:
+
+- selected objects;
+- full paper structure and relationships;
+- visible viewport;
+- AI graph, clusters, history, and library;
+- extension page selections;
+- a user-authorized visible-tab screenshot.
+
+Observations include source IDs, revision/fingerprint, viewport, redactions, and consent scope. Screen interpretation is grounded to supplied objects or pixels. A stale observation must be revalidated before mutation.
+
+### Critique and research
+
+Critique mode targets explicit items/candidates, ingests typed or spoken clauses, normalizes them into linked annotations, and materializes resulting edits or feedback. It cannot claim evaluation without an artifact effect.
+
+Research must use a source-returning browsing tool and preserve source title, URL, date, and snippet. If verified browsing is unavailable, research stops before mutation and says so. Model prior knowledge is never represented as live research.
+
+### Confirmations, recovery, and undo
+
+Destructive actions show exact affected domains and counts, preserve built-ins unless explicitly included, and require an unambiguous confirmation. The confirmation is a non-modal companion popover: it cannot be dismissed by an accidental backdrop click, it does not block a new safe command, and it remains keyboard/screen-reader operable. Follow-ups may refine a pending request, while unrelated work sets the stale confirmation aside and records that decision.
+
+Every command receives a durable bounded ledger entry with raw input, parsed arguments, plan, confirmation, effects, checkpoint, failure, and retry relationship. “Retry” resumes the last recoverable command from validated state. Errors shown to users are actionable and redact internals. Undo restores the exact pre-command checkpoint or executes the capability’s declared inverse.
+
+## Model gateway and generation infrastructure
+
+Vercel AI Gateway is the canonical provider abstraction. Server code owns credentials and model calls; clients never receive provider secrets.
+
+### Authentication and model catalog
+
+- Local/self-hosted gateway access uses `AI_GATEWAY_API_KEY`.
+- Vercel deployments may use automatically injected `VERCEL_OIDC_TOKEN`.
+- The live catalog is fetched from the Gateway, normalized, cached, and marked stale when fallback catalog data is used.
+- Explicit model IDs validate against current availability and task capabilities.
+- `Auto` chooses a compatible preferred model, then an available model according to profile quality/cost policy.
+
+Task profiles cover companion planning, voice repair, critique extraction, Move execution, Function execution, Lens interpretation/encoding, workspace vision, before/after inference, transcript extraction, and lightweight naming. Each profile specifies required capabilities, context policy, latency/cost tier, and hard input/output/cost budgets.
+
+Optional per-profile environment preferences:
+
+- `AI_GATEWAY_MODEL`
+- `AI_GATEWAY_MODEL_MOVE`
+- `AI_GATEWAY_MODEL_FUNCTION`
+- `AI_GATEWAY_MODEL_LENS`
+- `AI_GATEWAY_MODEL_LENS_ENCODING`
+- `AI_GATEWAY_MODEL_WORKSPACE_VISION`
+- `AI_GATEWAY_MODEL_VISION`
+- `AI_GATEWAY_MODEL_COMPANION`
+- `AI_GATEWAY_MODEL_VOICE_REPAIR`
+- `AI_GATEWAY_MODEL_CRITIQUE`
+- `AI_GATEWAY_MODEL_TRANSCRIPT`
+- `AI_GATEWAY_MODEL_LIGHTWEIGHT`
+
+### Routing, fallback, and provenance
+
+Requests validate context size, output tokens, estimated cost, required capabilities, cancellation, timeout, structured schema, tools, and reasoning effort. Retryable gateway failures receive a small bounded retry policy.
+
+Direct Hugging Face compatibility fallback is permitted only when all are true:
+
+1. `MODEL_GATEWAY_ALLOW_DIRECT_FALLBACK=true`;
+2. `HF_TOKEN` or `HUGGINGFACE_API_KEY` exists;
+3. the task profile allows fallback.
+
+Optional fallback variables are `HF_MODEL`, `HF_VISION_MODEL`, and `HF_PROVIDER`. Fallback is never described as Gateway execution.
+
+Every response records profile/version, requested and resolved model, gateway/adapter, provider route, fallback and reason, latency, generation ID, token usage, and cost when supplied. Streaming, tool calls, structured output, and cancellation preserve the same provenance.
+
+## Accounts, persistence, and sync
+
+Lens is anonymous-first. Without account configuration, the complete local workspace remains usable.
+
+### Local state
+
+Canonical local persistence includes:
+
+- page items/pages/title/star/theme/camera;
+- versioned library objects and Primitive Move preferences;
+- unified workspace and AI nodes;
+- item history and paths;
+- Lens material and perceptual state;
+- rack metadata and learning drafts;
+- companion memory and command ledger;
+- transient extension session state in browser session storage.
+
+Writes are immutable at the domain-command boundary and atomic at persistence boundaries. Corrupt entries fail closed or fall back to recoverable prior keys; migrations retain legacy sources for recovery.
+
+### Supabase accounts
+
+Optional Supabase configuration uses:
+
+- client: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`;
+- server: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`;
+- policy: `SUPABASE_REQUIRE_AUTH`.
+
+Accounts support email/password sign-up, email confirmation, reset, profile display name, and server-owned plan/subscription display. Row-level security restricts profiles, board snapshots, extension artifacts, and extension-generated items to their owner. Clients cannot write plans or subscriptions.
+
+No subscription row means Free. The newest active/trialing recognized subscription determines the displayed paid plan. Unknown plan IDs or states display no misleading Free badge; billing state remains indeterminate until the server resolves it. Plan rows are ordered server-side and prices are display data, not client authorization.
+
+### Adoption and synchronization
+
+On sign-in, Lens compares anonymous/local and account snapshots:
+
+- if the account is empty, local work is adopted;
+- if local work adds distinct content, the user chooses remote, merge, or local;
+- if content is already contained, it merges silently and idempotently;
+- newest-wins applies only after ownership and containment checks;
+- operators, Lenses, repos, references, rack metadata, and histories deduplicate without losing stable IDs.
+
+Cloud saves are debounced and flushed when the page hides. Failure leaves the local cache authoritative and retryable. In-flight model jobs and private transient selections do not sync unless explicitly materialized.
+
+## Lens Everywhere browser extension
+
+The extension brings the same capture, queue, GO, result, library, learning, critique, and companion semantics to external web pages.
+
+### Capture and execution
+
+1. The user invokes Lens by action, context menu, or `Alt+Shift+L`.
+2. The extension requests per-site access only when needed.
+3. The highlighter captures only explicit native selections and renders persistent overlays in an isolated open shadow root.
+4. Raw fragments, queue, tokens, and staged results live in session storage.
+5. The side panel shows source origins, character disclosure, ordered actions, Lens context, generation plan, and preview.
+6. GO sends only disclosed fragments and selected object references under an idempotency key.
+7. Results remain staged until Copy, Insert, Replace, Annotate, Open in Lens, or Save is explicit.
+
+Navigation clears page-bound raw material. Active runs can be cancelled. Anonymous libraries remain local and merge after later sign-in.
+
+### Result insertion
+
+Generic textarea/contenteditable insertion uses a revision snapshot and refuses replacement if the target changed. HTML is sanitized. Adapter behavior:
+
+- Gmail targets the semantic compose body and preserves surrounding content.
+- Notion supports current-block plain text and refuses cross-block replacement.
+- Outlook Web supports plain text; rich insertion uses the Office Add-in.
+- Google Docs uses Copy or the Google Workspace add-on rather than private editor internals.
+- Cross-origin frames and closed shadow roots use safe Copy/Open fallbacks.
+
+### Companion parity
+
+The extension companion can capture, toggle highlighter, save as Move/Lens, queue an action, bind Lens context, preview/press GO, copy/insert/replace/annotate/open results, manage library import, learn before/after transformations, capture an authorized visible tab, record taste, run critique, compose objects, invoke/reorder Primitive Moves, set generation branches, and arm Merge previews.
+
+Extension effects use the same schemas and validation as the web app. Full spatial editing falls back to an authenticated, short-lived Open in Lens artifact.
+
+### Distribution and platforms
+
+Chrome Manifest V3 is the primary side-panel target. Firefox uses `sidebar_action`; Safari uses the WebExtension payload inside a signed Xcode container. Platform-neutral domain modules cannot depend directly on `chrome.*`.
+
+An unsigned ZIP is a developer-mode package: unzip, open `chrome://extensions`, enable Developer mode, and load the build directory. A website must never imply that an unsigned ZIP is a store install. Chrome Web Store, Firefox AMO, Safari signing, Google Workspace, and Microsoft 365 distribution each require their vendor signing and review workflow.
+
+Extension build-time configuration:
+
+- `VITE_CHROME_WEB_STORE_URL` — trusted published store listing;
+- `VITE_LENS_EXTENSION_ID` — install check and direct handoff;
+- `VITE_LENS_ANALYTICS_ENDPOINT` — optional minimal funnel events.
+
+The options surface must expose domain denylist, raw-selection retention (`session` or `navigation`), model-data scope (`selected-only` or explicitly requested context), development API origin, library import preview, site-access explanation, and confirmed deletion of all local/session extension data.
+
+Capture refuses password, passcode, payment-card, one-time-code, banking, and other protected fields. Default denylisting includes account, payment, banking, and health origins and is user-extensible. Page text is always untrusted Material: embedded instructions that try to override system/developer policy are stripped from the instruction channel while preserving the selected content as data.
+
+## API and server contract
+
+The Express and Vercel serverless surfaces must expose equivalent handlers:
+
+- `GET /api/health` — configuration-safe health and gateway state;
+- `GET /api/models` — normalized model catalog;
+- `POST /api/run` — single/multiple model execution;
+- `POST /api/lens-encode` — perceptual encoding;
+- `POST /api/generate-batch` — NDJSON candidate events;
+- `POST /api/infer-transformation` — before/after learning;
+- `POST /api/infer-transcript-artifacts` — transcript learning;
+- `POST /api/plan` — deterministic execution-plan compilation;
+- `POST /api/phase` — one plan phase;
+- `POST /api/execute` and `/api/pipeline` — complete action/process execution;
+- `POST /api/share`, `GET /api/share/:id` — validated share bundles;
+- extension library, execution, artifact, and Lens-item routes.
+
+Production AI and extension APIs require verified account identity when configured. Extension selection is capped at 120,000 characters and action queues at 12. JSON bodies, images, context, graph sizes, outputs, and object nesting have hard limits. Extension routes rate-limit per identity/path and state remaining quota. Mutating retries use validated idempotency keys.
+
+`CORS_ALLOWED_ORIGINS` or `APP_ORIGIN` defines web origins; `EXTENSION_IDS` defines trusted Chrome/Firefox extension origins. Security headers deny camera, microphone, and geolocation at the server response level; feature-specific browser permissions remain explicit client actions.
+
+## Privacy, security, and trust
+
+- Secrets remain server-side and never enter Vite variables, exports, logs, or extension content scripts.
+- Page capture is selection-only by default; visible-tab screenshots require explicit authorization and are ephemeral.
+- Context compilation excludes obvious credentials and private Lens material unless separately included.
+- Prompt, transcript, imported bundle, web content, model output, and tool output are untrusted data.
+- Schemas reject prototype-pollution keys, cycles, executable objects, unsupported future versions, oversized graphs, and dangling dependencies.
+- Content scripts accept strict versioned messages from trusted senders.
+- External handoff accepts only configured origins, contains no credentials, and requires review for conflicts/private sources.
+- Incognito extension use is disabled.
+- No captured or model data is sold, used for advertising, or reused outside the requested operation.
+- Research citations and model provenance are visible; unsupported certainty is not synthesized.
+- Account deletion and “delete all extension data” remove user-owned stored data according to retention policy.
+
+## Accessibility and responsive behavior
+
+- All primary controls have accessible names, visible focus, semantic roles, and keyboard operation.
+- Modals trap focus and close with Escape without discarding unsaved work unexpectedly.
+- Strand chooser, pages, editor trees, branch lists, output choices, and candidate comparison support arrow-key navigation.
+- Touch and pointer targets are at least 24 CSS pixels; key actions target 44 pixels where space permits.
+- Color is never the sole signal for selection, status, error, or provenance.
+- Screen-reader announcements describe GO readiness, jobs, candidate streaming/completion, confirmations, and undo.
+- Reduced motion replaces camera flight, node birth, cursor animation, and morph effects with immediate state changes while preserving comprehension.
+- Narrow layouts stack the rail, page, AI controls, companion, brush bar, and side-panel content without horizontal document clipping.
+- Zoomed content maintains readable text and does not hide complete output behind graph geometry.
+- Voice is optional; every voice action has text and keyboard equivalents.
+
+## Reliability and performance
+
+- Domain mutations are immutable and return typed effects plus an undo snapshot.
+- Persistence is atomic; rollback restores the prior snapshot on failure.
+- Generation, planning, research, imports, and synchronization are cancellable and idempotent.
+- Async UI exposes pending, streaming, completed, failed, cancelled, and retryable states without dropping input.
+- Dense graphs remain finite and interactive; layout cannot produce non-finite positions.
+- Rendering uses bounded library windows, memoized spatial calculations, and code-split heavy editors/audits.
+- Model requests stream where useful and never block direct paper editing.
+- Offline/local actions remain usable when model, auth, catalog, or sync services fail.
+- Errors identify the blocked action, retained data, and safest next step without leaking internal or provider secrets.
+
+## Acceptance and release contract
+
+A user-facing capability is complete only when:
+
+1. its canonical schema and immutable domain command exist;
+2. direct UI entry is reachable;
+3. companion capability, planner semantics, real director effect, and ghost animation exist where meaningful;
+4. extension parity or a precise safe fallback exists;
+5. persistence, migration, versioning, idempotency, and undo are defined;
+6. privacy, confirmation, quotas, cancellation, and failure recovery are tested;
+7. anonymous and signed-in flows preserve work without duplication;
+8. desktop, narrow, touch, keyboard, screen-reader, and reduced-motion behavior are verified;
+9. model provenance and external boundaries remain honest;
+10. the feature registry, runtime handlers, generated matrix, tests, and evidence agree.
+
+Required release checks:
 
 ```bash
-npm run build   # builds the web app into ./dist
-npm start       # serves the app + API on http://localhost:8787
+npm run contracts:check
+npm test
+npm run build:extension
+npm run build
+npm run test:extension
+npm run test:extension-release
+npm run release:check
 ```
 
-## Deploy to Vercel
+The release gate must also prove that its mutation sanity check fails when a required handler is intentionally removed, scan release artifacts for secrets, and run model-safe browser audits for transcript learning, before/after learning, account adoption, companion effects, branch geometry, explicit GO, and page/node integration.
 
-This repo is Vercel-ready. The web app is built statically and the backend runs
-as serverless functions in `api/` (`/api/run`, `/api/health`).
+## Architecture and safe changes
 
-1. Import the GitHub repo into Vercel (or run `vercel`).
-2. Enable Vercel OIDC for the project (recommended; `VERCEL_OIDC_TOKEN` is injected automatically), or add an AI Gateway API key:
+```mermaid
+flowchart LR
+  UI[Web direct manipulation] --> CMD[Shared domain commands]
+  COM[Companion / voice / director] --> CMD
+  EXT[Browser extension] --> CMD
+  CMD --> OBJ[Move / Function / Lens schemas]
+  CMD --> MAT[Material and output contracts]
+  CMD --> STORE[Local persistence and Supabase sync]
+  UI --> API[Express / Vercel API]
+  COM --> API
+  EXT --> API
+  API --> GW[Vercel AI Gateway]
+  GW --> CAT[Catalog and task profiles]
+  API --> STORE
+```
 
-   | Name       | Value                        |
-   | ---------- | ---------------------------- |
-   | `AI_GATEWAY_API_KEY` | optional when deployment OIDC is enabled; useful for explicit key budgets |
-   | `VITE_SUPABASE_URL` | _(optional)_ Supabase project URL |
-   | `VITE_SUPABASE_PUBLISHABLE_KEY` | _(optional)_ `sb_publishable_…` key |
-   | `SUPABASE_SECRET_KEY` | _(optional)_ server secret for JWT auth |
+Primary ownership:
 
-   (Optionally set task profile preferences such as `AI_GATEWAY_MODEL_MOVE`, `AI_GATEWAY_MODEL_FUNCTION`, `AI_GATEWAY_MODEL_LENS_ENCODING`, or `SUPABASE_REQUIRE_AUTH=true`.)
-3. Deploy. Vercel uses `vercel.json`: build command `npm run build`, output `dist`.
+- `shared/library-objects.js` — canonical Move/Function/Lens model and migration.
+- `shared/domain-commands.js` — cross-surface mutations, effects, persistence, rollback.
+- `shared/material.js`, `shared/output-specifications.js` — representation and result contracts.
+- `shared/composition-algebra.js` — universal composition.
+- `shared/generation-plan.js` — candidates, branch specs, budgets, and taste.
+- `shared/lens-perceptual-model.js`, `shared/lens-context.js` — Lens perception and bounded context.
+- `shared/feature-contracts.js` — capability ownership and release baseline.
+- `client/` — direct gestures, views, companion adapters, and ghost director.
+- `server/` and `api/` — authenticated model and execution boundaries.
+- `extension/` — capture, side panel, adapters, companion, storage, and platform builds.
+- `supabase/` — account, plan, board, and extension data policy.
+- `scripts/` and `audit-shots/` — reproducible release evidence.
 
-**Production URL:** [https://representation-eta.vercel.app](https://representation-eta.vercel.app)
+Safe change sequence:
 
-> **Note:** `representation.vercel.app` is a different, unrelated Vercel project
-> (an old Create React App). This repo deploys to the `representation` project
-> under `tane-kims-projects`, aliased to `representation-eta.vercel.app`.
+1. Identify the feature contract, object versions, persistence keys, direct entry points, companion verbs, extension handlers, and tests.
+2. Add characterization coverage before extracting a high-conflict seam.
+3. Change the shared schema/command first, then thin surface adapters.
+4. Preserve stable IDs, history, output specifications, context fingerprints, and migration fixtures.
+5. Update capability registry, planner, director animation, extension fallback, and generated matrix.
+6. Run focused tests, inspect for lost handlers, then run the complete release gate.
 
-> Never put your API token in the code or commit it. Set it only in Vercel's
-> Environment Variables (or your local `.env`, which is gitignored).
+## Quick start
 
-## Configuration
+Prerequisites: a current Node.js release with npm; optional Supabase CLI for local accounts; optional Chromium/Playwright for browser audits.
 
-Set these in `.env`:
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
 
-| Variable          | Default                              | Description                                        |
-| ----------------- | ------------------------------------ | -------------------------------------------------- |
-| `AI_GATEWAY_API_KEY` | _(local/self-hosted)_             | Vercel AI Gateway key; server only                 |
-| `VERCEL_OIDC_TOKEN` | _(automatic on Vercel)_            | Deployment identity used when no API key is set    |
-| `AI_GATEWAY_MODEL_*` | `Auto`                            | Optional compatible model preference per task      |
-| `MODEL_GATEWAY_ALLOW_DIRECT_FALLBACK` | `false`          | Explicitly permit the legacy direct provider adapter |
-| `HF_TOKEN`        | _(fallback only)_                    | Used only when direct fallback is explicitly enabled |
-| `PORT`            | `8787`                               | API server port                                    |
-| `VITE_SUPABASE_URL` | _(optional)_                       | Supabase project URL (client accounts & cloud sync)|
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | _(optional)_           | Supabase publishable key (`sb_publishable_…`)    |
-| `SUPABASE_URL`    | _(optional)_                         | Same URL for server JWT verification               |
-| `SUPABASE_SECRET_KEY` | _(optional)_                     | Secret key for server-side auth (`sb_secret_…`)    |
-| `SUPABASE_REQUIRE_AUTH` | `false`                        | When `true`, AI endpoints require a signed-in JWT  |
+The Vite client opens at `http://localhost:5173`; the API server uses `http://localhost:8787`.
 
-## Accounts & plans (Supabase)
+Production-style local run:
 
-Lens can run without accounts — the canvas stays in your browser. With Supabase configured, you get email/password sign-up, password reset, plan tiers (Free/Pro display), and **cloud board sync** so your work follows you across devices.
+```bash
+npm run build
+npm start
+```
 
-### Local development
+Extension:
 
-1. Install the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
-2. Start the local stack and apply migrations + seed:
+```bash
+npm run dev:extension
+npm run build:extension
+npm run test:extension
+npm run package:extension
+```
 
-   ```bash
-   supabase start
-   supabase db reset
-   ```
+Load `extension/dist/chrome` unpacked for local Chrome testing.
 
-3. Copy keys from `supabase status` into `.env`:
+### Environment
 
-   ```bash
-   VITE_SUPABASE_URL=http://127.0.0.1:54321
-   VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key from supabase status>
-   ```
+Required for local AI execution: `AI_GATEWAY_API_KEY`, or the explicit direct-fallback combination described above. `PORT` defaults to `8787`.
 
-4. Run `npm run dev` and open http://localhost:5173. Sign-up emails appear in the CLI mail viewer (`supabase status` shows the Inbucket URL).
+Optional server/origin variables: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_REQUIRE_AUTH`, `CORS_ALLOWED_ORIGINS`, `APP_ORIGIN`, and `EXTENSION_IDS`.
 
-### Hosted project checklist
+Optional client build variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_CHROME_WEB_STORE_URL`, `VITE_LENS_EXTENSION_ID`, and `VITE_LENS_ANALYTICS_ENDPOINT`.
 
-Before inviting non-team users:
+Never commit real values. `VITE_` variables are public build-time configuration, not secret storage.
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. **Project Settings → API**: copy the project URL and **publishable** key into Vercel env vars as `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Copy the **secret** key as `SUPABASE_SECRET_KEY` (server only).
-3. **Authentication → URL Configuration**: set **Site URL** to your production URL; add `http://localhost:5173` and preview URLs to **Redirect URLs**. Under implicit flow, every allowlisted URL can receive session tokens — keep the list tight.
-4. Enable **email confirmations**, **minimum password length 8**, and email link expiry ≤ 1 hour (matches `supabase/config.toml`).
-5. Apply migrations: `supabase link --project-ref <ref>` then `supabase db push`. Run `supabase/seed.sql` in the SQL editor (or `supabase db reset` locally).
-6. Configure **custom SMTP** before public launch — the built-in email service (~2/hour, team members only) is not suitable for production signups.
+### Vercel
 
-> **Build note:** `VITE_` vars are inlined at build time. A Vercel deploy without them ships the auth-less app (one console warning). Set them in **Project Settings → Environment Variables** for Production and Preview.
+`vercel.json` builds the app with `npm run build`, serves `dist`, provisions serverless API functions, and rewrites model-catalog, Lens-encoding, and generation-batch routes through the consolidated handler. Configure Gateway/OIDC, Supabase, trusted origins, and extension IDs in the Vercel project. Apply Supabase migrations before enabling account-required production APIs.
 
-### What syncs to the cloud
+## Expansion roadmap
 
-When signed in, board state (canvas items, pages, title, operators, lenses, transformations) syncs to the `board_snapshots` table. localStorage remains the offline cache; the newer snapshot wins on sign-in. AI history and in-flight jobs stay local.
+Everything above is core contract. The following ideas are optional extensions.
 
-### Optional: require sign-in for AI
+### Prioritized top 10
 
-Set `SUPABASE_SECRET_KEY` and `SUPABASE_REQUIRE_AUTH=true` on the server to gate `/api/run`, `/api/execute`, `/api/phase`, and `/api/pipeline`. The client sends the session JWT automatically when signed in.
+1. **Lens differential debugger — Now.** Compare two Lens envelopes facet-by-facet and preview how each changes the same Function. Fits the explicit-context model; depends on context fingerprints and paired evaluation. Risk: false causal attribution when models are stochastic.
+2. **Taste-memory controls — Now.** Let users inspect, edit, scope, expire, and export remembered preferences. Fits private taste navigation; depends on feedback provenance and policy UI. Risk: overfitting or exposing sensitive preferences.
+3. **Semantic undo timeline — Now.** Undo by meaningful operation across paper, graph, companion, and extension. Fits lineage-first work; depends on domain-command inverses and checkpoint compaction. Risk: confusing interactions with concurrent sync.
+4. **Function test bench — Now.** Run versioned fixtures, compare outputs/models, and gate publishing on assertions. Fits reusable cognition; depends on deterministic fixtures and evaluation adapters. Risk: evaluation cost and flaky semantic assertions.
+5. **Collaborative branch review — Next.** Share candidate trees for comments, acceptance, and merge without exposing the whole board. Fits branch/taste workflows; depends on scoped sharing and identities. Risk: permissions and conflict complexity.
+6. **Lens evolution suggestions — Next.** Detect repeated edits/evidence and propose a reviewable new Lens version. Fits learned ways of seeing; depends on usage telemetry kept private and diff UI. Risk: silently codifying bias.
+7. **Local/private model route — Next.** Route sensitive profiles to user-controlled local inference. Fits privacy boundaries; depends on a capability-compatible local gateway. Risk: setup burden and uneven quality.
+8. **Desktop capture bridge — Next.** Consent-scoped capture and insertion across native apps. Fits material universality; depends on signed native helpers and OS accessibility APIs. Risk: high-security permission surface.
+9. **Cognitive package registry — Later.** Publish signed Move/Function/Lens packages with dependencies, tests, and provenance. Fits versioned composability; depends on trust, licensing, and package resolution. Risk: malicious prompts and marketplace spam.
+10. **Counterfactual workspace simulation — Later.** Fork a complete workspace state, run alternative Function/Lens policies, and compare trajectories. Fits branching plus provenance; depends on snapshot forks and budgeted orchestration. Risk: cost and false predictive confidence.
+
+### Cognition algebra
+
+- **Typed Function interfaces — Next.** Enables Functions to declare named ports and compile-time Material checks. Dependency: richer Material schemas. Risk: complexity for casual users.
+- **Higher-order Functions — Later.** Enables Functions that accept or return Moves/Functions. Dependency: safe graph metatypes. Risk: opaque execution and security review.
+- **Constraint composition — Next.** Enables explicit conflict resolution among invariants and Lens rules. Dependency: constraint schema and solver UI. Risk: users may mistake heuristic resolution for proof.
+- **Algebra optimizer — Later.** Suggests equivalent cheaper/faster process graphs. Dependency: effect equivalence tests and cost models. Risk: semantic drift.
+
+### Lens evolution and discovery
+
+- **Lens families — Next.** Groups versions, variants, counter-Lenses, and domain adaptations. Dependency: lineage graph. Risk: taxonomy sprawl.
+- **Evidence freshness monitor — Next.** Flags stale source material inside a Lens. Dependency: source metadata and consented refresh. Risk: unwanted network access.
+- **Marketplace trust cards — Later.** Shows author, tests, source policy, model assumptions, and known failure modes. Dependency: signed package registry. Risk: reputation gaming.
+- **Context rehearsal — Now.** Lets users ask “what would this Lens include/exclude?” without a model call. Dependency: deterministic compiler inspection. Risk: none beyond UI load.
+
+### Parallel and taste navigation
+
+- **Pareto candidate map — Next.** Places candidates by user-chosen tradeoffs rather than one score. Dependency: structured evaluations and embeddings. Risk: misleading axes.
+- **Diversity governor — Now.** Warns when branches are semantically redundant before spending the full budget. Dependency: low-cost similarity checks. Risk: suppressing subtle useful differences.
+- **Cross-session taste notebook — Next.** Collects explicit accepted/rejected patterns by project or Lens. Dependency: inspectable preference store. Risk: privacy and overgeneralization.
+- **Adaptive batch allocation — Later.** Shifts remaining budget toward promising branches while preserving exploration. Dependency: online evaluation policy. Risk: premature convergence.
+
+### Voice and companion agency
+
+- **Teach-by-demonstration macros — Next.** Learns a Function from a narrated sequence of direct actions. Dependency: event journal and role grounding. Risk: capturing accidental actions.
+- **Multi-speaker critique — Later.** Separates voices and attributes annotations during review. Dependency: diarization and consent. Risk: biometric/privacy concerns.
+- **Background watch rules — Later.** Runs user-authored local triggers for defined workspace changes. Dependency: constrained automation runtime. Risk: surprise actions and resource use.
+- **Agency receipts — Now.** Produces a compact effect/permission/cost receipt for every plan. Dependency: command ledger. Risk: notification fatigue.
+
+### Spatial interface
+
+- **Semantic paper regions — Next.** Gives bounded areas typed roles such as evidence, decision, or backlog. Dependency: region objects and routing rules. Risk: over-structuring freeform work.
+- **Temporal onion view — Next.** Scrubs the page through lineage over time. Dependency: compact history snapshots. Risk: storage growth.
+- **Spatial query gestures — Later.** Uses drawn enclosures/arrows as structured questions. Dependency: gesture recognition with confirmation. Risk: ambiguity.
+- **Mixed-reality paper — Later.** Anchors Lens pages in spatial-computing environments. Dependency: native 3D clients. Risk: niche hardware and interaction fragmentation.
+
+### Collaboration and version control
+
+- **Cognitive pull requests — Next.** Reviews Function/Lens diffs, tests, and evidence before merge. Dependency: object-level branching and identities. Risk: workflow overhead.
+- **CRDT paper collaboration — Later.** Enables simultaneous spatial editing. Dependency: conflict-free geometry/text model. Risk: history and undo complexity.
+- **Attribution-preserving remix — Next.** Tracks dependency credit through forks/compositions. Dependency: signed provenance. Risk: identity and licensing disputes.
+- **Decision records — Now.** Freezes accepted candidates, evidence, dissent, and Lens version into a shareable record. Dependency: existing bundles/history. Risk: records becoming falsely authoritative.
+
+### External integrations
+
+- **IDE adapter — Next.** Treats code selections, diffs, tests, and diagnostics as typed Material. Dependency: editor extension and secure project scope. Risk: source-code leakage.
+- **Calendar/meeting bridge — Next.** Converts explicit meeting artifacts into Functions/Lenses. Dependency: provider OAuth and transcript consent. Risk: third-party data exposure.
+- **Data notebook bridge — Later.** Moves tables, charts, and executable cells through Functions. Dependency: sandboxed computation Material. Risk: arbitrary code execution.
+- **Universal share sheet — Next.** Accepts explicit material from mobile/desktop share targets. Dependency: native wrappers. Risk: platform inconsistency.
+
+### Model intelligence and evaluation
+
+- **Profile auto-benchmarking — Now.** Runs a private fixture set before changing preferred models. Dependency: Function test bench. Risk: benchmark cost and leakage.
+- **Uncertainty calibration — Next.** Compares model confidence with observed acceptance/error rates. Dependency: structured outcomes. Risk: false precision.
+- **Provider-policy routing — Next.** Routes by residency, privacy, energy, latency, and budget. Dependency: trustworthy provider metadata. Risk: stale declarations.
+- **Ensemble synthesis with dissent — Later.** Preserves model disagreements instead of flattening them. Dependency: multi-model candidate schemas. Risk: cost and cognitive overload.
+
+### Trust, privacy, and security
+
+- **Personal data map — Now.** Shows every local/cloud/exported data class and deletion control. Dependency: storage registry. Risk: maintenance drift.
+- **Confidential Lens vaults — Next.** Adds end-to-end encrypted Lens material with user-held keys. Dependency: encrypted indexing/sync. Risk: unrecoverable keys and limited server processing.
+- **Prompt-package sandbox — Next.** Statistically and dynamically inspects imported cognitive objects before execution. Dependency: package registry and policy engine. Risk: incomplete detection.
+- **Verifiable execution receipts — Later.** Signs model route, object versions, and content hashes. Dependency: key management and provider attestations. Risk: metadata privacy.
+
+### Developer platform and ecosystem
+
+- **Public domain-command SDK — Next.** Lets trusted apps invoke typed actions with effects/undo. Dependency: stable schemas and auth scopes. Risk: compatibility burden.
+- **Custom Material adapters — Next.** Allows plugins to register deterministic conversions and previews. Dependency: sandboxed plugin API. Risk: unsafe parsers.
+- **Evaluation plugin protocol — Next.** Adds domain-specific candidate checks. Dependency: bounded worker runtime. Risk: untrusted code and score gaming.
+- **Capability conformance kit — Now.** Tests third-party surfaces against direct/companion/extension parity. Dependency: generated contracts. Risk: fixture maintenance.
+
+### Accessibility, education, and onboarding
+
+- **Interaction practice page — Now.** Teaches branch-edge versus move-center, brush/GO, and zoom morph safely. Dependency: reversible demo fixtures. Risk: onboarding length.
+- **Cognitive pattern curriculum — Next.** Teaches when to use Branch, Merge, Deepen, Challenge, Embody, Functions, and Lenses. Dependency: example library. Risk: prescribing one thinking style.
+- **Voice-only workspace mode — Next.** Supports complete nonvisual navigation and editing. Dependency: robust spatial references and announcements. Risk: verbosity.
+- **Adaptive simplification — Later.** Reduces visible complexity based on chosen learning mode, never inferred ability. Dependency: explicit UI profiles. Risk: hiding discoverability.
+
+### Business and product strategy
+
+- **Team governance tier — Next.** Adds private registries, policy routing, audit receipts, and approved models. Dependency: organizations and roles. Risk: enterprise complexity.
+- **Creator revenue sharing — Later.** Pays authors of trusted cognitive packages. Dependency: marketplace, licensing, attribution. Risk: incentives favor popularity over rigor.
+- **Domain editions — Next.** Curates Lenses, evaluations, and integrations for research, education, design, and investing. Dependency: reusable core plus expert validation. Risk: fragmented product identity.
+- **Usage-based model budgets — Now.** Gives transparent per-project limits and receipts without gating local work. Dependency: provenance/cost accounting. Risk: pricing anxiety.

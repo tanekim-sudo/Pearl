@@ -25,6 +25,7 @@ import {
   resetOutputSpec,
 } from "../shared/output-specifications.js";
 import {
+  comparativeLabels,
   normalizeGenerationPlan,
   normalizeTasteFeedback,
   resolveGenerationAssignments,
@@ -201,14 +202,25 @@ import {
   parseAdministrativeCommand,
   parseBeforeAfterCommand,
   parseExtensionDownloadCommand,
+  parseFunctionCreationCommand,
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
+  parseParallelBranchCommand,
+  parseSafeDemonstrationCommand,
+  parseTasteNavigationCommand,
   parseTranscriptLearningCommand,
   parseSaveChainCommand,
   parseCompanionPlan,
   parseCompanionReply,
   CLEARABLE_DOMAINS,
 } from "./lib/companion-intent.js";
+import {
+  beginCommand,
+  isRetryRequest,
+  lastRecoverableCommand,
+  publicCompanionError,
+  updateCommand,
+} from "./lib/companion-command-ledger.js";
 import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
 import {
   buildWorkspaceSnapshot,
@@ -4905,7 +4917,7 @@ export default function App() {
 
   // Built-in primitives offered inside the generator workspace.
   const generatorFunctionChips = useMemo(
-    () => ["op-compress", "op-expand", "op-invert", "op-explore"].map((id) => opMap[id]).filter(Boolean),
+    () => ["op-merge", "op-branch", "op-deepen", "op-challenge", "op-embody"].map((id) => opMap[id]).filter(Boolean),
     [opMap]
   );
 
@@ -5533,7 +5545,7 @@ export default function App() {
     }
     const runLens = (bridgeOpts = {}) => {
       expandInAi(ids, {
-        op: opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand"),
+        op: opMap["op-branch"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch"),
         opLabel: lens.name,
         bridgeOnly: true,
         stableCamera: true,
@@ -8321,6 +8333,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (!extraOpts.singleCandidate && generationPlan.candidateCount > 1) {
       const batchId = uid();
       const assignments = resolveGenerationAssignments(generationPlan);
+      const labels = comparativeLabels(assignments.map((assignment) => assignment.branchSpec || {}));
       assignments.forEach((assignment) => {
         expandInAi(ids || [], {
           op,
@@ -8333,7 +8346,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           generationBatchId: batchId,
           candidateIndex: assignment.index,
           modelPreference: assignment.requestedModel,
-          expandedAt: null,
+          branchSpec: assignment.branchSpec,
+          differentiationLabel: labels[assignment.index],
+          expandedAt: assignment.index === 0 ? extraOpts.expandedAt : null,
         });
       });
       showToast(`${assignments.length} candidates · review with Yes / No / More like this`);
@@ -10233,6 +10248,37 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     );
   }
 
+  function mergeAiNodesByProximity(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const source = aiNodesRef.current.find((node) => node.id === sourceId);
+    const target = aiNodesRef.current.find((node) => node.id === targetId);
+    if (!source || !target) return;
+    const material = [source, target].map((node) =>
+      node.expandedText || node.sourceBundleText || node.preview || node.label || ""
+    ).filter(Boolean);
+    if (material.length < 2) {
+      showToast("Merge needs two readable nodes");
+      return;
+    }
+    pushHistory();
+    const mergeSource = makeAiNode({
+      id: uid(),
+      nodeKind: "source",
+      label: `Merge · ${truncateLabel(source.label)} + ${truncateLabel(target.label)}`,
+      sourceNodeIds: [source.id, target.id],
+      sourceIds: [...new Set([...(source.sourceIds || []), ...(target.sourceIds || [])])],
+      sourceBundleText: material.join("\n\n---\n\n"),
+      x: (source.x + target.x) / 2,
+      y: (source.y + target.y) / 2,
+      radius: 24,
+      provenance: { kind: "proximity-merge", sourceNodeIds: [source.id, target.id], nonDestructive: true },
+    });
+    appendAiNodes(mergeSource);
+    const merge = opMap["op-merge"] || TRANSFORM_PRIMITIVES.find((operator) => operator.name.toLowerCase() === "merge");
+    if (merge) applyOperatorToAiNode(mergeSource, merge, null, { stableCamera: true });
+    showToast("Merge started · undo to cancel");
+  }
+
   function updateAiNode(nodeId, patch) {
     setAiNodes((nodes) =>
       nodes.map((n) => (n.id === nodeId ? clampAiNodeToPage({ ...n, ...patch }) : n))
@@ -10510,11 +10556,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     emitTourEvent("expand-ai");
     ensureAiColumnVisible();
     if (opts.stableCamera) aiStableCameraUntilRef.current = Date.now() + 5000;
-    const op = opts.op || opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
-    if (!op) {
+    const baseOp = opts.op || opMap["op-branch"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch");
+    if (!baseOp) {
       showToast("expand primitive not found");
       return;
     }
+    const op = opts.branchSpec
+      ? {
+          ...baseOp,
+          prompt: [
+            baseOp.prompt,
+            `Branch name: ${opts.branchSpec.name}.`,
+            opts.branchSpec.perspective ? `Perspective: ${opts.branchSpec.perspective}.` : "",
+            opts.branchSpec.instruction ? `Branch-specific instruction: ${opts.branchSpec.instruction}` : "",
+            ...(opts.branchSpec.constraints || []).map((constraint) => `Constraint: ${constraint}`),
+          ].filter(Boolean).join("\n"),
+        }
+      : baseOp;
     const idList = Array.isArray(ids) ? ids.filter(Boolean) : [];
     const aiMaterial = opts.aiMaterial?.trim() || "";
     const dropWorld = opts.expandedAt ?? opts.atWorld;
@@ -10552,6 +10610,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           generationBatchId: opts.generationBatchId,
           candidateIndex: opts.candidateIndex,
           requestedModel: opts.modelPreference || "auto",
+          branchSpec: opts.branchSpec || null,
+          differentiationLabel: opts.differentiationLabel || opts.branchSpec?.name || null,
           tasteFeedback: null,
         } : {}),
       },
@@ -10583,7 +10643,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (opts.bridgeOnly) {
       updateAiNode(expandedNode.id, {
         loading: false,
-        label: truncateLabel(opts.opLabel || op.name || "Expanded"),
+        label: truncateLabel(opts.differentiationLabel || opts.opLabel || op.name || "Expanded"),
         preview: "…",
       });
       return;
@@ -10654,7 +10714,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         expandedText: text,
         loading: false,
         error: null,
-        label: truncateLabel(opts.opLabel || op.name || "Expanded"),
+        label: truncateLabel(opts.differentiationLabel || opts.opLabel || op.name || "Expanded"),
         via: viaFromOp(op, idList),
         ...(opts.contextEnvelope ? { lensContext: opts.contextEnvelope.provenance } : {}),
         ...(response?.provenance ? {
@@ -11229,7 +11289,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   }
 
   function directorResolveOp(ref, ctx) {
-    if (!ref || ref === "last") return opMap[ctx.vars.lastOpId] || null;
+    if (!ref || ref === "last") {
+      return opMap[ctx.vars.lastOpId]
+        || [...operators].reverse().find((operator) => operator.top && !operator.primitive)
+        || null;
+    }
     if (ctx.vars[ref] && opMap[ctx.vars[ref]]) return opMap[ctx.vars[ref]];
     const needle = String(ref).toLowerCase();
     const normalized = needle.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
@@ -11846,7 +11910,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "move", moveId: id, id, name: fn.name, record: fn };
     },
     createFunction: async (a, tk, ctx) => {
-      tk.caption(a.caption || `create a new Lens: “${a.name}”`);
+      tk.caption(a.caption || `create a new Function: “${a.name}”`);
       const plus = tk.elementCenter(".cognition-git-new");
       if (plus) await tk.click(plus.x, plus.y);
       const steps = (a.steps || []).map((s) => (typeof s === "string" ? { name: s, description: "" } : s));
@@ -11892,12 +11956,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const row = directorOpRowCenter(tk, rootOp);
       if (row) {
         await tk.moveTo(row.x, row.y);
-        if (steps.length) tk.caption(`${steps.length} steps compose into one reusable move`);
+        if (steps.length) tk.caption(`${steps.length} Moves compose into one reusable Function`);
         await tk.wait(900);
       }
       return {
-        type: "lens",
-        lensId: rootId,
+        type: "function",
+        functionId: rootId,
         id: rootId,
         name: rootOp?.name || a.name,
         record: rootOp,
@@ -13293,7 +13357,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const mode = a.mode || (a.model ? "single" : current.assignment.mode);
       const generationPlan = normalizeGenerationPlan({
         ...current,
-        ...(a.count != null ? { candidateCount: Number(a.count) } : {}),
+        ...(a.count != null
+          ? { candidateCount: Number(a.count) }
+          : Array.isArray(a.branchSpecs)
+            ? { candidateCount: a.branchSpecs.reduce((sum, branch) => sum + (Number(branch?.count) || 1), 0) }
+            : {}),
+        ...(Array.isArray(a.branchSpecs) ? { branchSpecs: a.branchSpecs } : {}),
         assignment: { ...current.assignment, mode, model: a.model || current.assignment.model || "auto" },
       });
       const next = { ...artifact, generationPlan, updatedAt: Date.now() };
@@ -13333,6 +13402,60 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       applyOperatorToAiNode(node, op, null, { generationPlan, parentCandidateId: node.id, tasteSeed: node.expandedText || node.preview || "" });
       await tk.wait(350);
       return { type: "generation-batch", parentCandidateId: node.id, effects: ["candidate-children-created"] };
+    },
+    keepAllCandidates: async (a, tk) => {
+      const focused = focusedTasteCandidate();
+      if (!focused?.generationBatchId) throw new Error("focus a generated candidate first");
+      const siblingIds = aiNodesRef.current
+        .filter((node) => node.generationBatchId === focused.generationBatchId)
+        .map((node) => node.id);
+      setAiNodes((nodes) => nodes.map((node) =>
+        siblingIds.includes(node.id)
+          ? { ...node, tasteFeedback: normalizeTasteFeedback({ decision: "accepted" }) }
+          : node
+      ));
+      await tk.wait(220);
+      return { type: "taste-feedback", batchId: focused.generationBatchId, ids: siblingIds, effects: ["all-candidates-accepted"] };
+    },
+    extendSelectedCandidates: async (a, tk) => {
+      const selected = aiNodesRef.current.filter((node) =>
+        selectedAiNodeIdsRef.current.includes(node.id) && node.generationBatchId
+      );
+      if (!selected.length) throw new Error("select one or more generated candidates");
+      const count = Math.max(1, Math.min(20, Number(a.count) || 3));
+      selected.forEach((node) => {
+        const op = opMap[node.opId];
+        if (!op) return;
+        applyOperatorToAiNode(node, op, null, {
+          generationPlan: normalizeGenerationPlan({ ...(op.generationPlan || {}), candidateCount: count }),
+          parentCandidateId: node.id,
+          tasteSeed: node.expandedText || node.preview || "",
+        });
+      });
+      await tk.wait(260);
+      return { type: "generation-batch", parentCandidateIds: selected.map((node) => node.id), effects: ["selected-branches-extended"] };
+    },
+    stopGenerationBatch: async (a, tk) => {
+      const focused = focusedTasteCandidate();
+      if (!focused?.generationBatchId) throw new Error("focus a generated candidate first");
+      setAiNodes((nodes) => nodes.map((node) =>
+        node.generationBatchId === focused.generationBatchId && node.loading
+          ? { ...node, loading: false, error: "Cancelled" }
+          : node
+      ));
+      await tk.wait(160);
+      return { type: "generation-batch", id: focused.generationBatchId, effects: ["generation-batch-cancelled"] };
+    },
+    retryGenerationCandidate: async (a, tk) => {
+      const node = focusedTasteCandidate();
+      const op = node && opMap[node.opId];
+      if (!node || !op) throw new Error("focus a failed generated candidate");
+      applyOperatorToAiNode(node, op, null, {
+        generationPlan: normalizeGenerationPlan({ ...(op.generationPlan || {}), candidateCount: 1 }),
+        parentCandidateId: node.parentId || null,
+      });
+      await tk.wait(200);
+      return { type: "generation-candidate", id: node.id, effects: ["generation-candidate-retried"] };
     },
     observeWorkspace: async (a) => {
       const snapshot = buildWorkspaceSnapshot({
@@ -13476,6 +13599,91 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   });
 
   async function handleCompanionCommand(text, { signal, onPhase, onPlan } = {}) {
+    let commandText = String(text || "").trim();
+    let recovered = null;
+    if (isRetryRequest(commandText)) {
+      recovered = lastRecoverableCommand();
+      if (!recovered) {
+        return { visible: true, text: "There is no failed or unexecuted command to retry." };
+      }
+      commandText = recovered.rawInput;
+    }
+    text = commandText;
+    const commandEntry = beginCommand(text, {
+      retryOf: recovered?.id || null,
+      status: "received",
+      argsSnapshot: recovered?.argsSnapshot || null,
+      plan: recovered?.plan || null,
+    });
+
+    if (pendingCompanionClear) {
+      const pendingAdministrative = parseAdministrativeCommand(text, {
+        previousDomains: pendingCompanionClear.domains,
+        pending: true,
+      });
+      if (pendingAdministrative?.kind === "confirm-clear") {
+        confirmCompanionClear();
+        updateCommand(commandEntry.id, { status: "executed", confirmation: "confirmed", effects: ["workspace-domains-cleared"] });
+        return null;
+      }
+      if (pendingAdministrative?.kind === "cancel-clear") {
+        cancelCompanionClear();
+        updateCommand(commandEntry.id, { status: "cancelled", confirmation: "denied" });
+        return null;
+      }
+      if (pendingAdministrative?.kind === "clear-workspace") {
+        stageCompanionClear(pendingAdministrative.domains);
+        updateCommand(commandEntry.id, { status: "awaiting-confirmation", confirmation: { domains: pendingAdministrative.domains } });
+        return null;
+      }
+      // A new executable request is not an implicit denial of all work. End
+      // only the stale confirmation, retain it in the ledger, then continue.
+      setPendingCompanionClear(null);
+      setCompanionNotice({ id: Date.now(), text: "Previous clear request set aside.", transient: true });
+    }
+
+    const functionCreation = parseFunctionCreationCommand(text);
+    if (functionCreation) {
+      onPhase?.("executing");
+      updateCommand(commandEntry.id, { status: "planned", plan: functionCreation });
+      const result = await runDirectorScript(functionCreation.steps, { title: functionCreation.title });
+      if (!result.completed) {
+        const error = result.errors?.[0] || "Function creation did not complete";
+        updateCommand(commandEntry.id, { status: "failed", failure: error, effects: result.effects || [] });
+        return { visible: true, text: publicCompanionError(error) };
+      }
+      updateCommand(commandEntry.id, { status: "executed", effects: result.effects || ["function-created"] });
+      return null;
+    }
+
+    const parallelBranch = parseParallelBranchCommand(text);
+    if (parallelBranch) {
+      const result = await runDirectorScript([parallelBranch], { title: "Set parallel branch perspectives" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["generation-plan-changed"] }
+        : { status: "failed", failure: result.errors?.[0] || "Branch plan failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
+    const safeDemo = parseSafeDemonstrationCommand(text, itemsRef.current.length === 0 && aiNodesRef.current.length === 0);
+    if (safeDemo) {
+      const demo = findDemo(safeDemo.demoId);
+      const result = await runDirectorScript(demo?.steps || [], { title: demo?.title || "Capability demonstration" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: ["reversible-demonstration-played"] }
+        : { status: "failed", failure: result.errors?.[0] || "Demonstration failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
+    const tasteNavigation = parseTasteNavigationCommand(text);
+    if (tasteNavigation) {
+      const result = await runDirectorScript([tasteNavigation], { title: "Review candidates" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["taste-navigation"] }
+        : { status: "failed", failure: result.errors?.[0] || "Taste navigation failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
     if (pendingChainName) {
       setPendingChainName(false);
       const name = text.trim();
@@ -13508,7 +13716,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (transcriptCommand) {
       const steps = [{ verb: transcriptCommand.verb, args: transcriptCommand.args || {} }];
       if (transcriptCommand.followup) steps.push(transcriptCommand.followup);
-      startCompanionScript({ title: "Learn from a chat", steps });
+      runDirectorScript(steps, { title: "Learn from a chat" });
       return;
     }
     const libraryObjectCommand = parseLibraryObjectCommand(text);
@@ -13529,14 +13737,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       return null;
     }
-    const recentClear =
-      pendingCompanionClear ||
-      (Date.now() - lastCompanionClearRef.current.at < 5 * 60_000
-        ? lastCompanionClearRef.current
-        : null);
     const administrative = parseAdministrativeCommand(text, {
-      previousDomains: recentClear?.domains || [],
-      pending: Boolean(recentClear),
+      previousDomains: [],
+      pending: false,
     });
     if (administrative?.kind === "confirm-clear") {
       confirmCompanionClear();
@@ -13548,6 +13751,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
     if (administrative?.kind === "clear-workspace") {
       stageCompanionClear(administrative.domains);
+      updateCommand(commandEntry.id, { status: "awaiting-confirmation", confirmation: { domains: administrative.domains } });
       return null;
     }
 
@@ -13584,6 +13788,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       signal,
     });
     const plan = parseCompanionPlan(raw);
+    updateCommand(commandEntry.id, { status: "planned", plan });
     const containsResearch = JSON.stringify(plan).includes('"kind":"research"');
     if (containsResearch) {
       return {
@@ -13662,11 +13867,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     onPlan?.(null);
     if (!execution.completed) {
       if (execution.cancelled) return null;
+      updateCommand(commandEntry.id, { status: "failed", failure: execution.error, effects: execution.effects || [] });
       return {
         visible: true,
-        text: `Stopped at step ${execution.checkpoint}: ${execution.error}. Completed work was retained; retry or undo is available.`,
+        text: publicCompanionError(execution.error),
       };
     }
+    updateCommand(commandEntry.id, { status: "executed", effects: execution.effects || [] });
     return null;
   }
 
@@ -14029,6 +14236,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         selectedIds={selectedAiNodeIds}
         onSelect={handleAiNodeSelect}
         onMove={moveAiNode}
+        onMergeDrop={mergeAiNodesByProximity}
         tool={tool}
         onHighlightTransferStart={(e, nodeIds, opts = {}) =>
           startAiHighlightTransfer(e, nodeIds, opts)
@@ -14749,11 +14957,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
       {pendingCompanionClear && (
         <div
-          className="modal-scrim"
+          className="modal-scrim companion-confirmation-popover"
           data-testid="companion-clear-confirmation"
-          onClick={cancelCompanionClear}
         >
-          <div className="modal fresh-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal fresh-modal" role="dialog" aria-modal="false">
             <h3>Clear this workspace content?</h3>
             <p className="modal-sub">
               {pendingCompanionClear.domains
@@ -15093,8 +15300,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onExtend={() =>
           handleBrushAffordance({
             kind: "lens",
-            id: (opMap["op-expand"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "expand")).id,
-            name: "expand",
+            id: (opMap["op-branch"] || TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch")).id,
+            name: "Branch",
           })
         }
         onSameness={() => runSamenessDiscovery(highlightSelectionIds)}

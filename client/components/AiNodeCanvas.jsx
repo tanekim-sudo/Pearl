@@ -23,6 +23,7 @@ import {
   zoomContentBlend,
 } from "../lib/ai-space.js";
 import { attachCanvasWheel } from "../lib/canvas-navigation.js";
+import { nearestMergeTarget, updateMergeProximity } from "../lib/merge-proximity.js";
 import {
   aiNodeHighlightDraggable,
   aiNodeHighlightMarkable,
@@ -65,6 +66,7 @@ export default function AiNodeCanvas({
   selectedIds = [],
   onSelect,
   onMove,
+  onMergeDrop,
   onExpandNode,
   onExploreNode,
   onKeepExample,
@@ -99,6 +101,7 @@ export default function AiNodeCanvas({
   const localViewportRef = useRef(null);
   const viewportRef = externalViewportRef || localViewportRef;
   const dragRef = useRef(null);
+  const mergeRef = useRef({ candidateId: null, enteredAt: null, armed: false });
   const panRef = useRef(null);
   const lassoRef = useRef(null);
   const cameraRef = useRef(camera);
@@ -108,6 +111,7 @@ export default function AiNodeCanvas({
   const [vpSize, setVpSize] = useState({ w: 320, h: 240 });
   const [lasso, setLasso] = useState(null);
   const [strandTip, setStrandTip] = useState(null);
+  const [mergePreview, setMergePreview] = useState(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
   const [strandDrag, setStrandDrag] = useState(null);
   const strandDragRef = useRef(null);
@@ -773,6 +777,13 @@ export default function AiNodeCanvas({
           }
         }
       }
+      const merge = mergeRef.current;
+      if (dragging && merge.armed && merge.candidateId) {
+        onMove?.(node.id, node.x, node.y);
+        onMergeDrop?.(node.id, merge.candidateId);
+      }
+      mergeRef.current = { candidateId: null, enteredAt: null, armed: false };
+      setMergePreview(null);
       dragRef.current = null;
       document.body.classList.remove("ai-node-dragging");
       try {
@@ -814,6 +825,20 @@ export default function AiNodeCanvas({
       if (!rect) return;
       const world = screenToWorld(cameraRef.current, ev.clientX - rect.left, ev.clientY - rect.top);
       onMove?.(dragRef.current.nodeId, world.x, world.y);
+      const nearest = nearestMergeTarget(
+        dragRef.current.nodeId,
+        { x: ev.clientX, y: ev.clientY },
+        nodes,
+        cameraRef.current,
+        rect
+      );
+      mergeRef.current = updateMergeProximity(
+        mergeRef.current,
+        nearest ? { candidateId: nearest.id, distancePx: nearest.distancePx } : null
+      );
+      setMergePreview(mergeRef.current.candidateId
+        ? { sourceId: dragRef.current.nodeId, targetId: mergeRef.current.candidateId, armed: mergeRef.current.armed }
+        : null);
     }
 
     function handleDragEnd(ev) {
@@ -1311,6 +1336,7 @@ export default function AiNodeCanvas({
                 (node.error ? " error" : "") +
                 (isLanding ? " landing" : "") +
                 (operatorDropTargetId === node.id ? " operator-drop-target" : "") +
+                (mergePreview?.targetId === node.id ? ` merge-proximity${mergePreview.armed ? " armed" : ""}` : "") +
                 (bornIds.has(node.id) ? " born-gold" : "") +
                 (hoverPreview?.id === node.id ? " hover-preview" : "")
               }
@@ -1387,6 +1413,7 @@ export default function AiNodeCanvas({
                 }
               />
               {node.loading && <span className="ai-node-loading-core" aria-hidden="true" />}
+              {mergePreview?.targetId === node.id && <span className="ai-node-merge-label">Merge</span>}
               {node.error && <span className="ai-node-error-dot" title={node.error} />}
               {detail && textLayout && (
                 <div

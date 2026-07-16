@@ -58,7 +58,7 @@ export function parseAdministrativeCommand(text, { previousDomains = [], pending
   const destructive = /\b(clear|delete|remove|erase|wipe)\b/.test(normalized) || /\bget rid (?:of|fo)\b/.test(normalized);
   const bulk = /\b(all|everything|every single thing|entire|whole)\b/.test(normalized);
   const followup = pending && (
-    /\b(also|including?|plus|and the|do the rest|nodes?|notes?|moves?|functions?|lenses?)\b/.test(normalized)
+    /^(?:also|including?|plus|and (?:the )?|do the rest)\b/.test(normalized)
   );
   if ((!destructive || !bulk) && !followup) return null;
   let domains = clearDomainsFromText(normalized);
@@ -94,6 +94,84 @@ export function parseLibraryObjectCommand(text) {
   if (/^(?:collect|save) (?:these|this|the selected|selected) (?:items|material|content)? ?(?:in|as) (?:a )?lens$/i.test(value)) {
     return { verb: "openSaveAsChooser", args: {}, followup: { verb: "chooseSaveAsKind", args: { kind: "lens" } } };
   }
+  return null;
+}
+
+export function parseFunctionCreationCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!/\b(?:create|make|build)\b/i.test(value) || !/\bfunction\b/i.test(value)) return null;
+  const investment = /\binvestment memo\b/i.test(value);
+  const spielberg = /\b(?:movie|film)\b/i.test(value) && /\bsteven spielberg\b/i.test(value);
+  if (!investment && !spielberg) return null;
+  const steps = [];
+  if (investment) {
+    steps.push({
+      verb: "createFunction",
+      args: {
+        name: "Investment memo",
+        description: "Produce an evidence-grounded investment memo with an explicit recommendation.",
+        steps: [
+          { name: "Frame the thesis", description: "State the opportunity, timing, and key underwriting question." },
+          { name: "Assess market and moat", description: "Evaluate market structure, differentiation, and durability." },
+          { name: "Evaluate team and traction", description: "Assess execution capability and evidence of demand." },
+          { name: "Build risk ledger", description: "Name disconfirming evidence, failure modes, and mitigations." },
+          { name: "Write recommendation", description: "Synthesize an invest or pass memo with confidence and open questions." },
+        ],
+      },
+    });
+  }
+  if (spielberg) {
+    steps.push({
+      verb: "createFunction",
+      args: {
+        name: "Spielberg film evaluation",
+        description: "Analyze a film using observable criteria associated with Steven Spielberg's body of work, without claiming his private judgment.",
+        steps: [
+          { name: "Audience identification", description: "Evaluate emotional access, wonder, fear, and point of view." },
+          { name: "Visual storytelling", description: "Assess staging, blocking, suspense, and information revealed through images." },
+          { name: "Character and moral tension", description: "Examine relationships, ethical stakes, and earned sentiment." },
+          { name: "Set-piece construction", description: "Evaluate escalation, clarity, rhythm, and consequence." },
+          { name: "Synthesize evaluation", description: "Summarize strengths, weaknesses, and the most useful revision." },
+        ],
+      },
+    });
+  }
+  return { title: steps.length > 1 ? "Create two Functions" : `Create ${steps[0].args.name}`, steps };
+}
+
+export function parseParallelBranchCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!/\bbranch\s*a\b/i.test(value) || !/\bbranch\s*b\b/i.test(value) || !/\bbranch\s*c\b/i.test(value)) return null;
+  const branch = (letter, fallback) => value.match(new RegExp(`branch\\s*${letter}\\s*[:—-]\\s*([^;,.]+)`, "i"))?.[1]?.trim() || fallback;
+  return {
+    verb: "setGenerationPlan",
+    args: {
+      artifact: "last",
+      branchSpecs: [
+        { id: "branch-a", name: "Optimistic growth perspective", instruction: branch("a", "optimistic"), requestedModel: "auto" },
+        { id: "branch-b", name: "Conservative downside perspective", instruction: branch("b", "conservative"), requestedModel: "auto" },
+        { id: "branch-c", name: "Opposition inverted perspective", instruction: branch("c", "inverted opposition perspective"), requestedModel: "auto" },
+      ],
+    },
+  };
+}
+
+export function parseSafeDemonstrationCommand(text, empty = false) {
+  const value = String(text || "").trim();
+  if (!/\b(?:show me what you can do|do anything|give me anything)\b/i.test(value)) return null;
+  return empty
+    ? { demoId: "safe-capability-sample", chooser: false }
+    : { demoId: "three-layers", chooser: false };
+}
+
+export function parseTasteNavigationCommand(text) {
+  const value = String(text || "").trim().toLowerCase();
+  if (/^(?:yes|keep this|accept this)$/.test(value)) return { verb: "tasteCandidate", args: { decision: "yes" } };
+  if (/^(?:no|reject this|not this one)$/.test(value)) return { verb: "tasteCandidate", args: { decision: "no" } };
+  if (/^(?:more like this|make more like this)$/.test(value)) return { verb: "moreLikeThis", args: {} };
+  if (/^(?:keep all|accept all)$/.test(value)) return { verb: "keepAllCandidates", args: {} };
+  if (/^(?:extend these|extend selected|more from these)$/.test(value)) return { verb: "extendSelectedCandidates", args: {} };
+  if (/^(?:stop|stop generation)$/.test(value)) return { verb: "stopGenerationBatch", args: {} };
   return null;
 }
 
@@ -330,7 +408,7 @@ Return ONLY one versioned JSON plan:
 {"version":1,"title":"short visual label","root":{"kind":"sequence","steps":[]}}
 
 Step DSL:
-- {"kind":"query","id":"observe-1","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}
+- {"kind":"query","id":"observe-1","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}. Query names are an exact enum; never emit any other value.
 - {"kind":"action","id":"unique-step-id","capability":"manifestName","args":{},"saveAs":"optionalResultBinding"}
 - A result reference is {"$ref":"binding"}. It resolves from the live result environment to the actual stable saved ID. Never put saveAs inside args; saveAs is a property of the step.
 - {"kind":"sequence","steps":[]}

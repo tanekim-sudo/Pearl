@@ -16,16 +16,21 @@ import { PHASE_TIMEOUT } from "./phase-timeouts.js";
 describe("transform primitives", () => {
   it("defines the canonical grammar", () => {
     assert.equal(TRANSFORM_PRIMITIVES.length, 8);
-    assert.ok(PRIMITIVE_NAMES.has("expand"));
+    assert.deepEqual(
+      TRANSFORM_PRIMITIVES.filter((move) => move.primitiveMove)
+        .sort((a, b) => a.primitiveRankDefault - b.primitiveRankDefault)
+        .map((move) => move.name),
+      ["Branch", "Merge", "Deepen", "Challenge", "Embody"]
+    );
+    assert.ok(PRIMITIVE_NAMES.has("Branch"));
     assert.ok(PRIMITIVE_NAMES.has("compress"));
-    assert.ok(PRIMITIVE_NAMES.has("explore"));
     assert.ok(PRIMITIVE_NAMES.has("research"));
     assert.equal(TRANSFORM_PRIMITIVES.filter((p) => p.multi).length, 0);
   });
 
   it("marks primitives as transform-eligible", () => {
-    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
-    assert.ok(isTransformPrimitive(expand));
+    const branch = TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch");
+    assert.ok(isTransformPrimitive(branch));
     assert.ok(!isTransformPrimitive({ primitive: true, kind: "pipeline", steps: [] }));
   });
 
@@ -64,14 +69,15 @@ describe("transform primitives", () => {
       { id: "s2", name: "surface implications", kind: "prompt", prompt: "Implications." },
     ];
     const next2 = migrateOperatorStore(saved2);
-    const expand = next2.find((o) => o.name === "expand");
-    assert.equal(expand.kind, "pipeline");
+    const branch = next2.find((o) => o.name === "Branch");
+    assert.equal(branch.kind, "pipeline");
+    assert.deepEqual(branch.migratedFrom, { id: "r1", name: "expand" });
     assert.ok(next2.some((o) => o.id === "s1"));
     assert.ok(next2.some((o) => o.id === "s2"));
   });
 
-  it("routes expand on sparse entity as single perceptual step", () => {
-    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "expand");
+  it("routes Branch on sparse entity as single perceptual step", () => {
+    const expand = TRANSFORM_PRIMITIVES.find((p) => p.name === "Branch");
     const material = "bobyard ai startup";
     assert.ok(!primitiveNeedsResolve(expand, material));
     assert.ok(!primitiveNeedsResearch(expand, material));
@@ -79,7 +85,7 @@ describe("transform primitives", () => {
     const plan = compileExecutionPlan(expand, { [expand.id]: expand }, material);
     assert.equal(plan.phases.length, 1);
     assert.equal(plan.phases[0].id, "synthesize");
-    assert.match(plan.phases[0].prompt, /Unfold/i);
+    assert.match(plan.phases[0].prompt, /possibilities/i);
     assert.ok(plan.fastPath);
   });
 
@@ -93,10 +99,10 @@ describe("transform primitives", () => {
     assert.ok(!plan.fastPath);
   });
 
-  it("keeps primitive prompts short perceptual nudges", () => {
+  it("keeps primitive prompts bounded and action-specific", () => {
     for (const p of TRANSFORM_PRIMITIVES) {
       const words = p.prompt.trim().split(/\s+/).length;
-      assert.ok(words <= 6, `${p.name} prompt too long: ${p.prompt}`);
+      assert.ok(words <= 40, `${p.name} prompt too long: ${p.prompt}`);
     }
   });
 
@@ -111,8 +117,8 @@ describe("transform primitives", () => {
     assert.equal(plan.phases[0].id, "synthesize");
   });
 
-  it("routes invert as direct transform even on sparse input", () => {
-    const invert = TRANSFORM_PRIMITIVES.find((p) => p.name === "invert");
+  it("routes Challenge as direct transform even on sparse input", () => {
+    const invert = TRANSFORM_PRIMITIVES.find((p) => p.name === "Challenge");
     const plan = compileExecutionPlan(invert, { [invert.id]: invert }, "bobyard ai startup");
     assert.equal(plan.phases.length, 1);
     assert.ok(plan.fastPath);

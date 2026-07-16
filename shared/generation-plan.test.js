@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  comparativeLabels,
   createGenerationBatch,
   deriveComposedGenerationPlan,
   moreLikeThisPlan,
+  normalizeBranchSpec,
+  normalizeDifferentiationLabel,
   normalizeGenerationPlan,
   recordTasteFeedback,
   resolveGenerationAssignments,
@@ -85,4 +88,43 @@ test("composition never multiplies operand candidate counts", () => {
   const plan = deriveComposedGenerationPlan({ count: 5 }, { count: 4 });
   assert.equal(plan.candidateCount, 1);
   assert.equal(plan.assignment.mode, "auto");
+});
+
+test("BranchSpecs preserve branch-specific cognition independently of structural outputs", () => {
+  const plan = normalizeGenerationPlan({
+    branchSpecs: [
+      { id: "optimistic", name: "Optimistic growth through partnerships", instruction: "Build the optimistic case.", model: "a/model" },
+      { id: "conservative", name: "Conservative cash preservation path", instruction: "Protect cash and downside.", model: "b/model" },
+      { id: "opposition", name: "Opposition case demand overstated", instruction: "Invert the thesis and challenge demand.", model: "auto" },
+    ],
+  });
+  assert.equal(plan.version, 2);
+  assert.equal(plan.candidateCount, 3);
+  assert.deepEqual(plan.branchSpecs.map((branch) => branch.id), ["optimistic", "conservative", "opposition"]);
+  const batch = createGenerationBatch({ id: "parallel", plan, outputSpec: multiOutput });
+  assert.equal(batch.candidates.length, 3);
+  assert.equal(batch.structuralOutputSpec.branches.length, 2);
+  assert.equal(batch.candidates[1].branchSpec.instruction, "Protect cash and downside.");
+  assert.deepEqual(batch.candidates.map((candidate) => candidate.requestedModel), ["a/model", "b/model", "auto"]);
+});
+
+test("BranchSpec migration is stable, bounded, and rejects unsafe provider options", () => {
+  const branch = normalizeBranchSpec({ name: "A", count: 99, providerOptions: { temperature: 0.4 } });
+  assert.equal(branch.id, "branch-1");
+  assert.equal(branch.count, 20);
+  assert.throws(() => normalizeBranchSpec(JSON.parse('{"providerOptions":{"__proto__":{"polluted":true}}}')), /unsafe key/);
+});
+
+test("comparative differentiation labels are unique Unicode-safe 3–8 words", () => {
+  const labels = comparativeLabels([
+    { name: "Conservative cash preservation path" },
+    { name: "Conservative cash preservation path" },
+    { name: "反対視点 需要 過大評価 ケース" },
+  ]);
+  assert.equal(new Set(labels.map((label) => label.normalize("NFKC").toLocaleLowerCase())).size, 3);
+  for (const label of labels) {
+    const count = label.trim().split(/\s+/u).length;
+    assert.ok(count >= 3 && count <= 8, `${label} has ${count} words`);
+  }
+  assert.equal(normalizeDifferentiationLabel("too short"), "Distinct sibling perspective");
 });

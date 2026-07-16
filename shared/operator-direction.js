@@ -3,12 +3,12 @@
 export const COMPRESSION_PRIMITIVE_IDS = new Set(["op-compress", "op-merge"]);
 
 export const EXPANSION_PRIMITIVE_IDS = new Set([
-  "op-expand",
-  "op-explore",
+  "op-branch",
+  "op-deepen",
+  "op-challenge",
+  "op-embody",
   "op-research",
-  "op-invert",
   "op-reframe",
-  "op-transcend",
 ]);
 
 const COMPRESS_RE =

@@ -129,10 +129,14 @@ const RAW_CAPABILITIES = [
   ["composeObjects", { a: "string", b: "string", name: "string?" }, false, ["move", "function", "lens"], "Compose any two canonical objects through the shared 3×3 algebra"],
   ["encodeLens", { lens: "string", model: "string?" }, false, ["lens", "paper", "ai"], "Infer a provisional perceptual model from a Lens's bounded material"],
   ["inspectGenerationPlan", { artifact: "string" }, false, ["move", "function", "ai"], "Inspect candidate count and model assignment"],
-  ["setGenerationPlan", { artifact: "string", count: "number?", model: "string?", mode: "auto|single?" }, false, ["move", "function", "ai"], "Set persisted candidate generation defaults"],
+  ["setGenerationPlan", { artifact: "string", count: "number?", model: "string?", mode: "auto|single|exact|weighted|compare?", branchSpecs: "array?" }, false, ["move", "function", "ai"], "Set persisted candidate generation defaults and branch-specific perspectives"],
   ["resetGenerationPlan", { artifact: "string" }, false, ["move", "function", "ai"], "Reset candidate generation defaults"],
   ["tasteCandidate", { decision: "yes|no|undecided", reason: "string?" }, false, ["ai"], "Record reversible private taste feedback on the focused candidate"],
   ["moreLikeThis", { count: "number?" }, false, ["ai", "move", "function"], "Generate child candidates from the focused accepted example"],
+  ["keepAllCandidates", {}, false, ["ai"], "Accept every recoverable sibling candidate without publishing it"],
+  ["extendSelectedCandidates", { count: "number?" }, false, ["ai", "move", "function"], "Generate bounded child batches from every selected candidate"],
+  ["stopGenerationBatch", {}, false, ["ai"], "Cancel pending sibling candidates without deleting completed work"],
+  ["retryGenerationCandidate", {}, false, ["ai"], "Retry only the focused failed candidate idempotently"],
   ["observeWorkspace", { scope: "selection|viewport|paper|workspace" }, false, ["paper", "ai"], "Inspect a bounded semantic workspace observation"],
   ["interpretThroughLens", { lens: "string", scope: "selection|viewport|paper|workspace" }, false, ["lens", "paper", "ai"], "Interpret a grounded workspace scope through a Lens and materialize the result"],
   ["interpretVisibleScreenThroughLens", { lens: "string" }, false, ["lens", "paper", "ai"], "Request authorized ephemeral raster capture and ground a visual interpretation through a Lens"],
@@ -169,6 +173,10 @@ const RAW_CAPABILITIES = [
   ["ingestExternalCritique", { text: "string" }, false, ["extension", "paper", "ai"], "Normalize critique speech into linked external annotations", "extension"],
   ["stopExternalCritique", {}, false, ["extension", "paper", "ai"], "Stop and persist the private external critique session", "extension"],
   ["composeExternalObjects", { a: "string", b: "string", name: "string?" }, false, ["extension", "move", "function", "lens"], "Compose two synced canonical objects through the shared 3×3 algebra", "extension"],
+  ["invokeExternalPrimitive", { primitive: "Branch|Merge|Deepen|Challenge|Embody", targets: "array", branchSpecs: "array?" }, false, ["extension", "move", "ai"], "Invoke a canonical Primitive Move through the shared external action stack", "extension"],
+  ["reorderExternalPrimitive", { primitive: "string", to: "number" }, false, ["extension", "move", "interface"], "Reorder a synced Primitive Move", "extension"],
+  ["setExternalGenerationBranches", { artifact: "string", branchSpecs: "array" }, false, ["extension", "move", "function", "ai"], "Persist branch-specific generation perspectives for a synced artifact", "extension"],
+  ["armExternalMerge", { targets: "array" }, false, ["extension", "move", "ai"], "Arm a non-destructive Merge preview for explicit external material", "extension"],
 ];
 
 const HANDLER_CONFIRMED_CAPABILITIES = new Set([

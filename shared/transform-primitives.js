@@ -16,7 +16,7 @@ export const TRANSFORM_PRIMITIVES = [
     name: "compress",
     kind: "prompt",
     primitive: true,
-    primitiveMove: true,
+    primitiveMove: false,
     pair: "detail",
     inverse: "expand",
     resolveWhen: "never",
@@ -27,30 +27,38 @@ export const TRANSFORM_PRIMITIVES = [
     estimatedMs: 12000,
   },
   {
-    id: "op-expand",
-    name: "expand",
+    id: "op-branch",
+    name: "Branch",
     kind: "prompt",
     primitive: true,
     primitiveMove: true,
-    pair: "detail",
-    inverse: "compress",
+    primitiveRankDefault: 0,
     resolveWhen: "never",
     researchWhen: "never",
-    description: "Unfold implications and detail",
-    prompt: "Unfold.",
+    description: "What else could this become?",
+    prompt: "Create distinct, useful possibilities without changing the source. Follow each BranchSpec perspective and constraints.",
+    generationPlan: {
+      candidateCount: 3,
+      branchSpecs: [
+        { id: "branch-a", name: "Distinct adjacent possibility", instruction: "Develop one plausible adjacent direction." },
+        { id: "branch-b", name: "Contrasting strategic possibility", instruction: "Develop a meaningfully contrasting direction." },
+        { id: "branch-c", name: "Unexpected useful possibility", instruction: "Develop a less obvious but grounded direction." },
+      ],
+    },
     maxTokens: 1400,
     estimatedMs: 18000,
   },
   {
-    id: "op-explore",
-    name: "explore",
+    id: "op-deepen",
+    name: "Deepen",
     kind: "prompt",
     primitive: true,
     primitiveMove: true,
+    primitiveRankDefault: 2,
     resolveWhen: "never",
     researchWhen: "never",
-    description: "Open adjacent possibilities",
-    prompt: "Explore nearby.",
+    description: "Surface underlying principles",
+    prompt: "Go underneath the supplied material. Surface its assumptions, mechanisms, and underlying principles with grounded links to the source.",
     maxTokens: 1400,
     estimatedMs: 18000,
   },
@@ -59,7 +67,7 @@ export const TRANSFORM_PRIMITIVES = [
     name: "research",
     kind: "prompt",
     primitive: true,
-    primitiveMove: true,
+    primitiveMove: false,
     resolveWhen: "never",
     researchWhen: "always",
     description: "Ground in facts via web search",
@@ -68,15 +76,16 @@ export const TRANSFORM_PRIMITIVES = [
     estimatedMs: 42000,
   },
   {
-    id: "op-invert",
-    name: "invert",
+    id: "op-challenge",
+    name: "Challenge",
     kind: "prompt",
     primitive: true,
     primitiveMove: true,
+    primitiveRankDefault: 3,
     resolveWhen: "never",
     researchWhen: "never",
-    description: "Flip polarity or assumption",
-    prompt: "Opposite view.",
+    description: "Attack the idea and find weaknesses",
+    prompt: "Challenge the supplied material. Identify weak assumptions, counterevidence, failure modes, and the strongest opposition case. Preserve the source.",
     maxTokens: 700,
     estimatedMs: 12000,
   },
@@ -85,7 +94,7 @@ export const TRANSFORM_PRIMITIVES = [
     name: "reframe",
     kind: "prompt",
     primitive: true,
-    primitiveMove: true,
+    primitiveMove: false,
     resolveWhen: "never",
     researchWhen: "never",
     description: "Move the vantage point",
@@ -95,34 +104,59 @@ export const TRANSFORM_PRIMITIVES = [
   },
   {
     id: "op-merge",
-    name: "merge",
+    name: "Merge",
     kind: "prompt",
     primitive: true,
     primitiveMove: true,
+    primitiveRankDefault: 1,
     multiInput: true,
     resolveWhen: "never",
     researchWhen: "never",
     description: "Fuse several thoughts into one structure",
     prompt: "Fuse into one structure.",
+    inputRequirements: { type: "material", arity: { min: 2, max: 20 } },
+    outputSpec: { version: 1, mode: "custom", machineKind: "richText", semanticType: "meaningful synthesis", cardinality: { min: 1, max: 1 }, branches: [] },
     maxTokens: 1200,
     estimatedMs: 16000,
   },
   {
-    id: "op-transcend",
-    name: "transcend",
+    id: "op-embody",
+    name: "Embody",
     kind: "prompt",
     primitive: true,
     primitiveMove: true,
+    primitiveRankDefault: 4,
     resolveWhen: "never",
     researchWhen: "never",
-    description: "Ascend past a tension",
-    prompt: "Past the tension.",
+    description: "Make theory concrete and real",
+    prompt: "Embody the supplied concept through concrete examples, observable behaviors, situations, and artifacts. Keep each example traceable to the source concept.",
     maxTokens: 900,
     estimatedMs: 14000,
   },
 ];
 
+export const PRIMITIVE_MOVE_ALIASES = Object.freeze({
+  expand: "Branch",
+  explore: "Branch",
+  split: "Branch",
+  combine: "Merge",
+  synthesize: "Merge",
+  decompose: "Deepen",
+  "underlying principles": "Deepen",
+  critique: "Challenge",
+  counterexample: "Challenge",
+  invert: "Challenge",
+  transcend: "Challenge",
+  ground: "Embody",
+  concretize: "Embody",
+});
+
 export const PRIMITIVE_NAMES = new Set(TRANSFORM_PRIMITIVES.map((p) => p.name));
+
+export function canonicalPrimitiveName(name) {
+  const value = String(name || "").trim();
+  return PRIMITIVE_MOVE_ALIASES[value.toLowerCase()] || value;
+}
 
 const LEGACY_DEFAULT_NAMES = new Set([
   "combine",
@@ -226,8 +260,8 @@ export function migrateOperatorStore(saved) {
   // built-in. If the edit turned the primitive into a pipeline, keep its
   // whole step subtree alive too.
   const byId = Object.fromEntries(saved.map((o) => [o.id, o]));
-  const overrides = saved.filter((o) => o.primitive && !o.role && !o.top && PRIMITIVE_NAMES.has(o.name));
-  const overrideByName = new Map(overrides.map((o) => [o.name, o]));
+  const overrides = saved.filter((o) => o.primitive && !o.role && !o.top && PRIMITIVE_NAMES.has(canonicalPrimitiveName(o.name)));
+  const overrideByName = new Map(overrides.map((o) => [canonicalPrimitiveName(o.name), o]));
   const keepIds = new Set();
   const walkSteps = (id) => {
     const op = byId[id];
@@ -237,13 +271,15 @@ export function migrateOperatorStore(saved) {
   };
   overrides.forEach((o) => (o.steps || []).forEach(walkSteps));
   const overrideSubtree = saved.filter(
-    (o) => keepIds.has(o.id) && !overrideByName.has(o.name) && !userOps.some((u) => u.id === o.id)
+    (o) => keepIds.has(o.id) && !overrideByName.has(canonicalPrimitiveName(o.name)) && !userOps.some((u) => u.id === o.id)
   );
 
   return migrateOperatorOutputSpecs([
     ...TRANSFORM_PRIMITIVES.map((p) => {
       const edited = overrideByName.get(p.name);
-      return edited ? { ...edited } : { ...p };
+      return edited
+        ? { ...p, ...edited, id: p.id, name: p.name, migratedFrom: edited.name === p.name ? edited.migratedFrom : { id: edited.id, name: edited.name } }
+        : { ...p };
     }),
     ...overrideSubtree,
     ...userOps,
