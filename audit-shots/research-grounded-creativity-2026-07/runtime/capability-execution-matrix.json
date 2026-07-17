@@ -1,0 +1,139 @@
+{
+  "generatedAt": "2026-07-17T18:16:54.557Z",
+  "harness": "controlled real director/extension handler execution",
+  "inputPath": "director",
+  "counts": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "app": 1,
+    "extension": 1
+  },
+  "rows": [
+    {
+      "name": "createCreativeResearchProposal",
+      "platform": "app",
+      "utterance": "make five evidence-grounded creative process Functions from verified research",
+      "args": {
+        "goal": {
+          "version": 1,
+          "id": "creative-runtime",
+          "rawWording": "Create one evidence-inspired Function",
+          "desiredArtifactKinds": [
+            "function"
+          ],
+          "count": 1,
+          "groundingLevel": "evidence-inspired",
+          "noveltyTarget": 0.6,
+          "diversityDimensions": [
+            "mechanism"
+          ],
+          "constraints": [],
+          "prohibitedImitation": [],
+          "audience": "tester",
+          "useContext": "audit",
+          "modelPolicy": {
+            "strategy": "auto"
+          },
+          "budget": {
+            "maxSources": 3,
+            "maxModelCalls": 4,
+            "maxUsd": 1,
+            "maxLatencyMs": 30000
+          },
+          "rubric": [
+            "grounding"
+          ],
+          "attribution": {
+            "subject": null,
+            "exactFrequencyRequested": false,
+            "endorsementAllowed": false
+          },
+          "sourcePolicy": {
+            "primaryPreferred": true,
+            "independentPerspectives": 1,
+            "datesRequiredWhenAvailable": true
+          }
+        },
+        "research": {
+          "provider": "runtime-mock",
+          "sources": [
+            {
+              "id": "runtime-source",
+              "title": "Runtime source",
+              "url": "https://example.com/runtime",
+              "publisher": "Example",
+              "snippet": "Documented iterative variation.",
+              "retrievedAt": "2026-07-17T18:00:00.000Z"
+            }
+          ]
+        },
+        "patterns": [
+          {
+            "id": "creative-function",
+            "kind": "function",
+            "title": "Inferred variation",
+            "blurb": "Iterate across explicit constraints",
+            "purpose": "Test variation",
+            "category": "variation",
+            "sourceIds": [
+              "runtime-source"
+            ],
+            "steps": [
+              {
+                "name": "Vary",
+                "instruction": "Generate bounded variations."
+              },
+              {
+                "name": "Compare",
+                "instruction": "Compare outcomes."
+              }
+            ]
+          }
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "cognitive-pull-request",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "41211f77-92a0-4fcd-b4c7-d7207d7b633b",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1424,
+      "errors": []
+    },
+    {
+      "name": "openExternalCreativeExtraction",
+      "platform": "extension",
+      "utterance": "create a research-grounded creative proposal from this selection",
+      "args": {
+        "goal": "Create from this selected tradition",
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    }
+  ]
+}

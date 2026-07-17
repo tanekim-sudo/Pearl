@@ -144,6 +144,24 @@ test("extension cognitive workflows preserve payloads and enforce package and vo
   assert.equal(events[0].type, "open-cognitive-pull-request");
   assert.equal(events[0].payload.captureScope, "explicit-selection");
   assert.equal(events[0].payload.preservePayload, true);
+  assert.equal(parseExtensionIntent("save this selection to my Writing Taste Lens").name, "saveExternalTasteTeaching");
+  await assert.rejects(
+    () => executeExtensionVerb("saveExternalTasteTeaching", { lens: "Writing Taste Lens", text: "explicit-selection", kind: "example" }, {
+      action: async () => ({}),
+    }),
+    /scoped preview approval/
+  );
+  const tasteHandoff = await executeExtensionVerb("saveExternalTasteTeaching", {
+    lens: "Writing Taste Lens",
+    text: "explicit-selection",
+    kind: "example",
+  }, {
+    confirmed: true,
+    animate: async () => {},
+    action: async (type, payload) => ({ type, payload }),
+  });
+  assert.equal(tasteHandoff.payload.collectFullPage, false);
+  assert.equal(tasteHandoff.payload.privateExamples, true);
   await assert.rejects(
     () => executeExtensionVerb("teachExternalPersonalCommand", { trigger: "founder pass", command: "openExternalCognitivePullRequest", scope: "workspace" }, {
       action: async () => ({}),

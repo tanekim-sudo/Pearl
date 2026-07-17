@@ -15,6 +15,16 @@ const SECTION_LABELS = {
   blindSpots: "Possible blind spots",
   counterLenses: "Alternative lenses",
   preserve: "What to preserve",
+  dimensions: "Judgment dimensions and weights",
+  preferences: "Positive principles",
+  antiPatterns: "Anti-patterns and rejections",
+  exceptions: "Exceptions and context conditions",
+  positiveExamples: "Positive examples",
+  negativeExamples: "Negative examples",
+  pairedExamples: "Before → after examples",
+  critiques: "Critiques and reasons",
+  candidatePreferences: "Preferred and rejected candidates",
+  vocabularyPatterns: "Vocabulary and style patterns",
 };
 
 const TEXT_CARD_W = 190;
@@ -63,6 +73,7 @@ export default function LensSettingsDialog({
   onRunFunction,
   onFindSameness,
   onCraftLens,
+  onAddBeforeAfter,
   onClose,
 }) {
   const [title, setTitle] = useState(String(struct.title || ""));
@@ -89,6 +100,14 @@ export default function LensSettingsDialog({
   const spaceRef = useRef(null);
 
   const items = Array.isArray(struct.items) ? struct.items.filter(Boolean) : [];
+  const isTasteLens = perceptualModel.profile.purposes.includes("taste/judgment");
+  const tasteChips = [
+    ...perceptualModel.sections.preferences,
+    ...perceptualModel.sections.antiPatterns,
+    ...perceptualModel.sections.preserve,
+  ].filter((facet) => facet.enabled && facet.reviewStatus !== "rejected")
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 8);
   const isPlaceholder = !!struct.structNum || /^[◇#]\s*\d+/.test(String(struct.title || ""));
 
   // Fit the material into the workspace viewport: world bbox → scale + offset.
@@ -388,9 +407,14 @@ export default function LensSettingsDialog({
 
         <section className="lens-perceptual-editor" data-lens-perceptual-editor>
           <div className="lens-settings-label">
-            perceptual model — explicit context, never an action
+            {isTasteLens ? "how this Lens judges" : "perceptual model"} — explicit context, never an action
             <p className="gen-space-hint">Edit one facet per line. Your edits are confirmed and always override inferred hypotheses.</p>
           </div>
+          {isTasteLens && <div className="lens-taste-summary" data-taste-lens-summary>
+            <small>{perceptualModel.profile.domains.join(", ") || "general"} · {tasteChips.length} high-priority facets · {perceptualModel.sections.pairedExamples.length} before/after example(s){perceptualModel.profile.lastRefinedAt ? ` · refined ${new Date(perceptualModel.profile.lastRefinedAt).toLocaleDateString()}` : ""}</small>
+            <div>{tasteChips.map((facet) => <span key={facet.id} className="lens-context-chip">{facet.text}</span>)}</div>
+            {onAddBeforeAfter && <button type="button" className="lens-settings-quiet" onClick={onAddBeforeAfter}>Add before &amp; after</button>}
+          </div>}
           {LENS_PERCEPTUAL_SECTIONS.map((section) => (
             <label className="lens-settings-label" key={section}>
               {SECTION_LABELS[section]}
@@ -404,8 +428,9 @@ export default function LensSettingsDialog({
                     ...(previous[index] || {}),
                     id: previous[index]?.id || `${section}:user:${Date.now()}:${index}`,
                     text,
-                    status: "confirmed",
-                    source: "user",
+                    reviewStatus: "confirmed",
+                    origin: "user",
+                    userConfirmed: true,
                     confidence: 1,
                     updatedAt: Date.now(),
                   }));

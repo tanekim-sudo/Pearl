@@ -215,6 +215,16 @@ import {
   reviewCognitiveCandidate as reviewCognitiveCandidateData,
   testCognitiveCandidates,
 } from "../shared/cognitive-pull-request.js";
+import { createGroundedCreativePullRequest } from "../shared/research-grounded-creativity.js";
+import {
+  applyTasteLensDiff,
+  attachTasteBeforeAfter,
+  compileTasteJudgmentEnvelope,
+  createTasteLensModel,
+  evaluateThroughTasteLens,
+  interpretTasteTeaching,
+  proposeTasteLensDiff,
+} from "../shared/taste-lens.js";
 import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
 import LearnFromChat from "./components/LearnFromChat.jsx";
@@ -13585,6 +13595,85 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ? { type: "lens", lensId: struct.id, id: struct.id, name: struct.title, record: struct }
         : null;
     },
+    resolveTasteLens: async (a, tk, ctx) => {
+      const domain = String(a.domain || "general").trim();
+      const requestedName = String(a.name || `${domain[0]?.toUpperCase() || ""}${domain.slice(1)} Taste`).trim();
+      let lens = lensesRef.current.find((entry) => {
+        const model = createTasteLensModel({ current: entry.perceptualModel || {} });
+        return model.profile.purposes.includes("taste/judgment")
+          && (String(entry.title || entry.name).toLowerCase() === requestedName.toLowerCase() || model.profile.domains.includes(domain));
+      });
+      if (!lens) {
+        lens = createEmptyGenerator();
+        if (!lens) throw new Error("Taste Lens could not be created");
+        const perceptualModel = createTasteLensModel({ domains: [domain], scopes: [a.scope || "workspace"] });
+        const next = { ...lens, title: requestedName, name: requestedName, perceptualModel, contextPolicy: "bounded", version: 1 };
+        setLenses((current) => current.map((entry) => entry.id === lens.id ? next : entry));
+        lens = next;
+      }
+      ctx.vars.lastGeneratorId = lens.id;
+      const card = tk.elementCenter(`[data-struct-id="${lens.id}"]`);
+      if (card) await tk.moveTo(card.x, card.y);
+      return { type: "lens", id: lens.id, lensId: lens.id, name: lens.title || lens.name, record: lens, effects: ["taste-lens-resolved"] };
+    },
+    saveTasteTeaching: async (a, tk, ctx) => {
+      const lens = directorResolveGenerator(a.lens, ctx);
+      if (!lens) throw new Error("choose or create a Taste Lens first");
+      if (a.explicitSave !== true) throw new Error("Persistent taste requires explicit save or remember intent");
+      const interpretation = interpretTasteTeaching(a.instruction, {
+        explicitSave: true,
+        source: a.source || { sourceType: "instruction", scope: "workspace", private: true },
+      });
+      const diff = proposeTasteLensDiff(lens.perceptualModel, interpretation, {
+        domains: createTasteLensModel({ current: lens.perceptualModel }).profile.domains,
+        source: a.source,
+      });
+      const applied = applyTasteLensDiff(createTasteLensModel({ current: lens.perceptualModel }), diff);
+      const next = { ...lens, version: (Number(lens.version) || 1) + 1, perceptualModel: applied.model, updatedAt: Date.now() };
+      setLenses((current) => current.map((entry) => entry.id === lens.id ? next : entry));
+      setLensSettingsId(lens.id);
+      ctx.vars.lastGeneratorId = lens.id;
+      return { type: "lens", id: lens.id, lensId: lens.id, record: next, diff, receipt: applied.receipt, effects: ["taste-lens-versioned", "library-changed"] };
+    },
+    attachTasteBeforeAfter: async (a, tk, ctx) => {
+      const lens = directorResolveGenerator(a.lens, ctx);
+      const before = directorResolveItem(a.before, ctx);
+      const after = directorResolveItem(a.after, ctx);
+      if (!lens || !before || !after) throw new Error("choose a Taste Lens and explicit before and after artifacts");
+      const diff = attachTasteBeforeAfter(lens.perceptualModel, {
+        before: { id: before.id, modality: before.type || "text", private: true },
+        after: { id: after.id, modality: after.type || "text", private: true },
+        preserved: a.preserved || [],
+      }, {
+        explicitSave: true,
+        source: { sourceId: `${before.id}->${after.id}`, sourceType: "before-after", scope: "workspace", private: true },
+      });
+      const key = "lens.taste-lens-diffs.v1";
+      const pending = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([...pending, { lensId: lens.id, diff }].slice(-50)));
+      setLensSettingsId(lens.id);
+      return { type: "taste-lens-diff", id: diff.id, lensId: lens.id, diff, effects: ["taste-lens-diff-proposed"] };
+    },
+    inspectTasteLens: async (a, tk, ctx) => {
+      const lens = directorResolveGenerator(a.lens, ctx);
+      if (!lens) throw new Error("choose a Taste Lens to inspect");
+      setLensSettingsId(lens.id);
+      const model = createTasteLensModel({ current: lens.perceptualModel });
+      return { type: "taste-lens", id: lens.id, lensId: lens.id, profile: model.profile, sections: model.sections, fingerprint: model.fingerprint };
+    },
+    evaluateThroughTasteLens: async (a, tk, ctx) => {
+      const lens = directorResolveGenerator(a.lens, ctx);
+      const target = directorResolveItem(a.target, ctx);
+      if (!lens || !target) throw new Error("choose a Taste Lens and explicit material to evaluate");
+      const envelope = compileTasteJudgmentEnvelope(lens, { preserve: a.preserve || [] });
+      const evaluation = evaluateThroughTasteLens(target, envelope);
+      const feedbackId = spawnTextAtWorld(
+        `Taste Lens review · ${lens.title || lens.name}\n${evaluation.violations.map((entry) => `• ${entry.dimension}: ${entry.status}`).join("\n") || "No listed anti-pattern was directly observed; human review remains required."}\n${evaluation.uncertainty}`,
+        { x: (target.x || 0) + (target.w || 320) + 48, y: target.y || 0 },
+        { sourceIds: [target.id], via: { lensId: lens.id, lensVersion: lens.version, lensFingerprint: envelope.lens.fingerprint } },
+      );
+      return { type: "taste-lens-evaluation", id: feedbackId, lensId: lens.id, targetId: target.id, evaluation, envelope, effects: ["feedback-materialized"] };
+    },
     addLensMaterial: async (a, tk, ctx) => {
       const struct = directorResolveGenerator(a.lens, ctx);
       const item = directorResolveItem(a.target, ctx);
@@ -14214,6 +14303,44 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       tk.caption(`review ${request.candidates.length} grounded candidates`);
       return { type: "cognitive-pull-request", id: request.id, status: request.status, candidates: request.candidates, saturation: request.saturation };
     },
+    createCreativeResearchProposal: async (a, tk) => {
+      const research = a.research || {};
+      if (!Array.isArray(research.sources) || !research.sources.length) {
+        throw new Error("Verified research is unavailable; factual attribution is blocked. Explicitly choose a speculative exercise to continue without citations.");
+      }
+      let request = createGroundedCreativePullRequest({
+        goal: a.goal,
+        sources: research.sources,
+        patterns: a.patterns,
+        provider: research.provider,
+        retrievedAt: research.retrievedAt,
+      });
+      request = await testCognitiveCandidates(request, async (candidate) => ({
+        passed: candidate.evidence.length > 0 && candidate.steps.length >= (candidate.kind === "function" ? 2 : 0),
+        evidence: {
+          type: "creative-contract",
+          sourceGrounded: candidate.evidence.length > 0,
+          structurallyExecutable: candidate.kind !== "function" || candidate.steps.length >= 2,
+          attributionCalibrated: candidate.attribution?.derivedInterpretation === true && candidate.attribution?.official === false,
+          holdouts: candidate.holdouts,
+        },
+      }));
+      const key = "lens.cognitive-pull-requests.v1";
+      const requests = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([...requests, request].slice(-30)));
+      setCognitiveStudioInitialTab("pull-request");
+      setCognitiveStudioOpen(true);
+      tk.caption(`review ${request.candidates.length} inferred creative processes`);
+      return {
+        type: "cognitive-pull-request",
+        id: request.id,
+        status: request.status,
+        candidates: request.candidates,
+        evidenceMap: request.evidenceMap,
+        attributionReview: request.attributionReview,
+        metrics: request.metrics,
+      };
+    },
     reviewCognitiveCandidate: async (a, tk) => {
       const key = "lens.cognitive-pull-requests.v1";
       const requests = JSON.parse(localStorage.getItem(key) || "[]");
@@ -14240,9 +14367,43 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const moveArtifacts = merged.artifacts.filter((entry) => entry.kind === "move");
       const functionArtifacts = merged.artifacts.filter((entry) => entry.kind === "function");
       const lensArtifacts = merged.artifacts.filter((entry) => entry.kind === "lens");
+      const functionStepArtifacts = functionArtifacts.flatMap((entry) => {
+        const steps = entry.steps?.length
+          ? entry.steps
+          : [{ id: "step-1", name: entry.title, instruction: entry.definition, outputSpec: entry.outputSpec }];
+        return steps.map((step, index) => ({
+          id: `${entry.id}:step:${step.id || index + 1}`,
+          version: 1,
+          parentId: entry.id,
+          name: step.name || `Move ${index + 1}`,
+          prompt: step.instruction || step.prompt || entry.definition,
+          promptTemplate: step.instruction || step.prompt || entry.definition,
+          outputSpec: step.outputSpec,
+          move: true,
+          top: false,
+          libraryKind: "move",
+          kind: "prompt",
+          provenance: entry.provenance,
+        }));
+      });
       setOperators((current) => [...current,
         ...moveArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, prompt: entry.definition, promptTemplate: entry.definition, move: true, top: true, libraryKind: "move", kind: "prompt", provenance: entry.provenance })),
-        ...functionArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, description: entry.definition, steps: [], branches: [], top: true, libraryKind: "function", kind: "compound", provenance: entry.provenance })),
+        ...functionArtifacts.map((entry) => ({
+          id: entry.id,
+          version: 1,
+          name: entry.title,
+          description: entry.purpose || entry.definition,
+          steps: functionStepArtifacts.filter((step) => step.parentId === entry.id).map((step) => step.id),
+          branches: entry.branches || [],
+          outputSpec: entry.outputSpec,
+          top: true,
+          libraryKind: "function",
+          kind: "compound",
+          provenance: entry.provenance,
+          attribution: entry.attribution,
+          holdouts: entry.holdouts,
+        })),
+        ...functionStepArtifacts,
       ]);
       setLenses((current) => [...current, ...lensArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, description: entry.definition, materials: entry.evidence, provenance: entry.provenance }))]);
       localStorage.setItem(key, JSON.stringify(requests.map((entry) => entry.id === request.id ? { ...merged.request, receipt: merged.receipt } : entry)));
@@ -16963,6 +17124,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             onCraftLens={(itemIds) => {
               setLensSettingsId(null);
               craftLensFromGenerator(struct.id, itemIds);
+            }}
+            onAddBeforeAfter={() => {
+              localStorage.setItem("lens.taste-lens.active-refinement.v1", JSON.stringify({ lensId: struct.id, lensVersion: struct.version || 1, openedAt: Date.now() }));
+              setLensSettingsId(null);
+              openCreateLens("before-after");
             }}
             onClose={() => setLensSettingsId(null)}
           />

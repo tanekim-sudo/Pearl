@@ -363,6 +363,22 @@ test("adaptive planner documents framework metadata outside capability args", ()
   assert.match(prompt, /Handler-confirmed actions stage the app's normal counted confirmation/);
 });
 
+test("adaptive planner preserves canonical Taste Lens and creative attribution boundaries", () => {
+  const taste = buildAdaptiveCompanionPrompt({
+    goal: { rawWording: "save this to my taste Lens for writing", outcomes: ["remember this writing preference"] },
+  });
+  assert.match(taste, /resolveTasteLens\(/);
+  assert.match(taste, /saveTasteTeaching\(/);
+  assert.match(taste, /Taste Lens is the canonical Lens/);
+  assert.match(taste, /never an authorship detector claim/);
+
+  const creative = buildAdaptiveCompanionPrompt({
+    goal: { rawWording: "make me Picasso's five most common Functions", outcomes: ["five inferred recurring processes"] },
+  });
+  assert.match(creative, /createCreativeResearchProposal\(/);
+  assert.match(creative, /Historical\/persona creativity must research first/);
+});
+
 test("flat reply parser rejects fake verbs instead of silently dropping them", () => {
   assert.throws(
     () =>

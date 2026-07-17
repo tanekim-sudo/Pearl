@@ -205,7 +205,14 @@ export function createNewChatLens(options = {}) {
     contextPolicy: "empty",
     contextBudget: 0,
     material: [],
-    perceptualModel: emptyPerceptualModel(),
+    perceptualModel: {
+      ...emptyPerceptualModel(),
+      profile: {
+        ...emptyPerceptualModel().profile,
+        purposes: ["empty/new-chat"],
+        contextBudget: 0,
+      },
+    },
     encoding: { status: "empty", includedSourceCount: 0, excludedSourceCount: 0 },
     inclusionPolicy: { private: true, includeSources: false, excludeSensitive: true },
     metadata: { tags: ["built-in", "isolation"], description: "Fresh isolated model context." },

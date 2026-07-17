@@ -29,6 +29,27 @@ export const EXTENSION_VERBS = Object.freeze({
   openExternalCognitiveStudio: ({ args, action }) => action("open-web-handoff", { surface: "cognitive-workflow-studio", tab: args.tab || "integrate", preservePayload: true }),
   teachExternalPersonalCommand: ({ args, action }) => action("personal-command-save", { ...args, sharedResolver: true }),
   openExternalCognitivePullRequest: ({ args, action }) => action("open-cognitive-pull-request", { kinds: args.kinds || ["move", "function", "lens"], captureScope: "explicit-selection", preservePayload: true }),
+  openExternalCreativeExtraction: ({ args, action }) => action("open-web-handoff", {
+    surface: "cognitive-workflow-studio",
+    tab: "pull-request",
+    workflow: "research-grounded-creativity",
+    goal: args.goal,
+    kinds: args.kinds || ["move", "function", "lens"],
+    captureScope: "explicit-selection",
+    preservePayload: true,
+    collectFullPage: false,
+  }),
+  saveExternalTasteTeaching: ({ args, action }) => action("open-web-handoff", {
+    surface: "cognitive-workflow-studio",
+    tab: "pull-request",
+    workflow: "taste-lens-teaching",
+    lens: args.lens,
+    teaching: { text: args.text, kind: args.kind || "preference" },
+    captureScope: "explicit-selection",
+    preservePayload: true,
+    collectFullPage: false,
+    privateExamples: true,
+  }),
   openExternalBeforeAfter: ({ openBeforeAfter }) => openBeforeAfter(),
   setExternalBeforeAfterText: ({ args, setBeforeAfterText }) => setBeforeAfterText(args.side, args.text),
   inferExternalBeforeAfter: ({ inferBeforeAfter }) => inferBeforeAfter(),
@@ -104,6 +125,11 @@ export function parseExtensionIntent(text) {
   if (/^(show|open|browse)( the)? (cognitive )?packages$/i.test(value)) return { name: "browseExternalPackages", args: {} };
   if (/\bopen\b.*\b(?:cognitive workflow|higher-order|vocabulary)\b/i.test(value)) return { name: "openExternalCognitiveStudio", args: { tab: /\bvocabulary\b/i.test(value) ? "vocabulary" : "higher-order" } };
   if (/\bextract\b.*\b(?:move|function|lens|all)\b.*\bfrom (?:this|the selection)\b/i.test(value)) return { name: "openExternalCognitivePullRequest", args: { kinds: ["move", "function", "lens"] } };
+  if (/\b(?:creative extraction|create from|inspired by|recurring (?:moves|functions|processes))\b/i.test(value) && /\b(?:this|selection|person|tradition|domain)\b/i.test(value)) {
+    return { name: "openExternalCreativeExtraction", args: { goal: value, kinds: ["move", "function", "lens"] } };
+  }
+  const taste = value.match(/\bsave (?:this(?: selection)?|the selection) to (?:my )?(.+?taste lens)(?: for ([\p{L}\p{N} -]+))?$/iu);
+  if (taste) return { name: "saveExternalTasteTeaching", args: { lens: taste[1], text: "explicit-selection", kind: "example" } };
   if (/\b(?:open|make|create|learn)\b/i.test(value) && /\bbefore\s*(?:\/|and|&)?\s*after\b/i.test(value)) return { name: "openExternalBeforeAfter", args: {} };
   const setExample = value.match(/^(?:set|use) (before|after)(?: text)? (?:to|as) (.+)$/i);
   if (setExample) return { name: "setExternalBeforeAfterText", args: { side: setExample[1].toLowerCase(), text: setExample[2] } };

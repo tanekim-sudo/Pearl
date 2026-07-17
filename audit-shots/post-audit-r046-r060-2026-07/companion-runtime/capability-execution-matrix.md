@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 198
-- Passed: 198
+- Total: 206
+- Passed: 206
 - Failed: 0
 - Skipped: 0
 
@@ -125,6 +125,11 @@
 - PASS — `restoreFunction` (app): state-or-visible-artifact-changed
 - PASS — `editFunctionByInstruction` (app): state-or-visible-artifact-changed
 - PASS — `createLens` (app): state-or-visible-artifact-changed
+- PASS — `resolveTasteLens` (app): state-or-visible-artifact-changed
+- PASS — `saveTasteTeaching` (app): state-or-visible-artifact-changed
+- PASS — `attachTasteBeforeAfter` (app): state-or-visible-artifact-changed
+- PASS — `inspectTasteLens` (app): state-or-visible-artifact-changed
+- PASS — `evaluateThroughTasteLens` (app): state-or-visible-artifact-changed
 - PASS — `addLensMaterial` (app): state-or-visible-artifact-changed
 - PASS — `nameLens` (app): state-or-visible-artifact-changed
 - PASS — `probeLens` (app): state-or-visible-artifact-changed
@@ -164,6 +169,7 @@
 - PASS — `reviewCognitiveCandidate` (app): state-or-visible-artifact-changed
 - PASS — `mergeCognitivePullRequest` (app): state-or-visible-artifact-changed
 - PASS — `orchestrateCognitiveWorkflow` (app): state-or-visible-artifact-changed
+- PASS — `createCreativeResearchProposal` (app): state-or-visible-artifact-changed
 - PASS — `clearPaper` (app): state-or-visible-artifact-changed
 - PASS — `clearAiSpace` (app): state-or-visible-artifact-changed
 - PASS — `clearFunctions` (app): state-or-visible-artifact-changed
@@ -190,6 +196,8 @@
 - PASS — `openExternalCognitiveStudio` (extension): controlled extension state changed
 - PASS — `teachExternalPersonalCommand` (extension): controlled extension state changed
 - PASS — `openExternalCognitivePullRequest` (extension): controlled extension state changed
+- PASS — `openExternalCreativeExtraction` (extension): controlled extension state changed
+- PASS — `saveExternalTasteTeaching` (extension): controlled extension state changed
 - PASS — `openExternalBeforeAfter` (extension): controlled extension state changed
 - PASS — `setExternalBeforeAfterText` (extension): controlled extension state changed
 - PASS — `inferExternalBeforeAfter` (extension): controlled extension state changed

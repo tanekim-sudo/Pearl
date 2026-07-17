@@ -8,6 +8,7 @@ import {
   companionActionMetadataPrompt,
   COMPANION_VERBS,
 } from "./companion-capabilities.js";
+import { capabilityContextPrompt } from "./companion-capability-graph.js";
 import { parseCompanionPlan } from "./companion-plan.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
@@ -470,6 +471,13 @@ export function buildAdaptiveCompanionPrompt({
   mode = "agent",
   goal = null,
 } = {}) {
+  const retrievalQuery = [
+    goal?.rawWording,
+    ...(goal?.outcomes || []),
+    ...(goal?.constraints || []),
+    ...(goal?.references || []),
+  ].filter(Boolean).join(" ");
+  const retrievedCapabilities = capabilityContextPrompt(retrievalQuery, { platform: "app", limit: 24 });
   return `You are the action planner inside lens. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
 
 MODE (enforced by executor): ${mode}
@@ -479,8 +487,8 @@ ${JSON.stringify(goal || {}, null, 2)}
 WORKSPACE:
 ${workspaceContext}
 
-CAPABILITIES:
-${capabilityPrompt()}
+RETRIEVED CAPABILITIES (versioned subset selected from the canonical graph):
+${retrievedCapabilities}
 
 Return ONLY one versioned JSON plan:
 {"version":1,"title":"short visual label","root":{"kind":"sequence","steps":[]}}
@@ -512,8 +520,12 @@ Rules:
 - Action-first and silent. The plan itself is the response; do not add conversational text.
 - Every executable leaf step must have a unique id. If an action creates a Move, Function, Lens, block, node, path, or other resource used later, give it a saveAs binding and use {"$ref":"binding"} in dependent arguments.
 - Never treat Move, Function, and Lens as synonyms. “Save this text as a Move” means saveCurrentAsMove and preserves text verbatim. “Save how I got here as a Function” means captureLineageAsFunction and uses only contributing lineage. “Collect these in a Lens” means bounded context material.
+- A Taste Lens is the canonical Lens with purpose "taste/judgment", never a separate object or an action. For “save this to my taste Lens for writing,” resolveTasteLens first, preview the interpretation, then use saveTasteTeaching only when explicitSave is true. Ordinary yes/no remains session-private.
+- “Looks AI generated” is never an authorship detector claim. Translate it into editable observable anti-pattern proposals and retain uncertainty. Applying taste uses evaluateThroughTasteLens followed by an explicit preserve-original revision Move/Function; a run-specific preserve constraint does not mutate the saved Lens.
+- Historical/persona creativity must research first, keep sourced facts separate from inferred operations, and pass verified sources plus distinct synthesized patterns to createCreativeResearchProposal. If verified research is unavailable, block factual attribution or offer only an explicitly speculative exercise.
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
+- The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.

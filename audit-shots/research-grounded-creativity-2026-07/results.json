@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-17T18:17:00.000Z",
+  "focusedRuntime": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "app": 1,
+    "extension": 1
+  },
+  "mockedHistoricalPersonAcceptance": {
+    "requestedFunctions": 5,
+    "producedFunctions": 5,
+    "distinctProcessCategories": 5,
+    "sourceGrounding": 1,
+    "officialAuthorshipClaimed": false,
+    "exactFrequencyClaimed": false
+  },
+  "creativityToolkitTools": 13,
+  "staticCoverage": {
+    "capabilities": 206,
+    "app": 170,
+    "extension": 36,
+    "utteranceForms": 1236,
+    "fuzzPlans": 12000,
+    "failingSeeds": 0
+  },
+  "liveProvider": {
+    "configured": false,
+    "historicalSourceTest": "mocked",
+    "boundary": "Factual attribution blocks before mutation without verified sources."
+  }
+}

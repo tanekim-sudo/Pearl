@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-17T18:17:00.000Z",
+  "model": {
+    "canonicalObject": "lens",
+    "perceptualModelVersion": 2,
+    "purpose": "taste/judgment"
+  },
+  "focusedRuntime": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "app": 5,
+    "extension": 1
+  },
+  "contracts": {
+    "explicitPersistentIntent": true,
+    "sessionFeedbackPrivateByDefault": true,
+    "noAiAuthorshipDetectorClaim": true,
+    "beforeAfterReviewDiff": true,
+    "preserveOriginalRevision": true,
+    "privateExampleExportDefault": "excluded"
+  },
+  "providerBoundary": "Before/after model inference is mocked/contract-tested unless a verified model provider is configured."
+}

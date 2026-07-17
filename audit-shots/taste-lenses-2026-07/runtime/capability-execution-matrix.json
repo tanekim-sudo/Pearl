@@ -1,0 +1,188 @@
+{
+  "generatedAt": "2026-07-17T18:16:59.309Z",
+  "harness": "controlled real director/extension handler execution",
+  "inputPath": "director",
+  "counts": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "app": 5,
+    "extension": 1
+  },
+  "rows": [
+    {
+      "name": "resolveTasteLens",
+      "platform": "app",
+      "utterance": "use or create my Writing Taste Lens",
+      "args": {
+        "domain": "writing",
+        "name": "Runtime Writing Taste",
+        "scope": "workspace"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5324478b-ea41-4e98-90bd-9b47f94658d9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1482,
+      "errors": []
+    },
+    {
+      "name": "saveTasteTeaching",
+      "platform": "app",
+      "utterance": "save this to my taste Lens for writing",
+      "args": {
+        "lens": "generator-a",
+        "instruction": "Remember: avoid filler words",
+        "explicitSave": true,
+        "source": {
+          "sourceId": "runtime-teaching",
+          "sourceType": "instruction",
+          "scope": "workspace",
+          "private": true
+        }
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8bceac70-d096-459f-a98e-1ed1c04f1e14",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1411,
+      "errors": []
+    },
+    {
+      "name": "attachTasteBeforeAfter",
+      "platform": "app",
+      "utterance": "make sentences more concise in this way and save this before and after",
+      "args": {
+        "lens": "generator-a",
+        "before": "claim",
+        "after": "evidence",
+        "preserved": [
+          "technical precision"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens-diff",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d7489f72-92f4-4e3a-9a61-315729643474",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1340,
+      "errors": []
+    },
+    {
+      "name": "inspectTasteLens",
+      "platform": "app",
+      "utterance": "show me how my writing Taste Lens judges",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "79adf280-3921-42bf-bc8f-567bc6805046",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1349,
+      "errors": []
+    },
+    {
+      "name": "evaluateThroughTasteLens",
+      "platform": "app",
+      "utterance": "use my writing taste but keep the author's unusual rhythm",
+      "args": {
+        "lens": "generator-a",
+        "target": "claim",
+        "preserve": [
+          "unusual rhythm"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens-evaluation",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0f9aebc2-b197-432f-80c7-550018c65578",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1274,
+      "errors": []
+    },
+    {
+      "name": "saveExternalTasteTeaching",
+      "platform": "extension",
+      "utterance": "save this selection to my Writing Taste Lens",
+      "args": {
+        "lens": "Writing Taste Lens",
+        "text": "explicit-selection",
+        "kind": "example"
+      },
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    }
+  ]
+}

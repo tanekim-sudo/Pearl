@@ -1,6 +1,6 @@
 import { contentFingerprint } from "./lens-grammar.js";
 
-export const LENS_PERCEPTUAL_MODEL_VERSION = 1;
+export const LENS_PERCEPTUAL_MODEL_VERSION = 2;
 export const LENS_PERCEPTUAL_SECTIONS = Object.freeze([
   "notice",
   "questions",
@@ -14,6 +14,16 @@ export const LENS_PERCEPTUAL_SECTIONS = Object.freeze([
   "blindSpots",
   "counterLenses",
   "preserve",
+  "dimensions",
+  "preferences",
+  "antiPatterns",
+  "exceptions",
+  "positiveExamples",
+  "negativeExamples",
+  "pairedExamples",
+  "critiques",
+  "candidatePreferences",
+  "vocabularyPatterns",
 ]);
 
 const SECTION_SET = new Set(LENS_PERCEPTUAL_SECTIONS);
@@ -36,6 +46,7 @@ function assertPlain(value, path = "perceptualModel", depth = 0, seen = new Weak
 }
 
 const bounded = (value, max = MAX_TEXT) => String(value ?? "").slice(0, max);
+const list = (value, fallback = []) => Array.isArray(value) ? value : value == null ? fallback : [value];
 const confidence = (value) => value == null ? null : Math.max(0, Math.min(1, Number(value) || 0));
 const evidenceRef = (value = {}) => ({
   sourceId: bounded(value.sourceId || value.id, 256),
@@ -57,6 +68,14 @@ function normalizeFacet(value, section, index) {
     enabled: source.enabled !== false,
     priority: Number.isFinite(Number(source.priority)) ? Number(source.priority) : index,
     confidence: confidence(source.confidence),
+    strength: confidence(source.strength ?? source.weight),
+    weight: Number.isFinite(Number(source.weight)) ? Math.max(-10, Math.min(10, Number(source.weight))) : 1,
+    scope: bounded(source.scope || "", 500) || null,
+    conditions: (source.conditions || []).slice(0, 20).map((entry) => bounded(entry, 1000)).filter(Boolean),
+    source: source.source ? structuredClone(source.source) : null,
+    pair: source.pair ? structuredClone(source.pair) : null,
+    userConfirmed: source.userConfirmed === true || source.reviewStatus === "confirmed",
+    expiresAt: source.expiresAt || null,
     reviewStatus: ["unreviewed", "confirmed", "rejected"].includes(source.reviewStatus)
       ? source.reviewStatus
       : "unreviewed",
@@ -69,6 +88,14 @@ export function emptyPerceptualModel() {
   return {
     version: LENS_PERCEPTUAL_MODEL_VERSION,
     sections: Object.fromEntries(LENS_PERCEPTUAL_SECTIONS.map((section) => [section, []])),
+    profile: {
+      purposes: ["perceptual"],
+      domains: [],
+      scopes: ["workspace"],
+      privacy: { rawExamples: "private", exportDerivedOnly: true },
+      contextBudget: 24_000,
+      priority: 0,
+    },
     inference: null,
     userEditedSections: [],
   };
@@ -85,6 +112,19 @@ export function normalizePerceptualModel(value = {}, options = {}) {
   const model = {
     version: LENS_PERCEPTUAL_MODEL_VERSION,
     sections,
+    profile: {
+      purposes: [...new Set(list(value.profile?.purposes || value.purpose, ["perceptual"])
+        .map(String).filter((purpose) => ["perceptual", "taste/judgment", "domain-context", "empty/new-chat"].includes(purpose)))],
+      domains: [...new Set(list(value.profile?.domains || value.domains).map((entry) => bounded(entry, 200)).filter(Boolean))].slice(0, 50),
+      scopes: [...new Set(list(value.profile?.scopes, ["workspace"]).map((entry) => bounded(entry, 100)).filter(Boolean))].slice(0, 10),
+      privacy: {
+        rawExamples: ["private", "share-explicitly"].includes(value.profile?.privacy?.rawExamples) ? value.profile.privacy.rawExamples : "private",
+        exportDerivedOnly: value.profile?.privacy?.exportDerivedOnly !== false,
+      },
+      contextBudget: Math.max(0, Math.min(Number(value.profile?.contextBudget) || 24_000, 120_000)),
+      priority: Number.isFinite(Number(value.profile?.priority)) ? Number(value.profile.priority) : 0,
+      lastRefinedAt: value.profile?.lastRefinedAt || null,
+    },
     inference: value.inference ? {
       status: ["provisional", "inferred", "failed"].includes(value.inference.status) ? value.inference.status : "provisional",
       confidence: confidence(value.inference.confidence),
@@ -108,6 +148,7 @@ export function perceptualModelFingerprint(value) {
   const model = value?.sections ? value : normalizePerceptualModel(value);
   return contentFingerprint({
     version: LENS_PERCEPTUAL_MODEL_VERSION,
+    profile: model.profile,
     sections: Object.fromEntries(LENS_PERCEPTUAL_SECTIONS.map((section) => [
       section,
       (model.sections[section] || []).map(({ id: _id, confidence: _confidence, origin: _origin, ...facet }) => facet),

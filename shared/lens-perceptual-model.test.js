@@ -27,7 +27,8 @@ test("normalizes sparse and rich perceptual models without fabricating unsupport
 
 test("empty New Chat Lens contains no inherited context", () => {
   const lens = createNewChatLens();
-  assert.deepEqual(lens.perceptualModel, normalizePerceptualModel(emptyPerceptualModel()));
+  assert.deepEqual(lens.perceptualModel.sections, normalizePerceptualModel(emptyPerceptualModel()).sections);
+  assert.deepEqual(lens.perceptualModel.profile.purposes, ["empty/new-chat"]);
   const envelope = compileLensContext([lens]);
   assert.equal(envelope.mode, "isolated");
   assert.equal(envelope.text, "");

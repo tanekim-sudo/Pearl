@@ -567,7 +567,11 @@ The companion is a complete alternate command interface for every meaningful dir
 
 The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
 
-The canonical parity baseline is **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
+The pre-expansion parity checkpoint was **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. The current canonical baseline is **206 executable capabilities**: **170 app/director effects** and **36 extension effects**, adding grounded creative proposal, first-class Taste Lens judgment, and explicit-selection extension handoff. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
+
+`CompanionCapabilityGraph` is the generated, versioned self-description of that surface. Its nodes join the manifest to canonical domain commands and feature contracts, adding stable IDs, typed inputs/outputs, observations, risk/approval/autonomy policy, cost/network boundaries, persistence, undo/compensation, surfaces, expected effects, and test identities. Generated dataflow edges connect compatible outputs to typed reference inputs and mark write conflicts and parallel safety. Exact and bounded semantic retrieval select only goal-relevant nodes for each planning pass; the full catalog is never inserted into every adaptive prompt. The release gate validates the graph and rejects a stale generated graph artifact.
+
+Read-only graph APIs list and search capabilities, inspect one capability and its limits, and recommend a bounded workflow. An unmatched goal returns the precise missing canonical prerequisite and may propose a reviewable Move, Function, Lens, declarative package, or connector specification; it never invents a verb or reports an unobserved effect.
 
 ### Interaction model
 
@@ -635,6 +639,16 @@ Observations include stable source/version IDs, revision/fingerprint, viewport, 
 Critique mode targets explicit items/candidates, ingests typed or spoken clauses, normalizes them into linked annotations, and materializes resulting edits or feedback. It cannot claim evaluation without an artifact effect.
 
 Research uses a provider-neutral, read-only browsing contract restricted to approved HTTPS provider and source origins. Every source preserves title, URL, publisher, publication date when available, retrieval time, snippet, and claim references. `RESEARCH_PROVIDER_URL`, `RESEARCH_APPROVED_PROVIDER_ORIGINS`, and `RESEARCH_ALLOWED_SOURCE_ORIGINS` configure production access; provider credentials remain server-side. If verified browsing is unavailable or returns unverifiable metadata, research stops before mutation and says so. Model prior knowledge is never represented as live research. External publishing uses a separate connector, exact redaction/scope preview, explicit approval, and idempotent receipt.
+
+### Taste and judgment Lenses
+
+Taste remains one canonical Lens purpose, `taste/judgment`; it is never a separate opaque Taste object and never an executable action. The versioned perceptual model exposes domains/scopes, weighted dimensions, preferences, anti-patterns, preserve rules, exceptions, positive/negative and paired examples, critiques, candidate preferences, vocabulary patterns, confidence, evidence, review state, expiry, privacy, context budget, and priority. Facets remain editable, orderable, enabled/disabled, confirmable/rejectable, source-linked, and versioned.
+
+Explicit “save” or “remember” teaching previews a semantic Lens diff before persistence and returns an undo receipt. Ordinary candidate yes/no remains session-private. “Looks AI generated” is represented only as editable observable anti-pattern hypotheses—never a perfect authorship detector. Before/after pairs retain private artifact references and propose low-confidence facets without overwriting confirmed user rules. Public export and packages omit raw private examples by default.
+
+The compiler emits a bounded structured judgment envelope with Lens ID/version/fingerprint, enabled facets, priorities, preserve constraints, evidence refs, run overrides, and source policy. Evaluation materializes linked rubric evidence and proposes a separate preserve-original revision Function; it does not reduce taste to an unsupported scalar. A run-specific instruction such as “keep the author’s unusual rhythm” remains transient unless explicitly saved. Lens merges surface preference conflicts rather than silently averaging perspectives.
+
+Research-grounded historical or persona Lenses retain sourced facts separately from inferred judgments and never claim official authorship or endorsement. Creative synthesis may evaluate alternatives through a user-selected Taste Lens while preserving contradictory candidates. Extension teaching is limited to explicit selection, stores private-example intent, and hands full review to the web editor without collecting the full page.
 
 ### Confirmations, recovery, and undo
 

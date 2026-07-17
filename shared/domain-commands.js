@@ -20,6 +20,7 @@ import {
   updateCandidate,
 } from "./generation-plan.js";
 import { createWorkspaceObservation } from "./workspace-observation.js";
+import { applyTasteLensDiff } from "./taste-lens.js";
 
 export const DOMAIN_COMMAND_VERSION = 1;
 
@@ -230,6 +231,34 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return {
         state: appendObject(state, object),
         result: result("lens", object, ["lens-perceptual-model-changed", "library-changed"]),
+      };
+    },
+  },
+  applyTasteLensDiff: {
+    schema: { lensId: "string", expectedVersion: "number", diff: "object", acceptedOperationIds: "array", explicitSave: "boolean" },
+    preconditions: ["Lens exists", "expected version matches", "diff base fingerprint matches", "persistent intent is explicit"],
+    risk: "low", confirmation: "explicit-memory", undo: "restore-library-snapshot",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "library.objects.version",
+    observableEffects: ["taste-lens-versioned", "library-changed"],
+    execute(state, args, context) {
+      const current = [...(state.objects || [])].reverse().find((entry) => entry.id === args.lensId && entry.kind === "lens");
+      if (!current) throw new Error("Taste Lens not found");
+      if (Number(args.expectedVersion) !== current.version) throw new Error("Taste Lens changed; refresh the proposed diff");
+      if (args.explicitSave !== true) throw new Error("Persistent taste requires explicit save or remember intent");
+      const applied = applyTasteLensDiff(current.perceptualModel, args.diff, {
+        acceptedOperationIds: args.acceptedOperationIds,
+        appliedAt: context.now,
+      });
+      const object = normalizeLibraryObject({
+        ...current,
+        version: current.version + 1,
+        updatedAt: context.now,
+        perceptualModel: applied.model,
+      }, { now: context.now });
+      return {
+        state: appendObject(state, object),
+        result: { ...result("lens", object, ["taste-lens-versioned", "library-changed"]), receipt: applied.receipt },
       };
     },
   },

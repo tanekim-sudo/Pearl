@@ -215,6 +215,11 @@ const argsByName = {
   restoreFunction: { function: "op-pipeline" },
   editFunctionByInstruction: { function: "op-pipeline", instruction: "Make the Function compare evidence" },
   createLens: {},
+  resolveTasteLens: { name: "Runtime Writing Taste", domain: "writing", scope: "workspace" },
+  saveTasteTeaching: { lens: "generator-a", instruction: "Remember: avoid filler words", explicitSave: true, source: { sourceId: "runtime-teaching", sourceType: "instruction", scope: "workspace", private: true } },
+  attachTasteBeforeAfter: { lens: "generator-a", before: "claim", after: "evidence", preserved: ["technical precision"] },
+  inspectTasteLens: { lens: "generator-a" },
+  evaluateThroughTasteLens: { lens: "generator-a", target: "claim", preserve: ["unusual rhythm"] },
   addLensMaterial: { lens: "generator-a", target: "claim" },
   nameLens: { lens: "generator-a", name: "Named runtime Lens" },
   probeLens: { lens: "generator-a", domain: "music" },
@@ -245,6 +250,13 @@ const argsByName = {
   reviewCognitiveCandidate: { requestId: "last", candidateId: "first", decision: "accept" },
   mergeCognitivePullRequest: { requestId: "last", candidateIds: ["accepted"] },
   orchestrateCognitiveWorkflow: { source: "claim", visibility: "private" },
+  createCreativeResearchProposal: {
+    goal: { version: 1, id: "creative-runtime", rawWording: "Create one evidence-inspired Function", desiredArtifactKinds: ["function"], count: 1, groundingLevel: "evidence-inspired", noveltyTarget: .6, diversityDimensions: ["mechanism"], constraints: [], prohibitedImitation: [], audience: "tester", useContext: "audit", modelPolicy: { strategy: "auto" }, budget: { maxSources: 3, maxModelCalls: 4, maxUsd: 1, maxLatencyMs: 30000 }, rubric: ["grounding"], attribution: { subject: null, exactFrequencyRequested: false, endorsementAllowed: false }, sourcePolicy: { primaryPreferred: true, independentPerspectives: 1, datesRequiredWhenAvailable: true } },
+    research: { provider: "runtime-mock", sources: [{ id: "runtime-source", title: "Runtime source", url: "https://example.com/runtime", publisher: "Example", snippet: "Documented iterative variation.", retrievedAt: "2026-07-17T18:00:00.000Z" }] },
+    patterns: [{ id: "creative-function", kind: "function", title: "Inferred variation", blurb: "Iterate across explicit constraints", purpose: "Test variation", category: "variation", sourceIds: ["runtime-source"], steps: [{ name: "Vary", instruction: "Generate bounded variations." }, { name: "Compare", instruction: "Compare outcomes." }] }],
+  },
+  saveExternalTasteTeaching: { lens: "Writing Taste Lens", text: "explicit-selection", kind: "example" },
+  openExternalCreativeExtraction: { goal: "Create from this selected tradition", kinds: ["move", "function", "lens"] },
   clearWorkspaceDomains: { domains: ["paper", "ai"] },
 };
 
@@ -418,6 +430,8 @@ const readOnlyJustification = {
   runFunctionTestBench: "Read-only structural, fixture, holdout, dependency, and rubric report is the expected artifact.",
   inspectGenerationPlan: "Read-only generation-plan inspection; typed plan and visible editor are the expected artifacts.",
   observeWorkspace: "Read-only bounded semantic observation; the typed snapshot is the expected artifact.",
+  inspectTasteLens: "Read-only inspection opens the real Lens editor and returns its versioned facets.",
+  evaluateThroughTasteLens: "Evaluation materializes linked feedback and preserves the original material.",
 };
 const expectedSafeBlockers = {
   publishCognitivePackage: /sign in is required to publish/i,
@@ -691,6 +705,9 @@ async function runAppCapability(browser, capability) {
     );
     const passed = (execution.completed && typedResult && observable || safelyBlocked) && pageErrors.length === 0 &&
       (INPUT_PATH !== "visible" || (dispatchCount === 1 && !rawErrorLeak));
+    if (process.env.AUDIT_SCREENSHOTS === "1") {
+      await page.screenshot({ path: path.join(OUT, `${capability.name}.png`), fullPage: true });
+    }
     return {
       name: capability.name,
       platform: "app",

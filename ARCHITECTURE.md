@@ -6,6 +6,7 @@
 - `shared/output-specifications.js` — output contracts for Moves and Functions.
 - `shared/domain-commands.js` — immutable cross-surface mutations, effects, idempotency, persistence/rollback hooks.
 - `shared/feature-contracts.js` — active capability ownership and release baseline.
+- `client/lib/companion-capability-graph.js` — generated, versioned capability nodes, typed composition edges, bounded retrieval, and self-knowledge queries.
 - `shared/lens-context.js` — bounded/isolated Lens context compilation and provenance.
 - `shared/transcript-learning.js` and `shared/before-after-examples.js` — private evidence parsing and canonical inference inputs.
 - `client/` — gestures and views; director handlers adapt animation to domain commands.
@@ -19,7 +20,7 @@
 2. Change the canonical model/command first, then thin surface adapters.
 3. Keep mutations immutable; persist atomically and retain rollback/undo snapshots.
 4. Update migration fixtures, contract tests, companion effect fixtures, and extension fallback.
-5. Generate the feature matrix, run focused tests, inspect the diff, then run `npm run release:check`.
+5. Generate the feature matrix and capability graph, run focused tests, inspect the diff, then run `npm run release:check`.
 6. Do not release with missing UI reachability, fake handler effects, stale terminology, weakened counts, or unresolved local ledger items.
 
-`scripts/feature-contract-gate.mjs` cross-checks the registry against handlers, entry points, persistence keys, tests, and baseline counts. `scripts/release-check.mjs` is the reproducible release boundary.
+`scripts/feature-contract-gate.mjs` cross-checks the registry against handlers, entry points, persistence keys, tests, and baseline counts. `scripts/companion-capability-graph-gate.mjs` validates every generated node/edge and rejects stale graph evidence. `scripts/release-check.mjs` is the reproducible release boundary.

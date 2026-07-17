@@ -20,10 +20,10 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("lens.perceptual-encoding", {
     domains: ["lens", "paper", "ai", "extension"],
-    commands: ["encodeMaterialAsLens", "updateLensPerceptualModel", "applyLensInference"],
-    ui: ["client/components/LensSettingsDialog.jsx"], companion: ["createLens", "addLensMaterial", "inferFunctionFromLens"],
-    extension: ["saveExternalCaptureAsLens", "setExternalLensContext"], persistence: ["lens.lenses.v2"],
-    tests: ["shared/lens-perceptual-model.test.js"], owner: "shared/lens-perceptual-model.js",
+    commands: ["encodeMaterialAsLens", "updateLensPerceptualModel", "applyLensInference", "applyTasteLensDiff"],
+    ui: ["client/components/LensSettingsDialog.jsx"], companion: ["createLens", "addLensMaterial", "inferFunctionFromLens", "resolveTasteLens", "saveTasteTeaching", "attachTasteBeforeAfter", "inspectTasteLens", "evaluateThroughTasteLens"],
+    extension: ["saveExternalCaptureAsLens", "setExternalLensContext", "saveExternalTasteTeaching"], persistence: ["lens.lenses.v2"],
+    tests: ["shared/lens-perceptual-model.test.js", "shared/taste-lens.test.js"], owner: "shared/lens-perceptual-model.js",
   }),
   feature("composition.universal", {
     domains: ["move", "function", "lens"],
@@ -136,7 +136,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
     companion: ["runFunctionTestBench", "observeWorkspace"],
     extension: ["captureExternalVisibleTab", "saveExternalCaptureAsMove", "saveExternalCaptureAsFunction", "saveExternalCaptureAsLens"],
     persistence: ["lens.companion.run-ledger.v1", "lens.companion.mode.v1"],
-    tests: ["client/lib/companion-harness.test.js", "client/lib/companion-executor.test.js", "shared/function-test-bench.test.js"],
+    tests: ["client/lib/companion-harness.test.js", "client/lib/companion-executor.test.js", "client/lib/companion-capability-graph.test.js", "shared/function-test-bench.test.js"],
     owner: "client/lib/companion-harness.js",
   }),
   feature("registry.cognitive-packages", {
@@ -173,10 +173,10 @@ export const FEATURE_CONTRACTS = Object.freeze([
     domains: ["paper", "move", "function", "lens", "extension"],
     commands: [],
     ui: ["client/components/CognitiveWorkflowStudio.jsx:pull-request"],
-    companion: ["openCognitivePullRequest", "reviewCognitiveCandidate", "mergeCognitivePullRequest", "orchestrateCognitiveWorkflow"],
-    extension: ["openExternalCognitivePullRequest"],
+    companion: ["openCognitivePullRequest", "reviewCognitiveCandidate", "mergeCognitivePullRequest", "orchestrateCognitiveWorkflow", "createCreativeResearchProposal"],
+    extension: ["openExternalCognitivePullRequest", "openExternalCreativeExtraction"],
     persistence: ["lens.cognitive-pull-requests.v1", "cognitivePullRequestHandoff"],
-    tests: ["shared/cognitive-pull-request.test.js"],
+    tests: ["shared/cognitive-pull-request.test.js", "shared/research-grounded-creativity.test.js"],
     owner: "shared/cognitive-pull-request.js",
   }),
 ]);
@@ -195,6 +195,7 @@ export const FEATURE_BASELINE = Object.freeze({
     "shared/transcript-learning.js:parseTranscript",
     "shared/before-after-examples.js:normalizeInferenceResult",
     "client/lib/companion-capabilities.js:COMPANION_CAPABILITIES",
+    "client/lib/companion-capability-graph.js:CompanionCapabilityGraph",
     "extension/src/sidepanel/companion.js:EXTENSION_VERBS",
   ],
 });

@@ -15,6 +15,7 @@ function run(command, args, options = {}) {
 
 run("node", ["scripts/feature-contract-gate.mjs"]);
 run("node", ["scripts/feature-contract-gate.mjs"], { env: { LENS_GATE_MUTATION: "remove:createMove" }, expectStatus: 1 });
+run("node", ["scripts/companion-capability-graph-gate.mjs"]);
 run("npm", ["test"]);
 run("npm", ["run", "build:extension"]);
 run("npm", ["run", "build"]);
@@ -36,6 +37,7 @@ for (const directory of ["dist", "extension/dist", "extension/release"]) {
 if (forbidden.length) throw new Error(`forbidden release files: ${forbidden.join(", ")}`);
 
 if (full) {
+  run("node", ["scripts/companion-exhaustive-static-audit.mjs"]);
   const parsedAuditUrl = new URL(auditUrl);
   const server = spawn("npm", [
     "run", "dev:client", "--",

@@ -6,6 +6,8 @@ Lens Everywhere captures only text the user explicitly selects on a permitted pa
 
 Raw page selections, pending stacks, access tokens, and staged results use browser session storage and expire when the browser session ends. Saved artifacts and generator items are associated with the signed-in Lens account. Short-lived Open in Lens artifacts expire after 15 minutes. Users can clear page selections in the panel and delete all extension data in Settings.
 
+Saving an explicit selection or critique to a Taste Lens always shows a scoped preview and hands full facet review to the Lens web editor. It never captures the full page silently. Raw examples, paired artifacts, critiques, and candidate feedback remain private and are excluded from package/public export by default; sharing derived principles or private examples requires a separate explicit choice. Ordinary yes/no candidate feedback is session-private unless the user explicitly asks to remember it.
+
 Lens does not sell extension data, use it for advertising, or transfer it for unrelated purposes. Model processing is limited to the user-requested transformation. Content scripts never receive account credentials. Password, payment, protected browser pages, closed shadow roots, inaccessible frames, and denylisted sensitive origins are not captured.
 
 The extension requests site access only when activated. Users can revoke site permissions in browser settings. Incognito use is disabled. For account-data deletion, use the extension Settings page and the Lens account deletion controls or contact the support address listed in the store entry.
