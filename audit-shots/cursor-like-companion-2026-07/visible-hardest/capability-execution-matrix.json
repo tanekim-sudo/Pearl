@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-07-16T19:53:02.949Z",
+  "harness": "visible CompanionChat input with controlled planner and real director handlers",
+  "inputPath": "visible",
+  "counts": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "app": 1,
+    "extension": 0
+  },
+  "rows": [
+    {
+      "name": "chooseSaveAsKind",
+      "platform": "app",
+      "utterance": "collect these in a Lens",
+      "args": {
+        "kind": "move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "07d68aca-4cc8-4814-8e9b-158123b780c3",
+        "status": "completed",
+        "events": 14,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3452,
+      "errors": []
+    }
+  ]
+}

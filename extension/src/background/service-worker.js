@@ -9,6 +9,7 @@ import {
   mergeRemoteLibrary,
   previewLibraryFile,
   readLocalLibrary,
+  saveCapturedFunction,
   saveCapturedMove,
   saveCapturedLens,
   saveTranscriptCandidates,
@@ -19,6 +20,7 @@ import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../.
 import { normalizeGenerationPlan, normalizeTasteFeedback } from "../../../shared/generation-plan.js";
 import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { createCritiqueSession } from "../../../shared/critique-session.js";
+import { createPersonalCommandDefinition } from "../../../shared/personal-command-vocabulary.js";
 
 const runs = new Map();
 
@@ -87,6 +89,31 @@ async function handle(message) {
   if (type === "get-session") return session;
   if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
   if (type === "compose-library-objects") return composeLocalLibraryObjects(payload.a, payload.b, { name: payload.name });
+  if (type === "personal-command-save") {
+    const storage = await BrowserPlatform.storage.get("local", ["personalCommandVocabulary"]);
+    const definitions = storage.personalCommandVocabulary || [];
+    const definition = createPersonalCommandDefinition({
+      trigger: payload.trigger,
+      scope: payload.scope,
+      target: { command: payload.command },
+      teachingUtterance: `When I say ${payload.trigger}, run ${payload.command}`,
+      risk: "inherit",
+    }, definitions);
+    await BrowserPlatform.storage.set("local", { personalCommandVocabulary: [...definitions, definition] });
+    return { type: "personal-command-definition", id: definition.id, version: definition.version };
+  }
+  if (type === "open-web-handoff") {
+    await BrowserPlatform.storage.set("local", { cognitiveWorkflowHandoff: { ...payload, createdAt: Date.now() } });
+    await globalThis.chrome.tabs.create({ url: `https://representation-eta.vercel.app/?cognitive=${encodeURIComponent(payload.tab || "integrate")}` });
+    return { type: "cognitive-workflow-handoff", preserved: true };
+  }
+  if (type === "open-cognitive-pull-request") {
+    if (!session.fragments.length) throw new Error("select explicit page material before opening an extraction proposal");
+    const handoff = { kinds: payload.kinds, fragments: session.fragments, captureScope: "explicit-selection", createdAt: Date.now() };
+    await BrowserPlatform.storage.set("local", { cognitivePullRequestHandoff: handoff });
+    await globalThis.chrome.tabs.create({ url: "https://representation-eta.vercel.app/?cognitive=pull-request" });
+    return { type: "cognitive-pull-request-handoff", preserved: true, fragmentCount: session.fragments.length };
+  }
   if (type === "invoke-primitive") {
     const name = canonicalPrimitiveName(payload.primitive);
     const primitive = TRANSFORM_PRIMITIVES.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
@@ -189,6 +216,7 @@ async function handle(message) {
     return writeSession({ critiqueSession: critique.snapshot() });
   }
   if (type === "save-capture-as-move") return saveCapturedMove(session.fragments, payload);
+  if (type === "save-capture-as-function") return saveCapturedFunction(session.fragments, payload);
   if (type === "save-capture-as-lens") return saveCapturedLens(session.fragments, payload);
   if (type === "infer-transcript-artifacts") {
     if (!String(payload.transcript || "").trim()) throw new Error("paste transcript text explicitly");

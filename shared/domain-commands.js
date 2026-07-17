@@ -289,6 +289,51 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return { state: appendObject(state, object), result: result("move", object, ["move-created", "library-changed"]) };
     },
   },
+  createFunctionFromContent: {
+    schema: { items: "array", name: "string?", moveName: "string?", separator: "string?", id: "string?", moveId: "string?" },
+    preconditions: ["source material is explicit", "non-text material stays attached until an instruction is explicit"],
+    risk: "low", confirmation: "none", undo: "remove-created-versions",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "library.objects.append",
+    observableEffects: ["move-created", "function-created", "library-changed"],
+    execute(state, args, context) {
+      const list = Array.isArray(args.items) ? args.items : [];
+      const textItems = list.map((item) => ({
+        ...item,
+        content: item?.content ?? item?.text ?? item?.quote ??
+          "Ask for an explicit instruction before using this attached source material.",
+      }));
+      const move = createMoveFromDrop(textItems, {
+        id: args.moveId || context.idFactory(),
+        name: args.moveName,
+        separator: args.separator,
+        now: context.now,
+      });
+      const object = normalizeLibraryObject({
+        kind: "function",
+        schemaVersion: 2,
+        id: args.id || context.idFactory(),
+        name: args.name || `${move.name} Function`,
+        processGraph: {
+          version: 1,
+          nodes: [{ id: "step-1", ref: { id: move.id, version: move.version } }],
+          edges: [],
+          outputs: [{ from: "step-1" }],
+        },
+        processInstructions: textItems.map((item) => String(item.content || "")).join(args.separator ?? "\n\n"),
+        provenance: {
+          kind: "semantic-drop",
+          sourceMaterials: list.map((item) => item?.provenance || { id: item?.id || null }),
+          wrappedMove: { id: move.id, version: move.version },
+        },
+      }, { now: context.now });
+      const withMove = appendObject(state, move);
+      return {
+        state: appendObject(withMove, object),
+        result: result("function", object, ["move-created", "function-created", "library-changed"]),
+      };
+    },
+  },
   captureFunctionFromLineage: {
     schema: { items: "array", name: "string?", id: "string?" },
     preconditions: ["at least one contributing lineage exists"],

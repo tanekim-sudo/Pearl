@@ -1,0 +1,3270 @@
+{
+  "version": 1,
+  "sources": [
+    "text",
+    "rich-text",
+    "image",
+    "drawing",
+    "audio",
+    "file",
+    "link",
+    "ai-node",
+    "ai-output",
+    "paper-object",
+    "highlight",
+    "instruction-event",
+    "transcript",
+    "page-selection",
+    "external-capture",
+    "material",
+    "collection",
+    "canonical-move",
+    "canonical-function",
+    "canonical-lens",
+    "unknown"
+  ],
+  "targets": [
+    "paper",
+    "ai-space",
+    "ai-node",
+    "moves",
+    "functions",
+    "lenses",
+    "library",
+    "move-card",
+    "function-card",
+    "lens-card",
+    "primitive-moves",
+    "branch-taste",
+    "external-insertion",
+    "archive",
+    "trash",
+    "unknown"
+  ],
+  "cells": 336,
+  "rows": [
+    {
+      "source": "text",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "text",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "text",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "text",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "text",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "text",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "rich-text",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "rich-text",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "rich-text",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "rich-text",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "rich-text",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "image",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "image",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "image",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "image",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "image",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "drawing",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "drawing",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "drawing",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "drawing",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "drawing",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "audio",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "audio",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "audio",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "audio",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "audio",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "file",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "file",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "file",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "file",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "file",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "link",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "link",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "link",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "link",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "link",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-node",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "ai-node",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "ai-node",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "ai-node",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "ai-node",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "ai-output",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "ai-output",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "ai-output",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "ai-output",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "ai-output",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "paper-object",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "paper-object",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "paper-object",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "paper-object",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "paper-object",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "highlight",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "highlight",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "highlight",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "highlight",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "highlight",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "instruction-event",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "instruction-event",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "instruction-event",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "instruction-event",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "instruction-event",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "transcript",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "transcript",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "transcript",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "transcript",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "transcript",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "page-selection",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "page-selection",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "page-selection",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "page-selection",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "page-selection",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "external-capture",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "external-capture",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "external-capture",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "external-capture",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "external-capture",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "material",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "material",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "material",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "material",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "material",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "collection",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "collection",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "collection",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "collection",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "collection",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "paper",
+      "defaultIntent": "materialize-library-reference",
+      "preview": "Place portable move reference on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "ai-node",
+      "defaultIntent": "queue-node-action",
+      "preview": "Queue Move on node · GO executes",
+      "resultKind": "queued-action",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "moves",
+      "defaultIntent": "attach-material-to-move",
+      "preview": "Keep original material as a Move example",
+      "resultKind": "move-material",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-instruction-before-execution"
+      ]
+    },
+    {
+      "source": "canonical-move",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "primitive-moves",
+      "defaultIntent": "promote-primitive-move",
+      "preview": "Promote Move to Primitive Moves",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-move",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "canonical-move",
+      "target": "external-insertion",
+      "defaultIntent": "handoff-external-material",
+      "preview": "Preserve material and hand off to web editor",
+      "resultKind": "web-handoff",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "canonical-move",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-move",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-move",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "paper",
+      "defaultIntent": "materialize-library-reference",
+      "preview": "Place portable function reference on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "ai-node",
+      "defaultIntent": "queue-node-action",
+      "preview": "Queue Function on node · GO executes",
+      "resultKind": "queued-action",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "moves",
+      "defaultIntent": "attach-material-to-move",
+      "preview": "Keep original material as a Move example",
+      "resultKind": "move-material",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-instruction-before-execution"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-function",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-instruction-before-execution"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "external-insertion",
+      "defaultIntent": "handoff-external-material",
+      "preview": "Preserve material and hand off to web editor",
+      "resultKind": "web-handoff",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-function",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "paper",
+      "defaultIntent": "materialize-library-reference",
+      "preview": "Place portable lens reference on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "ai-node",
+      "defaultIntent": "queue-lens-context",
+      "preview": "Queue Lens context on node · GO executes",
+      "resultKind": "queued-context",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "moves",
+      "defaultIntent": "attach-material-to-move",
+      "preview": "Keep original material as a Move example",
+      "resultKind": "move-material",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-instruction-before-execution"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "canonical-lens",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-instruction-before-execution"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "external-insertion",
+      "defaultIntent": "handoff-external-material",
+      "preview": "Preserve material and hand off to web editor",
+      "resultKind": "web-handoff",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "canonical-lens",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "paper",
+      "defaultIntent": "materialize-on-paper",
+      "preview": "Place preserved material on paper",
+      "resultKind": "paper-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "ai-space",
+      "defaultIntent": "create-ai-source-node",
+      "preview": "Create source node from 1 material",
+      "resultKind": "ai-node",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "ai-node",
+      "defaultIntent": "attach-node-material",
+      "preview": "Attach preserved material to AI node",
+      "resultKind": "ai-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "moves",
+      "defaultIntent": "create-move-verbatim",
+      "preview": "Create Move from exact text",
+      "resultKind": "move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "functions",
+      "defaultIntent": "wrap-material-as-function",
+      "preview": "Create one-step Function preserving source",
+      "resultKind": "function",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "lenses",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "library",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "move-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "function-card",
+      "defaultIntent": "attach-library-material",
+      "preview": "Preserve source as editable library material",
+      "resultKind": "library-material",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "lens-card",
+      "defaultIntent": "collect-lens-material",
+      "preview": "Add 1 material to Lens",
+      "resultKind": "lens",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "primitive-moves",
+      "defaultIntent": "create-and-promote-move",
+      "preview": "Create Move from exact text and promote it",
+      "resultKind": "primitive-move",
+      "preserving": true,
+      "prerequisites": []
+    },
+    {
+      "source": "unknown",
+      "target": "branch-taste",
+      "defaultIntent": "queue-branch-material",
+      "preview": "Use preserved source for a reversible candidate branch",
+      "resultKind": "queued-branch",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-go"
+      ]
+    },
+    {
+      "source": "unknown",
+      "target": "external-insertion",
+      "defaultIntent": "insert-external-text",
+      "preview": "Insert exact text at verified external target",
+      "resultKind": "external-insertion",
+      "preserving": true,
+      "prerequisites": [
+        "verified-page-adapter",
+        "unchanged-target"
+      ]
+    },
+    {
+      "source": "unknown",
+      "target": "archive",
+      "defaultIntent": "confirm-archive",
+      "preview": "Archive 1 selected source after confirmation",
+      "resultKind": "archive",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "unknown",
+      "target": "trash",
+      "defaultIntent": "confirm-trash",
+      "preview": "Delete 1 selected source after confirmation",
+      "resultKind": "trash",
+      "preserving": true,
+      "prerequisites": [
+        "explicit-scoped-confirmation"
+      ]
+    },
+    {
+      "source": "unknown",
+      "target": "unknown",
+      "defaultIntent": "open-semantic-save-chooser",
+      "preview": "Choose Move, Function, Lens, paper, or AI destination",
+      "resultKind": "drop-chooser",
+      "preserving": true,
+      "prerequisites": []
+    }
+  ]
+}

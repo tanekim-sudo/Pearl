@@ -9,6 +9,7 @@ import { portableLensPayload, writeDragPayload } from "../core/portable.js";
 import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
 import { outputContractFor, outputContractLabel } from "../../../shared/output-specifications.js";
 import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
+import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {
@@ -54,7 +55,41 @@ function App() {
   const [chatRunning, setChatRunning] = useState(false);
   const [generationPlan, setGenerationPlan] = useState(() => normalizeGenerationPlan({}));
   const [modelCatalog, setModelCatalog] = useState([]);
+  const [packagesOpen, setPackagesOpen] = useState(false);
+  const [packages, setPackages] = useState([]);
   const fileRef = useRef(null);
+
+  async function browsePackages() {
+    setPackagesOpen(true);
+    setError("");
+    try {
+      const response = await fetch("https://representation-eta.vercel.app/api/cognitive-packages?limit=20");
+      if (!response.ok) throw new Error("Package registry is unavailable.");
+      const visible = (await response.json()).packages || [];
+      setPackages(visible);
+      return { type: "package-list", packages: visible };
+    } catch (reason) {
+      setError(reason.message);
+      throw reason;
+    }
+  }
+
+  async function installPackage(pkg) {
+    try {
+      const publicKey = await crypto.subtle.importKey("jwk", pkg.author.publicKey, { name: "Ed25519" }, true, ["verify"]);
+      await verifyCognitivePackage(pkg, { publicKey });
+      const current = await chrome.storage.local.get("cognitivePackages");
+      const key = `${pkg.namespace}/${pkg.name}`;
+      const history = await chrome.storage.local.get("cognitivePackageHistory");
+      await chrome.storage.local.set({ cognitivePackages: { ...(current.cognitivePackages || {}), [key]: pkg } });
+      await chrome.storage.local.set({ cognitivePackageHistory: [...(history.cognitivePackageHistory || []), { key, previous: current.cognitivePackages?.[key] || null, installedAt: Date.now() }].slice(-30) });
+      setReadyMessage(`Verified and installed ${key}@${pkg.version}. Complex graph edits open in the web editor.`);
+      return { type: "package-install-receipt", package: `${key}@${pkg.version}`, verified: true };
+    } catch (reason) {
+      setError(`Package install blocked: ${reason.message}`);
+      throw reason;
+    }
+  }
 
   function applyLibrary(data) {
     const byId = new Map(builtIns.map((entry) => [entry.id, entry]));
@@ -234,16 +269,21 @@ function App() {
 
   async function saveCaptureAs(kind) {
     if (!characters) return;
-    if (kind === "function") {
-      setError("This page capture has no transformation lineage. Open the web process editor to make a Function.");
-      return;
-    }
-    const value = await action(kind === "move" ? "save-capture-as-move" : "save-capture-as-lens", {});
+    const value = await action(
+      kind === "move"
+        ? "save-capture-as-move"
+        : kind === "function"
+          ? "save-capture-as-function"
+          : "save-capture-as-lens",
+      {}
+    );
     if (value?.library) applyLibrary(value.library);
     if (value?.object) {
       setReadyMessage(kind === "move"
         ? `${value.duplicate ? "Existing" : "New"} Move “${value.object.name}” is ready.`
-        : `Lens “${value.object.name}” collected ${value.object.material.length} context items.`);
+        : kind === "function"
+          ? `${value.duplicate ? "Existing" : "New"} one-step Function “${value.object.name}” preserves the exact capture.`
+          : `Lens “${value.object.name}” collected ${value.object.material.length} context items.`);
     }
     setSaveAsOpen(false);
   }
@@ -290,7 +330,19 @@ function App() {
     try {
       const command = parseExtensionIntent(companion);
       const outputs = session.results.flatMap((run) => run.outputs);
+      const approvalRequired = ["insertExternalResult", "replaceExternalSelection", "annotateExternalResult", "installExternalPackage", "teachExternalPersonalCommand"].includes(command.name);
+      const confirmed = !approvalRequired || window.confirm(
+        command.name === "teachExternalPersonalCommand"
+          ? `Remember “${command.args.trigger}” in ${command.args.scope} scope?`
+          : command.name === "installExternalPackage"
+            ? `Verify and install ${command.args.manifest?.namespace}/${command.args.manifest?.name}@${command.args.manifest?.version}?`
+            : `${command.name === "insertExternalResult" ? "Insert into" : command.name === "replaceExternalSelection" ? "Replace selection in" : "Annotate"} the current verified page target?\n\nOnly the staged result and current target are in scope.`
+      );
+      if (!confirmed) return;
       await executeExtensionVerb(command.name, command.args, {
+        confirmed,
+        approvalScope: "current verified page target",
+        idempotencyKey: `companion:${command.name}:${JSON.stringify(command.args)}`,
         action,
         pressGo: go,
         readPreview: () => preview,
@@ -315,6 +367,8 @@ function App() {
           await previewBundle(pending.bundle);
           return pending;
         },
+        browsePackages,
+        installPackage,
         openBeforeAfter: async () => {
           setLearnOpen(true);
           return { open: true };
@@ -427,8 +481,20 @@ function App() {
     </div>}
     <header>
       <div><b>Lens</b><span>Everywhere</span></div>
-      {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
+      <div>
+        <button type="button" onClick={browsePackages}>Packages</button>
+        {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
+      </div>
     </header>
+    {packagesOpen && <section className="extension-packages" aria-label="Cognitive Packages">
+      <div><b>Cognitive Packages</b><button type="button" onClick={() => setPackagesOpen(false)}>×</button></div>
+      {packages.map((pkg) => <article key={`${pkg.namespace}/${pkg.name}@${pkg.version}`}>
+        <b>{pkg.namespace}/{pkg.name}</b>
+        <small>v{pkg.version} · {pkg.kinds.join(" · ")} · signature {pkg.trust?.signature || "unverified"}</small>
+        <button type="button" onClick={() => installPackage(pkg)}>Verify & install</button>
+      </article>)}
+      {!packages.length && <p>No public or team packages are visible.</p>}
+    </section>}
     {!characters && !session.queue.length && <section className="quick-start">
       <p>Highlight anything, choose a Move or Function, optionally add Lens context, then press GO</p>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
@@ -441,7 +507,7 @@ function App() {
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
       {saveAsOpen && <div className="save-as-chooser" role="dialog" aria-label="Save capture as">
         <button onClick={() => saveCaptureAs("move")}><b>↦ Move</b><small>Use selected text verbatim as one instruction</small></button>
-        <button disabled title="Page text has no process lineage" onClick={() => saveCaptureAs("function")}><b>⛓ Function</b><small>Unavailable · no transformation lineage</small></button>
+        <button onClick={() => saveCaptureAs("function")}><b>⛓ Function</b><small>Wrap exact capture as a one-step Function</small></button>
         <button onClick={() => saveCaptureAs("lens")}><b>✦ Lens</b><small>Collect each capture as bounded context material</small></button>
       </div>}
       <p>{session.fragments.length} fragment{session.fragments.length === 1 ? "" : "s"} · {characters.toLocaleString()} characters</p>

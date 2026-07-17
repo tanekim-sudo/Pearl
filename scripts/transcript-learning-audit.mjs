@@ -29,6 +29,11 @@ for (const kind of ["move", "function", "lens", "all"]) {
     status: 200, contentType: "application/json",
     body: JSON.stringify({ transcript: { source: "audit", messageCount: 3, fingerprint: "audit-transcript" }, candidates }),
   }));
+  await page.route("**/api/models", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ models: [] }),
+  }));
   await page.goto(`${baseUrl}/?learn=chat`);
   await page.getByRole("dialog", { name: "Learn from a chat" }).waitFor();
   await page.getByLabel("Paste plain text, Markdown, or chat export JSON").fill("User: First collect sources.\nAssistant: Compare the evidence.\nUser: Report with citations.");

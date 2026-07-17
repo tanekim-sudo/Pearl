@@ -190,3 +190,49 @@ test("retry resumes after the exact checkpoint without duplicating completed cre
   assert.equal(counts.get("checkpoint-run:b"), 2);
   assert.equal(counts.get("checkpoint-run:merge"), 1);
 });
+
+test("Plan mode blocks mutation until accepted and persists every transition", async () => {
+  const persisted = [];
+  const plan = {
+    version: 1,
+    root: {
+      kind: "action",
+      id: "create",
+      capability: "createFunction",
+      args: { name: "Approved", steps: ["one"] },
+    },
+  };
+  const blocked = await executeCompanionPlan(plan, tools(), { mode: "plan", onPersist: (state) => persisted.push(state) });
+  assert.equal(blocked.completed, false);
+  assert.match(blocked.error, /accepted preview/);
+  assert.ok(persisted.length >= 1);
+  const accepted = await executeCompanionPlan(plan, tools(), { mode: "plan", approved: true });
+  assert.equal(accepted.completed, true);
+});
+
+test("transaction groups checkpoint, verify, compensate, and preserve resumable evidence", async () => {
+  const calls = [];
+  const plan = {
+    version: 1,
+    root: {
+      kind: "transaction",
+      id: "transaction-a",
+      compensation: "restore-checkpoint",
+      postconditions: [{ type: "exists", stableId: "move-a" }],
+      steps: [{
+        kind: "action",
+        id: "create",
+        capability: "createMove",
+        args: { name: "A", prompt: "Exact" },
+      }],
+    },
+  };
+  const result = await executeCompanionPlan(plan, tools({
+    checkpoint: async () => ({ id: "checkpoint-a" }),
+    verify: async () => ({ status: "failed" }),
+    compensate: async (_strategy, context) => calls.push(context.checkpoint.id),
+  }));
+  assert.equal(result.completed, false);
+  assert.deepEqual(calls, ["checkpoint-a"]);
+  assert.ok(result.journal.some((entry) => entry.status === "compensated"));
+});

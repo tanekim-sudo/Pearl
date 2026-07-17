@@ -14,7 +14,8 @@ import {
 } from "../extension/src/sidepanel/companion.js";
 
 const BASE = process.env.AUDIT_URL || "http://127.0.0.1:5190";
-const OUT = path.resolve("audit-shots/post-audit-r046-r060-2026-07/companion-runtime");
+const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/post-audit-r046-r060-2026-07/companion-runtime");
+const INPUT_PATH = process.env.AUDIT_INPUT_PATH === "visible" ? "visible" : "director";
 fs.mkdirSync(OUT, { recursive: true });
 
 const appCapabilities = COMPANION_CAPABILITIES.filter((entry) => entry.platform === "app");
@@ -139,6 +140,13 @@ const argsByName = {
   wrapMoveAsFunction: { move: "op-a", name: "Wrapped Move" },
   flattenFunctionToMove: { function: "op-pipeline", name: "Flattened Function" },
   createFunction: { name: "Runtime-created Function", steps: [{ name: "Observe" }, { name: "Synthesize" }] },
+  runFunctionTestBench: {
+    function: "op-pipeline",
+    fixtures: [{ id: "fixture-a", input: "Alpha evidence" }],
+    holdouts: [{ id: "holdout-a", input: "Unrelated beta evidence" }],
+    models: ["auto"],
+    rubric: ["substantive output"],
+  },
   setTranscriptDraft: { text: "User: Verify sources.\nAssistant: Compare evidence.", source: "runtime-audit" },
   chooseTranscriptArtifacts: { kind: "all" },
   excludeTranscriptMessages: { messages: [2] },
@@ -223,11 +231,32 @@ const argsByName = {
   interpretVisibleScreenThroughLens: { lens: "generator-a" },
   captureInstructionAsMove: { text: "Verify every primary source", source: "voice" },
   ingestCritique: { text: "Keep the first claim but rewrite the second." },
+  createSignedPackage: { namespace: "runtime.audit", name: "evidence-tools", version: "1.0.0", artifactIds: ["op-a"], visibility: "private" },
+  installCognitivePackage: { manifest: {} },
+  rollbackCognitivePackage: { package: "runtime.audit/evidence-tools" },
+  deprecateCognitivePackage: { namespace: "runtime.audit", name: "evidence-tools", version: "1.0.0" },
+  openCognitiveWorkflowStudio: { tab: "higher-order" },
+  proposeHigherOrderPatch: { artifact: "op-a", purpose: "Require evidence for every claim" },
+  applyHigherOrderPatch: { patchId: "last", acceptedHunkIds: ["primary-hunk"] },
+  teachPersonalCommand: { trigger: "runtime founder pass", command: "openCognitiveWorkflowStudio", scope: "workspace" },
+  disablePersonalCommand: { trigger: "runtime founder pass" },
+  forgetPersonalCommand: { trigger: "runtime founder pass" },
+  openCognitivePullRequest: { source: "claim", kinds: ["move", "function", "lens"] },
+  reviewCognitiveCandidate: { requestId: "last", candidateId: "first", decision: "accept" },
+  mergeCognitivePullRequest: { requestId: "last", candidateIds: ["accepted"] },
+  orchestrateCognitiveWorkflow: { source: "claim", visibility: "private" },
   clearWorkspaceDomains: { domains: ["paper", "ai"] },
 };
 
 const setupByName = {
-  chooseSaveAsKind: [{ verb: "openSaveAsChooser", args: { target: "claim" } }],
+  saveCurrentAsMove: [{ verb: "selectItems", args: { targets: ["claim"] } }],
+  captureLineageAsFunction: [{ verb: "selectItems", args: { targets: ["derived"] } }],
+  openSaveAsChooser: [{ verb: "selectItems", args: { targets: ["claim"] } }],
+  chooseSaveAsKind: [
+    { verb: "selectItems", args: { targets: ["claim"] } },
+    { verb: "openSaveAsChooser", args: { target: "claim" } },
+  ],
+  semanticTransfer: [{ verb: "selectItems", args: { targets: ["claim"] } }],
   setTranscriptDraft: [{ verb: "openTranscriptLearning", args: {} }],
   chooseTranscriptArtifacts: [{ verb: "openTranscriptLearning", args: {} }],
   excludeTranscriptMessages: [
@@ -319,6 +348,7 @@ const setupByName = {
   ],
   makeHighlightNode: [{ verb: "highlight", args: { targets: ["claim", "evidence"] } }],
   clearHighlight: [{ verb: "highlight", args: { targets: ["claim"] } }],
+  captureThreadAsFunction: [{ verb: "selectItems", args: { targets: ["derived"] } }],
   saveCompoundFunction: [{ verb: "stackFunctions", args: { a: "op-a", b: "op-b", name: "Runtime stack" } }],
   removeGrindExample: [{ verb: "addGrindExample", args: { input: "Before", output: "After" } }],
   reorderGrindExample: [
@@ -357,6 +387,25 @@ const setupByName = {
     { verb: "selectItems", args: { targets: ["claim", "evidence"] } },
     { verb: "startCritiqueSession", args: {} },
   ],
+  publishCognitivePackage: [
+    { verb: "createSignedPackage", args: { namespace: "runtime.audit", name: "evidence-tools", version: "1.0.0", artifactIds: ["op-a"], visibility: "private" } },
+  ],
+  applyHigherOrderPatch: [
+    { verb: "proposeHigherOrderPatch", args: { artifact: "op-a", purpose: "Require evidence for every claim" } },
+  ],
+  disablePersonalCommand: [
+    { verb: "teachPersonalCommand", args: { trigger: "runtime founder pass", command: "openCognitiveWorkflowStudio", scope: "workspace" } },
+  ],
+  forgetPersonalCommand: [
+    { verb: "teachPersonalCommand", args: { trigger: "runtime founder pass", command: "openCognitiveWorkflowStudio", scope: "workspace" } },
+  ],
+  reviewCognitiveCandidate: [
+    { verb: "openCognitivePullRequest", args: { source: "claim", kinds: ["move", "function", "lens"] } },
+  ],
+  mergeCognitivePullRequest: [
+    { verb: "openCognitivePullRequest", args: { source: "claim", kinds: ["move", "function", "lens"] } },
+    { verb: "reviewCognitiveCandidate", args: { requestId: "last", candidateId: "first", decision: "accept" } },
+  ],
 };
 
 const readOnlyJustification = {
@@ -366,8 +415,15 @@ const readOnlyJustification = {
   previewBrushQueue: "Read-only compatibility preview; typed preview is the expected artifact.",
   previewLensComposition: "Read-only composition preview; typed preview is the expected artifact.",
   testGrindDraft: "Read-only holdout evaluation; typed test results are the expected artifact.",
+  runFunctionTestBench: "Read-only structural, fixture, holdout, dependency, and rubric report is the expected artifact.",
   inspectGenerationPlan: "Read-only generation-plan inspection; typed plan and visible editor are the expected artifacts.",
   observeWorkspace: "Read-only bounded semantic observation; the typed snapshot is the expected artifact.",
+};
+const expectedSafeBlockers = {
+  publishCognitivePackage: /sign in is required to publish/i,
+  installCognitivePackage: /choose a complete signed package manifest/i,
+  rollbackCognitivePackage: /no package install checkpoint is available/i,
+  deprecateCognitivePackage: /sign in is required to deprecate/i,
 };
 const sharedPathCapabilities = new Set([
   "stepSharedPath",
@@ -425,7 +481,7 @@ function stable(value) {
   return JSON.stringify(value);
 }
 
-async function installModelRoute(page, stats) {
+async function installModelRoute(page, stats, plannedResponse = null) {
   await page.route("**/api/lens-encode", async (route) => {
     stats.calls += 1;
     await route.fulfill({
@@ -495,7 +551,16 @@ async function installModelRoute(page, stats) {
   await page.route("**/api/run", async (route) => {
     stats.calls += 1;
     const body = JSON.parse(route.request().postData() || "{}");
+    if (body.prompt === "Create the validated action plan for this request." && plannedResponse) {
+      stats.plannerCalls += 1;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ outputs: [JSON.stringify(plannedResponse)] }),
+      });
+      return;
+    }
     const prompt = String(body.prompt || "");
+    stats.effectCalls += 1;
     let output = "Runtime audit transformed output.";
     if (/forge|transformation examples|generalize/i.test(prompt)) {
       output = JSON.stringify({
@@ -523,11 +588,16 @@ async function installModelRoute(page, stats) {
 async function runAppCapability(browser, capability) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   const pageErrors = [];
-  const modelStats = { calls: 0 };
+  const modelStats = { calls: 0, plannerCalls: 0, effectCalls: 0 };
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  await installModelRoute(page, modelStats);
-  await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
   const args = argsFor(capability);
+  const plannedResponse = canonicalPlan(capability, args);
+  await installModelRoute(page, modelStats, plannedResponse);
+  await page.route("**/api/models", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ models: [] }),
+  }));
+  await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
   const started = performance.now();
   try {
     validateCapabilityArgs(capability, args);
@@ -554,48 +624,119 @@ async function runAppCapability(browser, capability) {
     }
     await page.waitForTimeout(80);
     const before = await snapshot(page);
-    const modelCallsBefore = modelStats.calls;
-    const execution = await page.evaluate(
-      ({ name, args: targetArgs }) =>
-        window.__lensDirector.run([{ verb: name, args: targetArgs }], {
-          title: `runtime audit · ${name}`,
-          speed: 3,
-        }),
-      { name: capability.name, args }
-    );
+    const effectCallsBefore = modelStats.effectCalls;
+    await page.evaluate(() => window.__lensDirector.clearTraces());
+    let dispatchCount = 0;
+    if (INPUT_PATH === "visible") {
+      await page.evaluate(() => {
+        window.__companionVisibleAuditRuns = 0;
+        window.addEventListener("lens:companion-run", () => {
+          window.__companionVisibleAuditRuns += 1;
+        }, { once: true });
+      });
+      const fab = page.locator(".companion-fab");
+      if (await fab.isVisible()) await fab.click();
+      const input = page.locator(".companion-input");
+      await input.fill(capability.examples[0]);
+      await input.press("Enter");
+      await page.waitForFunction(() => {
+        const inputNode = document.querySelector(".companion-input");
+        const traces = window.__lensDirector?.traces?.();
+        return inputNode && !inputNode.disabled && !traces?.active;
+      }, null, { timeout: 30_000 });
+      const confirm = page.getByTestId("companion-clear-confirm");
+      if (await confirm.isVisible().catch(() => false)) await confirm.click();
+      dispatchCount = await page.evaluate(() => window.__companionVisibleAuditRuns);
+    } else {
+      await page.evaluate(
+        ({ name, args: targetArgs }) =>
+          window.__lensDirector.run([{ verb: name, args: targetArgs }], {
+            title: `runtime audit · ${name}`,
+            speed: 3,
+          }),
+        { name: capability.name, args }
+      );
+    }
     await page.waitForTimeout(
       ["applyArmedBrush", "pressBrushGo", "saveLearnedFunction"].includes(capability.name) ? 2600 : 650
     );
     const after = await snapshot(page);
-    const value = execution.value;
+    const trace = await page.evaluate(() => window.__lensDirector.traces().completed.at(-1) || null);
+    const ledger = await page.evaluate(() => JSON.parse(
+      localStorage.getItem("lens.companion.command-ledger.v1") || "{\"entries\":[]}"
+    ).entries.at(-1) || null);
+    const value = trace?.events?.findLast?.((event) => event.type === "step-complete")?.resultType
+      ? { type: trace.events.findLast((event) => event.type === "step-complete").resultType }
+      : null;
+    const execution = {
+      completed: trace?.status === "completed",
+      errors: trace?.events?.filter((event) => event.type === "step-failed").map((event) => event.error) || [],
+      value,
+    };
     const typedResult = Boolean(value && typeof value === "object" && typeof value.type === "string");
     const changed = stable(before) !== stable(after);
-    const modelDispatched = modelStats.calls > modelCallsBefore;
+    const modelDispatched = modelStats.effectCalls > effectCallsBefore;
     const justifiedReadOnly = readOnlyJustification[capability.name] || null;
     const observable = changed || modelDispatched || Boolean(justifiedReadOnly);
-    const passed = execution.completed && typedResult && observable && pageErrors.length === 0;
+    const messages = INPUT_PATH === "visible"
+      ? await page.locator(".companion-msg").allTextContents()
+      : [];
+    const rawErrorLeak = messages.some((message) =>
+      /plan\.root|supported workspace query|is not accepted by|referenceerror|is not defined|schema/i.test(message)
+    );
+    const safelyBlocked = Boolean(
+      expectedSafeBlockers[capability.name]?.test(execution.errors.join(" ")) &&
+      pageErrors.length === 0 &&
+      !rawErrorLeak
+    );
+    const passed = (execution.completed && typedResult && observable || safelyBlocked) && pageErrors.length === 0 &&
+      (INPUT_PATH !== "visible" || (dispatchCount === 1 && !rawErrorLeak));
     return {
       name: capability.name,
       platform: "app",
       utterance: capability.examples[0],
       args,
-      planner: "canonical adaptive plan parsed and validated",
+      planner: INPUT_PATH === "visible"
+        ? "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan"
+        : "canonical adaptive plan parsed and validated",
       schema: "pass",
-      runtimeHandler: execution.completed ? "invoked" : "failed",
-      typedResult: typedResult ? value.type : null,
+      runtimeHandler: execution.completed ? "invoked" : safelyBlocked ? "safely-blocked" : "failed",
+      typedResult: typedResult ? value.type : safelyBlocked ? "safe-blocker" : null,
       observableEffect: changed
         ? "state-or-visible-artifact-changed"
         : modelDispatched
           ? "bounded model execution dispatched and returned"
-          : justifiedReadOnly,
-      persistence: changed ? "local store or visible runtime state observed" : "not-applicable",
-      animation: "director-ghost-cursor completed",
+          : justifiedReadOnly || (safelyBlocked ? "precise setup or authentication boundary before mutation" : null),
+      persistence: changed ? "local store or visible runtime state observed" : safelyBlocked ? "zero mutation before blocker" : "not-applicable",
+      animation: trace
+        ? {
+            version: trace.version,
+            traceId: trace.id,
+            status: trace.status,
+            events: trace.events.length,
+            reducedMotion: trace.reducedMotion,
+          }
+        : null,
+      dispatchCount: INPUT_PATH === "visible" ? dispatchCount : null,
+      ledgerStatus: ledger?.status || null,
+      rawErrorLeak,
       status: passed ? "passed" : "failed",
       durationMs: Math.round(performance.now() - started),
       errors: [...execution.errors, ...pageErrors],
       ...(typedResult ? {} : { debugExecution: execution }),
     };
   } catch (error) {
+    const debugState = await page.evaluate(() => ({
+      input: (() => {
+        const node = document.querySelector(".companion-input");
+        return node ? { disabled: node.disabled, value: node.value, connected: node.isConnected } : null;
+      })(),
+      progress: document.querySelector(".companion-progress")?.textContent?.trim() || null,
+      plan: document.querySelector(".companion-plan-strip")?.textContent?.trim() || null,
+      editor: Boolean(document.querySelector("[data-before-after-editor],.fn-editor-fullscreen")),
+      trace: window.__lensDirector?.traces?.() || null,
+      messages: [...document.querySelectorAll(".companion-msg")].map((node) => node.textContent?.trim()).slice(-4),
+    })).catch(() => null);
     return {
       name: capability.name,
       platform: "app",
@@ -611,6 +752,7 @@ async function runAppCapability(browser, capability) {
       status: "failed",
       durationMs: Math.round(performance.now() - started),
       errors: [error.message, ...pageErrors],
+      debugState,
     };
   } finally {
     await page.close();
@@ -636,6 +778,9 @@ async function runExtensionCapabilities() {
     };
     const resultRecord = { id: "result-a", text: "Runtime extension result", machineKind: "text", outputSpec: { machineKind: "text" } };
     const context = {
+      confirmed: capability.approval?.required === true,
+      approvalScope: capability.approval?.scope === "external-write" ? "runtime verified page target" : "runtime fixture",
+      idempotencyKey: `runtime:${capability.name}`,
       animate: async (event) => events.push(event.path),
       action: async (type, payload = {}) => {
         events.push(type);
@@ -661,6 +806,14 @@ async function runExtensionCapabilities() {
       showImport: () => {
         state.importShown = true;
         return { type: "extension-import-review" };
+      },
+      browsePackages: () => {
+        state.operation = "browse-packages";
+        return { type: "package-list", packages: [] };
+      },
+      installPackage: () => {
+        state.operation = "install-package";
+        return { type: "package-install-receipt", package: "runtime.audit/evidence-tools@1.0.0", verified: true };
       },
       openBeforeAfter: () => {
         state.operation = "open-before-after";
@@ -787,7 +940,10 @@ const counts = {
 };
 const output = {
   generatedAt: new Date().toISOString(),
-  harness: "controlled real director/extension handler execution",
+  harness: INPUT_PATH === "visible"
+    ? "visible CompanionChat input with controlled planner and real director handlers"
+    : "controlled real director/extension handler execution",
+  inputPath: INPUT_PATH,
   counts,
   rows,
 };

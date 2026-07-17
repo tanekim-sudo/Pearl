@@ -97,6 +97,55 @@ export function parseLibraryObjectCommand(text) {
   return null;
 }
 
+export function parseSemanticTransferCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (
+    /\bturn (?:this )?whole command into a move(?: exactly as written)?\b/i.test(value) ||
+    /\b(?:save|turn) (?:this|the selected text) as a move exactly as written\b/i.test(value)
+  ) {
+    return { verb: "semanticTransfer", args: { destination: "moves" } };
+  }
+  if (
+    /\bdrop (?:this|these|the selection) into functions?(?: and decompose (?:it|them))?\b/i.test(value) ||
+    /\bdecompose (?:this|these|the selected material) into (?:a )?functions?\b/i.test(value)
+  ) {
+    return { verb: "semanticTransfer", args: { destination: "functions" } };
+  }
+  if (
+    /\bput (?:this|these|the selection) into a lens(?: even though .+)?\b/i.test(value) ||
+    /\bdrop (?:this|these|the selection) into lenses?\b/i.test(value)
+  ) {
+    return { verb: "semanticTransfer", args: { destination: "lenses" } };
+  }
+  if (/\bcombine whatever i selected\b/i.test(value)) {
+    return { verb: "semanticTransfer", args: { destination: "functions" } };
+  }
+  return null;
+}
+
+export function parseCognitiveWorkflowCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  const teach = value.match(/^(?:from now on,?\s*)?when i say [“"'‘]?(.+?)[”"'’]?,?\s*(?:do|run|mean)\s+(.+?)(?:\.\s*)?(?:only remember this in (?:this )?(session|workspace|account|team))?$/i);
+  if (teach) {
+    return {
+      title: "Teach personal command",
+      steps: [{ verb: "teachPersonalCommand", args: { trigger: teach[1], command: teach[2].trim(), scope: teach[3] || "workspace" }, confirmed: true }],
+    };
+  }
+  const disable = value.match(/\b(?:disable|forget)\s+(?:the\s+)?(?:command|alias)\s+[“"'‘]?(.+?)[”"'’]?\s*$/i);
+  if (disable) return { title: "Update personal command", steps: [{ verb: /^forget/i.test(value) ? "forgetPersonalCommand" : "disablePersonalCommand", args: { trigger: disable[1] } }] };
+  if (/\b(?:open|show)\b.*\b(?:cognitive workflow|vocabulary|higher-order|pull request)\b/i.test(value)) {
+    const tab = /\bvocabulary\b/i.test(value) ? "vocabulary" : /\bpull request\b/i.test(value) ? "pull-request" : /\bhigher-order\b/i.test(value) ? "higher-order" : "integrate";
+    return { title: "Open Cognitive Workflow Studio", steps: [{ verb: "openCognitiveWorkflowStudio", args: { tab } }] };
+  }
+  const extract = value.match(/\bextract\b.*\b(?:move|function|lens|all three|all)\b.*\bfrom\s+(?:this\s+)?(.+)$/i);
+  if (extract) return { title: "Open grounded extraction proposal", steps: [{ verb: "openCognitivePullRequest", args: { source: extract[1], kinds: ["move", "function", "lens"] } }] };
+  const packageOpen = /\b(?:open|browse|show)\b.*\bpackages?\b/i.test(value);
+  if (packageOpen) return { title: "Open Cognitive Packages", steps: [{ verb: "openPackageRegistry", args: {} }] };
+  return null;
+}
+
 export function parseFunctionCreationCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!/\b(?:create|make|build)\b/i.test(value) || !/\bfunction\b/i.test(value)) return null;
@@ -312,6 +361,23 @@ export function parseFunctionOutputCommand(text) {
   if (/\b(?:override|explicit)\b/i.test(value) && /\boutput/i.test(value)) {
     return { verb: "setFunctionOutputMode", args: { op, mode: "override" } };
   }
+  const namedBranch = value.match(
+    /\b(?:change|make|set|edit)\s+(?:the\s+)?(first|second|third|\d+(?:st|nd|rd|th)?)\s+(?:output\s+)?branch(?:\s+output)?\s+(?:of|on)\s+(?:(?:function|move)\s+)?(?:called|named)?\s*["“]?(.+?)["”]?\s+(?:to|as)\s+(?:a|an)?\s*([^,.;]+)$/i
+  );
+  if (namedBranch) {
+    const positions = { first: 1, second: 2, third: 3 };
+    const branchNumber = positions[namedBranch[1].toLowerCase()] || Number.parseInt(namedBranch[1], 10);
+    const label = namedBranch[3].trim();
+    const machineKind = /\btable\b/i.test(label) ? "table"
+      : /\blist\b/i.test(label) ? "list"
+        : /\bimage\b/i.test(label) ? "image"
+          : /\blink\b/i.test(label) ? "link"
+            : undefined;
+    return {
+      verb: "editFunctionBranchOutput",
+      args: { op: namedBranch[2].trim(), branch: branchNumber, label, ...(machineKind ? { machineKind } : {}) },
+    };
+  }
   const branch = value.match(/\b(?:change|make|set|edit)\s+(?:the\s+)?(first|second|third|\d+(?:st|nd|rd|th)?)\s+(?:output\s+)?branch(?:\s+output)?\s+(?:to|as)\s+(?:a|an)?\s*([^,.;]+)$/i);
   if (branch) {
     const positions = { first: 1, second: 2, third: 3 };
@@ -344,18 +410,21 @@ export function parseBeforeAfterCommand(text) {
   if (/\b(?:add|give|show)\s+(?:me\s+)?another\s+(?:before\s*(?:\/|and)\s*after\s+)?example\b/i.test(value)) {
     return { verb: "addBeforeAfterExample", args: {} };
   }
-  if (/\b(?:infer|re-infer|learn|figure out)\b/i.test(value) && /\b(?:transformation|operation|lens|function|before|after)\b/i.test(value)) {
-    return { verb: "inferBeforeAfterTransformation", args: {} };
-  }
-  const set = value.match(/\b(?:set|make|use)\s+(?:the\s+)?(before|after)(?:\s+text)?\s+(?:to|as)\s+(.+)$/i);
-  if (set) return { verb: "setBeforeAfterText", args: { side: set[1].toLowerCase(), text: set[2].trim() } };
   if (
     /\b(?:make|create|build|learn)\b/i.test(value) &&
-    /\b(?:lens|function|transformation)\b/i.test(value) &&
+    /\b(?:lens|function|transformation|move)\b/i.test(value) &&
     /\bbefore\s*(?:\/|and|&)?\s*after\b/i.test(value)
   ) {
     return { verb: "openBeforeAfterCreation", args: {} };
   }
+  if (
+    /\b(?:infer|re-infer|learn|figure out)\b/i.test(value) &&
+    (/\b(?:transformation|operation)\b/i.test(value) || /\bbefore\b/i.test(value) || /\bafter\b/i.test(value))
+  ) {
+    return { verb: "inferBeforeAfterTransformation", args: {} };
+  }
+  const set = value.match(/\b(?:set|make|use)\s+(?:the\s+)?(before|after)(?:\s+text)?\s+(?:to|as)\s+(.+)$/i);
+  if (set) return { verb: "setBeforeAfterText", args: { side: set[1].toLowerCase(), text: set[2].trim() } };
   if (/\bthis\s+(?:image|drawing|text|selection)\s+became\s+that\s+(?:image|drawing|text|selection)\b/i.test(value)) {
     return { verb: "openBeforeAfterCreation", args: {} };
   }
@@ -395,8 +464,17 @@ Rules:
 - Keep scripts under 40 steps. Never invent verbs. If the request is a pure question, answer it in "say" with empty steps.`;
 }
 
-export function buildAdaptiveCompanionPrompt({ workspaceContext = "{}", autonomy = "preview-complex" } = {}) {
-  return `You are the action planner inside lens. Plan against the actual bounded workspace snapshot and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
+export function buildAdaptiveCompanionPrompt({
+  workspaceContext = "{}",
+  autonomy = "preview-complex",
+  mode = "agent",
+  goal = null,
+} = {}) {
+  return `You are the action planner inside lens. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
+
+MODE (enforced by executor): ${mode}
+GOAL ENVELOPE:
+${JSON.stringify(goal || {}, null, 2)}
 
 WORKSPACE:
 ${workspaceContext}
@@ -408,7 +486,7 @@ Return ONLY one versioned JSON plan:
 {"version":1,"title":"short visual label","root":{"kind":"sequence","steps":[]}}
 
 Step DSL:
-- {"kind":"query","id":"observe-1","query":"objects|selection|graph|clusters|history|library|viewport","filter":{},"saveAs":"name"}. Query names are an exact enum; never emit any other value.
+- {"kind":"query","id":"observe-1","query":"objects|selection|graph|clusters|history|library|viewport|material|dependencies|versions|spatial|temporal","filter":{},"saveAs":"name"}. Query names are an exact enum; never emit any other value.
 - {"kind":"action","id":"unique-step-id","capability":"manifestName","args":{},"saveAs":"optionalResultBinding"}
 - A result reference is {"$ref":"binding"}. It resolves from the live result environment to the actual stable saved ID. Never put saveAs inside args; saveAs is a property of the step.
 - {"kind":"sequence","steps":[]}
@@ -420,6 +498,12 @@ Step DSL:
 - {"kind":"research","question":"...","scope":"web","recency":"...","maxSources":5,"saveAs":"research"}
 - {"kind":"checkpoint","mode":"save|confirm","label":"..."}
 - {"kind":"artifact","from":"savedResult","placement":"paper|ai|lens|beside-target","target":"stable-id"}
+- {"kind":"phase|todo","id":"...","steps":[]}
+- {"kind":"transaction","id":"...","steps":[],"postconditions":[],"compensation":"restore-checkpoint"}
+- {"kind":"migration","id":"...","affectedIds":["stable-id"],"steps":[]}
+- {"kind":"approval","id":"...","scope":"phase|object|branch|migration|external-write|publish","affectedIds":[]}
+- {"kind":"assert","id":"...","condition":{"ref":"$name","exists":true},"message":"..."}
+- {"kind":"worker","id":"...","worker":"explore|research|evaluator|visual-auditor|migration-analyst|privacy-reviewer","saveAs":"proposal"}. Mutating workers additionally require candidateSnapshotId.
 
 Framework action metadata (never place these keys inside args):
 ${companionActionMetadataPrompt()}
@@ -435,6 +519,7 @@ Rules:
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.
 - Preserve originals before broad revisions. Use finite loops/retries. Do not exceed 40 total steps, 100 iterations, or 3 research calls.
 - Current autonomy preference is "${autonomy}".
+- Ask mode contains no action, artifact, or mutation. Plan mode remains blocked until accepted. Debug mode starts with multiple explicit hypotheses and evidence-producing observation before the smallest fix and regression assertions.
 
 Dependency examples:
 Create A + B + combine + demonstrate:

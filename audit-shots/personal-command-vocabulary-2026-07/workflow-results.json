@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "patch": {
+    "status": "applied",
+    "receipt": {
+      "type": "artifact-patch-receipt",
+      "patchId": "9f742728-f66a-4a00-b953-8b97b8bedb69",
+      "source": "workflow-move@2",
+      "result": "workflow-move@3",
+      "acceptedHunkIds": [
+        "evidence-hunk"
+      ],
+      "rejectedHunkIds": []
+    },
+    "isolatedTestPassed": true
+  },
+  "vocabulary": [
+    {
+      "id": "e5096925-89bb-4355-a3ba-a8b58ba03755",
+      "trigger": "founder pass",
+      "scope": "workspace",
+      "version": 1,
+      "active": true
+    }
+  ],
+  "pullRequest": {
+    "status": "partially_accepted",
+    "candidateKinds": [
+      "move",
+      "function",
+      "lens"
+    ],
+    "receipt": {
+      "type": "cognitive-pr-merge-receipt",
+      "requestId": "9f720c8f-8d53-45e8-948a-3dabc027a4fb",
+      "artifactIds": [
+        "43ec6e86-2024-4670-a42c-7c69885a0324",
+        "2c3a1adb-b16b-4d0b-b05a-896f15779a26"
+      ],
+      "undo": {
+        "removeArtifactIds": [
+          "43ec6e86-2024-4670-a42c-7c69885a0324",
+          "2c3a1adb-b16b-4d0b-b05a-896f15779a26"
+        ]
+      }
+    }
+  },
+  "companionVisible": true,
+  "errors": []
+}

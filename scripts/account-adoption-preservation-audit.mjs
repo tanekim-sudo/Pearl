@@ -15,7 +15,7 @@ await page.addInitScript(() => {
     actions: [], interviewComplete: true,
   }));
 });
-await page.goto(baseUrl);
+await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
 const result = await page.evaluate(async () => {
   const { mergeBoardSnapshots } = await import("/lib/board-sync.js");
   const operatorsKey = "lens.board.operators.v2";

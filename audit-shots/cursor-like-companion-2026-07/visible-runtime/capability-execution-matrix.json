@@ -1,0 +1,4534 @@
+{
+  "generatedAt": "2026-07-16T20:12:53.218Z",
+  "harness": "visible CompanionChat input with controlled planner and real director handlers",
+  "inputPath": "visible",
+  "counts": {
+    "total": 177,
+    "passed": 177,
+    "failed": 0,
+    "skipped": 0,
+    "app": 148,
+    "extension": 29
+  },
+  "rows": [
+    {
+      "name": "caption",
+      "platform": "app",
+      "utterance": "please explain an action while it happens",
+      "args": {
+        "text": "runtime audit"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b115edad-5ed9-4049-a89d-739bf8890db3",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2069,
+      "errors": []
+    },
+    {
+      "name": "pause",
+      "platform": "app",
+      "utterance": "please pause between visible actions",
+      "args": {
+        "ms": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b872ad49-96f0-4a21-b2f6-0d1a8c3c4afd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1691,
+      "errors": []
+    },
+    {
+      "name": "switchTool",
+      "platform": "app",
+      "utterance": "switch to the highlighter",
+      "args": {
+        "tool": "select"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5bc59756-d053-43b3-95d9-0188ad921a9f",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2450,
+      "errors": []
+    },
+    {
+      "name": "fitPaper",
+      "platform": "app",
+      "utterance": "please fit the paper frame in the unified workspace",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cfd1e14f-38ad-40ed-bdda-857ca7859f14",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2464,
+      "errors": []
+    },
+    {
+      "name": "zoomPaper",
+      "platform": "app",
+      "utterance": "please zoom the unified workspace",
+      "args": {
+        "direction": "in"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7f08e67d-a44b-4185-88ae-a23a6979870e",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2407,
+      "errors": []
+    },
+    {
+      "name": "panPaper",
+      "platform": "app",
+      "utterance": "please pan the unified world",
+      "args": {
+        "dx": 24,
+        "dy": 16
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "89031a2d-5487-4694-a0f1-e1bd240bfcba",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2236,
+      "errors": []
+    },
+    {
+      "name": "spawnText",
+      "platform": "app",
+      "utterance": "put this idea on paper",
+      "args": {
+        "text": "Runtime-created note"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "paper-item",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "37adf677-1719-4c79-9e8e-07209161d08d",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2299,
+      "errors": []
+    },
+    {
+      "name": "createMove",
+      "platform": "app",
+      "utterance": "make a Move called executive summary with this one action",
+      "args": {
+        "name": "Runtime-created Move",
+        "prompt": "Transform once."
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "95170252-5405-4ac3-a222-f34fdc9be3fb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2483,
+      "errors": []
+    },
+    {
+      "name": "editMove",
+      "platform": "app",
+      "utterance": "please edit and version an atomic Move",
+      "args": {
+        "move": "op-a",
+        "name": "Edited Move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7885b28b-198a-4fe2-a15f-97c2e09f5704",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1920,
+      "errors": []
+    },
+    {
+      "name": "forkMove",
+      "platform": "app",
+      "utterance": "please fork a Move without mutating its source",
+      "args": {
+        "move": "op-a",
+        "name": "Forked Move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8939f8c9-a4c3-4c7b-9487-5eec771f3b3b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1997,
+      "errors": []
+    },
+    {
+      "name": "applyMove",
+      "platform": "app",
+      "utterance": "please apply a Move as exactly one model call",
+      "args": {
+        "move": "op-a",
+        "target": "claim",
+        "wait": true
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2a89c850-4c4b-4f57-8967-36c2bec90374",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2062,
+      "errors": []
+    },
+    {
+      "name": "saveCurrentAsMove",
+      "platform": "app",
+      "utterance": "save this text as a Move",
+      "args": {
+        "target": "claim",
+        "name": "Captured Move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "916fe4f8-2986-45a7-a85a-b5dd124b2fe4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2713,
+      "errors": []
+    },
+    {
+      "name": "promotePrimitiveMove",
+      "platform": "app",
+      "utterance": "add summarize to Primitive Moves",
+      "args": {
+        "move": "op-b"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7dc4096a-ae89-4af6-8e5a-848b01b90c77",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1928,
+      "errors": []
+    },
+    {
+      "name": "demotePrimitiveMove",
+      "platform": "app",
+      "utterance": "remove invert from Primitive Moves",
+      "args": {
+        "move": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "125ab3d8-91e9-4f92-9116-234fa10372e4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1973,
+      "errors": []
+    },
+    {
+      "name": "reorderPrimitiveMove",
+      "platform": "app",
+      "utterance": "move expand to the first Primitive Move",
+      "args": {
+        "move": "op-branch",
+        "to": 0
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0d0e4b81-a04b-4840-854e-a58b00454dc5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1940,
+      "errors": []
+    },
+    {
+      "name": "captureLineageAsFunction",
+      "platform": "app",
+      "utterance": "save how I got here as a Function",
+      "args": {
+        "target": "derived",
+        "name": "Captured Function"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a008e5d1-4044-461d-b413-5842d3773b08",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2492,
+      "errors": []
+    },
+    {
+      "name": "openSaveAsChooser",
+      "platform": "app",
+      "utterance": "save this as…",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bec93e65-7303-4a27-ba42-8d9cc450f05f",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2666,
+      "errors": []
+    },
+    {
+      "name": "chooseSaveAsKind",
+      "platform": "app",
+      "utterance": "collect these in a Lens",
+      "args": {
+        "kind": "move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "320991e2-1119-4158-95a1-a4066669c395",
+        "status": "completed",
+        "events": 14,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3544,
+      "errors": []
+    },
+    {
+      "name": "openTranscriptLearning",
+      "platform": "app",
+      "utterance": "open Learn from a chat",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "804c66c1-0feb-4d45-8b95-1385dc067e7a",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2079,
+      "errors": []
+    },
+    {
+      "name": "setTranscriptDraft",
+      "platform": "app",
+      "utterance": "use this pasted chat transcript",
+      "args": {
+        "text": "User: Verify sources.\nAssistant: Compare evidence.",
+        "source": "runtime-audit"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c6b0bce9-ad71-4f61-ac00-1d1c3f779800",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2292,
+      "errors": []
+    },
+    {
+      "name": "chooseTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "make all three from this chat",
+      "args": {
+        "kind": "all"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "989efeb2-e4e6-4bb6-975d-8bf713c1dbc3",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2009,
+      "errors": []
+    },
+    {
+      "name": "excludeTranscriptMessages",
+      "platform": "app",
+      "utterance": "exclude messages two and five",
+      "args": {
+        "messages": [
+          2
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "174bf5f1-c4d2-4153-ad5e-657074d02ec1",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2408,
+      "errors": []
+    },
+    {
+      "name": "redactTranscriptText",
+      "platform": "app",
+      "utterance": "redact this token before analysis",
+      "args": {
+        "text": "sources",
+        "replacement": "[REDACTED]"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b53a1685-4def-43ed-b71d-ce3a428cf3ce",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2457,
+      "errors": []
+    },
+    {
+      "name": "generateTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "turn this chat into a Move",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "faf7a265-16bb-4698-b3fc-d7a77d154a09",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2647,
+      "errors": []
+    },
+    {
+      "name": "selectTranscriptAlternative",
+      "platform": "app",
+      "utterance": "use the second Function candidate",
+      "args": {
+        "kind": "move",
+        "alternative": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1e66dfda-4533-4032-b509-f75f23828247",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2923,
+      "errors": []
+    },
+    {
+      "name": "editTranscriptArtifact",
+      "platform": "app",
+      "utterance": "rename the inferred Lens",
+      "args": {
+        "kind": "move",
+        "name": "Edited transcript Move",
+        "content": "Verify primary sources."
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d4fd9866-f386-4d7a-ac6b-b096105d668d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3094,
+      "errors": []
+    },
+    {
+      "name": "saveTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "save the Move and Lens from this chat",
+      "args": {
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "64dc2b27-4be3-4f00-a2fa-eb966a00be8e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2893,
+      "errors": []
+    },
+    {
+      "name": "wrapMoveAsFunction",
+      "platform": "app",
+      "utterance": "turn this Move into a one-step Function",
+      "args": {
+        "move": "op-a",
+        "name": "Wrapped Move"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "67c9079b-2178-4aea-b0e6-e07f79686d52",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1965,
+      "errors": []
+    },
+    {
+      "name": "flattenFunctionToMove",
+      "platform": "app",
+      "utterance": "explicitly flatten this single-step Function into a Move",
+      "args": {
+        "function": "op-pipeline",
+        "name": "Flattened Function"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e5e8c724-dc03-446a-b41b-480953c1ada0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1957,
+      "errors": []
+    },
+    {
+      "name": "createFunction",
+      "platform": "app",
+      "utterance": "build a diligence Function with three steps",
+      "args": {
+        "name": "Runtime-created Function",
+        "steps": [
+          {
+            "name": "Observe"
+          },
+          {
+            "name": "Synthesize"
+          }
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7f021301-82e6-45e5-a251-ceb75d6cccf5",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3749,
+      "errors": []
+    },
+    {
+      "name": "openBeforeAfterCreation",
+      "platform": "app",
+      "utterance": "learn a Move or Function from this before and after",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1ab59312-fdb1-4614-a191-5cc7dbac72a8",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2114,
+      "errors": []
+    },
+    {
+      "name": "setBeforeAfterText",
+      "platform": "app",
+      "utterance": "set the before text to these raw notes",
+      "args": {
+        "side": "before",
+        "text": "Raw runtime notes"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "72bb1400-932c-4ab8-b987-0ad1584f7892",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2652,
+      "errors": []
+    },
+    {
+      "name": "attachSelectionToBeforeAfter",
+      "platform": "app",
+      "utterance": "this image became that image—learn the transformation",
+      "args": {
+        "side": "after",
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-inference",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "acdfe7d7-2952-4a39-9667-3f9285f0318d",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2628,
+      "errors": []
+    },
+    {
+      "name": "addBeforeAfterExample",
+      "platform": "app",
+      "utterance": "add another example",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8e01c4f3-9e9f-4f9d-a1ce-96ae7d81ad07",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2387,
+      "errors": []
+    },
+    {
+      "name": "removeBeforeAfterExample",
+      "platform": "app",
+      "utterance": "please remove one private before-and-after example",
+      "args": {
+        "example": 2
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "aa7cb3a7-a311-43e3-920c-2a040606705c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2684,
+      "errors": []
+    },
+    {
+      "name": "inferBeforeAfterTransformation",
+      "platform": "app",
+      "utterance": "infer the shared transformation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-inference",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1ce192fd-55a0-423c-ba50-b30c3ec1c221",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3603,
+      "errors": []
+    },
+    {
+      "name": "chooseBeforeAfterAlternative",
+      "platform": "app",
+      "utterance": "use the second hypothesis",
+      "args": {
+        "alternative": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "eebeb8ad-b7dd-4f33-8d4c-79510a7ba95e",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3775,
+      "errors": []
+    },
+    {
+      "name": "editInferredFunctionSpec",
+      "platform": "app",
+      "utterance": "make the inferred operation preserve headings",
+      "args": {
+        "name": "Edited learned lens",
+        "summary": "Runtime summary",
+        "operation": "Compare evidence"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "18626636-5d07-470d-8290-b3ccbaeb77a0",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3998,
+      "errors": []
+    },
+    {
+      "name": "useInferredFunction",
+      "platform": "app",
+      "utterance": "use this inferred transformation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3889285d-f8c6-4a43-94cc-8dd5a233c14d",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4375,
+      "errors": []
+    },
+    {
+      "name": "saveLearnedFunction",
+      "platform": "app",
+      "utterance": "save this learned Function",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7b52f7b2-7b74-4ad7-ab29-f5d4093182ef",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 6611,
+      "errors": []
+    },
+    {
+      "name": "applyFunction",
+      "platform": "app",
+      "utterance": "run my diligence Function on this note",
+      "args": {
+        "op": "op-a",
+        "target": "claim",
+        "wait": true
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "59a35543-bb83-4276-89fa-d1bdf971c6eb",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2636,
+      "errors": []
+    },
+    {
+      "name": "dragItemToAi",
+      "platform": "app",
+      "utterance": "send this note into AI space",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a6734f73-13a4-4852-8e7e-46bd1ef93196",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2855,
+      "errors": []
+    },
+    {
+      "name": "applyFunctionToAiNode",
+      "platform": "app",
+      "utterance": "branch this AI node through invert",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2703c3a6-7edb-4aae-8596-91c79e68b016",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2312,
+      "errors": []
+    },
+    {
+      "name": "focusAiResult",
+      "platform": "app",
+      "utterance": "please focus the latest AI result",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9a7e36ce-c972-4da2-8271-0e197bf4a78a",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2195,
+      "errors": []
+    },
+    {
+      "name": "fitAiSpace",
+      "platform": "app",
+      "utterance": "please fit the AI constellation in view",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d4435ffc-22c7-4e67-9fec-09373171a8c5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2023,
+      "errors": []
+    },
+    {
+      "name": "selectAiNode",
+      "platform": "app",
+      "utterance": "please select an AI node",
+      "args": {
+        "target": "node-root"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "587c6e00-1c15-42ca-8fdb-54c03573fef6",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2238,
+      "errors": []
+    },
+    {
+      "name": "dragAiResultToPaper",
+      "platform": "app",
+      "utterance": "please materialize an AI result as editable paper content",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a92960a6-7fe7-4dc8-870c-dc1a2350d748",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2606,
+      "errors": []
+    },
+    {
+      "name": "highlight",
+      "platform": "app",
+      "utterance": "please highlight paper material",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ebff0fb9-3fec-4139-87e0-29287439cff7",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3213,
+      "errors": []
+    },
+    {
+      "name": "operateHighlight",
+      "platform": "app",
+      "utterance": "please queue a Move or Function for the cross-domain highlight selection",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "beeba53f-131c-4cd4-a99a-fcbfdd650bb2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1882,
+      "errors": []
+    },
+    {
+      "name": "armFunctionBrush",
+      "platform": "app",
+      "utterance": "use my diligence Function as a brush",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9bcbf3e4-111c-4924-9f55-92c95c521128",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1890,
+      "errors": []
+    },
+    {
+      "name": "armLensContext",
+      "platform": "app",
+      "utterance": "use the evidence Lens as context",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f3d6811b-b49d-4d0b-81a3-f28b0b365d66",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2288,
+      "errors": []
+    },
+    {
+      "name": "disarmBrushTarget",
+      "platform": "app",
+      "utterance": "put down the brush",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4d6865d5-9789-49a9-b68c-6da7e1849979",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1878,
+      "errors": []
+    },
+    {
+      "name": "applyArmedBrush",
+      "platform": "app",
+      "utterance": "apply the armed brush to everything highlighted",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "436cf2bb-ff1b-4639-b2a6-6276f0a6cffc",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 5250,
+      "errors": []
+    },
+    {
+      "name": "queueBrushAction",
+      "platform": "app",
+      "utterance": "queue invert then ground, but do not run yet",
+      "args": {
+        "action": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "eee04846-f986-474c-8e27-feafc1e8fc91",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1902,
+      "errors": []
+    },
+    {
+      "name": "setBrushLensContext",
+      "platform": "app",
+      "utterance": "scope the pending action with my evidence Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c925e6e1-14fc-4b80-a021-4fd51a1c7ee4",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2262,
+      "errors": []
+    },
+    {
+      "name": "reorderBrushQueue",
+      "platform": "app",
+      "utterance": "please reorder the pending brush stack",
+      "args": {
+        "from": 0,
+        "to": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e3cab764-161d-4369-a025-b00019ecaa7b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2383,
+      "errors": []
+    },
+    {
+      "name": "removeBrushQueue",
+      "platform": "app",
+      "utterance": "please remove one queued brush lens",
+      "args": {
+        "index": 0
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1bd4b3ba-18b6-4917-afe8-af00fa4a4db0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2142,
+      "errors": []
+    },
+    {
+      "name": "previewBrushQueue",
+      "platform": "app",
+      "utterance": "please preview pending stack compatibility and outputs",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ef799a27-cb8d-4213-a439-06e3dd750be5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2042,
+      "errors": []
+    },
+    {
+      "name": "pressBrushGo",
+      "platform": "app",
+      "utterance": "press GO on the pending stack",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c4e46462-2824-4e5d-b711-40f5a38e34bb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 5283,
+      "errors": []
+    },
+    {
+      "name": "cancelPendingBrush",
+      "platform": "app",
+      "utterance": "cancel the pending brush stack but keep the highlight",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "35440d10-a80a-44f3-8ea5-7aa715c5415e",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2493,
+      "errors": []
+    },
+    {
+      "name": "saveBrushQueueAsFunction",
+      "platform": "app",
+      "utterance": "save this pending stack as a Function",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c35d480a-4cf0-4301-928f-d9ae9847215a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2503,
+      "errors": []
+    },
+    {
+      "name": "makeHighlightNode",
+      "platform": "app",
+      "utterance": "make the highlighted material one node",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c0934fcb-4fe6-476e-9bde-53bcba755834",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3340,
+      "errors": []
+    },
+    {
+      "name": "clearHighlight",
+      "platform": "app",
+      "utterance": "please clear the persistent cross-domain highlight selection",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8bfd4ad0-a839-4872-9dfc-8fcc538ce0fd",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2672,
+      "errors": []
+    },
+    {
+      "name": "captureThreadAsFunction",
+      "platform": "app",
+      "utterance": "save how I got here as a Function",
+      "args": {
+        "target": "derived",
+        "name": "Captured runtime path"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6026d969-d727-44b6-bca2-40ec1af7481c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2511,
+      "errors": []
+    },
+    {
+      "name": "showLenses",
+      "platform": "app",
+      "utterance": "please open the Lenses rail",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "63d7bf9d-16a9-437b-ab8d-e94cd4f3ceb6",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2281,
+      "errors": []
+    },
+    {
+      "name": "openExtensionDownload",
+      "platform": "app",
+      "utterance": "please open Lens Everywhere download and installation help",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4281a70e-5d02-4505-b833-0c5e6dabe514",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2465,
+      "errors": []
+    },
+    {
+      "name": "openExtensionLibraryExport",
+      "platform": "app",
+      "utterance": "please open the explicit library privacy review and export surface",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fcc120fa-57b6-4792-942e-9507f1f12e7a",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2479,
+      "errors": []
+    },
+    {
+      "name": "savePageAsLens",
+      "platform": "app",
+      "utterance": "please capture the page as contextual Lens material",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "df50858c-72ba-4ce9-88dd-ac74a8f23854",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2427,
+      "errors": []
+    },
+    {
+      "name": "waitForJobs",
+      "platform": "app",
+      "utterance": "please wait for running transformations",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "26b22981-73f6-4e0b-8a54-8afc6b6b35f7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2020,
+      "errors": []
+    },
+    {
+      "name": "moveItem",
+      "platform": "app",
+      "utterance": "please move a paper object",
+      "args": {
+        "target": "claim",
+        "dx": 80,
+        "dy": 30
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a91c9ecc-9a64-4a94-9315-b956ac088ef5",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2448,
+      "errors": []
+    },
+    {
+      "name": "editItem",
+      "platform": "app",
+      "utterance": "please edit a paper object",
+      "args": {
+        "target": "claim",
+        "text": "Edited by runtime audit"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2d7e22c0-feca-4bd1-a666-0cc5c51b24fd",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2538,
+      "errors": []
+    },
+    {
+      "name": "deleteItem",
+      "platform": "app",
+      "utterance": "please delete one paper object",
+      "args": {
+        "target": "evidence"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6eaab268-d19e-4a29-9536-ce48d1648a42",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2410,
+      "errors": []
+    },
+    {
+      "name": "selectItems",
+      "platform": "app",
+      "utterance": "please select paper objects",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "de7fe653-e9d6-4827-95af-16dc1545efe4",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2315,
+      "errors": []
+    },
+    {
+      "name": "organizePage",
+      "platform": "app",
+      "utterance": "please organize the current page",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1b5b26dc-fe7b-4ef8-833e-cda9892e83ec",
+        "status": "completed",
+        "events": 23,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3459,
+      "errors": []
+    },
+    {
+      "name": "addBlock",
+      "platform": "app",
+      "utterance": "please add a paper block",
+      "args": {
+        "type": "sticky",
+        "text": "Runtime block"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "paper-item",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cc1c1446-66e3-4ed4-8585-edd2ea3cbf75",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2268,
+      "errors": []
+    },
+    {
+      "name": "renamePage",
+      "platform": "app",
+      "utterance": "please rename the current page",
+      "args": {
+        "name": "Renamed runtime page"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "55914890-ee72-4f3e-894e-792821b533ef",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2378,
+      "errors": []
+    },
+    {
+      "name": "zoomToItem",
+      "platform": "app",
+      "utterance": "please zoom to a paper object",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7f588630-ef03-4ed8-a349-dbb7f534dbf4",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2195,
+      "errors": []
+    },
+    {
+      "name": "walkItemPath",
+      "platform": "app",
+      "utterance": "please walk the lineage that produced a paper object",
+      "args": {
+        "target": "derived"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f5687502-ab85-4a6f-949e-be40914ee0a2",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2300,
+      "errors": []
+    },
+    {
+      "name": "stepSharedPath",
+      "platform": "app",
+      "utterance": "please move through an active shared path",
+      "args": {
+        "delta": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b967622b-bdb3-4909-9045-02d09fa9604f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2107,
+      "errors": []
+    },
+    {
+      "name": "noteSharedPath",
+      "platform": "app",
+      "utterance": "please attach a note to the current shared-path step",
+      "args": {
+        "text": "Runtime path note"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "eab233ff-e034-4371-a719-783e97945484",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2334,
+      "errors": []
+    },
+    {
+      "name": "branchSharedPath",
+      "platform": "app",
+      "utterance": "please branch from the current shared-path step",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b282f8cb-915a-4b06-a54e-dbf41522e95d",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2393,
+      "errors": []
+    },
+    {
+      "name": "materializeSharedPath",
+      "platform": "app",
+      "utterance": "please materialize the active shared path into AI space",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9186d0bf-50c2-488f-a0a7-acc762fb65ba",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2468,
+      "errors": []
+    },
+    {
+      "name": "leaveSharedPath",
+      "platform": "app",
+      "utterance": "please leave the active shared-path walk",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "24346bda-03ce-409f-8812-d58abd7e7441",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2313,
+      "errors": []
+    },
+    {
+      "name": "moveAiNode",
+      "platform": "app",
+      "utterance": "please move an AI node",
+      "args": {
+        "target": "node-root",
+        "dx": 90,
+        "dy": 0
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8bfc6edf-db59-403c-b9f9-2b1a524a2b5f",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2526,
+      "errors": []
+    },
+    {
+      "name": "arrangeItems",
+      "platform": "app",
+      "utterance": "rearrange these notes into three columns",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence",
+          "node-root"
+        ],
+        "layout": "grid",
+        "options": {
+          "columns": 2,
+          "gap": 28
+        }
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ec352787-fd5c-42f4-b4c1-b2d3f40006d1",
+        "status": "completed",
+        "events": 22,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3295,
+      "errors": []
+    },
+    {
+      "name": "groupItems",
+      "platform": "app",
+      "utterance": "group the market evidence in the upper right",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ],
+        "name": "Runtime group"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c80b3038-ea12-4cee-8f72-b120daefd362",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2328,
+      "errors": []
+    },
+    {
+      "name": "linkItems",
+      "platform": "app",
+      "utterance": "link this counterexample to the claim",
+      "args": {
+        "from": "claim",
+        "to": "evidence",
+        "label": "supports"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "00da5fac-8383-4c7b-be88-f2dc5c3b97fe",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2573,
+      "errors": []
+    },
+    {
+      "name": "transformMaterial",
+      "platform": "app",
+      "utterance": "compare these branches for evidence quality and novelty",
+      "args": {
+        "mode": "compare",
+        "targets": [
+          "claim",
+          "evidence"
+        ],
+        "instruction": "Compare faithfully."
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c48184c7-272e-4fb5-8721-446d9faf5e01",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2195,
+      "errors": []
+    },
+    {
+      "name": "annotateFeedback",
+      "platform": "app",
+      "utterance": "annotate the weakest assumption beside this branch",
+      "args": {
+        "target": "claim",
+        "text": "Runtime feedback",
+        "kind": "feedback"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e2b35ad5-dc13-4d4f-b61d-8cf1cd4e0920",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2160,
+      "errors": []
+    },
+    {
+      "name": "openFunctionEditor",
+      "platform": "app",
+      "utterance": "please open a Function in the editor",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "70e15027-7b62-44f9-8d5d-606bf55e2acd",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2071,
+      "errors": []
+    },
+    {
+      "name": "editFunction",
+      "platform": "app",
+      "utterance": "please edit Function metadata or instructions",
+      "args": {
+        "op": "op-a",
+        "name": "Edited audit lens"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "877914ae-c8b4-4147-b50b-2c6282f5e51f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1992,
+      "errors": []
+    },
+    {
+      "name": "inspectFunctionOutput",
+      "platform": "app",
+      "utterance": "show me what this function outputs",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "78a48992-2548-466f-a664-c879e3467e1a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2041,
+      "errors": []
+    },
+    {
+      "name": "editFunctionOutput",
+      "platform": "app",
+      "utterance": "make this function output an investment memo and a one-page brief",
+      "args": {
+        "op": "op-a",
+        "outputs": [
+          "brief",
+          "memo"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc5f41f0-d268-4fe2-a223-02ec54a8c657",
+        "status": "completed",
+        "events": 20,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4119,
+      "errors": []
+    },
+    {
+      "name": "editFunctionBranchOutput",
+      "platform": "app",
+      "utterance": "change the second branch of Branch Move to a table",
+      "args": {
+        "op": "op-branch",
+        "branch": 2,
+        "label": "table",
+        "machineKind": "table"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "edc35a22-cd8a-430c-8940-8dbeaaf8e9fd",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2313,
+      "errors": []
+    },
+    {
+      "name": "setFunctionOutputMode",
+      "platform": "app",
+      "utterance": "derive this function output from its branches",
+      "args": {
+        "op": "op-branch",
+        "mode": "derived"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f08627fe-efaf-49b5-a842-14203c86343a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1997,
+      "errors": []
+    },
+    {
+      "name": "resetFunctionOutput",
+      "platform": "app",
+      "utterance": "reset this function to its suggested output",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "980e142f-1df1-47d6-b625-e6d79b58b289",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2034,
+      "errors": []
+    },
+    {
+      "name": "addFunctionStep",
+      "platform": "app",
+      "utterance": "please add a step to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "name": "Added runtime step"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3e067ed1-3cbf-4b30-8700-0436129ac4e6",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2024,
+      "errors": []
+    },
+    {
+      "name": "addFunctionBranch",
+      "platform": "app",
+      "utterance": "please add a branch to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "name": "Runtime branch",
+        "from": "First step"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a9038e3b-97ce-4cfb-a1ab-76ebe4588fa8",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1988,
+      "errors": []
+    },
+    {
+      "name": "setFunctionStep",
+      "platform": "app",
+      "utterance": "please edit a Function step",
+      "args": {
+        "op": "op-pipeline",
+        "step": "First step",
+        "name": "Edited first step"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a24fa948-91b6-4922-87bd-0369f98fdb7c",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2067,
+      "errors": []
+    },
+    {
+      "name": "saveFunction",
+      "platform": "app",
+      "utterance": "please commit edits to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "message": "runtime save"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c83f26ac-6e49-4dc8-9349-afc7b62be356",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2107,
+      "errors": []
+    },
+    {
+      "name": "forkFunction",
+      "platform": "app",
+      "utterance": "please fork a Function",
+      "args": {
+        "function": "Pipeline Function",
+        "message": "runtime fork"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3c1d6bf1-1ad1-4af6-9131-292d7ba3083e",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2842,
+      "errors": []
+    },
+    {
+      "name": "mergeFunctions",
+      "platform": "app",
+      "utterance": "please merge two Functions",
+      "args": {
+        "a": "Pipeline Function",
+        "b": "Second Function",
+        "name": "Runtime merged Function"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3e95d637-9673-4310-9412-af536c754c2d",
+        "status": "completed",
+        "events": 13,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2456,
+      "errors": []
+    },
+    {
+      "name": "previewFunctionComposition",
+      "platform": "app",
+      "utterance": "please preview ordered Function composition",
+      "args": {
+        "a": "op-a",
+        "b": "op-b"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "39a4dad2-82b6-447a-be26-4107737da8e2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1717,
+      "errors": []
+    },
+    {
+      "name": "stackFunctions",
+      "platform": "app",
+      "utterance": "stack invert then ground as a reusable Function",
+      "args": {
+        "a": "op-a",
+        "b": "op-b",
+        "name": "Runtime stack"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "17f2e4b5-2533-43b5-980f-c329ef6d1766",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2235,
+      "errors": []
+    },
+    {
+      "name": "saveCompoundFunction",
+      "platform": "app",
+      "utterance": "please save the reviewed compound Function",
+      "args": {
+        "edit": false
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "842e8492-a801-44c5-8826-24610edacb4a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2241,
+      "errors": []
+    },
+    {
+      "name": "addGrindExample",
+      "platform": "app",
+      "utterance": "add this as a positive example",
+      "args": {
+        "input": "Before example",
+        "output": "After example",
+        "note": "runtime"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "grind-example",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7a62abac-d5f1-4bec-8e73-8263253615cc",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1881,
+      "errors": []
+    },
+    {
+      "name": "removeGrindExample",
+      "platform": "app",
+      "utterance": "please remove a grinding example",
+      "args": {
+        "example": "last"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "16332437-8759-4b0e-9b1d-8f1af14a5d39",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2136,
+      "errors": []
+    },
+    {
+      "name": "reorderGrindExample",
+      "platform": "app",
+      "utterance": "please reorder grinding examples",
+      "args": {
+        "example": "last",
+        "to": 0
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8b7cd302-0c00-48b4-96ff-eb999a39fbf9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2344,
+      "errors": []
+    },
+    {
+      "name": "compileGrindDraft",
+      "platform": "app",
+      "utterance": "use these five transformations to forge a Function",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "grind-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5d4ab246-f420-4c33-a38d-dd1170649010",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2939,
+      "errors": []
+    },
+    {
+      "name": "testGrindDraft",
+      "platform": "app",
+      "utterance": "test the forged Function",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "69b78597-460b-412d-98d3-9249fe75e746",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3437,
+      "errors": []
+    },
+    {
+      "name": "runFunctionTestBench",
+      "platform": "app",
+      "utterance": "test this Function on five unrelated holdouts and compare the configured models",
+      "args": {
+        "function": "op-pipeline",
+        "fixtures": [
+          {
+            "id": "fixture-a",
+            "input": "Alpha evidence"
+          }
+        ],
+        "holdouts": [
+          {
+            "id": "holdout-a",
+            "input": "Unrelated beta evidence"
+          }
+        ],
+        "models": [
+          "auto"
+        ],
+        "rubric": [
+          "substantive output"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-test-report",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c1862b87-bf1b-422c-94cd-0b9ceadbcb9f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1948,
+      "errors": []
+    },
+    {
+      "name": "refineGrindDraft",
+      "platform": "app",
+      "utterance": "tighten it",
+      "args": {
+        "instruction": "Tighten the rule"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9f9eaabd-29c4-418f-aa6a-1c62043070f4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2600,
+      "errors": []
+    },
+    {
+      "name": "shapeForgedFunction",
+      "platform": "app",
+      "utterance": "please open the forged Function in the process editor",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ce939b04-bfbf-410d-9e08-0dc27b2c40c9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3256,
+      "errors": []
+    },
+    {
+      "name": "rackSearch",
+      "platform": "app",
+      "utterance": "find my argument Functions",
+      "args": {
+        "query": "Audit"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d28ca521-698d-476b-9ed0-3b88f3146a7b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1841,
+      "errors": []
+    },
+    {
+      "name": "rackFilter",
+      "platform": "app",
+      "utterance": "please filter and sort the library rack",
+      "args": {
+        "type": "all",
+        "sort": "recent"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1aa065a1-4d87-4c73-8d92-3e2ce2120a9b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1896,
+      "errors": []
+    },
+    {
+      "name": "pinFunction",
+      "platform": "app",
+      "utterance": "please pin or unpin a rack Function",
+      "args": {
+        "function": "op-pipeline",
+        "pinned": true
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e1050467-a789-4d48-a1b2-e46e7ffcb932",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1762,
+      "errors": []
+    },
+    {
+      "name": "archiveFunction",
+      "platform": "app",
+      "utterance": "please archive a Function without deleting it",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "43eb951f-4095-448f-85ba-608e7aa81cbc",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1860,
+      "errors": []
+    },
+    {
+      "name": "restoreFunction",
+      "platform": "app",
+      "utterance": "please restore an archived Function",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2201a29f-60a2-4245-9d8a-b8ee023a6699",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2103,
+      "errors": []
+    },
+    {
+      "name": "editFunctionByInstruction",
+      "platform": "app",
+      "utterance": "please rewrite a Function from an instruction",
+      "args": {
+        "function": "op-pipeline",
+        "instruction": "Make the Function compare evidence"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5b7d3f28-aed2-41d8-bd7b-0fd6aaf40962",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "failed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2017,
+      "errors": []
+    },
+    {
+      "name": "createLens",
+      "platform": "app",
+      "utterance": "create a New Chat Lens with no context",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3745f090-cdd9-4ef0-beff-6b6ac7709ad9",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2462,
+      "errors": []
+    },
+    {
+      "name": "addLensMaterial",
+      "platform": "app",
+      "utterance": "attach this observation to my Lens",
+      "args": {
+        "lens": "generator-a",
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b334a74d-caee-464c-88ec-a1fc8925974b",
+        "status": "completed",
+        "events": 12,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2581,
+      "errors": []
+    },
+    {
+      "name": "nameLens",
+      "platform": "app",
+      "utterance": "name this emerging Lens evidence-first",
+      "args": {
+        "lens": "generator-a",
+        "name": "Named runtime Lens"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "99ccb2e2-41e3-4afb-b23d-3a32d1ab7709",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2588,
+      "errors": []
+    },
+    {
+      "name": "probeLens",
+      "platform": "app",
+      "utterance": "view this Lens in the healthcare domain",
+      "args": {
+        "lens": "generator-a",
+        "domain": "music"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "37b846c7-f28e-401f-9d08-fe14b28527fc",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2456,
+      "errors": []
+    },
+    {
+      "name": "inferFunctionFromLens",
+      "platform": "app",
+      "utterance": "infer a reusable Function from this Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9e612651-0383-42f5-8314-4400a9da18d8",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2464,
+      "errors": []
+    },
+    {
+      "name": "composeObjects",
+      "platform": "app",
+      "utterance": "compose this Move with that Lens",
+      "args": {
+        "a": "op-a",
+        "b": "op-b",
+        "name": "Runtime composition"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "52c49298-67d3-4c15-956c-da1b45a28ab0",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2067,
+      "errors": []
+    },
+    {
+      "name": "encodeLens",
+      "platform": "app",
+      "utterance": "encode this material as an inspectable Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "14f5ec1d-98c0-47d3-9395-4867838c06b3",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2053,
+      "errors": []
+    },
+    {
+      "name": "inspectGenerationPlan",
+      "platform": "app",
+      "utterance": "how many candidates will this Move make",
+      "args": {
+        "artifact": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "80724dc0-b4fc-498e-a889-1ed2826b4a4c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2138,
+      "errors": []
+    },
+    {
+      "name": "setGenerationPlan",
+      "platform": "app",
+      "utterance": "make four candidates with this model",
+      "args": {
+        "artifact": "op-a",
+        "count": 3,
+        "model": "auto",
+        "mode": "single"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0c213165-e72e-4bb0-bb43-799393712632",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2020,
+      "errors": []
+    },
+    {
+      "name": "resetGenerationPlan",
+      "platform": "app",
+      "utterance": "reset this Function's candidate settings",
+      "args": {
+        "artifact": "op-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3d2e4706-b31e-4648-8bfd-02b0fe6e1cd4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2083,
+      "errors": []
+    },
+    {
+      "name": "tasteCandidate",
+      "platform": "app",
+      "utterance": "yes, keep this one",
+      "args": {
+        "decision": "yes"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "511ad17f-5496-4123-88c1-5f310b4d99c4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2611,
+      "errors": []
+    },
+    {
+      "name": "moreLikeThis",
+      "platform": "app",
+      "utterance": "make three more like this",
+      "args": {
+        "count": 2
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6c570d2a-de82-4db2-abb0-ce77060b130b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4318,
+      "errors": []
+    },
+    {
+      "name": "keepAllCandidates",
+      "platform": "app",
+      "utterance": "please accept every recoverable sibling candidate without publishing it",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e38fcbe4-d990-49ad-abfb-540b6df70a0c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2404,
+      "errors": []
+    },
+    {
+      "name": "extendSelectedCandidates",
+      "platform": "app",
+      "utterance": "please generate bounded child batches from every selected candidate",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b28d6572-9147-4172-8b48-8d31233eebc2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 6195,
+      "errors": []
+    },
+    {
+      "name": "stopGenerationBatch",
+      "platform": "app",
+      "utterance": "please cancel pending sibling candidates without deleting completed work",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9a66a00c-5eb8-4739-8813-d0f0028efbfd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "failed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2389,
+      "errors": []
+    },
+    {
+      "name": "retryGenerationCandidate",
+      "platform": "app",
+      "utterance": "please retry only the focused failed candidate idempotently",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b6d1a69c-63e5-47e6-bfd7-11c5f8e540ce",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2151,
+      "errors": []
+    },
+    {
+      "name": "observeWorkspace",
+      "platform": "app",
+      "utterance": "what is visible on my screen",
+      "args": {
+        "scope": "viewport"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a22db425-a3b5-4c09-972d-4b226c3e8c18",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3494,
+      "errors": []
+    },
+    {
+      "name": "interpretThroughLens",
+      "platform": "app",
+      "utterance": "interpret what's on my screen through this Lens",
+      "args": {
+        "lens": "generator-a",
+        "scope": "viewport"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "47b87a68-936c-49b2-93af-4876f42a8947",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2925,
+      "errors": []
+    },
+    {
+      "name": "interpretVisibleScreenThroughLens",
+      "platform": "app",
+      "utterance": "visually interpret my shared screen through this Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f2557ee8-dda6-4556-97de-22452e4057b4",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2151,
+      "errors": []
+    },
+    {
+      "name": "captureInstructionAsMove",
+      "platform": "app",
+      "utterance": "save what I just asked as a Move",
+      "args": {
+        "text": "Verify every primary source",
+        "source": "voice"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "593b1df0-02a8-400b-9564-a59f6a3e6d88",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1974,
+      "errors": []
+    },
+    {
+      "name": "semanticTransfer",
+      "platform": "app",
+      "utterance": "turn this whole command into a Move exactly as written",
+      "args": {
+        "destination": "moves"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "99f805c1-10c1-465a-a95b-1cef99858905",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2901,
+      "errors": []
+    },
+    {
+      "name": "startCritiqueSession",
+      "platform": "app",
+      "utterance": "start critique mode on these branches",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "559b99a8-df49-4341-bbe0-71172048c47c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "failed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2446,
+      "errors": []
+    },
+    {
+      "name": "ingestCritique",
+      "platform": "app",
+      "utterance": "keep the first one but rewrite the second",
+      "args": {
+        "text": "Keep the first claim but rewrite the second."
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0310f3ec-8d64-468b-8628-42b02c47b9c2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2824,
+      "errors": []
+    },
+    {
+      "name": "stopCritiqueSession",
+      "platform": "app",
+      "utterance": "stop critique mode",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cbebfef8-00fd-43c0-a4ec-43d09a70e8b1",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "failed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3817,
+      "errors": []
+    },
+    {
+      "name": "clearPaper",
+      "platform": "app",
+      "utterance": "please clear paper after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e13e9115-00ca-436a-b831-47fe55947c47",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1822,
+      "errors": []
+    },
+    {
+      "name": "clearAiSpace",
+      "platform": "app",
+      "utterance": "please clear AI space after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "aeea0f03-cdc4-4212-95a4-c6a0bbec8b9e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1700,
+      "errors": []
+    },
+    {
+      "name": "clearFunctions",
+      "platform": "app",
+      "utterance": "please clear user Functions after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c29cf0ee-4744-4518-abdf-a671c3187aaf",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1850,
+      "errors": []
+    },
+    {
+      "name": "clearLenses",
+      "platform": "app",
+      "utterance": "please clear contextual Lenses after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5365c06a-f7a5-4f22-a74e-d56519f668ec",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1728,
+      "errors": []
+    },
+    {
+      "name": "clearWorkspaceDomains",
+      "platform": "app",
+      "utterance": "clear all functions, drawings, and AI stuff",
+      "args": {
+        "domains": [
+          "paper",
+          "ai"
+        ]
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "575dd460-241f-44aa-8fff-6245868354bd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "awaiting-confirmation",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1724,
+      "errors": []
+    },
+    {
+      "name": "capturePageSelection",
+      "platform": "extension",
+      "utterance": "please capture the current external page selection",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalSaveAs",
+      "platform": "extension",
+      "utterance": "save this page selection as…",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-save-as",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsMove",
+      "platform": "extension",
+      "utterance": "save this text as a Move",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsFunction",
+      "platform": "extension",
+      "utterance": "save this text as a one-step Function",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsLens",
+      "platform": "extension",
+      "utterance": "collect these in a Lens",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "togglePageHighlighter",
+      "platform": "extension",
+      "utterance": "please toggle the external page highlighter",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "queueExternalAction",
+      "platform": "extension",
+      "utterance": "please queue a Move or Function in the external action stack without running it",
+      "args": {
+        "action": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalLensContext",
+      "platform": "extension",
+      "utterance": "use the evidence Lens as context",
+      "args": {
+        "lens": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "previewExternalGo",
+      "platform": "extension",
+      "utterance": "please preview external-page disclosure and output count",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-preview",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "pressExternalGo",
+      "platform": "extension",
+      "utterance": "please run the external stack only at the explicit GO boundary",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-run",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "copyExternalResult",
+      "platform": "extension",
+      "utterance": "please copy a staged external-page result",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "clipboard-write",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "insertExternalResult",
+      "platform": "extension",
+      "utterance": "please insert a staged result through the verified page adapter",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "replaceExternalSelection",
+      "platform": "extension",
+      "utterance": "please replace an unchanged page selection through the verified adapter",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "annotateExternalResult",
+      "platform": "extension",
+      "utterance": "please annotate a staged result without replacing page material",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalArtifact",
+      "platform": "extension",
+      "utterance": "please open a staged extension artifact in Lens",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "showExternalLibraryImport",
+      "platform": "extension",
+      "utterance": "please show pending library import status and review",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-import-review",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalBeforeAfter",
+      "platform": "extension",
+      "utterance": "please open compact external before-and-after learning",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-draft",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalBeforeAfterText",
+      "platform": "extension",
+      "utterance": "please set text in an external before or after capture slot",
+      "args": {
+        "side": "before",
+        "text": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-draft",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "inferExternalBeforeAfter",
+      "platform": "extension",
+      "utterance": "please infer and sync a Move or Function from explicit external examples",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-inference",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "captureExternalVisibleTab",
+      "platform": "extension",
+      "utterance": "capture what is visible in this tab",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "tasteExternalCandidate",
+      "platform": "extension",
+      "utterance": "yes, keep this external result",
+      "args": {
+        "result": "fixture",
+        "decision": "yes"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "startExternalCritique",
+      "platform": "extension",
+      "utterance": "start critique mode here",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "ingestExternalCritique",
+      "platform": "extension",
+      "utterance": "keep the first result but revise the second",
+      "args": {
+        "text": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "stopExternalCritique",
+      "platform": "extension",
+      "utterance": "stop critique mode here",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "composeExternalObjects",
+      "platform": "extension",
+      "utterance": "compose these two library objects",
+      "args": {
+        "a": "fixture",
+        "b": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "invokeExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please invoke a canonical Primitive Move through the shared external action stack",
+      "args": {
+        "primitive": "Branch",
+        "targets": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "reorderExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please reorder a synced Primitive Move",
+      "args": {
+        "primitive": "fixture",
+        "to": 1
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalGenerationBranches",
+      "platform": "extension",
+      "utterance": "please persist branch-specific generation perspectives for a synced artifact",
+      "args": {
+        "artifact": "fixture",
+        "branchSpecs": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "armExternalMerge",
+      "platform": "extension",
+      "utterance": "please arm a non-destructive Merge preview for explicit external material",
+      "args": {
+        "targets": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    }
+  ]
+}

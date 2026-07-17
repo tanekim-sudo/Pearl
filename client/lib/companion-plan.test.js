@@ -282,3 +282,39 @@ test("validates generalized create-then-use plans across workspace domains", () 
   assert.equal(plans.length, 12);
   plans.forEach((plan) => assert.doesNotThrow(() => validateCompanionPlan(plan)));
 });
+
+test("validates transactional phases, exact migrations, assertions, approvals, and bounded workers", () => {
+  const plan = {
+    version: 1,
+    root: {
+      kind: "phase",
+      id: "phase-a",
+      steps: [
+        { kind: "query", id: "dependencies", query: "dependencies", saveAs: "affected" },
+        { kind: "approval", id: "approval", scope: "migration", affectedIds: ["fn-a"] },
+        {
+          kind: "migration",
+          id: "migration",
+          affectedIds: ["fn-a"],
+          steps: [{
+            kind: "transaction",
+            id: "transaction",
+            compensation: "restore-checkpoint",
+            postconditions: [{ type: "exists", stableId: "fn-a" }],
+            steps: [{ kind: "action", id: "edit", capability: "editMove", args: { move: "move-a", prompt: "updated" } }],
+          }],
+        },
+        { kind: "assert", id: "assert", condition: { ref: "$affected", exists: true } },
+        { kind: "worker", id: "review", worker: "privacy-reviewer", saveAs: "privacy" },
+      ],
+    },
+  };
+  assert.doesNotThrow(() => validateCompanionPlan(plan));
+  assert.throws(
+    () => validateCompanionPlan({
+      version: 1,
+      root: { kind: "worker", worker: "migration-analyst", mutating: true },
+    }),
+    /candidateSnapshotId/
+  );
+});

@@ -108,6 +108,49 @@ export async function saveCapturedMove(fragments = [], input = {}) {
   return { library, object, duplicate: false };
 }
 
+export async function saveCapturedFunction(fragments = [], input = {}) {
+  if (!fragments.length) throw new Error("capture material before making a Function");
+  const exact = fragments.map((fragment) => String(fragment.quote || "")).join(input.separator ?? "\n\n");
+  const moved = await saveCapturedMove(fragments, {
+    name: input.moveName || input.name,
+    separator: input.separator,
+  });
+  const current = moved.library;
+  const duplicate = current.operators.find((operator) =>
+    operator.libraryKind === "function" &&
+    String(operator.sourceInstruction || "") === exact
+  );
+  if (duplicate) return { library: current, object: duplicate, duplicate: true };
+  const now = Date.now();
+  const id = crypto.randomUUID();
+  const object = {
+    id,
+    stableId: id,
+    version: 1,
+    kind: "pipeline",
+    libraryKind: "function",
+    schemaVersion: 2,
+    top: true,
+    name: String(input.name || exact.split(/\r?\n/)[0] || "Captured Function").slice(0, 80),
+    steps: [moved.object.id],
+    sourceInstruction: exact,
+    processInstructions: exact,
+    provenance: {
+      kind: "semantic-drop",
+      wrappedMove: { id: moved.object.id, version: moved.object.version || 1 },
+      private: true,
+      fragmentIds: fragments.map((fragment) => fragment.id),
+    },
+    createdAt: now,
+    updatedAt: now,
+  };
+  const library = await writeLocalLibrary({
+    ...current,
+    operators: [...current.operators, object],
+  });
+  return { library, object, duplicate: false };
+}
+
 export async function saveCapturedLens(fragments = [], input = {}) {
   if (!fragments.length) throw new Error("capture material before making a Lens");
   const current = await readLocalLibrary();

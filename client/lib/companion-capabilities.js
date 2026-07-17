@@ -101,7 +101,7 @@ const RAW_CAPABILITIES = [
   ["resetFunctionOutput", { op: "string" }, false, ["function"], "Reset a Function to its deterministic suggested output"],
   ["addFunctionStep", { op: "string", name: "string?", prompt: "string?", description: "string?", after: "string?", use: "string?" }, false, ["function"], "Add a step to a Function"],
   ["addFunctionBranch", { op: "string", from: "string?", name: "string", prompt: "string?" }, false, ["function"], "Add a branch to a Function"],
-  ["setFunctionStep", { op: "string", step: "string", name: "string?", prompt: "string?", description: "string?" }, false, ["function"], "Edit a Function step"],
+  ["setFunctionStep", { op: "string", step: "string", name: "string?", prompt: "string?", description: "string?", sourceMoveId: "string?", sourceMoveVersion: "number?" }, false, ["function"], "Edit a Function step"],
   ["saveFunction", { op: "string", message: "string?" }, false, ["function"], "Commit edits to a Function"],
   ["forkFunction", { function: "string", message: "string?" }, false, ["function"], "Fork a Function"],
   ["mergeFunctions", { a: "string", b: "string", name: "string?" }, false, ["function"], "Merge two Functions"],
@@ -113,6 +113,7 @@ const RAW_CAPABILITIES = [
   ["reorderGrindExample", { example: "string", to: "number" }, false, ["lens"], "Reorder grinding examples"],
   ["compileGrindDraft", {}, false, ["lens"], "Analyze examples and propose editable rules"],
   ["testGrindDraft", {}, false, ["lens"], "Test the forged proposal on a holdout"],
+  ["runFunctionTestBench", { function: "string", fixtures: "array?", holdouts: "array?", models: "array?", rubric: "array?" }, false, ["function", "ai", "interface"], "Run structural, fixture, holdout, dependency, model, and rubric checks for a Function"],
   ["refineGrindDraft", { instruction: "string" }, false, ["lens"], "Refine a forged proposal"],
   ["shapeForgedFunction", {}, false, ["function", "interface"], "Open the forged Function in the process editor"],
   ["rackSearch", { query: "string" }, false, ["move", "function", "lens", "interface"], "Search the library rack"],
@@ -141,9 +142,26 @@ const RAW_CAPABILITIES = [
   ["interpretThroughLens", { lens: "string", scope: "selection|viewport|paper|workspace" }, false, ["lens", "paper", "ai"], "Interpret a grounded workspace scope through a Lens and materialize the result"],
   ["interpretVisibleScreenThroughLens", { lens: "string" }, false, ["lens", "paper", "ai"], "Request authorized ephemeral raster capture and ground a visual interpretation through a Lens"],
   ["captureInstructionAsMove", { text: "string", source: "selection|history|voice?" }, false, ["move", "paper", "ai"], "Capture an actual user instruction through the shared InstructionEvent model"],
+  ["semanticTransfer", { destination: "moves|functions|lenses|paper|ai-space|primitive-moves", targets: "array?" }, false, ["move", "function", "lens", "paper", "ai", "interface"], "Transfer selected material through the shared semantic drop resolver"],
   ["startCritiqueSession", {}, false, ["paper", "ai", "interface"], "Start a private checkpointed voice-first critique session on the current selection"],
   ["ingestCritique", { text: "string" }, false, ["paper", "ai"], "Normalize and materialize critique clauses against stable targets"],
   ["stopCritiqueSession", {}, false, ["paper", "ai", "interface"], "Stop and persist the active private critique session"],
+  ["openPackageRegistry", {}, false, ["move", "function", "lens", "interface"], "Open the Cognitive Package registry and trust review"],
+  ["createSignedPackage", { namespace: "string", name: "string", version: "string", artifactIds: "array", visibility: "private|team|unlisted|public?" }, false, ["move", "function", "lens"], "Validate, test, scan, and sign a declarative package draft"],
+  ["publishCognitivePackage", {}, false, ["move", "function", "lens"], "Publish the active signed package after scoped external approval"],
+  ["installCognitivePackage", { manifest: "object" }, false, ["move", "function", "lens"], "Verify and atomically install a signed package"],
+  ["rollbackCognitivePackage", { package: "string" }, false, ["move", "function", "lens"], "Restore the previous installed package version"],
+  ["deprecateCognitivePackage", { namespace: "string", name: "string", version: "string", replacement: "string?" }, false, ["move", "function", "lens"], "Deprecate an owned package version after scoped approval"],
+  ["openCognitiveWorkflowStudio", { tab: "higher-order|vocabulary|pull-request|integrate?" }, false, ["move", "function", "lens", "paper", "interface"], "Open the higher-order, vocabulary, and extraction review studio"],
+  ["proposeHigherOrderPatch", { artifact: "string", purpose: "string" }, false, ["move", "function", "lens"], "Create and isolate-test a reviewable ArtifactPatch without mutating its source"],
+  ["applyHigherOrderPatch", { patchId: "string", acceptedHunkIds: "array" }, false, ["move", "function", "lens"], "Apply selected passing patch hunks as a new artifact version"],
+  ["teachPersonalCommand", { trigger: "string", command: "string", scope: "session|workspace|account|team" }, false, ["interface"], "Preview and save a scoped inspectable personal command definition"],
+  ["disablePersonalCommand", { trigger: "string" }, false, ["interface"], "Disable a personal command without deleting provenance"],
+  ["forgetPersonalCommand", { trigger: "string" }, false, ["interface"], "Delete a personal command definition from its authorized scope"],
+  ["openCognitivePullRequest", { source: "string", kinds: "array?" }, false, ["paper", "move", "function", "lens"], "Extract grounded candidate artifacts into a review-only Cognitive Pull Request"],
+  ["reviewCognitiveCandidate", { requestId: "string", candidateId: "string", decision: "accept|reject|changes_requested", comment: "string?" }, false, ["move", "function", "lens"], "Review one grounded extraction candidate without merging"],
+  ["mergeCognitivePullRequest", { requestId: "string", candidateIds: "array" }, false, ["move", "function", "lens"], "Atomically merge reviewed candidates with an undo receipt"],
+  ["orchestrateCognitiveWorkflow", { source: "string", visibility: "private|team|unlisted|public?" }, false, ["paper", "move", "function", "lens"], "Run extract, review, refine, test, package, and approval-gated publish as a typed plan"],
   ["clearPaper", {}, true, ["paper"], "Clear paper after confirmation"],
   ["clearAiSpace", {}, true, ["ai"], "Clear AI space after confirmation"],
   ["clearFunctions", {}, true, ["function"], "Clear user Functions after confirmation"],
@@ -152,6 +170,7 @@ const RAW_CAPABILITIES = [
   ["capturePageSelection", {}, false, ["extension", "highlight"], "Capture the current external page selection", "extension"],
   ["openExternalSaveAs", {}, false, ["extension", "move", "function", "lens", "interface"], "Open the external Move, Function, or Lens chooser", "extension"],
   ["saveExternalCaptureAsMove", {}, false, ["extension", "move", "highlight"], "Save captured page text verbatim as a Move", "extension"],
+  ["saveExternalCaptureAsFunction", {}, false, ["extension", "function", "highlight"], "Wrap captured page text verbatim as a one-step Function", "extension"],
   ["saveExternalCaptureAsLens", {}, false, ["extension", "lens", "highlight"], "Collect captured page material in a Lens", "extension"],
   ["togglePageHighlighter", { enabled: "boolean?" }, false, ["extension", "highlight", "interface"], "Toggle the external page highlighter", "extension"],
   ["queueExternalAction", { action: "string" }, false, ["extension", "highlight", "move", "function"], "Queue a Move or Function in the external action stack without running it", "extension"],
@@ -164,6 +183,11 @@ const RAW_CAPABILITIES = [
   ["annotateExternalResult", { result: "string" }, false, ["extension", "highlight"], "Annotate a staged result without replacing page material", "extension"],
   ["openExternalArtifact", { result: "string" }, false, ["extension", "paper"], "Open a staged extension artifact in Lens", "extension"],
   ["showExternalLibraryImport", {}, false, ["extension", "move", "function", "lens", "interface"], "Show pending library import status and review", "extension"],
+  ["browseExternalPackages", {}, false, ["extension", "move", "function", "lens", "interface"], "Browse verified Cognitive Packages in the extension", "extension"],
+  ["installExternalPackage", { manifest: "object" }, false, ["extension", "move", "function", "lens"], "Verify and install a signed package in extension storage", "extension"],
+  ["openExternalCognitiveStudio", { tab: "higher-order|vocabulary|pull-request|integrate?" }, false, ["extension", "move", "function", "lens", "interface"], "Open a preserved web handoff for complex cognitive workflow review", "extension"],
+  ["teachExternalPersonalCommand", { trigger: "string", command: "string", scope: "session|workspace|account|team" }, false, ["extension", "interface"], "Save a scoped personal command through shared extension storage", "extension"],
+  ["openExternalCognitivePullRequest", { kinds: "array?" }, false, ["extension", "move", "function", "lens", "highlight"], "Open a grounded extraction proposal from explicit selected page material", "extension"],
   ["openExternalBeforeAfter", {}, false, ["extension", "move", "function", "interface"], "Open compact external before-and-after learning", "extension"],
   ["setExternalBeforeAfterText", { side: "before|after", text: "string" }, false, ["extension", "move", "function"], "Set text in an external before or after capture slot", "extension"],
   ["inferExternalBeforeAfter", {}, false, ["extension", "move", "function"], "Infer and sync a Move or Function from explicit external examples", "extension"],
@@ -223,6 +247,7 @@ const RESULT_TYPES = {
   saveCompoundFunction: "function",
   addGrindExample: "grind-example",
   compileGrindDraft: "grind-draft",
+  runFunctionTestBench: "function-test-report",
   shapeForgedFunction: "function",
   captureThreadAsFunction: "function",
   addBlock: "paper-item",
@@ -328,12 +353,13 @@ const INTENT_EXAMPLES = {
   addGrindExample: ["add this as a positive example"],
   compileGrindDraft: ["use these five transformations to forge a Function"],
   testGrindDraft: ["test the forged Function"],
+  runFunctionTestBench: ["test this Function on five unrelated holdouts and compare the configured models"],
   refineGrindDraft: ["tighten it"],
   rackSearch: ["find my argument Functions"],
   captureThreadAsFunction: ["save how I got here as a Function"],
   inspectFunctionOutput: ["show me what this function outputs"],
   editFunctionOutput: ["make this function output an investment memo and a one-page brief"],
-  editFunctionBranchOutput: ["change the second branch to a table"],
+  editFunctionBranchOutput: ["change the second branch of Branch Move to a table"],
   setFunctionOutputMode: ["derive this function output from its branches"],
   resetFunctionOutput: ["reset this function to its suggested output"],
   createLens: ["create a New Chat Lens with no context"],
@@ -352,6 +378,7 @@ const INTENT_EXAMPLES = {
   interpretThroughLens: ["interpret what's on my screen through this Lens"],
   interpretVisibleScreenThroughLens: ["visually interpret my shared screen through this Lens"],
   captureInstructionAsMove: ["save what I just asked as a Move"],
+  semanticTransfer: ["turn this whole command into a Move exactly as written"],
   startCritiqueSession: ["start critique mode on these branches"],
   ingestCritique: ["keep the first one but rewrite the second"],
   stopCritiqueSession: ["stop critique mode"],
@@ -369,28 +396,79 @@ const INTENT_EXAMPLES = {
   clearWorkspaceDomains: ["clear all functions, drawings, and AI stuff"],
   openExternalSaveAs: ["save this page selection as…"],
   saveExternalCaptureAsMove: ["save this text as a Move"],
+  saveExternalCaptureAsFunction: ["save this text as a one-step Function"],
   saveExternalCaptureAsLens: ["collect these in a Lens"],
   setExternalLensContext: ["use the evidence Lens as context"],
 };
+
+const READ_ONLY_CAPABILITIES = new Set([
+  "caption", "pause", "observeWorkspace", "inspectGenerationPlan", "previewBrushQueue",
+  "runFunctionTestBench",
+  "openPackageRegistry", "browseExternalPackages",
+  "openExtensionDownload", "openExtensionLibraryExport", "focusAiResult", "fitPaper",
+  "fitAiSpace", "zoomPaper", "panPaper", "selectAiNode", "selectItems",
+]);
+
+const PACKAGE_APPROVAL_CAPABILITIES = new Set([
+  "publishCognitivePackage",
+  "installCognitivePackage",
+  "rollbackCognitivePackage",
+  "deprecateCognitivePackage",
+  "installExternalPackage",
+  "applyHigherOrderPatch",
+  "teachPersonalCommand",
+  "mergeCognitivePullRequest",
+  "orchestrateCognitiveWorkflow",
+  "teachExternalPersonalCommand",
+]);
 
 export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
   ([name, args, destructive, domains, purpose, platform = "app"]) => ({
     name,
     args,
+    schema: { type: "object", additionalProperties: false, properties: args },
     destructive,
     domains,
     purpose,
     resultType: RESULT_TYPES[name] || "action-result",
+    result: { type: RESULT_TYPES[name] || "action-result" },
     refArgs: REF_ARG_TYPES[name] || {},
     examples: INTENT_EXAMPLES[name] || [`please ${purpose.charAt(0).toLowerCase()}${purpose.slice(1)}`],
     animation: "director",
     observation: domains.includes("interface") && domains.length === 1 ? [] : ["selection", "objects", "viewport"],
+    observerQuery: {
+      scopes: domains.includes("interface") && domains.length === 1 ? ["viewport"] : ["selection", "viewport", "paper", "library"],
+      stableIds: true,
+      refreshAfterMutation: true,
+    },
+    expectedEffects: READ_ONLY_CAPABILITIES.has(name)
+      ? []
+      : domains.filter((domain) => domain !== "interface").map((domain) => `${domain}-state-changed`),
+    preconditions: [],
+    scope: { domains, platform },
+    idempotency: READ_ONLY_CAPABILITIES.has(name) ? "read-only" : "idempotency-key",
+    cost: { class: name.startsWith("apply") || name === "transformMaterial" ? "model" : "local", maxCalls: name.startsWith("apply") ? 1 : 0 },
+    timeoutMs: name.startsWith("apply") || name === "transformMaterial" ? 120_000 : 15_000,
+    inverse: destructive ? null : "workspace-checkpoint",
+    compensation: destructive ? "restore-approved-checkpoint" : "restore-workspace-checkpoint",
     risk: destructive ? "high" : ["transformMaterial", "arrangeItems", "groupItems"].includes(name) ? "medium" : "low",
     confirmation: HANDLER_CONFIRMED_CAPABILITIES.has(name)
       ? "handler"
-      : destructive
+      : destructive || PACKAGE_APPROVAL_CAPABILITIES.has(name)
         ? "framework"
         : "none",
+    approval: {
+      required: destructive || PACKAGE_APPROVAL_CAPABILITIES.has(name) || platform === "extension" && /publish|insert|replace|annotate|externalwrite/i.test(name),
+      scope: destructive
+        ? "object-or-domain"
+        : /publish|deprecate/i.test(name)
+          ? "publish"
+          : PACKAGE_APPROVAL_CAPABILITIES.has(name)
+            ? "package-version"
+        : platform === "extension" && /publish|insert|replace|annotate|externalwrite/i.test(name)
+          ? "external-write"
+          : "none",
+    },
     testCaseId: `capability-${name}`,
     platform,
   })

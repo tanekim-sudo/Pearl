@@ -1,0 +1,226 @@
+{
+  "generatedAt": "2026-07-16T19:51:52.392Z",
+  "harness": "visible CompanionChat input with controlled planner and real director handlers",
+  "inputPath": "visible",
+  "counts": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "app": 8,
+    "extension": 0
+  },
+  "rows": [
+    {
+      "name": "attachSelectionToBeforeAfter",
+      "platform": "app",
+      "utterance": "this image became that image—learn the transformation",
+      "args": {
+        "side": "after",
+        "target": "claim"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-inference",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a04c5013-5273-4196-9aca-990fad171715",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2407,
+      "errors": []
+    },
+    {
+      "name": "addBeforeAfterExample",
+      "platform": "app",
+      "utterance": "add another example",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cb8e3ffe-2487-4c45-965a-3c03130e79c6",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2342,
+      "errors": []
+    },
+    {
+      "name": "removeBeforeAfterExample",
+      "platform": "app",
+      "utterance": "please remove one private before-and-after example",
+      "args": {
+        "example": 2
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8ec7fe89-89ec-459f-8f41-905b22d4d10a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2733,
+      "errors": []
+    },
+    {
+      "name": "inferBeforeAfterTransformation",
+      "platform": "app",
+      "utterance": "infer the shared transformation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-inference",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "89d4c5de-4e23-4935-878c-3e64f7e4d2b0",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3444,
+      "errors": []
+    },
+    {
+      "name": "chooseBeforeAfterAlternative",
+      "platform": "app",
+      "utterance": "use the second hypothesis",
+      "args": {
+        "alternative": 1
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "375689d2-a9a7-47b6-8f0c-4a234d88e6f5",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4388,
+      "errors": []
+    },
+    {
+      "name": "editInferredFunctionSpec",
+      "platform": "app",
+      "utterance": "make the inferred operation preserve headings",
+      "args": {
+        "name": "Edited learned lens",
+        "summary": "Runtime summary",
+        "operation": "Compare evidence"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "26b78fd7-a7d8-4da9-bee3-4661dd29884a",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3628,
+      "errors": []
+    },
+    {
+      "name": "useInferredFunction",
+      "platform": "app",
+      "utterance": "use this inferred transformation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "eb08c000-e70b-49ff-ab55-a54e631ff480",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4298,
+      "errors": []
+    },
+    {
+      "name": "saveLearnedFunction",
+      "platform": "app",
+      "utterance": "save this learned Function",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1f338404-2dc9-4279-980b-6a8595e4e013",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 6419,
+      "errors": []
+    }
+  ]
+}

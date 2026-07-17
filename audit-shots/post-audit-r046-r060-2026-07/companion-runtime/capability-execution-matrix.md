@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 166
-- Passed: 166
+- Total: 198
+- Passed: 198
 - Failed: 0
 - Skipped: 0
 
@@ -62,7 +62,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
+- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -115,6 +115,7 @@
 - PASS — `reorderGrindExample` (app): state-or-visible-artifact-changed
 - PASS — `compileGrindDraft` (app): state-or-visible-artifact-changed
 - PASS — `testGrindDraft` (app): bounded model execution dispatched and returned
+- PASS — `runFunctionTestBench` (app): state-or-visible-artifact-changed
 - PASS — `refineGrindDraft` (app): state-or-visible-artifact-changed
 - PASS — `shapeForgedFunction` (app): state-or-visible-artifact-changed
 - PASS — `rackSearch` (app): state-or-visible-artifact-changed
@@ -135,13 +136,34 @@
 - PASS — `resetGenerationPlan` (app): state-or-visible-artifact-changed
 - PASS — `tasteCandidate` (app): state-or-visible-artifact-changed
 - PASS — `moreLikeThis` (app): state-or-visible-artifact-changed
+- PASS — `keepAllCandidates` (app): state-or-visible-artifact-changed
+- PASS — `extendSelectedCandidates` (app): state-or-visible-artifact-changed
+- PASS — `stopGenerationBatch` (app): state-or-visible-artifact-changed
+- PASS — `retryGenerationCandidate` (app): state-or-visible-artifact-changed
 - PASS — `observeWorkspace` (app): state-or-visible-artifact-changed
 - PASS — `interpretThroughLens` (app): state-or-visible-artifact-changed
 - PASS — `interpretVisibleScreenThroughLens` (app): state-or-visible-artifact-changed
 - PASS — `captureInstructionAsMove` (app): state-or-visible-artifact-changed
+- PASS — `semanticTransfer` (app): state-or-visible-artifact-changed
 - PASS — `startCritiqueSession` (app): state-or-visible-artifact-changed
 - PASS — `ingestCritique` (app): state-or-visible-artifact-changed
 - PASS — `stopCritiqueSession` (app): state-or-visible-artifact-changed
+- PASS — `openPackageRegistry` (app): state-or-visible-artifact-changed
+- PASS — `createSignedPackage` (app): state-or-visible-artifact-changed
+- PASS — `publishCognitivePackage` (app): precise setup or authentication boundary before mutation
+- PASS — `installCognitivePackage` (app): state-or-visible-artifact-changed
+- PASS — `rollbackCognitivePackage` (app): state-or-visible-artifact-changed
+- PASS — `deprecateCognitivePackage` (app): state-or-visible-artifact-changed
+- PASS — `openCognitiveWorkflowStudio` (app): state-or-visible-artifact-changed
+- PASS — `proposeHigherOrderPatch` (app): state-or-visible-artifact-changed
+- PASS — `applyHigherOrderPatch` (app): state-or-visible-artifact-changed
+- PASS — `teachPersonalCommand` (app): state-or-visible-artifact-changed
+- PASS — `disablePersonalCommand` (app): state-or-visible-artifact-changed
+- PASS — `forgetPersonalCommand` (app): state-or-visible-artifact-changed
+- PASS — `openCognitivePullRequest` (app): state-or-visible-artifact-changed
+- PASS — `reviewCognitiveCandidate` (app): state-or-visible-artifact-changed
+- PASS — `mergeCognitivePullRequest` (app): state-or-visible-artifact-changed
+- PASS — `orchestrateCognitiveWorkflow` (app): state-or-visible-artifact-changed
 - PASS — `clearPaper` (app): state-or-visible-artifact-changed
 - PASS — `clearAiSpace` (app): state-or-visible-artifact-changed
 - PASS — `clearFunctions` (app): state-or-visible-artifact-changed
@@ -150,6 +172,7 @@
 - PASS — `capturePageSelection` (extension): controlled extension state changed
 - PASS — `openExternalSaveAs` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsMove` (extension): controlled extension state changed
+- PASS — `saveExternalCaptureAsFunction` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsLens` (extension): controlled extension state changed
 - PASS — `togglePageHighlighter` (extension): controlled extension state changed
 - PASS — `queueExternalAction` (extension): controlled extension state changed
@@ -162,6 +185,11 @@
 - PASS — `annotateExternalResult` (extension): controlled extension state changed
 - PASS — `openExternalArtifact` (extension): controlled extension state changed
 - PASS — `showExternalLibraryImport` (extension): controlled extension state changed
+- PASS — `browseExternalPackages` (extension): controlled extension state changed
+- PASS — `installExternalPackage` (extension): controlled extension state changed
+- PASS — `openExternalCognitiveStudio` (extension): controlled extension state changed
+- PASS — `teachExternalPersonalCommand` (extension): controlled extension state changed
+- PASS — `openExternalCognitivePullRequest` (extension): controlled extension state changed
 - PASS — `openExternalBeforeAfter` (extension): controlled extension state changed
 - PASS — `setExternalBeforeAfterText` (extension): controlled extension state changed
 - PASS — `inferExternalBeforeAfter` (extension): controlled extension state changed
@@ -171,3 +199,7 @@
 - PASS — `ingestExternalCritique` (extension): controlled extension state changed
 - PASS — `stopExternalCritique` (extension): controlled extension state changed
 - PASS — `composeExternalObjects` (extension): controlled extension state changed
+- PASS — `invokeExternalPrimitive` (extension): controlled extension state changed
+- PASS — `reorderExternalPrimitive` (extension): controlled extension state changed
+- PASS — `setExternalGenerationBranches` (extension): controlled extension state changed
+- PASS — `armExternalMerge` (extension): controlled extension state changed

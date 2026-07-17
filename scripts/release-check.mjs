@@ -60,6 +60,10 @@ if (full) {
       "scripts/branch-visual-audit.mjs",
       "scripts/brush-workflow-audit.mjs",
       "scripts/page-node-integration-audit.mjs",
+      "scripts/universal-interaction-audit.mjs",
+      "scripts/cursor-like-companion-audit.mjs",
+      "scripts/cognitive-package-audit.mjs",
+      "scripts/cognitive-workflows-audit.mjs",
     ]) run("node", [audit], { env: { AUDIT_URL: auditUrl } });
   } finally {
     server.kill("SIGTERM");

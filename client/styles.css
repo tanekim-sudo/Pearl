@@ -29,6 +29,23 @@
 .library-save-as-drop small { color: #756c5d; }
 .library-kind-heading { margin-top: 10px; }
 .library-kind-heading > span:first-child { color: #2f2d29; font-weight: 800; letter-spacing: .02em; }
+.universal-drop-preview {
+  position: sticky;
+  top: 6px;
+  z-index: 8;
+  margin: 6px 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--chalk-yellow-deep) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--chalk-yellow) 28%, var(--card-edge));
+  color: var(--ink);
+  box-shadow: 0 5px 18px rgba(54, 43, 16, .12);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+.transfer-drag .rail-pane { transition: background-color 120ms ease, outline-color 120ms ease; }
+.transfer-drag .rail-pane:hover { outline: 1px dashed color-mix(in srgb, var(--chalk-yellow-deep) 55%, transparent); }
 .library-process-section {
   display: grid;
   gap: 7px;
@@ -3881,9 +3898,6 @@ body {
   max-height: none;
   border-radius: 14px;
 }
-body:has(.fn-editor-fullscreen) .companion-fab {
-  display: none;
-}
 .fn-head-sub {
   margin: 4px 0 0;
   font-size: 13px;
@@ -6033,6 +6047,18 @@ body:has(.fn-editor-fullscreen) .companion-fab {
 
 @media (prefers-reduced-motion: reduce) {
   .extension-walkthrough-pin { animation: none; }
+}
+
+.ghost-cursor-effect-status {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---- plans overlay ---- */

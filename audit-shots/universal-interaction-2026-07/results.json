@@ -1,0 +1,240 @@
+{
+  "generatedAt": "2026-07-17T01:46:17.979Z",
+  "exactCommand": "Clear only this page. Then create market, founder, product, competition, risks, and recommendation branches; compare the evidence and keep the strongest result.",
+  "matrix": {
+    "sources": 21,
+    "targets": 16,
+    "cells": 336,
+    "preserving": 336
+  },
+  "checks": [
+    {
+      "name": "complex command creates a Move",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "sourceInstruction remains byte-for-byte exact",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "promptTemplate remains byte-for-byte exact",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "paper source remains unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "drop advertises undo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "created Move is immediately usable in the rail",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "immediate undo removes only the created Move",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "undo preserves source",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "companion uses semanticTransfer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "companion animation completed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "companion trace starts and lands",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Move persists after refresh",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no uncaught browser errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed": 13,
+  "failed": 0,
+  "browserErrors": [],
+  "companionTrace": {
+    "version": 1,
+    "id": "5c29b49e-59f4-49a9-878e-cedeaaf7b551",
+    "title": "Semantic transfer",
+    "status": "completed",
+    "startedAt": "2026-07-17T01:46:15.011Z",
+    "completedAt": "2026-07-17T01:46:15.936Z",
+    "reducedMotion": false,
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "expectedCapabilities": [
+      "semanticTransfer"
+    ],
+    "events": [
+      {
+        "sequence": 0,
+        "elapsedMs": 0,
+        "type": "run-start",
+        "capability": null,
+        "stepId": null,
+        "stepCount": 1
+      },
+      {
+        "sequence": 1,
+        "elapsedMs": 241,
+        "type": "step-start",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "args": {
+          "destination": "moves"
+        },
+        "initialCursor": {
+          "x": 720,
+          "y": 480
+        }
+      },
+      {
+        "sequence": 2,
+        "elapsedMs": 242,
+        "type": "cursor-jump",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "from": {
+          "x": 720,
+          "y": 480
+        },
+        "to": {
+          "x": 784.6521739130435,
+          "y": 310.6277240255605
+        }
+      },
+      {
+        "sequence": 3,
+        "elapsedMs": 242,
+        "type": "target-resolved",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "target": ".move-quick-add",
+        "geometry": {
+          "x": 140,
+          "y": 318.25,
+          "rect": {
+            "x": 12,
+            "y": 302.25,
+            "top": 302.25,
+            "right": 268,
+            "bottom": 334.25,
+            "left": 12,
+            "width": 256,
+            "height": 32
+          }
+        }
+      },
+      {
+        "sequence": 4,
+        "elapsedMs": 242,
+        "type": "cursor-move-start",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "from": {
+          "x": 784.6521739130435,
+          "y": 310.6277240255605
+        },
+        "to": {
+          "x": 140,
+          "y": 318.25
+        },
+        "durationMs": 252
+      },
+      {
+        "sequence": 5,
+        "elapsedMs": 508,
+        "type": "cursor-move-complete",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "from": {
+          "x": 784.6521739130435,
+          "y": 310.6277240255605
+        },
+        "to": {
+          "x": 140,
+          "y": 318.25
+        }
+      },
+      {
+        "sequence": 6,
+        "elapsedMs": 508,
+        "type": "gesture-press",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "at": {
+          "x": 140,
+          "y": 318.25
+        },
+        "dragLabel": "Create Move from exact text"
+      },
+      {
+        "sequence": 7,
+        "elapsedMs": 576,
+        "type": "gesture-release",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "at": {
+          "x": 140,
+          "y": 318.25
+        }
+      },
+      {
+        "sequence": 8,
+        "elapsedMs": 924,
+        "type": "step-complete",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "resultType": "action-result",
+        "finalCursor": {
+          "x": 140,
+          "y": 318.25
+        }
+      },
+      {
+        "sequence": 9,
+        "elapsedMs": 925,
+        "type": "run-complete",
+        "capability": "semanticTransfer",
+        "stepId": null,
+        "status": "completed",
+        "resultTypes": [
+          "move"
+        ],
+        "errorCount": 0
+      }
+    ]
+  },
+  "screenshots": [
+    "01-complex-command-to-moves.png",
+    "02-companion-equivalent.png",
+    "03-narrow-persisted.png"
+  ]
+}

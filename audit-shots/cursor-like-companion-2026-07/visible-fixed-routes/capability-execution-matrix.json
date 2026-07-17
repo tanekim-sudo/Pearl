@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-07-16T20:03:47.270Z",
+  "harness": "visible CompanionChat input with controlled planner and real director handlers",
+  "inputPath": "visible",
+  "counts": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "app": 6,
+    "extension": 0
+  },
+  "rows": [
+    {
+      "name": "editFunctionBranchOutput",
+      "platform": "app",
+      "utterance": "change the second branch of Branch Move to a table",
+      "args": {
+        "op": "op-branch",
+        "branch": 2,
+        "label": "table",
+        "machineKind": "table"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "65666da8-746b-4edb-b746-638929dfc493",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2313,
+      "errors": []
+    },
+    {
+      "name": "inferFunctionFromLens",
+      "platform": "app",
+      "utterance": "infer a reusable Function from this Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "281954b2-bb15-4b6d-8ecb-2b5e674fd1de",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2373,
+      "errors": []
+    },
+    {
+      "name": "clearPaper",
+      "platform": "app",
+      "utterance": "please clear paper after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ebaece08-58db-4171-a696-5df9c30e596a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1870,
+      "errors": []
+    },
+    {
+      "name": "clearAiSpace",
+      "platform": "app",
+      "utterance": "please clear AI space after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d35ef3b8-4021-4f53-aa38-a8305c72f357",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1732,
+      "errors": []
+    },
+    {
+      "name": "clearFunctions",
+      "platform": "app",
+      "utterance": "please clear user Functions after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3d512e2c-1123-49a7-93ae-433f47f4b70d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1772,
+      "errors": []
+    },
+    {
+      "name": "clearLenses",
+      "platform": "app",
+      "utterance": "please clear contextual Lenses after confirmation",
+      "args": {},
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2a265d70-9d6a-49c0-a044-f8eca6193454",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "executed",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1747,
+      "errors": []
+    }
+  ]
+}

@@ -9,17 +9,29 @@ import {
   looksLikeProfileAnswer,
   parseAdministrativeCommand,
   parseBeforeAfterCommand,
+  parseCognitiveWorkflowCommand,
   parseExtensionDownloadCommand,
   parseFunctionCreationCommand,
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parseSafeDemonstrationCommand,
+  parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
+
+test("cognitive workflow intents preserve teaching scope and grounded review boundaries", () => {
+  assert.deepEqual(parseCognitiveWorkflowCommand("From now on, when I say 'Founder pass', run orchestrateCognitiveWorkflow only remember this in workspace"), {
+    title: "Teach personal command",
+    steps: [{ verb: "teachPersonalCommand", args: { trigger: "Founder pass", command: "orchestrateCognitiveWorkflow", scope: "workspace" }, confirmed: true }],
+  });
+  assert.equal(parseCognitiveWorkflowCommand("open my vocabulary").steps[0].args.tab, "vocabulary");
+  assert.equal(parseCognitiveWorkflowCommand("extract all Moves, Functions, and Lenses from this meeting transcript").steps[0].verb, "openCognitivePullRequest");
+  assert.equal(parseCognitiveWorkflowCommand("browse packages").steps[0].verb, "openPackageRegistry");
+});
 import {
   beginCommand,
   isRetryRequest,
@@ -84,11 +96,19 @@ test("function output edits use deterministic real capability paths", () => {
     verb: "editFunctionBranchOutput",
     args: { op: "last", branch: 2, label: "table", machineKind: "table" },
   });
+  assert.deepEqual(parseFunctionOutputCommand("change the second branch of Branch Move to a table"), {
+    verb: "editFunctionBranchOutput",
+    args: { op: "Branch Move", branch: 2, label: "table", machineKind: "table" },
+  });
   assert.equal(parseFunctionOutputCommand("tell me about tables"), null);
 });
 
 test("before and after lens requests use deterministic real editor actions", () => {
   assert.deepEqual(parseBeforeAfterCommand("make a lens from this before and after"), {
+    verb: "openBeforeAfterCreation",
+    args: {},
+  });
+  assert.deepEqual(parseBeforeAfterCommand("learn a Move or Function from this before and after"), {
     verb: "openBeforeAfterCreation",
     args: {},
   });
@@ -104,6 +124,7 @@ test("before and after lens requests use deterministic real editor actions", () 
     verb: "setBeforeAfterText",
     args: { side: "after", text: "a concise memo" },
   });
+  assert.equal(parseBeforeAfterCommand("infer a reusable Function from this Lens"), null);
 });
 
 test("extension download requests use the deterministic local path", () => {
@@ -193,6 +214,25 @@ test("three named branch perspectives parse exactly and vague safe requests choo
     "inverted opposition perspective",
   ]);
   assert.equal(parseSafeDemonstrationCommand("do anything give me anything show me what you can do", true).demoId, "safe-capability-sample");
+});
+
+test("universal transfer requests use the shared deterministic capability", () => {
+  assert.deepEqual(
+    parseSemanticTransferCommand("turn this whole command into a Move exactly as written"),
+    { verb: "semanticTransfer", args: { destination: "moves" } }
+  );
+  assert.deepEqual(
+    parseSemanticTransferCommand("drop this into Functions and decompose it"),
+    { verb: "semanticTransfer", args: { destination: "functions" } }
+  );
+  assert.deepEqual(
+    parseSemanticTransferCommand("put these into a Lens even though I don't know what connects them"),
+    { verb: "semanticTransfer", args: { destination: "lenses" } }
+  );
+  assert.deepEqual(
+    parseSemanticTransferCommand("combine whatever I selected in the way that makes most sense"),
+    { verb: "semanticTransfer", args: { destination: "functions" } }
+  );
 });
 
 test("command ledger retries only the last failed or unexecuted executable command", () => {

@@ -14,6 +14,23 @@ test("direct, companion, and extension adapters produce the same Move effect", a
   assert.equal(routes[0].result.object.prompt, "Rewrite clearly.");
 });
 
+test("content without lineage becomes a valid one-step Function without losing source", async () => {
+  const exact = "Inspect the claim. Then compare primary evidence.";
+  const execution = await executeDomainCommand("createFunctionFromContent", { objects: [] }, {
+    items: [{ id: "paper-command", type: "text", text: exact, provenance: { surface: "paper" } }],
+    name: "Captured process",
+    id: "function-exact",
+    moveId: "move-exact",
+  }, { idFactory: () => "unused", now: 100 });
+  const move = execution.state.objects.find((entry) => entry.id === "move-exact");
+  const fn = execution.state.objects.find((entry) => entry.id === "function-exact");
+  assert.equal(move.sourceInstruction, exact);
+  assert.equal(move.promptTemplate, exact);
+  assert.equal(fn.processGraph.nodes.length, 1);
+  assert.deepEqual(fn.processGraph.nodes[0].ref, { id: move.id, version: move.version });
+  assert.equal(fn.processInstructions, exact);
+});
+
 test("transactions persist atomically and expose rollback state", async () => {
   const state = { objects: [], primitivePreferences: {}, idempotencyKeys: [] };
   let rolledBack = null;

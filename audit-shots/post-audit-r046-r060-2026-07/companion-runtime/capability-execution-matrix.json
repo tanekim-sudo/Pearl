@@ -1,13 +1,14 @@
 {
-  "generatedAt": "2026-07-16T06:54:47.193Z",
+  "generatedAt": "2026-07-17T01:45:03.103Z",
   "harness": "controlled real director/extension handler execution",
+  "inputPath": "director",
   "counts": {
-    "total": 166,
-    "passed": 166,
+    "total": 198,
+    "passed": 198,
     "failed": 0,
     "skipped": 0,
-    "app": 142,
-    "extension": 24
+    "app": 164,
+    "extension": 34
   },
   "rows": [
     {
@@ -23,9 +24,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b73d9c91-fd24-4705-b50d-3e0ca8e4b2ee",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1472,
+      "durationMs": 1664,
       "errors": []
     },
     {
@@ -41,9 +51,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a2e1ebb6-7c84-47d6-9010-dadacb387a33",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1321,
+      "durationMs": 1471,
       "errors": []
     },
     {
@@ -59,9 +78,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "29af2949-09ab-4d9f-a4dc-487c0a146bcc",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1739,
+      "durationMs": 1795,
       "errors": []
     },
     {
@@ -75,9 +103,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "253ded28-b9e5-490f-9851-16c1c76c4269",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1468,
+      "durationMs": 1569,
       "errors": []
     },
     {
@@ -93,9 +130,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "89c456bf-a4ed-4548-aa14-5d3069d8a11f",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1697,
+      "durationMs": 1785,
       "errors": []
     },
     {
@@ -112,9 +158,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "22009bf5-8252-4612-b560-c568a896eb21",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1513,
+      "durationMs": 1667,
       "errors": []
     },
     {
@@ -130,9 +185,18 @@
       "typedResult": "paper-item",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a2340990-7a8f-46b0-a994-2f193e5b4231",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1573,
+      "durationMs": 1733,
       "errors": []
     },
     {
@@ -149,9 +213,18 @@
       "typedResult": "move",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "4b40138d-f2ae-4cc1-9117-a6ec8a02f3ab",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1995,
+      "durationMs": 1775,
       "errors": []
     },
     {
@@ -165,12 +238,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "503edaba-462c-468d-b31a-2931277ac644",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1428,
+      "durationMs": 1519,
       "errors": []
     },
     {
@@ -187,9 +269,18 @@
       "typedResult": "move",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "45b17f9d-31ea-4f3b-b2f7-2962ad47f88b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1453,
+      "durationMs": 1526,
       "errors": []
     },
     {
@@ -207,9 +298,18 @@
       "typedResult": "ai-node",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "512b47d0-c5a5-44c9-bdf0-95f74dbfa362",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1462,
+      "durationMs": 1559,
       "errors": []
     },
     {
@@ -226,9 +326,18 @@
       "typedResult": "move",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "5cd58805-5612-487f-a936-ee03092b5c18",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1620,
+      "durationMs": 2378,
       "errors": []
     },
     {
@@ -241,12 +350,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b3b120b6-1c00-4da4-8714-78e9a4b0ae05",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1360,
+      "durationMs": 2170,
       "errors": []
     },
     {
@@ -259,12 +377,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "9f94abcf-f45e-408a-8ceb-8fc4d5df992d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1378,
+      "durationMs": 1517,
       "errors": []
     },
     {
@@ -272,18 +399,27 @@
       "platform": "app",
       "utterance": "move expand to the first Primitive Move",
       "args": {
-        "move": "op-expand",
+        "move": "op-branch",
         "to": 0
       },
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "9c78817f-b6a4-4927-bc4f-83abeae2ff56",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1383,
+      "durationMs": 1497,
       "errors": []
     },
     {
@@ -300,9 +436,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a6d5dbe1-b9c8-4de5-a636-3a3f27c37bbd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1451,
+      "durationMs": 2058,
       "errors": []
     },
     {
@@ -315,12 +460,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "save-as-preview",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "43ddf0c1-6d32-47fb-90cd-87ea1d806e86",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1431,
+      "durationMs": 2235,
       "errors": []
     },
     {
@@ -333,12 +487,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "7bb6cae3-0005-43ce-90e3-e636edc6fbae",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1903,
+      "durationMs": 2612,
       "errors": []
     },
     {
@@ -349,12 +512,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b3aef3be-1f0f-4b95-8ac9-e277ba2664f1",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1467,
+      "durationMs": 2459,
       "errors": []
     },
     {
@@ -368,12 +540,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "83b5bd3b-2006-469d-b44c-980da1031faa",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1765,
+      "durationMs": 1837,
       "errors": []
     },
     {
@@ -386,12 +567,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3739c3e9-1c21-438e-8813-dd4637fbc450",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1680,
+      "durationMs": 2133,
       "errors": []
     },
     {
@@ -406,12 +596,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "7aa103e2-b356-4faf-a579-584d474b4edf",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1995,
+      "durationMs": 2089,
       "errors": []
     },
     {
@@ -425,12 +624,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "637449e6-2d00-4a8a-8bfb-9e2531e4469a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1999,
+      "durationMs": 2163,
       "errors": []
     },
     {
@@ -441,12 +649,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "transcript-generation",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "bb77a9ed-3fe5-40fb-9f97-c7ddfa429dba",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2181,
+      "durationMs": 2360,
       "errors": []
     },
     {
@@ -460,12 +677,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a956eff0-4ab0-41f1-b2fd-da9568cfccad",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2410,
+      "durationMs": 2640,
       "errors": []
     },
     {
@@ -480,12 +706,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "d22ec52a-1b1d-41ed-b41b-caa51139e8a3",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2475,
+      "durationMs": 2583,
       "errors": []
     },
     {
@@ -502,12 +737,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "library-artifacts",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "5f267f85-730a-408e-ba5d-98c60fbc746c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2505,
+      "durationMs": 2506,
       "errors": []
     },
     {
@@ -524,9 +768,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "e38e46c9-ff01-4133-b1ad-82e440e1cbdd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1493,
+      "durationMs": 1527,
       "errors": []
     },
     {
@@ -543,9 +796,18 @@
       "typedResult": "move",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a82ccc46-abfc-49cc-aa7f-097f6214d77d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1441,
+      "durationMs": 1575,
       "errors": []
     },
     {
@@ -566,12 +828,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "5a704dbf-e33e-495f-a06d-2c9acc891d8d",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2154,
+      "durationMs": 2207,
       "errors": []
     },
     {
@@ -585,9 +856,18 @@
       "typedResult": "before-after-draft",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ff66f214-e2fc-433b-803d-24520e28df0b",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1528,
+      "durationMs": 1666,
       "errors": []
     },
     {
@@ -604,9 +884,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "bd45ee00-9c33-438a-91b3-dba0421bdd60",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2009,
+      "durationMs": 2103,
       "errors": []
     },
     {
@@ -623,9 +912,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6b7fc12d-540f-4866-8da9-5a8382589dd4",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2111,
+      "durationMs": 2245,
       "errors": []
     },
     {
@@ -639,9 +937,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6c990cfe-50d9-4a79-bd4f-e73faa62a348",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1881,
+      "durationMs": 2067,
       "errors": []
     },
     {
@@ -657,9 +964,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "15257fe9-93df-4fc7-8975-a557f2306682",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2459,
+      "durationMs": 2348,
       "errors": []
     },
     {
@@ -673,9 +989,18 @@
       "typedResult": "before-after-inference",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "de14a6c0-b4b1-4d5d-bbab-159ecc0eb840",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2904,
+      "durationMs": 3120,
       "errors": []
     },
     {
@@ -691,9 +1016,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "0afd52dd-a2ff-476a-8eb8-85c040e59057",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3265,
+      "durationMs": 3421,
       "errors": []
     },
     {
@@ -711,9 +1045,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "f4299e8f-d27d-4ea8-b4f5-23250a39dcae",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3321,
+      "durationMs": 3513,
       "errors": []
     },
     {
@@ -727,9 +1070,18 @@
       "typedResult": "function-preview",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc412d3f-8961-44ef-8fe0-dd3707e565aa",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3393,
+      "durationMs": 4114,
       "errors": []
     },
     {
@@ -740,12 +1092,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "0a9b74b1-1a23-4610-b984-8875e49a0ebb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 5776,
+      "durationMs": 6048,
       "errors": []
     },
     {
@@ -763,9 +1124,18 @@
       "typedResult": "ai-node",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "920001df-17b8-4104-909a-71810cb8ca7a",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1959,
+      "durationMs": 1930,
       "errors": []
     },
     {
@@ -781,9 +1151,18 @@
       "typedResult": "ai-node",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b7456c12-1bee-43d9-86e0-6807f7dae128",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1832,
+      "durationMs": 2128,
       "errors": []
     },
     {
@@ -799,9 +1178,18 @@
       "typedResult": "ai-node",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "72ed2369-cadf-4736-9383-8d7be476076d",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1628,
+      "durationMs": 2459,
       "errors": []
     },
     {
@@ -815,9 +1203,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "dee7ec91-ab4f-47d0-b2cc-acf0a59bf931",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1517,
+      "durationMs": 1960,
       "errors": []
     },
     {
@@ -831,9 +1228,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "5afc5bfe-d3f8-4472-bf57-b8a57f21a702",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1439,
+      "durationMs": 1582,
       "errors": []
     },
     {
@@ -849,9 +1255,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "16967faf-85e4-46fa-8119-32bb793ffca7",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1555,
+      "durationMs": 1721,
       "errors": []
     },
     {
@@ -865,9 +1280,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "9d0e2d97-b46d-4221-af4d-af78b38e4317",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1748,
+      "durationMs": 1798,
       "errors": []
     },
     {
@@ -886,9 +1310,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "e1b544bb-669d-450c-9a12-8a1bd0a8ee90",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1977,
+      "durationMs": 2133,
       "errors": []
     },
     {
@@ -904,9 +1337,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "e3eebbc7-0280-4dd4-bae9-683a8e00cff7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1376,
+      "durationMs": 1713,
       "errors": []
     },
     {
@@ -922,9 +1364,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "85c4b626-dcd7-4db5-b61c-5cd86ba9ae32",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1382,
+      "durationMs": 1574,
       "errors": []
     },
     {
@@ -940,9 +1391,18 @@
       "typedResult": "lens",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "c2f22048-4d80-433c-8991-83509fb8c3e0",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1550,
+      "durationMs": 1757,
       "errors": []
     },
     {
@@ -956,9 +1416,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6e33907f-c16e-4642-b07c-50880b0641a0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1333,
+      "durationMs": 1453,
       "errors": []
     },
     {
@@ -972,9 +1441,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "efb9d152-28f8-491d-9120-96fa7df90a06",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4479,
+      "durationMs": 4671,
       "errors": []
     },
     {
@@ -987,12 +1465,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-queue-item",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "1f87d685-a3e3-4cbc-8fb7-144a20138519",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1361,
+      "durationMs": 1490,
       "errors": []
     },
     {
@@ -1005,12 +1492,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-lens-context",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "38fed92d-2a02-4542-9038-8f399552e5dc",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1891,
+      "durationMs": 1718,
       "errors": []
     },
     {
@@ -1024,12 +1520,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-queue",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2382a945-b06a-40e4-980e-d441bb2252d9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1895,
+      "durationMs": 2074,
       "errors": []
     },
     {
@@ -1042,12 +1547,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-queue",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3ccf12de-eb27-4806-94de-ab3d61431581",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1628,
+      "durationMs": 1726,
       "errors": []
     },
     {
@@ -1058,12 +1572,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "composition-preview",
-      "observableEffect": "Read-only compatibility preview; typed preview is the expected artifact.",
-      "persistence": "not-applicable",
-      "animation": "director-ghost-cursor completed",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "af6811db-5d53-4b9f-8eb3-caac7cca3b3d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1591,
+      "durationMs": 1787,
       "errors": []
     },
     {
@@ -1074,12 +1597,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "brush-run",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2e997e07-87dd-44c7-99ec-51fa34d139de",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4495,
+      "durationMs": 4655,
       "errors": []
     },
     {
@@ -1093,9 +1625,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "f6ec147a-0f8d-4c8e-b1b2-4e68d224b510",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2303,
+      "durationMs": 2016,
       "errors": []
     },
     {
@@ -1106,12 +1647,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-preview",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ccef6c4f-f145-437a-aba6-1ff96c43fe7b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1945,
+      "durationMs": 2037,
       "errors": []
     },
     {
@@ -1125,9 +1675,18 @@
       "typedResult": "ai-node",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b2507abd-695d-4112-9101-34e89b9b46c3",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2530,
+      "durationMs": 2698,
       "errors": []
     },
     {
@@ -1141,9 +1700,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "e440b9f6-40fe-4f64-a647-8a528e9f6c52",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2049,
+      "durationMs": 2199,
       "errors": []
     },
     {
@@ -1160,9 +1728,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "cd013348-9177-4c01-88a2-350a660cd2e4",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1556,
+      "durationMs": 2153,
       "errors": []
     },
     {
@@ -1176,9 +1753,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "536e39e6-385b-4c3d-a351-a4455be81e99",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1770,
+      "durationMs": 1925,
       "errors": []
     },
     {
@@ -1192,9 +1778,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "371542a2-0799-4f9c-8646-f99187110883",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1653,
+      "durationMs": 1822,
       "errors": []
     },
     {
@@ -1208,9 +1803,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "182ab59c-58af-45eb-a501-ae935a055fd9",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1700,
+      "durationMs": 1890,
       "errors": []
     },
     {
@@ -1224,9 +1828,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "86d38a3a-1ad8-4c35-a25a-d6523311f133",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1594,
+      "durationMs": 1755,
       "errors": []
     },
     {
@@ -1240,9 +1853,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "73064756-542b-4085-bdc2-28d6334d3f07",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1414,
+      "durationMs": 1590,
       "errors": []
     },
     {
@@ -1260,9 +1882,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b6ded223-4436-4eaa-a23b-5e0540fdd43f",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1638,
+      "durationMs": 1791,
       "errors": []
     },
     {
@@ -1279,9 +1910,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a9cc6991-a018-4577-8117-65ca5d928fdb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1654,
+      "durationMs": 1680,
       "errors": []
     },
     {
@@ -1297,9 +1937,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "8491d725-8cef-4292-8d08-58a06593e004",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1602,
+      "durationMs": 1715,
       "errors": []
     },
     {
@@ -1318,9 +1967,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a1be38dc-c5ad-4e54-b369-27705b4be107",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1546,
+      "durationMs": 1695,
       "errors": []
     },
     {
@@ -1334,9 +1992,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "58174489-1323-4c0c-9572-6e6f82c9c87e",
+        "status": "completed",
+        "events": 23,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2305,
+      "durationMs": 2249,
       "errors": []
     },
     {
@@ -1353,9 +2020,18 @@
       "typedResult": "paper-item",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "fb9b1e55-4383-46e6-b2b9-8ffca43bccad",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1720,
+      "durationMs": 2142,
       "errors": []
     },
     {
@@ -1371,9 +2047,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "5c61bf36-2713-4196-a3d8-9cb33e8b6754",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1501,
+      "durationMs": 1712,
       "errors": []
     },
     {
@@ -1389,9 +2074,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ba84b71c-2c15-4257-80ef-8f244882c375",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1461,
+      "durationMs": 1641,
       "errors": []
     },
     {
@@ -1407,9 +2101,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "580f6b40-8944-49f6-8a43-1a19e3420eee",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1468,
+      "durationMs": 1734,
       "errors": []
     },
     {
@@ -1425,9 +2128,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "012c8240-4e72-4dc8-b79c-ab7d86d17b56",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3569,
+      "durationMs": 1613,
       "errors": []
     },
     {
@@ -1443,9 +2155,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "16fefaad-12cd-4354-9877-e82503f54c22",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1802,
+      "durationMs": 2040,
       "errors": []
     },
     {
@@ -1459,9 +2180,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "4075be2f-ac35-4d49-9262-7a5ef061c9ef",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1613,
+      "durationMs": 1875,
       "errors": []
     },
     {
@@ -1475,9 +2205,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "09e2dbf1-5a3a-4b2e-8718-ec9cb410bea5",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1578,
+      "durationMs": 1727,
       "errors": []
     },
     {
@@ -1491,9 +2230,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "73b137b3-93e2-486c-9c4b-26914aa999e8",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1592,
+      "durationMs": 1787,
       "errors": []
     },
     {
@@ -1511,9 +2259,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6b70191e-ce3f-4248-85cf-5e93811a5a5a",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1650,
+      "durationMs": 1820,
       "errors": []
     },
     {
@@ -1538,9 +2295,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "f6f01bea-b381-48e3-9ce4-104f2f7e44a7",
+        "status": "completed",
+        "events": 22,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2045,
+      "durationMs": 2301,
       "errors": []
     },
     {
@@ -1560,9 +2326,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2f68d2a7-dda2-4af9-b40e-6b3ffdb551bc",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1578,
+      "durationMs": 2430,
       "errors": []
     },
     {
@@ -1580,9 +2355,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "d7bd35c6-7963-4ec2-a0f7-08399905b2d2",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1791,
+      "durationMs": 1806,
       "errors": []
     },
     {
@@ -1603,9 +2387,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "d3e0bf70-45bb-447f-9132-d73575c805c8",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1498,
+      "durationMs": 4342,
       "errors": []
     },
     {
@@ -1623,9 +2416,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "0fec985c-f7b1-48a5-97e6-92b72b0abc55",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1495,
+      "durationMs": 1702,
       "errors": []
     },
     {
@@ -1641,9 +2443,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b355b8d0-a89d-479d-b0d1-bfc15e05ad86",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1435,
+      "durationMs": 1604,
       "errors": []
     },
     {
@@ -1660,9 +2471,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "fc8ff869-2be6-4d3c-9a92-481a25e966f4",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1463,
+      "durationMs": 1614,
       "errors": []
     },
     {
@@ -1675,12 +2495,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-output-specification",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "994d9d29-4c3e-46ba-80d1-d3c336e052f6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1778,
+      "durationMs": 1532,
       "errors": []
     },
     {
@@ -1697,18 +2526,27 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-output-specification",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "19b8f275-aca8-4478-94bc-55ff88e55e93",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1738,
+      "durationMs": 1627,
       "errors": []
     },
     {
       "name": "editFunctionBranchOutput",
       "platform": "app",
-      "utterance": "change the second branch to a table",
+      "utterance": "change the second branch of Branch Move to a table",
       "args": {
         "op": "op-branch",
         "branch": 2,
@@ -1718,12 +2556,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-output-specification",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ae22cecb-b0a5-47e2-aebc-eba1b4aebec7",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1924,
+      "durationMs": 2876,
       "errors": []
     },
     {
@@ -1737,12 +2584,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-output-specification",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "1fd6fd53-7ffc-4fb2-abe5-6f7ff56c3c0e",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1601,
+      "durationMs": 1815,
       "errors": []
     },
     {
@@ -1755,12 +2611,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function-output-specification",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "41acb72c-90b3-40d9-a703-35b0bf9889c9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1445,
+      "durationMs": 1642,
       "errors": []
     },
     {
@@ -1777,9 +2642,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "805138eb-16b2-43bf-b54d-5113e31c3a49",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1399,
+      "durationMs": 1601,
       "errors": []
     },
     {
@@ -1797,9 +2671,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "0fa2daf3-62e3-4e25-8b19-7d600a39fa5f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1404,
+      "durationMs": 1610,
       "errors": []
     },
     {
@@ -1817,9 +2700,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ea4b4261-927a-4b86-ab47-b6d38d28037f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1406,
+      "durationMs": 1540,
       "errors": []
     },
     {
@@ -1836,9 +2728,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "67a94a9c-f958-4ab4-b174-ffcb32baff1d",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1417,
+      "durationMs": 1554,
       "errors": []
     },
     {
@@ -1855,9 +2756,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "378051e4-4421-4ac1-acb1-cfb63d22db00",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1595,
+      "durationMs": 2112,
       "errors": []
     },
     {
@@ -1875,9 +2785,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "befe63fb-e186-41c1-8d7d-1878f93806bb",
+        "status": "completed",
+        "events": 13,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1681,
+      "durationMs": 1868,
       "errors": []
     },
     {
@@ -1891,12 +2810,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "composition-preview",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "53bde4ae-7293-453f-b1fa-0454e1675c89",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1284,
+      "durationMs": 1529,
       "errors": []
     },
     {
@@ -1914,9 +2842,18 @@
       "typedResult": "function-preview",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "66d10339-9058-4165-b2ff-fc4bb0ab235e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1392,
+      "durationMs": 1569,
       "errors": []
     },
     {
@@ -1932,9 +2869,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "029a20c2-72cd-4364-b43f-8ea5ec0a41c2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1676,
+      "durationMs": 1846,
       "errors": []
     },
     {
@@ -1952,9 +2898,18 @@
       "typedResult": "grind-example",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "07b19796-dfb3-461c-a2f2-f62a24459abc",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1315,
+      "durationMs": 1462,
       "errors": []
     },
     {
@@ -1967,12 +2922,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "grind-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "a96e2df2-043e-44df-978b-908bf8496a52",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1611,
+      "durationMs": 2244,
       "errors": []
     },
     {
@@ -1986,12 +2950,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "grind-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "799e2f2d-9f94-41d8-a98d-3e6cf6836044",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1877,
+      "durationMs": 2126,
       "errors": []
     },
     {
@@ -2005,9 +2978,18 @@
       "typedResult": "grind-draft",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "7e1dee20-7396-484a-9428-6fbd05a0f672",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1912,
+      "durationMs": 2478,
       "errors": []
     },
     {
@@ -2018,12 +3000,66 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "grind-test",
+      "typedResult": "action-result",
       "observableEffect": "bounded model execution dispatched and returned",
       "persistence": "not-applicable",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "51e5476f-85e0-42fc-8577-a5826caac63a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2145,
+      "durationMs": 2901,
+      "errors": []
+    },
+    {
+      "name": "runFunctionTestBench",
+      "platform": "app",
+      "utterance": "test this Function on five unrelated holdouts and compare the configured models",
+      "args": {
+        "function": "op-pipeline",
+        "fixtures": [
+          {
+            "id": "fixture-a",
+            "input": "Alpha evidence"
+          }
+        ],
+        "holdouts": [
+          {
+            "id": "holdout-a",
+            "input": "Unrelated beta evidence"
+          }
+        ],
+        "models": [
+          "auto"
+        ],
+        "rubric": [
+          "substantive output"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-test-report",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2f19e2a8-ab44-4b4f-8a30-31b2e9579d27",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1599,
       "errors": []
     },
     {
@@ -2036,12 +3072,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "grind-draft",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "90c56a9d-d489-4a2e-9711-6520e044525b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2137,
+      "durationMs": 2233,
       "errors": []
     },
     {
@@ -2055,9 +3100,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "fc91770f-ee41-4ebd-ad09-aca6d7610049",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2230,
+      "durationMs": 2360,
       "errors": []
     },
     {
@@ -2070,12 +3124,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "rack-query",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "45d5c57b-25a6-4b4c-9d45-b9561ebcc555",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1444,
+      "durationMs": 1569,
       "errors": []
     },
     {
@@ -2089,12 +3152,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "rack-query",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2cdf9e15-90d6-4570-90b2-517ec650bc12",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1328,
+      "durationMs": 1795,
       "errors": []
     },
     {
@@ -2108,12 +3180,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6a2d6150-4cf4-416f-8330-b4012250727b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1321,
+      "durationMs": 1670,
       "errors": []
     },
     {
@@ -2126,12 +3207,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "7041d00b-8e3d-4509-984b-cc63275ba000",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1317,
+      "durationMs": 1453,
       "errors": []
     },
     {
@@ -2144,12 +3234,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "0e554bbe-f250-46a8-a89e-661a87fcc488",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1630,
+      "durationMs": 1770,
       "errors": []
     },
     {
@@ -2166,9 +3265,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "c339abfd-fb68-449d-bf3d-f625c398d8e3",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1437,
+      "durationMs": 1570,
       "errors": []
     },
     {
@@ -2182,9 +3290,18 @@
       "typedResult": "lens",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "6918bbd1-785e-4fe7-af1b-ff1b2758ac6e",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1674,
+      "durationMs": 1756,
       "errors": []
     },
     {
@@ -2201,9 +3318,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "54ade929-56b7-4ee4-bc69-70ea32c3f89f",
+        "status": "completed",
+        "events": 12,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2112,
+      "durationMs": 1863,
       "errors": []
     },
     {
@@ -2220,9 +3346,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "c6670f7f-d952-4485-8eb1-3612e08e77c3",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1610,
+      "durationMs": 1763,
       "errors": []
     },
     {
@@ -2239,9 +3374,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "e438e813-6731-49aa-b1ff-ae86c609ae51",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1546,
+      "durationMs": 1688,
       "errors": []
     },
     {
@@ -2257,9 +3401,18 @@
       "typedResult": "function",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "4397398b-98d3-41ab-b122-6afb1fa59408",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1909,
+      "durationMs": 2085,
       "errors": []
     },
     {
@@ -2274,12 +3427,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "function",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "321854ea-e97c-4418-9624-8cf926e1ae2c",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1462,
+      "durationMs": 1572,
       "errors": []
     },
     {
@@ -2292,12 +3454,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "lens",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b827371f-3b98-42f8-a224-10b80ed360c1",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1447,
+      "durationMs": 1608,
       "errors": []
     },
     {
@@ -2310,12 +3481,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "generation-plan",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2779f9ac-e6bb-4361-8e82-7e750b260546",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1430,
+      "durationMs": 1557,
       "errors": []
     },
     {
@@ -2331,12 +3511,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "generation-plan",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3a88a641-f192-407e-b066-2e260c6bac7d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1402,
+      "durationMs": 1612,
       "errors": []
     },
     {
@@ -2349,12 +3538,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "generation-plan",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3e94aa7f-58f9-456a-a9eb-bb934542e6c4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1409,
+      "durationMs": 1516,
       "errors": []
     },
     {
@@ -2367,12 +3565,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "taste-feedback",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "34e43bda-74ca-41e5-ad21-be3162c02459",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2063,
+      "durationMs": 2290,
       "errors": []
     },
     {
@@ -2385,12 +3592,121 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "generation-batch",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "ce37df97-4ff3-459c-9b59-219ff165dd9c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1897,
+      "durationMs": 2096,
+      "errors": []
+    },
+    {
+      "name": "keepAllCandidates",
+      "platform": "app",
+      "utterance": "please accept every recoverable sibling candidate without publishing it",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3c8e8f00-3c63-4822-a64e-71c6175d1124",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1537,
+      "errors": []
+    },
+    {
+      "name": "extendSelectedCandidates",
+      "platform": "app",
+      "utterance": "please generate bounded child batches from every selected candidate",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "73083259-779d-4d7f-8101-af248a8c8bc4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2015,
+      "errors": []
+    },
+    {
+      "name": "stopGenerationBatch",
+      "platform": "app",
+      "utterance": "please cancel pending sibling candidates without deleting completed work",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "80c8fec9-96f6-454c-8c64-36f8185c21f0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1531,
+      "errors": []
+    },
+    {
+      "name": "retryGenerationCandidate",
+      "platform": "app",
+      "utterance": "please retry only the focused failed candidate idempotently",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1470d281-af19-4e5d-871c-3405a968e782",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2021,
       "errors": []
     },
     {
@@ -2403,12 +3719,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "workspace-observation",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3a26f53d-4499-49f8-a97c-d4a9d88f74eb",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1274,
+      "durationMs": 1453,
       "errors": []
     },
     {
@@ -2422,12 +3747,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "ai-node",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "337e309c-c430-43db-85ea-8a9b6a6dbca0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1445,
+      "durationMs": 1578,
       "errors": []
     },
     {
@@ -2440,12 +3774,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "ai-node",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "2b618044-6407-48f5-9128-286e704da928",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1478,
+      "durationMs": 1600,
       "errors": []
     },
     {
@@ -2459,12 +3802,48 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "move",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "7e522b63-4e2a-458f-86a0-11c80851e2c4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1443,
+      "durationMs": 1588,
+      "errors": []
+    },
+    {
+      "name": "semanticTransfer",
+      "platform": "app",
+      "utterance": "turn this whole command into a Move exactly as written",
+      "args": {
+        "destination": "moves"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "153b283b-1f11-4333-809b-2ce5117780a4",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2266,
       "errors": []
     },
     {
@@ -2475,12 +3854,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "critique-session",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "122421e5-4a13-41dc-8115-97cb1fcefe40",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1917,
+      "durationMs": 2599,
       "errors": []
     },
     {
@@ -2493,12 +3881,21 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "critique-result",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "3e031316-a566-422f-9754-868e1b09b97f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2195,
+      "durationMs": 2380,
       "errors": []
     },
     {
@@ -2509,12 +3906,510 @@
       "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "critique-session",
+      "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "436c6c36-a454-4fc5-b121-be68e7eb41d2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2181,
+      "durationMs": 2356,
+      "errors": []
+    },
+    {
+      "name": "openPackageRegistry",
+      "platform": "app",
+      "utterance": "please open the Cognitive Package registry and trust review",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b018a57c-1eae-4c48-ae5b-064b280df743",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1545,
+      "errors": []
+    },
+    {
+      "name": "createSignedPackage",
+      "platform": "app",
+      "utterance": "please validate, test, scan, and sign a declarative package draft",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0",
+        "artifactIds": [
+          "op-a"
+        ],
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "84b0e1ba-54e6-412f-bba8-92a2a6f9ff31",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1712,
+      "errors": []
+    },
+    {
+      "name": "publishCognitivePackage",
+      "platform": "app",
+      "utterance": "please publish the active signed package after scoped external approval",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "precise setup or authentication boundary before mutation",
+      "persistence": "zero mutation before blocker",
+      "animation": {
+        "version": 1,
+        "traceId": "9178ecb6-b6d1-4a7d-b441-acd591c2b12e",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2022,
+      "errors": [
+        "sign in is required to publish; signed local export remains available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to publish; signed local export remains available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "installCognitivePackage",
+      "platform": "app",
+      "utterance": "please verify and atomically install a signed package",
+      "args": {
+        "manifest": {}
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5e693305-df9d-402b-aa0f-159bc6edd4b9",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1547,
+      "errors": [
+        "choose a complete signed package manifest before install"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "choose a complete signed package manifest before install"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "rollbackCognitivePackage",
+      "platform": "app",
+      "utterance": "please restore the previous installed package version",
+      "args": {
+        "package": "runtime.audit/evidence-tools"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4354ebe9-c7d2-446e-8f9a-54aa5812219a",
+        "status": "failed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1572,
+      "errors": [
+        "no package install checkpoint is available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "no package install checkpoint is available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "deprecateCognitivePackage",
+      "platform": "app",
+      "utterance": "please deprecate an owned package version after scoped approval",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "26f0c9c2-ca2a-4cb8-aa66-ab248dc29833",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1580,
+      "errors": [
+        "sign in is required to deprecate a published package"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to deprecate a published package"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "openCognitiveWorkflowStudio",
+      "platform": "app",
+      "utterance": "please open the higher-order, vocabulary, and extraction review studio",
+      "args": {
+        "tab": "higher-order"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d37f972a-7c23-463a-b83d-7ce1bd348e9a",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1880,
+      "errors": []
+    },
+    {
+      "name": "proposeHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please create and isolate-test a reviewable ArtifactPatch without mutating its source",
+      "args": {
+        "artifact": "op-a",
+        "purpose": "Require evidence for every claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "50d92c75-4246-4538-891a-0c429eff2db2",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1549,
+      "errors": []
+    },
+    {
+      "name": "applyHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please apply selected passing patch hunks as a new artifact version",
+      "args": {
+        "patchId": "last",
+        "acceptedHunkIds": [
+          "primary-hunk"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ca1967a4-64c8-4795-beef-1c65f8c1cf34",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1628,
+      "errors": []
+    },
+    {
+      "name": "teachPersonalCommand",
+      "platform": "app",
+      "utterance": "please preview and save a scoped inspectable personal command definition",
+      "args": {
+        "trigger": "runtime founder pass",
+        "command": "openCognitiveWorkflowStudio",
+        "scope": "workspace"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cb478c7c-1502-46bf-b4a8-dd621bf7e06f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1438,
+      "errors": []
+    },
+    {
+      "name": "disablePersonalCommand",
+      "platform": "app",
+      "utterance": "please disable a personal command without deleting provenance",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "78a0af8f-d8df-455a-a95b-f0e4bead3b7d",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1717,
+      "errors": []
+    },
+    {
+      "name": "forgetPersonalCommand",
+      "platform": "app",
+      "utterance": "please delete a personal command definition from its authorized scope",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc22a478-e9d5-45df-a2aa-3126ab8da1a5",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1644,
+      "errors": []
+    },
+    {
+      "name": "openCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please extract grounded candidate artifacts into a review-only Cognitive Pull Request",
+      "args": {
+        "source": "claim",
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "dbccea5d-f7ca-4aba-a140-0bbd6b213c60",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1456,
+      "errors": []
+    },
+    {
+      "name": "reviewCognitiveCandidate",
+      "platform": "app",
+      "utterance": "please review one grounded extraction candidate without merging",
+      "args": {
+        "requestId": "last",
+        "candidateId": "first",
+        "decision": "accept"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c03eb746-4cca-43bb-bee8-72ddf7cccd5e",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1704,
+      "errors": []
+    },
+    {
+      "name": "mergeCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please atomically merge reviewed candidates with an undo receipt",
+      "args": {
+        "requestId": "last",
+        "candidateIds": [
+          "accepted"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0ad388ad-05c4-4764-b73f-f78f9abb226c",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1856,
+      "errors": []
+    },
+    {
+      "name": "orchestrateCognitiveWorkflow",
+      "platform": "app",
+      "utterance": "please run extract, review, refine, test, package, and approval-gated publish as a typed plan",
+      "args": {
+        "source": "claim",
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e4361b4e-bf0e-4f74-8edd-f956b8e1aee6",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1476,
       "errors": []
     },
     {
@@ -2528,9 +4423,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "867ee93b-f140-4ab6-9e58-5bc51b22ad0d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1264,
+      "durationMs": 1458,
       "errors": []
     },
     {
@@ -2544,9 +4448,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "83d6f9d8-10f6-4d09-b819-9eef19e351f3",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1297,
+      "durationMs": 1365,
       "errors": []
     },
     {
@@ -2560,9 +4473,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "b715d3db-9cd2-484b-948d-e7d5555fdd79",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1328,
+      "durationMs": 1439,
       "errors": []
     },
     {
@@ -2576,9 +4498,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "8d5985f5-15d2-471a-8398-e698cde0db49",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1311,
+      "durationMs": 1366,
       "errors": []
     },
     {
@@ -2597,9 +4528,18 @@
       "typedResult": "action-result",
       "observableEffect": "state-or-visible-artifact-changed",
       "persistence": "local store or visible runtime state observed",
-      "animation": "director-ghost-cursor completed",
+      "animation": {
+        "version": 1,
+        "traceId": "992a15ba-756c-4e65-bc75-83b388a95ba5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1295,
+      "durationMs": 1397,
       "errors": []
     },
     {
@@ -2641,6 +4581,21 @@
       "schema": "pass",
       "runtimeHandler": "invoked",
       "typedResult": "move",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsFunction",
+      "platform": "extension",
+      "utterance": "save this text as a one-step Function",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -2768,7 +4723,7 @@
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "extension-action",
+      "typedResult": "external-write-receipt",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -2785,7 +4740,7 @@
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "extension-action",
+      "typedResult": "external-write-receipt",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -2802,7 +4757,7 @@
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "extension-action",
+      "typedResult": "external-write-receipt",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -2835,6 +4790,89 @@
       "schema": "pass",
       "runtimeHandler": "invoked",
       "typedResult": "extension-import-review",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "browseExternalPackages",
+      "platform": "extension",
+      "utterance": "please browse verified Cognitive Packages in the extension",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-list",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "installExternalPackage",
+      "platform": "extension",
+      "utterance": "please verify and install a signed package in extension storage",
+      "args": {
+        "manifest": {
+          "columns": 2
+        }
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-install-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitiveStudio",
+      "platform": "extension",
+      "utterance": "please open a preserved web handoff for complex cognitive workflow review",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "teachExternalPersonalCommand",
+      "platform": "extension",
+      "utterance": "please save a scoped personal command through shared extension storage",
+      "args": {
+        "trigger": "fixture",
+        "command": "fixture",
+        "scope": "session"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitivePullRequest",
+      "platform": "extension",
+      "utterance": "please open a grounded extraction proposal from explicit selected page material",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "director-ghost-cursor completed",
@@ -2976,6 +5014,83 @@
       "args": {
         "a": "fixture",
         "b": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "invokeExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please invoke a canonical Primitive Move through the shared external action stack",
+      "args": {
+        "primitive": "Branch",
+        "targets": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "reorderExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please reorder a synced Primitive Move",
+      "args": {
+        "primitive": "fixture",
+        "to": 1
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalGenerationBranches",
+      "platform": "extension",
+      "utterance": "please persist branch-specific generation perspectives for a synced artifact",
+      "args": {
+        "artifact": "fixture",
+        "branchSpecs": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "armExternalMerge",
+      "platform": "extension",
+      "utterance": "please arm a non-destructive Merge preview for explicit external material",
+      "args": {
+        "targets": [
+          "claim"
+        ]
       },
       "planner": "canonical extension plan",
       "schema": "pass",

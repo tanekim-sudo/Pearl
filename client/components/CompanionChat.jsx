@@ -5,9 +5,19 @@ import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
 import { publicCompanionError } from "../lib/companion-command-ledger.js";
 import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import {
+  COMPANION_MODES,
+  createRunLedger,
+  normalizeGoal,
+  persistRunLedger,
+  recommendCompanionMode,
+  restoreRunLedger,
+  transitionRun,
+} from "../lib/companion-harness.js";
+import {
   adoptAnonymousCompanionMemory,
   applyInterviewAnswer,
   clearCompanionMemory,
+  forgetCompanionMemory,
   loadCompanionMemory,
   nextInterviewPrompt,
   pauseCompanionInterview,
@@ -19,6 +29,8 @@ import {
 
 const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+const MODE_KEY = "lens.companion.mode.v1";
+const PENDING_PLAN_KEY = "lens.companion.pending-plan.v1";
 
 /**
  * Companion — a voice/text helper that answers by DOING: every reply can play
@@ -36,6 +48,7 @@ export default function CompanionChat({
 }) {
   const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
+  const [foreground, setForeground] = useState(false);
   const [messages, setMessages] = useState(() => [
     {
       role: "companion",
@@ -48,6 +61,13 @@ export default function CompanionChat({
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState("");
   const [activePlan, setActivePlan] = useState(null);
+  const [planDraft, setPlanDraft] = useState("");
+  const [planEditing, setPlanEditing] = useState(false);
+  const [reviewSelections, setReviewSelections] = useState({});
+  const [mode, setMode] = useState(() => {
+    const stored = typeof localStorage !== "undefined" ? localStorage.getItem(MODE_KEY) : null;
+    return COMPANION_MODES.includes(stored) ? stored : "agent";
+  });
   const [listening, setListening] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [director, setDirector] = useState(null);
@@ -56,12 +76,31 @@ export default function CompanionChat({
   const voiceSessionRef = useRef(null);
   const voiceGenerationRef = useRef(0);
   const composingRef = useRef(false);
+  const planDecisionRef = useRef(null);
+  const planRunRef = useRef(null);
   const submitGuardRef = useRef(null);
   if (!submitGuardRef.current) submitGuardRef.current = createCompanionSubmitGuard();
   const openRef = useRef(open);
   openRef.current = open;
 
   useEffect(() => subscribeDirector(setDirector), []);
+
+  useEffect(() => {
+    try {
+      const pending = JSON.parse(localStorage.getItem(PENDING_PLAN_KEY) || "null");
+      if (pending?.plan?.preview && pending?.rawText) {
+        setActivePlan({ ...pending.plan, resumeText: pending.rawText });
+        setPlanDraft(JSON.stringify(pending.plan.plan || {}, null, 2));
+        setReviewSelections(Object.fromEntries(
+          (pending.plan.review?.sections || []).map((section) => [section.id, section.selected !== false])
+        ));
+        const ledger = restoreRunLedger(localStorage);
+        planRunRef.current = ledger.runs.find((run) => run.runId === ledger.activeRunId) || null;
+      }
+    } catch {
+      localStorage.removeItem(PENDING_PLAN_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     const next = userId ? adoptAnonymousCompanionMemory(userId) : loadCompanionMemory(null);
@@ -127,11 +166,36 @@ export default function CompanionChat({
     setPhase("understanding");
     const commandOptions = {
       signal: run.signal,
+      mode,
+      goal: normalizeGoal(text),
+      planApproved: envelope.planApproved === true,
       onPhase(nextPhase) {
         if (!run.signal.aborted) setPhase(nextPhase);
       },
       onPlan(plan) {
-        if (!run.signal.aborted) setActivePlan(plan);
+        if (run.signal.aborted) return Promise.resolve({ decision: "reject", reason: "cancelled" });
+        if (!plan) {
+          localStorage.removeItem(PENDING_PLAN_KEY);
+          setActivePlan(null);
+          setPlanDraft("");
+          setPlanEditing(false);
+          setReviewSelections({});
+          return Promise.resolve({ decision: "closed" });
+        }
+        setActivePlan(plan);
+        setPlanDraft(JSON.stringify(plan.plan || {}, null, 2));
+        setPlanEditing(false);
+        setReviewSelections(Object.fromEntries(
+          (plan.review?.sections || []).map((section) => [section.id, section.selected !== false])
+        ));
+        if (!plan.preview) return Promise.resolve({ decision: "accept", plan: plan.plan || null });
+        let pendingRun = createRunLedger(normalizeGoal(text), plan.plan || plan, { mode });
+        pendingRun = transitionRun(pendingRun, { status: "awaiting-approval" });
+        planRunRef.current = persistRunLedger(pendingRun, localStorage);
+        localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ version: 1, rawText: text, mode, plan }));
+        return new Promise((resolve) => {
+          planDecisionRef.current = resolve;
+        });
       },
     };
     try {
@@ -197,6 +261,13 @@ export default function CompanionChat({
         speak(result.text);
       }
     } catch (err) {
+      if (typeof window !== "undefined" && import.meta.env?.DEV) {
+        window.__lensCompanionLastError = {
+          name: err?.name || "Error",
+          message: err?.message || String(err),
+          stack: err?.stack || null,
+        };
+      }
       if (run.signal.aborted || err?.name === "AbortError") {
         setDraft(text);
         return;
@@ -216,12 +287,66 @@ export default function CompanionChat({
   }
 
   function cancelActiveWork() {
+    planDecisionRef.current?.({ decision: "reject", reason: "user rejected plan" });
+    planDecisionRef.current = null;
     const cancelled = submitGuardRef.current.cancel();
     if (cancelled) setDraft(cancelled.text);
     setBusy(false);
     setPhase("");
     setActivePlan(null);
     stopDirector();
+  }
+
+  function decidePlan(decision) {
+    let editedPlan = activePlan?.plan || null;
+    if (decision === "accept" && planEditing) {
+      try {
+        editedPlan = JSON.parse(planDraft);
+      } catch {
+        setMessages((current) => [...current, { role: "companion", text: "Plan JSON is invalid. Fix it or reject the plan.", error: true }]);
+        return;
+      }
+    }
+    if (!planDecisionRef.current && activePlan?.resumeText) {
+      if (planRunRef.current) {
+        planRunRef.current = transitionRun(planRunRef.current, {
+          status: decision === "accept" ? "approved" : "cancelled",
+          stepId: decision === "accept" ? "plan-approval" : null,
+          stepStatus: decision === "accept" ? "completed" : null,
+          approval: { decision: decision === "accept" ? "accepted" : "rejected", scope: "plan" },
+        });
+        persistRunLedger(planRunRef.current, localStorage);
+      }
+      localStorage.removeItem(PENDING_PLAN_KEY);
+      setActivePlan(null);
+      setPlanEditing(false);
+      if (decision === "accept") void send(activePlan.resumeText, { source: "plan-resume", planApproved: true });
+      return;
+    }
+    planDecisionRef.current?.({
+      decision,
+      plan: editedPlan,
+      selectedSectionIds: Object.entries(reviewSelections)
+        .filter(([, selected]) => selected)
+        .map(([id]) => id),
+      rejectedSectionIds: Object.entries(reviewSelections)
+        .filter(([, selected]) => !selected)
+        .map(([id]) => id),
+    });
+    planDecisionRef.current = null;
+    if (planRunRef.current) {
+      planRunRef.current = transitionRun(planRunRef.current, {
+        status: decision === "accept" ? "approved" : "cancelled",
+        stepId: decision === "accept" ? "plan-approval" : null,
+        stepStatus: decision === "accept" ? "completed" : null,
+        approval: { decision: decision === "accept" ? "accepted" : "rejected", scope: "plan" },
+      });
+      persistRunLedger(planRunRef.current, localStorage);
+    }
+    localStorage.removeItem(PENDING_PLAN_KEY);
+    if (decision !== "accept") setActivePlan(null);
+    setPlanEditing(false);
+    setReviewSelections({});
   }
 
   function endVoiceSession({ send: shouldSend } = { send: true }) {
@@ -322,10 +447,21 @@ export default function CompanionChat({
   );
 
   const playing = !!director?.running;
+  const modeRecommendation = draft.trim()
+    ? recommendCompanionMode(normalizeGoal(draft), { autonomy: memory.preferences?.autonomy })
+    : null;
 
   if (!open) {
     return (
-      <button type="button" className="companion-fab" onClick={() => setOpen(true)} title="Ask the companion">
+      <button
+        type="button"
+        className="companion-fab"
+        onClick={() => {
+          setForeground(true);
+          setOpen(true);
+        }}
+        title="Ask the companion"
+      >
         <span className="companion-fab-orb" />
         <span className="companion-fab-label">companion</span>
       </button>
@@ -333,7 +469,10 @@ export default function CompanionChat({
   }
 
   return (
-    <div className={"companion-panel" + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}>
+    <div
+      className={"companion-panel" + (foreground ? " foreground" : "") + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}
+      onPointerDown={() => setForeground(true)}
+    >
       <div className="companion-head">
         <span className="companion-head-orb" />
         <span className="companion-head-title">companion</span>
@@ -351,9 +490,48 @@ export default function CompanionChat({
         >
           {voiceOut ? "voice on" : "voice off"}
         </button>
-        <button type="button" className="companion-head-btn" onClick={() => setOpen(false)} title="Close">
+        <button
+          type="button"
+          className="companion-head-btn"
+          onClick={() => {
+            setForeground(false);
+            setOpen(false);
+          }}
+          title="Close"
+        >
           ×
         </button>
+      </div>
+      <div className="companion-mode-bar">
+        <label>
+          mode
+          <select
+            aria-label="Companion mode"
+            value={mode}
+            onChange={(event) => {
+              const next = event.target.value;
+              setMode(next);
+              localStorage.setItem(MODE_KEY, next);
+            }}
+          >
+            <option value="ask">Ask · inspect only</option>
+            <option value="plan">Plan · approve before changes</option>
+            <option value="agent">Agent · execute reversible work</option>
+            <option value="debug">Debug · reproduce and verify</option>
+          </select>
+        </label>
+        {modeRecommendation && modeRecommendation.mode !== mode && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode(modeRecommendation.mode);
+              localStorage.setItem(MODE_KEY, modeRecommendation.mode);
+            }}
+            title={modeRecommendation.reasons.join(" · ")}
+          >
+            use {modeRecommendation.mode}
+          </button>
+        )}
       </div>
 
       {memoryOpen && (
@@ -373,6 +551,25 @@ export default function CompanionChat({
             />
           </label>
           <small>{memory.goals.length} goals · {memory.actions.length} recent action summaries</small>
+          {memory.memories?.length > 0 && (
+            <div className="companion-memory-entries">
+              {memory.memories.map((entry) => (
+                <div key={entry.id} className="companion-memory-entry">
+                  <span>{entry.value}</span>
+                  <small>
+                    {entry.scope} · {Math.round(entry.confidence * 100)}% · {entry.provenance?.kind || "unknown source"}
+                    {entry.expiresAt ? ` · expires ${entry.expiresAt}` : ""}
+                  </small>
+                  <button
+                    type="button"
+                    onClick={() => setMemory(forgetCompanionMemory(userId, entry.id))}
+                  >
+                    forget
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <label>
             autonomy
             <select
@@ -408,7 +605,56 @@ export default function CompanionChat({
                 <span key={`${step}-${index}`}>{step}</span>
               ))}
             </div>
-            <button type="button" onClick={cancelActiveWork}>stop</button>
+            {(activePlan.expectedEffects?.length > 0 || activePlan.cost) && (
+              <details className="companion-plan-evidence">
+                <summary>scope, expected effects, and cost</summary>
+                {activePlan.expectedEffects?.length > 0 && (
+                  <ul>{activePlan.expectedEffects.map((effect, index) => <li key={index}>{String(effect)}</li>)}</ul>
+                )}
+                {activePlan.cost && <pre>{JSON.stringify(activePlan.cost, null, 2)}</pre>}
+              </details>
+            )}
+            {activePlan.review?.sections?.length > 0 && (
+              <section className="companion-semantic-review" aria-label="Semantic change review">
+                <strong>semantic review</strong>
+                <p>{activePlan.review.summary || "Choose the exact changes to accept."}</p>
+                {activePlan.review.sections.map((section) => (
+                  <label key={section.id} className="companion-review-hunk">
+                    <input
+                      type="checkbox"
+                      checked={reviewSelections[section.id] !== false}
+                      onChange={(event) => setReviewSelections((current) => ({
+                        ...current,
+                        [section.id]: event.target.checked,
+                      }))}
+                    />
+                    <span>
+                      <b>{section.label || section.id}</b>
+                      <small>{section.scope || "object"} · {section.kind || "content"} · {section.targetId || "workspace"}</small>
+                      <del>{typeof section.before === "string" ? section.before : JSON.stringify(section.before)}</del>
+                      <ins>{typeof section.after === "string" ? section.after : JSON.stringify(section.after)}</ins>
+                    </span>
+                  </label>
+                ))}
+                {activePlan.review.checkpointId && <small>restore: {activePlan.review.checkpointId}</small>}
+              </section>
+            )}
+            <details className="companion-plan-evidence">
+              <summary>typed plan and approval scope</summary>
+              <pre>{JSON.stringify(activePlan.plan || {}, null, 2)}</pre>
+            </details>
+            {planEditing && (
+              <textarea
+                aria-label="Editable typed plan"
+                value={planDraft}
+                onChange={(event) => setPlanDraft(event.target.value)}
+              />
+            )}
+            <div className="companion-plan-actions">
+              <button type="button" data-testid="companion-plan-accept" onClick={() => decidePlan("accept")}>accept</button>
+              <button type="button" data-testid="companion-plan-edit" onClick={() => setPlanEditing((value) => !value)}>{planEditing ? "close edit" : "edit"}</button>
+              <button type="button" data-testid="companion-plan-reject" onClick={() => decidePlan("reject")}>reject</button>
+            </div>
           </div>
         )}
         {messages.map((m, i) => (

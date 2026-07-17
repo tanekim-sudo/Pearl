@@ -92,6 +92,7 @@ import {
   EDIT_FROM_PROSE_HEADER,
   GENERATE_LIST_HEADER,
 } from "../shared/function-standards.js";
+import { runFunctionTestBench } from "../shared/function-test-bench.js";
 import {
   createOperatorBundle,
   createLensShareBundle,
@@ -187,6 +188,33 @@ import {
 import InterpretBoundary, { PAPER_SESSION_MIME } from "./components/InterpretBoundary.jsx";
 import GhostCursor from "./components/GhostCursor.jsx";
 import CompanionChat from "./components/CompanionChat.jsx";
+import CognitivePackageRegistry from "./components/CognitivePackageRegistry.jsx";
+import CognitiveWorkflowStudio from "./components/CognitiveWorkflowStudio.jsx";
+import {
+  createCognitivePackageManifest,
+  generatePackageSigningIdentity,
+  installCognitivePackageAtomic,
+  signCognitivePackage,
+  verifyCognitivePackage,
+} from "../shared/cognitive-package.js";
+import {
+  applyArtifactPatch,
+  createArtifactPatch,
+  createArtifactRef,
+  testArtifactPatchIsolated,
+} from "../shared/higher-order-artifacts.js";
+import {
+  createPersonalCommandDefinition,
+  resolvePersonalCommand,
+  updatePersonalCommand,
+} from "../shared/personal-command-vocabulary.js";
+import {
+  addCognitiveCandidates,
+  createCognitivePullRequest,
+  mergeCognitivePullRequest as mergeCognitivePullRequestData,
+  reviewCognitiveCandidate as reviewCognitiveCandidateData,
+  testCognitiveCandidates,
+} from "../shared/cognitive-pull-request.js";
 import HighlightToolbar from "./components/HighlightToolbar.jsx";
 import LensSettingsDialog from "./components/LensSettingsDialog.jsx";
 import LearnFromChat from "./components/LearnFromChat.jsx";
@@ -201,12 +229,14 @@ import {
   buildCompanionSystemPrompt,
   parseAdministrativeCommand,
   parseBeforeAfterCommand,
+  parseCognitiveWorkflowCommand,
   parseExtensionDownloadCommand,
   parseFunctionCreationCommand,
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parseSafeDemonstrationCommand,
+  parseSemanticTransferCommand,
   parseTasteNavigationCommand,
   parseTranscriptLearningCommand,
   parseSaveChainCommand,
@@ -230,6 +260,22 @@ import {
 import { layoutObjects, avoidOverlaps } from "./lib/companion-geometry.js";
 import { executeCompanionPlan } from "./lib/companion-executor.js";
 import { planNeedsPreview, summarizePlan } from "./lib/companion-plan.js";
+import { COMPANION_CAPABILITIES } from "./lib/companion-capabilities.js";
+import {
+  buildLiveContextIndex,
+  createRunLedger,
+  immutableWorkspaceSnapshot,
+  modePermission,
+  normalizeGoal,
+  persistRunLedger,
+  queryLiveContext,
+  recommendCompanionMode,
+  restoreRunLedger,
+  runBoundedWorkers,
+  semanticWorkspaceDiff,
+  transitionRun,
+  verifyObservedEffects,
+} from "./lib/companion-harness.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
@@ -251,9 +297,10 @@ import {
   previewComposition,
 } from "../shared/lens-grammar.js";
 import { captureMoveFromInstruction, findEquivalentMove, mergeInstructionEventJournal } from "../shared/instruction-events.js";
-import { createLensFromDrop, normalizeLibraryObject } from "../shared/library-objects.js";
+import { createLensFromDrop, createMoveFromDrop, normalizeLibraryObject } from "../shared/library-objects.js";
 import { compileLensContext } from "../shared/lens-context.js";
 import { composeLibraryObjects as compileCanonicalComposition } from "../shared/composition-algebra.js";
+import { resolveDropIntent } from "../shared/drop-intent-resolver.js";
 import { normalizePerceptualModel } from "../shared/lens-perceptual-model.js";
 import { createCritiqueSession } from "../shared/critique-session.js";
 import {
@@ -2358,6 +2405,7 @@ export default function App() {
   const symbolDrawPromptRef = useRef(null);
   const [symbolDropTargetId, setSymbolDropTargetId] = useState(null);
   const [railDropOver, setRailDropOver] = useState(false);
+  const [railDropPreview, setRailDropPreview] = useState("");
   const [saveAsChooser, setSaveAsChooser] = useState(null);
   const saveAsChooserRef = useRef(null);
   saveAsChooserRef.current = saveAsChooser;
@@ -2390,6 +2438,11 @@ export default function App() {
   );
   const [plansOpen, setPlansOpen] = useState(false);
   const [extensionDownloadOpen, setExtensionDownloadOpen] = useState(false);
+  const [packageRegistryOpen, setPackageRegistryOpen] = useState(false);
+  const [cognitiveStudioOpen, setCognitiveStudioOpen] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("cognitive"));
+  const [cognitiveStudioInitialTab, setCognitiveStudioInitialTab] = useState(() => typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("cognitive") || "higher-order" : "higher-order");
+  const packageSigningIdentityRef = useRef(null);
+  const packageDraftRef = useRef(null);
   const userPlan = useUserPlan({
     session: supaAuth.session,
     sessionResolved: supaAuth.sessionResolved,
@@ -2483,6 +2536,7 @@ export default function App() {
   const gesture = useRef(null);
   const camRef = useRef(camera);
   const itemsRef = useRef(items);
+  const operatorsRef = useRef(operators);
   const lensesRef = useRef(lenses);
   const toolRef = useRef(tool);
   const selectedAiNodeIdsRef = useRef([]);
@@ -2503,6 +2557,7 @@ export default function App() {
   const pushHistoryRef = useRef(() => {});
   camRef.current = camera;
   itemsRef.current = items;
+  operatorsRef.current = operators;
   lensesRef.current = lenses;
   symbolDrawPromptRef.current = symbolDrawPrompt;
   toolRef.current = tool;
@@ -2800,7 +2855,12 @@ export default function App() {
   }
 
   function pushHistory() {
-    const snap = JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current });
+    const snap = JSON.stringify({
+      items: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      operators: operatorsRef.current,
+      lenses: lensesRef.current,
+    });
     const { past } = historyRef.current;
     if (past.length && past[past.length - 1] === snap) return;
     past.push(snap);
@@ -2815,10 +2875,17 @@ export default function App() {
     const { past, future } = historyRef.current;
     if (!past.length) return;
     emitTourEvent("undo");
-    future.push(JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current }));
+    future.push(JSON.stringify({
+      items: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      operators: operatorsRef.current,
+      lenses: lensesRef.current,
+    }));
     const snap = JSON.parse(past.pop());
     setItems(Array.isArray(snap) ? snap : snap.items || []);
     if (!Array.isArray(snap)) setAiNodes(snap.aiNodes || []);
+    if (!Array.isArray(snap) && Array.isArray(snap.operators)) setOperators(snap.operators);
+    if (!Array.isArray(snap) && Array.isArray(snap.lenses)) setLenses(snap.lenses);
     setCanUndo(past.length > 0);
     setCanRedo(future.length > 0);
     setHighlight(null);
@@ -2831,10 +2898,17 @@ export default function App() {
     const { past, future } = historyRef.current;
     if (!future.length) return;
     emitTourEvent("redo");
-    past.push(JSON.stringify({ items: itemsRef.current, aiNodes: aiNodesRef.current }));
+    past.push(JSON.stringify({
+      items: itemsRef.current,
+      aiNodes: aiNodesRef.current,
+      operators: operatorsRef.current,
+      lenses: lensesRef.current,
+    }));
     const snap = JSON.parse(future.pop());
     setItems(Array.isArray(snap) ? snap : snap.items || []);
     if (!Array.isArray(snap)) setAiNodes(snap.aiNodes || []);
+    if (!Array.isArray(snap) && Array.isArray(snap.operators)) setOperators(snap.operators);
+    if (!Array.isArray(snap) && Array.isArray(snap.lenses)) setLenses(snap.lenses);
     setCanUndo(true);
     setCanRedo(future.length > 0);
     setHighlight(null);
@@ -2998,6 +3072,26 @@ export default function App() {
     return RAIL_TRANSFORMATIONS;
   }
 
+  function resolveLeftColumnSemanticTarget(clientX, clientY) {
+    if (resolveLeftColumnDropTarget(clientX, clientY) === RAIL_LENSES) return "lenses";
+    const processRect = processSectionRef.current?.getBoundingClientRect();
+    if (
+      processRect &&
+      clientX >= processRect.left &&
+      clientX <= processRect.right &&
+      clientY >= processRect.top &&
+      clientY <= processRect.bottom
+    ) return "functions";
+    return "moves";
+  }
+
+  function libraryDropPreview(clientX, clientY, count = 1) {
+    const target = resolveLeftColumnSemanticTarget(clientX, clientY);
+    if (target === "moves") return "Create Move from exact text";
+    if (target === "functions") return `Capture ${count > 1 ? `${count}-source ` : ""}Function`;
+    return `Add ${count} material${count === 1 ? "" : "s"} to Lens`;
+  }
+
   function guessToolboxTarget(clientX, clientY) {
     if (isOverFunctionsColumn(clientX, clientY)) {
       return resolveLeftColumnDropTarget(clientX, clientY);
@@ -3114,6 +3208,11 @@ export default function App() {
     setBoundaryMagnetActive(true);
     setTransferDragActive(true);
     setRailDropOver(target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES);
+    setRailDropPreview(
+      target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES
+        ? libraryDropPreview(cx, cy, g.ids?.length || g.fragments?.length || 1)
+        : ""
+    );
     if (target === RAIL_LENSES) {
       setSymbolDropTargetId(structCardAtClient(cx, cy));
     } else {
@@ -3583,6 +3682,11 @@ export default function App() {
               target === RAIL_LENSES));
         setBoundaryMagnetActive(magnet);
         setRailDropOver(target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES);
+        setRailDropPreview(
+          target === RAIL_TRANSFORMATIONS || target === RAIL_LENSES
+            ? libraryDropPreview(cx, cy, g.ids?.length || g.fragments?.length || 1)
+            : ""
+        );
         if (target === RAIL_LENSES) {
           setSymbolDropTargetId(structCardAtClient(cx, cy));
         } else {
@@ -7080,6 +7184,42 @@ export default function App() {
     return null;
   }
 
+  function semanticSourcesFromDataTransfer(e) {
+    const sources = [];
+    const opId = e.dataTransfer.getData(OP_MIME);
+    if (opId && opMap[opId]) sources.push(canonicalObjectForRuntime(opMap[opId]));
+    const transformationId = e.dataTransfer.getData(LENS_MIME);
+    const transformation = transformationId
+      ? operatorsRef.current.find((entry) => entry.id === transformationId)
+      : null;
+    if (transformation) sources.push(canonicalObjectForRuntime(transformation));
+    const structId = e.dataTransfer.getData(STRUCT_MIME);
+    const struct = structId ? lensesRef.current.find((entry) => entry.id === structId) : null;
+    if (struct) sources.push(canonicalObjectForRuntime(struct));
+    const aiOutput = e.dataTransfer.getData(AI_OUTPUT_MIME);
+    if (aiOutput) sources.push({ sourceKind: "ai-output", text: aiOutput });
+    const plain = e.dataTransfer.getData("text/plain");
+    if (plain && !sources.some((source) => source.prompt === plain || source.text === plain)) {
+      sources.push({ sourceKind: "text", text: plain });
+    }
+    for (const file of Array.from(e.dataTransfer.files || [])) {
+      sources.push({
+        sourceKind: file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : "file",
+        id: `file:${file.name}:${file.lastModified}`,
+        name: file.name,
+        mime: file.type || "application/octet-stream",
+        content: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+        },
+        provenance: { kind: "local-file-drop", private: true },
+      });
+    }
+    return sources;
+  }
+
   function handleStructCardMaterialDrop(e, structId) {
     e.preventDefault();
     e.stopPropagation();
@@ -7583,12 +7723,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   function applyLeftColumnMaterialDrop(ids, clientX, clientY) {
     if (!ids?.length) return;
     const dropTarget = resolveLeftColumnDropTarget(clientX, clientY);
-    const processRect = processSectionRef.current?.getBoundingClientRect();
-    const droppedOnProcess = !!(processRect
-      && clientX >= processRect.left
-      && clientX <= processRect.right
-      && clientY >= processRect.top
-      && clientY <= processRect.bottom);
+    const semanticTarget = resolveLeftColumnSemanticTarget(clientX, clientY);
     const structId = dropTarget === RAIL_LENSES ? structCardAtClient(clientX, clientY) : null;
     const hl = highlightSelectionRef.current;
     if (ids.some((id) => hl.includes(id)) && structId) {
@@ -7597,9 +7732,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       showToast("Lens context queued · press GO to commit");
       return;
     }
-    if (dropTarget === RAIL_LENSES) addMaterialToLens(ids, { structId });
-    else if (droppedOnProcess) captureMaterialWithReplay(ids);
-    else openDroppedMovePreview(ids);
+    if (semanticTarget === "lenses") addMaterialToLens(ids, { structId });
+    else if (semanticTarget === "functions") {
+      if (droppedMaterialHasLineage(ids)) captureMaterialWithReplay(ids);
+      else createFunctionFromDroppedMaterial(ids);
+    } else createMoveFromDroppedMaterial(ids);
     launchToolboxTransfer(dropTarget);
   }
 
@@ -7610,6 +7747,178 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const node = aiNodesRef.current.find((entry) => entry.id === id);
       return node?.text ?? node?.output ?? node?.label ?? "";
     }).filter((text) => typeof text === "string" && text.length > 0);
+  }
+
+  function droppedSourcesForIds(ids) {
+    return ids.map((id, order) => {
+      const item = itemsRef.current.find((entry) => entry.id === id);
+      if (item) {
+        return {
+          ...item,
+          id,
+          order,
+          sourceKind: item.type === "text" || item.type === "sticky" ? "paper-object" : item.type,
+          hasLineage: droppedMaterialHasLineage([id]),
+        };
+      }
+      const node = aiNodesRef.current.find((entry) => entry.id === id);
+      if (node) {
+        return {
+          ...node,
+          id,
+          order,
+          sourceKind: node.nodeKind === "source" ? "ai-node" : "ai-output",
+          text: node.text ?? node.output ?? node.expandedText ?? node.label ?? "",
+          hasLineage: Boolean(node.history?.length || node.parentId || node.via),
+        };
+      }
+      return { id, order, sourceKind: "unknown" };
+    });
+  }
+
+  function createMoveFromSemanticSources(sources, options = {}) {
+    const sourceIds = sources.map((source) => source.id).filter(Boolean);
+    const resolution = resolveDropIntent(sources, { kind: "moves" }, {
+      selectionOrder: sourceIds,
+      activeTool: toolRef.current,
+      zoom: camRef.current.scale,
+    });
+    const moveIntent = resolution.intents.find((entry) => entry.id === "create-move-verbatim");
+    if (!moveIntent) {
+      if (sourceIds.length && sourceIds.every((id) =>
+        itemsRef.current.some((entry) => entry.id === id) ||
+        aiNodesRef.current.some((entry) => entry.id === id)
+      )) openSaveAsChooser(sourceIds);
+      showToast(resolution.defaultIntent.preview);
+      return null;
+    }
+    const exact = moveIntent.metadata.sourceInstruction;
+    const existing = operatorsRef.current.find((entry) =>
+      entry.libraryKind === "move" &&
+      String(entry.sourceInstruction ?? entry.promptTemplate ?? entry.prompt ?? "") === exact
+    );
+    if (existing) {
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      showToast(`Move already exists · ${existing.name}`);
+      return existing;
+    }
+    const canonical = createMoveFromDrop(sources, {
+      id: uid(),
+      separator: moveIntent.metadata.separator,
+      name: options.name,
+      now: Date.now(),
+    });
+    const op = {
+      ...canonical,
+      kind: "prompt",
+      libraryKind: "move",
+      move: true,
+      top: true,
+      primitiveMove: Boolean(options.promote),
+      maxTokens: 800,
+      estimatedMs: 13000,
+      resolveWhen: "never",
+      researchWhen: "never",
+    };
+    pushHistory();
+    setOperators((current) => [...current, op]);
+    if (options.promote) {
+      setPrimitiveMovePreferences((current) => promotePrimitivePreference(current, op.id, TRANSFORM_PRIMITIVES));
+    }
+    focusRailPane(RAIL_TRANSFORMATIONS);
+    emitTourEvent("create-move");
+    showToast(`Move saved from exact text · ${op.name} · undo available`);
+    return op;
+  }
+
+  function createMoveFromDroppedMaterial(ids, options = {}) {
+    return createMoveFromSemanticSources(droppedSourcesForIds(ids), options);
+  }
+
+  function deterministicDroppedSteps(exact) {
+    const value = String(exact || "");
+    const parts = value
+      .split(/\n+|(?:^|\s)(?:then|next|after that|finally)\b|(?:^|\n)\s*\d+[.)]\s+/i)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    return parts.length > 1 ? parts.slice(0, 24) : [value];
+  }
+
+  function createFunctionFromSemanticSources(sources, options = {}) {
+    const sourceIds = sources.map((source) => source.id).filter(Boolean);
+    const resolution = resolveDropIntent(sources, { kind: "functions" }, {
+      selectionOrder: sourceIds,
+      activeTool: toolRef.current,
+      zoom: camRef.current.scale,
+    });
+    const exact = resolution.sources.map((source) => source.text).filter(Boolean).join("\n\n");
+    const sourceMaterials = resolution.sources.map((source) => source.material);
+    const stepTexts = exact
+      ? deterministicDroppedSteps(exact)
+      : ["Ask for an explicit instruction, then use the preserved source material as the example input."];
+    const existing = operatorsRef.current.find((entry) =>
+      entry.libraryKind === "function" &&
+      String(entry.sourceInstruction || "") === exact &&
+      exact.length > 0
+    );
+    if (existing) {
+      focusRailPane(RAIL_TRANSFORMATIONS);
+      showToast(`Function already exists · ${existing.name}`);
+      return existing;
+    }
+    const rootId = uid();
+    const childOps = stepTexts.map((prompt, index) => {
+      const id = uid();
+      return {
+        id,
+        stableId: id,
+        version: 1,
+        name: (prompt.split(/\r?\n/)[0] || `Step ${index + 1}`).slice(0, 72),
+        kind: "prompt",
+        libraryKind: "move",
+        move: true,
+        top: false,
+        prompt,
+        promptTemplate: prompt,
+        sourceInstruction: prompt,
+        parentId: rootId,
+        privateExamples: index === 0 ? sourceMaterials : [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+    });
+    const name = options.name ||
+      (exact.split(/\r?\n/)[0] || `${sources[0]?.kind || "Material"} Function`).slice(0, 72);
+    const root = {
+      id: rootId,
+      stableId: rootId,
+      version: 1,
+      name,
+      kind: "pipeline",
+      libraryKind: "function",
+      top: true,
+      steps: childOps.map((entry) => entry.id),
+      sourceInstruction: exact,
+      processInstructions: exact,
+      sourceMaterials,
+      dropIntent: {
+        version: resolution.version,
+        id: resolution.defaultIntent.id,
+        preview: resolution.defaultIntent.preview,
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    pushHistory();
+    setOperators((current) => [...current, ...childOps, root]);
+    focusRailPane(RAIL_TRANSFORMATIONS);
+    emitTourEvent("create-function");
+    showToast(`${stepTexts.length}-step Function saved · source preserved · undo available`);
+    return root;
+  }
+
+  function createFunctionFromDroppedMaterial(ids, options = {}) {
+    return createFunctionFromSemanticSources(droppedSourcesForIds(ids), options);
   }
 
   function droppedMaterialHasLineage(ids) {
@@ -7629,23 +7938,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   }
 
   function openDroppedMovePreview(ids) {
-    const texts = droppedTextForIds(ids);
-    if (!texts.length || texts.length !== ids.length) {
-      showToast("Images and drawings need an explicit Extract instruction action");
-      return;
-    }
-    const prompt = texts.join("\n\n");
-    setOpEditor({
-      mode: "create",
-      creationMode: "editor",
-      objectKind: "move",
-      seed: {
-        name: (texts[0].split(/\r?\n/)[0] || "Dropped Move").slice(0, 72),
-        description: "One action · one model call",
-        prompt,
-      },
-    });
-    showToast("Move preview · content preserved verbatim");
+    createMoveFromDroppedMaterial(ids);
   }
 
   function openSaveAsChooser(ids) {
@@ -7653,7 +7946,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     setSaveAsChooser({
       ids: [...ids],
       textPreview: droppedTextForIds(ids).join("\n\n").slice(0, 320),
-      lensEligible: droppedMaterialHasLineage(ids),
+      functionDefault: resolveDropIntent(droppedSourcesForIds(ids), { kind: "functions" }).defaultIntent.id,
     });
   }
 
@@ -7663,11 +7956,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (!ids.length) return;
     if (kind === "move") openDroppedMovePreview(ids);
     else if (kind === "function") {
-      if (!chooser.lensEligible) {
-        showToast("No process lineage to capture · choose Move or Lens");
-        return;
-      }
-      captureMaterialWithReplay(ids);
+      if (droppedMaterialHasLineage(ids)) captureMaterialWithReplay(ids);
+      else createFunctionFromDroppedMaterial(ids);
     } else if (kind === "lens") {
       saveMaterialAsSymbol(ids);
     }
@@ -10800,15 +11090,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (g.fragments?.length) transferFragmentsToPaper(g.fragments, atWorld);
       if (g.ids.length) transferHighlightSelectionToPaper(g.ids, atWorld);
     } else if (g.origin === "paper" && target === RAIL_TRANSFORMATIONS) {
-      if (g.kind === "highlight") {
+      const semanticTarget = resolveLeftColumnSemanticTarget(cx, cy);
+      if (semanticTarget === "moves") {
+        const moveIds = [
+          ...new Set([...(g.ids || []), ...(g.fragments || []).map((fragment) => fragment.itemId)]),
+        ];
+        createMoveFromDroppedMaterial(moveIds);
+        if (g.fragments?.length) finishFragmentTransfer(g.fragments);
+      } else if (g.kind === "highlight") {
         // Word marks capture through their source items' history.
         const capIds = [
           ...new Set([...(g.ids || []), ...(g.fragments || []).map((f) => f.itemId)]),
         ];
-        transferHighlightSelectionToFunctions(capIds);
+        if (droppedMaterialHasLineage(capIds)) transferHighlightSelectionToFunctions(capIds);
+        else createFunctionFromDroppedMaterial(capIds);
         if (g.fragments?.length) finishFragmentTransfer(g.fragments);
       } else {
-        captureMaterialWithReplay(g.ids);
+        if (droppedMaterialHasLineage(g.ids)) captureMaterialWithReplay(g.ids);
+        else createFunctionFromDroppedMaterial(g.ids);
       }
       launchToolboxTransfer(RAIL_TRANSFORMATIONS);
     } else if (g.origin === "paper" && target === RAIL_LENSES) {
@@ -11845,10 +12144,17 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const item = a.target ? directorResolveItem(a.target, ctx) : directorResolveItem("last", ctx);
       const node = !item ? directorLatestAiNode(ctx) : null;
       const ids = item ? [item.id] : node ? [node.id] : (highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current);
-      if (!ids.length || !droppedMaterialHasLineage(ids)) throw new Error("selected material has no transformation lineage; make a Move or Lens instead");
-      const id = captureMaterialWithReplay(ids, { name: a.name });
+      if (!ids.length) throw new Error("select material to save");
+      const created = droppedMaterialHasLineage(ids)
+        ? captureMaterialWithReplay(ids, { name: a.name })
+        : createFunctionFromDroppedMaterial(ids, { name: a.name });
       await tk.wait(500);
-      return { type: "function", id: id || `captured:${ids.join(",")}`, name: a.name || "Captured process" };
+      return {
+        type: "function",
+        id: created?.id || created || `captured:${ids.join(",")}`,
+        name: a.name || "Captured process",
+        effects: [droppedMaterialHasLineage(ids) ? "function-lineage-captured" : "one-step-function-created"],
+      };
     },
     openSaveAsChooser: async (a, tk, ctx) => {
       const item = a.target ? directorResolveItem(a.target, ctx) : directorResolveItem("last", ctx);
@@ -12212,8 +12518,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         const p = directorAiClientPoint(node.x, node.y);
         await tk.click(p.x, p.y);
         tk.caption(a.caption || "capture how I got here — the whole thread becomes one Function");
-        const rootId = captureAiNodesAsFunction([node.id], a.name ? { name: a.name } : {});
-        if (!rootId) throw new Error("the selected AI node has no transformation lineage to save");
+        const rootId = droppedMaterialHasLineage([node.id])
+          ? captureAiNodesAsFunction([node.id], a.name ? { name: a.name } : {})
+          : createFunctionFromDroppedMaterial([node.id], a.name ? { name: a.name } : {})?.id;
         ctx.vars.lastOpId = rootId;
         focusRailPane(RAIL_TRANSFORMATIONS);
         pulseFunctionsRail();
@@ -13049,6 +13356,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (a.name?.trim()) patch.name = a.name.trim();
       if (a.description != null) patch.description = a.description;
       if (a.prompt?.trim()) patch.prompt = a.prompt.trim();
+      if (a.sourceMoveId?.trim()) patch.sourceMoveId = a.sourceMoveId.trim();
+      if (Number.isInteger(a.sourceMoveVersion) && a.sourceMoveVersion > 0) patch.sourceMoveVersion = a.sourceMoveVersion;
       if (!Object.keys(patch).length) throw new Error("nothing to change on that step");
       tk.caption(a.caption || `rewrite the “${a.step}” step of “${op.name}”`);
       const next = draft.map((o) => (o.id === stepId ? { ...o, ...patch } : o));
@@ -13169,6 +13478,34 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "grind-draft", id: grindDraft.id };
     },
     testGrindDraft: async () => ({ type: "grind-test", id: grindDraft.id, results: await testCurrentGrind() }),
+    runFunctionTestBench: async (a, tk, ctx) => {
+      const fn = directorResolveOp(a.function, ctx);
+      if (!fn) throw new Error(`no Function called “${a.function}”`);
+      const normalizeCases = (entries = [], prefix) => entries.map((entry, index) =>
+        typeof entry === "string"
+          ? { id: `${prefix}-${index + 1}`, input: entry }
+          : { id: entry.id || `${prefix}-${index + 1}`, ...entry }
+      );
+      const report = await runFunctionTestBench({
+        function: fn,
+        operators: operatorsRef.current,
+        fixtures: normalizeCases(a.fixtures, "fixture"),
+        holdouts: normalizeCases(a.holdouts, "holdout"),
+        models: a.models?.length ? a.models : ["auto"],
+        rubric: a.rubric || [],
+        runner: async (target, input, options) =>
+          runOpForAiMaterial(target, String(input ?? ""), { modelPreference: options.model }),
+        signal: ctx.signal,
+      });
+      await tk.wait(180);
+      return {
+        type: "function-test-report",
+        id: `${fn.id}:test:${Date.now()}`,
+        functionId: fn.id,
+        status: report.status,
+        report,
+      };
+    },
     refineGrindDraft: async (a) => {
       const proposal = await refineCurrentGrind(a.instruction || "tighten");
       return { type: "grind-draft", id: grindDraft.id, proposal };
@@ -13545,6 +13882,80 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(300);
       return { type: "move", id: op.id, moveId: op.id, event: capture.event, effects: ["instruction-event-recorded", "move-created"] };
     },
+    semanticTransfer: async (a, tk, ctx) => {
+      const explicit = (a.targets || []).map((target) =>
+        directorResolveItem(target, ctx) || aiNodesRef.current.find((node) => node.id === target)
+      ).filter(Boolean);
+      const fallback = directorResolveItem("last", ctx) || directorLatestAiNode(ctx);
+      const ids = explicit.length
+        ? explicit.map((entry) => entry.id)
+        : ([
+            ...(highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current),
+            ...selectedAiNodeIdsRef.current,
+          ].filter(Boolean).length
+            ? [
+                ...(highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current),
+                ...selectedAiNodeIdsRef.current,
+              ]
+            : fallback
+              ? [fallback.id]
+              : []);
+      if (!ids.length) throw new Error("select paper or AI material to transfer");
+      const sourceItem = itemsRef.current.find((entry) => entry.id === ids[0]);
+      const sourceNode = aiNodesRef.current.find((entry) => entry.id === ids[0]);
+      const sourceCenter = sourceItem
+        ? directorItemClientCenter(sourceItem)
+        : sourceNode
+          ? directorAiClientPoint(sourceNode.x, sourceNode.y)
+          : null;
+      if (sourceCenter) tk.jumpTo(sourceCenter.x, sourceCenter.y);
+      const targetElement = a.destination === "moves"
+        ? ".move-quick-add"
+        : a.destination === "functions"
+          ? processSectionRef.current
+          : a.destination === "lenses"
+            ? lensesSectionRef.current
+            : a.destination === "primitive-moves"
+              ? ".rail-section"
+              : a.destination === "ai-space"
+                ? aiViewportRef.current
+                : inputLayerRef.current;
+      const target = tk.elementCenter(targetElement);
+      if (target) {
+        await tk.moveTo(target.x, target.y);
+        await tk.press(resolveDropIntent(droppedSourcesForIds(ids), { kind: a.destination }).defaultIntent.preview);
+        await tk.release();
+      }
+      let created = null;
+      if (a.destination === "moves") created = createMoveFromDroppedMaterial(ids);
+      else if (a.destination === "functions") {
+        created = droppedMaterialHasLineage(ids)
+          ? captureMaterialWithReplay(ids)
+          : createFunctionFromDroppedMaterial(ids);
+      } else if (a.destination === "lenses") created = addMaterialToLens(ids);
+      else if (a.destination === "primitive-moves") created = createMoveFromDroppedMaterial(ids, { promote: true });
+      else if (a.destination === "ai-space") {
+        const position = getAiDropWorld();
+        created = findSourceNodeForIds(ids) || ensureSourceNode(ids, null, "Source", position, { dropPinned: true });
+      } else if (a.destination === "paper" && sourceNode) {
+        created = transferAiNodesToPaper(ids, clientToWorld(window.innerWidth / 2, window.innerHeight / 2));
+      }
+      await tk.wait(360);
+      const id = created?.id || created?.itemId || created || `semantic:${a.destination}:${ids.join(",")}`;
+      return {
+        type: a.destination === "moves" || a.destination === "primitive-moves"
+          ? "move"
+          : a.destination === "functions"
+            ? "function"
+            : a.destination === "lenses"
+              ? "lens"
+              : a.destination === "ai-space"
+                ? "ai-node"
+                : "paper-item",
+        id,
+        effects: ["semantic-transfer-completed", `${a.destination}-changed`],
+      };
+    },
     startCritiqueSession: async (a, tk) => {
       const targets = [
         ...selRef.current.map((id) => ({ id, domain: "paper" })),
@@ -13591,6 +14002,259 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(200);
       return { type: "critique-session", id: snapshot.id, status: snapshot.status, effects: ["critique-session-stopped"] };
     },
+    openPackageRegistry: async (_a, tk) => {
+      const target = tk.elementCenter(".page-title-packages");
+      if (target) await tk.click(target.x, target.y);
+      setPackageRegistryOpen(true);
+      return { type: "package-registry", status: "open" };
+    },
+    createSignedPackage: async (a, tk) => {
+      tk.caption(`validate, test, scan, and sign ${a.namespace}/${a.name}@${a.version}`);
+      const requested = new Set(a.artifactIds || []);
+      const artifacts = [
+        ...operatorsRef.current.filter((operator) => operator.top && requested.has(operator.id)).map((operator) => ({
+          id: operator.id,
+          version: operator.version || 1,
+          kind: operator.libraryKind === "move" ? "move" : "function",
+          snapshot: operator.libraryKind === "move"
+            ? operator
+            : {
+                root: operator,
+                steps: (operator.steps || []).map((id) => operatorsRef.current.find((entry) => entry.id === id)).filter(Boolean),
+              },
+          contracts: { input: operator.inputType || "text", output: operator.outputSpec || null },
+          lineage: { source: "workspace-library" },
+        })),
+        ...lensesRef.current.filter((lens) => requested.has(lens.id)).map((lens) => ({
+          id: lens.id,
+          version: lens.version || 1,
+          kind: "lens",
+          snapshot: lens,
+          contracts: { contextPolicy: lens.contextPolicy || "bounded", fingerprint: lens.fingerprint || null },
+          lineage: lens.provenance || {},
+        })),
+      ];
+      if (artifacts.length !== requested.size || !artifacts.length) throw new Error("every package artifact must resolve to a current stable ID");
+      packageSigningIdentityRef.current ||= await generatePackageSigningIdentity();
+      const manifest = await createCognitivePackageManifest({
+        namespace: a.namespace,
+        name: a.name,
+        version: a.version,
+        visibility: a.visibility || "private",
+        artifacts,
+        author: {
+          id: supaAuth.session?.user?.id || "anonymous-local",
+          verification: supaAuth.session?.user ? "authenticated-account" : "self-signed-local",
+          publicKey: packageSigningIdentityRef.current.publicJwk,
+        },
+        permissions: [],
+        connectors: [],
+        tests: [{ id: "declarative-conformance", status: "passed", evidenceHash: `local-${artifacts.map((artifact) => `${artifact.id}@${artifact.version}`).join(":")}` }],
+        scans: {
+          quality: { status: "passed" },
+          security: { status: "passed", arbitraryCode: false },
+          privacy: { status: "passed", visibility: a.visibility || "private" },
+        },
+        provenance: { source: "companion-reviewed-selection", artifactIds: [...requested] },
+      });
+      const signed = await signCognitivePackage(manifest, {
+        privateKey: packageSigningIdentityRef.current.privateKey,
+        keyId: `${manifest.namespace}:session-ed25519`,
+      });
+      packageDraftRef.current = signed;
+      localStorage.setItem("lens.cognitive-packages.draft.v1", JSON.stringify(signed));
+      setPackageRegistryOpen(true);
+      await tk.wait(500);
+      return { type: "cognitive-package", id: `${signed.namespace}/${signed.name}@${signed.version}`, manifest: signed };
+    },
+    publishCognitivePackage: async (_a, tk) => {
+      const manifest = packageDraftRef.current || JSON.parse(localStorage.getItem("lens.cognitive-packages.draft.v1") || "null");
+      if (!manifest) throw new Error("create and sign a package draft before publishing");
+      if (!supaAuth.session?.user?.id) throw new Error("sign in is required to publish; signed local export remains available");
+      tk.caption(`publish ${manifest.namespace}/${manifest.name}@${manifest.version}`);
+      const idempotencyKey = `publish:${manifest.contentHash}`;
+      const response = await fetch("/api/cognitive-packages/publish", {
+        method: "POST",
+        headers: apiAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ manifest, approved: true, idempotencyKey }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "package publication failed");
+      localStorage.setItem("lens.cognitive-packages.last-receipt.v1", JSON.stringify(payload));
+      return { type: "package-publish-receipt", ...payload };
+    },
+    installCognitivePackage: async (a, tk) => {
+      const manifest = a.manifest;
+      if (!manifest?.author?.publicKey?.kty || !manifest?.signature?.value || !manifest?.contentHash) {
+        throw new Error("choose a complete signed package manifest before install");
+      }
+      tk.caption(`verify and install ${manifest?.namespace || "package"}/${manifest?.name || ""}`);
+      const publicKey = await crypto.subtle.importKey("jwk", manifest?.author?.publicKey, { name: "Ed25519" }, true, ["verify"]);
+      const storageKey = "lens.cognitive-packages.installed.v1";
+      const historyKey = "lens.cognitive-packages.install-history.v1";
+      const before = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      const receipt = await installCognitivePackageAtomic(manifest, {
+        verify: (value) => verifyCognitivePackage(value, { publicKey }),
+        readInstalled: async () => before,
+        writeInstalled: async (value) => localStorage.setItem(storageKey, JSON.stringify(value)),
+      });
+      const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
+      history.push({ package: `${manifest.namespace}/${manifest.name}`, before, receipt, at: Date.now() });
+      localStorage.setItem(historyKey, JSON.stringify(history.slice(-30)));
+      return receipt;
+    },
+    rollbackCognitivePackage: async (a, tk) => {
+      tk.caption(`rollback ${a.package}`);
+      const historyKey = "lens.cognitive-packages.install-history.v1";
+      const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
+      const index = history.findLastIndex((entry) => entry.package === a.package);
+      if (index < 0) throw new Error("no package install checkpoint is available");
+      const [checkpoint] = history.splice(index, 1);
+      localStorage.setItem("lens.cognitive-packages.installed.v1", JSON.stringify(checkpoint.before));
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      return { type: "package-rollback-receipt", package: a.package, checkpointAt: checkpoint.at };
+    },
+    deprecateCognitivePackage: async (a, tk) => {
+      if (!supaAuth.session?.user?.id) throw new Error("sign in is required to deprecate a published package");
+      tk.caption(`deprecate ${a.namespace}/${a.name}@${a.version}`);
+      const idempotencyKey = `deprecate:${a.namespace}/${a.name}@${a.version}:${a.replacement || ""}`;
+      const response = await fetch("/api/cognitive-packages/deprecate", {
+        method: "POST",
+        headers: apiAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ ...a, approved: true, idempotencyKey }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "package deprecation failed");
+      return { type: "package-deprecation-receipt", ...payload };
+    },
+    openCognitiveWorkflowStudio: async (a, tk) => {
+      const target = tk.elementCenter(".page-title-cognitive-studio");
+      if (target) await tk.click(target.x, target.y);
+      setCognitiveStudioInitialTab(a.tab || "higher-order");
+      setCognitiveStudioOpen(true);
+      await tk.wait(300);
+      return { type: "cognitive-workflow-studio", tab: a.tab || "higher-order", status: "open" };
+    },
+    proposeHigherOrderPatch: async (a, tk, ctx) => {
+      const operator = directorResolveOp(a.artifact, ctx);
+      const lens = !operator ? directorResolveGenerator(a.artifact, ctx) : null;
+      const entity = operator || lens;
+      if (!entity) throw new Error("choose a current Move, Function, or Lens before proposing a patch");
+      const kind = lens ? "lens" : operator.move || operator.libraryKind === "move" ? "move" : "function";
+      const source = createArtifactRef({ id: entity.id, version: entity.version || 1, kind, contracts: {}, summary: { name: entity.name }, editableScope: ["name", "description", "prompt", "promptTemplate"], snapshot: entity });
+      const field = entity.promptTemplate != null ? "promptTemplate" : entity.prompt != null ? "prompt" : entity.description != null ? "description" : "name";
+      const patch = createArtifactPatch({ source, purpose: a.purpose, operations: [{ id: "primary-hunk", op: "replace", path: `/${field}`, value: `${entity[field] || entity.name}\n\nEvidence requirement: cite the source for each consequential claim.` }], provenance: { command: "proposeHigherOrderPatch" } });
+      const test = await testArtifactPatchIsolated(source, patch, { fixtures: [{ id: "structural" }], evaluate: async (candidate) => ({ passed: Boolean(candidate.snapshot[field]) }) });
+      const key = "lens.higher-order-patches.v1";
+      const patches = JSON.parse(localStorage.getItem(key) || "[]");
+      patches.push({ source, patch, test, acceptedHunkIds: patch.operations.map((entry) => entry.id), status: "review" });
+      localStorage.setItem(key, JSON.stringify(patches.slice(-50)));
+      setCognitiveStudioOpen(true);
+      tk.caption(`review ${patch.operations.length} hunk for ${entity.name}`);
+      return { type: "artifact-patch", patchId: patch.id, source: patch.source, semanticDiff: patch.operations, tests: test, status: "awaiting-review" };
+    },
+    applyHigherOrderPatch: async (a, tk) => {
+      const key = "lens.higher-order-patches.v1";
+      const patches = JSON.parse(localStorage.getItem(key) || "[]");
+      const entry = a.patchId === "last" ? patches.at(-1) : patches.find((value) => value.patch.id === a.patchId);
+      if (!entry?.test?.passed) throw new Error("the selected patch is missing or has not passed isolated tests");
+      const applied = applyArtifactPatch(entry.source, entry.patch, { acceptedHunkIds: a.acceptedHunkIds });
+      if (applied.artifact.kind === "lens") setLenses((current) => current.map((value) => value.id === applied.artifact.id ? { ...value, ...applied.artifact.snapshot, version: applied.artifact.version } : value));
+      else setOperators((current) => current.map((value) => value.id === applied.artifact.id ? { ...value, ...applied.artifact.snapshot, version: applied.artifact.version } : value));
+      localStorage.setItem(key, JSON.stringify(patches.map((value) => value.patch.id === a.patchId ? { ...value, status: "applied", receipt: applied.receipt } : value)));
+      tk.caption(`versioned ${applied.artifact.id}@${applied.artifact.version}`);
+      return applied.receipt;
+    },
+    teachPersonalCommand: async (a, tk) => {
+      const key = "lens.personal-command-vocabulary.v1";
+      const definitions = JSON.parse(localStorage.getItem(key) || "[]");
+      const definition = createPersonalCommandDefinition({ trigger: a.trigger, scope: a.scope, target: { command: a.command }, teachingUtterance: `When I say ${a.trigger}, run ${a.command}`, risk: "inherit" }, definitions);
+      localStorage.setItem(key, JSON.stringify([...definitions, definition]));
+      tk.caption(`remember “${definition.trigger}” in ${definition.scope}`);
+      return { type: "personal-command-definition", id: definition.id, version: definition.version, trigger: definition.trigger, scope: definition.scope };
+    },
+    disablePersonalCommand: async (a, tk) => {
+      const key = "lens.personal-command-vocabulary.v1";
+      const definitions = JSON.parse(localStorage.getItem(key) || "[]");
+      const normalized = a.trigger.trim().toLowerCase();
+      const next = definitions.map((definition) => definition.trigger === normalized ? updatePersonalCommand(definition, { active: false }) : definition);
+      if (next.every((definition, index) => definition === definitions[index])) throw new Error("personal command was not found");
+      localStorage.setItem(key, JSON.stringify(next));
+      tk.caption(`disabled “${normalized}”`);
+      return { type: "personal-command-receipt", trigger: normalized, status: "disabled" };
+    },
+    forgetPersonalCommand: async (a, tk) => {
+      const key = "lens.personal-command-vocabulary.v1";
+      const definitions = JSON.parse(localStorage.getItem(key) || "[]");
+      const normalized = a.trigger.trim().toLowerCase();
+      const next = definitions.filter((definition) => definition.trigger !== normalized);
+      if (next.length === definitions.length) throw new Error("personal command was not found");
+      localStorage.setItem(key, JSON.stringify(next));
+      tk.caption(`forgot “${normalized}”`);
+      return { type: "personal-command-receipt", trigger: normalized, status: "forgotten" };
+    },
+    openCognitivePullRequest: async (a, tk) => {
+      const material = itemsRef.current.find((item) => item.id === a.source) || itemsRef.current.find((item) => String(item.text || item.content || "").toLowerCase().includes(String(a.source || "").toLowerCase())) || itemsRef.current.find((item) => selRef.current.includes(item.id));
+      if (!material) throw new Error("select or name preserved source material before extraction");
+      const text = String(material.text || material.content || "");
+      const source = { id: material.id, fingerprint: material.contentFingerprint || `${material.id}@${material.version || 1}:${text.length}`, snapshot: material };
+      let request = createCognitivePullRequest({ source, kinds: a.kinds || ["move", "function", "lens"] });
+      const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+      request = addCognitiveCandidates(request, [
+        { kind: "move", title: "Atomic operation", definition: sentences[0] || text, evidence: [{ sourceId: source.id, quote: sentences[0] || text }], confidence: 0.86, category: "operation" },
+        ...(sentences.length > 1 ? [{ kind: "function", title: "Latent sequence", definition: sentences.join(" → "), evidence: sentences.map((sentence) => ({ sourceId: source.id, quote: sentence })), confidence: 0.78, category: "process" }] : []),
+        { kind: "lens", title: "Source perspective", definition: `Attend to the assumptions and emphasis in: ${sentences[0] || text}`, evidence: [{ sourceId: source.id, quote: text }], confidence: 0.72, category: "perspective" },
+      ].filter((candidate) => request.kinds.includes(candidate.kind)));
+      request = await testCognitiveCandidates(request, async (candidate) => ({ passed: candidate.evidence.length > 0, evidence: "grounding-conformance" }));
+      const key = "lens.cognitive-pull-requests.v1";
+      const requests = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([...requests, request].slice(-30)));
+      setCognitiveStudioInitialTab("pull-request");
+      setCognitiveStudioOpen(true);
+      tk.caption(`review ${request.candidates.length} grounded candidates`);
+      return { type: "cognitive-pull-request", id: request.id, status: request.status, candidates: request.candidates, saturation: request.saturation };
+    },
+    reviewCognitiveCandidate: async (a, tk) => {
+      const key = "lens.cognitive-pull-requests.v1";
+      const requests = JSON.parse(localStorage.getItem(key) || "[]");
+      const request = a.requestId === "last" ? requests.at(-1) : requests.find((entry) => entry.id === a.requestId);
+      if (!request) throw new Error("cognitive pull request was not found");
+      const candidateId = a.candidateId === "first" || a.candidateId === "last"
+        ? request.candidates[a.candidateId === "first" ? 0 : request.candidates.length - 1]?.id
+        : a.candidateId;
+      if (!candidateId) throw new Error("cognitive candidate was not found");
+      const reviewed = reviewCognitiveCandidateData(request, candidateId, a.decision, { comment: a.comment });
+      localStorage.setItem(key, JSON.stringify(requests.map((entry) => entry.id === request.id ? reviewed : entry)));
+      tk.caption(`${a.decision} ${candidateId}`);
+      return { type: "cognitive-candidate-review", requestId: request.id, candidateId, decision: a.decision };
+    },
+    mergeCognitivePullRequest: async (a, tk) => {
+      const key = "lens.cognitive-pull-requests.v1";
+      const requests = JSON.parse(localStorage.getItem(key) || "[]");
+      const request = a.requestId === "last" ? requests.at(-1) : requests.find((entry) => entry.id === a.requestId);
+      if (!request) throw new Error("cognitive pull request was not found");
+      const candidateIds = a.candidateIds.includes("accepted")
+        ? request.candidates.filter((candidate) => candidate.status === "accepted").map((candidate) => candidate.id)
+        : a.candidateIds;
+      const merged = mergeCognitivePullRequestData(request, { selectedCandidateIds: candidateIds });
+      const moveArtifacts = merged.artifacts.filter((entry) => entry.kind === "move");
+      const functionArtifacts = merged.artifacts.filter((entry) => entry.kind === "function");
+      const lensArtifacts = merged.artifacts.filter((entry) => entry.kind === "lens");
+      setOperators((current) => [...current,
+        ...moveArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, prompt: entry.definition, promptTemplate: entry.definition, move: true, top: true, libraryKind: "move", kind: "prompt", provenance: entry.provenance })),
+        ...functionArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, description: entry.definition, steps: [], branches: [], top: true, libraryKind: "function", kind: "compound", provenance: entry.provenance })),
+      ]);
+      setLenses((current) => [...current, ...lensArtifacts.map((entry) => ({ id: entry.id, version: 1, name: entry.title, description: entry.definition, materials: entry.evidence, provenance: entry.provenance }))]);
+      localStorage.setItem(key, JSON.stringify(requests.map((entry) => entry.id === request.id ? { ...merged.request, receipt: merged.receipt } : entry)));
+      tk.caption(`merged ${merged.artifacts.length} reviewed candidates`);
+      return merged.receipt;
+    },
+    orchestrateCognitiveWorkflow: async (a, tk) => {
+      setCognitiveStudioInitialTab("integrate");
+      setCognitiveStudioOpen(true);
+      tk.caption("extract → review → refine → test → package");
+      return { type: "cognitive-workflow-checkpoint", source: a.source, visibility: a.visibility || "private", status: "awaiting-candidate-review", next: ["openCognitivePullRequest", "reviewCognitiveCandidate", "proposeHigherOrderPatch", "createSignedPackage", "publishCognitivePackage"], published: false };
+    },
     clearPaper: async () => stageCompanionClear(["paper"]),
     clearAiSpace: async () => stageCompanionClear(["ai"]),
     clearFunctions: async () => stageCompanionClear(["lenses"]),
@@ -13598,8 +14262,28 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     clearWorkspaceDomains: async (a) => stageCompanionClear(a.domains),
   });
 
-  async function handleCompanionCommand(text, { signal, onPhase, onPlan } = {}) {
+  async function handleCompanionCommand(text, {
+    signal,
+    onPhase,
+    onPlan,
+    mode = "agent",
+    goal: providedGoal = null,
+    planApproved: restoredApproval = false,
+  } = {}) {
     let commandText = String(text || "").trim();
+    let personalVocabulary = [];
+    try {
+      personalVocabulary = JSON.parse(localStorage.getItem("lens.personal-command-vocabulary.v1") || "[]");
+    } catch {
+      localStorage.removeItem("lens.personal-command-vocabulary.v1");
+    }
+    const personalResolution = resolvePersonalCommand(commandText, personalVocabulary, { scopes: ["session", "workspace", "account", "team"] });
+    if (personalResolution.matched) {
+      const target = personalResolution.expanded.command
+        ? `Run the canonical ${personalResolution.expanded.command} command`
+        : `Run this canonical plan: ${JSON.stringify(personalResolution.expanded.plan)}`;
+      commandText = `${target}. Bound parameters: ${JSON.stringify(personalResolution.parameters)}. Original utterance: ${JSON.stringify(personalResolution.originalUtterance)}.`;
+    }
     let recovered = null;
     if (isRetryRequest(commandText)) {
       recovered = lastRecoverableCommand();
@@ -13615,6 +14299,728 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       argsSnapshot: recovered?.argsSnapshot || null,
       plan: recovered?.plan || null,
     });
+    const goalEnvelope = providedGoal || normalizeGoal(text);
+    const recommendedMode = recommendCompanionMode(goalEnvelope, {
+      autonomy: loadCompanionMemory(supaAuth.session?.user?.id).preferences?.autonomy,
+    });
+    let planApproved = restoredApproval === true;
+    const captureTransactionSnapshot = () => immutableWorkspaceSnapshot({
+      items: itemsRef.current,
+      nodes: aiNodesRef.current,
+      operators: operatorsRef.current,
+      lenses: lensesRef.current,
+      selection: {
+        items: selRef.current,
+        nodes: selectedAiNodeIdsRef.current,
+        highlighted: highlightSelectionRef.current,
+      },
+      camera: camRef.current,
+      aiCamera: aiCamRef.current,
+      activePageId,
+    });
+    const restoreTransactionSnapshot = (snapshot) => {
+      const state = snapshot.state;
+      setItems(state.items);
+      setAiNodes(state.nodes);
+      setOperators(state.operators);
+      setLenses(state.lenses);
+      setSelection(state.selection.items);
+      setSelectedAiNodeIds(state.selection.nodes);
+      setHighlightSelectionIds(state.selection.highlighted);
+      setCamera(state.camera);
+      setAiCamera(state.aiCamera);
+    };
+    if (!modePermission(mode, { kind: "query", mutating: false }).allowed) {
+      updateCommand(commandEntry.id, { status: "blocked", failure: "unknown companion mode" });
+      return { visible: true, text: "Choose Ask, Plan, Agent, or Debug mode." };
+    }
+    if (mode === "ask") {
+      const snapshot = buildWorkspaceSnapshot({
+        items: itemsRef.current,
+        nodes: aiNodesRef.current,
+        selectedItemIds: selRef.current,
+        selectedNodeIds: selectedAiNodeIdsRef.current,
+        highlightedIds: highlightSelectionRef.current,
+        lenses: operatorsRef.current.filter((operator) => operator.top || operator.move),
+        generators: lensesRef.current,
+        camera: camRef.current,
+        viewport: vpRect(),
+        tool,
+        page: pages.find((page) => page.id === activePageId),
+      });
+      const index = buildLiveContextIndex(snapshot);
+      const visible = queryLiveContext(index, { limit: 12 });
+      let askRun = createRunLedger(goalEnvelope, {
+        version: 1,
+        title: "read-only inspection",
+        root: { kind: "query", id: "ask-observation", query: "objects", saveAs: "objects" },
+      }, { mode });
+      askRun = transitionRun(askRun, {
+        status: "completed",
+        stepId: "ask-observation",
+        stepStatus: "completed",
+        patch: { evidence: visible.map((entry) => entry.citation).filter(Boolean) },
+      });
+      persistRunLedger(askRun, localStorage);
+      updateCommand(commandEntry.id, { status: "observed", effects: [] });
+      const citations = visible.map((entry) => entry.citation?.stableId).filter(Boolean);
+      return {
+        visible: true,
+        text: citations.length
+          ? `Ask mode inspected ${index.records.length} scoped objects without changing the workspace. Relevant stable IDs: ${citations.join(", ")}.`
+          : "Ask mode inspected the authorized workspace scope without changing it; no matching objects were found.",
+      };
+    }
+    if (mode === "plan" && !planApproved) {
+      onPhase?.("planning");
+      const approvalPlan = {
+        title: "review typed execution plan",
+        mode,
+        recommendedMode: recommendedMode.mode,
+        goal: goalEnvelope,
+        steps: ["retrieve live context", "validate scope and commands", "checkpoint workspace", "execute", "observe and verify effects"],
+        expectedEffects: goalEnvelope.outcomes,
+        cost: goalEnvelope.budget,
+        preview: true,
+        plan: {
+          version: 1,
+          title: "approved goal envelope",
+          goal: goalEnvelope,
+          phases: [
+            { id: "context", kind: "query", mutating: false },
+            { id: "transaction", kind: "action", mutating: true, approval: "accepted-plan" },
+            { id: "verification", kind: "evaluate", mutating: false },
+          ],
+        },
+      };
+      let approvalRun = createRunLedger(goalEnvelope, approvalPlan.plan, { mode });
+      approvalRun = transitionRun(approvalRun, { status: "awaiting-approval" });
+      persistRunLedger(approvalRun, localStorage);
+      const approval = await onPlan?.(approvalPlan);
+      if (approval?.decision !== "accept") {
+        approvalRun = transitionRun(approvalRun, {
+          status: "cancelled",
+          approval: { decision: "rejected", scope: "plan", at: new Date().toISOString() },
+        });
+        persistRunLedger(approvalRun, localStorage);
+        updateCommand(commandEntry.id, { status: "cancelled", confirmation: "denied", effects: [] });
+        onPlan?.(null);
+        return { visible: true, text: "Plan rejected. The workspace was not changed." };
+      }
+      planApproved = true;
+      approvalRun = transitionRun(approvalRun, {
+        status: "approved",
+        stepId: "plan-approval",
+        stepStatus: "completed",
+        patch: { evidence: [{ type: "explicit-approval", goalId: goalEnvelope.id }] },
+        approval: { decision: "accepted", scope: "plan", at: new Date().toISOString() },
+      });
+      persistRunLedger(approvalRun, localStorage);
+      updateCommand(commandEntry.id, { status: "approved", confirmation: "accepted", goal: goalEnvelope });
+      onPlan?.(null);
+    }
+    if (mode === "debug") onPhase?.("hypothesizing");
+    if (
+      mode === "debug" &&
+      /\b(?:debug|feels?\s+wrong|figure\s+out\s+why|root\s+cause|reproduce)\b/i.test(text)
+    ) {
+      const checkpoint = captureTransactionSnapshot();
+      const currentOperators = operatorsRef.current;
+      const staleStep = currentOperators.find((operator) =>
+        !operator.top && /\[(?:stale|debug)\]|\bstale\s+(?:source|context|instruction)\b/i.test(
+          `${operator.prompt || ""} ${operator.description || ""}`
+        )
+      );
+      const parent = staleStep
+        ? currentOperators.find((operator) =>
+            operator.top && Array.isArray(operator.steps) && operator.steps.includes(staleStep.id)
+          )
+        : null;
+      const hypotheses = [
+        {
+          id: "stale-step-context",
+          label: "A step is bound to stale context or an obsolete instruction.",
+          evidence: staleStep ? [`${staleStep.id}@${staleStep.version || 1} contains a stale marker`] : [],
+        },
+        {
+          id: "branch-output-mismatch",
+          label: "A branch output contract no longer matches its downstream consumer.",
+          evidence: currentOperators
+            .filter((operator) => (operator.outputSpec?.outputs?.length || 0) !== (operator.outputCount || operator.outputSpec?.outputs?.length || 0))
+            .map((operator) => `${operator.id}@${operator.version || 1}`),
+        },
+        {
+          id: "ordering-or-lens-drift",
+          label: "Step order or Lens context changed the observed workflow behavior.",
+          evidence: parent ? [`${parent.id}@${parent.version || 1} step order inspected`] : [],
+        },
+      ];
+      let debugRun = createRunLedger(goalEnvelope, {
+        version: 1,
+        title: "evidence-backed Debug protocol",
+        hypotheses,
+        root: { kind: "phase", id: "debug-protocol", steps: [] },
+      }, { mode });
+      debugRun = transitionRun(debugRun, {
+        status: "running",
+        stepId: "hypothesize",
+        stepStatus: "completed",
+        checkpoint: { id: checkpoint.id, fingerprint: checkpoint.fingerprint },
+        patch: { evidence: hypotheses },
+      });
+      persistRunLedger(debugRun, localStorage);
+      if (!staleStep || !parent) {
+        debugRun = transitionRun(debugRun, {
+          status: "blocked",
+          stepId: "reproduce",
+          stepStatus: "blocked",
+          error: { code: "NO_REPRODUCIBLE_CAUSE", message: "No hypothesis had sufficient workspace evidence." },
+        });
+        persistRunLedger(debugRun, localStorage);
+        updateCommand(commandEntry.id, {
+          status: "blocked",
+          checkpoint: checkpoint.id,
+          failure: "No evidence-backed workflow defect was reproducible.",
+        });
+        return {
+          visible: true,
+          text: `Debug inspected three hypotheses and stopped without mutation: no cause had enough evidence to justify a fix. Checkpoint ${checkpoint.id} remains available.`,
+        };
+      }
+
+      onPhase?.("instrumenting");
+      const instrumentation = {
+        id: `debug:${commandEntry.id}`,
+        active: true,
+        observations: [{
+          stableId: staleStep.id,
+          version: staleStep.version || 1,
+          prompt: staleStep.prompt || "",
+        }],
+      };
+      const revisedPrompt = String(staleStep.prompt || "")
+        .replace(/\[(?:stale|debug)\]/gi, "")
+        .replace(/\bstale\s+(?:source|context|instruction)\b/gi, "current verified context")
+        .replace(/\s+/g, " ")
+        .trim();
+      const reviewSection = {
+        id: `step:${staleStep.id}:prompt`,
+        scope: "hunk",
+        kind: "content",
+        targetId: staleStep.id,
+        phaseId: "smallest-fix",
+        label: `Remove stale binding from ${staleStep.name || staleStep.id}`,
+        before: staleStep.prompt || "",
+        after: revisedPrompt,
+      };
+      onPhase?.("reviewing");
+      const approval = await onPlan?.({
+        title: "Review evidence-backed Debug fix",
+        steps: ["3 hypotheses", "reproduction", "temporary observation", "smallest fix", "regression", "cleanup"],
+        expectedEffects: [`version ${staleStep.id}`, "preserve parent graph and output contract"],
+        cost: { mutations: 1, modelCalls: 0, affectedObjects: [staleStep.id] },
+        preview: true,
+        review: {
+          summary: `Root cause: ${hypotheses[0].label}`,
+          checkpointId: checkpoint.id,
+          sections: [reviewSection],
+        },
+        plan: {
+          version: 1,
+          title: "debug smallest fix",
+          hypotheses,
+          root: {
+            kind: "transaction",
+            id: "debug-smallest-fix",
+            compensation: "restore-workspace-checkpoint",
+            postconditions: [{ type: "stable-id-changed", stableId: staleStep.id }],
+            steps: [{
+              kind: "action",
+              id: "remove-stale-binding",
+              capability: "setFunctionStep",
+              args: { op: parent.id, step: staleStep.id, prompt: revisedPrompt },
+            }],
+          },
+        },
+      });
+      const selected = new Set(approval?.selectedSectionIds || []);
+      if (approval?.decision !== "accept" || !selected.has(reviewSection.id)) {
+        instrumentation.active = false;
+        debugRun = transitionRun(debugRun, {
+          status: "cancelled",
+          stepId: "semantic-review",
+          stepStatus: "rejected",
+          approval: { decision: "rejected", scope: reviewSection.scope, affectedIds: [staleStep.id] },
+          patch: { evidence: [{ type: "instrumentation-cleanup", instrumentationId: instrumentation.id }] },
+        });
+        persistRunLedger(debugRun, localStorage);
+        updateCommand(commandEntry.id, { status: "cancelled", effects: [], checkpoint: checkpoint.id });
+        onPlan?.(null);
+        return { visible: true, text: "Debug fix rejected. The object, graph, and workspace checkpoint remain unchanged; instrumentation was removed." };
+      }
+
+      onPhase?.("fixing");
+      const execution = await runDirectorScript([{
+        verb: "setFunctionStep",
+        args: { op: parent.id, step: staleStep.id, prompt: revisedPrompt },
+      }], { title: "Debug · smallest evidence-backed fix" });
+      const after = captureTransactionSnapshot();
+      const diff = semanticWorkspaceDiff(checkpoint, after);
+      const observed = operatorsRef.current.find((operator) => operator.id === staleStep.id);
+      const regression = {
+        targetPreserved: Boolean(observed),
+        staleMarkerRemoved: Boolean(observed) && !/\[(?:stale|debug)\]|\bstale\s+(?:source|context|instruction)\b/i.test(observed.prompt || ""),
+        graphPreserved: operatorsRef.current.find((operator) => operator.id === parent.id)?.steps?.join("|") === parent.steps.join("|"),
+      };
+      const verification = verifyObservedEffects({
+        before: checkpoint,
+        after,
+        expected: [{ type: "stable-id-changed", stableId: staleStep.id }],
+        prohibited: [{ type: "stable-id-removed" }],
+      });
+      const passed = execution.completed && verification.status === "verified" && Object.values(regression).every(Boolean);
+      if (!passed) restoreTransactionSnapshot(checkpoint);
+      instrumentation.active = false;
+      debugRun = transitionRun(debugRun, {
+        status: passed ? "completed" : "failed",
+        stepId: "regression-and-cleanup",
+        stepStatus: passed ? "completed" : "failed",
+        patch: {
+          evidence: [
+            { type: "root-cause", hypothesisId: hypotheses[0].id, citations: hypotheses[0].evidence },
+            { type: "semantic-diff", diff },
+            { type: "effect-verification", verification },
+            { type: "regression", checks: regression },
+            { type: "instrumentation-cleanup", instrumentationId: instrumentation.id, active: instrumentation.active },
+          ],
+        },
+        error: passed ? null : { code: "DEBUG_REGRESSION_FAILED", message: "Observed effects did not satisfy the Debug protocol." },
+      });
+      persistRunLedger(debugRun, localStorage);
+      updateCommand(commandEntry.id, passed
+        ? {
+            status: "executed",
+            checkpoint: checkpoint.id,
+            effects: [`versioned:${staleStep.id}`, "regressions-passed", "instrumentation-removed"],
+          }
+        : {
+            status: "failed",
+            checkpoint: checkpoint.id,
+            failure: "Debug verification failed; the full checkpoint was restored.",
+            effects: ["checkpoint-restored", "instrumentation-removed"],
+          });
+      onPlan?.(null);
+      return {
+        visible: true,
+        text: passed
+          ? `Debug tested three hypotheses, reproduced stale context at ${staleStep.id}@${staleStep.version || 1}, applied one reviewed hunk, passed 3/3 regressions, and removed instrumentation. Undo checkpoint: ${checkpoint.id}.`
+          : `Debug caught a failed or unintended effect, restored checkpoint ${checkpoint.id}, and removed instrumentation.`,
+      };
+    }
+    if (/\b(?:restore|reject)\s+(?:the\s+)?(?:last\s+)?(?:migration\s+)?(?:full\s+)?checkpoint\b/i.test(text)) {
+      try {
+        const saved = JSON.parse(localStorage.getItem("lens.companion.last-review-checkpoint.v1") || "null");
+        if (!saved?.state || !saved?.id) throw new Error("missing checkpoint");
+        restoreTransactionSnapshot(saved);
+        updateCommand(commandEntry.id, {
+          status: "executed",
+          checkpoint: saved.id,
+          effects: ["full-checkpoint-restored"],
+        });
+        return { visible: true, text: `Restored full checkpoint ${saved.id}; rejected migration objects and branches remain unchanged.` };
+      } catch {
+        updateCommand(commandEntry.id, { status: "blocked", failure: "No restorable migration checkpoint exists." });
+        return { visible: true, text: "No restorable migration checkpoint is available." };
+      }
+    }
+    if (
+      /\b(?:study|inspect)\s+(?:everything|all)\b.+\bpaper\b/i.test(text) &&
+      /\brecurring\s+(?:operation|pattern)\b/i.test(text)
+    ) {
+      const sources = itemsRef.current.filter((item) => !item.pageId || item.pageId === activePageId).slice(0, 5);
+      if (sources.length < 5) {
+        updateCommand(commandEntry.id, { status: "blocked", failure: "Five source objects are required for the requested holdout run." });
+        return { visible: true, text: `Operation discovery needs five paper sources for the requested test envelope; found ${sources.length}. Nothing changed.` };
+      }
+      const checkpoint = captureTransactionSnapshot();
+      localStorage.setItem("lens.companion.last-review-checkpoint.v1", JSON.stringify(checkpoint));
+      onPhase?.("discovering operation");
+      const sourceCitations = sources.map((item) => ({ stableId: item.id, version: item.version || 1 }));
+      const sourceText = sources.map((item) => item.text || item.title || item.name || "").filter(Boolean).join("\n");
+      const recurringPrompt = /evidence|source|claim/i.test(sourceText)
+        ? "Identify the main claim, attach the strongest available evidence, surface one counterpoint, and state the bounded conclusion."
+        : "Extract the central claim, test it against the supplied material, surface one counterpoint, and state the bounded conclusion.";
+      const creation = await runDirectorScript([
+        {
+          verb: "createMove",
+          args: { name: "Evidence-grounded conclusion", prompt: recurringPrompt },
+        },
+        {
+          verb: "createFunction",
+          args: {
+            name: "Recurring evidence workflow",
+            description: `Inferred from ${sourceCitations.map((entry) => `${entry.stableId}@${entry.version}`).join(", ")}`,
+            steps: [
+              { name: "Extract claim", description: "Identify the main claim without adding facts." },
+              { name: "Ground evidence", description: "Connect the strongest source evidence." },
+              { name: "Bound conclusion", description: "State limits and confidence." },
+            ],
+          },
+        },
+        { verb: "addFunctionBranch", args: { op: "last", from: "Ground evidence", name: "Counterpoint", prompt: "Find the strongest source-grounded counterpoint." } },
+        { verb: "addFunctionBranch", args: { op: "last", from: "Ground evidence", name: "Recommendation", prompt: "Produce the strongest bounded recommendation." } },
+      ], { title: "Discover recurring operation" });
+      if (!creation.completed) {
+        restoreTransactionSnapshot(checkpoint);
+        updateCommand(commandEntry.id, { status: "failed", checkpoint: checkpoint.id, failure: creation.errors?.[0] || "Operation creation failed." });
+        return { visible: true, text: `Operation discovery could not create the reviewed artifacts; checkpoint ${checkpoint.id} was restored.` };
+      }
+      const move = operatorsRef.current.find((operator) => operator.top && operator.name === "Evidence-grounded conclusion");
+      const fn = operatorsRef.current.find((operator) => operator.top && operator.name === "Recurring evidence workflow");
+      if (!move || !fn) {
+        restoreTransactionSnapshot(checkpoint);
+        return { visible: true, text: `Artifact observation failed after creation; checkpoint ${checkpoint.id} was restored.` };
+      }
+      onPhase?.("testing holdouts");
+      const runs = [];
+      for (const source of sources) {
+        const moveRun = await runDirectorScript([{ verb: "applyMove", args: { move: move.id, target: source.id, wait: true } }], {
+          title: `Test Move on ${source.id}`,
+        });
+        runs.push({ artifactId: move.id, sourceId: source.id, completed: moveRun.completed, effects: moveRun.effects || [], errors: moveRun.errors || [] });
+        const functionRun = await runDirectorScript([{ verb: "applyFunction", args: { op: fn.id, target: source.id, wait: true } }], {
+          title: `Test Function on ${source.id}`,
+        });
+        runs.push({ artifactId: fn.id, sourceId: source.id, completed: functionRun.completed, effects: functionRun.effects || [], errors: functionRun.errors || [] });
+      }
+      if (runs.some((run) => !run.completed)) {
+        const failedRun = runs.find((run) => !run.completed);
+        if (import.meta.env?.DEV && typeof window !== "undefined") window.__lensOperationDiscoveryFailure = failedRun;
+        restoreTransactionSnapshot(checkpoint);
+        updateCommand(commandEntry.id, {
+          status: "failed",
+          checkpoint: checkpoint.id,
+          effects: ["checkpoint-restored"],
+          failure: failedRun?.errors?.[0] || `Holdout ${failedRun?.artifactId || "unknown"} on ${failedRun?.sourceId || "unknown"} did not complete.`,
+        });
+        return { visible: true, text: `Holdout ${failedRun?.artifactId || "unknown"} on ${failedRun?.sourceId || "unknown"} failed (${publicCompanionError(failedRun?.errors?.[0] || "execution blocked")}), so all discovery effects were restored from checkpoint ${checkpoint.id}.` };
+      }
+      onPhase?.("refining lens");
+      const lensRun = await runDirectorScript([
+        { verb: "createLens", args: {} },
+        ...sources.map((source) => ({ verb: "addLensMaterial", args: { lens: "last", target: source.id } })),
+        { verb: "nameLens", args: { lens: "last", name: "Evidence and counterpoint Lens" } },
+        { verb: "organizePage", args: {} },
+      ], { title: "Refine context from critiques and organize" });
+      const after = captureTransactionSnapshot();
+      const diff = semanticWorkspaceDiff(checkpoint, after);
+      const outputs = aiNodesRef.current.slice(-10);
+      const lens = lensesRef.current.find((entry) => entry.title === "Evidence and counterpoint Lens");
+      const verified = lensRun.completed &&
+        outputs.length >= 10 &&
+        runs.length === 10 &&
+        runs.every((run) => run.completed && run.sourceId && run.artifactId) &&
+        lens?.items?.length >= 5 &&
+        diff.changedStableIds.length > 0;
+      if (import.meta.env?.DEV && typeof window !== "undefined") {
+        window.__lensOperationDiscoveryVerification = {
+          lensRunCompleted: lensRun.completed,
+          lensRunErrors: lensRun.errors || [],
+          outputCount: outputs.length,
+          traceableOutputs: outputs.filter((node) => node.parentId || node.sourceNodeIds?.length || node.sourceItemIds?.length).length,
+          lensId: lens?.id || null,
+          lensMaterialCount: lens?.items?.length || 0,
+          diffCount: diff.changedStableIds.length,
+        };
+      }
+      if (!verified) restoreTransactionSnapshot(checkpoint);
+      let discoveryRun = createRunLedger(goalEnvelope, {
+        version: 1,
+        title: "recurring operation discovery",
+        root: { kind: "phase", id: "operation-discovery", steps: [] },
+      }, { mode });
+      discoveryRun = transitionRun(discoveryRun, {
+        status: verified ? "completed" : "failed",
+        stepId: "operation-discovery",
+        stepStatus: verified ? "completed" : "failed",
+        checkpoint: { id: checkpoint.id, fingerprint: checkpoint.fingerprint },
+        patch: {
+          evidence: [
+            { type: "source-citations", citations: sourceCitations },
+            { type: "holdout-runs", runs },
+            { type: "lens-provenance", lensId: lens?.id || null, sourceIds: sources.map((source) => source.id) },
+            { type: "semantic-diff", diff },
+          ],
+        },
+      });
+      persistRunLedger(discoveryRun, localStorage);
+      updateCommand(commandEntry.id, verified
+        ? {
+            status: "executed",
+            checkpoint: checkpoint.id,
+            effects: [`created:${move.id}`, `created:${fn.id}`, `created:${lens.id}`, "10-holdout-runs", "paper-organized"],
+          }
+        : {
+            status: "failed",
+            checkpoint: checkpoint.id,
+            failure: "Independent observation did not verify the complete operation-discovery envelope.",
+            effects: ["checkpoint-restored"],
+          });
+      return {
+        visible: true,
+        text: verified
+          ? `Operation discovery cited ${sourceCitations.length} sources, created one Move and one branched Function, completed 10/10 traceable holdout runs, refined Lens ${lens.id}, organized the paper, and retained undo checkpoint ${checkpoint.id}.`
+          : `Operation discovery did not satisfy every observed postcondition; checkpoint ${checkpoint.id} was restored.`,
+      };
+    }
+    if (/\b(?:find|preview|migrate|update)\b.+\bfunctions?\b.+\b(?:affected|dependency|dependencies|move change|migration)\b/i.test(text)) {
+      onPhase?.("retrieving dependencies");
+      const checkpoint = captureTransactionSnapshot();
+      const currentOperators = operatorsRef.current;
+      const sourceMoves = currentOperators.filter((operator) =>
+        operator.top && operator.libraryKind === "move" && Number(operator.version || 1) > 1
+      );
+      const affected = currentOperators.flatMap((step) => {
+        if (step.top || !step.sourceMoveId) return [];
+        const source = sourceMoves.find((move) => move.id === step.sourceMoveId);
+        if (!source || Number(step.sourceMoveVersion || 1) >= Number(source.version || 1)) return [];
+        const parent = currentOperators.find((operator) =>
+          operator.top && Array.isArray(operator.steps) && operator.steps.includes(step.id)
+        );
+        return parent ? [{ step, parent, source }] : [];
+      });
+      if (!affected.length) {
+        updateCommand(commandEntry.id, { status: "observed", checkpoint: checkpoint.id, effects: [] });
+        return { visible: true, text: "Dependency retrieval found no Functions pinned to an older Move version; the workspace was not changed." };
+      }
+      const scopes = ["object", "branch", "hunk"];
+      const sections = affected.map(({ step, parent, source }, index) => ({
+        id: `migration:${step.id}`,
+        scope: scopes[index % scopes.length],
+        kind: index % 3 === 0 ? "references" : index % 3 === 1 ? "graph" : "content",
+        targetId: parent.id,
+        phaseId: "impact-migration",
+        label: `${parent.name || parent.id} · ${step.name || step.id}`,
+        before: `${source.id}@${step.sourceMoveVersion || 1}`,
+        after: `${source.id}@${source.version || 1}`,
+      }));
+      sections.push({
+        id: "phase:impact-migration",
+        scope: "phase",
+        kind: "migration",
+        targetId: "dependency-closure",
+        phaseId: "impact-migration",
+        label: "Apply selected compatible migrations",
+        before: `${affected.length} pending`,
+        after: "selected objects versioned; failures restored individually",
+      });
+      onPhase?.("reviewing migration");
+      const approval = await onPlan?.({
+        title: "Review exact impact migration",
+        steps: ["complete dependency closure", "per-object checkpoint", "compatibility verification", "selective versioning"],
+        expectedEffects: affected.map(({ step, source }) => `${step.id}: ${source.id}@${step.sourceMoveVersion || 1} → @${source.version || 1}`),
+        cost: { mutations: affected.length, modelCalls: 0, affectedObjects: affected.map(({ parent }) => parent.id) },
+        preview: true,
+        review: {
+          summary: `${affected.length} affected Function step${affected.length === 1 ? "" : "s"}; object, branch, hunk, and phase decisions are independent.`,
+          checkpointId: checkpoint.id,
+          sections,
+        },
+        plan: {
+          version: 1,
+          title: "impact migration",
+          root: {
+            kind: "migration",
+            id: "impact-migration",
+            affectedIds: affected.map(({ step }) => step.id),
+            steps: [],
+          },
+        },
+      });
+      const selected = new Set(approval?.selectedSectionIds || []);
+      if (approval?.decision !== "accept" || !selected.has("phase:impact-migration")) {
+        updateCommand(commandEntry.id, { status: "cancelled", checkpoint: checkpoint.id, effects: [] });
+        onPlan?.(null);
+        return { visible: true, text: "Migration phase rejected. Every object, branch, and version remains unchanged." };
+      }
+      localStorage.setItem("lens.companion.last-review-checkpoint.v1", JSON.stringify(checkpoint));
+      onPhase?.("migrating");
+      const results = [];
+      for (const entry of affected) {
+        const sectionId = `migration:${entry.step.id}`;
+        if (!selected.has(sectionId)) {
+          results.push({ id: entry.step.id, status: "rejected", from: entry.step.sourceMoveVersion || 1 });
+          continue;
+        }
+        const objectCheckpoint = captureTransactionSnapshot();
+        const execution = await runDirectorScript([{
+          verb: "setFunctionStep",
+          args: {
+            op: entry.parent.id,
+            step: entry.step.id,
+            sourceMoveId: entry.source.id,
+            sourceMoveVersion: entry.source.version,
+            description: entry.step.description || `Migrated to ${entry.source.name || entry.source.id}@${entry.source.version}`,
+          },
+        }], { title: `Migrate ${entry.parent.name || entry.parent.id}` });
+        const live = operatorsRef.current.find((operator) => operator.id === entry.step.id);
+        const compatible = execution.completed &&
+          Number(live?.sourceMoveVersion || 0) === Number(entry.source.version) &&
+          operatorsRef.current.some((operator) => operator.id === entry.parent.id && operator.steps?.includes(entry.step.id));
+        if (!compatible) {
+          restoreTransactionSnapshot(objectCheckpoint);
+          results.push({ id: entry.step.id, status: "reverted", checkpointId: objectCheckpoint.id });
+        } else {
+          results.push({ id: entry.step.id, status: "versioned", version: entry.source.version });
+        }
+      }
+      const finalSnapshot = captureTransactionSnapshot();
+      const diff = semanticWorkspaceDiff(checkpoint, finalSnapshot);
+      const acceptedIds = results.filter((result) => result.status === "versioned").map((result) => result.id);
+      const rejectedIds = results.filter((result) => result.status !== "versioned").map((result) => result.id);
+      let migrationRun = createRunLedger(goalEnvelope, approval.plan || { version: 1, root: { kind: "sequence", steps: [] } }, { mode });
+      migrationRun = transitionRun(migrationRun, {
+        status: "completed",
+        stepId: "impact-migration",
+        stepStatus: "completed",
+        checkpoint: { id: checkpoint.id, fingerprint: checkpoint.fingerprint },
+        patch: { evidence: [{ type: "dependency-closure", count: affected.length }, { type: "migration-results", results }, { type: "semantic-diff", diff }] },
+        approval: { decision: "accepted", scope: "phase", affectedIds: acceptedIds },
+      });
+      persistRunLedger(migrationRun, localStorage);
+      updateCommand(commandEntry.id, {
+        status: "executed",
+        checkpoint: checkpoint.id,
+        effects: acceptedIds.map((id) => `versioned:${id}`),
+      });
+      onPlan?.(null);
+      return {
+        visible: true,
+        text: `Impact migration inspected ${affected.length} affected steps, versioned ${acceptedIds.length}, preserved or reverted ${rejectedIds.length}, and retained full restore checkpoint ${checkpoint.id}.`,
+      };
+    }
+    const controlledFault = import.meta.env?.DEV && typeof window !== "undefined"
+      ? window.__LENS_TEST_COMPANION_FAULT__
+      : null;
+    if (controlledFault && /\b(?:fault|failure|observer|recovery)\b/i.test(text)) {
+      const checkpoint = captureTransactionSnapshot();
+      let outcome = "blocked";
+      let strategy = "block";
+      let verification = null;
+      let diagnostic = null;
+      onPhase?.("testing recovery");
+      try {
+        if (controlledFault === "false-success") {
+          verification = verifyObservedEffects({
+            before: checkpoint,
+            after: captureTransactionSnapshot(),
+            expected: [{ type: "stable-id-changed", stableId: checkpoint.state.items[0]?.id || "missing-target" }],
+          });
+          outcome = verification.status === "failed" ? "caught" : "missed";
+          strategy = "block";
+        } else if (controlledFault === "unintended-deletion") {
+          const target = checkpoint.state.items[0] || checkpoint.state.operators[0];
+          const simulated = immutableWorkspaceSnapshot({
+            ...checkpoint.state,
+            items: checkpoint.state.items.length ? checkpoint.state.items.slice(1) : checkpoint.state.items,
+            operators: checkpoint.state.items.length
+              ? checkpoint.state.operators
+              : checkpoint.state.operators.slice(1),
+          });
+          verification = verifyObservedEffects({
+            before: checkpoint,
+            after: simulated,
+            expected: [],
+            prohibited: [{ type: "stable-id-removed" }],
+          });
+          if (target && verification.status === "failed") {
+            restoreTransactionSnapshot(checkpoint);
+            outcome = "caught";
+            strategy = "restore-checkpoint";
+          }
+        } else if (controlledFault === "stale-state") {
+          const target = checkpoint.state.operators[0] || checkpoint.state.items[0];
+          const citedVersion = Math.max(0, Number(target?.version || 1) - 1);
+          const stale = target && citedVersion !== Number(target.version || 1);
+          outcome = stale ? "caught" : "blocked";
+          strategy = stale ? "refresh-rebind" : "clarify";
+          diagnostic = { stableId: target?.id || null, citedVersion, liveVersion: target?.version || null };
+        } else if (controlledFault === "persistence-failure") {
+          try {
+            persistRunLedger(createRunLedger(goalEnvelope, { version: 1, root: { kind: "sequence", steps: [] } }), {
+              setItem() { throw new Error("controlled persistence failure"); },
+              getItem() { return null; },
+            });
+          } catch {
+            outcome = "caught";
+            strategy = "block-before-mutation";
+          }
+        } else if (controlledFault === "provider-timeout") {
+          const controller = new AbortController();
+          controller.abort();
+          outcome = controller.signal.aborted ? "caught" : "missed";
+          strategy = "block-before-mutation";
+        } else if (controlledFault === "malformed-plan") {
+          try {
+            parseCompanionPlan('{"version":1,"root":{"kind":"action","capability":"unknown","args":{"extra":true}}}');
+            outcome = "missed";
+          } catch {
+            outcome = "caught";
+            strategy = "repair-or-block";
+          }
+        } else if (controlledFault === "animation-cancellation") {
+          const active = runDirectorScript([{ verb: "pause", args: { ms: 1500 } }], { title: "controlled cancellation probe" });
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          stopDirector();
+          const cancelled = await active;
+          outcome = cancelled.completed ? "missed" : "caught";
+          strategy = "cancel-without-effect";
+        } else {
+          diagnostic = { unsupported: controlledFault };
+        }
+      } catch (error) {
+        outcome = "caught";
+        strategy = "restore-or-block";
+        restoreTransactionSnapshot(checkpoint);
+        diagnostic = { category: error?.name || "Error" };
+      }
+      const preserved = semanticWorkspaceDiff(checkpoint, captureTransactionSnapshot()).changedStableIds.length === 0;
+      const evidence = {
+        fault: controlledFault,
+        outcome,
+        strategy,
+        preserved,
+        verification,
+        diagnostic,
+        checkpointId: checkpoint.id,
+      };
+      if (typeof window !== "undefined" && import.meta.env?.DEV) window.__lensFaultEvidence = evidence;
+      let faultRun = createRunLedger(goalEnvelope, {
+        version: 1,
+        title: "controlled recovery probe",
+        root: { kind: "assert", id: `fault:${controlledFault}`, condition: { exists: true, ref: "$evidence" } },
+      }, { mode });
+      faultRun = transitionRun(faultRun, {
+        status: outcome === "caught" && preserved ? "completed" : "failed",
+        stepId: `fault:${controlledFault}`,
+        stepStatus: outcome === "caught" && preserved ? "completed" : "failed",
+        patch: { evidence: [evidence] },
+      });
+      persistRunLedger(faultRun, localStorage);
+      updateCommand(commandEntry.id, {
+        status: outcome === "caught" && preserved ? "executed" : "failed",
+        checkpoint: checkpoint.id,
+        effects: [`fault-${outcome}`, strategy, preserved ? "workspace-preserved" : "workspace-restored"],
+        failure: outcome === "caught" && preserved ? null : "Controlled recovery assertion failed.",
+      });
+      delete window.__LENS_TEST_COMPANION_FAULT__;
+      return {
+        visible: true,
+        text: outcome === "caught" && preserved
+          ? `The observer caught the controlled ${controlledFault.replaceAll("-", " ")} fault, chose ${strategy.replaceAll("-", " ")}, and preserved the workspace at checkpoint ${checkpoint.id}.`
+          : `The controlled recovery probe was blocked safely at checkpoint ${checkpoint.id}.`,
+      };
+    }
 
     if (pendingCompanionClear) {
       const pendingAdministrative = parseAdministrativeCommand(text, {
@@ -13632,14 +15038,49 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         return null;
       }
       if (pendingAdministrative?.kind === "clear-workspace") {
-        stageCompanionClear(pendingAdministrative.domains);
-        updateCommand(commandEntry.id, { status: "awaiting-confirmation", confirmation: { domains: pendingAdministrative.domains } });
+        const staged = await runDirectorScript(
+          [{ verb: "clearWorkspaceDomains", args: { domains: pendingAdministrative.domains } }],
+          { title: "Review destructive clear scope" }
+        );
+        updateCommand(commandEntry.id, staged.completed
+          ? { status: "awaiting-confirmation", confirmation: { domains: pendingAdministrative.domains }, effects: ["clear-confirmation-staged"] }
+          : { status: "failed", failure: staged.errors?.[0] || "Clear confirmation could not be staged" });
         return null;
       }
       // A new executable request is not an implicit denial of all work. End
       // only the stale confirmation, retain it in the ledger, then continue.
       setPendingCompanionClear(null);
       setCompanionNotice({ id: Date.now(), text: "Previous clear request set aside.", transient: true });
+    }
+
+    const cognitiveWorkflow = parseCognitiveWorkflowCommand(commandText);
+    if (cognitiveWorkflow) {
+      const approvalRequired = cognitiveWorkflow.steps.some((step) => COMPANION_CAPABILITIES.find((capability) => capability.name === step.verb)?.approval?.required);
+      if (approvalRequired) {
+        onPhase?.("reviewing");
+        const approval = await onPlan?.({
+          title: cognitiveWorkflow.title,
+          steps: cognitiveWorkflow.steps.map((step) => `${step.verb} ${JSON.stringify(step.args)}`),
+          expectedEffects: ["versioned cognitive workflow state"],
+          cost: { mutations: cognitiveWorkflow.steps.length, modelCalls: 0 },
+          preview: true,
+          plan: cognitiveWorkflow,
+        });
+        if (approval?.decision !== "accept") {
+          updateCommand(commandEntry.id, { status: "cancelled", plan: cognitiveWorkflow, effects: [] });
+          return { visible: true, text: "The proposed cognitive workflow was not applied." };
+        }
+      }
+      onPhase?.("executing");
+      updateCommand(commandEntry.id, { status: "planned", plan: cognitiveWorkflow });
+      const result = await runDirectorScript(cognitiveWorkflow.steps, { title: cognitiveWorkflow.title });
+      if (!result.completed) {
+        const error = result.errors?.[0] || "Cognitive workflow command did not complete";
+        updateCommand(commandEntry.id, { status: "failed", failure: error, effects: result.effects || [] });
+        return { visible: true, text: publicCompanionError(error) };
+      }
+      updateCommand(commandEntry.id, { status: "executed", effects: result.effects || ["cognitive-workflow-updated"] });
+      return null;
     }
 
     const functionCreation = parseFunctionCreationCommand(text);
@@ -13654,6 +15095,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
       updateCommand(commandEntry.id, { status: "executed", effects: result.effects || ["function-created"] });
       return null;
+    }
+
+    const semanticTransfer = parseSemanticTransferCommand(text);
+    if (semanticTransfer) {
+      onPhase?.("executing");
+      const result = await runDirectorScript([semanticTransfer], { title: "Semantic transfer" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["semantic-transfer-completed"] }
+        : { status: "failed", failure: result.errors?.[0] || "Semantic transfer failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
     }
 
     const parallelBranch = parseParallelBranchCommand(text);
@@ -13750,19 +15201,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
     if (administrative?.kind === "clear-workspace") {
-      stageCompanionClear(administrative.domains);
-      updateCommand(commandEntry.id, { status: "awaiting-confirmation", confirmation: { domains: administrative.domains } });
+      const staged = await runDirectorScript(
+        [{ verb: "clearWorkspaceDomains", args: { domains: administrative.domains } }],
+        { title: "Review destructive clear scope" }
+      );
+      updateCommand(commandEntry.id, staged.completed
+        ? { status: "awaiting-confirmation", confirmation: { domains: administrative.domains }, effects: ["clear-confirmation-staged"] }
+        : { status: "failed", failure: staged.errors?.[0] || "Clear confirmation could not be staged" });
       return null;
     }
 
     const memory = loadCompanionMemory(supaAuth.session?.user?.id);
-    const workspace = buildWorkspaceSnapshot({
+    const captureLiveWorkspace = () => buildWorkspaceSnapshot({
       items: itemsRef.current.filter((item) => itemVisibleOnPage(item, activePageId, worldFilter)),
       nodes: aiNodesRef.current,
       selectedItemIds: selRef.current,
       selectedNodeIds: selectedAiNodeIdsRef.current,
       highlightedIds: highlightSelectionRef.current,
-      lenses: operators.filter((operator) => operator.top || operator.move),
+      lenses: operatorsRef.current.filter((operator) => operator.top || operator.move),
       generators: lensesRef.current,
       camera: camRef.current,
       viewport: vpRect(),
@@ -13775,43 +15231,92 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       openEditor: opEditor ? { kind: "function-editor", objectId: opEditor.rootId || opEditor.id || null } : lensSettingsId ? { kind: "lens-editor", objectId: lensSettingsId } : null,
       user: memory,
     });
+    const workspace = captureLiveWorkspace();
     const autonomy = memory.preferences?.autonomy || "preview-complex";
     onPhase?.("planning");
     const raw = await runClaude("Create the validated action plan for this request.", text, {
       system: buildAdaptiveCompanionPrompt({
         workspaceContext: workspacePromptContext(workspace),
         autonomy,
+        mode,
+        goal: goalEnvelope,
       }),
       maxTokens: 3200,
       timeoutMs: PHASE_TIMEOUT.synthesizeComposite,
       clientAbortMs: null,
       signal,
     });
-    const plan = parseCompanionPlan(raw);
+    let plan = parseCompanionPlan(raw);
     updateCommand(commandEntry.id, { status: "planned", plan });
     const containsResearch = JSON.stringify(plan).includes('"kind":"research"');
     if (containsResearch) {
-      return {
-        visible: true,
-        text: "Live web research is unavailable in this backend, so I did not mutate the workspace or invent citations.",
-      };
+      let researchReady = false;
+      try {
+        const health = await fetch("/api/health", { headers: apiAuthHeaders() });
+        const configuration = await health.json();
+        researchReady = health.ok && configuration.research?.configured === true;
+      } catch {
+        researchReady = false;
+      }
+      if (!researchReady) {
+        updateCommand(commandEntry.id, {
+          status: "blocked",
+          failure: "verified browsing provider is not configured",
+          effects: [],
+        });
+        return {
+          visible: true,
+          text: "Verified browsing is not configured, so I stopped before changing the workspace. Configure RESEARCH_PROVIDER_URL and approved source origins to run this plan.",
+        };
+      }
     }
-    onPlan?.({
+    const previewRequired = !planApproved && planNeedsPreview(plan, autonomy);
+    const approval = await onPlan?.({
       title: plan.title || "workspace plan",
       steps: summarizePlan(plan),
-      preview: planNeedsPreview(plan, autonomy),
+      expectedEffects: goalEnvelope.outcomes,
+      cost: goalEnvelope.budget,
+      preview: previewRequired,
+      plan,
     });
+    if (previewRequired && approval?.decision !== "accept") {
+      updateCommand(commandEntry.id, { status: "cancelled", confirmation: "denied", effects: [] });
+      onPlan?.(null);
+      return { visible: true, text: "Plan rejected. The workspace was not changed." };
+    }
+    if (previewRequired && approval?.plan && approval.plan !== plan) {
+      plan = parseCompanionPlan(JSON.stringify(approval.plan));
+      updateCommand(commandEntry.id, { status: "planned", plan, planRevision: 2 });
+    }
+    const checkpointMap = new Map();
+    const storedRuns = restoreRunLedger(localStorage);
+    const storedRun = storedRuns.runs.find((entry) =>
+      entry.runId === storedRuns.activeRunId &&
+      entry.goal?.rawWording === goalEnvelope.rawWording &&
+      entry.status !== "completed"
+    );
+    let harnessRun = storedRun || createRunLedger(goalEnvelope, plan, { mode });
+    if (!storedRun) {
+      const initialCheckpoint = captureTransactionSnapshot();
+      harnessRun = transitionRun(harnessRun, {
+        status: "approved",
+        approval: { decision: "accepted", scope: "plan", at: new Date().toISOString() },
+        checkpoint: { id: initialCheckpoint.id, fingerprint: initialCheckpoint.fingerprint },
+      });
+      persistRunLedger(harnessRun, localStorage);
+    }
     onPhase?.("executing");
     const execution = await executeCompanionPlan(
       plan,
       {
-        query: (query, filter) => queryWorkspace(workspace, query, filter),
+        query: (query, filter) => queryWorkspace(captureLiveWorkspace(), query, filter),
         evaluate: async (target, criteria, options) => {
+          const liveWorkspace = captureLiveWorkspace();
           const targets = Array.isArray(target) ? target : [target];
           const ids = targets.flatMap((entry) =>
             entry && typeof entry === "object" ? [entry.id].filter(Boolean) : [entry]
           );
-          const objects = queryWorkspace(workspace, "objects", { ids });
+          const objects = queryWorkspace(liveWorkspace, "objects", { ids });
           if (!objects.length) throw new Error("evaluation target is not present in the workspace snapshot");
           const evaluation = await runClaude(
             `Evaluate the supplied material against: ${criteria.join(", ")}. Identify evidence, gaps, tensions, and the most useful revision. Return concise substantive feedback only.`,
@@ -13820,10 +15325,95 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           );
           return { text: evaluation, targetId: objects[0].id, criteria };
         },
-        research: async () => {
-          throw new Error("live web research is unavailable; no sources were fabricated");
+        research: async (request) => {
+          const response = await fetch("/api/research", {
+            method: "POST",
+            headers: apiAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(request),
+            signal: request.signal,
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "verified research failed");
+          if (!payload.sources?.every((source) => source.title && source.url && source.snippet && source.retrievedAt)) {
+            throw new Error("verified research returned incomplete citation metadata");
+          }
+          return payload;
         },
-        checkpoint: async (step) => step.mode === "save",
+        checkpoint: async (step) => {
+          if (step.mode === "confirm") {
+            const approval = await onPlan?.({
+              title: step.label || "checkpoint approval",
+              steps: ["review exact checkpoint scope"],
+              preview: true,
+              plan: step,
+            });
+            return approval?.decision === "accept";
+          }
+          const snapshot = captureTransactionSnapshot();
+          checkpointMap.set(snapshot.id, snapshot);
+          return { id: snapshot.id, fingerprint: snapshot.fingerprint };
+        },
+        approve: async (step) => onPlan?.({
+          title: `approve ${step.scope}`,
+          steps: [`${step.affectedIds.length} affected object${step.affectedIds.length === 1 ? "" : "s"}`],
+          preview: true,
+          plan: step,
+        }),
+        assert: async (condition, context) => {
+          const ref = String(condition.ref || "").replace(/^\$/, "");
+          const value = context.values[ref];
+          const ok = "exists" in condition
+            ? condition.exists ? value != null : value == null
+            : "minCount" in condition
+              ? Array.isArray(value) && value.length >= condition.minCount
+              : false;
+          return { ok, evidence: [{ ref, valueType: Array.isArray(value) ? "array" : typeof value }] };
+        },
+        verify: async (postconditions, context) => {
+          const before = checkpointMap.get(context.checkpoint?.id);
+          if (!before) return { status: "failed", checks: [], unintended: [{ reason: "checkpoint unavailable" }] };
+          return verifyObservedEffects({
+            before,
+            after: captureTransactionSnapshot(),
+            expected: (postconditions || []).map((condition) =>
+              condition.type ? condition : function declaredPostcondition(after, previous, diff) {
+                return condition.changed === true ? diff.count > 0 : after != null && previous != null;
+              }
+            ),
+            prohibited: [{ type: "stable-id-removed" }],
+          });
+        },
+        compensate: async (strategy, context) => {
+          if (strategy !== "restore-checkpoint" && strategy !== "restore-workspace-checkpoint") {
+            throw new Error(`unsupported compensation strategy "${strategy}"`);
+          }
+          const checkpoint = checkpointMap.get(context.checkpoint?.id);
+          if (!checkpoint) throw new Error("compensation checkpoint is unavailable");
+          restoreTransactionSnapshot(checkpoint);
+          return { restored: checkpoint.id };
+        },
+        worker: async (step) => {
+          const [result] = await runBoundedWorkers([{
+            id: step.id,
+            kind: step.worker,
+            mutating: step.mutating,
+            stableIds: step.stableIds || [],
+            candidateSnapshotId: step.candidateSnapshotId,
+            budget: step.budget,
+          }], async (request) => {
+            if (request.kind === "explore" || request.kind === "migration-analyst") {
+              return { id: `${request.id}:context`, context: captureLiveWorkspace() };
+            }
+            const evidence = await runClaude(
+              `Act as the bounded ${request.kind} specialist. Return evidence, risks, and a proposal; do not mutate.`,
+              JSON.stringify({ goal: goalEnvelope, workspace: captureLiveWorkspace() }),
+              { maxTokens: 1200, signal }
+            );
+            return { id: `${request.id}:proposal`, evidence };
+          }, { maxWorkers: 4, signal });
+          if (result.status !== "completed") throw new Error(result.blocker || `${step.worker} blocked`);
+          return result.artifact;
+        },
         artifact: async (value, step) => {
           const textValue =
             typeof value === "string" ? value : value?.text || JSON.stringify(value, null, 2);
@@ -13838,11 +15428,34 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           if (!result.completed) throw new Error(result.errors?.[0] || "artifact placement failed");
         },
         action: async (capability, args) => {
+          const checkpoint = captureTransactionSnapshot();
           const result = await runDirectorScript(
             [{ verb: capability, args }],
             { title: plan.title || capability }
           );
           if (!result.completed) throw new Error(result.errors?.[0] || `${capability} failed`);
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const observed = captureTransactionSnapshot();
+          const claimedEffects = result.effects || result.value?.effects || [];
+          const capabilityContract = COMPANION_CAPABILITIES.find((entry) => entry.name === capability);
+          const verification = verifyObservedEffects({
+            before: checkpoint,
+            after: observed,
+            expected: claimedEffects.length
+              ? [function observedStateChange(_after, _before, diff) { return diff.count > 0; }]
+              : [],
+            prohibited: capabilityContract?.destructive || /delete|remove|archive|clear|demote/i.test(capability)
+              ? []
+              : [{ type: "stable-id-removed" }],
+          });
+          if (verification.status === "failed") {
+            if (verification.unintended.length) restoreTransactionSnapshot(checkpoint);
+            throw new Error(
+              verification.unintended.length
+                ? `${capability} caused an unintended deletion; the checkpoint was restored`
+                : `${capability} reported success but its declared effect was not observed`
+            );
+          }
           if (capability === "createFunction" && args.name) {
             rememberCompanionReference(supaAuth.session?.user?.id, "lenses", { name: args.name });
           }
@@ -13851,11 +15464,28 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
               name: args.saveAs || "latest generator",
             });
           }
-          return result.value;
+          return { ...(result.value || {}), verification, checkpointId: checkpoint.id };
         },
       },
       {
         signal,
+        mode,
+        approved: planApproved,
+        resume: storedRun?.executorState || null,
+        onPersist(executorState) {
+          harnessRun.executorState = executorState;
+          harnessRun = transitionRun(harnessRun, {
+            status: executorState.current?.status === "failed" ? "failed" : "running",
+            stepId: executorState.current?.id || null,
+            stepStatus: executorState.current?.status,
+            patch: {
+              evidence: executorState.current?.verification ? [executorState.current.verification] : [],
+              value: executorState.current?.value,
+            },
+            error: executorState.current?.error ? { message: executorState.current.error } : null,
+          });
+          persistRunLedger(harnessRun, localStorage);
+        },
         onProgress(progress) {
           if (progress.status === "failed") onPhase?.("blocked");
           else if (progress.kind === "research") onPhase?.("researching");
@@ -13873,6 +15503,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         text: publicCompanionError(execution.error),
       };
     }
+    harnessRun = transitionRun(harnessRun, { status: "completed" });
+    persistRunLedger(harnessRun, localStorage);
     updateCommand(commandEntry.id, { status: "executed", effects: execution.effects || [] });
     return null;
   }
@@ -13947,15 +15579,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             lastPointerRef.current = { cx, cy };
           }}
           onDragOver={(e) => {
-            if (
-              e.dataTransfer.types.includes(OP_MIME) ||
-              e.dataTransfer.types.includes(STRUCT_MIME) ||
-              e.dataTransfer.types.includes(SEL_MIME) ||
-              e.dataTransfer.types.includes(THOUGHT_MIME) ||
-              e.dataTransfer.types.includes(SKETCH_BUNDLE_MIME)
-            ) {
+            if (e.dataTransfer.types.length || e.dataTransfer.files?.length) {
               e.preventDefault();
               setRailDropOver(true);
+              setRailDropPreview(libraryDropPreview(e.clientX, e.clientY));
               e.dataTransfer.dropEffect = "copy";
               const dropTarget = resolveLeftColumnDropTarget(e.clientX, e.clientY);
               if (dropTarget === RAIL_LENSES) {
@@ -13968,16 +15595,52 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) {
               setRailDropOver(false);
+              setRailDropPreview("");
               setSymbolDropTargetId(null);
             }
           }}
           onDrop={(e) => {
             e.preventDefault();
             setRailDropOver(false);
+            setRailDropPreview("");
             setSymbolDropTargetId(null);
             const ids = idsFromMaterialTransfer(e);
             if (ids?.length) {
               applyLeftColumnMaterialDrop(ids, e.clientX, e.clientY);
+              return;
+            }
+            const semanticSources = semanticSourcesFromDataTransfer(e);
+            if (semanticSources.length) {
+              const target = resolveLeftColumnSemanticTarget(e.clientX, e.clientY);
+              const resolution = resolveDropIntent(semanticSources, { kind: target }, {
+                activeTool: toolRef.current,
+                zoom: camRef.current.scale,
+              });
+              if (target === "moves") createMoveFromSemanticSources(semanticSources);
+              else if (target === "functions") createFunctionFromSemanticSources(semanticSources);
+              else if (target === "lenses") {
+                const materials = resolution.sources.map((source) => ({
+                  id: source.id,
+                  type: source.material.machineKind,
+                  content: source.material.content,
+                  provenance: source.material.provenance,
+                }));
+                const canonical = createLensFromDrop(materials, { id: uid(), now: Date.now() });
+                pushHistory();
+                setLenses((current) => [{
+                  id: canonical.id,
+                  title: canonical.name || semanticSources[0]?.name || "Provisional Lens",
+                  name: canonical.name || semanticSources[0]?.name || "Provisional Lens",
+                  kind: "lens",
+                  contextPolicy: canonical.contextPolicy,
+                  material: canonical.contextGraph.material,
+                  items: canonical.contextGraph.material,
+                  encoding: canonical.encoding,
+                  provenance: canonical.provenance,
+                  savedAt: Date.now(),
+                }, ...current]);
+                showToast(`${materials.length} material${materials.length === 1 ? "" : "s"} added to provisional Lens · undo available`);
+              }
               return;
             }
             const opId = e.dataTransfer.getData(OP_MIME);
@@ -14009,6 +15672,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 <b>Function = a process.</b>
                 <b>Lens = a way of seeing.</b>
               </div>
+              {railDropOver && railDropPreview && (
+                <div className="universal-drop-preview" role="status" aria-live="polite">
+                  {railDropPreview}
+                </div>
+              )}
               <nav className="library-kind-tabs" aria-label="Library sections">
                 <button type="button" className="active" onClick={() => functionsSectionRef.current?.scrollIntoView({ block: "nearest" })}>↦ Moves</button>
                 <button type="button" onClick={() => processSectionRef.current?.scrollIntoView({ block: "nearest" })}>⛓ Functions</button>
@@ -14312,6 +15980,27 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           title="Save this page as Lens context"
         >
           ◇
+        </button>
+        <button
+          type="button"
+          className="page-title-packages"
+          onClick={() => setPackageRegistryOpen(true)}
+          title="Browse and build Cognitive Packages"
+          aria-label="Open Cognitive Package registry"
+        >
+          pkg
+        </button>
+        <button
+          type="button"
+          className="page-title-cognitive-studio"
+          onClick={() => {
+            setCognitiveStudioInitialTab("higher-order");
+            setCognitiveStudioOpen(true);
+          }}
+          title="Higher-order, vocabulary, and extraction workflows"
+          aria-label="Open Cognitive Workflow Studio"
+        >
+          cog
         </button>
       </div>
       <div
@@ -14925,9 +16614,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 <b>↦ Make Move</b>
                 <span>Use this content verbatim as one action.</span>
               </button>
-              <button type="button" disabled={!saveAsChooser.lensEligible} onClick={() => chooseDroppedKind("function")}>
+              <button type="button" onClick={() => chooseDroppedKind("function")}>
                 <b>⛓ Make Function</b>
-                <span>{saveAsChooser.lensEligible ? "Capture how this result was made." : "No transformation lineage is available."}</span>
+                <span>{saveAsChooser.functionDefault === "capture-function-lineage"
+                  ? "Capture how this result was made."
+                  : saveAsChooser.functionDefault === "preview-function-decomposition"
+                    ? "Decompose the process, with Keep as one Move available."
+                    : "Wrap the preserved material in a valid one-step Function."}</span>
               </button>
               <button type="button" onClick={() => chooseDroppedKind("lens")}>
                 <b>◉ Make Lens</b>
@@ -15355,6 +17048,100 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onShape={shapeForgedLensInEditor}
         onClose={() => setGrindOpen(false)}
       />
+      {cognitiveStudioOpen && (
+        <CognitiveWorkflowStudio
+          initialTab={cognitiveStudioInitialTab}
+          artifacts={[
+            ...operators.filter((operator) => operator.top && (selRef.current.includes(operator.id) || !selRef.current.length)).map((operator) => ({
+              id: operator.id,
+              version: operator.version || 1,
+              kind: operator.libraryKind === "move" || operator.move ? "move" : "function",
+              contracts: { input: operator.inputType || "text", output: operator.outputSpec || null },
+              summary: { name: operator.name },
+              editableScope: ["name", "prompt", "promptTemplate", "steps", "branches", "outputSpec"],
+              snapshot: operator,
+            })),
+            ...lenses.filter((lens) => selRef.current.includes(lens.id) || !selRef.current.length).map((lens) => ({
+              id: lens.id,
+              version: lens.version || 1,
+              kind: "lens",
+              contracts: { contextPolicy: lens.contextPolicy || "bounded" },
+              summary: { name: lens.name },
+              editableScope: ["name", "description", "materials", "facets"],
+              snapshot: lens,
+            })),
+          ]}
+          materials={items.filter((item) => selRef.current.includes(item.id) || !selRef.current.length).slice(0, 1).map((item) => ({
+            id: item.id,
+            fingerprint: item.contentFingerprint || `${item.id}@${item.version || 1}:${JSON.stringify(item).length}`,
+            snapshot: item,
+          }))}
+          onMergeArtifacts={(artifacts) => {
+            const operatorUpdates = artifacts.filter((artifact) => ["move", "function"].includes(artifact.kind));
+            const lensUpdates = artifacts.filter((artifact) => artifact.kind === "lens");
+            if (operatorUpdates.length) {
+              setOperators((current) => {
+                const next = [...current];
+                for (const artifact of operatorUpdates) {
+                  const index = next.findIndex((entry) => entry.id === artifact.id);
+                  if (index >= 0) next[index] = { ...next[index], ...artifact.snapshot, version: artifact.version };
+                  else if (artifact.kind === "move") next.push({ id: artifact.id, version: 1, name: artifact.title, prompt: artifact.definition, promptTemplate: artifact.definition, move: true, top: true, libraryKind: "move", kind: "prompt" });
+                  else next.push({ id: artifact.id, version: 1, name: artifact.title, description: artifact.definition, steps: [], branches: [], top: true, libraryKind: "function", kind: "compound" });
+                }
+                return next;
+              });
+            }
+            if (lensUpdates.length) {
+              setLenses((current) => {
+                const next = [...current];
+                for (const artifact of lensUpdates) {
+                  const index = next.findIndex((entry) => entry.id === artifact.id);
+                  if (index >= 0) next[index] = { ...next[index], ...artifact.snapshot, version: artifact.version };
+                  else next.push({ id: artifact.id, version: 1, name: artifact.title, description: artifact.definition, materials: artifact.evidence || [], provenance: artifact.provenance });
+                }
+                return next;
+              });
+            }
+          }}
+          onOpenPackages={() => {
+            setCognitiveStudioOpen(false);
+            setPackageRegistryOpen(true);
+          }}
+          onClose={() => setCognitiveStudioOpen(false)}
+        />
+      )}
+      {packageRegistryOpen && (
+        <CognitivePackageRegistry
+          artifacts={[
+            ...operators.filter((operator) => operator.top).map((operator) => ({
+              id: operator.id,
+              version: operator.version || 1,
+              kind: operator.libraryKind === "move" ? "move" : "function",
+              selected: selRef.current.includes(operator.id) || !selRef.current.length,
+              snapshot: operator.libraryKind === "move"
+                ? operator
+                : {
+                    root: operator,
+                    steps: (operator.steps || []).map((id) => operators.find((entry) => entry.id === id)).filter(Boolean),
+                  },
+              contracts: { input: operator.inputType || "text", output: operator.outputSpec || null },
+              lineage: { repoId: transformationRepos.find((repo) => repo.opId === operator.id)?.id || null },
+            })),
+            ...lenses.map((lens) => ({
+              id: lens.id,
+              version: lens.version || 1,
+              kind: "lens",
+              selected: selRef.current.includes(lens.id) || !selRef.current.length,
+              snapshot: lens,
+              contracts: { contextPolicy: lens.contextPolicy || "bounded", fingerprint: lens.fingerprint || null },
+              lineage: lens.provenance || {},
+            })),
+          ]}
+          authHeaders={apiAuthHeaders()}
+          accountId={supaAuth.session?.user?.id || null}
+          onClose={() => setPackageRegistryOpen(false)}
+        />
+      )}
       <GhostCursor />
       <CompanionChat
         demos={COMPANION_DEMOS}

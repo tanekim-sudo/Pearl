@@ -115,6 +115,51 @@ test("extension companion manifest and real handlers have exact parity", async (
     openBeforeAfter: async () => { opened = true; },
   });
   assert.equal(opened, true);
+  await assert.rejects(
+    () => executeExtensionVerb("insertExternalResult", { result: "1" }, {
+      resolveResult: () => ({ text: "draft" }),
+      action: async () => ({ ok: true }),
+    }),
+    /scoped preview approval/
+  );
+  const written = await executeExtensionVerb("insertExternalResult", { result: "1" }, {
+    confirmed: true,
+    approvalScope: "current editor",
+    idempotencyKey: "write-1",
+    resolveResult: () => ({ text: "draft", outputSpec: {}, machineKind: "text" }),
+    action: async () => ({ ok: true }),
+  });
+  assert.equal(written.receipt.id, "write-1");
+  assert.equal(written.receipt.scope, "current editor");
+});
+
+test("extension cognitive workflows preserve payloads and enforce package and vocabulary approval", async () => {
+  assert.equal(parseExtensionIntent("browse cognitive packages").name, "browseExternalPackages");
+  assert.equal(parseExtensionIntent("extract all Moves and Lenses from this selection").name, "openExternalCognitivePullRequest");
+  const events = [];
+  await executeExtensionVerb("openExternalCognitivePullRequest", { kinds: ["move", "lens"] }, {
+    animate: async () => {},
+    action: async (type, payload) => events.push({ type, payload }),
+  });
+  assert.equal(events[0].type, "open-cognitive-pull-request");
+  assert.equal(events[0].payload.captureScope, "explicit-selection");
+  assert.equal(events[0].payload.preservePayload, true);
+  await assert.rejects(
+    () => executeExtensionVerb("teachExternalPersonalCommand", { trigger: "founder pass", command: "openExternalCognitivePullRequest", scope: "workspace" }, {
+      action: async () => ({}),
+    }),
+    /scoped preview approval/
+  );
+  const taught = await executeExtensionVerb("teachExternalPersonalCommand", { trigger: "founder pass", command: "openExternalCognitivePullRequest", scope: "workspace" }, {
+    confirmed: true,
+    animate: async () => {},
+    action: async (type, payload) => ({ type, payload }),
+  });
+  assert.equal(taught.type, "personal-command-save");
+  await assert.rejects(
+    () => executeExtensionVerb("installExternalPackage", { manifest: {} }, { installPackage: async () => ({}) }),
+    /scoped preview approval/
+  );
 });
 
 test("specialist adapters use supported public integration boundaries", () => {

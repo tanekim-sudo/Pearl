@@ -1,0 +1,587 @@
+{
+  "generatedAt": "2026-07-17T01:38:04.531Z",
+  "harness": "controlled real director/extension handler execution",
+  "inputPath": "director",
+  "counts": {
+    "total": 21,
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0,
+    "app": 16,
+    "extension": 5
+  },
+  "rows": [
+    {
+      "name": "openPackageRegistry",
+      "platform": "app",
+      "utterance": "please open the Cognitive Package registry and trust review",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "06b490c9-4881-4912-895c-312855d120b8",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1589,
+      "errors": []
+    },
+    {
+      "name": "createSignedPackage",
+      "platform": "app",
+      "utterance": "please validate, test, scan, and sign a declarative package draft",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0",
+        "artifactIds": [
+          "op-a"
+        ],
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6382ed5f-7a1b-4a67-92de-638c50665915",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1620,
+      "errors": []
+    },
+    {
+      "name": "publishCognitivePackage",
+      "platform": "app",
+      "utterance": "please publish the active signed package after scoped external approval",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "precise setup or authentication boundary before mutation",
+      "persistence": "zero mutation before blocker",
+      "animation": {
+        "version": 1,
+        "traceId": "80e987fa-38bf-49a4-bfb3-127207f98b2a",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2007,
+      "errors": [
+        "sign in is required to publish; signed local export remains available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to publish; signed local export remains available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "installCognitivePackage",
+      "platform": "app",
+      "utterance": "please verify and atomically install a signed package",
+      "args": {
+        "manifest": {}
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6f0a4e52-6435-4713-a846-aebb3391b30c",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1572,
+      "errors": [
+        "choose a complete signed package manifest before install"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "choose a complete signed package manifest before install"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "rollbackCognitivePackage",
+      "platform": "app",
+      "utterance": "please restore the previous installed package version",
+      "args": {
+        "package": "runtime.audit/evidence-tools"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1a5de96e-3c54-451f-8545-673f081d5968",
+        "status": "failed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1540,
+      "errors": [
+        "no package install checkpoint is available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "no package install checkpoint is available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "deprecateCognitivePackage",
+      "platform": "app",
+      "utterance": "please deprecate an owned package version after scoped approval",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9cd77351-5a8c-48d6-bda4-76b7acfb311b",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1607,
+      "errors": [
+        "sign in is required to deprecate a published package"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to deprecate a published package"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "openCognitiveWorkflowStudio",
+      "platform": "app",
+      "utterance": "please open the higher-order, vocabulary, and extraction review studio",
+      "args": {
+        "tab": "higher-order"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b6f55bea-63fe-4d04-93ca-fbbdddccb689",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1727,
+      "errors": []
+    },
+    {
+      "name": "proposeHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please create and isolate-test a reviewable ArtifactPatch without mutating its source",
+      "args": {
+        "artifact": "op-a",
+        "purpose": "Require evidence for every claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "815b4d18-37fb-48f6-9b40-5089017c1755",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1447,
+      "errors": []
+    },
+    {
+      "name": "applyHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please apply selected passing patch hunks as a new artifact version",
+      "args": {
+        "patchId": "last",
+        "acceptedHunkIds": [
+          "primary-hunk"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "91ba1629-8fcc-4c38-a524-4ce67b8bfb4f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1894,
+      "errors": []
+    },
+    {
+      "name": "teachPersonalCommand",
+      "platform": "app",
+      "utterance": "please preview and save a scoped inspectable personal command definition",
+      "args": {
+        "trigger": "runtime founder pass",
+        "command": "openCognitiveWorkflowStudio",
+        "scope": "workspace"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "40eb32d0-4a99-47e7-85eb-9c39f2264920",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1463,
+      "errors": []
+    },
+    {
+      "name": "disablePersonalCommand",
+      "platform": "app",
+      "utterance": "please disable a personal command without deleting provenance",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0ff67b9e-5592-4fd6-986f-2d682be80967",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1638,
+      "errors": []
+    },
+    {
+      "name": "forgetPersonalCommand",
+      "platform": "app",
+      "utterance": "please delete a personal command definition from its authorized scope",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e89c3847-582d-4772-b337-fefeadb49ceb",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1727,
+      "errors": []
+    },
+    {
+      "name": "openCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please extract grounded candidate artifacts into a review-only Cognitive Pull Request",
+      "args": {
+        "source": "claim",
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fe89703d-f05b-46e4-b8c6-3a60b593cdf7",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1688,
+      "errors": []
+    },
+    {
+      "name": "reviewCognitiveCandidate",
+      "platform": "app",
+      "utterance": "please review one grounded extraction candidate without merging",
+      "args": {
+        "requestId": "last",
+        "candidateId": "first",
+        "decision": "accept"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d92cd814-67a6-4d77-98fd-06e07d36e974",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1640,
+      "errors": []
+    },
+    {
+      "name": "mergeCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please atomically merge reviewed candidates with an undo receipt",
+      "args": {
+        "requestId": "last",
+        "candidateIds": [
+          "accepted"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5322994d-6ed3-4eba-82ce-eb5db4deb01b",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1888,
+      "errors": []
+    },
+    {
+      "name": "orchestrateCognitiveWorkflow",
+      "platform": "app",
+      "utterance": "please run extract, review, refine, test, package, and approval-gated publish as a typed plan",
+      "args": {
+        "source": "claim",
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "09c45282-6ed7-426e-9a59-b08c8b05c3a1",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1469,
+      "errors": []
+    },
+    {
+      "name": "browseExternalPackages",
+      "platform": "extension",
+      "utterance": "please browse verified Cognitive Packages in the extension",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-list",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "installExternalPackage",
+      "platform": "extension",
+      "utterance": "please verify and install a signed package in extension storage",
+      "args": {
+        "manifest": {
+          "columns": 2
+        }
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-install-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitiveStudio",
+      "platform": "extension",
+      "utterance": "please open a preserved web handoff for complex cognitive workflow review",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "teachExternalPersonalCommand",
+      "platform": "extension",
+      "utterance": "please save a scoped personal command through shared extension storage",
+      "args": {
+        "trigger": "fixture",
+        "command": "fixture",
+        "scope": "session"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitivePullRequest",
+      "platform": "extension",
+      "utterance": "please open a grounded extraction proposal from explicit selected page material",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "director-ghost-cursor completed",
+      "status": "passed",
+      "errors": []
+    }
+  ]
+}

@@ -152,13 +152,16 @@ export function normalizeLibraryObject(value, options = {}) {
     };
   }
   if (classification.kind === "function") {
+    const processInstructions = text(value.processInstructions || value.instructions || "", 20_000);
     return {
       ...common,
       processGraph: normalizeProcessGraph(value),
       contextBindings: clone(value.contextBindings || []),
       composition: clone(value.composition || null),
       modelPreference: clone(value.modelPreference || null),
-      instructions: text(value.instructions || value.processInstructions || "", 20_000),
+      instructions: processInstructions,
+      processInstructions,
+      sourceInstruction: text(value.sourceInstruction || processInstructions, LIBRARY_OBJECT_LIMITS.promptCharacters),
       invariants: clone(value.invariants || []),
       outputSpec: normalizeOutputSpec(value.outputSpec || suggestedOutputSpec(value), value),
       generationPlan: normalizeGenerationPlan(value.generationPlan || {}),
@@ -342,8 +345,8 @@ export function captureFunctionFromLineage(items, options = {}) {
   const lineages = list.map((item) => item?.lineage || item?.history || []).filter((lineage) => lineage.length);
   if (!lineages.length) return {
     eligible: false,
-    reason: "This material has no transformation lineage. Make a Move from its content or collect it in a Lens.",
-    alternatives: ["move", "lens"],
+    reason: "No reusable process history was found. Preserve the source as a one-step Function, Move, or Lens material.",
+    alternatives: ["function", "move", "lens"],
   };
   const nodes = new Map();
   const edges = new Map();

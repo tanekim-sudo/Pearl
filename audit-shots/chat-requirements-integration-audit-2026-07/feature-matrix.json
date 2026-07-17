@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-16T14:24:28.902Z",
+  "generatedAt": "2026-07-16T22:06:40.377Z",
   "counts": {
-    "features": 18,
-    "companion": 174,
-    "extension": 28,
-    "commands": 17
+    "features": 25,
+    "companion": 198,
+    "extension": 34,
+    "commands": 18
   },
   "features": [
     {
@@ -319,6 +319,122 @@
       "tests": [
         "client/lib/companion-intent.test.js",
         "client/lib/companion-plan.test.js"
+      ]
+    },
+    {
+      "id": "companion.effect-trace",
+      "commands": [],
+      "companion": [],
+      "extension": [],
+      "tests": [
+        "client/lib/director.test.js"
+      ]
+    },
+    {
+      "id": "interaction.semantic-transfer",
+      "commands": [
+        "createMoveFromContent",
+        "createFunctionFromContent",
+        "captureFunctionFromLineage",
+        "collectLensMaterial",
+        "composeCanonicalObjects"
+      ],
+      "companion": [
+        "semanticTransfer"
+      ],
+      "extension": [
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens"
+      ],
+      "tests": [
+        "shared/drop-intent-resolver.test.js",
+        "shared/domain-commands.test.js"
+      ]
+    },
+    {
+      "id": "companion.transaction-harness",
+      "commands": [],
+      "companion": [
+        "runFunctionTestBench",
+        "observeWorkspace"
+      ],
+      "extension": [
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens"
+      ],
+      "tests": [
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "shared/function-test-bench.test.js"
+      ]
+    },
+    {
+      "id": "registry.cognitive-packages",
+      "commands": [],
+      "companion": [
+        "openPackageRegistry",
+        "createSignedPackage",
+        "publishCognitivePackage",
+        "installCognitivePackage",
+        "rollbackCognitivePackage",
+        "deprecateCognitivePackage"
+      ],
+      "extension": [
+        "browseExternalPackages",
+        "installExternalPackage"
+      ],
+      "tests": [
+        "shared/cognitive-package.test.js",
+        "server/cognitive-package-registry.test.js"
+      ]
+    },
+    {
+      "id": "artifacts.higher-order",
+      "commands": [],
+      "companion": [
+        "proposeHigherOrderPatch",
+        "applyHigherOrderPatch"
+      ],
+      "extension": [
+        "openExternalCognitiveStudio"
+      ],
+      "tests": [
+        "shared/higher-order-artifacts.test.js"
+      ]
+    },
+    {
+      "id": "companion.personal-vocabulary",
+      "commands": [],
+      "companion": [
+        "teachPersonalCommand",
+        "disablePersonalCommand",
+        "forgetPersonalCommand"
+      ],
+      "extension": [
+        "teachExternalPersonalCommand"
+      ],
+      "tests": [
+        "shared/personal-command-vocabulary.test.js",
+        "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "extraction.cognitive-pull-request",
+      "commands": [],
+      "companion": [
+        "openCognitivePullRequest",
+        "reviewCognitiveCandidate",
+        "mergeCognitivePullRequest",
+        "orchestrateCognitiveWorkflow"
+      ],
+      "extension": [
+        "openExternalCognitivePullRequest"
+      ],
+      "tests": [
+        "shared/cognitive-pull-request.test.js"
       ]
     }
   ],

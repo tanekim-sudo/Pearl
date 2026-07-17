@@ -1,4 +1,6 @@
 import { DEFAULT_PLAN_BUDGET, validateCompanionPlan } from "./companion-plan.js";
+import { COMPANION_CAPABILITIES } from "./companion-capabilities.js";
+import { modePermission } from "./companion-harness.js";
 
 function abortError() {
   return new DOMException("Companion plan cancelled", "AbortError");
@@ -68,6 +70,9 @@ export async function executeCompanionPlan(
     initialValues = {},
     resume = null,
     runId = resume?.runId || globalThis.crypto?.randomUUID?.() || `plan-${Date.now()}`,
+    mode = "agent",
+    approved = false,
+    onPersist,
   } = {}
 ) {
   const validated = validateCompanionPlan(plan, { budget });
@@ -75,6 +80,7 @@ export async function executeCompanionPlan(
   const scope = { values: { ...initialValues, ...(resume?.values || {}) }, item: null };
   const journal = [...(resume?.journal || [])];
   const completedStepIds = new Set(resume?.completedStepIds || []);
+  const capabilityMap = new Map(COMPANION_CAPABILITIES.map((entry) => [entry.name, entry]));
   let iterations = 0;
   let researchCalls = 0;
   let actionCount = 0;
@@ -82,12 +88,41 @@ export async function executeCompanionPlan(
   const record = (entry) => {
     journal.push({ at: new Date().toISOString(), ...entry });
     onProgress?.({ ...entry, completed: journal.length, total: validated.stats.steps });
+    onPersist?.({
+      runId,
+      values: cloneSerializable(scope.values),
+      journal: cloneSerializable(journal),
+      completedStepIds: [...completedStepIds],
+      current: entry,
+    });
   };
 
   const run = async (step, localScope = scope) => {
     assertActive(signal);
-    if (step.kind === "sequence") {
+    if (["sequence", "phase", "todo", "migration"].includes(step.kind)) {
       for (const child of step.steps) await run(child, localScope);
+      return;
+    }
+    if (step.kind === "transaction") {
+      const checkpoint = await tools.checkpoint?.(
+        { id: step.id, mode: "save", scope: step.scope || "workspace" },
+        { signal, journal, values: localScope.values }
+      );
+      record({ kind: "transaction", status: "started", id: step.id, checkpointId: checkpoint?.id || checkpoint || null });
+      try {
+        for (const child of step.steps) await run(child, localScope);
+        const verification = await tools.verify?.(step.postconditions || [], {
+          signal,
+          checkpoint,
+          values: localScope.values,
+        });
+        if (verification && verification.status !== "verified") throw new Error(`transaction effect verification ${verification.status}`);
+        record({ kind: "transaction", status: "verified", id: step.id, verification: verification || null });
+      } catch (error) {
+        await tools.compensate?.(step.compensation, { signal, checkpoint, error, values: localScope.values });
+        record({ kind: "transaction", status: "compensated", id: step.id, error: error.message });
+        throw error;
+      }
       return;
     }
     if (step.kind === "parallel") {
@@ -123,6 +158,32 @@ export async function executeCompanionPlan(
         }
       }
       throw lastError;
+    }
+    if (step.kind === "approval") {
+      if (step.id && completedStepIds.has(step.id)) return;
+      const result = await tools.approve?.(step, { signal, values: localScope.values });
+      if (result?.decision !== "accept" && result !== true) throw new Error("scoped approval declined");
+      if (step.id) completedStepIds.add(step.id);
+      record({ kind: "approval", status: "accepted", id: step.id, scope: step.scope, affectedIds: step.affectedIds });
+      return;
+    }
+    if (step.kind === "assert") {
+      if (step.id && completedStepIds.has(step.id)) return;
+      const result = tools.assert
+        ? await tools.assert(step.condition, { signal, values: localScope.values })
+        : conditionMatches(step.condition, localScope);
+      if (!result || result.ok === false) throw new Error(step.message || "plan assertion failed");
+      if (step.id) completedStepIds.add(step.id);
+      record({ kind: "assert", status: "verified", id: step.id, evidence: result?.evidence || null });
+      return;
+    }
+    if (step.kind === "worker") {
+      if (step.id && completedStepIds.has(step.id)) return;
+      const result = await tools.worker(step, { signal, values: localScope.values });
+      if (step.saveAs) localScope.values[step.saveAs] = result;
+      if (step.id) completedStepIds.add(step.id);
+      record({ kind: "worker", status: "completed", id: step.id, worker: step.worker, artifact: result?.id || null });
+      return;
     }
     if (step.kind === "query") {
       if (step.id && completedStepIds.has(step.id)) return;
@@ -180,6 +241,16 @@ export async function executeCompanionPlan(
     }
     if (step.kind === "action") {
       if (step.id && completedStepIds.has(step.id)) return;
+      const contract = capabilityMap.get(step.capability);
+      const permission = modePermission(mode, {
+        kind: "action",
+        mutating: true,
+        destructive: contract?.destructive,
+        externalWrite: contract?.approval?.scope === "external-write",
+        publish: contract?.approval?.scope === "publish",
+        approved: approved || step.confirmed === true || contract?.confirmation === "handler",
+      });
+      if (!permission.allowed) throw new Error(permission.reason);
       actionCount += 1;
       const result = await tools.action(step.capability, resolveArgs(step.args || {}, localScope), {
         signal,
@@ -227,5 +298,13 @@ export async function executeCompanionPlan(
         completedStepIds: [...completedStepIds],
       },
     };
+  }
+}
+
+function cloneSerializable(value) {
+  try {
+    return structuredClone(value);
+  } catch {
+    return JSON.parse(JSON.stringify(value));
   }
 }

@@ -38,3 +38,29 @@ test("queries by text, region, graph lineage, and spatial clusters", () => {
   assert.deepEqual(queryWorkspace(snapshot, "graph", { id: "root", direction: "descendants" }).map((entry) => entry.id), ["root", "branch"]);
   assert.ok(queryWorkspace(snapshot, "clusters", { distance: 250 }).length >= 2);
 });
+
+test("live indexes retrieve complete dense dependency, version, spatial, and temporal context", () => {
+  const lenses = Array.from({ length: 500 }, (_, index) => ({
+    id: `function-${index}`,
+    stableId: `function-${index}`,
+    version: index + 1,
+    name: `Function ${index}`,
+    kind: "pipeline",
+    steps: index ? [`function-${index - 1}`] : [],
+  }));
+  const dense = buildWorkspaceSnapshot({
+    items: Array.from({ length: 500 }, (_, index) => ({
+      id: `item-${index}`,
+      text: `Material ${index}`,
+      x: index,
+      y: index * 2,
+      createdAt: new Date(2026, 0, 1, 0, index).toISOString(),
+    })),
+    lenses,
+  });
+  assert.equal(queryWorkspace(dense, "dependencies", { ids: lenses.map((entry) => entry.id), limit: 500 }).length, 500);
+  assert.equal(queryWorkspace(dense, "versions", { limit: 500 }).length, 500);
+  assert.equal(queryWorkspace(dense, "spatial", { limit: 500 }).length, 500);
+  assert.equal(queryWorkspace(dense, "temporal", { limit: 500 }).length, 500);
+  assert.equal(queryWorkspace(dense, "material", { text: "Material 499", limit: 500 })[0].id, "item-499");
+});

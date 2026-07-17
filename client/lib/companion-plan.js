@@ -21,6 +21,13 @@ const STEP_KINDS = new Set([
   "research",
   "checkpoint",
   "artifact",
+  "phase",
+  "todo",
+  "assert",
+  "transaction",
+  "worker",
+  "migration",
+  "approval",
 ]);
 
 function fail(path, message) {
@@ -121,6 +128,11 @@ function validateQuery(step, path) {
     "history",
     "library",
     "viewport",
+    "material",
+    "dependencies",
+    "versions",
+    "spatial",
+    "temporal",
   ]);
   if (!allowed.has(step.query)) fail(`${path}.query`, "is not a supported workspace query");
   if (step.filter != null && (typeof step.filter !== "object" || Array.isArray(step.filter))) {
@@ -140,10 +152,16 @@ function walk(step, state, path, depth) {
     state.ids.add(step.id);
   }
 
-  if (step.kind === "sequence" || step.kind === "parallel") {
+  if (["sequence", "parallel", "phase", "todo", "transaction", "migration"].includes(step.kind)) {
     if (!Array.isArray(step.steps) || !step.steps.length) fail(`${path}.steps`, "must be non-empty");
     if (step.kind === "parallel" && step.steps.some((child) => child.kind === "action" || child.kind === "checkpoint")) {
       fail(path, "parallel branches may only contain read/evaluate/research work");
+    }
+    if (step.kind === "transaction" && !step.compensation) {
+      fail(`${path}.compensation`, "is required for a mutating transaction");
+    }
+    if (step.kind === "migration" && !Array.isArray(step.affectedIds)) {
+      fail(`${path}.affectedIds`, "must preview the exact affected set");
     }
     step.steps.forEach((child, index) => walk(child, state, `${path}.steps[${index}]`, depth + 1));
     return;
@@ -224,6 +242,26 @@ function walk(step, state, path, depth) {
   }
   if (step.kind === "checkpoint") {
     if (!["save", "confirm"].includes(step.mode)) fail(`${path}.mode`, "must be save or confirm");
+    return;
+  }
+  if (step.kind === "approval") {
+    if (!["phase", "object", "branch", "migration", "external-write", "publish"].includes(step.scope)) {
+      fail(`${path}.scope`, "is not a supported approval scope");
+    }
+    if (!Array.isArray(step.affectedIds)) fail(`${path}.affectedIds`, "must be an array");
+    return;
+  }
+  if (step.kind === "assert") {
+    if (!step.condition || typeof step.condition !== "object") fail(`${path}.condition`, "is required");
+    return;
+  }
+  if (step.kind === "worker") {
+    if (!["explore", "research", "evaluator", "visual-auditor", "migration-analyst", "privacy-reviewer"].includes(step.worker)) {
+      fail(`${path}.worker`, "is not a supported specialist");
+    }
+    if (step.mutating && !step.candidateSnapshotId) {
+      fail(`${path}.candidateSnapshotId`, "is required for a mutating worker");
+    }
     return;
   }
   if (step.kind === "artifact") {

@@ -5674,12 +5674,20 @@ body.director-running .idea-app {
     transform 0.22s var(--ease-out, ease);
 }
 
-/* Editors and decision modals own input while open; the companion remains
-   visible but must never intercept their controls. */
+/* Auto-opened guidance yields to editors. A panel the user explicitly opened
+   remains an alternate command surface inside its bounded footprint. */
 body:has(.modal-scrim) .companion-panel,
 body:has(.fn-editor-fullscreen) .companion-panel {
   z-index: 50;
   pointer-events: none;
+}
+
+body:has(.modal-scrim) .companion-panel.foreground,
+body:has(.modal-scrim) .companion-fab,
+body:has(.fn-editor-fullscreen) .companion-panel.foreground,
+body:has(.fn-editor-fullscreen) .companion-fab {
+  z-index: 5200;
+  pointer-events: auto;
 }
 
 .companion-panel.playing {
@@ -5812,6 +5820,33 @@ body:has(.fn-editor-fullscreen) .companion-panel {
   color: #f5e6a3;
 }
 
+.companion-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(26, 24, 18, 0.08);
+  background: rgba(255, 253, 246, 0.9);
+  font-size: 10px;
+}
+
+.companion-mode-bar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.companion-mode-bar select,
+.companion-mode-bar button {
+  min-height: 28px;
+  border: 1px solid rgba(26, 24, 18, 0.14);
+  border-radius: 8px;
+  background: white;
+  color: rgba(35, 31, 22, 0.9);
+  font: inherit;
+}
+
 .companion-messages {
   flex: 1;
   overflow-y: auto;
@@ -5899,9 +5934,247 @@ body:has(.fn-editor-fullscreen) .companion-panel {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.companion-plan-strip textarea {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  border: 1px solid rgba(70, 55, 22, 0.2);
+  border-radius: 8px;
+  padding: 7px;
+  font: 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.companion-plan-strip > .companion-plan-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.companion-plan-evidence {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(70, 55, 22, 0.12);
+  padding-top: 5px;
+}
+
+.companion-semantic-review {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(84, 72, 38, 0.18);
+  border-radius: 10px;
+  background: rgba(248, 244, 230, 0.72);
+}
+
+.companion-semantic-review > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.companion-review-hunk {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  padding: 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.companion-review-hunk span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.companion-review-hunk small,
+.companion-review-hunk del,
+.companion-review-hunk ins {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.companion-review-hunk del {
+  color: #8b3d36;
+}
+
+.companion-review-hunk ins {
+  color: #246842;
+  text-decoration: none;
+}
+
+.page-title-packages {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: rgba(58, 48, 24, 0.08);
+  color: inherit;
+  font: 700 9px/1 Inter, sans-serif;
+  cursor: pointer;
+}
+
+.page-title-cognitive-studio {
+  border: 1px solid rgba(32, 38, 32, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font: 700 10px/1 var(--font-mono);
+  padding: 5px 7px;
+}
+
+.cognitive-studio-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 5100;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(18, 22, 18, 0.36);
+  backdrop-filter: blur(7px);
+}
+
+.cognitive-studio {
+  width: min(760px, 96vw);
+  max-height: min(820px, 92vh);
+  overflow: auto;
+  border: 1px solid rgba(31, 39, 31, 0.22);
+  border-radius: 22px;
+  background: #f7f5ef;
+  box-shadow: 0 30px 90px rgba(18, 22, 18, 0.26);
+  color: var(--ink);
+}
+
+.cognitive-studio > header,
+.cognitive-studio > nav,
+.cognitive-studio-body,
+.cognitive-studio > footer {
+  padding: 14px 18px;
+}
+
+.cognitive-studio > header,
+.cognitive-studio > nav,
+.cognitive-studio article {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cognitive-studio > header { justify-content: space-between; }
+.cognitive-studio > header div { display: grid; gap: 3px; }
+.cognitive-studio > nav { border-block: 1px solid rgba(31, 39, 31, 0.12); overflow-x: auto; }
+.cognitive-studio > nav button.active { background: var(--ink); color: #fff; }
+.cognitive-studio-body { display: grid; gap: 12px; }
+.cognitive-studio-body label { display: grid; gap: 5px; font-size: 12px; }
+.cognitive-studio-body input,
+.cognitive-studio-body select { min-width: 0; padding: 9px; border: 1px solid rgba(31, 39, 31, 0.2); border-radius: 9px; background: #fff; }
+.cognitive-studio article { flex-wrap: wrap; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.72); }
+.cognitive-studio article p { flex-basis: 100%; margin: 0; }
+.cognitive-studio article small { margin-right: auto; }
+.cognitive-studio > footer { position: sticky; bottom: 0; background: #e8eadf; font-size: 12px; }
+
+@media (max-width: 560px) {
+  .cognitive-studio-scrim { padding: 0; place-items: stretch; }
+  .cognitive-studio { width: 100%; max-height: 100vh; border-radius: 0; }
+}
+
+.package-registry-scrim {
+  z-index: 5100;
+}
+
+.package-registry-modal {
+  width: min(880px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(120px, 1fr) auto;
+  gap: 12px;
+  overflow: hidden;
+  padding: 18px;
+}
+
+.package-registry-modal > header,
+.package-registry-search,
+.package-draft-card > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.package-registry-modal > header {
+  justify-content: space-between;
+}
+
+.package-registry-modal h2,
+.package-registry-modal h3,
+.package-registry-modal p {
+  margin: 0;
+}
+
+.package-registry-search input {
+  flex: 1;
+}
+
+.package-draft-card,
+.package-trust-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(84, 72, 38, 0.18);
+  border-radius: 12px;
+  background: rgba(251, 248, 238, 0.82);
+}
+
+.package-registry-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  overflow: auto;
+}
+
+.package-trust-card pre {
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 10px;
+}
+
+.package-registry-modal dl {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 4px 8px;
+  font-size: 11px;
+}
+
+.package-registry-modal dt {
+  font-weight: 700;
+}
+
+.package-registry-modal dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .package-registry-modal {
+    width: calc(100vw - 12px);
+    max-height: calc(100vh - 12px);
+    padding: 12px;
+  }
+
+  .package-registry-results {
+    grid-template-columns: 1fr;
+  }
+}
+
+.companion-plan-evidence pre {
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font: 9px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .companion-plan-strip button {
-  grid-column: 2;
-  grid-row: 1 / span 2;
   align-self: center;
   border: 0;
   border-radius: 999px;

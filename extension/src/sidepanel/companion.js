@@ -5,6 +5,7 @@ export const EXTENSION_VERBS = Object.freeze({
   capturePageSelection: ({ action }) => action("capture-selection"),
   openExternalSaveAs: ({ openSaveAs }) => openSaveAs(),
   saveExternalCaptureAsMove: ({ saveCaptureAs }) => saveCaptureAs("move"),
+  saveExternalCaptureAsFunction: ({ saveCaptureAs }) => saveCaptureAs("function"),
   saveExternalCaptureAsLens: ({ saveCaptureAs }) => saveCaptureAs("lens"),
   togglePageHighlighter: ({ args, action }) => action("toggle-highlighter", { enabled: args.enabled }),
   queueExternalAction: ({ args, action, resolveLens }) => action("queue-lens", { lens: resolveLens(args.action) }),
@@ -23,6 +24,11 @@ export const EXTENSION_VERBS = Object.freeze({
   annotateExternalResult: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "annotate" } }),
   openExternalArtifact: ({ args, action, resolveResult }) => action("open-artifact", { result: resolveResult(args.result) }),
   showExternalLibraryImport: ({ showImport }) => showImport(),
+  browseExternalPackages: ({ browsePackages }) => browsePackages(),
+  installExternalPackage: ({ args, installPackage }) => installPackage(args.manifest),
+  openExternalCognitiveStudio: ({ args, action }) => action("open-web-handoff", { surface: "cognitive-workflow-studio", tab: args.tab || "integrate", preservePayload: true }),
+  teachExternalPersonalCommand: ({ args, action }) => action("personal-command-save", { ...args, sharedResolver: true }),
+  openExternalCognitivePullRequest: ({ args, action }) => action("open-cognitive-pull-request", { kinds: args.kinds || ["move", "function", "lens"], captureScope: "explicit-selection", preservePayload: true }),
   openExternalBeforeAfter: ({ openBeforeAfter }) => openBeforeAfter(),
   setExternalBeforeAfterText: ({ args, setBeforeAfterText }) => setBeforeAfterText(args.side, args.text),
   inferExternalBeforeAfter: ({ inferBeforeAfter }) => inferBeforeAfter(),
@@ -62,9 +68,25 @@ export async function executeExtensionVerb(name, args, context) {
   const handler = EXTENSION_VERBS[name];
   if (!capability || !handler) throw new Error(`unsupported extension action: ${name}`);
   validateCapabilityArgs(capability, args || {}, `extension.${name}.args`);
-  if (capability.destructive && !context.confirmed) throw new Error("confirmation required");
+  if (capability.approval?.required && !context.confirmed) {
+    throw new Error("scoped preview approval required");
+  }
   await context.animate?.({ name, args, path: "director-ghost-cursor" });
-  return handler({ ...context, args: args || {} });
+  const result = await handler({ ...context, args: args || {} });
+  if (capability.approval?.scope === "external-write") {
+    if (result?.ok === false || result?.error) throw new Error(result.error || "external write failed");
+    return {
+      type: "external-write-receipt",
+      result,
+      receipt: {
+        id: context.idempotencyKey || `${name}:${JSON.stringify(args || {})}`,
+        capability: name,
+        scope: context.approvalScope || "current verified page target",
+        at: new Date().toISOString(),
+      },
+    };
+  }
+  return result;
 }
 
 export function parseExtensionIntent(text) {
@@ -72,12 +94,16 @@ export function parseExtensionIntent(text) {
   if (/^(capture|highlight) (this |the )?(selection|text)$/i.test(value)) return { name: "capturePageSelection", args: {} };
   if (/^save (?:this|the selection) as(?:…|\.\.\.)?$/i.test(value)) return { name: "openExternalSaveAs", args: {} };
   if (/^save (?:this|the selected|selected) (?:text|content|selection)? ?as (?:a )?move$/i.test(value)) return { name: "saveExternalCaptureAsMove", args: {} };
+  if (/^save (?:this|the selected|selected) (?:text|content|selection)? ?as (?:a )?(?:one-step )?function$/i.test(value)) return { name: "saveExternalCaptureAsFunction", args: {} };
   if (/^(?:collect|save) (?:this|these|the selected|selected) (?:items|material|content)? ?(?:in|as) (?:a )?lens$/i.test(value)) return { name: "saveExternalCaptureAsLens", args: {} };
   if (/^(turn on|enable|start) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: true } };
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
   if (/^preview( the)? (stack|go)$/i.test(value)) return { name: "previewExternalGo", args: {} };
   if (/^(show|open|review)( the)? (library )?import$/i.test(value)) return { name: "showExternalLibraryImport", args: {} };
+  if (/^(show|open|browse)( the)? (cognitive )?packages$/i.test(value)) return { name: "browseExternalPackages", args: {} };
+  if (/\bopen\b.*\b(?:cognitive workflow|higher-order|vocabulary)\b/i.test(value)) return { name: "openExternalCognitiveStudio", args: { tab: /\bvocabulary\b/i.test(value) ? "vocabulary" : "higher-order" } };
+  if (/\bextract\b.*\b(?:move|function|lens|all)\b.*\bfrom (?:this|the selection)\b/i.test(value)) return { name: "openExternalCognitivePullRequest", args: { kinds: ["move", "function", "lens"] } };
   if (/\b(?:open|make|create|learn)\b/i.test(value) && /\bbefore\s*(?:\/|and|&)?\s*after\b/i.test(value)) return { name: "openExternalBeforeAfter", args: {} };
   const setExample = value.match(/^(?:set|use) (before|after)(?: text)? (?:to|as) (.+)$/i);
   if (setExample) return { name: "setExternalBeforeAfterText", args: { side: setExample[1].toLowerCase(), text: setExample[2] } };

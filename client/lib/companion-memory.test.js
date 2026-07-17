@@ -6,9 +6,11 @@ import {
   clearCompanionMemory,
   emptyCompanionMemory,
   loadCompanionMemory,
+  forgetCompanionMemory,
   nextInterviewPrompt,
   pauseCompanionInterview,
   rememberCompanionReference,
+  rememberCompanionMemory,
   saveCompanionMemory,
   resumeCompanionInterview,
   setCompanionAutonomy,
@@ -71,9 +73,27 @@ test("created references are compact and deduplicated", () => {
   const store = storage();
   rememberCompanionReference("a", "lenses", { id: "lens-1", name: "First" }, store);
   rememberCompanionReference("a", "lenses", { id: "lens-1", name: "Renamed" }, store);
-  assert.deepEqual(loadCompanionMemory("a", store).references.lenses, [
-    { id: "lens-1", name: "Renamed" },
-  ]);
+  const reference = loadCompanionMemory("a", store).references.lenses[0];
+  assert.equal(reference.id, "lens-1");
+  assert.equal(reference.name, "Renamed");
+  assert.equal(reference.scope, "account");
+  assert.equal(reference.confidence, 1);
+});
+
+test("inspectable memories retain provenance, confidence, scope, expiry, and forget control", () => {
+  const store = storage();
+  const saved = rememberCompanionMemory("a", {
+    id: "preference-a",
+    value: "Prefer evidence-first critiques",
+    provenance: { kind: "explicit-user-memory", sourceId: "message-1" },
+    confidence: 0.8,
+    scope: "workspace",
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  }, store);
+  assert.equal(saved.memories[0].provenance.sourceId, "message-1");
+  assert.equal(saved.memories[0].confidence, 0.8);
+  assert.equal(saved.memories[0].scope, "workspace");
+  assert.equal(forgetCompanionMemory("a", "preference-a", store).memories.length, 0);
 });
 
 test("repairs identities polluted by swallowed commands", () => {

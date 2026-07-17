@@ -3,6 +3,7 @@ export const ANONYMOUS_COMPANION_SCOPE = "anonymous";
 const PREFIX = "lens.companion.memory.v1:";
 const MAX_ACTIONS = 20;
 const MAX_REFS = 40;
+const MAX_MEMORIES = 80;
 
 export function companionMemoryKey(userId) {
   return PREFIX + (userId || ANONYMOUS_COMPANION_SCOPE);
@@ -17,6 +18,7 @@ export function emptyCompanionMemory() {
     preferences: { autonomy: "preview-complex" },
     references: { lenses: [], generators: [], paths: [] },
     actions: [],
+    memories: [],
     interviewComplete: false,
     interviewPaused: false,
     updatedAt: null,
@@ -53,6 +55,12 @@ function compact(memory) {
       ])
     ),
     actions: Array.isArray(memory?.actions) ? memory.actions.slice(-MAX_ACTIONS) : [],
+    memories: Array.isArray(memory?.memories)
+      ? memory.memories
+          .filter((entry) => !entry.expiresAt || Date.parse(entry.expiresAt) > Date.now())
+          .slice(-MAX_MEMORIES)
+          .map(normalizeMemoryEntry)
+      : [],
     interviewPaused: Boolean(memory?.interviewPaused),
     updatedAt: memory?.updatedAt || null,
   };
@@ -97,12 +105,53 @@ export function rememberCompanionReference(userId, kind, reference, storage = gl
   }
   const current = loadCompanionMemory(userId, storage);
   const key = reference.id || reference.name;
-  const refs = [...current.references[kind].filter((entry) => (entry.id || entry.name) !== key), reference];
+  const refs = [
+    ...current.references[kind].filter((entry) => (entry.id || entry.name) !== key),
+    {
+      ...reference,
+      provenance: reference.provenance || { kind: "companion-reference", sourceId: reference.id || null },
+      confidence: Number.isFinite(reference.confidence) ? reference.confidence : 1,
+      scope: reference.scope || (userId ? "account" : "anonymous"),
+      expiresAt: reference.expiresAt || null,
+    },
+  ];
   return saveCompanionMemory(
     userId,
     { references: { ...current.references, [kind]: refs.slice(-MAX_REFS) } },
     storage
   );
+}
+
+function normalizeMemoryEntry(entry = {}) {
+  return {
+    id: String(entry.id || globalThis.crypto?.randomUUID?.() || `memory-${Date.now()}`),
+    value: String(entry.value || entry.summary || "").slice(0, 1_000),
+    provenance: entry.provenance && typeof entry.provenance === "object"
+      ? entry.provenance
+      : { kind: "explicit-user-memory", sourceId: null },
+    confidence: Math.max(0, Math.min(1, Number.isFinite(entry.confidence) ? entry.confidence : 1)),
+    scope: ["session", "workspace", "account", "anonymous"].includes(entry.scope) ? entry.scope : "session",
+    createdAt: entry.createdAt || new Date().toISOString(),
+    expiresAt: entry.expiresAt || null,
+  };
+}
+
+export function rememberCompanionMemory(userId, entry, storage = globalThis.localStorage) {
+  const current = loadCompanionMemory(userId, storage);
+  const normalized = normalizeMemoryEntry(entry);
+  return saveCompanionMemory(userId, {
+    memories: [
+      ...current.memories.filter((memory) => memory.id !== normalized.id),
+      normalized,
+    ].slice(-MAX_MEMORIES),
+  }, storage);
+}
+
+export function forgetCompanionMemory(userId, memoryId, storage = globalThis.localStorage) {
+  const current = loadCompanionMemory(userId, storage);
+  return saveCompanionMemory(userId, {
+    memories: current.memories.filter((entry) => entry.id !== memoryId),
+  }, storage);
 }
 
 export function setCompanionAutonomy(userId, autonomy, storage = globalThis.localStorage) {
@@ -138,6 +187,9 @@ export function adoptAnonymousCompanionMemory(userId, storage = globalThis.local
         ])
       ),
       actions: [...anonymous.actions, ...account.actions].slice(-MAX_ACTIONS),
+      memories: [...anonymous.memories, ...account.memories]
+        .filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index)
+        .slice(-MAX_MEMORIES),
     },
     storage
   );

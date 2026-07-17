@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "sections": {
+    "content": [],
+    "graph": [
+      {
+        "key": "operators",
+        "stableId": "move-a",
+        "type": "changed",
+        "before": {
+          "id": "move-a",
+          "stableId": "move-a",
+          "version": 1,
+          "prompt": "Before"
+        },
+        "after": {
+          "id": "move-a",
+          "stableId": "move-a",
+          "version": 2,
+          "prompt": "After"
+        }
+      }
+    ],
+    "outputAndModels": [],
+    "lensContext": [],
+    "referencesAndMigrations": [],
+    "spatial": [],
+    "provenanceAndPrivacy": []
+  },
+  "changedStableIds": [
+    "move-a"
+  ],
+  "count": 1,
+  "fingerprint": "fnv1a-d560c1b5"
+}

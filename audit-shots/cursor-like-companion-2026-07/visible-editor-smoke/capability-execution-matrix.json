@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-07-16T19:51:12.921Z",
+  "harness": "visible CompanionChat input with controlled planner and real director handlers",
+  "inputPath": "visible",
+  "counts": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "app": 1,
+    "extension": 0
+  },
+  "rows": [
+    {
+      "name": "setBeforeAfterText",
+      "platform": "app",
+      "utterance": "set the before text to these raw notes",
+      "args": {
+        "side": "before",
+        "text": "Raw runtime notes"
+      },
+      "planner": "visible CompanionChat input → deterministic route or controlled adaptive planner → validated plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fb2be3a8-6ba2-48f8-b587-6761b0308192",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": 1,
+      "ledgerStatus": "received",
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2650,
+      "errors": []
+    }
+  ]
+}

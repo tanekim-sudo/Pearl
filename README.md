@@ -138,6 +138,28 @@ Composition records operand IDs and versions, left/right order, relation (`then`
 
 The user sees a preview before persistence. Action composition derives an acyclic process graph and terminal output contract. Lens composition merges perceptual models, budgets, material, privacy policy, priorities, and conflicts. A later empty Lens resets prior context layers. Multi-selection composition is a bounded left fold with a visible order and a maximum selection size.
 
+## Universal semantic transfer
+
+Every deliberate drop, send, save, paste, or companion transfer resolves through one versioned semantic intent contract. The resolver receives ordered source descriptors, a destination descriptor, and gesture context; it returns ranked valid intents with a default, target-specific preview, result kind, prerequisites, reversibility, and preserving fallback. MIME identifies a representation, never the limit of what the material can become. A drop never disappears, throws a generic conversion/type rejection, or silently loses the source.
+
+The canonical fallback preserves the original as Material at the destination and offers the next valid actions. Model inference may enrich or decompose a transfer, but basic preservation and canonical creation never depend on a model call. Ambiguity opens a compact chooser only when alternatives materially differ. Permission, privacy, destructive scope, model compatibility, and cost safeguards remain explicit and proportional to risk.
+
+The transfer grammar is:
+
+- Exact plain, rich, selected, highlighted, transcript, history, or paper text sent to Moves creates a Move immediately. `sourceInstruction` and `promptTemplate` preserve the ordered text verbatim; a multi-step suggestion may offer a Function but never blocks the Move.
+- Material sent to Functions captures real lineage when present, previews deterministic decomposition for an explicit process, or wraps the exact source in one valid Move and one-step Function. “Keep as one Move” remains available.
+- Any source sent to Lenses becomes provisional bounded material immediately. Perceptual encoding is an optional follow-up.
+- Move/Function/Lens object-on-object transfer uses the ordered universal 3×3 algebra. Move × Move, Function × Function, and every cross-kind pair create a Function; Lens × Lens creates a layered Lens.
+- Actions sent to content or AI nodes fill the action slot; Lenses fill the context slot; explicit GO executes. Content sent to AI creates a fixed source/material node. No drop executes unexpectedly on blank paper.
+- Canonical objects sent to paper materialize as portable references, text, or previews. Media and files preserve their original Material; Move execution waits for an explicit extraction instruction when no text exists.
+- Multi-selection preserves fragment, item, and spatial order. Moves use editable separators, Functions capture shared/minimal lineage or ordered Moves, and Lenses retain separate materials.
+- Primitive Moves accepts Move promotion/reordering; other content creates an exact Move and promotes it. Dragging out demotes without deleting.
+- Archive and trash remain explicit scoped targets. Near misses never delete, and confirmed destructive transfers preserve the declared scope.
+
+Valid destinations reveal on drag start and announce a target-specific preview before release. Hit thresholds are screen-space stable across zoom, targets use magnetic hysteresis, edge motion autoscrolls or autopans, Escape leaves the source unchanged, and safe transfers expose immediate undo. Keyboard “Send/Save/Combine with…”, touch long-press/drop, and screen-reader status use the same resolver and commands. Drag overlays never intercept text selection, center movement, edge branching, cross-layer transfer, or armed proximity Merge.
+
+Direct manipulation, companion `semanticTransfer`, and extension capture use the same intent grammar and persisted object semantics. Companion demonstrations begin on a current source hitbox, resolve and preview the real target, release there, invoke the same command, and complete only when the matching state effect exists. Unsupported external spatial editing preserves a handoff payload for the web editor instead of rejecting it.
+
 ## Spatial workspace
 
 ### One page and one world
@@ -483,6 +505,32 @@ Object evolution uses repository-like semantics without exposing source-control 
 
 The interface labels the current Function, branch/fork/merge relationship, save count, and lineage. “Commit” means save a new cognitive-object version; it never writes to the software repository.
 
+### Cognitive packages and trust
+
+A Cognitive Package is a declarative, versioned bundle of Moves, Functions, Lenses, and their dependency closure. Its canonical manifest records namespace/name, semantic version, immutable content hash, artifact versions and contracts, required models/modalities, permissions/connectors, provenance, license/visibility, test evidence, scan results, migration notes, author public key, and Ed25519 signature. Arbitrary executable code, unsafe keys, undeclared connectors, and hidden model calls are rejected.
+
+The lifecycle is `draft → validate → test/evaluate → dependency/privacy/security scan → semantic review → sign → publish → install/update/deprecate/rollback`. Private signing keys are non-extractable and never stored in localStorage or package records. Publish and deprecate are idempotent external writes with scoped approval receipts. Install re-verifies canonical content, signature, key status, permissions, and deterministic dependency resolution before one atomic storage change; a failed write restores the prior install set.
+
+Authenticated package records and key status use versioned server migrations, account/team row-level isolation, immutable published versions, bounded pagination, and revocation. A bounded local registry is the offline/anonymous fallback. Anonymous authors may create and export self-signed local packages; account publication remains an explicit authentication boundary. Web and extension trust cards show identity level, signature, provenance, tests, requested access, model/cost requirements, dependency health, update history, and deprecation replacement.
+
+### Higher-order artifacts and reviewable patches
+
+Moves, Functions, and Lenses may be passed as immutable typed `ArtifactRef` values containing stable ID/version/kind, contracts, graph/context summary, authorized editable scope, snapshot, and fingerprint. A higher-order operation produces a new artifact, alternatives, or an `ArtifactPatch`; it never invisibly mutates the source.
+
+Patches expose graph, content, contract, dependency, context, model/cost, privacy, and layout hunks. Protected registries cannot be targets. Recursion depth, operation count, model calls, and cost are bounded. Candidates run against fixtures and holdouts in isolated snapshots. Users may accept all or selected hunks; accepted changes create a new version, while originals and pinned dependents remain stable until an explicit migration is approved.
+
+### Personal command vocabulary
+
+An explicitly taught phrase becomes a versioned `PersonalCommandDefinition` containing exact/semantic trigger variants, parameter slots, canonical command or typed plan target, scope, precedence, inherited risk, status/expiry, teaching provenance, tests, and last-use metadata. Exact aliases resolve deterministically before open-ended planning. Semantic aliases require a confidence threshold; consequential ambiguity previews or asks.
+
+Persistent workspace/account/team teaching requires a concise executable preview and confirmation. Session-only low-risk teaching is reversible immediately. Quoted or literal uses never execute. Reserved confirmations, collisions, recursive aliases, and cycles are rejected. The vocabulary manager can inspect, test, edit, reorder, enable/disable, export/import, and forget definitions. Conflict-aware version merging keeps extension and web resolution aligned, and vocabulary remains private unless explicitly included in an export.
+
+### Cognitive pull requests
+
+A Cognitive Pull Request preserves source Material, fingerprint, privacy scope, requested kinds, strategy/budget, grounded candidates, evidence spans, confidence/ambiguity, novelty/duplicate matches, dependencies, review comments, tests, saturation, status, and merge receipt. “All possible” means diverse evidence-grounded coverage within a stated budget, with saturation reached after repeated rounds yield no new category; it never claims mathematical exhaustiveness.
+
+Move candidates are atomic, Function candidates are process-structured, and Lens candidates are perceptual/contextual. Unsupported candidates without source evidence are omitted. Review exposes source versus proposal, candidate and hunk decisions, edits, comments, tests, alternatives, novelty, and coverage. Only accepted selections merge atomically as new IDs/versions with provenance and an undo receipt. Explicit extension selection may create a preserved proposal handoff; whole-page capture is never implicit.
+
 ### Ideas, worlds, and paths
 
 The workspace provides a chronological ideas feed grouped by today, yesterday, and this week. Text, notes, voice, callouts, diagrams, tables, code, math, video, images, and sketches receive readable titles/icons and can be focused from the feed.
@@ -519,7 +567,7 @@ The companion is a complete alternate command interface for every meaningful dir
 
 The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
 
-The canonical parity baseline is **174 executable capabilities**: **146 app/director effects** and **28 extension effects**. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
+The canonical parity baseline is **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
 
 ### Interaction model
 
@@ -527,7 +575,7 @@ The canonical parity baseline is **174 executable capabilities**: **146 app/dire
 - Common, high-confidence commands execute immediately.
 - Complex requests compile into a finite visual plan of query, action, sequence, parallel, conditional, and bounded iteration nodes.
 - Every capability and argument validates before execution.
-- Queries operate on a bounded workspace snapshot and may save references for later steps.
+- Queries operate on a live scoped index and save stable object/version citations for later steps.
 - Created resources resolve by actual IDs, not guessed names.
 - The plan remains cancellable and checkpoints after every durable effect.
 - Executable commands begin real ghost-cursor/director animation immediately and emit no conversational praise or redundant narration.
@@ -535,6 +583,33 @@ The canonical parity baseline is **174 executable capabilities**: **146 app/dire
 - Speech output is off unless explicitly enabled.
 - Vague requests such as “show me what you can do” run a reversible demonstration chosen for the current workspace instead of inventing or deleting user work.
 - Deterministic high-value intents—Function creation, parallel branch setup, taste navigation, learning, and administration—run through typed scripts before open-ended planning.
+
+### Modes, goals, and approval
+
+Every request enters an immutable Goal Envelope containing the raw wording, outcomes, constraints, references, unknowns, acceptance criteria, preservation and prohibited effects, risk/cost budget, and communication policy. The companion recommends a mode from risk and uncertainty while preserving the user’s override:
+
+- **Ask** retrieves and explains authorized context but cannot mutate.
+- **Plan** retrieves live context and creates an editable typed plan; every mutation is blocked until Accept. Edit invalidates affected descendants, and Reject performs zero mutation.
+- **Agent** executes approved or low-risk reversible local commands within the declared budget.
+- **Debug** records multiple hypotheses, reproduces and instruments the behavior, chooses an evidence-backed cause, applies the smallest versioned fix, reruns regressions, and removes temporary instrumentation.
+
+Mode permission is enforced at the executor boundary. Broad migrations, costly generation, and privacy changes require a scoped preview. Destructive, publishing, external-write, and secret-bearing operations always require explicit scoped approval regardless of mode. Cosmetic ambiguity takes a reversible default; the companion asks only when a choice materially changes consequential results.
+
+### Transaction, verification, and semantic review
+
+Typed plans support phases, todos, queries, actions, assertions, postconditions, transaction groups, specialist workers, exact migration sets, approval gates, and compensation. Before each mutating phase Lens captures an immutable workspace snapshot containing content, stable IDs, graph topology, versions, lineage, selection, and layout. The run ledger persists dependencies, status, attempts, values, evidence, approvals, errors, checkpoint IDs, worker state, and executor resume state after every transition. Reload resumes incomplete work without replaying completed non-idempotent steps.
+
+Handler return is not success. Lens refreshes the relevant observation after each command or transaction and compares actual state with declared postconditions. Results are `verified`, `partially_verified`, or `failed`, with unintended effects. Missing intended effects block completion; unintended deletion restores the checkpoint before recovery chooses refresh/rebind, retry, compensate, replan, clarify, or block.
+
+Plan and outcome review use a semantic diff of content, graph/branch topology, output contracts and Generation Plans, Lens context, references/dependencies/migrations, layout, and provenance/privacy metadata. Evidence rows expand to command, stable target, arguments, expected effect, observed effect, tests, and animation. Object-, branch-, and phase-scoped rejection restores the corresponding checkpoint. Normal successful operation remains terse.
+
+### Evaluation, workers, and continuity
+
+The Function test bench performs structural and dependency validation, versioned fixtures, unrelated holdouts, compatibility checks, normalized model comparison, browser/extension flows, and rubric evaluation. Evaluation follows `execute → observe → test acceptance criteria → diagnose → revise → rerun` within finite budgets.
+
+Explore, Research, Evaluator, Visual Auditor, Migration Analyst, and Privacy Reviewer workers receive bounded isolated contexts. Only independent read/evaluation branches run concurrently. A mutating worker requires an isolated candidate snapshot, overlapping stable-object mutation is rejected, cancellation and budgets propagate, and the parent verifies every proposal before merge. Compact worker cards retain task, status, model, duration, blocker, and artifact without flooding the parent context.
+
+Long sessions compact into an evidence-preserving summary containing stable IDs, unresolved requirements, decisions, approvals, failures, checkpoints, external receipts, prohibited effects, and the current task graph. Resume trusts the durable ledger and snapshots rather than prose memory. Rules resolve deterministically with security and team policy above workspace and user preferences; progressively loaded skills define reusable workflows; typed hooks may allow, deny, require approval, annotate, or trigger one bounded follow-up around commands, model calls, external writes, checkpoints, compaction, and completion.
 
 ### Voice
 
@@ -553,13 +628,13 @@ With explicit scope the companion can understand:
 - extension page selections;
 - a user-authorized visible-tab screenshot.
 
-Observations include source IDs, revision/fingerprint, viewport, redactions, and consent scope. Screen interpretation is grounded to supplied objects or pixels. A stale observation must be revalidated before mutation.
+Observations include stable source/version IDs, revision/fingerprint, viewport, redactions, and consent scope. Exact name/tag/content, semantic Material, graph/dependency/version, and spatial/temporal indexes cover selection, viewport, paper, AI graph, library, and history. Every claim exposes an inspectable citation. Private or ignored material remains excluded unless the authorized scope explicitly includes it. Screen interpretation is grounded to supplied objects or pixels. A stale or deleted target is refreshed/rebound or blocked before mutation.
 
 ### Critique and research
 
 Critique mode targets explicit items/candidates, ingests typed or spoken clauses, normalizes them into linked annotations, and materializes resulting edits or feedback. It cannot claim evaluation without an artifact effect.
 
-Research must use a source-returning browsing tool and preserve source title, URL, date, and snippet. If verified browsing is unavailable, research stops before mutation and says so. Model prior knowledge is never represented as live research.
+Research uses a provider-neutral, read-only browsing contract restricted to approved HTTPS provider and source origins. Every source preserves title, URL, publisher, publication date when available, retrieval time, snippet, and claim references. `RESEARCH_PROVIDER_URL`, `RESEARCH_APPROVED_PROVIDER_ORIGINS`, and `RESEARCH_ALLOWED_SOURCE_ORIGINS` configure production access; provider credentials remain server-side. If verified browsing is unavailable or returns unverifiable metadata, research stops before mutation and says so. Model prior knowledge is never represented as live research. External publishing uses a separate connector, exact redaction/scope preview, explicit approval, and idempotent receipt.
 
 ### Confirmations, recovery, and undo
 
@@ -790,7 +865,7 @@ npm run release:check
 
 The release gate must also prove that its mutation sanity check fails when a required handler is intentionally removed, scan release artifacts for secrets, and run model-safe browser audits for transcript learning, before/after learning, account adoption, companion effects, branch geometry, explicit GO, and page/node integration.
 
-Parallel-cognition release evidence must additionally cover continuous natural-language command dispatch, stale-confirmation arbitration, ledger-backed retry, reversible demonstrations, BranchSpec persistence after reload, unique 3–8 word labels, all taste controls, Primitive Move migration/overrides, screen-space proximity Merge, and the complete 174-capability effect matrix.
+Parallel-cognition release evidence must additionally cover continuous natural-language command dispatch, stale-confirmation arbitration, ledger-backed retry, reversible demonstrations, BranchSpec persistence after reload, unique 3–8 word labels, all taste controls, Primitive Move migration/overrides, screen-space proximity Merge, and the complete 177-capability effect matrix.
 
 ## Architecture and safe changes
 
@@ -892,13 +967,13 @@ Everything above is core contract. The following ideas are optional extensions.
 6. **Lens evolution suggestions — Next.** Detect repeated edits/evidence and propose a reviewable new Lens version. Fits learned ways of seeing; depends on usage telemetry kept private and diff UI. Risk: silently codifying bias.
 7. **Local/private model route — Next.** Route sensitive profiles to user-controlled local inference. Fits privacy boundaries; depends on a capability-compatible local gateway. Risk: setup burden and uneven quality.
 8. **Desktop capture bridge — Next.** Consent-scoped capture and insertion across native apps. Fits material universality; depends on signed native helpers and OS accessibility APIs. Risk: high-security permission surface.
-9. **Cognitive package registry — Later.** Publish signed Move/Function/Lens packages with dependencies, tests, and provenance. Fits versioned composability; depends on trust, licensing, and package resolution. Risk: malicious prompts and marketplace spam.
+9. **Federated package discovery — Later.** Search approved external registries without weakening local signature, policy, and install verification. Fits signed Cognitive Packages; depends on registry federation and abuse controls. Risk: malicious metadata and discovery spam.
 10. **Counterfactual workspace simulation — Later.** Fork a complete workspace state, run alternative Function/Lens policies, and compare trajectories. Fits branching plus provenance; depends on snapshot forks and budgeted orchestration. Risk: cost and false predictive confidence.
 
 ### Cognition algebra
 
 - **Typed Function interfaces — Next.** Enables Functions to declare named ports and compile-time Material checks. Dependency: richer Material schemas. Risk: complexity for casual users.
-- **Higher-order Functions — Later.** Enables Functions that accept or return Moves/Functions. Dependency: safe graph metatypes. Risk: opaque execution and security review.
+- **Artifact equivalence proofs — Later.** Attaches stronger behavioral evidence when two higher-order patches claim equivalent outputs. Dependency: richer holdouts and formalizable contracts. Risk: overstating heuristic evidence as proof.
 - **Constraint composition — Next.** Enables explicit conflict resolution among invariants and Lens rules. Dependency: constraint schema and solver UI. Risk: users may mistake heuristic resolution for proof.
 - **Algebra optimizer — Later.** Suggests equivalent cheaper/faster process graphs. Dependency: effect equivalence tests and cost models. Risk: semantic drift.
 
@@ -906,7 +981,7 @@ Everything above is core contract. The following ideas are optional extensions.
 
 - **Lens families — Next.** Groups versions, variants, counter-Lenses, and domain adaptations. Dependency: lineage graph. Risk: taxonomy sprawl.
 - **Evidence freshness monitor — Next.** Flags stale source material inside a Lens. Dependency: source metadata and consented refresh. Risk: unwanted network access.
-- **Marketplace trust cards — Later.** Shows author, tests, source policy, model assumptions, and known failure modes. Dependency: signed package registry. Risk: reputation gaming.
+- **Federated trust attestations — Later.** Adds independently signed audit statements to existing package trust cards. Dependency: portable verifier identities. Risk: reputation gaming.
 - **Context rehearsal — Now.** Lets users ask “what would this Lens include/exclude?” without a model call. Dependency: deterministic compiler inspection. Risk: none beyond UI load.
 
 ### Parallel and taste navigation
@@ -932,7 +1007,7 @@ Everything above is core contract. The following ideas are optional extensions.
 
 ### Collaboration and version control
 
-- **Cognitive pull requests — Next.** Reviews Function/Lens diffs, tests, and evidence before merge. Dependency: object-level branching and identities. Risk: workflow overhead.
+- **Live collaborative proposal review — Later.** Adds simultaneous comments and candidate decisions to Cognitive Pull Requests. Dependency: scoped real-time identity and conflict resolution. Risk: review conflicts and workflow overhead.
 - **CRDT paper collaboration — Later.** Enables simultaneous spatial editing. Dependency: conflict-free geometry/text model. Risk: history and undo complexity.
 - **Attribution-preserving remix — Next.** Tracks dependency credit through forks/compositions. Dependency: signed provenance. Risk: identity and licensing disputes.
 - **Decision records — Now.** Freezes accepted candidates, evidence, dissent, and Lens version into a shareable record. Dependency: existing bundles/history. Risk: records becoming falsely authoritative.

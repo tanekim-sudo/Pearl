@@ -30,6 +30,8 @@ import { getModelCatalog } from "./model-catalog.js";
 import { modelGateway } from "./model-gateway.js";
 import { encodeLens } from "./lens-encoder.js";
 import { startGenerationBatch } from "./generation-runner.js";
+import { researchConfiguration, verifiedResearch } from "./research-provider.js";
+import { cognitivePackageRegistry } from "./cognitive-package-registry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -47,11 +49,69 @@ app.use(express.json({ limit: "7mb" }));
 app.use(attachLensUser);
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, hasKey: hasKey(), model: MODEL, visionModel: VISION_MODEL, modelGateway: modelGateway.configuration() });
+  res.json({
+    ok: true,
+    hasKey: hasKey(),
+    model: MODEL,
+    visionModel: VISION_MODEL,
+    modelGateway: modelGateway.configuration(),
+    research: researchConfiguration(),
+  });
 });
 app.get("/api/models", async (_req, res) => {
   const catalog = await getModelCatalog();
   res.json(catalog);
+});
+app.post("/api/research", rateLimit({ windowMs: 60_000, limit: 12 }), async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  try {
+    res.json(await verifiedResearch(req.body || {}));
+  } catch (err) {
+    console.error("[lens] /api/research failed:", err?.message || err);
+    res.status(err?.status || 500).json({
+      error: err?.message || "Verified research failed.",
+      code: err?.code || "RESEARCH_FAILED",
+    });
+  }
+});
+
+const packageLimiter = rateLimit({ windowMs: 60_000, limit: 30 });
+app.get("/api/cognitive-packages", packageLimiter, async (req, res) => {
+  try {
+    res.json(await cognitivePackageRegistry.list({
+      userId: req.lensUser?.user?.id || null,
+      teamId: req.query.teamId || null,
+      query: req.query.query || "",
+      cursor: req.query.cursor || 0,
+      limit: req.query.limit || 20,
+    }));
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Package registry lookup failed.", code: err?.code || "PACKAGE_LIST_FAILED" });
+  }
+});
+app.post("/api/cognitive-packages/publish", packageLimiter, async (req, res) => {
+  try {
+    const receipt = await cognitivePackageRegistry.publish(req.body?.manifest, {
+      userId: req.lensUser?.user?.id || null,
+      teamId: req.body?.teamId || null,
+      approved: req.body?.approved === true,
+      idempotencyKey: req.body?.idempotencyKey,
+    });
+    res.status(201).json(receipt);
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Package publication failed.", code: err?.code || "PACKAGE_PUBLISH_FAILED" });
+  }
+});
+app.post("/api/cognitive-packages/deprecate", packageLimiter, async (req, res) => {
+  try {
+    res.json(await cognitivePackageRegistry.deprecate(req.body || {}, {
+      userId: req.lensUser?.user?.id || null,
+      approved: req.body?.approved === true,
+      idempotencyKey: req.body?.idempotencyKey,
+    }));
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Package deprecation failed.", code: err?.code || "PACKAGE_DEPRECATE_FAILED" });
+  }
 });
 
 const extensionLimiter = rateLimit({ windowMs: 60_000, limit: 24 });

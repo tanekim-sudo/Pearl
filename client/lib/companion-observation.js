@@ -1,7 +1,7 @@
 import { createWorkspaceObservation, sceneRelationships } from "../../shared/workspace-observation.js";
 
 const DEFAULT_LIMIT = 50;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 500;
 
 function textOf(value) {
   return String(value?.text || value?.expandedText || value?.preview || value?.label || value?.name || "");
@@ -29,6 +29,8 @@ function conciseObject(value, domain) {
       : itemBox(value);
   return {
     id: value.id,
+    stableId: value.stableId || value.id,
+    version: Number(value.version) || 1,
     domain,
     type: value.type || value.nodeKind || "object",
     summary: summary(value),
@@ -65,7 +67,7 @@ export function buildWorkspaceSnapshot({
     ...items.map((value) => conciseObject(value, "paper")),
     ...nodes.map((value) => conciseObject(value, "ai")),
   ];
-  const edges = nodes.slice(0, 250).flatMap((node) => [
+  const edges = nodes.slice(0, MAX_LIMIT).flatMap((node) => [
     ...(node.parentId ? [{ id: `${node.parentId}->${node.id}`, fromId: node.parentId, toId: node.id, kind: "parent" }] : []),
     ...(node.sourceNodeIds || []).map((sourceId) => ({ id: `${sourceId}->${node.id}`, fromId: sourceId, toId: node.id, kind: "source" })),
   ]);
@@ -103,19 +105,25 @@ export function buildWorkspaceSnapshot({
     objects: objects.slice(0, 500),
     selection: objects.filter((object) => selected.has(object.id)).slice(0, MAX_LIMIT),
     highlighted: objects.filter((object) => highlighted.has(object.id)).slice(0, MAX_LIMIT),
-    graph: nodes.slice(0, 250).map((node) => ({
+    graph: nodes.slice(0, MAX_LIMIT).map((node) => ({
       id: node.id,
       parentId: node.parentId || null,
       sourceNodeIds: (node.sourceNodeIds || []).slice(0, 12),
     })),
-    lenses: lenses.slice(0, 60).map((lens) => ({
+    lenses: lenses.slice(0, MAX_LIMIT).map((lens) => ({
       id: lens.id,
+      stableId: lens.stableId || lens.id,
+      version: Number(lens.version) || 1,
       name: lens.name || lens.title || "Untitled lens",
       description: summary(lens),
       kind: lens.kind || "lens",
+      tags: (lens.tags || []).slice(0, 20),
+      dependencies: [...(lens.steps || []), ...(lens.dependencies || [])].slice(0, 50),
     })),
-    generators: generators.slice(0, 40).map((generator) => ({
+    generators: generators.slice(0, MAX_LIMIT).map((generator) => ({
       id: generator.id,
+      stableId: generator.stableId || generator.id,
+      version: Number(generator.version) || 1,
       name: generator.title || generator.name || "Untitled generator",
       observationCount: (generator.itemIds || generator.items || []).length,
     })),
@@ -191,6 +199,37 @@ export function queryWorkspace(snapshot, query, filter = {}) {
     return snapshot.recentHistory
       .filter((entry) => !filter.targetId || entry.targetId === filter.targetId)
       .slice(-limit);
+  }
+  if (query === "material") {
+    const needle = String(filter.text || "").toLowerCase();
+    return snapshot.objects
+      .filter((object) => !needle || object.summary.toLowerCase().includes(needle))
+      .slice(0, limit);
+  }
+  if (query === "dependencies") {
+    const targetIds = new Set(filter.ids || [filter.id].filter(Boolean));
+    return snapshot.lenses
+      .filter((entry) => !targetIds.size || targetIds.has(entry.id) ||
+        entry.dependencies.some((dependency) => targetIds.has(typeof dependency === "string" ? dependency : dependency.id)))
+      .slice(0, limit);
+  }
+  if (query === "versions") {
+    const targetIds = new Set(filter.ids || [filter.id].filter(Boolean));
+    return [...snapshot.lenses, ...snapshot.generators]
+      .filter((entry) => !targetIds.size || targetIds.has(entry.id))
+      .map((entry) => ({ id: entry.id, stableId: entry.stableId || entry.id, version: entry.version || 1, name: entry.name }))
+      .slice(0, limit);
+  }
+  if (query === "spatial") {
+    let objects = snapshot.objects;
+    if (filter.region) objects = objects.filter((object) => intersects(object.box, filter.region));
+    return [...objects].sort((a, b) => a.box.miny - b.box.miny || a.box.minx - b.box.minx).slice(0, limit);
+  }
+  if (query === "temporal") {
+    return [
+      ...snapshot.objects.map((entry) => ({ ...entry, at: entry.createdAt })),
+      ...snapshot.recentHistory.map((entry) => ({ ...entry, domain: "history", at: entry.at })),
+    ].sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, limit);
   }
   if (query === "graph") {
     const seeds = Array.isArray(filter.ids) ? filter.ids : [filter.id].filter(Boolean);

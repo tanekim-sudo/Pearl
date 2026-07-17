@@ -12,6 +12,11 @@ import {
 import { validateCapabilityArgs } from "./companion-plan.js";
 
 const listeners = new Set();
+export const DIRECTOR_EFFECT_TRACE_VERSION = 1;
+const MAX_COMPLETED_TRACES = 100;
+const completedTraces = [];
+let activeTrace = null;
+let activeStep = null;
 
 const state = {
   running: false,
@@ -36,6 +41,50 @@ function snapshot() {
 function emit() {
   const snap = snapshot();
   for (const l of listeners) l(snap);
+}
+
+function reducedMotionRequested() {
+  return Boolean(globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+}
+
+function traceEvent(type, detail = {}) {
+  if (!activeTrace) return;
+  const event = {
+    sequence: activeTrace.events.length,
+    elapsedMs: Math.max(0, Math.round(performance.now() - activeTrace.startedAtMonotonic)),
+    type,
+    capability: activeStep?.capability || null,
+    stepId: activeStep?.id || null,
+    ...detail,
+  };
+  activeTrace.events.push(event);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("lens:director-effect-trace", {
+      detail: {
+        version: DIRECTOR_EFFECT_TRACE_VERSION,
+        traceId: activeTrace.id,
+        event,
+      },
+    }));
+  }
+}
+
+function publicTrace(trace) {
+  if (!trace) return null;
+  const { startedAtMonotonic, ...value } = trace;
+  return structuredClone(value);
+}
+
+export function getDirectorEffectTraces() {
+  return {
+    active: publicTrace(activeTrace),
+    completed: completedTraces.map(publicTrace),
+  };
+}
+
+export function clearDirectorEffectTraces() {
+  completedTraces.length = 0;
+  if (!state.running) activeTrace = null;
 }
 
 export function subscribeDirector(fn) {
@@ -91,17 +140,33 @@ export function directorWait(ms) {
 }
 
 export function cursorJumpTo(x, y) {
+  const from = { x: state.cursor.x, y: state.cursor.y };
   state.cursor.x = x;
   state.cursor.y = y;
   state.cursor.visible = true;
+  traceEvent("cursor-jump", { from, to: { x, y } });
   emit();
 }
 
 export function cursorMoveTo(x, y, ms = 340) {
   const from = { x: state.cursor.x, y: state.cursor.y };
   const dist = Math.hypot(x - from.x, y - from.y);
+  if (reducedMotionRequested()) {
+    state.cursor.x = x;
+    state.cursor.y = y;
+    state.cursor.visible = true;
+    traceEvent("cursor-move", {
+      from,
+      to: { x, y },
+      durationMs: 0,
+      reducedMotion: true,
+    });
+    emit();
+    return Promise.resolve();
+  }
   const duration = Math.max(140, Math.min(360, ms, 140 + dist * 0.32)) / (state.speed || 1);
   state.cursor.visible = true;
+  traceEvent("cursor-move-start", { from, to: { x, y }, durationMs: Math.round(duration) });
   emit();
   return new Promise((resolve) => {
     const start = performance.now();
@@ -113,7 +178,10 @@ export function cursorMoveTo(x, y, ms = 340) {
       state.cursor.y = from.y + (y - from.y) * k;
       emit();
       if (t < 1) requestAnimationFrame(frame);
-      else resolve();
+      else {
+        traceEvent("cursor-move-complete", { from, to: { x, y } });
+        resolve();
+      }
     }
     requestAnimationFrame(frame);
   });
@@ -123,6 +191,10 @@ export async function cursorPress(dragLabel = null) {
   state.cursor.pressed = true;
   state.cursor.dragLabel = dragLabel;
   state.cursor.pulse += 1;
+  traceEvent("gesture-press", {
+    at: { x: state.cursor.x, y: state.cursor.y },
+    dragLabel,
+  });
   emit();
   await directorWait(70);
 }
@@ -131,6 +203,7 @@ export async function cursorRelease() {
   state.cursor.pressed = false;
   state.cursor.dragLabel = null;
   state.cursor.pulse += 1;
+  traceEvent("gesture-release", { at: { x: state.cursor.x, y: state.cursor.y } });
   emit();
   await directorWait(70);
 }
@@ -143,6 +216,7 @@ export async function cursorClick(x, y, ms) {
 
 export function setDirectorCaption(text) {
   state.caption = text || null;
+  traceEvent("caption", { text: state.caption });
   emit();
 }
 
@@ -158,7 +232,27 @@ export function elementCenter(selector, { scroll = true } = {}) {
   if (scroll) el.scrollIntoView({ block: "nearest", behavior: "auto" });
   const r = el.getBoundingClientRect();
   if (!r.width && !r.height) return null;
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2, rect: r };
+  const geometry = {
+    x: r.left + r.width / 2,
+    y: r.top + r.height / 2,
+    rect: {
+      x: r.x,
+      y: r.y,
+      top: r.top,
+      right: r.right,
+      bottom: r.bottom,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+    },
+  };
+  traceEvent("target-resolved", {
+    target: typeof selector === "string"
+      ? selector
+      : el.id || el.dataset?.itemId || el.dataset?.nodeId || el.getAttribute?.("data-testid") || el.tagName,
+    geometry,
+  });
+  return geometry;
 }
 
 // ---- script runner ----
@@ -194,6 +288,24 @@ export async function runDirectorScript(steps, opts = {}) {
   state.running = true;
   state.abortRequested = false;
   activeAbortController = new AbortController();
+  const startedAt = new Date().toISOString();
+  activeTrace = {
+    version: DIRECTOR_EFFECT_TRACE_VERSION,
+    id: globalThis.crypto?.randomUUID?.() || `director-${Date.now()}`,
+    title: opts.title || null,
+    status: "running",
+    startedAt,
+    startedAtMonotonic: performance.now(),
+    completedAt: null,
+    reducedMotion: reducedMotionRequested(),
+    viewport: {
+      width: typeof window !== "undefined" ? window.innerWidth : null,
+      height: typeof window !== "undefined" ? window.innerHeight : null,
+    },
+    expectedCapabilities: steps.map((step) => step?.verb).filter(Boolean),
+    events: [],
+  };
+  traceEvent("run-start", { stepCount: steps.length });
   state.scriptTitle = opts.title || null;
   state.cursor.visible = true;
   emit();
@@ -209,6 +321,11 @@ export async function runDirectorScript(steps, opts = {}) {
     for (const step of steps) {
       if (state.abortRequested) break;
       const fn = verbs[step.verb];
+      activeStep = { capability: step.verb, id: step.id || null };
+      traceEvent("step-start", {
+        args: structuredClone(step.args || {}),
+        initialCursor: { x: state.cursor.x, y: state.cursor.y },
+      });
       try {
         const suppliedArgs = step.args || {};
         const capability = capabilityByName.get(step.verb);
@@ -238,12 +355,17 @@ export async function runDirectorScript(steps, opts = {}) {
                 ...(result == null ? {} : { value: result }),
               }
         );
+        traceEvent("step-complete", {
+          resultType,
+          finalCursor: { x: state.cursor.x, y: state.cursor.y },
+        });
         consecutiveFailures = 0;
       } catch (err) {
         // One broken step shouldn't kill a long demonstration — note it,
         // let the viewer read the note, and carry on with the rest.
         const msg = err?.message || String(err);
         errors.push(msg);
+        traceEvent("step-failed", { error: msg });
         consecutiveFailures += 1;
         setDirectorCaption(`skipping a step (${msg}) — continuing…`);
         await directorWait(1400);
@@ -256,6 +378,17 @@ export async function runDirectorScript(steps, opts = {}) {
     }
   } finally {
     const aborted = state.abortRequested;
+    traceEvent("run-complete", {
+      status: aborted ? "cancelled" : errors.length ? "failed" : "completed",
+      resultTypes: results.map((result) => result.type),
+      errorCount: errors.length,
+    });
+    activeTrace.status = aborted ? "cancelled" : errors.length ? "failed" : "completed";
+    activeTrace.completedAt = new Date().toISOString();
+    completedTraces.push(activeTrace);
+    if (completedTraces.length > MAX_COMPLETED_TRACES) completedTraces.splice(0, completedTraces.length - MAX_COMPLETED_TRACES);
+    activeTrace = null;
+    activeStep = null;
     state.running = false;
     state.scriptTitle = null;
     state.caption = null;
@@ -281,5 +414,11 @@ export function stopDirector() {
 
 // Dev-only hook so automated audits can exercise director verbs end to end.
 if (typeof window !== "undefined" && import.meta.env?.DEV) {
-  window.__lensDirector = { run: runDirectorScript, stop: stopDirector, verbs: listDirectorVerbs };
+  window.__lensDirector = {
+    run: runDirectorScript,
+    stop: stopDirector,
+    verbs: listDirectorVerbs,
+    traces: getDirectorEffectTraces,
+    clearTraces: clearDirectorEffectTraces,
+  };
 }

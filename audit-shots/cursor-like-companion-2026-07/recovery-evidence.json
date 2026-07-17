@@ -1,0 +1,100 @@
+{
+  "checkpoint": {
+    "version": 1,
+    "id": "checkpoint-before",
+    "parentId": null,
+    "createdAt": "2026-07-17T01:46:58.475Z",
+    "revision": "fnv1a-f3ffcff8",
+    "state": {
+      "items": [
+        {
+          "id": "source-a",
+          "stableId": "source-a",
+          "version": 1,
+          "text": "Preserve"
+        }
+      ],
+      "operators": [
+        {
+          "id": "move-a",
+          "stableId": "move-a",
+          "version": 1,
+          "prompt": "Before"
+        }
+      ]
+    },
+    "fingerprint": "fnv1a-12fc467c"
+  },
+  "candidate": {
+    "version": 1,
+    "id": "checkpoint-after",
+    "parentId": "checkpoint-before",
+    "createdAt": "2026-07-17T01:46:58.477Z",
+    "revision": "fnv1a-7249ecc4",
+    "state": {
+      "items": [
+        {
+          "id": "source-a",
+          "stableId": "source-a",
+          "version": 1,
+          "text": "Preserve"
+        }
+      ],
+      "operators": [
+        {
+          "id": "move-a",
+          "stableId": "move-a",
+          "version": 2,
+          "prompt": "After"
+        }
+      ]
+    },
+    "fingerprint": "fnv1a-87fe2746"
+  },
+  "verification": {
+    "status": "verified",
+    "checks": [
+      {
+        "label": "move-a",
+        "ok": true
+      }
+    ],
+    "unintended": [],
+    "diff": {
+      "version": 1,
+      "sections": {
+        "content": [],
+        "graph": [
+          {
+            "key": "operators",
+            "stableId": "move-a",
+            "type": "changed",
+            "before": {
+              "id": "move-a",
+              "stableId": "move-a",
+              "version": 1,
+              "prompt": "Before"
+            },
+            "after": {
+              "id": "move-a",
+              "stableId": "move-a",
+              "version": 2,
+              "prompt": "After"
+            }
+          }
+        ],
+        "outputAndModels": [],
+        "lensContext": [],
+        "referencesAndMigrations": [],
+        "spatial": [],
+        "provenanceAndPrivacy": []
+      },
+      "changedStableIds": [
+        "move-a"
+      ],
+      "count": 1,
+      "fingerprint": "fnv1a-d560c1b5"
+    }
+  },
+  "strategy": "restore-workspace-checkpoint"
+}

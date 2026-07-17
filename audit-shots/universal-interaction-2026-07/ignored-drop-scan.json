@@ -1,0 +1,27 @@
+[
+  {
+    "file": "client/App.jsx",
+    "dropHandlers": 6,
+    "genericConversionErrors": []
+  },
+  {
+    "file": "client/components/AiNodeCanvas.jsx",
+    "dropHandlers": 1,
+    "genericConversionErrors": []
+  },
+  {
+    "file": "client/components/BeforeAfterLensEditor.jsx",
+    "dropHandlers": 1,
+    "genericConversionErrors": []
+  },
+  {
+    "file": "client/components/LensTreeEditor.jsx",
+    "dropHandlers": 11,
+    "genericConversionErrors": []
+  },
+  {
+    "file": "extension/src/sidepanel/main.jsx",
+    "dropHandlers": 2,
+    "genericConversionErrors": []
+  }
+]

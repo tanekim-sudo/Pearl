@@ -1,0 +1,41 @@
+[
+  {
+    "id": "explore-context",
+    "kind": "explore",
+    "status": "completed",
+    "artifact": {
+      "id": "explore-context-artifact",
+      "durationMs": 1,
+      "evidence": [
+        "explore completed in isolated read context"
+      ]
+    },
+    "durationMs": 1
+  },
+  {
+    "id": "privacy-review",
+    "kind": "privacy-reviewer",
+    "status": "completed",
+    "artifact": {
+      "id": "privacy-review-artifact",
+      "durationMs": 1,
+      "evidence": [
+        "privacy-reviewer completed in isolated read context"
+      ]
+    },
+    "durationMs": 1
+  },
+  {
+    "id": "evaluate-effects",
+    "kind": "evaluator",
+    "status": "completed",
+    "artifact": {
+      "id": "evaluate-effects-artifact",
+      "durationMs": 1,
+      "evidence": [
+        "evaluator completed in isolated read context"
+      ]
+    },
+    "durationMs": 1
+  }
+]
