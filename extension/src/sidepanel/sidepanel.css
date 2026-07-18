@@ -20,3 +20,43 @@
 .kind-guide{margin:0;padding:8px;border:1px solid #4a463b;border-radius:8px;color:#c8c3b6;font-size:11px;line-height:1.45}.library-subhead{margin:6px 0 0;color:#d5a82e;font-size:11px;letter-spacing:.04em}.save-as-chooser{display:grid;gap:5px;border:1px solid #d5a82e;border-radius:9px;padding:8px;background:#181713}.save-as-chooser button,.generator-rack button{display:grid;gap:3px;text-align:left}.generator-rack{display:grid;gap:6px;max-height:150px;overflow:auto}.save-as-toggle{border-style:dashed}
 .extension-packages{display:grid;gap:8px;padding:10px;border:1px solid #38352d;border-radius:10px;background:#181713}.extension-packages>div,.extension-packages article{display:flex;gap:7px}.extension-packages>div{align-items:center;justify-content:space-between}.extension-packages article{align-items:stretch;flex-direction:column;padding:8px;border:1px solid #38352d;border-radius:9px;background:#111}
 .extension-orb-shell{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px;min-width:0}.extension-orb{width:46px;height:46px;min-height:46px;flex:none;border:0;padding:0;border-radius:50%;background:transparent;filter:drop-shadow(0 5px 14px rgba(225,173,43,.3))}.extension-orb svg{width:100%;height:100%;overflow:visible}.extension-orb-rays{transform-origin:50px 50px;animation:extension-orb-breathe 4.5s ease-in-out infinite}.extension-orb-rays path{fill:none;stroke:#efd184;stroke-width:4;stroke-linecap:round}.extension-orb-halo{fill:rgba(225,173,43,.12);stroke:rgba(255,240,194,.35)}.extension-orb-core{fill:#fffdf3;stroke:#e1ad2b;stroke-width:3}.extension-orb-label{min-width:0;min-height:34px;padding:5px 7px;text-align:left;border:0;background:transparent;color:#f5f2e8}.extension-orb-shell[data-orb-state=listening] .extension-orb-rays{animation-duration:1s}.extension-orb-shell[data-orb-state=executing] .extension-orb-rays{animation:extension-orb-spin 3s linear infinite}.extension-orb-shell[data-orb-state=blocked] .extension-orb-rays path{stroke:#ff9e92}.orb-view-tabs{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:repeat(6,minmax(58px,1fr));gap:4px;padding:6px 0;overflow-x:auto;background:#111}.orb-view-tabs button{min-height:34px;padding:5px 7px;text-transform:capitalize;font-size:10px}.orb-view-tabs button[aria-current=page]{color:#16120a;background:#e1ad2b;border-color:#f1c75a;font-weight:800}.orb-panel{display:none!important}.orb-panel.active{display:grid!important}.companion:not(.active){display:none}.orb-settings a{color:#d5a82e;font-size:12px}.companion{grid-template-columns:auto 1fr auto auto}.companion input{min-width:0}@keyframes extension-orb-breathe{0%,100%{transform:scale(.92) rotate(-3deg);opacity:.68}50%{transform:scale(1.06) rotate(3deg);opacity:1}}@keyframes extension-orb-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.extension-orb-rays{animation:none!important}}
+
+/* Restrained orb surface overrides. Keep this block explicit so packaged MV3 CSS is stable. */
+:root{--ex-bg:#080909;--ex-surface:#0e0f0f;--ex-text:#eeede8;--ex-muted:#9a9b96;--ex-dim:#6f706d;--ex-line:rgba(241,239,232,.14);--ex-line-strong:rgba(241,239,232,.24);--ex-focus:#d8c28d;--ex-ease:cubic-bezier(.22,.72,.18,1)}
+body{background:var(--ex-bg);color:var(--ex-text)}
+main{gap:16px;background:radial-gradient(ellipse at 40% -10%,rgba(255,255,255,.025),transparent 38%),var(--ex-bg)}
+header{border-color:var(--ex-line)}
+header span,small,.muted{color:var(--ex-muted)}
+h2,.library-subhead{color:var(--ex-muted);font-size:10px;letter-spacing:.16em;font-weight:600}
+button,input,select{border-color:var(--ex-line);background:transparent;color:var(--ex-text);border-radius:3px}
+button:hover{border-color:var(--ex-line-strong);background:rgba(255,255,255,.025)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:1px solid #f4f2eb;outline-offset:2px}
+.gold,.go{background:#ece9df;color:#171818;border-color:#ece9df;font-weight:650}
+.go{font-size:13px}
+.quick-start,.learn-panel,.extension-packages,.extension-packages article,.save-as-chooser,.import-preview,.fragments article,.result{border-radius:3px;border-color:var(--ex-line);background:var(--ex-surface);box-shadow:none}
+.compat,.disclosure{background:rgba(255,255,255,.035);border-left:1px solid var(--ex-line);border-radius:0}
+.library-import,.kind-guide{border-radius:3px;border-color:var(--ex-line)}
+.extension-orb{filter:drop-shadow(0 4px 14px rgba(216,194,141,.1))}
+.extension-orb-rays{animation:extension-orb-respire 9s var(--ex-ease) infinite}
+.extension-orb-rays path{stroke:rgba(228,214,177,.72);stroke-width:1.15;opacity:.55}
+.extension-orb-rays path:nth-child(2n){stroke-width:.8;opacity:.36}
+.extension-orb-halo{fill:none;stroke:rgba(232,221,190,.22);stroke-width:.8}
+.extension-orb-core{fill:#f7f5ed;stroke:rgba(216,194,141,.68);stroke-width:1}
+.extension-orb-trace,.extension-orb-state-ring{fill:none;stroke:var(--ex-focus);stroke-width:.8;opacity:0}
+.extension-orb-state-ring{stroke-dasharray:1.5 3}
+.extension-orb-shell[data-orb-state=listening] .extension-orb-rays{animation:extension-orb-listen 1.8s var(--ex-ease) infinite}
+.extension-orb-shell[data-orb-state=executing] .extension-orb-rays{animation:none;opacity:.42}
+.extension-orb-shell[data-orb-state=executing] .extension-orb-trace{opacity:.8;stroke-dasharray:10 50;animation:extension-orb-trace 1.5s var(--ex-ease) infinite}
+.extension-orb-shell[data-orb-state=blocked] .extension-orb-trace{opacity:.75;stroke:#c89b91;stroke-dasharray:7 4 2 30}
+.extension-orb-shell[data-orb-state=blocked] .extension-orb-rays path{stroke:rgba(228,214,177,.3)}
+.extension-orb-label{color:var(--ex-text);font-weight:520}
+.orb-view-tabs{gap:0;padding:8px 0;background:var(--ex-bg);border-bottom:1px solid var(--ex-line)}
+.orb-view-tabs button{border:0;border-bottom:1px solid transparent;border-radius:0;color:var(--ex-muted);background:transparent}
+.orb-view-tabs button[aria-current=page]{color:var(--ex-text);background:transparent;border-color:var(--ex-focus);font-weight:600}
+.companion{background:var(--ex-bg);border-top:1px solid var(--ex-line);padding-top:10px}
+.ghost{color:var(--ex-focus)}
+@keyframes extension-orb-respire{0%,100%{transform:scale(.985);opacity:.48}50%{transform:scale(1.015);opacity:.68}}
+@keyframes extension-orb-listen{0%,100%{transform:scale(.96);opacity:.42}50%{transform:scale(1.045);opacity:.86}}
+@keyframes extension-orb-trace{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.extension-orb-rays,.extension-orb-trace{animation:none!important}}
+@media(prefers-contrast:more){:root{--ex-muted:#d7d7d2;--ex-dim:#b7b8b3;--ex-line:rgba(255,255,255,.38);--ex-line-strong:rgba(255,255,255,.65)}main{background:var(--ex-bg)}}

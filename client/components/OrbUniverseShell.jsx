@@ -23,6 +23,23 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+function waitForOrbRuntime(timeoutMs = 12_000) {
+  if (window.__lensOrbRuntime?.run) return Promise.resolve(window.__lensOrbRuntime);
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      window.removeEventListener("lens:orb-runtime-ready", ready);
+      reject(new Error("The Scene runtime did not become ready."));
+    }, timeoutMs);
+    function ready() {
+      if (!window.__lensOrbRuntime?.run) return;
+      window.clearTimeout(timeout);
+      window.removeEventListener("lens:orb-runtime-ready", ready);
+      resolve(window.__lensOrbRuntime);
+    }
+    window.addEventListener("lens:orb-runtime-ready", ready);
+  });
+}
+
 function useRoute() {
   const [route, setRoute] = useState(() => parseOrbRoute());
   useEffect(() => {
@@ -138,19 +155,106 @@ export default function OrbUniverseShell({ StageComponent }) {
     navigate("/library");
   }
 
-  function command(raw) {
+  async function command(raw) {
     const recorded = recordOrbUtterance(orb, raw, {
       id: `web:${Date.now()}`,
       targetSnapshot: [{ route: route.path }],
     });
-    let next = transitionOrb({ ...recorded.state, activeIntent: recorded.entry }, "interpreting", { taskId: recorded.entry.id });
+    let current = recorded.state.phase === "idle"
+      ? recorded.state
+      : createOrbState({
+          ...recorded.state,
+          phase: "idle",
+          taskId: recorded.entry.id,
+          effectId: null,
+          commandId: null,
+        });
+    let next = transitionOrb({ ...current, activeIntent: recorded.entry }, "interpreting", { taskId: recorded.entry.id });
     if (/\b(?:open|start|new)\b.*\bscene\b/i.test(recorded.entry.normalized)) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openScene" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openScene", effectId: "route:scene" }));
       navigate(`/scene/${crypto.randomUUID()}`);
       return;
     }
-    setOrb(transitionOrb(next, "blocked", { taskId: recorded.entry.id, evidence: { boundary: "Open a library object or enter Stage for scoped execution." } }));
+    if (route.kind !== "stage") {
+      setOrb(transitionOrb(next, "blocked", { taskId: recorded.entry.id, evidence: { boundary: "Open or create a Scene before mutating material." } }));
+      return;
+    }
+    setOrb(next);
+    setOutputFrameOpen(true);
+    try {
+      const runtime = await waitForOrbRuntime();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const phaseMap = {
+        planning: "planning",
+        researching: "researching",
+        executing: "executing",
+        blocked: "blocked",
+        evaluating: "executing",
+      };
+      const result = await runtime.run(recorded.entry.raw, {
+        mode: "agent",
+        onPhase(phase) {
+          const mapped = phaseMap[phase];
+          if (!mapped) return;
+          setOrb((value) => value.phase === mapped ? value : transitionOrb(value, mapped, { taskId: recorded.entry.id }));
+        },
+        onPlan(plan) {
+          if (!plan) return null;
+          setOrb((value) => value.phase === "approval" ? value : transitionOrb(value, "approval", {
+            taskId: recorded.entry.id,
+            evidence: { title: plan.title, preview: true },
+          }));
+          return Promise.resolve({ decision: "reject" });
+        },
+      });
+      if (result?.visible) {
+        setOrb((value) => value.phase === "blocked" ? value : transitionOrb(value, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: result.text },
+        }));
+        return;
+      }
+      setOrb((value) => {
+        const executing = value.phase === "executing"
+          ? value
+          : transitionOrb(value, "executing", { taskId: recorded.entry.id, commandId: "companion-plan" });
+        return transitionOrb(executing, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "companion-plan",
+          effectId: `companion:${recorded.entry.id}`,
+        });
+      });
+    } catch (error) {
+      setOrb((value) => {
+        if (value.phase === "blocked") return value;
+        const recoverable = ["executing", "paused"].includes(value.phase)
+          ? transitionOrb(value, "recovery", { taskId: recorded.entry.id, evidence: { error: error.message } })
+          : value;
+        return transitionOrb(recoverable, "blocked", { taskId: recorded.entry.id, evidence: { boundary: error.message } });
+      });
+    }
+  }
+
+  async function undoOrbEffect() {
+    try {
+      const runtime = await waitForOrbRuntime();
+      setOrb((value) => createOrbState({ ...value, phase: "recovery", effectId: null }));
+      const receipt = runtime.undo();
+      setOrb((value) => transitionOrb(value, "completed", {
+        taskId: value.taskId || `undo:${Date.now()}`,
+        commandId: "undo",
+        effectId: `undo:${Date.now()}`,
+        evidence: receipt,
+      }));
+    } catch (error) {
+      setOrb((value) => createOrbState({
+        ...value,
+        phase: "blocked",
+        effectId: null,
+        trace: [...(value.trace || []), { id: `undo-error:${Date.now()}`, from: value.phase, to: "blocked", evidence: { boundary: error.message } }],
+      }));
+    }
   }
 
   if (route.kind === "stage") {
@@ -159,7 +263,8 @@ export default function OrbUniverseShell({ StageComponent }) {
         <a href="/library" onClick={(event) => { event.preventDefault(); navigate("/library"); }}>← Library</a>
         <button type="button" onClick={() => setOutputFrameOpen((value) => !value)}>{outputFrameOpen ? "Close Output Frame" : "Open Output Frame"}</button>
       </div>
-      {outputFrameOpen ? <div className="orb-output-frame-host" data-semantic-anchor="output-frame"><StageComponent sceneId={route.sceneId} /></div> : (
+      <div className="orb-output-frame-host" data-semantic-anchor="output-frame" hidden={!outputFrameOpen}><StageComponent sceneId={route.sceneId} /></div>
+      {!outputFrameOpen && (
         <main className="orb-black-stage" aria-label={`Scene ${route.sceneId || "untitled"}`}>
           <div className="orb-stage-context"><span>Scene</span><b>{route.sceneId || "Untitled Scene"}</b><small>Empty working set · add material through the orb, extension, or library</small></div>
           <nav className="orb-adaptive-views" aria-label="Adaptive Scene views">
@@ -175,7 +280,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           </aside>
         </main>
       )}
-      <CompanionOrb state={orb} onStateChange={setOrb} onCommand={command} />
+      <CompanionOrb state={orb} onStateChange={setOrb} onCommand={command} onUndo={undoOrbEffect} />
     </div>;
   }
 

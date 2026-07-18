@@ -15684,6 +15684,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return null;
   }
 
+  useEffect(() => {
+    const bridge = {
+      run(text, options = {}) {
+        return handleCompanionCommand(text, options);
+      },
+      undo() {
+        undo();
+        return { type: "workspace-undo", persisted: true };
+      },
+    };
+    window.__lensOrbRuntime = bridge;
+    window.dispatchEvent(new CustomEvent("lens:orb-runtime-ready"));
+    return () => {
+      if (window.__lensOrbRuntime === bridge) delete window.__lensOrbRuntime;
+    };
+  });
+
   const tourState = useMemo(
     () => ({
       items,

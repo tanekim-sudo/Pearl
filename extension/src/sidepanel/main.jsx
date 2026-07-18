@@ -24,14 +24,21 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
+const ORB_RAYS = Object.freeze([
+  [4, 13, 35, 2], [43, 18, 36, -1], [82, 11, 34, 1], [129, 18, 36, 2],
+  [174, 14, 35, -1], [220, 19, 36, 1], [266, 12, 34, -2], [309, 17, 36, 1], [341, 15, 35, -1],
+]);
+
 function ExtensionOrb({ phase, listening, onVoice, onCommandView }) {
   return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Lens orb, ${phase}`}>
     <button type="button" className="extension-orb" aria-label={listening ? "Stop listening" : "Hold to speak"} onClick={onVoice}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <g className="extension-orb-rays">
-          {Array.from({ length: 12 }, (_, index) => <path key={index} d="M50 8 C49 22 52 28 50 37" transform={`rotate(${index * 30} 50 50)`} />)}
+          {ORB_RAYS.map(([angle, start, end, bend]) => <path key={angle} d={`M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}`} transform={`rotate(${angle} 50 50)`} />)}
         </g>
+        <path className="extension-orb-trace" d="M50 14 C66 20 76 34 78 50" />
         <circle cx="50" cy="50" r="29" className="extension-orb-halo" />
+        <circle cx="50" cy="50" r="36" className="extension-orb-state-ring" />
         <circle cx="50" cy="50" r="19" className="extension-orb-core" />
       </svg>
     </button>

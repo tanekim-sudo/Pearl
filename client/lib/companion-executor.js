@@ -60,6 +60,13 @@ function conditionMatches(condition, scope) {
   return false;
 }
 
+function createRunId() {
+  const uuid = globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : null;
+  return uuid || `plan-${Date.now()}`;
+}
+
 export async function executeCompanionPlan(
   plan,
   tools,
@@ -69,7 +76,7 @@ export async function executeCompanionPlan(
     budget = {},
     initialValues = {},
     resume = null,
-    runId = resume?.runId || globalThis.crypto?.randomUUID?.() || `plan-${Date.now()}`,
+    runId = resume?.runId || createRunId(),
     mode = "agent",
     approved = false,
     onPersist,

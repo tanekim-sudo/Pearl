@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-18T20:50:23.867Z",
+  "browser": "149.0.7827.55",
+  "checks": [
+    {
+      "name": "01-install-desktop",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:41741/",
+      "title": "Untitled Idea — Lens",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(16, 18, 22)",
+          "background": "rgb(236, 236, 239)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1600,
+          "clientWidth": 1600
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false
+      },
+      "metrics": {
+        "domContentLoadedMs": 19,
+        "loadMs": 19,
+        "transferBytes": 900,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - text: Lens Everywhere\n  - heading \"Your cognition, available on every page.\" [level=1]\n  - paragraph: Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.\n  - link \"Add Lens to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Continue to Lens\"\n  - status: Installation status is unknown. You can check again after installing.\n  - complementary \"Lens orb, idle\":\n    - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
+    },
+    {
+      "name": "02-library-laptop",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41741/library",
+      "title": "Untitled Idea — Lens",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(16, 18, 22)",
+          "background": "rgb(236, 236, 239)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1280,
+          "clientWidth": 1280
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false
+      },
+      "metrics": {
+        "domContentLoadedMs": 22,
+        "loadMs": 23,
+        "transferBytes": 900,
+        "longTasks": 0
+      },
+      "snapshot": "- navigation \"Lens\":\n  - link \"Lens\":\n    - /url: /library\n  - link \"Packages\":\n    - /url: /packages\n  - link \"Tasks\":\n    - /url: /tasks\n  - link \"Settings\":\n    - /url: /settings\n- main:\n  - text: Extension-first · Stage on demand\n  - heading \"Cognitive library\" [level=1]\n  - paragraph: Moves, Functions, Lenses, reusable packages, saved Scenes, and verified task history—without opening a blank workspace.\n  - button \"New Scene\"\n  - button \"Extension setup\"\n  - region \"Cognitive toolbox\":\n    - link \"Moves Single reusable actions and primitive operations.\":\n      - /url: /library?kind=moves\n    - link \"Functions Visible ordered and branched choreographies.\":\n      - /url: /library?kind=functions\n    - link \"Lenses Context atmospheres, Taste Lenses, and perceptual models.\":\n      - /url: /library?kind=lenses\n    - link \"Packages Signed cognition with trust, versions, tests, and provenance.\":\n      - /url: /packages\n    - link \"Saved Scenes Resume an explicit working set, camera, branches, and checkpoints.\":\n      - /url: /tasks?view=scenes\n    - link \"Tasks & history Review plans, diffs, checkpoints, recovery, and semantic rewind.\":\n      - /url: /tasks\n    - link \"Vocabulary Teach personal phrases without weakening privacy boundaries.\":\n      - /url: /settings?vocabulary=1\n    - link \"Models & connectors Control execution models, research policy, and handoffs.\":\n      - /url: /settings?connectors=1\n    - link \"Sync health Anonymous local work, account adoption, import, and export.\":\n      - /url: /settings?sync=1\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
+    },
+    {
+      "name": "03-library-narrow",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:41741/library",
+      "title": "Untitled Idea — Lens",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(16, 18, 22)",
+          "background": "rgb(236, 236, 239)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 390,
+          "clientWidth": 390
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false
+      },
+      "metrics": {
+        "domContentLoadedMs": 26,
+        "loadMs": 26,
+        "transferBytes": 900,
+        "longTasks": 0
+      },
+      "snapshot": "- navigation \"Lens\":\n  - link \"Lens\":\n    - /url: /library\n  - link \"Packages\":\n    - /url: /packages\n  - link \"Tasks\":\n    - /url: /tasks\n  - link \"Settings\":\n    - /url: /settings\n- main:\n  - text: Extension-first · Stage on demand\n  - heading \"Cognitive library\" [level=1]\n  - paragraph: Moves, Functions, Lenses, reusable packages, saved Scenes, and verified task history—without opening a blank workspace.\n  - button \"New Scene\"\n  - button \"Extension setup\"\n  - region \"Cognitive toolbox\":\n    - link \"Moves Single reusable actions and primitive operations.\":\n      - /url: /library?kind=moves\n    - link \"Functions Visible ordered and branched choreographies.\":\n      - /url: /library?kind=functions\n    - link \"Lenses Context atmospheres, Taste Lenses, and perceptual models.\":\n      - /url: /library?kind=lenses\n    - link \"Packages Signed cognition with trust, versions, tests, and provenance.\":\n      - /url: /packages\n    - link \"Saved Scenes Resume an explicit working set, camera, branches, and checkpoints.\":\n      - /url: /tasks?view=scenes\n    - link \"Tasks & history Review plans, diffs, checkpoints, recovery, and semantic rewind.\":\n      - /url: /tasks\n    - link \"Vocabulary Teach personal phrases without weakening privacy boundaries.\":\n      - /url: /settings?vocabulary=1\n    - link \"Models & connectors Control execution models, research policy, and handoffs.\":\n      - /url: /settings?connectors=1\n    - link \"Sync health Anonymous local work, account adoption, import, and export.\":\n      - /url: /settings?sync=1\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
+    },
+    {
+      "name": "04-stage-desktop",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:41741/scene/audit-scene",
+      "title": "Untitled Idea — Lens",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(16, 18, 22)",
+          "background": "rgb(236, 236, 239)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1600,
+          "clientWidth": 1600
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false
+      },
+      "metrics": {
+        "domContentLoadedMs": 243,
+        "loadMs": 244,
+        "transferBytes": 476329,
+        "longTasks": 0
+      },
+      "snapshot": "- link \"← Library\":\n  - /url: /library\n- button \"Open Output Frame\"\n- main \"Scene audit-scene\":\n  - text: Scene audit-scene Empty working set · add material through the orb, extension, or library\n  - navigation \"Adaptive Scene views\":\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\"\n    - button \"Timeline\"\n    - button \"Frame\"\n  - heading \"Bring material into this Scene.\" [level=1]\n  - paragraph: Drag onto the orb, speak a goal, or open a saved working set. Nothing is created until you choose it.\n  - complementary \"Contextual library drawer\": Library Moves Functions Lenses Packages\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
+    },
+    {
+      "name": "05-install-reduced-motion",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41741/install",
+      "title": "Untitled Idea — Lens",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(16, 18, 22)",
+          "background": "rgb(236, 236, 239)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1280,
+          "clientWidth": 1280
+        },
+        "animationCount": 0,
+        "animations": [],
+        "reducedMotion": true,
+        "highContrast": false
+      },
+      "metrics": {
+        "domContentLoadedMs": 276,
+        "loadMs": 276,
+        "transferBytes": 476029,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - text: Lens Everywhere\n  - heading \"Your cognition, available on every page.\" [level=1]\n  - paragraph: Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.\n  - link \"Add Lens to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Continue to Lens\"\n  - status: Installation status is unknown. You can check again after installing.\n  - complementary \"Lens orb, idle\":\n    - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
+    }
+  ],
+  "passed": 5,
+  "failed": 0
+}

@@ -95,6 +95,14 @@ Ambiguous records default to reversible Lens/context classification and retain s
 - A **candidate** is one typed output in a generation batch, with its requested/resolved model, branch specification, differentiation blurb, status, provenance, and taste feedback.
 - The **orb** is the companion, cursor, context and execution interface. It plans, observes, executes canonical commands, verifies effects, checkpoints, confirms, recovers, and may split into bounded read/evaluation workers whose typed proposals require parent verification.
 
+### Orb visual and motion language
+
+The orb uses a warm-white core, a low-chroma pale-gold energy field, sparse irregular traces, and neutral near-black space. Gold is reserved for focus, causality, and acceptance; it is not a general decoration color. Stage and library surfaces use open editorial hierarchy, hairlines, and negative space rather than planetary motifs, glass cards, dotted grids, or pill-heavy dashboards.
+
+Only one state motion may dominate at once: slow idle respiration, amplitude-bounded listening, focused interpretation, ordered planning points, arriving research provenance, causal execution traces, controlled branching, a still approval ring, one interrupted blocked path, a quiet completion settle, or checkpoint retraction. Reduced-motion mode renders each state statically. Motion uses transform, opacity, and SVG stroke offsets; full-screen blur and uncontrolled particles are prohibited.
+
+The Scene orb input is wired to the same companion planner, director verbs, canonical effects, persistence, and undo stack as the full instrumentation view. Opening that view is an adaptive handoff, not a second implementation. The extension side panel and isolated page overlay use the same restrained state grammar at their smaller scale.
+
 ## Primitive Moves
 
 The primary Primitive Moves are:

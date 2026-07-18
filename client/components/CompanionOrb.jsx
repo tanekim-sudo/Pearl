@@ -2,6 +2,21 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
+const RAYS = Object.freeze([
+  { angle: 4, start: 13, end: 35, bend: 2.1 },
+  { angle: 39, start: 17, end: 36, bend: -1.4 },
+  { angle: 76, start: 11, end: 34, bend: .7 },
+  { angle: 121, start: 18, end: 36, bend: 1.8 },
+  { angle: 164, start: 14, end: 35, bend: -1.2 },
+  { angle: 207, start: 19, end: 36, bend: .9 },
+  { angle: 251, start: 12, end: 34, bend: -1.8 },
+  { angle: 299, start: 17, end: 36, bend: 1.1 },
+  { angle: 337, start: 15, end: 35, bend: -.6 },
+]);
+
+function rayPath({ start, end, bend }) {
+  return `M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}`;
+}
 
 function readPlacement(storageKey) {
   try {
@@ -122,17 +137,30 @@ export default function CompanionOrb({
           <defs>
             <radialGradient id={`orb-core-${titleId}`} cx="42%" cy="38%">
               <stop offset="0" stopColor="#fffef4" />
-              <stop offset=".44" stopColor="#fff" />
-              <stop offset=".7" stopColor="#f0c96b" />
-              <stop offset="1" stopColor="#8f641f" stopOpacity=".2" />
+              <stop offset=".48" stopColor="#f8f6ee" />
+              <stop offset=".78" stopColor="#d8c89f" />
+              <stop offset="1" stopColor="#9a865a" stopOpacity=".12" />
+            </radialGradient>
+            <radialGradient id={`orb-aura-${titleId}`}>
+              <stop offset="0" stopColor="#f3e8c8" stopOpacity=".2" />
+              <stop offset=".6" stopColor="#d8c28d" stopOpacity=".05" />
+              <stop offset="1" stopColor="#d8c28d" stopOpacity="0" />
             </radialGradient>
           </defs>
+          <circle className="orb-aura" cx="50" cy="50" r="45" fill={`url(#orb-aura-${titleId})`} />
           <g className="orb-rays">
-            {Array.from({ length: 12 }, (_, index) => (
-              <path key={index} d="M50 7 C48 22 52 27 50 37" transform={`rotate(${index * 30} 50 50)`} />
+            {RAYS.map((ray) => (
+              <path key={ray.angle} d={rayPath(ray)} transform={`rotate(${ray.angle} 50 50)`} />
             ))}
           </g>
+          <path className="orb-causal-trace" d="M50 14 C66 20 76 34 78 50" />
+          <g className="orb-satellites">
+            <circle cx="50" cy="12" r="1.5" />
+            <circle cx="82" cy="56" r="1.2" />
+            <circle cx="25" cy="72" r="1" />
+          </g>
           <circle className="orb-halo" cx="50" cy="50" r="31" />
+          <circle className="orb-approval-ring" cx="50" cy="50" r="37" />
           <circle className="orb-core" cx="50" cy="50" r="20" fill={`url(#orb-core-${titleId})`} />
           <circle className="orb-glint" cx="43" cy="42" r="5" />
         </svg>
@@ -150,13 +178,16 @@ export default function CompanionOrb({
           </form>
           <div className="orb-controls">
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
-            <button type="button" onClick={onStop}>Stop</button>
-            <button type="button" onClick={onUndo}>Undo</button>
+            <button type="button" onClick={onStop} disabled={!onStop}>Stop</button>
+            <button type="button" onClick={onUndo} disabled={!onUndo}>Undo</button>
           </div>
           {(state.trace || []).length > 0 && (
             <ol className="orb-trace" aria-label="Recent task evidence">
               {state.trace.slice(-3).reverse().map((entry) => (
-                <li key={entry.id}><b>{entry.to}</b><span>{entry.commandId || entry.taskId || "orb task"}</span></li>
+                <li key={entry.id}>
+                  <b>{entry.to}</b>
+                  <span>{entry.evidence?.boundary || entry.evidence?.error || entry.commandId || entry.taskId || "orb task"}</span>
+                </li>
               ))}
             </ol>
           )}

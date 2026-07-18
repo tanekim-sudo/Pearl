@@ -6,7 +6,7 @@ import path from "node:path";
 const extensionRoot = path.resolve(import.meta.dirname, "..");
 const dist = path.join(extensionRoot, "dist/chrome");
 const auditDist = path.join(extensionRoot, ".audit-orb-extension");
-const evidence = path.resolve(extensionRoot, "../audit-shots/orb-universe-2026-07");
+const evidence = path.resolve(extensionRoot, process.env.AUDIT_OUT || "../audit-shots/orb-universe-2026-07");
 fs.mkdirSync(evidence, { recursive: true });
 fs.rmSync(auditDist, { recursive: true, force: true });
 fs.cpSync(dist, auditDist, { recursive: true });

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:41737";
-const evidence = path.resolve("audit-shots/orb-universe-2026-07");
+const evidence = path.resolve(process.env.AUDIT_OUT || "audit-shots/orb-universe-2026-07");
 fs.mkdirSync(evidence, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const results = [];
@@ -20,7 +20,36 @@ async function shot(name, viewport, url, setup) {
   await setup?.(page);
   await page.screenshot({ path: path.join(evidence, `${name}.png`), fullPage: true });
   const snapshot = await page.locator("body").ariaSnapshot();
-  results.push({ name, viewport, url: page.url(), title: await page.title(), errors, snapshot: snapshot.slice(0, 2000) });
+  const diagnostics = await page.evaluate(() => {
+    const body = getComputedStyle(document.body);
+    const animations = document.getAnimations().map((animation) => ({
+      name: animation.animationName || animation.effect?.target?.className || "transition",
+      playState: animation.playState,
+    }));
+    return {
+      colors: { foreground: body.color, background: body.backgroundColor },
+      overflow: {
+        horizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      },
+      animationCount: animations.length,
+      animations: animations.slice(0, 20),
+      reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      highContrast: matchMedia("(prefers-contrast: more)").matches,
+    };
+  });
+  const metrics = await page.evaluate(() => {
+    const navigation = performance.getEntriesByType("navigation")[0];
+    const resources = performance.getEntriesByType("resource");
+    return {
+      domContentLoadedMs: Math.round(navigation?.domContentLoadedEventEnd || 0),
+      loadMs: Math.round(navigation?.loadEventEnd || 0),
+      transferBytes: resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0),
+      longTasks: performance.getEntriesByType("longtask").length,
+    };
+  });
+  results.push({ name, viewport, url: page.url(), title: await page.title(), errors, diagnostics, metrics, snapshot: snapshot.slice(0, 2000) });
   if (errors.length) throw new Error(`${name}: ${errors.join("; ")}`);
   await context.close();
 }

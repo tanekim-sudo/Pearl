@@ -7,6 +7,10 @@ import { captureNativeSelection, selectionRects } from "./selection.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
+const PAGE_ORB_RAYS = [
+  [4, 13, 35, 2], [43, 18, 36, -1], [82, 11, 34, 1], [129, 18, 36, 2],
+  [174, 14, 35, -1], [220, 19, 36, 1], [266, 12, 34, -2], [309, 17, 36, 1], [341, 15, 35, -1],
+];
 
 function mountPageOrb() {
   if (document.getElementById("lens-orb-overlay-host") || !document.documentElement) return;
@@ -17,12 +21,13 @@ function mountPageOrb() {
   const style = document.createElement("style");
   style.textContent = `
     :host{all:initial}
-    .shell{font:12px/1.3 system-ui,sans-serif;color:#f8f5ed;display:flex;align-items:center;gap:6px}
-    button{font:inherit;color:inherit;border:1px solid rgba(255,255,255,.2);background:#111;border-radius:999px;cursor:pointer;box-shadow:0 7px 24px rgba(0,0,0,.3)}
-    .orb{width:48px;height:48px;padding:0;display:grid;place-items:center;filter:drop-shadow(0 5px 12px rgba(225,173,43,.35))}
-    svg{width:42px;height:42px;overflow:visible}.rays{transform-origin:50px 50px;animation:breathe 4.5s ease-in-out infinite}.rays path{fill:none;stroke:#efd184;stroke-width:4;stroke-linecap:round}.core{fill:#fffdf3;stroke:#d6a631;stroke-width:3}.actions{display:none;gap:5px;padding:5px;background:rgba(12,12,12,.94);border-radius:999px}.shell.open .actions{display:flex}.actions button{min-height:36px;padding:6px 10px}
-    button:focus-visible{outline:2px solid #fff;outline-offset:2px}@keyframes breathe{0%,100%{transform:scale(.92);opacity:.7}50%{transform:scale(1.06);opacity:1}}
+    .shell{font:12px/1.3 system-ui,sans-serif;color:#eeede8;display:flex;align-items:center;gap:8px}
+    button{font:inherit;color:inherit;border:1px solid rgba(255,255,255,.22);background:rgba(8,9,9,.96);border-radius:3px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+    .orb{width:48px;height:48px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(8,9,9,.88);filter:drop-shadow(0 4px 14px rgba(216,194,141,.1))}
+    svg{width:42px;height:42px;overflow:visible}.rays{transform-origin:50px 50px;animation:respire 9s cubic-bezier(.22,.72,.18,1) infinite}.rays path{fill:none;stroke:rgba(228,214,177,.72);stroke-width:1.15;stroke-linecap:round;opacity:.55}.rays path:nth-child(2n){stroke-width:.8;opacity:.35}.halo{fill:none;stroke:rgba(232,221,190,.22);stroke-width:.8}.core{fill:#f7f5ed;stroke:rgba(216,194,141,.68);stroke-width:1}.actions{display:none;gap:5px;padding:6px;background:rgba(8,9,9,.96);border:1px solid rgba(255,255,255,.14);border-radius:3px}.shell.open .actions{display:flex}.actions button{min-height:36px;padding:6px 10px}
+    button:focus-visible{outline:1px solid #fff;outline-offset:3px}@keyframes respire{0%,100%{transform:scale(.985);opacity:.48}50%{transform:scale(1.015);opacity:.68}}
     @media(prefers-reduced-motion:reduce){.rays{animation:none}}
+    @media(prefers-contrast:more){button,.actions{border-color:rgba(255,255,255,.62)}}
   `;
   const shell = document.createElement("div");
   shell.className = "shell";
@@ -31,7 +36,7 @@ function mountPageOrb() {
   orb.type = "button";
   orb.setAttribute("aria-label", "Open Lens orb controls");
   orb.setAttribute("aria-expanded", "false");
-  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="rays">${Array.from({ length: 12 }, (_, index) => `<path d="M50 8 C49 22 52 28 50 37" transform="rotate(${index * 30} 50 50)"/>`).join("")}</g><circle class="core" cx="50" cy="50" r="20"/></svg>`;
+  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="rays">${PAGE_ORB_RAYS.map(([angle, start, end, bend]) => `<path d="M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}" transform="rotate(${angle} 50 50)"/>`).join("")}</g><circle class="halo" cx="50" cy="50" r="30"/><circle class="core" cx="50" cy="50" r="19"/></svg>`;
   const actions = document.createElement("div");
   actions.className = "actions";
   const captureButton = document.createElement("button");

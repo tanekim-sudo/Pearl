@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-18T20:50:07.715Z",
+  "inputPath": "visible Scene orb input",
+  "planner": "controlled typed plan through production planner boundary",
+  "canonicalCapability": "spawnText",
+  "firstEffect": {
+    "itemCount": 1,
+    "stableId": "s-x5wud36",
+    "text": "Orb-created persisted evidence"
+  },
+  "persistedAfterRefresh": true,
+  "noDuplicateOnRefresh": true,
+  "undoThroughOrbControl": true,
+  "runtimeBridge": true,
+  "errors": [],
+  "status": "passed"
+}

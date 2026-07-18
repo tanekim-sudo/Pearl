@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-18T20:38:58.578Z",
+  "browser": "149.0.7827.55",
+  "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
+  "viewport": {
+    "width": 360,
+    "height": 720
+  },
+  "checks": [
+    "Shadow DOM page-edge orb visible",
+    "orb command shell at 360px",
+    "view-based side panel navigation",
+    "library view",
+    "settings and privacy handoff",
+    "MV3 service worker loaded"
+  ],
+  "passed": 6,
+  "failed": 0
+}

@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import OrbUniverseShell from "./components/OrbUniverseShell.jsx";
 import "./styles.css";
 import "./styles-idea.css";
+import "./orb-visual-tokens.css";
 import "./orb-universe.css";
 
 class RootErrorBoundary extends React.Component {
