@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T01:46:17.979Z",
+  "generatedAt": "2026-07-17T18:25:16.840Z",
   "exactCommand": "Clear only this page. Then create market, founder, product, competition, risks, and recommendation branches; compare the evidence and keep the strongest result.",
   "matrix": {
     "sources": 21,
@@ -79,11 +79,11 @@
   "browserErrors": [],
   "companionTrace": {
     "version": 1,
-    "id": "5c29b49e-59f4-49a9-878e-cedeaaf7b551",
+    "id": "e3ec8e3f-0d63-463a-84ba-a0dceebe77b4",
     "title": "Semantic transfer",
     "status": "completed",
-    "startedAt": "2026-07-17T01:46:15.011Z",
-    "completedAt": "2026-07-17T01:46:15.936Z",
+    "startedAt": "2026-07-17T18:25:14.457Z",
+    "completedAt": "2026-07-17T18:25:15.388Z",
     "reducedMotion": false,
     "viewport": {
       "width": 1440,
@@ -103,7 +103,7 @@
       },
       {
         "sequence": 1,
-        "elapsedMs": 241,
+        "elapsedMs": 248,
         "type": "step-start",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -117,7 +117,7 @@
       },
       {
         "sequence": 2,
-        "elapsedMs": 242,
+        "elapsedMs": 248,
         "type": "cursor-jump",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -132,7 +132,7 @@
       },
       {
         "sequence": 3,
-        "elapsedMs": 242,
+        "elapsedMs": 249,
         "type": "target-resolved",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -154,7 +154,7 @@
       },
       {
         "sequence": 4,
-        "elapsedMs": 242,
+        "elapsedMs": 249,
         "type": "cursor-move-start",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -170,7 +170,7 @@
       },
       {
         "sequence": 5,
-        "elapsedMs": 508,
+        "elapsedMs": 514,
         "type": "cursor-move-complete",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -185,7 +185,7 @@
       },
       {
         "sequence": 6,
-        "elapsedMs": 508,
+        "elapsedMs": 514,
         "type": "gesture-press",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -197,7 +197,7 @@
       },
       {
         "sequence": 7,
-        "elapsedMs": 576,
+        "elapsedMs": 581,
         "type": "gesture-release",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -208,7 +208,7 @@
       },
       {
         "sequence": 8,
-        "elapsedMs": 924,
+        "elapsedMs": 931,
         "type": "step-complete",
         "capability": "semanticTransfer",
         "stepId": null,
@@ -220,7 +220,7 @@
       },
       {
         "sequence": 9,
-        "elapsedMs": 925,
+        "elapsedMs": 931,
         "type": "run-complete",
         "capability": "semanticTransfer",
         "stepId": null,

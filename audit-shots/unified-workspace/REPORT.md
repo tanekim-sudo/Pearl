@@ -33,7 +33,7 @@
 
 ## Checks
 
-- PASS — versioned migration created: v2
+- PASS — versioned migration created: v3
 - PASS — paper records preserved
 - PASS — AI records and history preserved
 - PASS — migration reload is idempotent

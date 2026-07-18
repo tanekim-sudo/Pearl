@@ -15,6 +15,7 @@ const listeners = new Set();
 export const DIRECTOR_EFFECT_TRACE_VERSION = 1;
 const MAX_COMPLETED_TRACES = 100;
 const completedTraces = [];
+const completedDirectEffects = [];
 let activeTrace = null;
 let activeStep = null;
 
@@ -85,6 +86,14 @@ export function getDirectorEffectTraces() {
 export function clearDirectorEffectTraces() {
   completedTraces.length = 0;
   if (!state.running) activeTrace = null;
+}
+
+export function getDirectCapabilityEffects() {
+  return completedDirectEffects.map((entry) => structuredClone(entry));
+}
+
+export function clearDirectCapabilityEffects() {
+  completedDirectEffects.length = 0;
 }
 
 export function subscribeDirector(fn) {
@@ -291,6 +300,101 @@ const toolkit = {
   },
 };
 
+function validateDirectorArgs(verb, suppliedArgs) {
+  const capability = capabilityByName.get(verb);
+  if (!capability) return null;
+  const capabilityArgs = {};
+  const metadataArgs = {};
+  for (const [key, value] of Object.entries(suppliedArgs || {})) {
+    if (key in COMPANION_DIRECTOR_ARG_METADATA) metadataArgs[key] = value;
+    else capabilityArgs[key] = value;
+  }
+  validateCapabilityArgs(capability, capabilityArgs, `director.${verb}.args`);
+  validateCapabilityArgs(
+    { name: `${verb} director metadata`, args: COMPANION_DIRECTOR_ARG_METADATA },
+    metadataArgs,
+    `director.${verb}.metadata`
+  );
+  return capability;
+}
+
+function createDirectToolkit(signal) {
+  const wait = (ms = 0) => new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException("Aborted", "AbortError"));
+    const timeout = setTimeout(resolve, Math.min(420, Math.max(0, Number(ms) || 0)));
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timeout);
+      reject(new DOMException("Aborted", "AbortError"));
+    }, { once: true });
+  });
+  return {
+    moveTo: async () => {},
+    jumpTo: () => {},
+    press: async () => {},
+    release: async () => {},
+    click: async () => {},
+    caption: () => {},
+    wait,
+    elementCenter,
+    isAborted: () => signal?.aborted === true,
+    signal,
+  };
+}
+
+export async function executeCapabilityDirect(verb, args = {}, options = {}) {
+  const fn = verbs[verb];
+  if (typeof fn !== "function") throw new Error(`unavailable capability: ${verb}`);
+  const capability = validateDirectorArgs(verb, args);
+  const startedAt = new Date().toISOString();
+  try {
+    const result = await fn(args, createDirectToolkit(options.signal), options.context || { vars: {} });
+    const resultType = capability?.resultType || "action-result";
+    const value = result && typeof result === "object" && !Array.isArray(result)
+      ? { type: resultType, ...result }
+      : { type: resultType, capability: verb, status: "completed", ...(result == null ? {} : { value: result }) };
+    const effect = {
+      id: globalThis.crypto?.randomUUID?.() || `direct-${Date.now()}`,
+      capability: verb,
+      status: "completed",
+      startedAt,
+      completedAt: new Date().toISOString(),
+      resultType,
+      effects: value.effects || [],
+    };
+    completedDirectEffects.push(effect);
+    if (completedDirectEffects.length > MAX_COMPLETED_TRACES) completedDirectEffects.splice(0, completedDirectEffects.length - MAX_COMPLETED_TRACES);
+    globalThis.dispatchEvent?.(new CustomEvent("lens:capability-direct-effect", { detail: structuredClone(effect) }));
+    return value;
+  } catch (error) {
+    completedDirectEffects.push({
+      id: globalThis.crypto?.randomUUID?.() || `direct-${Date.now()}`,
+      capability: verb,
+      status: options.signal?.aborted ? "cancelled" : "failed",
+      startedAt,
+      completedAt: new Date().toISOString(),
+      resultType: capability?.resultType || "action-result",
+      error: error.message,
+      effects: [],
+    });
+    throw error;
+  }
+}
+
+export async function executeCapabilityScriptDirect(steps, options = {}) {
+  if (!Array.isArray(steps) || !steps.length) return { completed: false, error: "empty script", errors: ["empty script"], results: [] };
+  const context = { vars: {} };
+  const results = [];
+  try {
+    for (const step of steps) {
+      if (options.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      results.push(await executeCapabilityDirect(step.verb, step.args || {}, { ...options, context }));
+    }
+    return { completed: true, errors: [], results, value: results.at(-1) };
+  } catch (error) {
+    return { completed: false, aborted: error.name === "AbortError", error: error.message, errors: [error.message], results, value: results.at(-1) };
+  }
+}
+
 export async function runDirectorScript(steps, opts = {}) {
   if (!Array.isArray(steps) || !steps.length) return { completed: false, error: "empty script" };
   const resolution = resolveDirectorCapabilities(steps.map((step) => step?.verb));
@@ -347,21 +451,7 @@ export async function runDirectorScript(steps, opts = {}) {
       });
       try {
         const suppliedArgs = step.args || {};
-        const capability = capabilityByName.get(step.verb);
-        if (capability) {
-          const capabilityArgs = {};
-          const metadataArgs = {};
-          for (const [key, value] of Object.entries(suppliedArgs)) {
-            if (key in COMPANION_DIRECTOR_ARG_METADATA) metadataArgs[key] = value;
-            else capabilityArgs[key] = value;
-          }
-          validateCapabilityArgs(capability, capabilityArgs, `director.${step.verb}.args`);
-          validateCapabilityArgs(
-            { name: `${step.verb} director metadata`, args: COMPANION_DIRECTOR_ARG_METADATA },
-            metadataArgs,
-            `director.${step.verb}.metadata`
-          );
-        }
+        const capability = validateDirectorArgs(step.verb, suppliedArgs);
         const result = await fn(suppliedArgs, toolkit, ctx);
         const resultType = capability?.resultType || "action-result";
         results.push(
@@ -439,5 +529,7 @@ if (typeof window !== "undefined" && import.meta.env?.DEV) {
     verbs: listDirectorVerbs,
     traces: getDirectorEffectTraces,
     clearTraces: clearDirectorEffectTraces,
+    directEffects: getDirectCapabilityEffects,
+    clearDirectEffects: clearDirectCapabilityEffects,
   };
 }

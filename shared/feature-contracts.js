@@ -193,10 +193,10 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("companion.orb-runtime", {
     migrationVersion: 4,
     domains: ["interface", "scene", "extension"],
-    commands: ["addOrbContext"],
+    commands: ["addOrbContext", "updateOrbContext", "removeOrbContext", "addOrbLens", "updateOrbLens", "removeOrbLens"],
     ui: ["client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\""],
-    companion: ["observeWorkspace", "semanticTransfer", "toggleOrbCursor"],
-    extension: ["capturePageSelection", "pressExternalGo", "toggleExternalOrbCursor"],
+    companion: ["observeWorkspace", "semanticTransfer", "toggleOrbCursor", "addOrbContext", "updateOrbContext", "removeOrbContext", "addOrbLens", "updateOrbLens", "removeOrbLens"],
+    extension: ["capturePageSelection", "pressExternalGo", "setExternalLensContext", "toggleExternalOrbCursor"],
     persistence: ["lens.orb.placement.v1", "lens.orb.cursor.v1", "orbCursorTabs"],
     tests: ["shared/orb-universe.test.js", "extension/tests/core.test.js"],
     owner: "shared/orb-runtime.js",
@@ -204,7 +204,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("interaction.orb-gesture", {
     migrationVersion: 4,
     domains: ["scene", "frame", "move", "function", "lens"],
-    commands: ["addOrbContext", "materializeOnStage", "materializeInOutputFrame", "queueBranchMaterial", "assignWorkerContext"],
+    commands: ["addOrbContext", "addOrbLens", "materializeOnStage", "materializeInOutputFrame", "queueBranchMaterial", "assignWorkerContext"],
     ui: ["client/components/CompanionOrb.jsx"],
     companion: ["semanticTransfer"],
     extension: ["openExternalArtifact"],

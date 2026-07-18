@@ -1,7 +1,17 @@
 import { contentFingerprint } from "./lens-grammar.js";
 
 export const WORKSPACE_OBSERVATION_VERSION = 1;
-export const OBSERVATION_SCOPES = Object.freeze(["selection", "viewport", "paper", "workspace", "visibleTab"]);
+export const OBSERVATION_SCOPES = Object.freeze([
+  "selection",
+  "viewport",
+  "stage",
+  "frame",
+  "orb-context",
+  "paper",
+  "ai-space",
+  "workspace",
+  "visibleTab",
+]);
 export const OBSERVATION_LIMITS = Object.freeze({ objects: 1000, exactText: 120_000, depth: 20, summary: 500 });
 const SCOPES = new Set(OBSERVATION_SCOPES);
 const SECRET = /\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|authorization|cookie|bearer\s+[a-z0-9._-]+)\b/gi;
@@ -60,6 +70,8 @@ function normalizeObject(value = {}, index, context) {
     outputRef: value.outputRef ? structuredClone(value.outputRef) : null,
     historyRefs: (value.historyRefs || []).slice(0, 50).map((entry) => structuredClone(entry)),
     taste: value.tasteFeedback?.decision || value.feedback?.decision || null,
+    sceneId: bounded(value.sceneId, 256) || null,
+    frameId: bounded(value.frameId, 256) || null,
   };
 }
 
@@ -77,11 +89,21 @@ export function createWorkspaceObservation(value = {}) {
   const selected = new Set([...(value.selectedIds || []), ...(value.highlightedIds || [])]);
   const highlighted = new Set(value.highlightedIds || []);
   const normalized = (value.objects || []).map((object, index) => normalizeObject(object, index, { selected, highlighted, viewportBounds }));
-  let eligible = scope === "selection"
-    ? normalized.filter((object) => object.selected || object.highlighted)
-    : scope === "viewport" || scope === "visibleTab"
-      ? normalized.filter((object) => object.visibility.inViewport)
-      : normalized;
+  const contextIds = new Set(value.contextIds || []);
+  let eligible;
+  if (scope === "selection") eligible = normalized.filter((object) => object.selected || object.highlighted);
+  else if (scope === "viewport" || scope === "visibleTab") eligible = normalized.filter((object) => object.visibility.inViewport);
+  else if (scope === "frame" || scope === "paper") {
+    const frameId = value.frameId || value.focus?.frameId || value.pageRef?.id;
+    eligible = frameId
+      ? normalized.filter((object) => object.frameId === frameId)
+      : scope === "paper"
+        ? normalized
+        : normalized.filter((object) => Boolean(object.frameId));
+  } else if (scope === "stage") eligible = normalized.filter((object) => !object.frameId);
+  else if (scope === "orb-context") eligible = normalized.filter((object) => contextIds.has(object.id) || object.domain === "orb-context");
+  else if (scope === "ai-space") eligible = normalized.filter((object) => object.domain === "ai");
+  else eligible = normalized;
   eligible = [...eligible].sort((a, b) =>
     Number(b.selected || b.highlighted) - Number(a.selected || a.highlighted)
     || a.zIndex - b.zIndex

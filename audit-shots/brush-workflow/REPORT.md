@@ -26,7 +26,7 @@
 - PASS — Escape clears pending before marks
 - PASS — Lens context remains immutable while queued
 - PASS — Lens context alone cannot execute: 0 GO · 1 Evidence garden×
-- PASS — Move plus Lens context shows GO: 1 GO · 1 compress←→× | 2 Evidence garden×
+- PASS — Move plus Lens context shows GO: 1 GO · 1 Branch←→× | 2 Evidence garden×
 - PASS — GO applies action without mutating Lens context: 0 context mutations
 - PASS — contextual action commits exactly once: 0 → 1 model calls
 - PASS — successful GO clears pending stack

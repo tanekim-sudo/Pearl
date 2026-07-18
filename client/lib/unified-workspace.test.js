@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   UNIFIED_WORKSPACE_VERSION,
   clampAiNodeToPage,
+  clampAiNodeToOutputFrame,
   clampWorkspaceItem,
   clampItemToOutputFrame,
   createOutputFrame,
@@ -11,6 +12,7 @@ import {
   hitUnifiedMaterial,
   migrateUnifiedWorkspace,
   routeUnifiedGesture,
+  selectSceneWorkspace,
 } from "./unified-workspace.js";
 
 test("legacy paper and AI records migrate inside page without losing metadata", () => {
@@ -33,6 +35,27 @@ test("legacy paper and AI records migrate inside page without losing metadata", 
   assert.equal(migrated.frames[0].kind, "output-frame");
   assert.equal(migrated.items[0].frameId, migrated.frames[0].id);
   assert.equal(migrated.scenes[0].metadata.createdFrom, "legacy-page-migration");
+});
+
+test("every legacy page becomes a distinct Scene and Output Frame", () => {
+  const migrated = migrateUnifiedWorkspace({
+    pages: [
+      { id: "page-a", name: "Alpha", camera: { x: 1, y: 2, scale: .8 } },
+      { id: "page-b", name: "Beta", camera: { x: 3, y: 4, scale: .7 } },
+    ],
+    activePageId: "page-b",
+    items: [
+      { id: "a", pageId: "page-a", type: "text", x: 10, y: 20 },
+      { id: "b", pageId: "page-b", type: "text", x: 30, y: 40 },
+    ],
+    nodes: [{ id: "node-b", pageId: "page-b", x: 20, y: 20 }],
+  });
+  assert.equal(migrated.scenes.length, 2);
+  assert.equal(migrated.activeSceneId, "scene-legacy:page-b");
+  assert.deepEqual(migrated.items.map((item) => item.id), ["b"]);
+  assert.deepEqual(migrated.nodes.map((node) => node.id), ["node-b"]);
+  assert.equal(migrated.scenes[0].frames[0].metadata.legacyPageId, "page-a");
+  assert.equal(migrated.scenes[1].frames[0].metadata.legacyPageId, "page-b");
 });
 
 test("Scene v4 preserves unknown fields and leaves world objects unbounded", () => {
@@ -60,6 +83,28 @@ test("only frame-local material is clamped", () => {
   const local = clampItemToOutputFrame({ ...world, id: "local", frameId: frame.id }, frame);
   assert.ok(local.x >= frame.x + 24);
   assert.ok(local.y >= frame.y + 24);
+  const worldNode = { id: "world-node", x: -800, y: 4000, radius: 16 };
+  assert.equal(clampAiNodeToOutputFrame(worldNode, frame), worldNode);
+  const localNode = clampAiNodeToOutputFrame({ ...worldNode, frameId: frame.id }, frame);
+  assert.ok(localNode.x >= frame.x + 24 + localNode.radius);
+  assert.ok(localNode.y <= frame.y + frame.height - 24 - localNode.radius);
+});
+
+test("explicit Scene routes select or create only the requested working set", () => {
+  const first = createScene({ id: "scene-a", items: [{ id: "a" }] });
+  const second = createScene({ id: "scene-b", items: [{ id: "b" }], workingSet: { context: [{ id: "ctx" }] } });
+  const selected = selectSceneWorkspace({
+    version: UNIFIED_WORKSPACE_VERSION,
+    activeSceneId: first.id,
+    scenes: [first, second],
+  }, "scene-b");
+  assert.equal(selected.activeSceneId, "scene-b");
+  assert.deepEqual(selected.items.map((item) => item.id), ["b"]);
+  assert.deepEqual(selected.workingSet.context.map((item) => item.id), ["ctx"]);
+  const created = selectSceneWorkspace(selected, "scene-new", { createIfMissing: true });
+  assert.equal(created.activeSceneId, "scene-new");
+  assert.equal(created.scenes.length, 3);
+  assert.equal(created.scenes[2].metadata.createdFrom, "explicit-scene-route");
 });
 
 test("node clamp uses compact defaults and preserves explicit custom radii", () => {

@@ -2,14 +2,12 @@
 
 - Public artifact: `/downloads/lens-everywhere-chrome-v1.0.0.zip`
 - Three-screen, skippable first run: passed at 360px
-- One dominant web install action and post-download setup card: passed
-- Honest Chrome settings copy action (no fake launch): passed
 - Local no-account path and one-confirm clean import: passed
 - Signed-in login invokes automatic library refresh: covered by worker contract
 - Persistent selection and explicit GO boundary: passed
 - Preview-before-mutation and verified insertion: passed
 - Reduced-motion and keyboard-visible styles: present
-- Automated extension checks: 11 passed, 0 failed
+- Automated checks: 11 passed, 0 failed
 
 The funnel follows the dominant patterns used by Grammarly, Notion Web Clipper,
 Loom, 1Password, and Readwise: one install action, a short first run, equal

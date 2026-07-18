@@ -36,6 +36,57 @@ function appendObject(state, object) {
 }
 
 export const DOMAIN_COMMANDS = Object.freeze({
+  addOrbLens: {
+    schema: { lens: "object", strength: "number?" },
+    preconditions: ["Lens is explicit and preserved"],
+    risk: "low", confirmation: "none", undo: "restore-orb-lenses",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.lenses",
+    observableEffects: ["orb-lenses-changed"],
+    execute(state, args) {
+      if (!args.lens?.id) throw new Error("Lens id is required");
+      const byId = new Map((state.orbLenses || []).map((entry) => [entry.id, entry]));
+      byId.set(args.lens.id, {
+        ...clone(args.lens),
+        strength: Math.max(0, Math.min(1, Number(args.strength ?? args.lens.strength) || .7)),
+      });
+      return { state: { ...state, orbLenses: [...byId.values()] }, result: { type: "orb-lens", id: args.lens.id, effects: ["orb-lenses-changed"] } };
+    },
+  },
+  updateOrbLens: {
+    schema: { id: "string", strength: "number?" },
+    preconditions: ["Lens is active on the orb"],
+    risk: "low", confirmation: "none", undo: "restore-orb-lenses",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.lenses",
+    observableEffects: ["orb-lenses-changed"],
+    execute(state, args) {
+      let found = false;
+      const orbLenses = (state.orbLenses || []).map((lens) => {
+        if (lens.id !== args.id) return lens;
+        found = true;
+        return {
+          ...lens,
+          ...(Number.isFinite(args.strength) ? { strength: Math.max(0, Math.min(1, args.strength)) } : {}),
+        };
+      });
+      if (!found) throw new Error("orb Lens not found");
+      return { state: { ...state, orbLenses }, result: { type: "orb-lens-updated", id: args.id, effects: ["orb-lenses-changed"] } };
+    },
+  },
+  removeOrbLens: {
+    schema: { id: "string" },
+    preconditions: ["Lens is active on the orb"],
+    risk: "low", confirmation: "none", undo: "restore-orb-lenses",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.lenses",
+    observableEffects: ["orb-lenses-changed"],
+    execute(state, args) {
+      const orbLenses = (state.orbLenses || []).filter((lens) => lens.id !== args.id);
+      if (orbLenses.length === (state.orbLenses || []).length) throw new Error("orb Lens not found");
+      return { state: { ...state, orbLenses }, result: { type: "orb-lens-removed", id: args.id, effects: ["orb-lenses-changed"] } };
+    },
+  },
   addOrbContext: {
     schema: { items: "array", priority: "number?", group: "string?" },
     preconditions: ["material is explicit and preserved"],
@@ -50,6 +101,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
         if (!id) continue;
         byId.set(id, {
           ...(byId.get(id) || {}),
+          ...clone(item),
           id,
           kind: item.kind || item.material?.machineKind || "material",
           priority: Math.max(0, Math.min(1, Number.isFinite(args.priority) ? args.priority : 1)),
@@ -58,6 +110,42 @@ export const DOMAIN_COMMANDS = Object.freeze({
         });
       }
       return { state: { ...state, orbContext: [...byId.values()] }, result: { type: "orb-context", id: null, effects: ["orb-context-changed"] } };
+    },
+  },
+  updateOrbContext: {
+    schema: { id: "string", priority: "number?", pinned: "boolean?", group: "string?" },
+    preconditions: ["context item exists"],
+    risk: "low", confirmation: "none", undo: "restore-orb-context",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.context",
+    observableEffects: ["orb-context-changed"],
+    execute(state, args) {
+      let found = false;
+      const orbContext = (state.orbContext || []).map((item) => {
+        if (item.id !== args.id) return item;
+        found = true;
+        return {
+          ...item,
+          ...(Number.isFinite(args.priority) ? { priority: Math.max(0, Math.min(1, args.priority)) } : {}),
+          ...(typeof args.pinned === "boolean" ? { pinned: args.pinned } : {}),
+          ...(typeof args.group === "string" ? { group: args.group || null } : {}),
+        };
+      });
+      if (!found) throw new Error("orb context item not found");
+      return { state: { ...state, orbContext }, result: { type: "orb-context-updated", id: args.id, effects: ["orb-context-changed"] } };
+    },
+  },
+  removeOrbContext: {
+    schema: { id: "string" },
+    preconditions: ["context item exists"],
+    risk: "low", confirmation: "none", undo: "restore-orb-context",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.context",
+    observableEffects: ["orb-context-changed"],
+    execute(state, args) {
+      const orbContext = (state.orbContext || []).filter((item) => item.id !== args.id);
+      if (orbContext.length === (state.orbContext || []).length) throw new Error("orb context item not found");
+      return { state: { ...state, orbContext }, result: { type: "orb-context-removed", id: args.id, effects: ["orb-context-changed"] } };
     },
   },
   materializeOnStage: {

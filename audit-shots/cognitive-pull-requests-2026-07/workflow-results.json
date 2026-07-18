@@ -4,7 +4,7 @@
     "status": "applied",
     "receipt": {
       "type": "artifact-patch-receipt",
-      "patchId": "9f742728-f66a-4a00-b953-8b97b8bedb69",
+      "patchId": "82ec9ef7-a6b6-4d54-b3e3-7dc2612ccb62",
       "source": "workflow-move@2",
       "result": "workflow-move@3",
       "acceptedHunkIds": [
@@ -16,7 +16,7 @@
   },
   "vocabulary": [
     {
-      "id": "e5096925-89bb-4355-a3ba-a8b58ba03755",
+      "id": "ee908201-8866-44ef-9f5c-d5e787df6a15",
       "trigger": "founder pass",
       "scope": "workspace",
       "version": 1,
@@ -32,15 +32,15 @@
     ],
     "receipt": {
       "type": "cognitive-pr-merge-receipt",
-      "requestId": "9f720c8f-8d53-45e8-948a-3dabc027a4fb",
+      "requestId": "7beb3ba0-c564-4756-8448-fd962429b414",
       "artifactIds": [
-        "43ec6e86-2024-4670-a42c-7c69885a0324",
-        "2c3a1adb-b16b-4d0b-b05a-896f15779a26"
+        "acd4caeb-e649-4700-b623-e6ac77e72bc2",
+        "17789d71-b723-4c9e-ae3c-7b1c95e3b580"
       ],
       "undo": {
         "removeArtifactIds": [
-          "43ec6e86-2024-4670-a42c-7c69885a0324",
-          "2c3a1adb-b16b-4d0b-b05a-896f15779a26"
+          "acd4caeb-e649-4700-b623-e6ac77e72bc2",
+          "17789d71-b723-4c9e-ae3c-7b1c95e3b580"
         ]
       }
     }

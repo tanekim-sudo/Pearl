@@ -4,10 +4,30 @@ import assert from "node:assert/strict";
 import {
   DIRECTOR_EFFECT_TRACE_VERSION,
   clearDirectorEffectTraces,
+  directorRunning,
+  executeCapabilityScriptDirect,
   getDirectorEffectTraces,
   registerDirectorVerbs,
   runDirectorScript,
 } from "./director.js";
+
+test("direct capability execution mutates without starting demonstration motion", async () => {
+  let mutations = 0;
+  registerDirectorVerbs({
+    directFixture: async (_args, toolkit) => {
+      await toolkit.moveTo(900, 500);
+      toolkit.caption("must stay silent");
+      mutations += 1;
+      return { effects: ["fixture-mutated"] };
+    },
+  });
+  clearDirectorEffectTraces();
+  const execution = await executeCapabilityScriptDirect([{ verb: "directFixture", args: {} }]);
+  assert.equal(execution.completed, true);
+  assert.equal(mutations, 1);
+  assert.equal(directorRunning(), false);
+  assert.deepEqual(getDirectorEffectTraces(), { active: null, completed: [] });
+});
 
 test("director records versioned causal effect traces in reduced-motion mode", async () => {
   const originalDocument = globalThis.document;

@@ -33,6 +33,24 @@ export function clampAiNodesToPage(nodes = [], margin = PAGE_CONTENT_MARGIN) {
   return (Array.isArray(nodes) ? nodes : []).map((node) => clampAiNodeToPage(node, margin));
 }
 
+export function clampAiNodeToOutputFrame(node, frame, margin = PAGE_CONTENT_MARGIN) {
+  if (!node?.frameId) return node;
+  const normalizedFrame = createOutputFrame(frame);
+  const radius = node.customRadius
+    ? Math.max(8, Math.min(Number(node.radius) || defaultAiNodeRadius(node), Math.min(normalizedFrame.width, normalizedFrame.height) / 2 - margin))
+    : defaultAiNodeRadius(node);
+  const x = Math.max(
+    normalizedFrame.x + margin + radius,
+    Math.min(normalizedFrame.x + normalizedFrame.width - margin - radius, Number(node.x) || 0)
+  );
+  const y = Math.max(
+    normalizedFrame.y + margin + radius,
+    Math.min(normalizedFrame.y + normalizedFrame.height - margin - radius, Number(node.y) || 0)
+  );
+  if (node.x === x && node.y === y && node.radius === radius) return node;
+  return { ...node, x, y, radius, frameBounded: true };
+}
+
 /** Conservative fallback bbox for migration before rendered measurements exist. */
 export function workspaceItemBBox(item) {
   if (!item || item.type === "link") return null;
@@ -162,6 +180,34 @@ export function createScene(value = {}) {
   };
 }
 
+export function selectSceneWorkspace(workspace, sceneId, { createIfMissing = false } = {}) {
+  const source = migrateUnifiedWorkspace({ unified: workspace });
+  const requestedId = sceneId || source.activeSceneId;
+  let scenes = source.scenes || [];
+  let scene = scenes.find((entry) => entry.id === requestedId);
+  if (!scene && createIfMissing && requestedId) {
+    scene = createScene({
+      id: requestedId,
+      name: requestedId === DEFAULT_SCENE_ID ? "Migrated Scene" : "Untitled Scene",
+      metadata: { createdFrom: "explicit-scene-route" },
+    });
+    scenes = [...scenes, scene];
+  }
+  scene ||= scenes.find((entry) => entry.id === source.activeSceneId) || scenes[0] || null;
+  if (!scene) return source;
+  return {
+    ...source,
+    scenes,
+    activeSceneId: scene.id,
+    items: scene.items || [],
+    nodes: scene.nodes || [],
+    frames: scene.frames || [],
+    orbInstances: scene.orbInstances || [],
+    workingSet: scene.workingSet || {},
+    camera: finiteCamera(scene.camera),
+  };
+}
+
 export function clampItemToOutputFrame(item, frame, getBBox = workspaceItemBBox, margin = PAGE_CONTENT_MARGIN) {
   if (!item?.frameId) return item;
   const normalizedFrame = createOutputFrame(frame);
@@ -179,19 +225,19 @@ export function clampItemToOutputFrame(item, frame, getBBox = workspaceItemBBox,
   };
 }
 
-function legacyFrameItems(items, frame) {
-  return clampWorkspaceItems(items).map((item) => ({ ...item, frameId: frame.id, sceneId: DEFAULT_SCENE_ID }));
+function legacyFrameItems(items, frame, sceneId = DEFAULT_SCENE_ID) {
+  return clampWorkspaceItems(items).map((item) => ({ ...item, frameId: frame.id, sceneId }));
 }
 
-function legacyFrameNodes(nodes, alreadyUnified) {
+function legacyFrameNodes(nodes, alreadyUnified, frameId = DEFAULT_OUTPUT_FRAME_ID, sceneId = DEFAULT_SCENE_ID) {
   return nodes.map((node) =>
     clampAiNodeToPage({
       ...node,
       x: (Number.isFinite(node.x) ? node.x : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.x),
       y: (Number.isFinite(node.y) ? node.y : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.y),
       unifiedWorldVersion: UNIFIED_WORKSPACE_VERSION,
-      frameId: DEFAULT_OUTPUT_FRAME_ID,
-      sceneId: DEFAULT_SCENE_ID,
+      frameId,
+      sceneId,
     })
   );
 }
@@ -200,7 +246,7 @@ function legacyFrameNodes(nodes, alreadyUnified) {
  * Copies the two legacy stores into one coordinate system. Legacy values are
  * inputs only: callers keep those keys intact as recovery sources.
  */
-export function migrateUnifiedWorkspace({ items = [], nodes = [], camera = null, unified = null } = {}) {
+export function migrateUnifiedWorkspace({ items = [], nodes = [], pages = [], activePageId = null, camera = null, unified = null } = {}) {
   if (unified?.version === UNIFIED_WORKSPACE_VERSION) {
     const scenes = Array.isArray(unified.scenes)
       ? unified.scenes.map((scene) => createScene(scene))
@@ -223,42 +269,62 @@ export function migrateUnifiedWorkspace({ items = [], nodes = [], camera = null,
   const sourceItems = Array.isArray(unified?.items) ? unified.items : items;
   const sourceNodes = Array.isArray(unified?.nodes) ? unified.nodes : nodes;
   const alreadyUnified = Number(unified?.version) >= 2;
-  const frame = createOutputFrame({
-    id: unified?.frames?.[0]?.id || DEFAULT_OUTPUT_FRAME_ID,
-    name: unified?.name || "Legacy Paper",
-    metadata: { migrationSourceVersion: Number(unified?.version) || 1 },
+  const pageIds = [...new Set([
+    ...(Array.isArray(pages) ? pages.map((page) => page?.id) : []),
+    ...sourceItems.map((item) => item?.pageId),
+    ...sourceNodes.map((node) => node?.pageId),
+  ].filter(Boolean))];
+  const pageRecords = pageIds.length
+    ? pageIds.map((id, index) => {
+        const page = pages.find((entry) => entry?.id === id);
+        return { id, name: page?.name || `World ${index + 1}`, camera: page?.camera || null };
+      })
+    : [{ id: "page-1", name: unified?.name || "Migrated Scene", camera: null }];
+  const scenes = pageRecords.map((page, index) => {
+    const sceneId = index === 0 ? (unified?.activeSceneId || DEFAULT_SCENE_ID) : `scene-legacy:${page.id}`;
+    const frameId = index === 0 ? (unified?.frames?.[0]?.id || DEFAULT_OUTPUT_FRAME_ID) : `frame-legacy-paper:${page.id}`;
+    const frame = createOutputFrame({
+      id: frameId,
+      name: page.name || `Legacy Paper ${index + 1}`,
+      metadata: { migrationSourceVersion: Number(unified?.version) || 1, legacyPageId: page.id },
+    });
+    const pageItems = sourceItems.filter((item) => (item.pageId || pageRecords[0].id) === page.id);
+    const pageNodes = sourceNodes.filter((node) => (node.pageId || pageRecords[0].id) === page.id);
+    return createScene({
+      ...(index === 0 ? (unified || {}) : {}),
+      id: sceneId,
+      name: page.name || `Migrated Scene ${index + 1}`,
+      frames: [frame],
+      items: legacyFrameItems(pageItems, frame, sceneId),
+      nodes: legacyFrameNodes(pageNodes, alreadyUnified, frame.id, sceneId),
+      camera: finiteCamera(page.camera || (index === 0 ? unified?.camera || camera : null)),
+      orbInstances: index === 0 ? unified?.orbInstances || [] : [],
+      workingSet: {
+        context: [],
+        lenses: [],
+        selections: index === 0 ? unified?.selection || [] : [],
+        branches: [],
+        checkpoints: index === 0 ? unified?.history || [] : [],
+        ...(index === 0 ? unified?.workingSet || {} : {}),
+      },
+      metadata: {
+        ...(index === 0 ? unified?.metadata || {} : {}),
+        createdFrom: "legacy-page-migration",
+        legacyPageId: page.id,
+        migrationSourceVersion: Number(unified?.version) || 1,
+      },
+    });
   });
-  const migratedItems = legacyFrameItems(sourceItems, frame);
-  const migratedNodes = legacyFrameNodes(sourceNodes, alreadyUnified);
-  const scene = createScene({
-    ...(unified || {}),
-    id: unified?.activeSceneId || DEFAULT_SCENE_ID,
-    name: unified?.name || "Migrated Scene",
-    frames: [frame],
-    items: migratedItems,
-    nodes: migratedNodes,
-    camera: finiteCamera(unified?.camera || camera),
-    orbInstances: unified?.orbInstances || [],
-    workingSet: {
-      context: [],
-      lenses: [],
-      selections: unified?.selection || [],
-      branches: [],
-      checkpoints: unified?.history || [],
-      ...(unified?.workingSet || {}),
-    },
-    metadata: {
-      ...(unified?.metadata || {}),
-      createdFrom: "legacy-page-migration",
-      migrationSourceVersion: Number(unified?.version) || 1,
-    },
-  });
+  const requestedIndex = Math.max(0, pageRecords.findIndex((page) => page.id === activePageId));
+  const scene = scenes[requestedIndex] || scenes[0];
+  const migratedItems = scene.items;
+  const migratedNodes = scene.nodes;
   return {
     ...(unified || {}),
     version: UNIFIED_WORKSPACE_VERSION,
     migratedAt: new Date().toISOString(),
     activeSceneId: scene.id,
-    scenes: [scene],
+    scenes,
     frames: scene.frames,
     camera: scene.camera,
     items: migratedItems,

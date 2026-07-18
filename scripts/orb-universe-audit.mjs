@@ -5,7 +5,10 @@ import path from "node:path";
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:41737";
 const evidence = path.resolve(process.env.AUDIT_OUT || "audit-shots/orb-universe-2026-07");
 fs.mkdirSync(evidence, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
+});
 const results = [];
 
 async function shot(name, viewport, url, setup) {
@@ -75,10 +78,80 @@ try {
     await page.reload({ waitUntil: "networkidle" });
   });
   await shot("04-stage-desktop", { width: 1600, height: 1000 }, "/scene/audit-scene", async (page) => {
+    await page.evaluate(() => {
+      localStorage.removeItem("lens.orb.cursor.v1");
+      document.documentElement.setAttribute("data-lens-orb-cursor-active", "false");
+      localStorage.setItem("lens.scenes.v4", JSON.stringify({
+        version: 4,
+        activeSceneId: "audit-scene",
+        scenes: [{
+          id: "audit-scene",
+          kind: "scene",
+          version: 4,
+          name: "Audit Scene",
+          items: [{ id: "audit-material", type: "text", text: "A grounded Stage material", x: 120, y: 160, frameId: null }],
+          nodes: [],
+          frames: [],
+          orbInstances: [],
+          workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+          camera: { x: 0, y: 0, scale: 1 },
+        }],
+      }));
+    });
+    await page.reload({ waitUntil: "networkidle" });
     await page.locator('[data-semantic-anchor="scene-stage"]').first().waitFor();
     const orb = await page.locator('[data-semantic-anchor="primary-orb"] .companion-orb').boundingBox();
     if (!orb || orb.width < 110) throw new Error("Stage orb is not the primary manipulation handle");
     if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
+    await page.mouse.move(620, 420);
+    const cursor = await page.locator(".orb-cursor-visual").boundingBox();
+    if (!cursor || Math.abs(cursor.x + cursor.width / 2 - 620) > 8 || Math.abs(cursor.y + cursor.height / 2 - 420) > 8) {
+      throw new Error("web orb cursor does not track the pointer hotspot");
+    }
+    const nativeCursor = await page.locator(".orb-black-stage").evaluate((node) => getComputedStyle(node).cursor);
+    if (nativeCursor !== "none") throw new Error("web native cursor remains visible in orb cursor mode");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "false");
+    await page.locator(".companion-orb").click();
+    const command = page.getByRole("textbox", { name: "Tell the orb your goal" });
+    await command.focus();
+    await command.fill("before");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    if (await page.evaluate(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true")) {
+      throw new Error("web Triple-Space toggled while editing an orb command");
+    }
+    if ((await command.inputValue()) !== "before   ") throw new Error("editable Triple-Space did not preserve typed spaces");
+    await page.keyboard.press("Escape");
+    await page.locator(".orb-black-stage").click({ position: { x: 80, y: 80 } });
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");
+    await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Gallery", exact: true }).click();
+    await page.waitForFunction(() =>
+      document.querySelector('.orb-adaptive-views button[aria-pressed="true"]')?.textContent === "Gallery"
+    );
+    await page.getByRole("button", { name: "Add to orb context" }).click();
+    await page.locator(".orb-context-object").waitFor();
+    await page.evaluate(() => {
+      const transfer = new DataTransfer();
+      transfer.setData("text/plain", "Evidence Lens");
+      transfer.setData("application/x-lens-object", JSON.stringify({ id: "lens-audit", kind: "lens", name: "Evidence Lens", strength: .75 }));
+      document.querySelector(".companion-orb-shell").dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    });
+    await page.locator(".orb-lens-atmosphere").waitFor();
+    const beforeDrop = await page.locator(".orb-stage-materials article").count();
+    await page.locator(".orb-context-object").dragTo(page.locator(".orb-black-stage"), { targetPosition: { x: 980, y: 620 } });
+    await page.waitForFunction((count) => document.querySelectorAll(".orb-stage-materials article").length > count, beforeDrop);
+    await page.getByRole("button", { name: "Table", exact: true }).click();
+    await page.locator(".orb-stage-table").waitFor();
   });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
     const animation = await page.locator(".orb-rays").first().evaluate((node) => getComputedStyle(node).animationName);

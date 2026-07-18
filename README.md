@@ -103,6 +103,16 @@ Only one state motion may dominate at once: slow idle respiration, amplitude-bou
 
 The Scene orb input is wired to the same companion planner, director verbs, canonical effects, persistence, and undo stack as the full instrumentation view. Opening that view is an adaptive handoff, not a second implementation. The extension side panel and isolated page overlay use the same restrained state grammar at their smaller scale.
 
+### Orb cursor, context, and workers
+
+Triple-Space outside editable fields and controls makes the primary orb the literal cursor on web Scenes and ordinary extension-enabled pages. The precision hotspot remains aligned to the real pointer; text, action, grab, and resize targets change the orb presentation without changing native pointer semantics. Escape or a second Triple-Space sequence restores the native cursor. Cursor mode is persisted per web surface and per extension tab. Browser-protected pages, browser chrome, cross-origin frames, and pages where content scripts are prohibited retain the native cursor and offer the side-panel fallback.
+
+Dragging material onto the orb adds a source-preserving context object. Dragging a Lens applies an editable atmosphere with explicit strength. Both are inspectable, removable, keyboard reachable, undoable, and persisted in the active Scene working set. Dragging context back to the Stage creates a provenance-linked copy rather than moving or deleting the source. Candidate batches appear as constellations with equivalent Yes, No, and More-like-this controls.
+
+Read, evaluation, and research work may split into bounded worker orbs. Each worker has an isolated context, model/tool budget, checkpoint, status, typed proposal, and cancellation control. Parallel mutation scopes are rejected. Completed proposals return to the parent orb, which records fusion provenance and applies nothing until verification succeeds. A cancelled or failed worker preserves the exact parent checkpoint and the surviving worker evidence.
+
+Normal companion execution invokes capability handlers directly, emits a typed direct-effect receipt, observes the resulting state, and retains undo/checkpoint evidence. The ghost cursor is reserved for an explicit “show me” demonstration or a controlled animation test; it is not mutation authority.
+
 ## Primitive Moves
 
 The primary Primitive Moves are:
@@ -171,13 +181,13 @@ Direct manipulation, companion `semanticTransfer`, and extension capture use the
 
 ## Spatial workspace
 
-### One page and one world
+### One unbounded Scene, optional bounded Frames
 
-The canonical workspace is one 8.5×11-inch sheet at 96 DPI (768×1104 world units), with a 24-unit content margin. Paper objects and AI nodes share page coordinates, one camera, one selection system, and one persistence model.
+The canonical workspace is a versioned, unbounded Scene with one camera, one selection system, and one persistence envelope for working material, AI nodes, relationships, context, Lenses, candidates, branches, checkpoints, and orb instances. Visiting the web root does not create a Scene; the library creates one only after an explicit New Scene action.
 
-All persistent content remains inside page bounds. Oversized objects scale to fit; strokes scale and translate without losing shape; text width is clamped; nodes retain their complete visible footprint. Zooming out stops when the full page is visible. Zooming in is cursor-centered. Pan is available only when useful and cannot lose the page off-screen.
+An Output Frame is an optional 8.5×11-inch publication region at 96 DPI (768×1104 world units) with a 24-unit content margin. Only objects and nodes carrying that Frame’s `frameId` are clamped to its bounds. Oversized Frame-local objects scale to fit; strokes retain shape; text width is bounded; nodes retain their full footprint. Scene-local material without a `frameId` remains unbounded.
 
-Pages may be named and organized as document-level tabs, but each active page obeys the same single-sheet contract. Page creation, rename, reorder, switching, and deletion are undoable.
+Every legacy Page migrates idempotently into its own Scene and legacy-compatible Output Frame. Stable IDs, page IDs, coordinates, lineage, histories, camera state, and unknown future fields are retained. Version-4 Scene persistence is authoritative while legacy item, node, page, camera, and version-3 unified stores remain dual-written/readable during the compatibility window.
 
 ### Layers and domains
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-18T21:55:21.181Z",
+  "generatedAt": "2026-07-18T23:50:02.080Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -33,9 +33,9 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 66,
-        "loadMs": 67,
-        "transferBytes": 43500,
+        "domContentLoadedMs": 124,
+        "loadMs": 125,
+        "transferBytes": 43800,
         "longTasks": 0
       },
       "snapshot": "- main:\n  - text: Lens Everywhere\n  - heading \"Your cognition, available on every page.\" [level=1]\n  - paragraph: Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.\n  - link \"Add Lens to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Continue to Lens\"\n  - status: Installation status is unknown. You can check again after installing.\n  - complementary \"Lens orb, idle\":\n    - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""
@@ -70,12 +70,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 86,
-        "loadMs": 87,
-        "transferBytes": 43500,
+        "domContentLoadedMs": 105,
+        "loadMs": 106,
+        "transferBytes": 43800,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - link \"LENS\":\n    - /url: /library\n  - text: Extension connected · local universe\n  - button \"Library\"\n  - text: Extension-first · Stage on demand\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Speak a goal, bring material close, or resume a thought.\n  - region \"Recent scenes and tasks\":\n    - button \"Investor notes Scene · 2 hours ago\"\n    - button \"Research synthesis Task · checkpoint ready\"\n    - button \"New Scene Begin with an empty working set\"\n  - paragraph: Hold the orb to speak · click for command · drag material into its orbit\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
+      "snapshot": "- main:\n  - link \"LENS\":\n    - /url: /library\n  - text: Local universe · private by default\n  - button \"Library\"\n  - text: Extension-first · Stage on demand\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Speak a goal, bring material close, or resume a thought.\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n  - paragraph: Hold the orb to speak · click for command · drag material into its orbit\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
     },
     {
       "name": "03-library-narrow",
@@ -107,12 +107,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 98,
-        "loadMs": 99,
-        "transferBytes": 43500,
+        "domContentLoadedMs": 121,
+        "loadMs": 122,
+        "transferBytes": 43800,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - link \"LENS\":\n    - /url: /library\n  - button \"Library\"\n  - text: Extension-first · Stage on demand\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Speak a goal, bring material close, or resume a thought.\n  - region \"Recent scenes and tasks\":\n    - button \"Investor notes Scene · 2 hours ago\"\n  - paragraph: Hold the orb to speak · click for command · drag material into its orbit\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
+      "snapshot": "- main:\n  - link \"LENS\":\n    - /url: /library\n  - button \"Library\"\n  - text: Extension-first · Stage on demand\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Speak a goal, bring material close, or resume a thought.\n  - region \"Recent scenes and tasks\"\n  - paragraph: Hold the orb to speak · click for command · drag material into its orbit\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
     },
     {
       "name": "04-stage-desktop",
@@ -136,7 +136,7 @@
         "animationCount": 1,
         "animations": [
           {
-            "name": "orb-respire",
+            "name": "orb-settle",
             "playState": "running"
           }
         ],
@@ -144,12 +144,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 218,
-        "loadMs": 220,
-        "transferBytes": 11785142,
+        "domContentLoadedMs": 145,
+        "loadMs": 147,
+        "transferBytes": 44100,
         "longTasks": 0
       },
-      "snapshot": "- link \"← Library\":\n  - /url: /library\n- button \"Open Output Frame\"\n- main \"Scene audit-scene\":\n  - text: Scene audit-scene Empty working set · add material through the orb, extension, or library\n  - navigation \"Adaptive Scene views\":\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\"\n    - button \"Timeline\"\n    - button \"Frame\"\n  - heading \"Bring material into this Scene.\" [level=1]\n  - paragraph: Drag onto the orb, speak a goal, or open a saved working set. Nothing is created until you choose it.\n- complementary \"Lens orb, idle\":\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
+      "snapshot": "- link \"← Library\":\n  - /url: /library\n- button \"Open Output Frame\"\n- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - navigation \"Adaptive Scene views\":\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\" [pressed]\n    - button \"Timeline\"\n    - button \"Frame\"\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n- complementary \"Lens orb, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
     },
     {
       "name": "05-install-reduced-motion",
@@ -176,9 +176,9 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 465,
-        "loadMs": 468,
-        "transferBytes": 11784842,
+        "domContentLoadedMs": 575,
+        "loadMs": 578,
+        "transferBytes": 12049038,
         "longTasks": 0
       },
       "snapshot": "- main:\n  - text: Lens Everywhere\n  - heading \"Your cognition, available on every page.\" [level=1]\n  - paragraph: Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.\n  - link \"Add Lens to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Continue to Lens\"\n  - status: Installation status is unknown. You can check again after installing.\n  - complementary \"Lens orb, idle\":\n    - button \"Lens orb. Hold to speak, click to expand, or use arrow keys to move.\""

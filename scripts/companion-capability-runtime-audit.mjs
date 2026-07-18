@@ -91,6 +91,23 @@ function seedScript(payload) {
     items,
     nodes,
   }));
+  localStorage.setItem("lens.scenes.v4", JSON.stringify({
+    version: 4,
+    activeSceneId: "release-audit",
+    scenes: [{
+      id: "release-audit",
+      kind: "scene",
+      version: 4,
+      name: "Runtime audit",
+      items,
+      nodes,
+      frames: [],
+      orbInstances: [],
+      workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+      camera: { x: 100, y: 40, scale: 0.7 },
+      metadata: { createdFrom: "runtime-audit-fixture" },
+    }],
+  }));
   localStorage.setItem("lens.board.operators.v2", JSON.stringify(operators));
   localStorage.setItem("lens.primitive-moves.v1", JSON.stringify({ version: 1, promoted: ["op-b"], demoted: [], rank: ["op-a", "op-b"] }));
   localStorage.setItem("lens.transformation-repos.v1", JSON.stringify(repos));
@@ -183,6 +200,12 @@ const argsByName = {
   selectItems: { targets: ["claim", "evidence"] },
   addBlock: { type: "sticky", text: "Runtime block" },
   renamePage: { name: "Renamed runtime page" },
+  addOrbContext: { items: [{ id: "claim", kind: "text", text: "Claim material", label: "Claim material" }], priority: .8 },
+  updateOrbContext: { id: "claim", priority: 1, pinned: true },
+  removeOrbContext: { id: "claim" },
+  addOrbLens: { lens: { id: "orb-lens-audit", kind: "lens", name: "Runtime orb Lens" }, strength: .8 },
+  updateOrbLens: { id: "orb-lens-audit", strength: .3 },
+  removeOrbLens: { id: "orb-lens-audit" },
   zoomToItem: { target: "claim" },
   walkItemPath: { target: "derived" },
   stepSharedPath: { delta: 1 },
@@ -392,6 +415,10 @@ const setupByName = {
     { verb: "compileGrindDraft", args: {} },
   ],
   restoreFunction: [{ verb: "archiveFunction", args: { function: "op-pipeline" } }],
+  updateOrbContext: [{ verb: "addOrbContext", args: { items: [{ id: "claim", kind: "text", text: "Claim material" }] } }],
+  removeOrbContext: [{ verb: "addOrbContext", args: { items: [{ id: "claim", kind: "text", text: "Claim material" }] } }],
+  updateOrbLens: [{ verb: "addOrbLens", args: { lens: { id: "orb-lens-audit", kind: "lens", name: "Runtime orb Lens" }, strength: .8 } }],
+  removeOrbLens: [{ verb: "addOrbLens", args: { lens: { id: "orb-lens-audit", kind: "lens", name: "Runtime orb Lens" }, strength: .8 } }],
   tasteCandidate: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
   moreLikeThis: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
   extendSelectedCandidates: [{ verb: "selectAiNode", args: { target: "node-candidate" } }],
@@ -644,7 +671,10 @@ async function runAppCapability(browser, capability) {
     await page.waitForTimeout(80);
     const before = await snapshot(page);
     const effectCallsBefore = modelStats.effectCalls;
-    await page.evaluate(() => window.__lensDirector.clearTraces());
+    await page.evaluate(() => {
+      window.__lensDirector.clearTraces();
+      window.__lensDirector.clearDirectEffects?.();
+    });
     let dispatchCount = 0;
     if (INPUT_PATH === "visible") {
       await page.evaluate(() => {
@@ -681,15 +711,20 @@ async function runAppCapability(browser, capability) {
     );
     const after = await snapshot(page);
     const trace = await page.evaluate(() => window.__lensDirector.traces().completed.at(-1) || null);
+    const directEffect = await page.evaluate(() => window.__lensDirector.directEffects?.().at(-1) || null);
     const ledger = await page.evaluate(() => JSON.parse(
       localStorage.getItem("lens.companion.command-ledger.v1") || "{\"entries\":[]}"
     ).entries.at(-1) || null);
-    const value = trace?.events?.findLast?.((event) => event.type === "step-complete")?.resultType
+    const value = directEffect?.resultType
+      ? { type: directEffect.resultType }
+      : trace?.events?.findLast?.((event) => event.type === "step-complete")?.resultType
       ? { type: trace.events.findLast((event) => event.type === "step-complete").resultType }
       : null;
     const execution = {
-      completed: trace?.status === "completed",
-      errors: trace?.events?.filter((event) => event.type === "step-failed").map((event) => event.error) || [],
+      completed: directEffect ? directEffect.status === "completed" : trace?.status === "completed",
+      errors: directEffect?.error
+        ? [directEffect.error]
+        : trace?.events?.filter((event) => event.type === "step-failed").map((event) => event.error) || [],
       value,
     };
     const typedResult = Boolean(value && typeof value === "object" && typeof value.type === "string");
@@ -737,6 +772,15 @@ async function runAppCapability(browser, capability) {
             status: trace.status,
             events: trace.events.length,
             reducedMotion: trace.reducedMotion,
+          }
+        : null,
+      directExecution: directEffect
+        ? {
+            id: directEffect.id,
+            status: directEffect.status,
+            capability: directEffect.capability,
+            resultType: directEffect.resultType,
+            effects: directEffect.effects,
           }
         : null,
       dispatchCount: INPUT_PATH === "visible" ? dispatchCount : null,

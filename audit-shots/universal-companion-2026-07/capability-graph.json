@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-8f697916",
+  "fingerprint": "fnv1a-00601dff",
   "counts": {
     "nodes": 206,
     "edges": 516
@@ -6154,10 +6154,12 @@
       "expectedEffects": [],
       "tests": [
         "capability-openExtensionDownload",
-        "feature:extension.distribution"
+        "feature:extension.distribution",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "extension.distribution"
+        "extension.distribution",
+        "shell.extension-first"
       ],
       "canonicalCommands": [],
       "destructive": false,
@@ -13306,7 +13308,9 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "material is explicit and preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -13341,9 +13345,11 @@
         "boundary": "none"
       },
       "sideEffects": [],
-      "persistence": [],
+      "persistence": [
+        "scene.workingSet.context"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-orb-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -13352,15 +13358,21 @@
         "companion",
         "direct-ui"
       ],
-      "expectedEffects": [],
+      "expectedEffects": [
+        "orb-context-changed"
+      ],
       "tests": [
         "capability-observeWorkspace",
-        "feature:companion.transaction-harness"
+        "feature:companion.transaction-harness",
+        "feature:companion.orb-runtime"
       ],
       "featureIds": [
-        "companion.transaction-harness"
+        "companion.transaction-harness",
+        "companion.orb-runtime"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "addOrbContext"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "read-only",
@@ -13679,7 +13691,14 @@
         "at least one contributing lineage exists",
         "material is explicit and bounded",
         "both canonical objects validate",
-        "ordered composition is explicit"
+        "ordered composition is explicit",
+        "Scene is explicit",
+        "material is preserved",
+        "Output Frame exists",
+        "material is explicit and preserved",
+        "explicit GO before generation",
+        "worker exists",
+        "context is explicit"
       ],
       "requiredObservations": [
         "selection",
@@ -13722,11 +13741,19 @@
         "ai-state-changed"
       ],
       "persistence": [
-        "library.objects.append"
+        "library.objects.append",
+        "scene.items.append",
+        "scene.workingSet.context",
+        "scene.pendingBranches.append",
+        "scene.orbInstances.update"
       ],
       "undo": [
         "remove-created-version",
-        "remove-created-versions"
+        "remove-created-versions",
+        "restore-scene-snapshot",
+        "restore-orb-context",
+        "remove-queued-branch",
+        "restore-worker-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -13745,21 +13772,37 @@
         "library-changed",
         "function-created",
         "lens-created",
-        "canonical-composition-created"
+        "canonical-composition-created",
+        "scene-material-created",
+        "frame-material-created",
+        "orb-context-changed",
+        "branch-material-queued",
+        "worker-context-changed"
       ],
       "tests": [
         "capability-semanticTransfer",
-        "feature:interaction.semantic-transfer"
+        "feature:interaction.semantic-transfer",
+        "feature:scene.v4",
+        "feature:companion.orb-runtime",
+        "feature:interaction.orb-gesture"
       ],
       "featureIds": [
-        "interaction.semantic-transfer"
+        "interaction.semantic-transfer",
+        "scene.v4",
+        "companion.orb-runtime",
+        "interaction.orb-gesture"
       ],
       "canonicalCommands": [
         "createMoveFromContent",
         "createFunctionFromContent",
         "captureFunctionFromLineage",
         "collectLensMaterial",
-        "composeCanonicalObjects"
+        "composeCanonicalObjects",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "addOrbContext",
+        "queueBranchMaterial",
+        "assignWorkerContext"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -14104,10 +14147,12 @@
       "expectedEffects": [],
       "tests": [
         "capability-openPackageRegistry",
-        "feature:registry.cognitive-packages"
+        "feature:registry.cognitive-packages",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "registry.cognitive-packages"
+        "registry.cognitive-packages",
+        "shell.extension-first"
       ],
       "canonicalCommands": [],
       "destructive": false,
@@ -15426,7 +15471,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "worker exists",
+        "context is explicit"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -15466,9 +15514,11 @@
         "function-state-changed",
         "lens-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.orbInstances.update"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-worker-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -15481,16 +15531,21 @@
         "paper-state-changed",
         "move-state-changed",
         "function-state-changed",
-        "lens-state-changed"
+        "lens-state-changed",
+        "worker-context-changed"
       ],
       "tests": [
         "capability-orchestrateCognitiveWorkflow",
-        "feature:extraction.cognitive-pull-request"
+        "feature:extraction.cognitive-pull-request",
+        "feature:companion.orb-swarm"
       ],
       "featureIds": [
-        "extraction.cognitive-pull-request"
+        "extraction.cognitive-pull-request",
+        "companion.orb-swarm"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "assignWorkerContext"
+      ],
       "destructive": false,
       "confirmation": "framework",
       "idempotency": "idempotency-key",
@@ -16052,7 +16107,8 @@
         "scope is explicit",
         "visibleTab requires user gesture",
         "observation is current or revalidated",
-        "Lens is canonical context"
+        "Lens is canonical context",
+        "material is explicit and preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -16093,11 +16149,13 @@
       ],
       "persistence": [
         "none",
-        "library.objects.append"
+        "library.objects.append",
+        "scene.workingSet.context"
       ],
       "undo": [
         "none",
-        "remove-created-version"
+        "remove-created-version",
+        "restore-orb-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -16110,18 +16168,22 @@
         "highlight-state-changed",
         "workspace-observed",
         "lens-scoped-function-created",
-        "workspace-observation-bound"
+        "workspace-observation-bound",
+        "orb-context-changed"
       ],
       "tests": [
         "capability-capturePageSelection",
-        "feature:observation.workspace"
+        "feature:observation.workspace",
+        "feature:companion.orb-runtime"
       ],
       "featureIds": [
-        "observation.workspace"
+        "observation.workspace",
+        "companion.orb-runtime"
       ],
       "canonicalCommands": [
         "observeWorkspace",
-        "interpretObservationThroughLens"
+        "interpretObservationThroughLens",
+        "addOrbContext"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17068,7 +17130,8 @@
         "event is idempotent",
         "candidate exists and is focused or explicitly referenced",
         "completed candidate exists",
-        "new cost stays within budget"
+        "new cost stays within budget",
+        "material is explicit and preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -17112,14 +17175,16 @@
         "library.objects.version",
         "generationBatches.append",
         "generationBatches.update",
-        "none"
+        "none",
+        "scene.workingSet.context"
       ],
       "undo": [
         "restore-library-snapshot",
         "cancel-pending-batch",
         "restore-batch-snapshot",
         "restore-previous-feedback",
-        "cancel-pending-child-batch"
+        "cancel-pending-child-batch",
+        "restore-orb-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17138,25 +17203,29 @@
         "generation-candidate-changed",
         "taste-feedback-changed",
         "candidate-focus-changed",
-        "more-like-this-prepared"
+        "more-like-this-prepared",
+        "orb-context-changed"
       ],
       "tests": [
         "capability-pressExternalGo",
         "feature:generation.taste-branching",
         "feature:execution.lens-context",
-        "feature:highlight.explicit-go"
+        "feature:highlight.explicit-go",
+        "feature:companion.orb-runtime"
       ],
       "featureIds": [
         "generation.taste-branching",
         "execution.lens-context",
-        "highlight.explicit-go"
+        "highlight.explicit-go",
+        "companion.orb-runtime"
       ],
       "canonicalCommands": [
         "setGenerationPlan",
         "startGenerationBatch",
         "updateGenerationCandidate",
         "recordTasteFeedback",
-        "prepareMoreLikeThis"
+        "prepareMoreLikeThis",
+        "addOrbContext"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17532,7 +17601,14 @@
         "scope is explicit",
         "visibleTab requires user gesture",
         "observation is current or revalidated",
-        "Lens is canonical context"
+        "Lens is canonical context",
+        "material is explicit and preserved",
+        "Scene is explicit",
+        "material is preserved",
+        "Output Frame exists",
+        "explicit GO before generation",
+        "worker exists",
+        "context is explicit"
       ],
       "requiredObservations": [
         "selection",
@@ -17573,11 +17649,19 @@
       ],
       "persistence": [
         "none",
-        "library.objects.append"
+        "library.objects.append",
+        "scene.workingSet.context",
+        "scene.items.append",
+        "scene.pendingBranches.append",
+        "scene.orbInstances.update"
       ],
       "undo": [
         "none",
-        "remove-created-version"
+        "remove-created-version",
+        "restore-orb-context",
+        "restore-scene-snapshot",
+        "remove-queued-branch",
+        "restore-worker-context"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17590,18 +17674,30 @@
         "paper-state-changed",
         "workspace-observed",
         "lens-scoped-function-created",
-        "workspace-observation-bound"
+        "workspace-observation-bound",
+        "orb-context-changed",
+        "scene-material-created",
+        "frame-material-created",
+        "branch-material-queued",
+        "worker-context-changed"
       ],
       "tests": [
         "capability-openExternalArtifact",
-        "feature:observation.workspace"
+        "feature:observation.workspace",
+        "feature:interaction.orb-gesture"
       ],
       "featureIds": [
-        "observation.workspace"
+        "observation.workspace",
+        "interaction.orb-gesture"
       ],
       "canonicalCommands": [
         "observeWorkspace",
-        "interpretObservationThroughLens"
+        "interpretObservationThroughLens",
+        "addOrbContext",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17696,11 +17792,13 @@
       "tests": [
         "capability-showExternalLibraryImport",
         "feature:persistence.account-adoption",
-        "feature:extension.distribution"
+        "feature:extension.distribution",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
         "persistence.account-adoption",
-        "extension.distribution"
+        "extension.distribution",
+        "shell.extension-first"
       ],
       "canonicalCommands": [
         "upsertCanonicalObject"
@@ -17784,10 +17882,12 @@
       "expectedEffects": [],
       "tests": [
         "capability-browseExternalPackages",
-        "feature:registry.cognitive-packages"
+        "feature:registry.cognitive-packages",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "registry.cognitive-packages"
+        "registry.cognitive-packages",
+        "shell.extension-first"
       ],
       "canonicalCommands": [],
       "destructive": false,

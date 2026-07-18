@@ -39,9 +39,13 @@ export default function CompanionOrb({
   compact = false,
   featured = false,
   onContextAdd,
+  onLensAdd,
   onEmitView,
   cursorMode = false,
   onCursorToggle,
+  approval = null,
+  onApproval,
+  onWorkerCancel,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -152,12 +156,19 @@ export default function CompanionOrb({
     const text = event.dataTransfer?.getData("text/plain")?.trim();
     const portable = event.dataTransfer?.getData("application/x-lens-object");
     if (!text && !portable) return;
+    let object = null;
+    try { object = portable ? JSON.parse(portable) : null; } catch { /* preserve malformed payload as text context */ }
+    if (object && ["lens", "generator"].includes(object.kind || object.type)) {
+      onLensAdd?.(object);
+      return;
+    }
     onContextAdd?.({
-      id: `orb-context:${Date.now()}`,
-      kind: portable ? "object" : "text",
-      label: text ? text.slice(0, 42) : "Lens material",
-      text,
-      portable,
+      ...(object || {}),
+      id: object?.id || `orb-context:${Date.now()}`,
+      kind: object?.kind || object?.type || (portable ? "object" : "text"),
+      label: object?.label || object?.name || (text ? text.slice(0, 42) : "Lens material"),
+      text: object?.text || text,
+      portable: portable || undefined,
       priority: 1,
       pinned: false,
     });
@@ -177,11 +188,19 @@ export default function CompanionOrb({
     >
       <div className="orb-emissions" aria-live="polite">
         {(state.lenses || []).map((lens, index) => (
-          <span
+          <button
+            type="button"
             className="orb-lens-atmosphere"
             key={lens.id || lens.name}
             style={{ "--lens-index": index, "--lens-strength": lens.strength ?? .7 }}
             aria-label={`${lens.name || "Lens"} atmosphere, strength ${Math.round((lens.strength ?? .7) * 100)} percent`}
+            onClick={() => onEmitView?.("lenses")}
+            draggable="true"
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "copyMove";
+              event.dataTransfer.setData("text/plain", lens.name || "Lens");
+              event.dataTransfer.setData("application/x-lens-object", JSON.stringify(lens));
+            }}
           />
         ))}
         {(state.context || []).slice(0, 7).map((item, index) => (
@@ -193,12 +212,18 @@ export default function CompanionOrb({
             title={item.label || item.text || "Context material"}
             aria-label={`${item.label || "Context material"}, priority ${item.priority ?? 1}`}
             onClick={() => onEmitView?.("context")}
+            draggable="true"
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "copyMove";
+              event.dataTransfer.setData("text/plain", item.text || item.label || "Context material");
+              event.dataTransfer.setData("application/x-lens-object", JSON.stringify(item));
+            }}
           ><span>{item.kind === "image" ? "image" : item.kind === "scene" ? "scene" : "context"}</span></button>
         ))}
         {(state.workers || []).slice(0, 4).map((worker, index) => (
-          <span className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}`}>
+          <button type="button" className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}${worker.status === "working" ? ", cancel worker" : ""}`} onClick={() => worker.status === "working" && onWorkerCancel?.(worker.id)}>
             <i />{worker.role || "worker"}
-          </span>
+          </button>
         ))}
         {(state.candidates || []).slice(0, 6).map((candidate, index) => (
           <button type="button" className="orb-candidate" key={candidate.id} style={{ "--candidate-index": index }} onClick={() => onEmitView?.("taste")}>
@@ -266,6 +291,24 @@ export default function CompanionOrb({
             <input value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Tell the orb your goal" placeholder="Tell the orb your goal…" />
             <button type="submit">Run</button>
           </form>
+          {approval && <section className="orb-approval" aria-label="Plan approval required">
+            <b>{approval.title || "Review plan"}</b>
+            <ol>{(approval.steps || []).slice(0, 8).map((step, index) => <li key={`${index}:${step}`}>{step}</li>)}</ol>
+            <div>
+              <button type="button" onClick={() => onApproval?.("accept")}>Run plan</button>
+              <button type="button" onClick={() => onApproval?.("reject")}>Reject</button>
+            </div>
+          </section>}
+          {(state.checkpoints || []).length > 0 && <details className="orb-checkpoints">
+            <summary>{state.checkpoints.length} checkpoint{state.checkpoints.length === 1 ? "" : "s"}</summary>
+            <ol>{state.checkpoints.slice(-8).map((checkpoint, index) => <li key={checkpoint.id || checkpoint.at || index}>
+              {checkpoint.label || checkpoint.id || checkpoint.status || `Checkpoint ${index + 1}`}
+            </li>)}</ol>
+          </details>}
+          {state.fusion?.provenance?.length > 0 && <details className="orb-checkpoints orb-fusion">
+            <summary>{state.fusion.applicable ? "Verified worker fusion" : "Worker fusion needs review"}</summary>
+            <ol>{state.fusion.provenance.map((entry) => <li key={`${entry.workerId}:${entry.type}`}>{entry.workerId} · {entry.type}</li>)}</ol>
+          </details>}
           <div className="orb-controls">
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
             <button type="button" onClick={() => onEmitView?.("context")}>Context</button>

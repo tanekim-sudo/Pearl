@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-16T22:06:40.377Z",
+  "generatedAt": "2026-07-18T18:03:07.769Z",
   "counts": {
-    "features": 25,
-    "companion": 198,
-    "extension": 34,
-    "commands": 18
+    "features": 30,
+    "companion": 206,
+    "extension": 36,
+    "commands": 24
   },
   "features": [
     {
@@ -60,19 +60,27 @@
       "commands": [
         "encodeMaterialAsLens",
         "updateLensPerceptualModel",
-        "applyLensInference"
+        "applyLensInference",
+        "applyTasteLensDiff"
       ],
       "companion": [
         "createLens",
         "addLensMaterial",
-        "inferFunctionFromLens"
+        "inferFunctionFromLens",
+        "resolveTasteLens",
+        "saveTasteTeaching",
+        "attachTasteBeforeAfter",
+        "inspectTasteLens",
+        "evaluateThroughTasteLens"
       ],
       "extension": [
         "saveExternalCaptureAsLens",
-        "setExternalLensContext"
+        "setExternalLensContext",
+        "saveExternalTasteTeaching"
       ],
       "tests": [
-        "shared/lens-perceptual-model.test.js"
+        "shared/lens-perceptual-model.test.js",
+        "shared/taste-lens.test.js"
       ]
     },
     {
@@ -368,6 +376,7 @@
       "tests": [
         "client/lib/companion-harness.test.js",
         "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
         "shared/function-test-bench.test.js"
       ]
     },
@@ -428,13 +437,96 @@
         "openCognitivePullRequest",
         "reviewCognitiveCandidate",
         "mergeCognitivePullRequest",
-        "orchestrateCognitiveWorkflow"
+        "orchestrateCognitiveWorkflow",
+        "createCreativeResearchProposal"
       ],
       "extension": [
-        "openExternalCognitivePullRequest"
+        "openExternalCognitivePullRequest",
+        "openExternalCreativeExtraction"
       ],
       "tests": [
-        "shared/cognitive-pull-request.test.js"
+        "shared/cognitive-pull-request.test.js",
+        "shared/research-grounded-creativity.test.js"
+      ]
+    },
+    {
+      "id": "scene.v4",
+      "commands": [
+        "materializeOnStage",
+        "materializeInOutputFrame"
+      ],
+      "companion": [
+        "semanticTransfer"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/unified-workspace.test.js"
+      ]
+    },
+    {
+      "id": "companion.orb-runtime",
+      "commands": [
+        "addOrbContext"
+      ],
+      "companion": [
+        "observeWorkspace",
+        "semanticTransfer"
+      ],
+      "extension": [
+        "capturePageSelection",
+        "pressExternalGo"
+      ],
+      "tests": [
+        "shared/orb-universe.test.js"
+      ]
+    },
+    {
+      "id": "interaction.orb-gesture",
+      "commands": [
+        "addOrbContext",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext"
+      ],
+      "companion": [
+        "semanticTransfer"
+      ],
+      "extension": [
+        "openExternalArtifact"
+      ],
+      "tests": [
+        "shared/orb-universe.test.js",
+        "shared/drop-intent-resolver.test.js"
+      ]
+    },
+    {
+      "id": "companion.orb-swarm",
+      "commands": [
+        "assignWorkerContext"
+      ],
+      "companion": [
+        "orchestrateCognitiveWorkflow"
+      ],
+      "extension": [],
+      "tests": [
+        "shared/orb-universe.test.js"
+      ]
+    },
+    {
+      "id": "shell.extension-first",
+      "commands": [],
+      "companion": [
+        "openExtensionDownload",
+        "openPackageRegistry"
+      ],
+      "extension": [
+        "showExternalLibraryImport",
+        "browseExternalPackages"
+      ],
+      "tests": [
+        "client/lib/extension-funnel.test.js",
+        "shared/orb-universe.test.js"
       ]
     }
   ],

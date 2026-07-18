@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 208
-- Passed: 208
+- Total: 214
+- Passed: 214
 - Failed: 0
 - Skipped: 0
 
@@ -62,7 +62,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
+- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -82,6 +82,12 @@
 - PASS — `addBlock` (app): state-or-visible-artifact-changed
 - PASS — `renamePage` (app): state-or-visible-artifact-changed
 - PASS — `toggleOrbCursor` (app): state-or-visible-artifact-changed
+- PASS — `addOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `updateOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `removeOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `addOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `updateOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `removeOrbLens` (app): state-or-visible-artifact-changed
 - PASS — `zoomToItem` (app): state-or-visible-artifact-changed
 - PASS — `walkItemPath` (app): state-or-visible-artifact-changed
 - PASS — `stepSharedPath` (app): state-or-visible-artifact-changed

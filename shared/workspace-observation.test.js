@@ -46,6 +46,30 @@ test("visible-tab scope requires an explicit user gesture", () => {
   assert.equal(createWorkspaceObservation({ scope: "visibleTab", objects: [], userGesture: true }).scope, "visibleTab");
 });
 
+test("Scene scopes distinguish unbounded Stage, Output Frame, orb context, and AI aliases", () => {
+  const scoped = [
+    { id: "stage", domain: "paper", x: 0, y: 0 },
+    { id: "frame", domain: "paper", frameId: "frame-1", x: 10, y: 10 },
+    { id: "ai", domain: "ai", x: 20, y: 20 },
+  ];
+  assert.deepEqual(
+    createWorkspaceObservation({ scope: "stage", objects: scoped }).objects.map((object) => object.id),
+    ["stage", "ai"]
+  );
+  assert.deepEqual(
+    createWorkspaceObservation({ scope: "frame", frameId: "frame-1", objects: scoped }).objects.map((object) => object.id),
+    ["frame"]
+  );
+  assert.deepEqual(
+    createWorkspaceObservation({ scope: "orb-context", contextIds: ["stage"], objects: scoped }).objects.map((object) => object.id),
+    ["stage"]
+  );
+  assert.deepEqual(
+    createWorkspaceObservation({ scope: "ai-space", objects: scoped }).objects.map((object) => object.id),
+    ["ai"]
+  );
+});
+
 test("scene relationships remain grounded to stable object IDs", () => {
   const observation = createWorkspaceObservation({
     scope: "paper",

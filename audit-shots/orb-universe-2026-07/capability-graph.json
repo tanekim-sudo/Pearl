@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-d2f2119b",
+  "fingerprint": "fnv1a-fd3d9ec8",
   "counts": {
-    "nodes": 208,
+    "nodes": 214,
     "edges": 516
   },
   "nodes": [
@@ -7048,7 +7048,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -7087,10 +7090,12 @@
         "scene-state-changed"
       ],
       "persistence": [
-        "scene.workingSet.context"
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
-        "restore-orb-context"
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -7101,7 +7106,8 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
-        "orb-context-changed"
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-toggleOrbCursor",
@@ -7111,7 +7117,12 @@
         "companion.orb-runtime"
       ],
       "canonicalCommands": [
-        "addOrbContext"
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -7119,6 +7130,664 @@
       "domains": [
         "interface",
         "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.addOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "addOrbContext",
+      "purpose": "Bring explicit material into the orb context without changing its source",
+      "examples": [
+        "bring these selected notes into the orb context"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": "array",
+          "priority": "number?",
+          "group": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-addOrbContext",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.updateOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "updateOrbContext",
+      "purpose": "Change the priority, pin, or group of an explicit orb context item",
+      "examples": [
+        "pin this context item and make it highest priority"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "priority": "number?",
+          "pinned": "boolean?",
+          "group": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-updateOrbContext",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeOrbContext",
+      "purpose": "Remove one explicit item from the orb context without deleting its source",
+      "examples": [
+        "remove this item from the orb context"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-removeOrbContext",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.addOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "addOrbLens",
+      "purpose": "Apply a Lens as an editable atmosphere around the orb",
+      "examples": [
+        "apply my concise writing Lens around the orb at eighty percent"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lens": "object",
+          "strength": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "lens-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-addOrbLens",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.updateOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "updateOrbLens",
+      "purpose": "Change the strength of an active orb Lens atmosphere",
+      "examples": [
+        "turn that active Lens down to thirty percent"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "strength": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "lens-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-updateOrbLens",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeOrbLens",
+      "purpose": "Remove an active Lens atmosphere without deleting the Lens",
+      "examples": [
+        "remove the concise writing Lens from the orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
+      ],
+      "undo": [
+        "restore-orb-context",
+        "restore-orb-lenses"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "lens-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed"
+      ],
+      "tests": [
+        "capability-removeOrbLens",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "lens"
       ],
       "platform": "app"
     },
@@ -13405,7 +14074,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -13442,10 +14114,12 @@
       },
       "sideEffects": [],
       "persistence": [
-        "scene.workingSet.context"
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
-        "restore-orb-context"
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -13455,7 +14129,8 @@
         "direct-ui"
       ],
       "expectedEffects": [
-        "orb-context-changed"
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-observeWorkspace",
@@ -13467,7 +14142,12 @@
         "companion.orb-runtime"
       ],
       "canonicalCommands": [
-        "addOrbContext"
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -13792,6 +14472,9 @@
         "material is preserved",
         "Output Frame exists",
         "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb",
         "explicit GO before generation",
         "worker exists",
         "context is explicit"
@@ -13840,6 +14523,7 @@
         "library.objects.append",
         "scene.items.append",
         "scene.workingSet.context",
+        "scene.workingSet.lenses",
         "scene.pendingBranches.append",
         "scene.orbInstances.update"
       ],
@@ -13848,6 +14532,7 @@
         "remove-created-versions",
         "restore-scene-snapshot",
         "restore-orb-context",
+        "restore-orb-lenses",
         "remove-queued-branch",
         "restore-worker-context"
       ],
@@ -13872,6 +14557,7 @@
         "scene-material-created",
         "frame-material-created",
         "orb-context-changed",
+        "orb-lenses-changed",
         "branch-material-queued",
         "worker-context-changed"
       ],
@@ -13897,6 +14583,11 @@
         "materializeOnStage",
         "materializeInOutputFrame",
         "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
         "queueBranchMaterial",
         "assignWorkerContext"
       ],
@@ -16204,7 +16895,10 @@
         "visibleTab requires user gesture",
         "observation is current or revalidated",
         "Lens is canonical context",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -16246,12 +16940,14 @@
       "persistence": [
         "none",
         "library.objects.append",
-        "scene.workingSet.context"
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
         "none",
         "remove-created-version",
-        "restore-orb-context"
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -16265,7 +16961,8 @@
         "workspace-observed",
         "lens-scoped-function-created",
         "workspace-observation-bound",
-        "orb-context-changed"
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-capturePageSelection",
@@ -16279,7 +16976,12 @@
       "canonicalCommands": [
         "observeWorkspace",
         "interpretObservationThroughLens",
-        "addOrbContext"
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -16889,7 +17591,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -16928,10 +17633,12 @@
         "extension-state-changed"
       ],
       "persistence": [
-        "scene.workingSet.context"
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
-        "restore-orb-context"
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -16941,7 +17648,8 @@
       ],
       "expectedEffects": [
         "extension-state-changed",
-        "orb-context-changed"
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-toggleExternalOrbCursor",
@@ -16951,7 +17659,12 @@
         "companion.orb-runtime"
       ],
       "canonicalCommands": [
-        "addOrbContext"
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17113,7 +17826,11 @@
         "persistent intent is explicit",
         "material is explicit and bounded",
         "object validates",
-        "idempotency key is stable"
+        "idempotency key is stable",
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -17155,11 +17872,15 @@
       "persistence": [
         "library.objects.append",
         "library.objects.version",
-        "library.objects.upsert"
+        "library.objects.upsert",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
         "remove-created-version",
-        "restore-library-snapshot"
+        "restore-library-snapshot",
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17175,18 +17896,22 @@
         "library-changed",
         "lens-perceptual-model-changed",
         "lens-inference-applied",
-        "taste-lens-versioned"
+        "taste-lens-versioned",
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-setExternalLensContext",
         "feature:lens.perceptual-encoding",
         "feature:library.lens",
-        "feature:execution.lens-context"
+        "feature:execution.lens-context",
+        "feature:companion.orb-runtime"
       ],
       "featureIds": [
         "lens.perceptual-encoding",
         "library.lens",
-        "execution.lens-context"
+        "execution.lens-context",
+        "companion.orb-runtime"
       ],
       "canonicalCommands": [
         "encodeMaterialAsLens",
@@ -17194,7 +17919,13 @@
         "applyLensInference",
         "applyTasteLensDiff",
         "collectLensMaterial",
-        "upsertCanonicalObject"
+        "upsertCanonicalObject",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17322,7 +18053,10 @@
         "candidate exists and is focused or explicitly referenced",
         "completed candidate exists",
         "new cost stays within budget",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "context item exists",
+        "Lens is explicit and preserved",
+        "Lens is active on the orb"
       ],
       "requiredObservations": [
         "selection",
@@ -17367,7 +18101,8 @@
         "generationBatches.append",
         "generationBatches.update",
         "none",
-        "scene.workingSet.context"
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
         "restore-library-snapshot",
@@ -17375,7 +18110,8 @@
         "restore-batch-snapshot",
         "restore-previous-feedback",
         "cancel-pending-child-batch",
-        "restore-orb-context"
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17395,7 +18131,8 @@
         "taste-feedback-changed",
         "candidate-focus-changed",
         "more-like-this-prepared",
-        "orb-context-changed"
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-pressExternalGo",
@@ -17416,7 +18153,12 @@
         "updateGenerationCandidate",
         "recordTasteFeedback",
         "prepareMoreLikeThis",
-        "addOrbContext"
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17794,6 +18536,7 @@
         "observation is current or revalidated",
         "Lens is canonical context",
         "material is explicit and preserved",
+        "Lens is explicit and preserved",
         "Scene is explicit",
         "material is preserved",
         "Output Frame exists",
@@ -17842,6 +18585,7 @@
         "none",
         "library.objects.append",
         "scene.workingSet.context",
+        "scene.workingSet.lenses",
         "scene.items.append",
         "scene.pendingBranches.append",
         "scene.orbInstances.update"
@@ -17850,6 +18594,7 @@
         "none",
         "remove-created-version",
         "restore-orb-context",
+        "restore-orb-lenses",
         "restore-scene-snapshot",
         "remove-queued-branch",
         "restore-worker-context"
@@ -17867,6 +18612,7 @@
         "lens-scoped-function-created",
         "workspace-observation-bound",
         "orb-context-changed",
+        "orb-lenses-changed",
         "scene-material-created",
         "frame-material-created",
         "branch-material-queued",
@@ -17885,6 +18631,7 @@
         "observeWorkspace",
         "interpretObservationThroughLens",
         "addOrbContext",
+        "addOrbLens",
         "materializeOnStage",
         "materializeInOutputFrame",
         "queueBranchMaterial",

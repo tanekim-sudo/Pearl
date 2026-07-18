@@ -54,6 +54,48 @@ test("idempotent canonical upsert does not duplicate retried sync", async () => 
   assert.equal(twice.result.type, "idempotent-replay");
 });
 
+test("orb context add, priority, pin, and removal are canonical and reversible", async () => {
+  const initial = { orbContext: [] };
+  const added = await executeDomainCommand("addOrbContext", initial, {
+    items: [{ id: "material-1", kind: "text", label: "Exact source", text: "Keep this verbatim.", provenance: { source: "paper" } }],
+    priority: .6,
+  }, context);
+  assert.equal(added.state.orbContext[0].priority, .6);
+  assert.equal(added.state.orbContext[0].text, "Keep this verbatim.");
+  const updated = await executeDomainCommand("updateOrbContext", added.state, {
+    id: "material-1",
+    priority: .95,
+    pinned: true,
+    group: "evidence",
+  }, context);
+  assert.deepEqual(updated.state.orbContext[0], {
+    id: "material-1",
+    kind: "text",
+    label: "Exact source",
+    text: "Keep this verbatim.",
+    priority: .95,
+    group: "evidence",
+    provenance: { source: "paper" },
+    pinned: true,
+  });
+  const removed = await executeDomainCommand("removeOrbContext", updated.state, { id: "material-1" }, context);
+  assert.deepEqual(removed.state.orbContext, []);
+  assert.deepEqual(removed.undo().orbContext, updated.state.orbContext);
+});
+
+test("orb Lens atmosphere uses canonical reversible commands", async () => {
+  const added = await executeDomainCommand("addOrbLens", { orbLenses: [] }, {
+    lens: { id: "lens-1", kind: "lens", name: "Concrete evidence" },
+    strength: .8,
+  });
+  assert.equal(added.state.orbLenses[0].strength, .8);
+  const updated = await executeDomainCommand("updateOrbLens", added.state, { id: "lens-1", strength: .35 });
+  assert.equal(updated.state.orbLenses[0].strength, .35);
+  const removed = await executeDomainCommand("removeOrbLens", updated.state, { id: "lens-1" });
+  assert.deepEqual(removed.state.orbLenses, []);
+  assert.deepEqual(removed.undo(), updated.state);
+});
+
 test("every command declares complete release contract metadata", () => {
   for (const [name, command] of Object.entries(DOMAIN_COMMANDS)) {
     for (const field of ["schema", "preconditions", "risk", "confirmation", "undo", "surfaces", "persistenceEffect", "observableEffects", "execute"]) {

@@ -2,7 +2,7 @@
 
 ## Result
 
-75/75 checks passed. The 64-case directional matrix measured a mean angular error of 0.00° and a maximum of 0.00°.
+75/75 checks passed. The 64-case directional matrix measured a mean angular error of 0.20° and a maximum of 11.24°.
 
 ## Root causes and contract
 
@@ -81,10 +81,10 @@
 - read/north: 0.00° error, 0.000 world-px preview jump, ArrowRight
 - read/north-east: 0.00° error, 0.000 world-px preview jump
 - max/east: 0.00° error, 0.000 world-px preview jump, ArrowRight
-- max/south-east: 0.00° error, 0.000 world-px preview jump
-- max/south: 0.00° error, 0.000 world-px preview jump
+- max/south-east: 11.24° error, 0.000 world-px preview jump
+- max/south: 1.27° error, 0.000 world-px preview jump
 - max/south-west: 0.00° error, 0.000 world-px preview jump, ArrowRight
-- max/west: 0.00° error, 0.000 world-px preview jump
+- max/west: 0.28° error, 0.000 world-px preview jump
 - max/north-west: 0.00° error, 0.000 world-px preview jump, ArrowUp
 - max/north: 0.00° error, 0.000 world-px preview jump, ArrowRight
 - max/north-east: 0.00° error, 0.000 world-px preview jump

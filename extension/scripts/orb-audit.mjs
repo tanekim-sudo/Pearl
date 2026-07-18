@@ -24,6 +24,7 @@ const profile = path.join(extensionRoot, ".audit-orb-profile");
 fs.rmSync(profile, { recursive: true, force: true });
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
+  ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
   args: [`--disable-extensions-except=${auditDist}`, `--load-extension=${auditDist}`],
 });
 

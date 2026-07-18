@@ -133,11 +133,10 @@ import AiNodeCanvas from "./components/AiNodeCanvas.jsx";
 import {
   UNIFIED_WORKSPACE_KEY,
   LEGACY_UNIFIED_WORKSPACE_KEYS,
-  clampAiNodeToPage,
-  clampAiNodesToPage,
-  clampWorkspaceItem,
-  clampWorkspaceItems,
+  clampAiNodeToOutputFrame,
+  clampItemToOutputFrame,
   migrateUnifiedWorkspace,
+  selectSceneWorkspace,
   serializeUnifiedWorkspace,
 } from "./lib/unified-workspace.js";
 import LensTreeEditor from "./components/LensTreeEditor.jsx";
@@ -235,7 +234,7 @@ import {
   GrindWorkspace,
   LensRackToolbar,
 } from "./components/LensGrammarPanels.jsx";
-import { registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
+import { executeCapabilityScriptDirect, registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import {
   buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
@@ -288,6 +287,7 @@ import {
   transitionRun,
   verifyObservedEffects,
 } from "./lib/companion-harness.js";
+import { createOrbInstance, fuseWorkerProposals, workerProposal } from "../shared/orb-swarm.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
 import {
   SKETCH_BUNDLE_MIME,
@@ -2242,24 +2242,28 @@ if (typeof window !== "undefined") {
   }
 }
 
-export default function App() {
+export default function App({ sceneId = null }) {
   const initialUnifiedWorkspace = useMemo(() => {
     const legacyItems = load(ITEMS_KEY, null);
     const legacyNodes = load(AI_NODES_KEY, []);
+    const legacyPages = load(PAGES_KEY, []);
     const legacyCamera = load(CAMERA_KEY, null);
     const unified = load(UNIFIED_WORKSPACE_KEY, null)
       || LEGACY_UNIFIED_WORKSPACE_KEYS.map((key) => load(key, null)).find(Boolean)
       || null;
-    return migrateUnifiedWorkspace({
+    const migrated = migrateUnifiedWorkspace({
       items: Array.isArray(legacyItems) ? legacyItems : [],
       nodes: Array.isArray(legacyNodes) ? legacyNodes : [],
+      pages: Array.isArray(legacyPages) ? legacyPages : [],
+      activePageId: Array.isArray(legacyPages) ? legacyPages[0]?.id || null : null,
       camera: legacyCamera,
       unified,
     });
-  }, []);
+    return selectSceneWorkspace(migrated, sceneId, { createIfMissing: Boolean(sceneId) });
+  }, [sceneId]);
   const [items, setItems] = useState(() => {
     const saved = initialUnifiedWorkspace.items;
-    if (Array.isArray(saved) && saved.length) return saved.map(normalizeItem).filter(Boolean);
+    if (Array.isArray(saved) && (saved.length || sceneId)) return saved.map(normalizeItem).filter(Boolean);
     const fromArtifact = migrateFromArtifact();
     if (fromArtifact.length) return fromArtifact;
     return migrateOldSeeds().map(normalizeItem);
@@ -2595,12 +2599,28 @@ export default function App() {
   const functionsColumnRef = useRef(null);
   const aiCamAnimCancelRef = useRef(null);
   const aiMoveHistoryRef = useRef({ nodeId: null, at: 0 });
+  const workerAbortControllersRef = useRef(new Map());
   const prevAiNodeCountRef = useRef(0);
   const aiStableCameraUntilRef = useRef(0);
   aiCamRef.current = aiCamera;
   const pageFilterRef = useRef({ pageId: DEFAULT_PAGE_ID, world: null });
   pageFilterRef.current = { pageId: activePageId, world: worldFilter };
   aiNodesRef.current = aiNodes;
+  const sceneFrames = initialUnifiedWorkspace.frames || [];
+  const sceneFrameById = useMemo(
+    () => new Map(sceneFrames.map((frame) => [frame.id, frame])),
+    [sceneFrames]
+  );
+  const clampItemForScene = useCallback((item) => {
+    if (!item?.frameId) return item;
+    const frame = sceneFrameById.get(item.frameId);
+    return frame ? clampItemToOutputFrame(item, frame, itemWorldBBox) : item;
+  }, [sceneFrameById]);
+  const clampNodeForScene = useCallback((node) => {
+    if (!node?.frameId) return node;
+    const frame = sceneFrameById.get(node.frameId);
+    return frame ? clampAiNodeToOutputFrame(node, frame) : node;
+  }, [sceneFrameById]);
 
   useEffect(() => localStorage.setItem(ITEMS_KEY, JSON.stringify(items)), [items]);
   useEffect(() => {
@@ -2632,15 +2652,16 @@ export default function App() {
   }, [items]);
   useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
   // Storage, cloud hydration, undo, generators, imports, and companion actions
-  // all converge here. The page is the authoritative persistence boundary.
+  // all converge here. Only material attached to an Output Frame is bounded;
+  // free Scene material remains in the unbounded world.
   useEffect(() => {
-    const bounded = clampWorkspaceItems(items, itemWorldBBox);
+    const bounded = items.map(clampItemForScene);
     if (bounded.some((item, index) => item !== items[index])) setItems(bounded);
-  }, [items]);
+  }, [clampItemForScene, items]);
   useEffect(() => {
-    const bounded = clampAiNodesToPage(aiNodes);
+    const bounded = aiNodes.map(clampNodeForScene);
     if (bounded.some((node, index) => node !== aiNodes[index])) setAiNodes(bounded);
-  }, [aiNodes]);
+  }, [aiNodes, clampNodeForScene]);
 
   const paperCenteredRef = useRef(Boolean(initialUnifiedWorkspace.savedAt));
   useEffect(() => {
@@ -2676,7 +2697,16 @@ export default function App() {
   }, [aiNodes]);
   useEffect(() => {
     try {
-      const serialized = serializeUnifiedWorkspace({ items, nodes: aiNodes, camera });
+      const serialized = serializeUnifiedWorkspace({
+        items,
+        nodes: aiNodes,
+        camera,
+        scenes: initialUnifiedWorkspace.scenes,
+        activeSceneId: initialUnifiedWorkspace.activeSceneId,
+        frames: sceneFrames,
+        orbInstances: initialUnifiedWorkspace.orbInstances,
+        workingSet: initialUnifiedWorkspace.workingSet,
+      });
       localStorage.setItem(
         UNIFIED_WORKSPACE_KEY,
         serialized
@@ -2694,7 +2724,7 @@ export default function App() {
     } catch {
       /* quota / privacy mode: legacy stores still provide recovery */
     }
-  }, [items, aiNodes, camera]);
+  }, [items, aiNodes, camera, initialUnifiedWorkspace, sceneFrames]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
@@ -3826,7 +3856,7 @@ export default function App() {
             }
           }
           return movedItems.map((item) =>
-            ids.has(item.id) ? clampWorkspaceItem(item, itemWorldBBox) : item
+            ids.has(item.id) ? clampItemForScene(item) : item
           );
         });
       } else if (g.mode === "pending") {
@@ -10563,7 +10593,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       aiMoveHistoryRef.current.at = now;
     }
     setAiNodes((nodes) =>
-      nodes.map((n) => (n.id === nodeId ? clampAiNodeToPage({ ...n, x, y }) : n))
+      nodes.map((n) => (n.id === nodeId ? clampNodeForScene({ ...n, x, y }) : n))
     );
   }
 
@@ -10600,17 +10630,17 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
   function updateAiNode(nodeId, patch) {
     setAiNodes((nodes) =>
-      nodes.map((n) => (n.id === nodeId ? clampAiNodeToPage({ ...n, ...patch }) : n))
+      nodes.map((n) => (n.id === nodeId ? clampNodeForScene({ ...n, ...patch }) : n))
     );
   }
 
   function appendAiNodes(...newNodes) {
     setAiNodes((nodes) => {
       try {
-        return clampAiNodesToPage(layoutAfterAppend(nodes, newNodes));
+        return layoutAfterAppend(nodes, newNodes).map(clampNodeForScene);
       } catch (err) {
         console.error("appendAiNodes layout failed", err);
-        return clampAiNodesToPage([...nodes, ...newNodes]);
+        return [...nodes, ...newNodes].map(clampNodeForScene);
       }
     });
     return newNodes;
@@ -11852,7 +11882,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     localStorage.setItem(AI_NODES_KEY, JSON.stringify(nextAiNodes));
     localStorage.setItem(
       UNIFIED_WORKSPACE_KEY,
-      serializeUnifiedWorkspace({ items: nextItems, nodes: nextAiNodes, camera: camRef.current })
+      serializeUnifiedWorkspace({
+        items: nextItems,
+        nodes: nextAiNodes,
+        camera: camRef.current,
+        scenes: initialUnifiedWorkspace.scenes,
+        activeSceneId: initialUnifiedWorkspace.activeSceneId,
+        frames: sceneFrames,
+        orbInstances: initialUnifiedWorkspace.orbInstances,
+        workingSet: initialUnifiedWorkspace.workingSet,
+      })
     );
     const snapshot = readLocalBoardSnapshot();
     writeLocalBoardSnapshot({ ...snapshot, savedAt: new Date().toISOString() });
@@ -11991,6 +12030,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return { ...node, tasteFeedback };
   }
 
+  function dispatchOrbSurfaceCommand(eventName, detail, timeoutMs = 3000) {
+    return new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error("orb surface did not confirm the command")), timeoutMs);
+      const finish = (callback) => (value) => {
+        window.clearTimeout(timeout);
+        callback(value);
+      };
+      document.dispatchEvent(new CustomEvent(eventName, {
+        detail: { ...detail, resolve: finish(resolve), reject: finish(reject) },
+      }));
+    });
+  }
+
   registerDirectorVerbs({
     caption: async (a, tk) => {
       tk.caption(a.text || "");
@@ -12006,6 +12058,40 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         effectId: `orb-cursor:${a.enabled === false ? "off" : "on"}`,
         enabled: a.enabled !== false,
       };
+    },
+    addOrbContext: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-context-command", {
+        action: "add", items: a.items || [], priority: a.priority, group: a.group,
+      });
+      return { effectId: `orb-context-added:${Date.now()}`, count: a.items?.length || 0 };
+    },
+    updateOrbContext: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-context-command", {
+        action: "update",
+        id: a.id,
+        patch: {
+          ...(Number.isFinite(a.priority) ? { priority: a.priority } : {}),
+          ...(typeof a.pinned === "boolean" ? { pinned: a.pinned } : {}),
+          ...(typeof a.group === "string" ? { group: a.group } : {}),
+        },
+      });
+      return { effectId: `orb-context-updated:${a.id}`, id: a.id };
+    },
+    removeOrbContext: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-context-command", { action: "remove", id: a.id });
+      return { effectId: `orb-context-removed:${a.id}`, id: a.id };
+    },
+    addOrbLens: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-lens-command", { action: "add", lens: a.lens, strength: a.strength });
+      return { effectId: `orb-lens-added:${a.lens?.id || Date.now()}`, id: a.lens?.id };
+    },
+    updateOrbLens: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-lens-command", { action: "update", id: a.id, strength: a.strength });
+      return { effectId: `orb-lens-updated:${a.id}`, id: a.id };
+    },
+    removeOrbLens: async (a, tk) => {
+      await dispatchOrbSurfaceCommand("lens:orb-lens-command", { action: "remove", id: a.id });
+      return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
     },
     switchTool: async (a, tk) => {
       const target =
@@ -14456,11 +14542,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     signal,
     onPhase,
     onPlan,
+    onWorker,
     mode = "agent",
     goal: providedGoal = null,
     planApproved: restoredApproval = false,
   } = {}) {
     let commandText = String(text || "").trim();
+    const executeCompanionScript = (steps, options = {}) =>
+      executeCapabilityScriptDirect(steps, { signal, ...options });
     let personalVocabulary = [];
     try {
       personalVocabulary = JSON.parse(localStorage.getItem("lens.personal-command-vocabulary.v1") || "[]");
@@ -14750,7 +14839,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
 
       onPhase?.("fixing");
-      const execution = await runDirectorScript([{
+      const execution = await executeCompanionScript([{
         verb: "setFunctionStep",
         args: { op: parent.id, step: staleStep.id, prompt: revisedPrompt },
       }], { title: "Debug · smallest evidence-backed fix" });
@@ -14840,7 +14929,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const recurringPrompt = /evidence|source|claim/i.test(sourceText)
         ? "Identify the main claim, attach the strongest available evidence, surface one counterpoint, and state the bounded conclusion."
         : "Extract the central claim, test it against the supplied material, surface one counterpoint, and state the bounded conclusion.";
-      const creation = await runDirectorScript([
+      const creation = await executeCompanionScript([
         {
           verb: "createMove",
           args: { name: "Evidence-grounded conclusion", prompt: recurringPrompt },
@@ -14874,11 +14963,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       onPhase?.("testing holdouts");
       const runs = [];
       for (const source of sources) {
-        const moveRun = await runDirectorScript([{ verb: "applyMove", args: { move: move.id, target: source.id, wait: true } }], {
+        const moveRun = await executeCompanionScript([{ verb: "applyMove", args: { move: move.id, target: source.id, wait: true } }], {
           title: `Test Move on ${source.id}`,
         });
         runs.push({ artifactId: move.id, sourceId: source.id, completed: moveRun.completed, effects: moveRun.effects || [], errors: moveRun.errors || [] });
-        const functionRun = await runDirectorScript([{ verb: "applyFunction", args: { op: fn.id, target: source.id, wait: true } }], {
+        const functionRun = await executeCompanionScript([{ verb: "applyFunction", args: { op: fn.id, target: source.id, wait: true } }], {
           title: `Test Function on ${source.id}`,
         });
         runs.push({ artifactId: fn.id, sourceId: source.id, completed: functionRun.completed, effects: functionRun.effects || [], errors: functionRun.errors || [] });
@@ -14896,7 +14985,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         return { visible: true, text: `Holdout ${failedRun?.artifactId || "unknown"} on ${failedRun?.sourceId || "unknown"} failed (${publicCompanionError(failedRun?.errors?.[0] || "execution blocked")}), so all discovery effects were restored from checkpoint ${checkpoint.id}.` };
       }
       onPhase?.("refining lens");
-      const lensRun = await runDirectorScript([
+      const lensRun = await executeCompanionScript([
         { verb: "createLens", args: {} },
         ...sources.map((source) => ({ verb: "addLensMaterial", args: { lens: "last", target: source.id } })),
         { verb: "nameLens", args: { lens: "last", name: "Evidence and counterpoint Lens" } },
@@ -15043,7 +15132,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           continue;
         }
         const objectCheckpoint = captureTransactionSnapshot();
-        const execution = await runDirectorScript([{
+        const execution = await executeCompanionScript([{
           verb: "setFunctionStep",
           args: {
             op: entry.parent.id,
@@ -15228,7 +15317,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         return null;
       }
       if (pendingAdministrative?.kind === "clear-workspace") {
-        const staged = await runDirectorScript(
+        const staged = await executeCompanionScript(
           [{ verb: "clearWorkspaceDomains", args: { domains: pendingAdministrative.domains } }],
           { title: "Review destructive clear scope" }
         );
@@ -15263,7 +15352,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
       onPhase?.("executing");
       updateCommand(commandEntry.id, { status: "planned", plan: cognitiveWorkflow });
-      const result = await runDirectorScript(cognitiveWorkflow.steps, { title: cognitiveWorkflow.title });
+      const result = await executeCompanionScript(cognitiveWorkflow.steps, { title: cognitiveWorkflow.title });
       if (!result.completed) {
         const error = result.errors?.[0] || "Cognitive workflow command did not complete";
         updateCommand(commandEntry.id, { status: "failed", failure: error, effects: result.effects || [] });
@@ -15277,7 +15366,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (functionCreation) {
       onPhase?.("executing");
       updateCommand(commandEntry.id, { status: "planned", plan: functionCreation });
-      const result = await runDirectorScript(functionCreation.steps, { title: functionCreation.title });
+      const result = await executeCompanionScript(functionCreation.steps, { title: functionCreation.title });
       if (!result.completed) {
         const error = result.errors?.[0] || "Function creation did not complete";
         updateCommand(commandEntry.id, { status: "failed", failure: error, effects: result.effects || [] });
@@ -15290,7 +15379,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const semanticTransfer = parseSemanticTransferCommand(text);
     if (semanticTransfer) {
       onPhase?.("executing");
-      const result = await runDirectorScript([semanticTransfer], { title: "Semantic transfer" });
+      const result = await executeCompanionScript([semanticTransfer], { title: "Semantic transfer" });
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["semantic-transfer-completed"] }
         : { status: "failed", failure: result.errors?.[0] || "Semantic transfer failed" });
@@ -15299,7 +15388,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
     const parallelBranch = parseParallelBranchCommand(text);
     if (parallelBranch) {
-      const result = await runDirectorScript([parallelBranch], { title: "Set parallel branch perspectives" });
+      const result = await executeCompanionScript([parallelBranch], { title: "Set parallel branch perspectives" });
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["generation-plan-changed"] }
         : { status: "failed", failure: result.errors?.[0] || "Branch plan failed" });
@@ -15318,7 +15407,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
     const tasteNavigation = parseTasteNavigationCommand(text);
     if (tasteNavigation) {
-      const result = await runDirectorScript([tasteNavigation], { title: "Review candidates" });
+      const result = await executeCompanionScript([tasteNavigation], { title: "Review candidates" });
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["taste-navigation"] }
         : { status: "failed", failure: result.errors?.[0] || "Taste navigation failed" });
@@ -15328,27 +15417,27 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (pendingChainName) {
       setPendingChainName(false);
       const name = text.trim();
-      runDirectorScript([{ verb: "captureThreadAsFunction", args: { name } }], { title: "save chain as Function" }).then((result) => {
+      executeCompanionScript([{ verb: "captureThreadAsFunction", args: { name } }], { title: "save chain as Function" }).then((result) => {
         if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "functions", { name });
       });
       return null;
     }
     if (parseExtensionDownloadCommand(text)) {
-      runDirectorScript([{ verb: "openExtensionDownload", args: {} }], {
+      executeCompanionScript([{ verb: "openExtensionDownload", args: {} }], {
         title: "open extension download",
       });
       return null;
     }
     const beforeAfterCommand = parseBeforeAfterCommand(text);
     if (beforeAfterCommand) {
-      runDirectorScript([{ verb: beforeAfterCommand.verb, args: beforeAfterCommand.args }], {
+      executeCompanionScript([{ verb: beforeAfterCommand.verb, args: beforeAfterCommand.args }], {
         title: "learn transformation from examples",
       });
       return null;
     }
     const outputCommand = parseFunctionOutputCommand(text);
     if (outputCommand) {
-      runDirectorScript([{ verb: outputCommand.verb, args: outputCommand.args }], {
+      executeCompanionScript([{ verb: outputCommand.verb, args: outputCommand.args }], {
         title: "edit function output",
       });
       return null;
@@ -15357,14 +15446,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (transcriptCommand) {
       const steps = [{ verb: transcriptCommand.verb, args: transcriptCommand.args || {} }];
       if (transcriptCommand.followup) steps.push(transcriptCommand.followup);
-      runDirectorScript(steps, { title: "Learn from a chat" });
+      executeCompanionScript(steps, { title: "Learn from a chat" });
       return;
     }
     const libraryObjectCommand = parseLibraryObjectCommand(text);
     if (libraryObjectCommand) {
       const script = [{ verb: libraryObjectCommand.verb, args: libraryObjectCommand.args }];
       if (libraryObjectCommand.followup) script.push(libraryObjectCommand.followup);
-      runDirectorScript(script, { title: "save library object" });
+      executeCompanionScript(script, { title: "save library object" });
       return null;
     }
     const chain = parseSaveChainCommand(text);
@@ -15373,7 +15462,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         setPendingChainName(true);
         return { visible: true, text: "Name this Function." };
       }
-      runDirectorScript([{ verb: "captureThreadAsFunction", args: { name: chain.name } }], { title: "save chain as Function" }).then((result) => {
+      executeCompanionScript([{ verb: "captureThreadAsFunction", args: { name: chain.name } }], { title: "save chain as Function" }).then((result) => {
         if (result.completed) rememberCompanionReference(supaAuth.session?.user?.id, "functions", { name: chain.name });
       });
       return null;
@@ -15391,7 +15480,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
     if (administrative?.kind === "clear-workspace") {
-      const staged = await runDirectorScript(
+      const staged = await executeCompanionScript(
         [{ verb: "clearWorkspaceDomains", args: { domains: administrative.domains } }],
         { title: "Review destructive clear scope" }
       );
@@ -15479,6 +15568,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       updateCommand(commandEntry.id, { status: "planned", plan, planRevision: 2 });
     }
     const checkpointMap = new Map();
+    const orbWorkerInstances = [];
     const storedRuns = restoreRunLedger(localStorage);
     const storedRun = storedRuns.runs.find((entry) =>
       entry.runId === storedRuns.activeRunId &&
@@ -15583,25 +15673,72 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           return { restored: checkpoint.id };
         },
         worker: async (step) => {
-          const [result] = await runBoundedWorkers([{
-            id: step.id,
+          const worker = {
+            ...createOrbInstance({
+              id: step.id,
+              role: step.worker,
+              goal: step.goal || goalEnvelope.rawWording,
+              context: step.context || [],
+              budget: step.budget,
+              status: "running",
+              checkpoint: harnessRun.checkpoints?.at(-1) || null,
+            }),
             kind: step.worker,
             mutating: step.mutating,
             stableIds: step.stableIds || [],
             candidateSnapshotId: step.candidateSnapshotId,
             budget: step.budget,
-          }], async (request) => {
-            if (request.kind === "explore" || request.kind === "migration-analyst") {
-              return { id: `${request.id}:context`, context: captureLiveWorkspace() };
-            }
-            const evidence = await runClaude(
-              `Act as the bounded ${request.kind} specialist. Return evidence, risks, and a proposal; do not mutate.`,
-              JSON.stringify({ goal: goalEnvelope, workspace: captureLiveWorkspace() }),
-              { maxTokens: 1200, signal }
-            );
-            return { id: `${request.id}:proposal`, evidence };
-          }, { maxWorkers: 4, signal });
-          if (result.status !== "completed") throw new Error(result.blocker || `${step.worker} blocked`);
+          };
+          onWorker?.({ type: "started", worker: { ...worker, status: "working", startedAt: new Date().toISOString() } });
+          const workerController = new AbortController();
+          const abortWorker = () => workerController.abort();
+          signal?.addEventListener("abort", abortWorker, { once: true });
+          workerAbortControllersRef.current.set(worker.id, workerController);
+          let result;
+          try {
+            [result] = await runBoundedWorkers([worker], async (request) => {
+              if (request.kind === "explore" || request.kind === "migration-analyst") {
+                return { id: `${request.id}:context`, context: captureLiveWorkspace() };
+              }
+              const evidence = await runClaude(
+                `Act as the bounded ${request.kind} specialist. Return evidence, risks, and a proposal; do not mutate.`,
+                JSON.stringify({ goal: goalEnvelope, workspace: captureLiveWorkspace() }),
+                { maxTokens: 1200, signal: workerController.signal }
+              );
+              return { id: `${request.id}:proposal`, evidence };
+            }, { maxWorkers: 4, signal: workerController.signal });
+          } catch (error) {
+            onWorker?.({
+              type: workerController.signal.aborted ? "cancelled" : "failed",
+              worker: {
+                ...worker,
+                status: workerController.signal.aborted ? "cancelled" : "failed",
+                blocker: workerController.signal.aborted ? "cancelled by user" : error.message,
+              },
+            });
+            throw error;
+          } finally {
+            signal?.removeEventListener("abort", abortWorker);
+            workerAbortControllersRef.current.delete(worker.id);
+          }
+          if (result.status !== "completed") {
+            onWorker?.({ type: "failed", worker: { ...worker, status: "failed", blocker: result.blocker || `${step.worker} blocked` } });
+            throw new Error(result.blocker || `${step.worker} blocked`);
+          }
+          const completedWorker = workerProposal(worker, {
+            type: "artifact",
+            artifact: result.artifact,
+            artifactId: result.artifact?.id || null,
+          });
+          orbWorkerInstances.push(completedWorker);
+          onWorker?.({
+            type: "completed",
+            worker: {
+              ...completedWorker,
+              artifactId: result.artifact?.id || null,
+              completedAt: new Date().toISOString(),
+            },
+          });
           return result.artifact;
         },
         artifact: async (value, step) => {
@@ -15614,12 +15751,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 args: { target, text: textValue, kind: step.kindLabel || "feedback" },
               }]
             : [{ verb: "spawnText", args: { text: textValue } }];
-          const result = await runDirectorScript(script, { title: plan.title || "place artifact" });
+          const result = await executeCompanionScript(script, { title: plan.title || "place artifact" });
           if (!result.completed) throw new Error(result.errors?.[0] || "artifact placement failed");
         },
         action: async (capability, args) => {
           const checkpoint = captureTransactionSnapshot();
-          const result = await runDirectorScript(
+          const result = await executeCompanionScript(
             [{ verb: capability, args }],
             { title: plan.title || capability }
           );
@@ -15696,13 +15833,54 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     harnessRun = transitionRun(harnessRun, { status: "completed" });
     persistRunLedger(harnessRun, localStorage);
     updateCommand(commandEntry.id, { status: "executed", effects: execution.effects || [] });
-    return null;
+    const candidates = aiNodesRef.current
+      .filter((node) => node.generationBatchId)
+      .slice(-6)
+      .map((node) => ({
+        id: node.id,
+        title: node.title || node.label || node.preview || "Candidate",
+        distinction: node.distinction || node.preview || node.expandedText?.slice(0, 120) || "Generated branch",
+        status: node.tasteFeedback?.decision || "pending",
+        sourceId: node.parentId || null,
+      }));
+    const workerFusion = fuseWorkerProposals(
+      orbWorkerInstances,
+      (proposal) => proposal.type === "artifact" && Boolean(proposal.artifact)
+    );
+    return {
+      completed: true,
+      effects: execution.effects || [],
+      candidates,
+      checkpoints: (harnessRun.checkpoints || []).slice(-20),
+      workerFusion,
+    };
   }
 
   useEffect(() => {
     const bridge = {
       run(text, options = {}) {
         return handleCompanionCommand(text, options);
+      },
+      execute(script, options = {}) {
+        return executeCapabilityScriptDirect(script, { signal: options.signal, title: options.title || "Orb gesture" });
+      },
+      candidates() {
+        return aiNodesRef.current
+          .filter((node) => node.generationBatchId)
+          .slice(-6)
+          .map((node) => ({
+            id: node.id,
+            title: node.title || node.label || node.preview || "Candidate",
+            distinction: node.distinction || node.preview || node.expandedText?.slice(0, 120) || "Generated branch",
+            status: node.tasteFeedback?.decision || "pending",
+            sourceId: node.parentId || null,
+          }));
+      },
+      cancelWorker(id) {
+        const controller = workerAbortControllersRef.current.get(id);
+        if (!controller) return { cancelled: false, id };
+        controller.abort();
+        return { cancelled: true, id };
       },
       undo() {
         undo();
