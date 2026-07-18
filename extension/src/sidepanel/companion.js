@@ -92,10 +92,13 @@ export async function executeExtensionVerb(name, args, context) {
   if (capability.approval?.required && !context.confirmed) {
     throw new Error("scoped preview approval required");
   }
-  await context.animate?.({ name, args, path: "director-ghost-cursor" });
   const result = await handler({ ...context, args: args || {} });
+  if (result?.ok === false || result?.error) throw new Error(result.error || "extension action failed");
+  const effectId = result?.effectId || result?.receipt?.id || `${context.idempotencyKey || name}:effect`;
+  const observation = await context.observe?.({ name, args: args || {}, result, effectId });
+  if (observation?.verified === false) throw new Error(observation.error || "extension effect could not be verified");
+  await context.animate?.({ name, args, result, effectId, path: "orb-effect-trace", mutationAuthority: false });
   if (capability.approval?.scope === "external-write") {
-    if (result?.ok === false || result?.error) throw new Error(result.error || "external write failed");
     return {
       type: "external-write-receipt",
       result,
@@ -104,10 +107,11 @@ export async function executeExtensionVerb(name, args, context) {
         capability: name,
         scope: context.approvalScope || "current verified page target",
         at: new Date().toISOString(),
+        effectId,
       },
     };
   }
-  return result;
+  return result && typeof result === "object" ? { ...result, effectId } : { result, effectId };
 }
 
 export function parseExtensionIntent(text) {

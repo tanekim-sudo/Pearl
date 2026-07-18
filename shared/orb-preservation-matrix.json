@@ -1,0 +1,5516 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-18T18:02:58.616Z",
+  "contract": "old-shell-to-orb",
+  "counts": {
+    "total": 328,
+    "features": 30,
+    "domainCommands": 24,
+    "companionCapabilities": 206,
+    "extensionVerbs": 36,
+    "persistenceKeys": 16,
+    "missing": 0
+  },
+  "rows": [
+    {
+      "category": "feature",
+      "id": "observation.workspace",
+      "status": "preserved",
+      "currentPath": [
+        "client/lib/companion-observation.js"
+      ],
+      "orbPath": "feature-contract:observation.workspace",
+      "mode": "native",
+      "voice": "capability:observation.workspace",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:observation.workspace",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/workspace-observation.test.js",
+        "client/lib/companion-observation.test.js"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "generation.taste-branching",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LensTreeEditor.jsx",
+        "client/components/AiNodeCanvas.jsx",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "orbPath": "feature-contract:generation.taste-branching",
+      "mode": "native",
+      "voice": "capability:generation.taste-branching",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:generation.taste-branching",
+      "persistence": [
+        "lens.unified-workspace.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/generation-plan.test.js",
+        "lens.unified-workspace.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "lens.perceptual-encoding",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LensSettingsDialog.jsx"
+      ],
+      "orbPath": "feature-contract:lens.perceptual-encoding",
+      "mode": "native",
+      "voice": "capability:lens.perceptual-encoding",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:lens.perceptual-encoding",
+      "persistence": [
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/lens-perceptual-model.test.js",
+        "shared/taste-lens.test.js",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "composition.universal",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LensGrammarPanels.jsx"
+      ],
+      "orbPath": "feature-contract:composition.universal",
+      "mode": "native",
+      "voice": "capability:composition.universal",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:composition.universal",
+      "persistence": [
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/composition-algebra.test.js",
+        "shared/material.test.js",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "library.move",
+      "status": "preserved",
+      "currentPath": [
+        "client/App.jsx:↦ Moves"
+      ],
+      "orbPath": "feature-contract:library.move",
+      "mode": "native",
+      "voice": "capability:library.move",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:library.move",
+      "persistence": [
+        "lens.board.operators.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/library-objects.test.js",
+        "client/lib/companion-verb-coverage.test.js",
+        "lens.board.operators.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "library.function",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LensTreeEditor.jsx"
+      ],
+      "orbPath": "feature-contract:library.function",
+      "mode": "native",
+      "voice": "capability:library.function",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:library.function",
+      "persistence": [
+        "lens.board.operators.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/library-objects.test.js",
+        "client/lib/function-tree-editor.test.js",
+        "lens.board.operators.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "library.lens",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LensSettingsDialog.jsx"
+      ],
+      "orbPath": "feature-contract:library.lens",
+      "mode": "native",
+      "voice": "capability:library.lens",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:library.lens",
+      "persistence": [
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/library-objects.test.js",
+        "shared/lens-context.test.js",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "library.save-as",
+      "status": "preserved",
+      "currentPath": [
+        "client/App.jsx:library-save-as-drop"
+      ],
+      "orbPath": "feature-contract:library.save-as",
+      "mode": "native",
+      "voice": "capability:library.save-as",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:library.save-as",
+      "persistence": [
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/domain-commands.test.js",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "library.primitive-moves",
+      "status": "preserved",
+      "currentPath": [
+        "client/App.jsx:Primitive Moves"
+      ],
+      "orbPath": "feature-contract:library.primitive-moves",
+      "mode": "native",
+      "voice": "capability:library.primitive-moves",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:library.primitive-moves",
+      "persistence": [
+        "lens.primitive-moves.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/primitive-moves.test.js",
+        "client/lib/companion-geometry.test.js",
+        "lens.primitive-moves.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "ai.branch-chooser",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/AiNodeCanvas.jsx:ai-strand-choice-hud"
+      ],
+      "orbPath": "feature-contract:ai.branch-chooser",
+      "mode": "native",
+      "voice": "capability:ai.branch-chooser",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:ai.branch-chooser",
+      "persistence": [
+        "lens.primitive-moves.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/ai-nodes.test.js",
+        "lens.primitive-moves.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "execution.lens-context",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/HighlightToolbar.jsx"
+      ],
+      "orbPath": "feature-contract:execution.lens-context",
+      "mode": "native",
+      "voice": "capability:execution.lens-context",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:execution.lens-context",
+      "persistence": [
+        "lens.item.history.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/lens-context.test.js",
+        "shared/library-objects.test.js",
+        "lens.item.history.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "learning.before-after",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/BeforeAfterLensEditor.jsx"
+      ],
+      "orbPath": "feature-contract:learning.before-after",
+      "mode": "native",
+      "voice": "capability:learning.before-after",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:learning.before-after",
+      "persistence": [
+        "lens.before-after.draft.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/before-after-examples.test.js",
+        "lens.before-after.draft.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "learning.transcript",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/LearnFromChat.jsx"
+      ],
+      "orbPath": "feature-contract:learning.transcript",
+      "mode": "native",
+      "voice": "capability:learning.transcript",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:learning.transcript",
+      "persistence": [
+        "lens.learn-from-chat.draft.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/transcript-learning.test.js",
+        "lens.learn-from-chat.draft.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "highlight.explicit-go",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/HighlightToolbar.jsx"
+      ],
+      "orbPath": "feature-contract:highlight.explicit-go",
+      "mode": "native",
+      "voice": "capability:highlight.explicit-go",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:highlight.explicit-go",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/lens-runtime.test.js"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "ai.node-gestures",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/AiNodeCanvas.jsx"
+      ],
+      "orbPath": "feature-contract:ai.node-gestures",
+      "mode": "native",
+      "voice": "capability:ai.node-gestures",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:ai.node-gestures",
+      "persistence": [
+        "lens.ai.nodes.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/ai-nodes.test.js",
+        "client/lib/ai-layout.test.js",
+        "lens.ai.nodes.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "persistence.account-adoption",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/AuthOverlay.jsx"
+      ],
+      "orbPath": "feature-contract:persistence.account-adoption",
+      "mode": "native",
+      "voice": "capability:persistence.account-adoption",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:persistence.account-adoption",
+      "persistence": [
+        "lens.board.items.v1",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/board-sync.test.js",
+        "shared/lens-library.test.js",
+        "lens.board.items.v1",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "extension.distribution",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/ExtensionDownloadModal.jsx"
+      ],
+      "orbPath": "feature-contract:extension.distribution",
+      "mode": "native",
+      "voice": "capability:extension.distribution",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:extension.distribution",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/release.test.js"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.destructive-clear",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CompanionChat.jsx"
+      ],
+      "orbPath": "feature-contract:companion.destructive-clear",
+      "mode": "native",
+      "voice": "capability:companion.destructive-clear",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.destructive-clear",
+      "persistence": [
+        "lens.board.items.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/companion-intent.test.js",
+        "client/lib/companion-plan.test.js",
+        "lens.board.items.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.effect-trace",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/GhostCursor.jsx:ghost-cursor-effect-status"
+      ],
+      "orbPath": "feature-contract:companion.effect-trace",
+      "mode": "native",
+      "voice": "capability:companion.effect-trace",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.effect-trace",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/director.test.js"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "interaction.semantic-transfer",
+      "status": "preserved",
+      "currentPath": [
+        "client/App.jsx:resolveLeftColumnSemanticTarget"
+      ],
+      "orbPath": "feature-contract:interaction.semantic-transfer",
+      "mode": "native",
+      "voice": "capability:interaction.semantic-transfer",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:interaction.semantic-transfer",
+      "persistence": [
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/drop-intent-resolver.test.js",
+        "shared/domain-commands.test.js",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.transaction-harness",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:companion-plan-strip"
+      ],
+      "orbPath": "feature-contract:companion.transaction-harness",
+      "mode": "native",
+      "voice": "capability:companion.transaction-harness",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.transaction-harness",
+      "persistence": [
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
+        "shared/function-test-bench.test.js",
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "registry.cognitive-packages",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CognitivePackageRegistry.jsx"
+      ],
+      "orbPath": "feature-contract:registry.cognitive-packages",
+      "mode": "native",
+      "voice": "capability:registry.cognitive-packages",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:registry.cognitive-packages",
+      "persistence": [
+        "cognitive_packages",
+        "cognitive_package_keys",
+        "lens.cognitive-packages.installed.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/cognitive-package.test.js",
+        "server/cognitive-package-registry.test.js",
+        "cognitive_packages",
+        "cognitive_package_keys",
+        "lens.cognitive-packages.installed.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "artifacts.higher-order",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CognitiveWorkflowStudio.jsx:higher-order"
+      ],
+      "orbPath": "feature-contract:artifacts.higher-order",
+      "mode": "native",
+      "voice": "capability:artifacts.higher-order",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:artifacts.higher-order",
+      "persistence": [
+        "lens.higher-order-patches.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/higher-order-artifacts.test.js",
+        "lens.higher-order-patches.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.personal-vocabulary",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CognitiveWorkflowStudio.jsx:vocabulary"
+      ],
+      "orbPath": "feature-contract:companion.personal-vocabulary",
+      "mode": "native",
+      "voice": "capability:companion.personal-vocabulary",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.personal-vocabulary",
+      "persistence": [
+        "lens.personal-command-vocabulary.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/personal-command-vocabulary.test.js",
+        "client/lib/companion-intent.test.js",
+        "lens.personal-command-vocabulary.v1",
+        "personalCommandVocabulary"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "extraction.cognitive-pull-request",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CognitiveWorkflowStudio.jsx:pull-request"
+      ],
+      "orbPath": "feature-contract:extraction.cognitive-pull-request",
+      "mode": "native",
+      "voice": "capability:extraction.cognitive-pull-request",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:extraction.cognitive-pull-request",
+      "persistence": [
+        "lens.cognitive-pull-requests.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/cognitive-pull-request.test.js",
+        "shared/research-grounded-creativity.test.js",
+        "lens.cognitive-pull-requests.v1",
+        "cognitivePullRequestHandoff"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "scene.v4",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/OrbUniverseShell.jsx:data-semantic-anchor=\"scene-stage\""
+      ],
+      "orbPath": "feature-contract:scene.v4",
+      "mode": "native",
+      "voice": "capability:scene.v4",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:scene.v4",
+      "persistence": [
+        "lens.scenes.v4",
+        "lens.unified-workspace.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/unified-workspace.test.js",
+        "lens.scenes.v4",
+        "lens.unified-workspace.v2"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.orb-runtime",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\""
+      ],
+      "orbPath": "feature-contract:companion.orb-runtime",
+      "mode": "native",
+      "voice": "capability:companion.orb-runtime",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.orb-runtime",
+      "persistence": [
+        "lens.orb.placement.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/orb-universe.test.js",
+        "lens.orb.placement.v1"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "interaction.orb-gesture",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CompanionOrb.jsx"
+      ],
+      "orbPath": "feature-contract:interaction.orb-gesture",
+      "mode": "native",
+      "voice": "capability:interaction.orb-gesture",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:interaction.orb-gesture",
+      "persistence": [
+        "lens.scenes.v4"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/orb-universe.test.js",
+        "shared/drop-intent-resolver.test.js",
+        "lens.scenes.v4"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "companion.orb-swarm",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/CompanionOrb.jsx"
+      ],
+      "orbPath": "feature-contract:companion.orb-swarm",
+      "mode": "native",
+      "voice": "capability:companion.orb-swarm",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:companion.orb-swarm",
+      "persistence": [
+        "lens.scenes.v4"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/orb-universe.test.js",
+        "lens.scenes.v4"
+      ]
+    },
+    {
+      "category": "feature",
+      "id": "shell.extension-first",
+      "status": "preserved",
+      "currentPath": [
+        "client/components/OrbUniverseShell.jsx"
+      ],
+      "orbPath": "feature-contract:shell.extension-first",
+      "mode": "native",
+      "voice": "capability:shell.extension-first",
+      "gesture": "orb-emitted:feature",
+      "keyboard": "orb-command:shell.extension-first",
+      "persistence": [
+        "lens.orb-universe.continued.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/extension-funnel.test.js",
+        "shared/orb-universe.test.js",
+        "lens.orb-universe.continued.v1"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "addOrbContext",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:addOrbContext",
+      "mode": "native",
+      "voice": "capability:addOrbContext",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:addOrbContext",
+      "persistence": [],
+      "undo": "restore-orb-context",
+      "evidence": [
+        "scene.workingSet.context",
+        "orb-context-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "materializeOnStage",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:materializeOnStage",
+      "mode": "native",
+      "voice": "capability:materializeOnStage",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:materializeOnStage",
+      "persistence": [],
+      "undo": "restore-scene-snapshot",
+      "evidence": [
+        "scene.items.append",
+        "scene-material-created"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "materializeInOutputFrame",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:materializeInOutputFrame",
+      "mode": "native",
+      "voice": "capability:materializeInOutputFrame",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:materializeInOutputFrame",
+      "persistence": [],
+      "undo": "restore-scene-snapshot",
+      "evidence": [
+        "scene.items.append",
+        "frame-material-created"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "queueBranchMaterial",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:queueBranchMaterial",
+      "mode": "native",
+      "voice": "capability:queueBranchMaterial",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:queueBranchMaterial",
+      "persistence": [],
+      "undo": "remove-queued-branch",
+      "evidence": [
+        "scene.pendingBranches.append",
+        "branch-material-queued"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "assignWorkerContext",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:assignWorkerContext",
+      "mode": "native",
+      "voice": "capability:assignWorkerContext",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:assignWorkerContext",
+      "persistence": [],
+      "undo": "restore-worker-context",
+      "evidence": [
+        "scene.orbInstances.update",
+        "worker-context-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "observeWorkspace",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:observeWorkspace",
+      "mode": "native",
+      "voice": "capability:observeWorkspace",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:observeWorkspace",
+      "persistence": [],
+      "undo": "none",
+      "evidence": [
+        "none",
+        "workspace-observed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "interpretObservationThroughLens",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:interpretObservationThroughLens",
+      "mode": "native",
+      "voice": "capability:interpretObservationThroughLens",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:interpretObservationThroughLens",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "lens-scoped-function-created",
+        "workspace-observation-bound"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "setGenerationPlan",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:setGenerationPlan",
+      "mode": "native",
+      "voice": "capability:setGenerationPlan",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:setGenerationPlan",
+      "persistence": [],
+      "undo": "restore-library-snapshot",
+      "evidence": [
+        "library.objects.version",
+        "generation-plan-changed",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "startGenerationBatch",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:startGenerationBatch",
+      "mode": "native",
+      "voice": "capability:startGenerationBatch",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:startGenerationBatch",
+      "persistence": [],
+      "undo": "cancel-pending-batch",
+      "evidence": [
+        "generationBatches.append",
+        "generation-batch-started",
+        "candidate-placeholders-created"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "updateGenerationCandidate",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:updateGenerationCandidate",
+      "mode": "native",
+      "voice": "capability:updateGenerationCandidate",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:updateGenerationCandidate",
+      "persistence": [],
+      "undo": "restore-batch-snapshot",
+      "evidence": [
+        "generationBatches.update",
+        "generation-candidate-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "recordTasteFeedback",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:recordTasteFeedback",
+      "mode": "native",
+      "voice": "capability:recordTasteFeedback",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:recordTasteFeedback",
+      "persistence": [],
+      "undo": "restore-previous-feedback",
+      "evidence": [
+        "generationBatches.update",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "prepareMoreLikeThis",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:prepareMoreLikeThis",
+      "mode": "native",
+      "voice": "capability:prepareMoreLikeThis",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:prepareMoreLikeThis",
+      "persistence": [],
+      "undo": "cancel-pending-child-batch",
+      "evidence": [
+        "none",
+        "more-like-this-prepared"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "encodeMaterialAsLens",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:encodeMaterialAsLens",
+      "mode": "native",
+      "voice": "capability:encodeMaterialAsLens",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:encodeMaterialAsLens",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "lens-created",
+        "lens-encoding-provisional",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "updateLensPerceptualModel",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:updateLensPerceptualModel",
+      "mode": "native",
+      "voice": "capability:updateLensPerceptualModel",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:updateLensPerceptualModel",
+      "persistence": [],
+      "undo": "restore-library-snapshot",
+      "evidence": [
+        "library.objects.version",
+        "lens-perceptual-model-changed",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "applyTasteLensDiff",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:applyTasteLensDiff",
+      "mode": "native",
+      "voice": "capability:applyTasteLensDiff",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:applyTasteLensDiff",
+      "persistence": [],
+      "undo": "restore-library-snapshot",
+      "evidence": [
+        "library.objects.version",
+        "taste-lens-versioned",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "applyLensInference",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:applyLensInference",
+      "mode": "native",
+      "voice": "capability:applyLensInference",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:applyLensInference",
+      "persistence": [],
+      "undo": "restore-library-snapshot",
+      "evidence": [
+        "library.objects.version",
+        "lens-inference-applied",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "composeCanonicalObjects",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:composeCanonicalObjects",
+      "mode": "native",
+      "voice": "capability:composeCanonicalObjects",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:composeCanonicalObjects",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "canonical-composition-created",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "createMoveFromContent",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:createMoveFromContent",
+      "mode": "native",
+      "voice": "capability:createMoveFromContent",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:createMoveFromContent",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "move-created",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "createFunctionFromContent",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:createFunctionFromContent",
+      "mode": "native",
+      "voice": "capability:createFunctionFromContent",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:createFunctionFromContent",
+      "persistence": [],
+      "undo": "remove-created-versions",
+      "evidence": [
+        "library.objects.append",
+        "move-created",
+        "function-created",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "captureFunctionFromLineage",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:captureFunctionFromLineage",
+      "mode": "native",
+      "voice": "capability:captureFunctionFromLineage",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:captureFunctionFromLineage",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "function-created",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "collectLensMaterial",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:collectLensMaterial",
+      "mode": "native",
+      "voice": "capability:collectLensMaterial",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:collectLensMaterial",
+      "persistence": [],
+      "undo": "remove-created-version",
+      "evidence": [
+        "library.objects.append",
+        "lens-created",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "setPrimitiveMove",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:setPrimitiveMove",
+      "mode": "native",
+      "voice": "capability:setPrimitiveMove",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:setPrimitiveMove",
+      "persistence": [],
+      "undo": "restore-primitive-preferences",
+      "evidence": [
+        "primitivePreferences.replace",
+        "primitive-order-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "reorderPrimitiveMove",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:reorderPrimitiveMove",
+      "mode": "native",
+      "voice": "capability:reorderPrimitiveMove",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:reorderPrimitiveMove",
+      "persistence": [],
+      "undo": "restore-primitive-preferences",
+      "evidence": [
+        "primitivePreferences.replace",
+        "primitive-order-changed"
+      ]
+    },
+    {
+      "category": "domain-command",
+      "id": "upsertCanonicalObject",
+      "status": "preserved",
+      "currentPath": "shared/domain-commands.js",
+      "orbPath": "executeOrbCommand:upsertCanonicalObject",
+      "mode": "native",
+      "voice": "capability:upsertCanonicalObject",
+      "gesture": "orb-emitted:domain-command",
+      "keyboard": "orb-command:upsertCanonicalObject",
+      "persistence": [],
+      "undo": "restore-library-snapshot",
+      "evidence": [
+        "library.objects.upsert",
+        "library-changed"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "caption",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:caption",
+      "mode": "native",
+      "voice": "capability:caption",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:caption",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-caption"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "pause",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:pause",
+      "mode": "native",
+      "voice": "capability:pause",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:pause",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-pause"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "switchTool",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:switchTool",
+      "mode": "native",
+      "voice": "capability:switchTool",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:switchTool",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-switchTool"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "fitPaper",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:fitPaper",
+      "mode": "native",
+      "voice": "capability:fitPaper",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:fitPaper",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-fitPaper"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "zoomPaper",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:zoomPaper",
+      "mode": "native",
+      "voice": "capability:zoomPaper",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:zoomPaper",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-zoomPaper"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "panPaper",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:panPaper",
+      "mode": "native",
+      "voice": "capability:panPaper",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:panPaper",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-panPaper"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "spawnText",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:spawnText",
+      "mode": "native",
+      "voice": "capability:spawnText",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:spawnText",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-spawnText"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "createMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:createMove",
+      "mode": "native",
+      "voice": "capability:createMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:createMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-createMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editMove",
+      "mode": "native",
+      "voice": "capability:editMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "forkMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:forkMove",
+      "mode": "native",
+      "voice": "capability:forkMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:forkMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-forkMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "applyMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:applyMove",
+      "mode": "native",
+      "voice": "capability:applyMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:applyMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-applyMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveCurrentAsMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveCurrentAsMove",
+      "mode": "native",
+      "voice": "capability:saveCurrentAsMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveCurrentAsMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveCurrentAsMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "promotePrimitiveMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:promotePrimitiveMove",
+      "mode": "native",
+      "voice": "capability:promotePrimitiveMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:promotePrimitiveMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-promotePrimitiveMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "demotePrimitiveMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:demotePrimitiveMove",
+      "mode": "native",
+      "voice": "capability:demotePrimitiveMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:demotePrimitiveMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-demotePrimitiveMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "reorderPrimitiveMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:reorderPrimitiveMove",
+      "mode": "native",
+      "voice": "capability:reorderPrimitiveMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:reorderPrimitiveMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-reorderPrimitiveMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "captureLineageAsFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:captureLineageAsFunction",
+      "mode": "native",
+      "voice": "capability:captureLineageAsFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:captureLineageAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-captureLineageAsFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openSaveAsChooser",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openSaveAsChooser",
+      "mode": "native",
+      "voice": "capability:openSaveAsChooser",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openSaveAsChooser",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openSaveAsChooser"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "chooseSaveAsKind",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:chooseSaveAsKind",
+      "mode": "native",
+      "voice": "capability:chooseSaveAsKind",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:chooseSaveAsKind",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-chooseSaveAsKind"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openTranscriptLearning",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openTranscriptLearning",
+      "mode": "native",
+      "voice": "capability:openTranscriptLearning",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openTranscriptLearning",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openTranscriptLearning"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setTranscriptDraft",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setTranscriptDraft",
+      "mode": "native",
+      "voice": "capability:setTranscriptDraft",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setTranscriptDraft",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setTranscriptDraft"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "chooseTranscriptArtifacts",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:chooseTranscriptArtifacts",
+      "mode": "native",
+      "voice": "capability:chooseTranscriptArtifacts",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:chooseTranscriptArtifacts",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-chooseTranscriptArtifacts"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "excludeTranscriptMessages",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:excludeTranscriptMessages",
+      "mode": "native",
+      "voice": "capability:excludeTranscriptMessages",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:excludeTranscriptMessages",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-excludeTranscriptMessages"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "redactTranscriptText",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:redactTranscriptText",
+      "mode": "native",
+      "voice": "capability:redactTranscriptText",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:redactTranscriptText",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-redactTranscriptText"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "generateTranscriptArtifacts",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:generateTranscriptArtifacts",
+      "mode": "native",
+      "voice": "capability:generateTranscriptArtifacts",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:generateTranscriptArtifacts",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-generateTranscriptArtifacts"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "selectTranscriptAlternative",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:selectTranscriptAlternative",
+      "mode": "native",
+      "voice": "capability:selectTranscriptAlternative",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:selectTranscriptAlternative",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-selectTranscriptAlternative"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editTranscriptArtifact",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editTranscriptArtifact",
+      "mode": "native",
+      "voice": "capability:editTranscriptArtifact",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editTranscriptArtifact",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editTranscriptArtifact"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveTranscriptArtifacts",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveTranscriptArtifacts",
+      "mode": "native",
+      "voice": "capability:saveTranscriptArtifacts",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveTranscriptArtifacts",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveTranscriptArtifacts"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "wrapMoveAsFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:wrapMoveAsFunction",
+      "mode": "native",
+      "voice": "capability:wrapMoveAsFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:wrapMoveAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-wrapMoveAsFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "flattenFunctionToMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:flattenFunctionToMove",
+      "mode": "native",
+      "voice": "capability:flattenFunctionToMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:flattenFunctionToMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-flattenFunctionToMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "createFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:createFunction",
+      "mode": "native",
+      "voice": "capability:createFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:createFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-createFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openBeforeAfterCreation",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openBeforeAfterCreation",
+      "mode": "native",
+      "voice": "capability:openBeforeAfterCreation",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openBeforeAfterCreation",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openBeforeAfterCreation"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setBeforeAfterText",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setBeforeAfterText",
+      "mode": "native",
+      "voice": "capability:setBeforeAfterText",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setBeforeAfterText",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setBeforeAfterText"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "attachSelectionToBeforeAfter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:attachSelectionToBeforeAfter",
+      "mode": "native",
+      "voice": "capability:attachSelectionToBeforeAfter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:attachSelectionToBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-attachSelectionToBeforeAfter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addBeforeAfterExample",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addBeforeAfterExample",
+      "mode": "native",
+      "voice": "capability:addBeforeAfterExample",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addBeforeAfterExample",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addBeforeAfterExample"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "removeBeforeAfterExample",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:removeBeforeAfterExample",
+      "mode": "native",
+      "voice": "capability:removeBeforeAfterExample",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:removeBeforeAfterExample",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-removeBeforeAfterExample"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inferBeforeAfterTransformation",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inferBeforeAfterTransformation",
+      "mode": "native",
+      "voice": "capability:inferBeforeAfterTransformation",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inferBeforeAfterTransformation",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inferBeforeAfterTransformation"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "chooseBeforeAfterAlternative",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:chooseBeforeAfterAlternative",
+      "mode": "native",
+      "voice": "capability:chooseBeforeAfterAlternative",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:chooseBeforeAfterAlternative",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-chooseBeforeAfterAlternative"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editInferredFunctionSpec",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editInferredFunctionSpec",
+      "mode": "native",
+      "voice": "capability:editInferredFunctionSpec",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editInferredFunctionSpec",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editInferredFunctionSpec"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "useInferredFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:useInferredFunction",
+      "mode": "native",
+      "voice": "capability:useInferredFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:useInferredFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-useInferredFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveLearnedFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveLearnedFunction",
+      "mode": "native",
+      "voice": "capability:saveLearnedFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveLearnedFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveLearnedFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "applyFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:applyFunction",
+      "mode": "native",
+      "voice": "capability:applyFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:applyFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-applyFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "dragItemToAi",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:dragItemToAi",
+      "mode": "native",
+      "voice": "capability:dragItemToAi",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:dragItemToAi",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-dragItemToAi"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "applyFunctionToAiNode",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:applyFunctionToAiNode",
+      "mode": "native",
+      "voice": "capability:applyFunctionToAiNode",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:applyFunctionToAiNode",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-applyFunctionToAiNode"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "focusAiResult",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:focusAiResult",
+      "mode": "native",
+      "voice": "capability:focusAiResult",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:focusAiResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-focusAiResult"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "fitAiSpace",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:fitAiSpace",
+      "mode": "native",
+      "voice": "capability:fitAiSpace",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:fitAiSpace",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-fitAiSpace"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "selectAiNode",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:selectAiNode",
+      "mode": "native",
+      "voice": "capability:selectAiNode",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:selectAiNode",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-selectAiNode"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "dragAiResultToPaper",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:dragAiResultToPaper",
+      "mode": "native",
+      "voice": "capability:dragAiResultToPaper",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:dragAiResultToPaper",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-dragAiResultToPaper"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "highlight",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:highlight",
+      "mode": "native",
+      "voice": "capability:highlight",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:highlight",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-highlight"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "operateHighlight",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:operateHighlight",
+      "mode": "native",
+      "voice": "capability:operateHighlight",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:operateHighlight",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-operateHighlight"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "armFunctionBrush",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:armFunctionBrush",
+      "mode": "native",
+      "voice": "capability:armFunctionBrush",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:armFunctionBrush",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-armFunctionBrush"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "armLensContext",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:armLensContext",
+      "mode": "native",
+      "voice": "capability:armLensContext",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:armLensContext",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-armLensContext"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "disarmBrushTarget",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:disarmBrushTarget",
+      "mode": "native",
+      "voice": "capability:disarmBrushTarget",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:disarmBrushTarget",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-disarmBrushTarget"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "applyArmedBrush",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:applyArmedBrush",
+      "mode": "native",
+      "voice": "capability:applyArmedBrush",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:applyArmedBrush",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-applyArmedBrush"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "queueBrushAction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:queueBrushAction",
+      "mode": "native",
+      "voice": "capability:queueBrushAction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:queueBrushAction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-queueBrushAction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setBrushLensContext",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setBrushLensContext",
+      "mode": "native",
+      "voice": "capability:setBrushLensContext",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setBrushLensContext",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setBrushLensContext"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "reorderBrushQueue",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:reorderBrushQueue",
+      "mode": "native",
+      "voice": "capability:reorderBrushQueue",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:reorderBrushQueue",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-reorderBrushQueue"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "removeBrushQueue",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:removeBrushQueue",
+      "mode": "native",
+      "voice": "capability:removeBrushQueue",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:removeBrushQueue",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-removeBrushQueue"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "previewBrushQueue",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:previewBrushQueue",
+      "mode": "native",
+      "voice": "capability:previewBrushQueue",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:previewBrushQueue",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-previewBrushQueue"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "pressBrushGo",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:pressBrushGo",
+      "mode": "native",
+      "voice": "capability:pressBrushGo",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:pressBrushGo",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-pressBrushGo"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "cancelPendingBrush",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:cancelPendingBrush",
+      "mode": "native",
+      "voice": "capability:cancelPendingBrush",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:cancelPendingBrush",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-cancelPendingBrush"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveBrushQueueAsFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveBrushQueueAsFunction",
+      "mode": "native",
+      "voice": "capability:saveBrushQueueAsFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveBrushQueueAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveBrushQueueAsFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "makeHighlightNode",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:makeHighlightNode",
+      "mode": "native",
+      "voice": "capability:makeHighlightNode",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:makeHighlightNode",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-makeHighlightNode"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearHighlight",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearHighlight",
+      "mode": "native",
+      "voice": "capability:clearHighlight",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearHighlight",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearHighlight"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "captureThreadAsFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:captureThreadAsFunction",
+      "mode": "native",
+      "voice": "capability:captureThreadAsFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:captureThreadAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-captureThreadAsFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "showLenses",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:showLenses",
+      "mode": "native",
+      "voice": "capability:showLenses",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:showLenses",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-showLenses"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExtensionDownload",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExtensionDownload",
+      "mode": "native",
+      "voice": "capability:openExtensionDownload",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExtensionDownload",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExtensionDownload"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExtensionLibraryExport",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExtensionLibraryExport",
+      "mode": "native",
+      "voice": "capability:openExtensionLibraryExport",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExtensionLibraryExport",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExtensionLibraryExport"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "savePageAsLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:savePageAsLens",
+      "mode": "native",
+      "voice": "capability:savePageAsLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:savePageAsLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-savePageAsLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "waitForJobs",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:waitForJobs",
+      "mode": "native",
+      "voice": "capability:waitForJobs",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:waitForJobs",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-waitForJobs"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "moveItem",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:moveItem",
+      "mode": "native",
+      "voice": "capability:moveItem",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:moveItem",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-moveItem"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editItem",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editItem",
+      "mode": "native",
+      "voice": "capability:editItem",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editItem",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editItem"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "deleteItem",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:deleteItem",
+      "mode": "native",
+      "voice": "capability:deleteItem",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:deleteItem",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-deleteItem"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "selectItems",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:selectItems",
+      "mode": "native",
+      "voice": "capability:selectItems",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:selectItems",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-selectItems"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "organizePage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:organizePage",
+      "mode": "native",
+      "voice": "capability:organizePage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:organizePage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-organizePage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addBlock",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addBlock",
+      "mode": "native",
+      "voice": "capability:addBlock",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addBlock",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addBlock"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "renamePage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:renamePage",
+      "mode": "native",
+      "voice": "capability:renamePage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:renamePage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-renamePage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "zoomToItem",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:zoomToItem",
+      "mode": "native",
+      "voice": "capability:zoomToItem",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:zoomToItem",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-zoomToItem"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "walkItemPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:walkItemPath",
+      "mode": "native",
+      "voice": "capability:walkItemPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:walkItemPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-walkItemPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "stepSharedPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:stepSharedPath",
+      "mode": "native",
+      "voice": "capability:stepSharedPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:stepSharedPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-stepSharedPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "noteSharedPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:noteSharedPath",
+      "mode": "native",
+      "voice": "capability:noteSharedPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:noteSharedPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-noteSharedPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "branchSharedPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:branchSharedPath",
+      "mode": "native",
+      "voice": "capability:branchSharedPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:branchSharedPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-branchSharedPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "materializeSharedPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:materializeSharedPath",
+      "mode": "native",
+      "voice": "capability:materializeSharedPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:materializeSharedPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-materializeSharedPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "leaveSharedPath",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:leaveSharedPath",
+      "mode": "native",
+      "voice": "capability:leaveSharedPath",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:leaveSharedPath",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-leaveSharedPath"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "moveAiNode",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:moveAiNode",
+      "mode": "native",
+      "voice": "capability:moveAiNode",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:moveAiNode",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-moveAiNode"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "arrangeItems",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:arrangeItems",
+      "mode": "native",
+      "voice": "capability:arrangeItems",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:arrangeItems",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-arrangeItems"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "groupItems",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:groupItems",
+      "mode": "native",
+      "voice": "capability:groupItems",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:groupItems",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-groupItems"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "linkItems",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:linkItems",
+      "mode": "native",
+      "voice": "capability:linkItems",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:linkItems",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-linkItems"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "transformMaterial",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:transformMaterial",
+      "mode": "native",
+      "voice": "capability:transformMaterial",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:transformMaterial",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-transformMaterial"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "annotateFeedback",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:annotateFeedback",
+      "mode": "native",
+      "voice": "capability:annotateFeedback",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:annotateFeedback",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-annotateFeedback"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openFunctionEditor",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openFunctionEditor",
+      "mode": "native",
+      "voice": "capability:openFunctionEditor",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openFunctionEditor",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openFunctionEditor"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editFunction",
+      "mode": "native",
+      "voice": "capability:editFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inspectFunctionOutput",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inspectFunctionOutput",
+      "mode": "native",
+      "voice": "capability:inspectFunctionOutput",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inspectFunctionOutput",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inspectFunctionOutput"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editFunctionOutput",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editFunctionOutput",
+      "mode": "native",
+      "voice": "capability:editFunctionOutput",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editFunctionOutput",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editFunctionOutput"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editFunctionBranchOutput",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editFunctionBranchOutput",
+      "mode": "native",
+      "voice": "capability:editFunctionBranchOutput",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editFunctionBranchOutput",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editFunctionBranchOutput"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setFunctionOutputMode",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setFunctionOutputMode",
+      "mode": "native",
+      "voice": "capability:setFunctionOutputMode",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setFunctionOutputMode",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setFunctionOutputMode"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "resetFunctionOutput",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:resetFunctionOutput",
+      "mode": "native",
+      "voice": "capability:resetFunctionOutput",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:resetFunctionOutput",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-resetFunctionOutput"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addFunctionStep",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addFunctionStep",
+      "mode": "native",
+      "voice": "capability:addFunctionStep",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addFunctionStep",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addFunctionStep"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addFunctionBranch",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addFunctionBranch",
+      "mode": "native",
+      "voice": "capability:addFunctionBranch",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addFunctionBranch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addFunctionBranch"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setFunctionStep",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setFunctionStep",
+      "mode": "native",
+      "voice": "capability:setFunctionStep",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setFunctionStep",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setFunctionStep"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveFunction",
+      "mode": "native",
+      "voice": "capability:saveFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "forkFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:forkFunction",
+      "mode": "native",
+      "voice": "capability:forkFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:forkFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-forkFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "mergeFunctions",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:mergeFunctions",
+      "mode": "native",
+      "voice": "capability:mergeFunctions",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:mergeFunctions",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-mergeFunctions"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "previewFunctionComposition",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:previewFunctionComposition",
+      "mode": "native",
+      "voice": "capability:previewFunctionComposition",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:previewFunctionComposition",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-previewFunctionComposition"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "stackFunctions",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:stackFunctions",
+      "mode": "native",
+      "voice": "capability:stackFunctions",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:stackFunctions",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-stackFunctions"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveCompoundFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveCompoundFunction",
+      "mode": "native",
+      "voice": "capability:saveCompoundFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveCompoundFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveCompoundFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addGrindExample",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addGrindExample",
+      "mode": "native",
+      "voice": "capability:addGrindExample",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addGrindExample",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addGrindExample"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "removeGrindExample",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:removeGrindExample",
+      "mode": "native",
+      "voice": "capability:removeGrindExample",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:removeGrindExample",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-removeGrindExample"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "reorderGrindExample",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:reorderGrindExample",
+      "mode": "native",
+      "voice": "capability:reorderGrindExample",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:reorderGrindExample",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-reorderGrindExample"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "compileGrindDraft",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:compileGrindDraft",
+      "mode": "native",
+      "voice": "capability:compileGrindDraft",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:compileGrindDraft",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-compileGrindDraft"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "testGrindDraft",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:testGrindDraft",
+      "mode": "native",
+      "voice": "capability:testGrindDraft",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:testGrindDraft",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-testGrindDraft"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "runFunctionTestBench",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:runFunctionTestBench",
+      "mode": "native",
+      "voice": "capability:runFunctionTestBench",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:runFunctionTestBench",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-runFunctionTestBench"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "refineGrindDraft",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:refineGrindDraft",
+      "mode": "native",
+      "voice": "capability:refineGrindDraft",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:refineGrindDraft",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-refineGrindDraft"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "shapeForgedFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:shapeForgedFunction",
+      "mode": "native",
+      "voice": "capability:shapeForgedFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:shapeForgedFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-shapeForgedFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "rackSearch",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:rackSearch",
+      "mode": "native",
+      "voice": "capability:rackSearch",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:rackSearch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-rackSearch"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "rackFilter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:rackFilter",
+      "mode": "native",
+      "voice": "capability:rackFilter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:rackFilter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-rackFilter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "pinFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:pinFunction",
+      "mode": "native",
+      "voice": "capability:pinFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:pinFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-pinFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "archiveFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:archiveFunction",
+      "mode": "native",
+      "voice": "capability:archiveFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:archiveFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-archiveFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "restoreFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:restoreFunction",
+      "mode": "native",
+      "voice": "capability:restoreFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:restoreFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-restoreFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "editFunctionByInstruction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:editFunctionByInstruction",
+      "mode": "native",
+      "voice": "capability:editFunctionByInstruction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:editFunctionByInstruction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-editFunctionByInstruction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "createLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:createLens",
+      "mode": "native",
+      "voice": "capability:createLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:createLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-createLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "resolveTasteLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:resolveTasteLens",
+      "mode": "native",
+      "voice": "capability:resolveTasteLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:resolveTasteLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-resolveTasteLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveTasteTeaching",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveTasteTeaching",
+      "mode": "native",
+      "voice": "capability:saveTasteTeaching",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveTasteTeaching",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveTasteTeaching"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "attachTasteBeforeAfter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:attachTasteBeforeAfter",
+      "mode": "native",
+      "voice": "capability:attachTasteBeforeAfter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:attachTasteBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-attachTasteBeforeAfter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inspectTasteLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inspectTasteLens",
+      "mode": "native",
+      "voice": "capability:inspectTasteLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inspectTasteLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inspectTasteLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "evaluateThroughTasteLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:evaluateThroughTasteLens",
+      "mode": "native",
+      "voice": "capability:evaluateThroughTasteLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:evaluateThroughTasteLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-evaluateThroughTasteLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "addLensMaterial",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:addLensMaterial",
+      "mode": "native",
+      "voice": "capability:addLensMaterial",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:addLensMaterial",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-addLensMaterial"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "nameLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:nameLens",
+      "mode": "native",
+      "voice": "capability:nameLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:nameLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-nameLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "probeLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:probeLens",
+      "mode": "native",
+      "voice": "capability:probeLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:probeLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-probeLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inferFunctionFromLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inferFunctionFromLens",
+      "mode": "native",
+      "voice": "capability:inferFunctionFromLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inferFunctionFromLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inferFunctionFromLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "composeObjects",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:composeObjects",
+      "mode": "native",
+      "voice": "capability:composeObjects",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:composeObjects",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-composeObjects"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "encodeLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:encodeLens",
+      "mode": "native",
+      "voice": "capability:encodeLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:encodeLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-encodeLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inspectGenerationPlan",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inspectGenerationPlan",
+      "mode": "native",
+      "voice": "capability:inspectGenerationPlan",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inspectGenerationPlan",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inspectGenerationPlan"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setGenerationPlan",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setGenerationPlan",
+      "mode": "native",
+      "voice": "capability:setGenerationPlan",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setGenerationPlan",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setGenerationPlan"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "resetGenerationPlan",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:resetGenerationPlan",
+      "mode": "native",
+      "voice": "capability:resetGenerationPlan",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:resetGenerationPlan",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-resetGenerationPlan"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "tasteCandidate",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:tasteCandidate",
+      "mode": "native",
+      "voice": "capability:tasteCandidate",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:tasteCandidate",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-tasteCandidate"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "moreLikeThis",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:moreLikeThis",
+      "mode": "native",
+      "voice": "capability:moreLikeThis",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:moreLikeThis",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-moreLikeThis"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "keepAllCandidates",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:keepAllCandidates",
+      "mode": "native",
+      "voice": "capability:keepAllCandidates",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:keepAllCandidates",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-keepAllCandidates"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "extendSelectedCandidates",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:extendSelectedCandidates",
+      "mode": "native",
+      "voice": "capability:extendSelectedCandidates",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:extendSelectedCandidates",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-extendSelectedCandidates"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "stopGenerationBatch",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:stopGenerationBatch",
+      "mode": "native",
+      "voice": "capability:stopGenerationBatch",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:stopGenerationBatch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-stopGenerationBatch"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "retryGenerationCandidate",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:retryGenerationCandidate",
+      "mode": "native",
+      "voice": "capability:retryGenerationCandidate",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:retryGenerationCandidate",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-retryGenerationCandidate"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "observeWorkspace",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:observeWorkspace",
+      "mode": "native",
+      "voice": "capability:observeWorkspace",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:observeWorkspace",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-observeWorkspace"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "interpretThroughLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:interpretThroughLens",
+      "mode": "native",
+      "voice": "capability:interpretThroughLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:interpretThroughLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-interpretThroughLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "interpretVisibleScreenThroughLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:interpretVisibleScreenThroughLens",
+      "mode": "native",
+      "voice": "capability:interpretVisibleScreenThroughLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:interpretVisibleScreenThroughLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-interpretVisibleScreenThroughLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "captureInstructionAsMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:captureInstructionAsMove",
+      "mode": "native",
+      "voice": "capability:captureInstructionAsMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:captureInstructionAsMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-captureInstructionAsMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "semanticTransfer",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:semanticTransfer",
+      "mode": "native",
+      "voice": "capability:semanticTransfer",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:semanticTransfer",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-semanticTransfer"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "startCritiqueSession",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:startCritiqueSession",
+      "mode": "native",
+      "voice": "capability:startCritiqueSession",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:startCritiqueSession",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-startCritiqueSession"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "ingestCritique",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:ingestCritique",
+      "mode": "native",
+      "voice": "capability:ingestCritique",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:ingestCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-ingestCritique"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "stopCritiqueSession",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:stopCritiqueSession",
+      "mode": "native",
+      "voice": "capability:stopCritiqueSession",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:stopCritiqueSession",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-stopCritiqueSession"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openPackageRegistry",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openPackageRegistry",
+      "mode": "native",
+      "voice": "capability:openPackageRegistry",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openPackageRegistry",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openPackageRegistry"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "createSignedPackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:createSignedPackage",
+      "mode": "native",
+      "voice": "capability:createSignedPackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:createSignedPackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-createSignedPackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "publishCognitivePackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:publishCognitivePackage",
+      "mode": "native",
+      "voice": "capability:publishCognitivePackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:publishCognitivePackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-publishCognitivePackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "installCognitivePackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:installCognitivePackage",
+      "mode": "native",
+      "voice": "capability:installCognitivePackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:installCognitivePackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-installCognitivePackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "rollbackCognitivePackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:rollbackCognitivePackage",
+      "mode": "native",
+      "voice": "capability:rollbackCognitivePackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:rollbackCognitivePackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-rollbackCognitivePackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "deprecateCognitivePackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:deprecateCognitivePackage",
+      "mode": "native",
+      "voice": "capability:deprecateCognitivePackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:deprecateCognitivePackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-deprecateCognitivePackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openCognitiveWorkflowStudio",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openCognitiveWorkflowStudio",
+      "mode": "native",
+      "voice": "capability:openCognitiveWorkflowStudio",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openCognitiveWorkflowStudio",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openCognitiveWorkflowStudio"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "proposeHigherOrderPatch",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:proposeHigherOrderPatch",
+      "mode": "native",
+      "voice": "capability:proposeHigherOrderPatch",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:proposeHigherOrderPatch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-proposeHigherOrderPatch"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "applyHigherOrderPatch",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:applyHigherOrderPatch",
+      "mode": "native",
+      "voice": "capability:applyHigherOrderPatch",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:applyHigherOrderPatch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-applyHigherOrderPatch"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "teachPersonalCommand",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:teachPersonalCommand",
+      "mode": "native",
+      "voice": "capability:teachPersonalCommand",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:teachPersonalCommand",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-teachPersonalCommand"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "disablePersonalCommand",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:disablePersonalCommand",
+      "mode": "native",
+      "voice": "capability:disablePersonalCommand",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:disablePersonalCommand",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-disablePersonalCommand"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "forgetPersonalCommand",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:forgetPersonalCommand",
+      "mode": "native",
+      "voice": "capability:forgetPersonalCommand",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:forgetPersonalCommand",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-forgetPersonalCommand"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openCognitivePullRequest",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openCognitivePullRequest",
+      "mode": "native",
+      "voice": "capability:openCognitivePullRequest",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openCognitivePullRequest",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openCognitivePullRequest"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "reviewCognitiveCandidate",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:reviewCognitiveCandidate",
+      "mode": "native",
+      "voice": "capability:reviewCognitiveCandidate",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:reviewCognitiveCandidate",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-reviewCognitiveCandidate"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "mergeCognitivePullRequest",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:mergeCognitivePullRequest",
+      "mode": "native",
+      "voice": "capability:mergeCognitivePullRequest",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:mergeCognitivePullRequest",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-mergeCognitivePullRequest"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "orchestrateCognitiveWorkflow",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:orchestrateCognitiveWorkflow",
+      "mode": "native",
+      "voice": "capability:orchestrateCognitiveWorkflow",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:orchestrateCognitiveWorkflow",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-orchestrateCognitiveWorkflow"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "createCreativeResearchProposal",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:createCreativeResearchProposal",
+      "mode": "native",
+      "voice": "capability:createCreativeResearchProposal",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:createCreativeResearchProposal",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-createCreativeResearchProposal"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearPaper",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearPaper",
+      "mode": "native",
+      "voice": "capability:clearPaper",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearPaper",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearPaper"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearAiSpace",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearAiSpace",
+      "mode": "native",
+      "voice": "capability:clearAiSpace",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearAiSpace",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearAiSpace"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearFunctions",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearFunctions",
+      "mode": "native",
+      "voice": "capability:clearFunctions",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearFunctions",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearFunctions"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearLenses",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearLenses",
+      "mode": "native",
+      "voice": "capability:clearLenses",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearLenses",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearLenses"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "clearWorkspaceDomains",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:clearWorkspaceDomains",
+      "mode": "native",
+      "voice": "capability:clearWorkspaceDomains",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:clearWorkspaceDomains",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-clearWorkspaceDomains"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "capturePageSelection",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:capturePageSelection",
+      "mode": "native",
+      "voice": "capability:capturePageSelection",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:capturePageSelection",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-capturePageSelection"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalSaveAs",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalSaveAs",
+      "mode": "native",
+      "voice": "capability:openExternalSaveAs",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalSaveAs",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalSaveAs"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveExternalCaptureAsMove",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveExternalCaptureAsMove",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsMove",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveExternalCaptureAsMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveExternalCaptureAsMove"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveExternalCaptureAsFunction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveExternalCaptureAsFunction",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsFunction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveExternalCaptureAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveExternalCaptureAsFunction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveExternalCaptureAsLens",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveExternalCaptureAsLens",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsLens",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveExternalCaptureAsLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveExternalCaptureAsLens"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "togglePageHighlighter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:togglePageHighlighter",
+      "mode": "native",
+      "voice": "capability:togglePageHighlighter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:togglePageHighlighter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-togglePageHighlighter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "queueExternalAction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:queueExternalAction",
+      "mode": "native",
+      "voice": "capability:queueExternalAction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:queueExternalAction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-queueExternalAction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setExternalLensContext",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setExternalLensContext",
+      "mode": "native",
+      "voice": "capability:setExternalLensContext",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setExternalLensContext",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setExternalLensContext"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "previewExternalGo",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:previewExternalGo",
+      "mode": "native",
+      "voice": "capability:previewExternalGo",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:previewExternalGo",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-previewExternalGo"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "pressExternalGo",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:pressExternalGo",
+      "mode": "native",
+      "voice": "capability:pressExternalGo",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:pressExternalGo",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-pressExternalGo"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "copyExternalResult",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:copyExternalResult",
+      "mode": "native",
+      "voice": "capability:copyExternalResult",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:copyExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-copyExternalResult"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "insertExternalResult",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:insertExternalResult",
+      "mode": "native",
+      "voice": "capability:insertExternalResult",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:insertExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-insertExternalResult"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "replaceExternalSelection",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:replaceExternalSelection",
+      "mode": "native",
+      "voice": "capability:replaceExternalSelection",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:replaceExternalSelection",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-replaceExternalSelection"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "annotateExternalResult",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:annotateExternalResult",
+      "mode": "native",
+      "voice": "capability:annotateExternalResult",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:annotateExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-annotateExternalResult"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalArtifact",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalArtifact",
+      "mode": "native",
+      "voice": "capability:openExternalArtifact",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalArtifact",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalArtifact"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "showExternalLibraryImport",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:showExternalLibraryImport",
+      "mode": "native",
+      "voice": "capability:showExternalLibraryImport",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:showExternalLibraryImport",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-showExternalLibraryImport"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "browseExternalPackages",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:browseExternalPackages",
+      "mode": "native",
+      "voice": "capability:browseExternalPackages",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:browseExternalPackages",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-browseExternalPackages"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "installExternalPackage",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:installExternalPackage",
+      "mode": "native",
+      "voice": "capability:installExternalPackage",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:installExternalPackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-installExternalPackage"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalCognitiveStudio",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalCognitiveStudio",
+      "mode": "native",
+      "voice": "capability:openExternalCognitiveStudio",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalCognitiveStudio",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalCognitiveStudio"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "teachExternalPersonalCommand",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:teachExternalPersonalCommand",
+      "mode": "native",
+      "voice": "capability:teachExternalPersonalCommand",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:teachExternalPersonalCommand",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-teachExternalPersonalCommand"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalCognitivePullRequest",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalCognitivePullRequest",
+      "mode": "native",
+      "voice": "capability:openExternalCognitivePullRequest",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalCognitivePullRequest",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalCognitivePullRequest"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalCreativeExtraction",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalCreativeExtraction",
+      "mode": "native",
+      "voice": "capability:openExternalCreativeExtraction",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalCreativeExtraction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalCreativeExtraction"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "saveExternalTasteTeaching",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:saveExternalTasteTeaching",
+      "mode": "native",
+      "voice": "capability:saveExternalTasteTeaching",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:saveExternalTasteTeaching",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-saveExternalTasteTeaching"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "openExternalBeforeAfter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:openExternalBeforeAfter",
+      "mode": "native",
+      "voice": "capability:openExternalBeforeAfter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:openExternalBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-openExternalBeforeAfter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setExternalBeforeAfterText",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setExternalBeforeAfterText",
+      "mode": "native",
+      "voice": "capability:setExternalBeforeAfterText",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setExternalBeforeAfterText",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setExternalBeforeAfterText"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "inferExternalBeforeAfter",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:inferExternalBeforeAfter",
+      "mode": "native",
+      "voice": "capability:inferExternalBeforeAfter",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:inferExternalBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-inferExternalBeforeAfter"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "captureExternalVisibleTab",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:captureExternalVisibleTab",
+      "mode": "native",
+      "voice": "capability:captureExternalVisibleTab",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:captureExternalVisibleTab",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-captureExternalVisibleTab"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "tasteExternalCandidate",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:tasteExternalCandidate",
+      "mode": "native",
+      "voice": "capability:tasteExternalCandidate",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:tasteExternalCandidate",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-tasteExternalCandidate"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "startExternalCritique",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:startExternalCritique",
+      "mode": "native",
+      "voice": "capability:startExternalCritique",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:startExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-startExternalCritique"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "ingestExternalCritique",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:ingestExternalCritique",
+      "mode": "native",
+      "voice": "capability:ingestExternalCritique",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:ingestExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-ingestExternalCritique"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "stopExternalCritique",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:stopExternalCritique",
+      "mode": "native",
+      "voice": "capability:stopExternalCritique",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:stopExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-stopExternalCritique"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "composeExternalObjects",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:composeExternalObjects",
+      "mode": "native",
+      "voice": "capability:composeExternalObjects",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:composeExternalObjects",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-composeExternalObjects"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "invokeExternalPrimitive",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:invokeExternalPrimitive",
+      "mode": "native",
+      "voice": "capability:invokeExternalPrimitive",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:invokeExternalPrimitive",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-invokeExternalPrimitive"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "reorderExternalPrimitive",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:reorderExternalPrimitive",
+      "mode": "native",
+      "voice": "capability:reorderExternalPrimitive",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:reorderExternalPrimitive",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-reorderExternalPrimitive"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "setExternalGenerationBranches",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:setExternalGenerationBranches",
+      "mode": "native",
+      "voice": "capability:setExternalGenerationBranches",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:setExternalGenerationBranches",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-setExternalGenerationBranches"
+      ]
+    },
+    {
+      "category": "companion-capability",
+      "id": "armExternalMerge",
+      "status": "preserved",
+      "currentPath": "client/lib/companion-capabilities.js",
+      "orbPath": "orb-capability:armExternalMerge",
+      "mode": "native",
+      "voice": "capability:armExternalMerge",
+      "gesture": "orb-emitted:companion-capability",
+      "keyboard": "orb-command:armExternalMerge",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "capability-armExternalMerge"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "capturePageSelection",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:capturePageSelection",
+      "mode": "native",
+      "voice": "capability:capturePageSelection",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:capturePageSelection",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalSaveAs",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalSaveAs",
+      "mode": "native",
+      "voice": "capability:openExternalSaveAs",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalSaveAs",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "saveExternalCaptureAsMove",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:saveExternalCaptureAsMove",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsMove",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:saveExternalCaptureAsMove",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "saveExternalCaptureAsFunction",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:saveExternalCaptureAsFunction",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsFunction",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:saveExternalCaptureAsFunction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "saveExternalCaptureAsLens",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:saveExternalCaptureAsLens",
+      "mode": "native",
+      "voice": "capability:saveExternalCaptureAsLens",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:saveExternalCaptureAsLens",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "togglePageHighlighter",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:togglePageHighlighter",
+      "mode": "native",
+      "voice": "capability:togglePageHighlighter",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:togglePageHighlighter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "queueExternalAction",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:queueExternalAction",
+      "mode": "native",
+      "voice": "capability:queueExternalAction",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:queueExternalAction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "setExternalLensContext",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:setExternalLensContext",
+      "mode": "native",
+      "voice": "capability:setExternalLensContext",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:setExternalLensContext",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "previewExternalGo",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:previewExternalGo",
+      "mode": "native",
+      "voice": "capability:previewExternalGo",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:previewExternalGo",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "pressExternalGo",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:pressExternalGo",
+      "mode": "native",
+      "voice": "capability:pressExternalGo",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:pressExternalGo",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "copyExternalResult",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:copyExternalResult",
+      "mode": "native",
+      "voice": "capability:copyExternalResult",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:copyExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "insertExternalResult",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:insertExternalResult",
+      "mode": "native",
+      "voice": "capability:insertExternalResult",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:insertExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "replaceExternalSelection",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:replaceExternalSelection",
+      "mode": "native",
+      "voice": "capability:replaceExternalSelection",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:replaceExternalSelection",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "annotateExternalResult",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:annotateExternalResult",
+      "mode": "native",
+      "voice": "capability:annotateExternalResult",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:annotateExternalResult",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalArtifact",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalArtifact",
+      "mode": "native",
+      "voice": "capability:openExternalArtifact",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalArtifact",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "showExternalLibraryImport",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:showExternalLibraryImport",
+      "mode": "native",
+      "voice": "capability:showExternalLibraryImport",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:showExternalLibraryImport",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "browseExternalPackages",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:browseExternalPackages",
+      "mode": "native",
+      "voice": "capability:browseExternalPackages",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:browseExternalPackages",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "installExternalPackage",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:installExternalPackage",
+      "mode": "native",
+      "voice": "capability:installExternalPackage",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:installExternalPackage",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalCognitiveStudio",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalCognitiveStudio",
+      "mode": "native",
+      "voice": "capability:openExternalCognitiveStudio",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalCognitiveStudio",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "teachExternalPersonalCommand",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:teachExternalPersonalCommand",
+      "mode": "native",
+      "voice": "capability:teachExternalPersonalCommand",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:teachExternalPersonalCommand",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalCognitivePullRequest",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalCognitivePullRequest",
+      "mode": "native",
+      "voice": "capability:openExternalCognitivePullRequest",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalCognitivePullRequest",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalCreativeExtraction",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalCreativeExtraction",
+      "mode": "native",
+      "voice": "capability:openExternalCreativeExtraction",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalCreativeExtraction",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "saveExternalTasteTeaching",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:saveExternalTasteTeaching",
+      "mode": "native",
+      "voice": "capability:saveExternalTasteTeaching",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:saveExternalTasteTeaching",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "openExternalBeforeAfter",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:openExternalBeforeAfter",
+      "mode": "native",
+      "voice": "capability:openExternalBeforeAfter",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:openExternalBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "setExternalBeforeAfterText",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:setExternalBeforeAfterText",
+      "mode": "native",
+      "voice": "capability:setExternalBeforeAfterText",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:setExternalBeforeAfterText",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "inferExternalBeforeAfter",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:inferExternalBeforeAfter",
+      "mode": "native",
+      "voice": "capability:inferExternalBeforeAfter",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:inferExternalBeforeAfter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "captureExternalVisibleTab",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:captureExternalVisibleTab",
+      "mode": "native",
+      "voice": "capability:captureExternalVisibleTab",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:captureExternalVisibleTab",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "tasteExternalCandidate",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:tasteExternalCandidate",
+      "mode": "native",
+      "voice": "capability:tasteExternalCandidate",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:tasteExternalCandidate",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "startExternalCritique",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:startExternalCritique",
+      "mode": "native",
+      "voice": "capability:startExternalCritique",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:startExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "ingestExternalCritique",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:ingestExternalCritique",
+      "mode": "native",
+      "voice": "capability:ingestExternalCritique",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:ingestExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "stopExternalCritique",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:stopExternalCritique",
+      "mode": "native",
+      "voice": "capability:stopExternalCritique",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:stopExternalCritique",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "composeExternalObjects",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:composeExternalObjects",
+      "mode": "native",
+      "voice": "capability:composeExternalObjects",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:composeExternalObjects",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "invokeExternalPrimitive",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:invokeExternalPrimitive",
+      "mode": "native",
+      "voice": "capability:invokeExternalPrimitive",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:invokeExternalPrimitive",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "reorderExternalPrimitive",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:reorderExternalPrimitive",
+      "mode": "native",
+      "voice": "capability:reorderExternalPrimitive",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:reorderExternalPrimitive",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "setExternalGenerationBranches",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:setExternalGenerationBranches",
+      "mode": "native",
+      "voice": "capability:setExternalGenerationBranches",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:setExternalGenerationBranches",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "extension-verb",
+      "id": "armExternalMerge",
+      "status": "preserved",
+      "currentPath": "extension/src/sidepanel/companion.js",
+      "orbPath": "extension-orb:armExternalMerge",
+      "mode": "native",
+      "voice": "capability:armExternalMerge",
+      "gesture": "orb-emitted:extension-verb",
+      "keyboard": "orb-command:armExternalMerge",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.board.items.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.board.items.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.board.items.v1",
+      "persistence": [
+        "lens.board.items.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.board.items.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.board.pages.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.board.pages.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.board.pages.v1",
+      "persistence": [
+        "lens.board.pages.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.board.pages.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.doc.title.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.doc.title.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.doc.title.v1",
+      "persistence": [
+        "lens.doc.title.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.doc.title.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.doc.star.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.doc.star.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.doc.star.v1",
+      "persistence": [
+        "lens.doc.star.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.doc.star.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.theme.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.theme.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.theme.v1",
+      "persistence": [
+        "lens.theme.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.theme.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.board.camera.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.board.camera.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.board.camera.v1",
+      "persistence": [
+        "lens.board.camera.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.board.camera.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.board.operators.v2",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.board.operators.v2",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.board.operators.v2",
+      "persistence": [
+        "lens.board.operators.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.board.operators.v2"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.lenses.v2",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.lenses.v2",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.lenses.v2",
+      "persistence": [
+        "lens.lenses.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.lenses.v2"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.transformation-repos.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.transformation-repos.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.transformation-repos.v1",
+      "persistence": [
+        "lens.transformation-repos.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.transformation-repos.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.activeTransformation.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.activeTransformation.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.activeTransformation.v1",
+      "persistence": [
+        "lens.activeTransformation.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.activeTransformation.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.ai.nodes.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.ai.nodes.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.ai.nodes.v1",
+      "persistence": [
+        "lens.ai.nodes.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.ai.nodes.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.item.history.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.item.history.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.item.history.v1",
+      "persistence": [
+        "lens.item.history.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.item.history.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.scenes.v4",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "scene-v4-primary",
+      "mode": "native",
+      "voice": "capability:lens.scenes.v4",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.scenes.v4",
+      "persistence": [
+        "lens.scenes.v4"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.scenes.v4"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.unified-workspace.v2",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.unified-workspace.v2",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.unified-workspace.v2",
+      "persistence": [
+        "lens.unified-workspace.v2"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.unified-workspace.v2"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.grind.draft.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.grind.draft.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.grind.draft.v1",
+      "persistence": [
+        "lens.grind.draft.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.grind.draft.v1"
+      ]
+    },
+    {
+      "category": "persistence",
+      "id": "lens.rack.meta.v1",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "dual-read-write-migration",
+      "mode": "native",
+      "voice": "capability:lens.rack.meta.v1",
+      "gesture": "orb-emitted:persistence",
+      "keyboard": "orb-command:lens.rack.meta.v1",
+      "persistence": [
+        "lens.rack.meta.v1"
+      ],
+      "undo": "preserve-existing",
+      "evidence": [
+        "lens.rack.meta.v1"
+      ]
+    },
+    {
+      "category": "editor",
+      "id": "before-after",
+      "status": "preserved",
+      "currentPath": "client/components/BeforeAfterLensEditor.jsx",
+      "orbPath": "orb:before-after",
+      "mode": "native",
+      "voice": "capability:before-after",
+      "gesture": "orb-emitted:editor",
+      "keyboard": "orb-command:before-after",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/BeforeAfterLensEditor.jsx"
+      ]
+    },
+    {
+      "category": "editor",
+      "id": "function-tree",
+      "status": "preserved",
+      "currentPath": "client/components/LensTreeEditor.jsx",
+      "orbPath": "orb:function-tree",
+      "mode": "native",
+      "voice": "capability:function-tree",
+      "gesture": "orb-emitted:editor",
+      "keyboard": "orb-command:function-tree",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/LensTreeEditor.jsx"
+      ]
+    },
+    {
+      "category": "editor",
+      "id": "lens-settings",
+      "status": "preserved",
+      "currentPath": "client/components/LensSettingsDialog.jsx",
+      "orbPath": "orb:lens-settings",
+      "mode": "native",
+      "voice": "capability:lens-settings",
+      "gesture": "orb-emitted:editor",
+      "keyboard": "orb-command:lens-settings",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/LensSettingsDialog.jsx"
+      ]
+    },
+    {
+      "category": "editor",
+      "id": "cognitive-workflow",
+      "status": "preserved",
+      "currentPath": "client/components/CognitiveWorkflowStudio.jsx",
+      "orbPath": "orb:cognitive-workflow",
+      "mode": "native",
+      "voice": "capability:cognitive-workflow",
+      "gesture": "orb-emitted:editor",
+      "keyboard": "orb-command:cognitive-workflow",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/CognitiveWorkflowStudio.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "center-node-move",
+      "status": "preserved",
+      "currentPath": "client/components/AiNodeCanvas.jsx",
+      "orbPath": "orb:center-node-move",
+      "mode": "native",
+      "voice": "capability:center-node-move",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:center-node-move",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/AiNodeCanvas.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "edge-node-branch",
+      "status": "preserved",
+      "currentPath": "client/components/AiNodeCanvas.jsx",
+      "orbPath": "orb:edge-node-branch",
+      "mode": "native",
+      "voice": "capability:edge-node-branch",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:edge-node-branch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/AiNodeCanvas.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "explicit-go",
+      "status": "preserved",
+      "currentPath": "client/components/HighlightToolbar.jsx",
+      "orbPath": "orb:explicit-go",
+      "mode": "native",
+      "voice": "capability:explicit-go",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:explicit-go",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/HighlightToolbar.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "highlighter",
+      "status": "preserved",
+      "currentPath": "client/App.jsx",
+      "orbPath": "orb:highlighter",
+      "mode": "native",
+      "voice": "capability:highlighter",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:highlighter",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/App.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "proximity-merge",
+      "status": "preserved",
+      "currentPath": "client/components/AiNodeCanvas.jsx",
+      "orbPath": "orb:proximity-merge",
+      "mode": "native",
+      "voice": "capability:proximity-merge",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:proximity-merge",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/AiNodeCanvas.jsx"
+      ]
+    },
+    {
+      "category": "gesture",
+      "id": "semantic-transfer",
+      "status": "preserved",
+      "currentPath": "shared/drop-intent-resolver.js",
+      "orbPath": "orb:semantic-transfer",
+      "mode": "native",
+      "voice": "capability:semantic-transfer",
+      "gesture": "orb-emitted:gesture",
+      "keyboard": "orb-command:semantic-transfer",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/drop-intent-resolver.js"
+      ]
+    },
+    {
+      "category": "keyboard",
+      "id": "spatial-navigation",
+      "status": "preserved",
+      "currentPath": "client/App.jsx",
+      "orbPath": "orb:spatial-navigation",
+      "mode": "native",
+      "voice": "capability:spatial-navigation",
+      "gesture": "orb-emitted:keyboard",
+      "keyboard": "orb-command:spatial-navigation",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/App.jsx"
+      ]
+    },
+    {
+      "category": "keyboard",
+      "id": "orb-positioning",
+      "status": "preserved",
+      "currentPath": "client/components/CompanionOrb.jsx",
+      "orbPath": "orb:orb-positioning",
+      "mode": "native",
+      "voice": "capability:orb-positioning",
+      "gesture": "orb-emitted:keyboard",
+      "keyboard": "orb-command:orb-positioning",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/components/CompanionOrb.jsx"
+      ]
+    },
+    {
+      "category": "voice",
+      "id": "raw-normalized-ledger",
+      "status": "preserved",
+      "currentPath": "shared/orb-runtime.js",
+      "orbPath": "orb:raw-normalized-ledger",
+      "mode": "native",
+      "voice": "capability:raw-normalized-ledger",
+      "gesture": "orb-emitted:voice",
+      "keyboard": "orb-command:raw-normalized-ledger",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/orb-runtime.js"
+      ]
+    },
+    {
+      "category": "voice",
+      "id": "exactly-once-dispatch",
+      "status": "preserved",
+      "currentPath": "shared/orb-runtime.js",
+      "orbPath": "orb:exactly-once-dispatch",
+      "mode": "native",
+      "voice": "capability:exactly-once-dispatch",
+      "gesture": "orb-emitted:voice",
+      "keyboard": "orb-command:exactly-once-dispatch",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "shared/orb-runtime.js"
+      ]
+    },
+    {
+      "category": "migration",
+      "id": "scene-v4",
+      "status": "preserved",
+      "currentPath": "client/lib/unified-workspace.js",
+      "orbPath": "orb:scene-v4",
+      "mode": "native",
+      "voice": "capability:scene-v4",
+      "gesture": "orb-emitted:migration",
+      "keyboard": "orb-command:scene-v4",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/unified-workspace.js"
+      ]
+    },
+    {
+      "category": "migration",
+      "id": "account-adoption",
+      "status": "preserved",
+      "currentPath": "client/lib/board-sync.js",
+      "orbPath": "orb:account-adoption",
+      "mode": "native",
+      "voice": "capability:account-adoption",
+      "gesture": "orb-emitted:migration",
+      "keyboard": "orb-command:account-adoption",
+      "persistence": [],
+      "undo": "preserve-existing",
+      "evidence": [
+        "client/lib/board-sync.js"
+      ]
+    }
+  ]
+}

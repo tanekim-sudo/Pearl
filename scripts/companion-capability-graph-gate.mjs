@@ -8,7 +8,7 @@ import {
 } from "../client/lib/companion-capability-graph.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const output = path.join(root, "audit-shots/universal-companion-2026-07/capability-graph.json");
+const output = path.join(root, "audit-shots/orb-universe-2026-07/capability-graph.json");
 const validation = validateCompanionCapabilityGraph();
 
 if (!validation.ok) {

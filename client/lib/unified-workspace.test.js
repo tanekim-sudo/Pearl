@@ -4,6 +4,9 @@ import {
   UNIFIED_WORKSPACE_VERSION,
   clampAiNodeToPage,
   clampWorkspaceItem,
+  clampItemToOutputFrame,
+  createOutputFrame,
+  createScene,
   workspaceItemBBox,
   hitUnifiedMaterial,
   migrateUnifiedWorkspace,
@@ -26,6 +29,37 @@ test("legacy paper and AI records migrate inside page without losing metadata", 
   assert.ok(migrated.nodes[0].y >= 24 + migrated.nodes[0].radius);
   assert.deepEqual(migrated.nodes[0].history, ["b"]);
   assert.equal(migrated.nodes[0].parentId, "root");
+  assert.equal(migrated.scenes[0].kind, "scene");
+  assert.equal(migrated.frames[0].kind, "output-frame");
+  assert.equal(migrated.items[0].frameId, migrated.frames[0].id);
+  assert.equal(migrated.scenes[0].metadata.createdFrom, "legacy-page-migration");
+});
+
+test("Scene v4 preserves unknown fields and leaves world objects unbounded", () => {
+  const worldItem = { id: "world", type: "text", x: -9000, y: 5000, futureField: { safe: true } };
+  const scene = createScene({
+    id: "scene-1",
+    items: [worldItem],
+    camera: { x: 8, y: 9, scale: .5 },
+    futureSceneField: "kept",
+  });
+  const migrated = migrateUnifiedWorkspace({ unified: {
+    version: UNIFIED_WORKSPACE_VERSION,
+    activeSceneId: scene.id,
+    scenes: [scene],
+  } });
+  assert.equal(migrated.items[0].x, -9000);
+  assert.deepEqual(migrated.items[0].futureField, { safe: true });
+  assert.equal(migrated.scenes[0].futureSceneField, "kept");
+});
+
+test("only frame-local material is clamped", () => {
+  const frame = createOutputFrame({ id: "frame-1", x: 100, y: 200 });
+  const world = { id: "world", type: "text", x: -1000, y: -1000 };
+  assert.equal(clampItemToOutputFrame(world, frame), world);
+  const local = clampItemToOutputFrame({ ...world, id: "local", frameId: frame.id }, frame);
+  assert.ok(local.x >= frame.x + 24);
+  assert.ok(local.y >= frame.y + 24);
 });
 
 test("node clamp uses compact defaults and preserves explicit custom radii", () => {

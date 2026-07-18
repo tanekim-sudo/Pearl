@@ -24,6 +24,21 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
+function ExtensionOrb({ phase, listening, onVoice, onCommandView }) {
+  return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Lens orb, ${phase}`}>
+    <button type="button" className="extension-orb" aria-label={listening ? "Stop listening" : "Hold to speak"} onClick={onVoice}>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <g className="extension-orb-rays">
+          {Array.from({ length: 12 }, (_, index) => <path key={index} d="M50 8 C49 22 52 28 50 37" transform={`rotate(${index * 30} 50 50)`} />)}
+        </g>
+        <circle cx="50" cy="50" r="29" className="extension-orb-halo" />
+        <circle cx="50" cy="50" r="19" className="extension-orb-core" />
+      </svg>
+    </button>
+    <button type="button" className="extension-orb-label" onClick={onCommandView}>{phase === "listening" ? "Listening…" : phase === "executing" ? "Working…" : "Tell the orb your goal"}</button>
+  </div>;
+}
+
 function App() {
   const [session, setSession] = useState({ fragments: [], queue: [], generator: null, results: [] });
   const [library, setLibrary] = useState(builtIns);
@@ -57,6 +72,7 @@ function App() {
   const [modelCatalog, setModelCatalog] = useState([]);
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [packages, setPackages] = useState([]);
+  const [activeView, setActiveView] = useState("command");
   const fileRef = useRef(null);
 
   async function browsePackages() {
@@ -440,7 +456,8 @@ function App() {
     setVoiceListening(true);
   }
 
-  return <main>
+  const orbPhase = voiceListening ? "listening" : running || chatRunning || learning ? "executing" : error ? "blocked" : "idle";
+  return <main data-orb-view={activeView}>
     {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
       {onboardingStep === 1 && <>
@@ -480,13 +497,16 @@ function App() {
       {error && <p role="alert">{error}</p>}
     </div>}
     <header>
-      <div><b>Lens</b><span>Everywhere</span></div>
+      <ExtensionOrb phase={orbPhase} listening={voiceListening} onVoice={toggleCompanionVoice} onCommandView={() => setActiveView("command")} />
       <div>
         <button type="button" onClick={browsePackages}>Packages</button>
         {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
       </div>
     </header>
-    {packagesOpen && <section className="extension-packages" aria-label="Cognitive Packages">
+    <nav className="orb-view-tabs" aria-label="Orb views">
+      {["command", "context", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view}</button>)}
+    </nav>
+    {packagesOpen && <section className={`orb-panel ${activeView === "library" ? "active" : ""} extension-packages`} aria-label="Cognitive Packages">
       <div><b>Cognitive Packages</b><button type="button" onClick={() => setPackagesOpen(false)}>×</button></div>
       {packages.map((pkg) => <article key={`${pkg.namespace}/${pkg.name}@${pkg.version}`}>
         <b>{pkg.namespace}/{pkg.name}</b>
@@ -495,13 +515,13 @@ function App() {
       </article>)}
       {!packages.length && <p>No public or team packages are visible.</p>}
     </section>}
-    {!characters && !session.queue.length && <section className="quick-start">
+    {!characters && !session.queue.length && <section className={`orb-panel ${activeView === "command" ? "active" : ""} quick-start`}>
       <p>Highlight anything, choose a Move or Function, optionally add Lens context, then press GO</p>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
         <b>{sampleLens.name}</b><small>Sample Primitive Move</small>
       </button>}
     </section>}
-    <section className="capture">
+    <section className={`orb-panel ${activeView === "context" || activeView === "command" ? "active" : ""} capture`}>
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
@@ -535,7 +555,7 @@ function App() {
         {chatDraft.length > 40_000 && <a href="https://representation-eta.vercel.app/?learn=chat" target="_blank" rel="noreferrer">Use full editor for long chats, exclusions, and redaction</a>}
       </div>}
     </section>
-    <section>
+    <section className={`orb-panel ${activeView === "library" ? "active" : ""}`}>
       <h2>Library</h2>
       <p className="kind-guide">Move = one action.<br />Function = a process.<br />Lens = a way of seeing.</p>
       <div
@@ -590,7 +610,7 @@ function App() {
         <button key={generator.id} onClick={() => action("set-generator", { generator })}><b>{generator.name || generator.title}</b><small>{(generator.material || generator.items || []).length} material items</small></button>
       )}</div>
     </section>
-    <section>
+    <section className={`orb-panel ${activeView === "command" || activeView === "review" ? "active" : ""}`}>
       <h2>Action stack</h2>
       <ol className="queue">{session.queue.map((lens, index) =>
         <li key={`${lens.id}-${index}`}><span>{lens.name}<small>{lens.outputSpec ? outputContractLabel(lens.outputSpec) : ""}</small></span><button disabled={!index} onClick={() => action("reorder-queue", { from: index, to: index - 1 })}>↑</button><button disabled={index === session.queue.length - 1} onClick={() => action("reorder-queue", { from: index, to: index + 1 })}>↓</button><button onClick={() => action("remove-queue", { index })}>×</button></li>
@@ -624,13 +644,19 @@ function App() {
       <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go}>{running ? "Running…" : "GO"}</button>
       {running && <button onClick={() => action("cancel-run", { runId: session.activeRunId })}>Cancel</button>}
     </section>
-    <section>
+    <section className={`orb-panel ${activeView === "taste" || activeView === "review" ? "active" : ""}`}>
       <h2>Preview results</h2>
       {!session.results.length && <p className="muted">Results stage here. The page never changes automatically.</p>}
       {session.results.flatMap((run) => run.outputs.map((output) =>
         <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
       ))}</section>
-    <form className="companion" onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens companion command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="capture selection · preview GO · press GO" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Do</button></form>
+    <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Orb settings">
+      <h2>Settings</h2>
+      <p className="muted">Voice stays local until you explicitly run a capability. Page capture always requires your action.</p>
+      <button type="button" onClick={signIn}>{auth ? "Refresh synced library" : "Sign in for sync"}</button>
+      <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Models, connectors, vocabulary, and privacy</a>
+    </section>
+    <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens orb command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell the orb your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
     {error && <aside role="alert">{error}</aside>}
   </main>;
 }

@@ -1,6 +1,6 @@
 # Lens
 
-Lens is a spatial operating environment for reusable cognition. It lets people act on any material with atomic **Moves**, compose those actions into repeatable **Functions**, and shape the context and perceptual stance of the work through **Lenses**. Paper, AI generations, web selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
+Lens is an orb-centered operating environment for reusable cognition. The Chrome extension is the everyday surface; its voice-first orb acts on material anywhere. The web root is extension onboarding and the cognitive library, while the full-bleed black spatial Stage opens only for explicit deep work. Moves, Functions, Lenses, Scenes, optional Output Frames, selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
 
 This README is the canonical product and engineering contract for the fully realized product. “Must” and “shall” describe required behavior. Optional future extensions are isolated in [Expansion roadmap](#expansion-roadmap).
 
@@ -18,12 +18,12 @@ Most AI products make the prompt, model response, and conversation the primary u
 
 ### Experience principles
 
-1. **Paper first.** A person can write, draw, arrange, and highlight before invoking a model.
+1. **Extension and orb first.** A person can select material anywhere and state a goal without first opening a blank workspace.
 2. **Explicit execution.** Selecting, highlighting, queueing, or previewing never runs a model. Only explicit **GO** or an equally explicit command executes.
 3. **Preserve sources.** Branching and interpretation create lineage-linked outputs; they do not silently overwrite source material.
 4. **Progressive disclosure.** Common actions stay immediate. Graphs, model assignments, schemas, provenance, and advanced composition remain inspectable without crowding the default surface.
 5. **One semantic system.** Web app, companion, voice, and extension share object schemas, domain commands, validation, persistence, and undo semantics.
-6. **Visible agency.** The companion demonstrates real actions with a ghost cursor and reports precise blockers; it does not narrate success without effects.
+6. **Verified agency.** The orb executes canonical commands directly and demonstrates only freshly verified effects. Ghost cursors and rays are never mutation authority.
 7. **Bounded autonomy.** Plans, context, research, generation, cost, retries, and iteration are finite, cancellable, and checkpointed.
 8. **Private by default.** Local work stays local unless the user signs in, exports, shares, captures a screen, or presses GO with disclosed material.
 9. **Accessible equivalence.** Pointer, touch, keyboard, and voice paths reach the same core outcomes.
@@ -87,12 +87,13 @@ Legacy data migrates idempotently under these rules:
 
 Ambiguous records default to reversible Lens/context classification and retain source kind, aliases, migration reason, confidence, and original extension fields.
 
-### Page, node, candidate, and companion
+### Scene, Output Frame, node, candidate, and orb
 
-- A **Page** is the single bounded 8.5×11-inch paper and world coordinate system for human and AI material.
-- A **node** is lineage-bearing AI material on that page. It can be moved, read, highlighted, branched, linked, or returned to paper.
+- A **Scene** is a versioned, unbounded cognitive world carrying its explicit working set, camera, branches, checkpoints, and orb instances. It is never created merely by visiting the web app.
+- An **Output Frame** is an optional bounded publication region inside a Scene. Legacy Pages migrate into legacy-compatible Output Frames without changing object IDs, lineage, history, or coordinates.
+- A **node** is lineage-bearing AI material in a Scene. It can be moved, read, highlighted, branched, linked, or placed in an Output Frame.
 - A **candidate** is one typed output in a generation batch, with its requested/resolved model, branch specification, differentiation blurb, status, provenance, and taste feedback.
-- The **companion** is a capability-complete command interface over the same domain actions as direct manipulation. It plans, observes, animates, executes, checkpoints, confirms, and recovers.
+- The **orb** is the companion, cursor, context and execution interface. It plans, observes, executes canonical commands, verifies effects, checkpoints, confirms, recovers, and may split into bounded read/evaluation workers whose typed proposals require parent verification.
 
 ## Primitive Moves
 

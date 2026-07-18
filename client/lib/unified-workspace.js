@@ -1,10 +1,13 @@
 import { AI_NODE_RADIUS } from "./ai-constants.js";
 import { PAPER_HEIGHT, PAPER_MARGIN, PAPER_WIDTH, bboxClampOffset } from "./paper.js";
 
-export const UNIFIED_WORKSPACE_VERSION = 3;
-export const UNIFIED_WORKSPACE_KEY = "lens.unified-workspace.v2";
+export const UNIFIED_WORKSPACE_VERSION = 4;
+export const UNIFIED_WORKSPACE_KEY = "lens.scenes.v4";
+export const LEGACY_UNIFIED_WORKSPACE_KEYS = Object.freeze(["lens.unified-workspace.v2"]);
 export const LEGACY_AI_OFFSET = Object.freeze({ x: 820, y: 180 });
 export const PAGE_CONTENT_MARGIN = PAPER_MARGIN;
+export const DEFAULT_SCENE_ID = "scene-legacy";
+export const DEFAULT_OUTPUT_FRAME_ID = "frame-legacy-paper";
 
 export function defaultAiNodeRadius(node = {}) {
   return AI_NODE_RADIUS[node.nodeKind] || AI_NODE_RADIUS.source;
@@ -116,48 +119,172 @@ function finiteCamera(camera) {
   return { x: camera.x, y: camera.y, scale: camera.scale };
 }
 
+export function createOutputFrame(value = {}) {
+  return {
+    id: value.id || DEFAULT_OUTPUT_FRAME_ID,
+    kind: "output-frame",
+    format: value.format || "paper",
+    name: value.name || "Legacy Paper",
+    x: Number.isFinite(value.x) ? value.x : 0,
+    y: Number.isFinite(value.y) ? value.y : 0,
+    width: Math.max(120, Number(value.width) || PAPER_WIDTH),
+    height: Math.max(120, Number(value.height) || PAPER_HEIGHT),
+    hidden: Boolean(value.hidden),
+    legacyCompatible: value.legacyCompatible !== false,
+    ...value,
+  };
+}
+
+export function createScene(value = {}) {
+  const frames = Array.isArray(value.frames) ? value.frames.map(createOutputFrame) : [];
+  return {
+    ...value,
+    version: UNIFIED_WORKSPACE_VERSION,
+    id: value.id || DEFAULT_SCENE_ID,
+    kind: "scene",
+    name: value.name || "Untitled Scene",
+    world: { background: "black", unbounded: true, ...(value.world || {}) },
+    frames,
+    items: Array.isArray(value.items) ? value.items : [],
+    nodes: Array.isArray(value.nodes) ? value.nodes : [],
+    orbInstances: Array.isArray(value.orbInstances) ? value.orbInstances : [],
+    camera: finiteCamera(value.camera),
+    workingSet: {
+      context: [],
+      lenses: [],
+      selections: [],
+      branches: [],
+      checkpoints: [],
+      ...(value.workingSet || {}),
+    },
+    metadata: { createdFrom: "explicit", ...(value.metadata || {}) },
+    frames,
+  };
+}
+
+export function clampItemToOutputFrame(item, frame, getBBox = workspaceItemBBox, margin = PAGE_CONTENT_MARGIN) {
+  if (!item?.frameId) return item;
+  const normalizedFrame = createOutputFrame(frame);
+  const local = {
+    ...item,
+    x: (Number(item.x) || 0) - normalizedFrame.x,
+    y: (Number(item.y) || 0) - normalizedFrame.y,
+  };
+  const clamped = clampWorkspaceItem(local, getBBox, margin);
+  return {
+    ...clamped,
+    x: (Number(clamped.x) || 0) + normalizedFrame.x,
+    y: (Number(clamped.y) || 0) + normalizedFrame.y,
+    frameId: normalizedFrame.id,
+  };
+}
+
+function legacyFrameItems(items, frame) {
+  return clampWorkspaceItems(items).map((item) => ({ ...item, frameId: frame.id, sceneId: DEFAULT_SCENE_ID }));
+}
+
+function legacyFrameNodes(nodes, alreadyUnified) {
+  return nodes.map((node) =>
+    clampAiNodeToPage({
+      ...node,
+      x: (Number.isFinite(node.x) ? node.x : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.x),
+      y: (Number.isFinite(node.y) ? node.y : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.y),
+      unifiedWorldVersion: UNIFIED_WORKSPACE_VERSION,
+      frameId: DEFAULT_OUTPUT_FRAME_ID,
+      sceneId: DEFAULT_SCENE_ID,
+    })
+  );
+}
+
 /**
  * Copies the two legacy stores into one coordinate system. Legacy values are
  * inputs only: callers keep those keys intact as recovery sources.
  */
 export function migrateUnifiedWorkspace({ items = [], nodes = [], camera = null, unified = null } = {}) {
   if (unified?.version === UNIFIED_WORKSPACE_VERSION) {
+    const scenes = Array.isArray(unified.scenes)
+      ? unified.scenes.map((scene) => createScene(scene))
+      : [createScene({ ...unified, id: unified.activeSceneId || DEFAULT_SCENE_ID })];
+    const activeSceneId = unified.activeSceneId || scenes[0]?.id || null;
+    const activeScene = scenes.find((scene) => scene.id === activeSceneId) || scenes[0] || null;
     return {
       ...unified,
-      items: clampWorkspaceItems(Array.isArray(unified.items) ? unified.items : items),
-      nodes: clampAiNodesToPage(Array.isArray(unified.nodes) ? unified.nodes : nodes),
-      camera: finiteCamera(unified.camera || camera),
+      scenes,
+      activeSceneId,
+      items: Array.isArray(activeScene?.items) ? activeScene.items : (Array.isArray(unified.items) ? unified.items : items),
+      nodes: Array.isArray(activeScene?.nodes) ? activeScene.nodes : (Array.isArray(unified.nodes) ? unified.nodes : nodes),
+      frames: activeScene?.frames || unified.frames || [],
+      orbInstances: activeScene?.orbInstances || unified.orbInstances || [],
+      workingSet: activeScene?.workingSet || unified.workingSet || {},
+      camera: finiteCamera(activeScene?.camera || unified.camera || camera),
     };
   }
 
   const sourceItems = Array.isArray(unified?.items) ? unified.items : items;
   const sourceNodes = Array.isArray(unified?.nodes) ? unified.nodes : nodes;
   const alreadyUnified = Number(unified?.version) >= 2;
-  const migratedNodes = sourceNodes.map((node) =>
-    clampAiNodeToPage({
-      ...node,
-      x: (Number.isFinite(node.x) ? node.x : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.x),
-      y: (Number.isFinite(node.y) ? node.y : 0) + (alreadyUnified ? 0 : LEGACY_AI_OFFSET.y),
-      unifiedWorldVersion: UNIFIED_WORKSPACE_VERSION,
-    })
-  );
-
+  const frame = createOutputFrame({
+    id: unified?.frames?.[0]?.id || DEFAULT_OUTPUT_FRAME_ID,
+    name: unified?.name || "Legacy Paper",
+    metadata: { migrationSourceVersion: Number(unified?.version) || 1 },
+  });
+  const migratedItems = legacyFrameItems(sourceItems, frame);
+  const migratedNodes = legacyFrameNodes(sourceNodes, alreadyUnified);
+  const scene = createScene({
+    ...(unified || {}),
+    id: unified?.activeSceneId || DEFAULT_SCENE_ID,
+    name: unified?.name || "Migrated Scene",
+    frames: [frame],
+    items: migratedItems,
+    nodes: migratedNodes,
+    camera: finiteCamera(unified?.camera || camera),
+    orbInstances: unified?.orbInstances || [],
+    workingSet: {
+      context: [],
+      lenses: [],
+      selections: unified?.selection || [],
+      branches: [],
+      checkpoints: unified?.history || [],
+      ...(unified?.workingSet || {}),
+    },
+    metadata: {
+      ...(unified?.metadata || {}),
+      createdFrom: "legacy-page-migration",
+      migrationSourceVersion: Number(unified?.version) || 1,
+    },
+  });
   return {
+    ...(unified || {}),
     version: UNIFIED_WORKSPACE_VERSION,
     migratedAt: new Date().toISOString(),
-    camera: finiteCamera(camera),
-    items: clampWorkspaceItems(sourceItems),
+    activeSceneId: scene.id,
+    scenes: [scene],
+    frames: scene.frames,
+    camera: scene.camera,
+    items: migratedItems,
     nodes: migratedNodes,
+    orbInstances: scene.orbInstances,
+    workingSet: scene.workingSet,
   };
 }
 
-export function serializeUnifiedWorkspace({ items, nodes, camera }) {
+export function serializeUnifiedWorkspace({ items, nodes, camera, scenes, activeSceneId, frames, orbInstances, workingSet, ...safeFields }) {
+  const sceneId = activeSceneId || scenes?.[0]?.id || DEFAULT_SCENE_ID;
+  const sceneList = Array.isArray(scenes) && scenes.length
+    ? scenes.map((scene) => scene.id === sceneId ? createScene({ ...scene, items, nodes, camera, frames: frames || scene.frames, orbInstances: orbInstances || scene.orbInstances, workingSet: workingSet || scene.workingSet }) : createScene(scene))
+    : [createScene({ id: sceneId, items, nodes, camera, frames: frames || [], orbInstances, workingSet })];
   return JSON.stringify({
+    ...safeFields,
     version: UNIFIED_WORKSPACE_VERSION,
     savedAt: new Date().toISOString(),
+    activeSceneId: sceneId,
+    scenes: sceneList,
     camera: finiteCamera(camera),
     items: Array.isArray(items) ? items : [],
     nodes: Array.isArray(nodes) ? nodes : [],
+    frames: sceneList.find((scene) => scene.id === sceneId)?.frames || [],
+    orbInstances: Array.isArray(orbInstances) ? orbInstances : [],
+    workingSet: workingSet || {},
   });
 }
 

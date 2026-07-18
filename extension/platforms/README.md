@@ -8,6 +8,10 @@
 
 Chrome is the verified release target. Firefox and Safari outputs preserve the platform-neutral runtime and avoid `chrome.*` references in domain modules, but store signing, native Safari container entitlements, and live account canaries require vendor developer accounts and therefore are not claimed as completed here.
 
+## Native adapter boundary
+
+Desktop and mobile applications are contracts only in this release. A future adapter consumes the versioned Scene v4, orb runtime, Material, domain-command, effect-verification, and typed handoff contracts. It must provide platform capture/voice/permission bridges without bypassing canonical commands, approval, checkpoints, or provenance. No native binary is implemented or claimed here.
+
 The production app build packages Chrome with a portable Node ZIP writer and
 publishes both `/downloads/lens-everywhere-chrome-v<version>.zip` and
 `/downloads/lens-everywhere-chrome-latest.zip`. The direct download remains a

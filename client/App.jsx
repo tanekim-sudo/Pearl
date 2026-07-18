@@ -131,6 +131,7 @@ import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.js
 import AiNodeCanvas from "./components/AiNodeCanvas.jsx";
 import {
   UNIFIED_WORKSPACE_KEY,
+  LEGACY_UNIFIED_WORKSPACE_KEYS,
   clampAiNodeToPage,
   clampAiNodesToPage,
   clampWorkspaceItem,
@@ -2245,7 +2246,9 @@ export default function App() {
     const legacyItems = load(ITEMS_KEY, null);
     const legacyNodes = load(AI_NODES_KEY, []);
     const legacyCamera = load(CAMERA_KEY, null);
-    const unified = load(UNIFIED_WORKSPACE_KEY, null);
+    const unified = load(UNIFIED_WORKSPACE_KEY, null)
+      || LEGACY_UNIFIED_WORKSPACE_KEYS.map((key) => load(key, null)).find(Boolean)
+      || null;
     return migrateUnifiedWorkspace({
       items: Array.isArray(legacyItems) ? legacyItems : [],
       nodes: Array.isArray(legacyNodes) ? legacyNodes : [],
@@ -2672,10 +2675,21 @@ export default function App() {
   }, [aiNodes]);
   useEffect(() => {
     try {
+      const serialized = serializeUnifiedWorkspace({ items, nodes: aiNodes, camera });
       localStorage.setItem(
         UNIFIED_WORKSPACE_KEY,
-        serializeUnifiedWorkspace({ items, nodes: aiNodes, camera })
+        serialized
       );
+      for (const key of LEGACY_UNIFIED_WORKSPACE_KEYS) {
+        localStorage.setItem(key, JSON.stringify({
+          version: 3,
+          savedAt: new Date().toISOString(),
+          camera,
+          items,
+          nodes: aiNodes,
+          migrationSource: UNIFIED_WORKSPACE_KEY,
+        }));
+      }
     } catch {
       /* quota / privacy mode: legacy stores still provide recovery */
     }
@@ -12004,7 +12018,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     panPaper: async (a, tk) => {
       const dx = Number(a.dx) || 0;
       const dy = Number(a.dy) || 0;
-      const viewport = tk.elementCenter('[data-tour="paper-canvas"]');
+      const viewport = tk.elementCenter("anchor:scene-stage");
       if (viewport) await tk.moveTo(viewport.x + Math.sign(dx) * 80, viewport.y + Math.sign(dy) * 60);
       setCamera((current) => ({ ...current, x: current.x + dx, y: current.y + dy }));
       await tk.wait(420);
@@ -12039,7 +12053,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         createdAt: now,
         updatedAt: now,
       }])[0];
-      const target = tk.elementCenter(".move-quick-add") || tk.elementCenter('[data-tour="functions-section"]');
+      const target = tk.elementCenter("anchor:library-moves") || tk.elementCenter("anchor:library-functions");
       if (target) await tk.click(target.x, target.y);
       setOperators((current) => [...current, op]);
       syncTransformationRepoForOperator(id, op, { isNew: true, stepNames: [a.name], commitMessage: "created Move" });
@@ -13999,16 +14013,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           : null;
       if (sourceCenter) tk.jumpTo(sourceCenter.x, sourceCenter.y);
       const targetElement = a.destination === "moves"
-        ? ".move-quick-add"
+        ? "anchor:library-moves"
         : a.destination === "functions"
-          ? processSectionRef.current
+          ? "anchor:library-functions"
           : a.destination === "lenses"
-            ? lensesSectionRef.current
+            ? "anchor:library-lenses"
             : a.destination === "primitive-moves"
               ? ".rail-section"
               : a.destination === "ai-space"
-                ? aiViewportRef.current
-                : inputLayerRef.current;
+                ? "anchor:scene-stage"
+                : "anchor:scene-stage";
       const target = tk.elementCenter(targetElement);
       if (target) {
         await tk.moveTo(target.x, target.y);
@@ -15877,7 +15891,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 <span>↦ Moves</span>
                 <span className="rail-pane-sub">one action · an atomic prompt · one model call</span>
               </h3>
-              <div className="move-quick-add">
+              <div className="move-quick-add" data-semantic-anchor="library-moves">
                 <input className="move-quick-input" aria-label="Quick Move instruction" placeholder="one action — e.g. treat as a garden" value={moveDraft} onChange={(e) => setMoveDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createMove(); }} />
                 <button type="button" className="move-quick-btn" aria-label="Add Move" disabled={!moveDraft.trim()} onClick={() => createMove()}>+</button>
               </div>
@@ -15906,7 +15920,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                   ))}
                 {regularMoves.some((op) => visibleRackIds.has(op.id)) && (<><div className="rail-section">Moves</div>{regularMoves.filter((op) => visibleRackIds.has(op.id)).map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === op.id)} brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === op.id) + 1} onBrush={() => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })} onPrimitiveToggle={() => setPrimitiveMove(op, true)} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
                 {basics.length > 0 && (<><div className="rail-section">Library</div>{basics.map((op) => (<DraggableOpCard key={op.id} op={op} opMap={opMap} expanded={expanded} marked={highlightRailOpIds.includes(op.id)} brushArmed={pendingBrushStack.some((entry) => entry.kind === "lens" && entry.id === op.id)} brushOrder={pendingBrushStack.findIndex((entry) => entry.kind === "lens" && entry.id === op.id) + 1} onBrush={() => handleBrushAffordance({ kind: "lens", id: op.id, name: op.name })} onToggle={(id) => setExpanded((e) => ({ ...e, [id]: !e[id] }))} onEdit={openEditLens} onCompose={composeOperators} onShare={() => shareOperator(op.id)} onExplore={(o) => openTransferExplore(o.id)} onRun={runFunctionFromRail} flat />))}</>)}
-                <div ref={processSectionRef} className="library-process-section">
+                <div ref={processSectionRef} className="library-process-section" data-semantic-anchor="library-functions">
                   <CognitionGitHeader
                     activeTransformation={activeTransformation}
                     transformationCount={visibleFunctionRepoGroups.length}
@@ -15924,7 +15938,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 </div>
               </div>
             </section>
-            <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab">
+            <section ref={lensesSectionRef} className="rail-pane rail-lenses-pane" data-tour="lenses-tab" data-semantic-anchor="library-lenses">
               <h3 className="rail-pane-heading">
                 <span className="rail-pane-heading-row">
                   ◉ Lenses {lenses.length ? `(${lenses.length})` : ""}
@@ -16168,6 +16182,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ref={viewportRef}
         className="viewport"
         data-tour="paper-canvas"
+        data-semantic-anchor="scene-stage"
         onPointerDown={
           editing
             ? (e) => {

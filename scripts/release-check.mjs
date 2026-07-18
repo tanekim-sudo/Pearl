@@ -16,6 +16,8 @@ function run(command, args, options = {}) {
 run("node", ["scripts/feature-contract-gate.mjs"]);
 run("node", ["scripts/feature-contract-gate.mjs"], { env: { LENS_GATE_MUTATION: "remove:createMove" }, expectStatus: 1 });
 run("node", ["scripts/companion-capability-graph-gate.mjs"]);
+run("npm", ["run", "orb:matrix:check"]);
+run("npm", ["run", "test:orb"]);
 run("npm", ["test"]);
 run("npm", ["run", "build:extension"]);
 run("npm", ["run", "build"]);
@@ -54,19 +56,14 @@ if (full) {
       await new Promise((resolve) => setTimeout(resolve, 250));
       if (attempt === 79) throw new Error("Vite did not become ready");
     }
-    for (const audit of [
-      "scripts/transcript-learning-audit.mjs",
-      "scripts/before-after-taxonomy-audit.mjs",
-      "scripts/account-adoption-preservation-audit.mjs",
-      "scripts/companion-capability-runtime-audit.mjs",
-      "scripts/branch-visual-audit.mjs",
-      "scripts/brush-workflow-audit.mjs",
-      "scripts/page-node-integration-audit.mjs",
-      "scripts/universal-interaction-audit.mjs",
-      "scripts/cursor-like-companion-audit.mjs",
-      "scripts/cognitive-package-audit.mjs",
-      "scripts/cognitive-workflows-audit.mjs",
-    ]) run("node", [audit], { env: { AUDIT_URL: auditUrl } });
+    run("node", ["scripts/companion-capability-runtime-audit.mjs"], {
+      env: {
+        AUDIT_URL: auditUrl,
+        AUDIT_OUT: path.join(root, "audit-shots/orb-universe-2026-07/companion-runtime"),
+      },
+    });
+    run("node", ["scripts/orb-universe-audit.mjs"], { env: { AUDIT_URL: auditUrl } });
+    run("node", ["extension/scripts/orb-audit.mjs"]);
   } finally {
     server.kill("SIGTERM");
   }

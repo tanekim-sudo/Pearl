@@ -20,24 +20,30 @@ Companion verbs are defined by `client/lib/companion-capabilities.js` and
 registered in `App.jsx`. Existing verbs remain registered; paper/AI transfer
 verbs now describe source attachment and materialization in the unified world.
 
-## Migration plan and invariants
+## Scene v4 migration and invariants
 
 1. Keep every legacy key readable and continue mirroring paper and AI records.
-2. Create `lens.unified-workspace.v2` as a duplicate, versioned recovery-safe
-   snapshot containing camera, paper items, and AI nodes.
-3. Keep paper coordinates unchanged. Offset legacy AI coordinates once into
-   the open area beside the page frame. Stamp migrated nodes with the version.
-4. Prefer an existing v2 snapshot on reload. Never reapply the offset.
+2. Write `lens.scenes.v4` as the canonical snapshot while continuing to write
+   the rollback-compatible `lens.unified-workspace.v2` alias during the
+   migration window.
+3. Convert each legacy Page into one Scene with a legacy-compatible optional
+   Output Frame. Keep every ID, field, history, lineage, camera, and selection;
+   offset old split-space AI coordinates only once.
+4. Prefer a valid Scene v4 snapshot on reload, then fall back through legacy
+   readers. Migration, account adoption, import, and repeated login remain
+   idempotent.
 5. Preserve unknown fields verbatim so histories, lineage, pending metadata,
    and future record extensions survive.
+6. Do not create or open a Scene on normal web navigation. Scene creation
+   requires New Scene, an explicit command, a saved Scene, or a typed handoff.
 
 ## Runtime model
 
-The workspace uses one affine world camera (`screen = world × scale +
-translation`). The paper is a fixed 768×1104 frame at world origin, not a
-camera boundary. Blocks and ink may extend outside it. AI edges and nodes use
-the same camera and world coordinates, so interleaving does not require
-per-render coordinate translation.
+The Stage uses one affine world camera (`screen = world × scale +
+translation`) and is unbounded. Output Frames are optional bounded regions;
+only objects assigned to a Frame are clamped to its local dimensions. World
+objects outside Frames keep unrestricted coordinates. AI edges, nodes, blocks,
+and ink share the same camera.
 
 The paper input layer owns background gestures. AI node cores and explicit
 edge handles sit above it:

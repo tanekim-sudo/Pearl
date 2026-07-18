@@ -8,6 +8,53 @@ import { captureNativeSelection, selectionRects } from "./selection.js";
 const highlighter = createHighlighter();
 const captured = new Map();
 
+function mountPageOrb() {
+  if (document.getElementById("lens-orb-overlay-host") || !document.documentElement) return;
+  const host = document.createElement("div");
+  host.id = "lens-orb-overlay-host";
+  host.style.cssText = "all:initial;position:fixed;right:10px;top:42%;z-index:2147483646";
+  const shadow = host.attachShadow({ mode: "closed" });
+  const style = document.createElement("style");
+  style.textContent = `
+    :host{all:initial}
+    .shell{font:12px/1.3 system-ui,sans-serif;color:#f8f5ed;display:flex;align-items:center;gap:6px}
+    button{font:inherit;color:inherit;border:1px solid rgba(255,255,255,.2);background:#111;border-radius:999px;cursor:pointer;box-shadow:0 7px 24px rgba(0,0,0,.3)}
+    .orb{width:48px;height:48px;padding:0;display:grid;place-items:center;filter:drop-shadow(0 5px 12px rgba(225,173,43,.35))}
+    svg{width:42px;height:42px;overflow:visible}.rays{transform-origin:50px 50px;animation:breathe 4.5s ease-in-out infinite}.rays path{fill:none;stroke:#efd184;stroke-width:4;stroke-linecap:round}.core{fill:#fffdf3;stroke:#d6a631;stroke-width:3}.actions{display:none;gap:5px;padding:5px;background:rgba(12,12,12,.94);border-radius:999px}.shell.open .actions{display:flex}.actions button{min-height:36px;padding:6px 10px}
+    button:focus-visible{outline:2px solid #fff;outline-offset:2px}@keyframes breathe{0%,100%{transform:scale(.92);opacity:.7}50%{transform:scale(1.06);opacity:1}}
+    @media(prefers-reduced-motion:reduce){.rays{animation:none}}
+  `;
+  const shell = document.createElement("div");
+  shell.className = "shell";
+  const orb = document.createElement("button");
+  orb.className = "orb";
+  orb.type = "button";
+  orb.setAttribute("aria-label", "Open Lens orb controls");
+  orb.setAttribute("aria-expanded", "false");
+  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="rays">${Array.from({ length: 12 }, (_, index) => `<path d="M50 8 C49 22 52 28 50 37" transform="rotate(${index * 30} 50 50)"/>`).join("")}</g><circle class="core" cx="50" cy="50" r="20"/></svg>`;
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  const captureButton = document.createElement("button");
+  captureButton.type = "button";
+  captureButton.textContent = "Capture selection";
+  captureButton.addEventListener("click", () => send("capture-selection").catch(() => {}));
+  const highlightButton = document.createElement("button");
+  highlightButton.type = "button";
+  highlightButton.textContent = "Highlight";
+  highlightButton.addEventListener("click", () => send("toggle-highlighter", { enabled: true }).catch(() => {}));
+  orb.addEventListener("click", () => {
+    const open = !shell.classList.contains("open");
+    shell.classList.toggle("open", open);
+    orb.setAttribute("aria-expanded", String(open));
+  });
+  actions.append(captureButton, highlightButton);
+  shell.append(orb, actions);
+  shadow.append(style, shell);
+  document.documentElement.append(host);
+}
+
+mountPageOrb();
+
 async function send(type, payload = {}) {
   return globalThis.chrome?.runtime?.sendMessage(createMessage(type, payload));
 }

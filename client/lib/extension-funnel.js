@@ -30,6 +30,19 @@ export function detectExtensionBrowser(userAgent = "") {
   return { name: "browser", supported: false };
 }
 
+export async function checkTrustedExtensionInstallation(extensionId = import.meta.env.VITE_LENS_EXTENSION_ID) {
+  if (!extensionId || !globalThis.chrome?.runtime?.sendMessage || !globalThis.crypto?.randomUUID) {
+    return { status: "unknown", trusted: false };
+  }
+  const nonce = crypto.randomUUID().replaceAll("-", "");
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(extensionId, { type: "lens-install-check", version: 1, nonce }, (value) => {
+      if (chrome.runtime.lastError || !value?.ok) resolve({ status: "unknown", trusted: false });
+      else resolve({ status: "installed", trusted: true, value: value.value || null });
+    });
+  });
+}
+
 export function trackExtensionFunnel(event, context = {}) {
   const endpoint = import.meta.env.VITE_LENS_ANALYTICS_ENDPOINT;
   if (!endpoint || !FUNNEL_EVENTS.has(event)) return false;

@@ -112,7 +112,7 @@ const matrix = {
   features: FEATURE_CONTRACTS.map((entry) => ({ id: entry.id, commands: entry.commands, companion: entry.companion, extension: entry.extension, tests: entry.tests })),
   checks: { duplicateHandlers, stale, errors },
 };
-const output = path.join(root, "audit-shots/chat-requirements-integration-audit-2026-07/feature-matrix.json");
+const output = path.join(root, "audit-shots/orb-universe-2026-07/feature-matrix.json");
 if (process.argv.includes("--update")) fs.writeFileSync(output, `${JSON.stringify(matrix, null, 2)}\n`);
 else if (!exists(path.relative(root, output))) errors.push("generated feature matrix is missing; run with --update after reviewed registry changes");
 else {

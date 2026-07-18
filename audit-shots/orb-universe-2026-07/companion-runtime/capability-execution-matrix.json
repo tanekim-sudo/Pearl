@@ -1,0 +1,5403 @@
+{
+  "generatedAt": "2026-07-18T18:29:36.990Z",
+  "harness": "controlled real director/extension handler execution",
+  "inputPath": "director",
+  "counts": {
+    "total": 206,
+    "passed": 206,
+    "failed": 0,
+    "skipped": 0,
+    "app": 170,
+    "extension": 36
+  },
+  "rows": [
+    {
+      "name": "caption",
+      "platform": "app",
+      "utterance": "please explain an action while it happens",
+      "args": {
+        "text": "runtime audit"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cd82533c-6fed-4597-9638-c707f237f3b9",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1528,
+      "errors": []
+    },
+    {
+      "name": "pause",
+      "platform": "app",
+      "utterance": "please pause between visible actions",
+      "args": {
+        "ms": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b55c2cdd-a8a2-4f28-b9ce-447d42377014",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1602,
+      "errors": []
+    },
+    {
+      "name": "switchTool",
+      "platform": "app",
+      "utterance": "switch to the highlighter",
+      "args": {
+        "tool": "select"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cf88757f-208a-49ef-9208-32e64758287c",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1569,
+      "errors": []
+    },
+    {
+      "name": "fitPaper",
+      "platform": "app",
+      "utterance": "please fit the paper frame in the unified workspace",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f1c5b2a0-8114-41aa-a634-aa1f8600b90e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1406,
+      "errors": []
+    },
+    {
+      "name": "zoomPaper",
+      "platform": "app",
+      "utterance": "please zoom the unified workspace",
+      "args": {
+        "direction": "in"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "487d8860-3f3c-477d-b530-603f91af5318",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1600,
+      "errors": []
+    },
+    {
+      "name": "panPaper",
+      "platform": "app",
+      "utterance": "please pan the unified world",
+      "args": {
+        "dx": 24,
+        "dy": 16
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "43fa3704-3949-4d94-9ef2-5e46cea18ea4",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1470,
+      "errors": []
+    },
+    {
+      "name": "spawnText",
+      "platform": "app",
+      "utterance": "put this idea on paper",
+      "args": {
+        "text": "Runtime-created note"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "paper-item",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bde493d8-b2c4-422e-8db6-cab774cf6287",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1486,
+      "errors": []
+    },
+    {
+      "name": "createMove",
+      "platform": "app",
+      "utterance": "make a Move called executive summary with this one action",
+      "args": {
+        "name": "Runtime-created Move",
+        "prompt": "Transform once."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8e08d366-5a00-43b8-aeb1-a1367265fb75",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2029,
+      "errors": []
+    },
+    {
+      "name": "editMove",
+      "platform": "app",
+      "utterance": "please edit and version an atomic Move",
+      "args": {
+        "move": "op-a",
+        "name": "Edited Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cec013c9-2665-4480-961f-4333c40d5f5a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1407,
+      "errors": []
+    },
+    {
+      "name": "forkMove",
+      "platform": "app",
+      "utterance": "please fork a Move without mutating its source",
+      "args": {
+        "move": "op-a",
+        "name": "Forked Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "042df648-af7f-48ca-9f41-31df40ef70a4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1387,
+      "errors": []
+    },
+    {
+      "name": "applyMove",
+      "platform": "app",
+      "utterance": "please apply a Move as exactly one model call",
+      "args": {
+        "move": "op-a",
+        "target": "claim",
+        "wait": true
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "38c08795-b542-43d4-a288-20e5d7ca8a66",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1381,
+      "errors": []
+    },
+    {
+      "name": "saveCurrentAsMove",
+      "platform": "app",
+      "utterance": "save this text as a Move",
+      "args": {
+        "target": "claim",
+        "name": "Captured Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "01ab6b6f-22c1-4b06-b6e1-84c3283fcb5f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1868,
+      "errors": []
+    },
+    {
+      "name": "promotePrimitiveMove",
+      "platform": "app",
+      "utterance": "add summarize to Primitive Moves",
+      "args": {
+        "move": "op-b"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "02da2c0e-3e01-4eab-bf97-5cb8a09392d0",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1358,
+      "errors": []
+    },
+    {
+      "name": "demotePrimitiveMove",
+      "platform": "app",
+      "utterance": "remove invert from Primitive Moves",
+      "args": {
+        "move": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b2a869cd-d034-45a2-bd7d-158e37d93ad5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1752,
+      "errors": []
+    },
+    {
+      "name": "reorderPrimitiveMove",
+      "platform": "app",
+      "utterance": "move expand to the first Primitive Move",
+      "args": {
+        "move": "op-branch",
+        "to": 0
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c50f1b38-f19f-47d3-b36c-c8fa587dc9f6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1319,
+      "errors": []
+    },
+    {
+      "name": "captureLineageAsFunction",
+      "platform": "app",
+      "utterance": "save how I got here as a Function",
+      "args": {
+        "target": "derived",
+        "name": "Captured Function"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9b9c4367-a3ad-4134-b259-f3c9902154a4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1856,
+      "errors": []
+    },
+    {
+      "name": "openSaveAsChooser",
+      "platform": "app",
+      "utterance": "save this as…",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7971e404-d624-45a2-8b2c-a3e5b5645729",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1955,
+      "errors": []
+    },
+    {
+      "name": "chooseSaveAsKind",
+      "platform": "app",
+      "utterance": "collect these in a Lens",
+      "args": {
+        "kind": "move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b5884128-3edf-4e97-9986-e5c9f99a7362",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2428,
+      "errors": []
+    },
+    {
+      "name": "openTranscriptLearning",
+      "platform": "app",
+      "utterance": "open Learn from a chat",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c85aa0de-4db9-4314-99da-e2493a2f8fcf",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2008,
+      "errors": []
+    },
+    {
+      "name": "setTranscriptDraft",
+      "platform": "app",
+      "utterance": "use this pasted chat transcript",
+      "args": {
+        "text": "User: Verify sources.\nAssistant: Compare evidence.",
+        "source": "runtime-audit"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0a0c8157-367e-4efc-9779-fbc02926772e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1771,
+      "errors": []
+    },
+    {
+      "name": "chooseTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "make all three from this chat",
+      "args": {
+        "kind": "all"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b9b616c2-678c-48e8-9448-8afedfabd7b9",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1602,
+      "errors": []
+    },
+    {
+      "name": "excludeTranscriptMessages",
+      "platform": "app",
+      "utterance": "exclude messages two and five",
+      "args": {
+        "messages": [
+          2
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "db7bdf56-c1bc-4c79-9b6f-1c3689df7a29",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1915,
+      "errors": []
+    },
+    {
+      "name": "redactTranscriptText",
+      "platform": "app",
+      "utterance": "redact this token before analysis",
+      "args": {
+        "text": "sources",
+        "replacement": "[REDACTED]"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cdabeaaf-3a50-4b4f-bb28-1934fa547d95",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1896,
+      "errors": []
+    },
+    {
+      "name": "generateTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "turn this chat into a Move",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "cf96576e-e9c6-4cad-8f7c-212da6335003",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2149,
+      "errors": []
+    },
+    {
+      "name": "selectTranscriptAlternative",
+      "platform": "app",
+      "utterance": "use the second Function candidate",
+      "args": {
+        "kind": "move",
+        "alternative": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "054633cb-d455-41fa-8bfb-5e2a80e877d7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2364,
+      "errors": []
+    },
+    {
+      "name": "editTranscriptArtifact",
+      "platform": "app",
+      "utterance": "rename the inferred Lens",
+      "args": {
+        "kind": "move",
+        "name": "Edited transcript Move",
+        "content": "Verify primary sources."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "63dee95e-da7b-43d5-9622-de9baf7ec2aa",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2348,
+      "errors": []
+    },
+    {
+      "name": "saveTranscriptArtifacts",
+      "platform": "app",
+      "utterance": "save the Move and Lens from this chat",
+      "args": {
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e89b7c6d-e1d2-494f-ab82-34b9ecdd19ae",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2386,
+      "errors": []
+    },
+    {
+      "name": "wrapMoveAsFunction",
+      "platform": "app",
+      "utterance": "turn this Move into a one-step Function",
+      "args": {
+        "move": "op-a",
+        "name": "Wrapped Move"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "53766805-77cb-448b-baa3-cb4b4e567558",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1418,
+      "errors": []
+    },
+    {
+      "name": "flattenFunctionToMove",
+      "platform": "app",
+      "utterance": "explicitly flatten this single-step Function into a Move",
+      "args": {
+        "function": "op-pipeline",
+        "name": "Flattened Function"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "66ec8322-cf96-448f-87d0-9d20236559f7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1388,
+      "errors": []
+    },
+    {
+      "name": "createFunction",
+      "platform": "app",
+      "utterance": "build a diligence Function with three steps",
+      "args": {
+        "name": "Runtime-created Function",
+        "steps": [
+          {
+            "name": "Observe"
+          },
+          {
+            "name": "Synthesize"
+          }
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "701dba93-4094-472a-ac5b-0fd0c130825c",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2581,
+      "errors": []
+    },
+    {
+      "name": "openBeforeAfterCreation",
+      "platform": "app",
+      "utterance": "learn a Move or Function from this before and after",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c89688bb-a6a0-41fb-9796-73adac618330",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1418,
+      "errors": []
+    },
+    {
+      "name": "setBeforeAfterText",
+      "platform": "app",
+      "utterance": "set the before text to these raw notes",
+      "args": {
+        "side": "before",
+        "text": "Raw runtime notes"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "74c74571-1c4c-4033-a76d-21867cbfebd3",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2394,
+      "errors": []
+    },
+    {
+      "name": "attachSelectionToBeforeAfter",
+      "platform": "app",
+      "utterance": "this image became that image—learn the transformation",
+      "args": {
+        "side": "after",
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f83f47a2-b321-4060-8751-2dc82bf7b585",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1974,
+      "errors": []
+    },
+    {
+      "name": "addBeforeAfterExample",
+      "platform": "app",
+      "utterance": "add another example",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "50d93094-2d6e-4702-ac71-2019cba01a66",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1835,
+      "errors": []
+    },
+    {
+      "name": "removeBeforeAfterExample",
+      "platform": "app",
+      "utterance": "please remove one private before-and-after example",
+      "args": {
+        "example": 2
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2b8eec36-fd83-45b6-9867-aea18d70d8b7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2152,
+      "errors": []
+    },
+    {
+      "name": "inferBeforeAfterTransformation",
+      "platform": "app",
+      "utterance": "infer the shared transformation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "before-after-inference",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6a2641f2-399b-434e-bce8-43b86fc5c42e",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2811,
+      "errors": []
+    },
+    {
+      "name": "chooseBeforeAfterAlternative",
+      "platform": "app",
+      "utterance": "use the second hypothesis",
+      "args": {
+        "alternative": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5e9e9b6b-7241-4e73-8d07-beff683d48f2",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3206,
+      "errors": []
+    },
+    {
+      "name": "editInferredFunctionSpec",
+      "platform": "app",
+      "utterance": "make the inferred operation preserve headings",
+      "args": {
+        "name": "Edited learned lens",
+        "summary": "Runtime summary",
+        "operation": "Compare evidence"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5e10c372-3904-4f96-9b1a-abe7d069a2e5",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3114,
+      "errors": []
+    },
+    {
+      "name": "useInferredFunction",
+      "platform": "app",
+      "utterance": "use this inferred transformation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3f368db3-f2c6-4895-aec6-8168da32e32a",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 3430,
+      "errors": []
+    },
+    {
+      "name": "saveLearnedFunction",
+      "platform": "app",
+      "utterance": "save this learned Function",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "abcba6c4-64e0-4a53-bef1-948b41b6e81b",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 5778,
+      "errors": []
+    },
+    {
+      "name": "applyFunction",
+      "platform": "app",
+      "utterance": "run my diligence Function on this note",
+      "args": {
+        "op": "op-a",
+        "target": "claim",
+        "wait": true
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b45135cb-9bf6-4881-b726-7b592e0e721c",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1690,
+      "errors": []
+    },
+    {
+      "name": "dragItemToAi",
+      "platform": "app",
+      "utterance": "send this note into AI space",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc1e6c4a-0ad1-48d5-8903-f3e4d5719b35",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1786,
+      "errors": []
+    },
+    {
+      "name": "applyFunctionToAiNode",
+      "platform": "app",
+      "utterance": "branch this AI node through invert",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6a85f107-5a83-4fad-aab1-8037dd08f951",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1510,
+      "errors": []
+    },
+    {
+      "name": "focusAiResult",
+      "platform": "app",
+      "utterance": "please focus the latest AI result",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "76de81cb-9069-4782-9552-ed3fbf24c0dc",
+        "status": "completed",
+        "events": 7,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1451,
+      "errors": []
+    },
+    {
+      "name": "fitAiSpace",
+      "platform": "app",
+      "utterance": "please fit the AI constellation in view",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c8aa0a0d-a452-4cbe-99fa-03be023e23d7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1797,
+      "errors": []
+    },
+    {
+      "name": "selectAiNode",
+      "platform": "app",
+      "utterance": "please select an AI node",
+      "args": {
+        "target": "node-root"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3871185e-9a14-4697-b212-8eac0229b275",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1584,
+      "errors": []
+    },
+    {
+      "name": "dragAiResultToPaper",
+      "platform": "app",
+      "utterance": "please materialize an AI result as editable paper content",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "34b13bbc-d3fe-4167-b61f-c40f1693838b",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1696,
+      "errors": []
+    },
+    {
+      "name": "highlight",
+      "platform": "app",
+      "utterance": "please highlight paper material",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "93bad807-24d4-425a-b1bd-d55346b361e4",
+        "status": "completed",
+        "events": 17,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1965,
+      "errors": []
+    },
+    {
+      "name": "operateHighlight",
+      "platform": "app",
+      "utterance": "please queue a Move or Function for the cross-domain highlight selection",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d6a77ed1-8d0e-4aa6-a698-63127f97be33",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1337,
+      "errors": []
+    },
+    {
+      "name": "armFunctionBrush",
+      "platform": "app",
+      "utterance": "use my diligence Function as a brush",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "eeecf438-0fb6-48da-9de5-cbbfa2f615a6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1471,
+      "errors": []
+    },
+    {
+      "name": "armLensContext",
+      "platform": "app",
+      "utterance": "use the evidence Lens as context",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a475a3a7-dc6e-4cbe-af7d-f700f4d73c08",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1581,
+      "errors": []
+    },
+    {
+      "name": "disarmBrushTarget",
+      "platform": "app",
+      "utterance": "put down the brush",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f8787e1e-d156-4f73-8317-aacc53e30ef6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1322,
+      "errors": []
+    },
+    {
+      "name": "applyArmedBrush",
+      "platform": "app",
+      "utterance": "apply the armed brush to everything highlighted",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "729112d6-e8f0-476d-bfb6-b61ccba59cdb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4444,
+      "errors": []
+    },
+    {
+      "name": "queueBrushAction",
+      "platform": "app",
+      "utterance": "queue invert then ground, but do not run yet",
+      "args": {
+        "action": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e123b007-bf2f-4c99-a62a-1b26cb5530f4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1338,
+      "errors": []
+    },
+    {
+      "name": "setBrushLensContext",
+      "platform": "app",
+      "utterance": "scope the pending action with my evidence Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "53dda000-30b0-4ca8-a4a5-ddae6d828feb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1516,
+      "errors": []
+    },
+    {
+      "name": "reorderBrushQueue",
+      "platform": "app",
+      "utterance": "please reorder the pending brush stack",
+      "args": {
+        "from": 0,
+        "to": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "52f67703-70ff-417f-932b-998feb4646a6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1836,
+      "errors": []
+    },
+    {
+      "name": "removeBrushQueue",
+      "platform": "app",
+      "utterance": "please remove one queued brush lens",
+      "args": {
+        "index": 0
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "819b50a8-a501-447d-965f-58aa12e05cb5",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1628,
+      "errors": []
+    },
+    {
+      "name": "previewBrushQueue",
+      "platform": "app",
+      "utterance": "please preview pending stack compatibility and outputs",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e25d024f-394c-4f46-880e-e273ee812747",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1531,
+      "errors": []
+    },
+    {
+      "name": "pressBrushGo",
+      "platform": "app",
+      "utterance": "press GO on the pending stack",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8a221422-5963-40a2-83c6-6ac89a871815",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 4408,
+      "errors": []
+    },
+    {
+      "name": "cancelPendingBrush",
+      "platform": "app",
+      "utterance": "cancel the pending brush stack but keep the highlight",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3db148c5-434c-45ed-a0ef-112a96b24ba9",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1786,
+      "errors": []
+    },
+    {
+      "name": "saveBrushQueueAsFunction",
+      "platform": "app",
+      "utterance": "save this pending stack as a Function",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7e261f40-e114-4988-92dc-603accb388cd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1920,
+      "errors": []
+    },
+    {
+      "name": "makeHighlightNode",
+      "platform": "app",
+      "utterance": "make the highlighted material one node",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "ai-node",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8c26dea2-9085-4359-a9dd-6090a01761a9",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2475,
+      "errors": []
+    },
+    {
+      "name": "clearHighlight",
+      "platform": "app",
+      "utterance": "please clear the persistent cross-domain highlight selection",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "536fdb78-4014-4f77-9a72-ab5b8851df7f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1998,
+      "errors": []
+    },
+    {
+      "name": "captureThreadAsFunction",
+      "platform": "app",
+      "utterance": "save how I got here as a Function",
+      "args": {
+        "target": "derived",
+        "name": "Captured runtime path"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9d606580-c35f-4443-bc4b-99bf10297879",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2019,
+      "errors": []
+    },
+    {
+      "name": "showLenses",
+      "platform": "app",
+      "utterance": "please open the Lenses rail",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "914fb97d-a457-418e-88c6-7c845c8f588c",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1465,
+      "errors": []
+    },
+    {
+      "name": "openExtensionDownload",
+      "platform": "app",
+      "utterance": "please open Lens Everywhere download and installation help",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8cc75ff9-0807-44a8-b1b3-28763d0a4df1",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1627,
+      "errors": []
+    },
+    {
+      "name": "openExtensionLibraryExport",
+      "platform": "app",
+      "utterance": "please open the explicit library privacy review and export surface",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2ece4cd6-179c-4237-8bf9-cdd386b6ea50",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1634,
+      "errors": []
+    },
+    {
+      "name": "savePageAsLens",
+      "platform": "app",
+      "utterance": "please capture the page as contextual Lens material",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "69d7a1d0-dcc4-4c52-a59f-b5cb636bda60",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1556,
+      "errors": []
+    },
+    {
+      "name": "waitForJobs",
+      "platform": "app",
+      "utterance": "please wait for running transformations",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "69276399-c7c6-4b0c-8432-61291137c5cd",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1377,
+      "errors": []
+    },
+    {
+      "name": "moveItem",
+      "platform": "app",
+      "utterance": "please move a paper object",
+      "args": {
+        "target": "claim",
+        "dx": 80,
+        "dy": 30
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c29875ff-eda6-4009-8a03-5ea006f37375",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1611,
+      "errors": []
+    },
+    {
+      "name": "editItem",
+      "platform": "app",
+      "utterance": "please edit a paper object",
+      "args": {
+        "target": "claim",
+        "text": "Edited by runtime audit"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "81caaaa5-46a6-405e-a120-cc723457334a",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1539,
+      "errors": []
+    },
+    {
+      "name": "deleteItem",
+      "platform": "app",
+      "utterance": "please delete one paper object",
+      "args": {
+        "target": "evidence"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8b89501e-a5d1-4256-9b61-608b8a7adc12",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1919,
+      "errors": []
+    },
+    {
+      "name": "selectItems",
+      "platform": "app",
+      "utterance": "please select paper objects",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a14e4d8d-5e59-4119-8ccb-689262dc6957",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1503,
+      "errors": []
+    },
+    {
+      "name": "organizePage",
+      "platform": "app",
+      "utterance": "please organize the current page",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9968749c-6df4-4193-bc8c-7b5d9c957882",
+        "status": "completed",
+        "events": 23,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2074,
+      "errors": []
+    },
+    {
+      "name": "addBlock",
+      "platform": "app",
+      "utterance": "please add a paper block",
+      "args": {
+        "type": "sticky",
+        "text": "Runtime block"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "paper-item",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "68ae1b7e-4976-4aff-8119-b938ce8ef0fc",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1496,
+      "errors": []
+    },
+    {
+      "name": "renamePage",
+      "platform": "app",
+      "utterance": "please rename the current page",
+      "args": {
+        "name": "Renamed runtime page"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "025a5499-43a8-4fa0-b39b-9f3bb76b0e5b",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1537,
+      "errors": []
+    },
+    {
+      "name": "zoomToItem",
+      "platform": "app",
+      "utterance": "please zoom to a paper object",
+      "args": {
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4943ad5d-f606-46ba-8f31-a0e4d1d3accc",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1446,
+      "errors": []
+    },
+    {
+      "name": "walkItemPath",
+      "platform": "app",
+      "utterance": "please walk the lineage that produced a paper object",
+      "args": {
+        "target": "derived"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "44cdafa9-7dd4-42b0-94d3-71f61253aaf7",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1905,
+      "errors": []
+    },
+    {
+      "name": "stepSharedPath",
+      "platform": "app",
+      "utterance": "please move through an active shared path",
+      "args": {
+        "delta": 1
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "47511f6e-c3c6-47d1-805f-eeb5d5ca519f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1395,
+      "errors": []
+    },
+    {
+      "name": "noteSharedPath",
+      "platform": "app",
+      "utterance": "please attach a note to the current shared-path step",
+      "args": {
+        "text": "Runtime path note"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "459035dc-bd6e-4efd-bd2e-b74f6180fec7",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1516,
+      "errors": []
+    },
+    {
+      "name": "branchSharedPath",
+      "platform": "app",
+      "utterance": "please branch from the current shared-path step",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "22cf24fc-229f-4aca-9759-3a48fbe7b870",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1589,
+      "errors": []
+    },
+    {
+      "name": "materializeSharedPath",
+      "platform": "app",
+      "utterance": "please materialize the active shared path into AI space",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "952ee0c2-7e49-441b-b6a9-f2445c83d7b1",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1591,
+      "errors": []
+    },
+    {
+      "name": "leaveSharedPath",
+      "platform": "app",
+      "utterance": "please leave the active shared-path walk",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b23a04d1-1643-45e2-870a-2605e8a51105",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1572,
+      "errors": []
+    },
+    {
+      "name": "moveAiNode",
+      "platform": "app",
+      "utterance": "please move an AI node",
+      "args": {
+        "target": "node-root",
+        "dx": 90,
+        "dy": 0
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ea16e468-ee98-4312-b692-4d5279497cd1",
+        "status": "completed",
+        "events": 11,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1984,
+      "errors": []
+    },
+    {
+      "name": "arrangeItems",
+      "platform": "app",
+      "utterance": "rearrange these notes into three columns",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence",
+          "node-root"
+        ],
+        "layout": "grid",
+        "options": {
+          "columns": 2,
+          "gap": 28
+        }
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "1b9d86a8-68ea-420b-9e8f-cfefb75c8673",
+        "status": "completed",
+        "events": 22,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2009,
+      "errors": []
+    },
+    {
+      "name": "groupItems",
+      "platform": "app",
+      "utterance": "group the market evidence in the upper right",
+      "args": {
+        "targets": [
+          "claim",
+          "evidence"
+        ],
+        "name": "Runtime group"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ad123f50-3dba-4267-b5da-4a99278a290f",
+        "status": "completed",
+        "events": 8,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1522,
+      "errors": []
+    },
+    {
+      "name": "linkItems",
+      "platform": "app",
+      "utterance": "link this counterexample to the claim",
+      "args": {
+        "from": "claim",
+        "to": "evidence",
+        "label": "supports"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0b4fe7c8-deaa-40cb-ab50-64512f827bf1",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1640,
+      "errors": []
+    },
+    {
+      "name": "transformMaterial",
+      "platform": "app",
+      "utterance": "compare these branches for evidence quality and novelty",
+      "args": {
+        "mode": "compare",
+        "targets": [
+          "claim",
+          "evidence"
+        ],
+        "instruction": "Compare faithfully."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "73f49a46-5b9a-43e1-819c-8a09b5f3d070",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1448,
+      "errors": []
+    },
+    {
+      "name": "annotateFeedback",
+      "platform": "app",
+      "utterance": "annotate the weakest assumption beside this branch",
+      "args": {
+        "target": "claim",
+        "text": "Runtime feedback",
+        "kind": "feedback"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a29dc09a-48c6-422c-a5f5-507877efc364",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1476,
+      "errors": []
+    },
+    {
+      "name": "openFunctionEditor",
+      "platform": "app",
+      "utterance": "please open a Function in the editor",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f83a4760-c9dd-4d31-969b-b8a8fe6f71c1",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1394,
+      "errors": []
+    },
+    {
+      "name": "editFunction",
+      "platform": "app",
+      "utterance": "please edit Function metadata or instructions",
+      "args": {
+        "op": "op-a",
+        "name": "Edited audit lens"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9b710e23-8824-4a64-a2f4-889bc30b698b",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1352,
+      "errors": []
+    },
+    {
+      "name": "inspectFunctionOutput",
+      "platform": "app",
+      "utterance": "show me what this function outputs",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "129c488d-e391-48ba-a96e-6cb00da3b94a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1400,
+      "errors": []
+    },
+    {
+      "name": "editFunctionOutput",
+      "platform": "app",
+      "utterance": "make this function output an investment memo and a one-page brief",
+      "args": {
+        "op": "op-a",
+        "outputs": [
+          "brief",
+          "memo"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e855119c-845b-4c7b-9740-52649e5e17e7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1407,
+      "errors": []
+    },
+    {
+      "name": "editFunctionBranchOutput",
+      "platform": "app",
+      "utterance": "change the second branch of Branch Move to a table",
+      "args": {
+        "op": "op-branch",
+        "branch": 2,
+        "label": "table",
+        "machineKind": "table"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d1f46c74-4fcc-4605-958b-b9ddcc6a20f4",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1579,
+      "errors": []
+    },
+    {
+      "name": "setFunctionOutputMode",
+      "platform": "app",
+      "utterance": "derive this function output from its branches",
+      "args": {
+        "op": "op-branch",
+        "mode": "derived"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "26b73ff1-0b5c-4430-ad6e-b76a478b0fbb",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1612,
+      "errors": []
+    },
+    {
+      "name": "resetFunctionOutput",
+      "platform": "app",
+      "utterance": "reset this function to its suggested output",
+      "args": {
+        "op": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4e6b345f-f1ea-4d9c-a410-04057ecf7685",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1390,
+      "errors": []
+    },
+    {
+      "name": "addFunctionStep",
+      "platform": "app",
+      "utterance": "please add a step to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "name": "Added runtime step"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "64f96430-0a16-4f7b-b871-0ce6986b5e9d",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1334,
+      "errors": []
+    },
+    {
+      "name": "addFunctionBranch",
+      "platform": "app",
+      "utterance": "please add a branch to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "name": "Runtime branch",
+        "from": "First step"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "754f3f1a-5649-449a-815d-49a70f11cdc3",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1407,
+      "errors": []
+    },
+    {
+      "name": "setFunctionStep",
+      "platform": "app",
+      "utterance": "please edit a Function step",
+      "args": {
+        "op": "op-pipeline",
+        "step": "First step",
+        "name": "Edited first step"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8c7bbb38-0c7d-41f5-b143-28598efb401a",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1458,
+      "errors": []
+    },
+    {
+      "name": "saveFunction",
+      "platform": "app",
+      "utterance": "please commit edits to a Function",
+      "args": {
+        "op": "op-pipeline",
+        "message": "runtime save"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bef38e2a-4dc4-490a-a252-a71b1312623c",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2057,
+      "errors": []
+    },
+    {
+      "name": "forkFunction",
+      "platform": "app",
+      "utterance": "please fork a Function",
+      "args": {
+        "function": "Pipeline Function",
+        "message": "runtime fork"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc96c557-2a66-4735-8e50-f4de4bba37e8",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1575,
+      "errors": []
+    },
+    {
+      "name": "mergeFunctions",
+      "platform": "app",
+      "utterance": "please merge two Functions",
+      "args": {
+        "a": "Pipeline Function",
+        "b": "Second Function",
+        "name": "Runtime merged Function"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "41f85380-54a5-4c41-bc90-b4ee3c254da5",
+        "status": "completed",
+        "events": 13,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1636,
+      "errors": []
+    },
+    {
+      "name": "previewFunctionComposition",
+      "platform": "app",
+      "utterance": "please preview ordered Function composition",
+      "args": {
+        "a": "op-a",
+        "b": "op-b"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3569ebc9-ae8e-43f5-8aca-4df16a7ce739",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1205,
+      "errors": []
+    },
+    {
+      "name": "stackFunctions",
+      "platform": "app",
+      "utterance": "stack invert then ground as a reusable Function",
+      "args": {
+        "a": "op-a",
+        "b": "op-b",
+        "name": "Runtime stack"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-preview",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5792af7c-a9d9-48a5-8e56-8efed111f54e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1363,
+      "errors": []
+    },
+    {
+      "name": "saveCompoundFunction",
+      "platform": "app",
+      "utterance": "please save the reviewed compound Function",
+      "args": {
+        "edit": false
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fb472ca7-86fb-48a0-ac3a-6040acd8297c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1844,
+      "errors": []
+    },
+    {
+      "name": "addGrindExample",
+      "platform": "app",
+      "utterance": "add this as a positive example",
+      "args": {
+        "input": "Before example",
+        "output": "After example",
+        "note": "runtime"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "grind-example",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "55c4376a-95d6-4df7-bfac-f3f42146de8a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1319,
+      "errors": []
+    },
+    {
+      "name": "removeGrindExample",
+      "platform": "app",
+      "utterance": "please remove a grinding example",
+      "args": {
+        "example": "last"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2ed2c3a1-40b4-46f7-bd37-bf0fd61ecd07",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1580,
+      "errors": []
+    },
+    {
+      "name": "reorderGrindExample",
+      "platform": "app",
+      "utterance": "please reorder grinding examples",
+      "args": {
+        "example": "last",
+        "to": 0
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fe924b32-57fc-482c-86fb-3f6a3b5caa5e",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2100,
+      "errors": []
+    },
+    {
+      "name": "compileGrindDraft",
+      "platform": "app",
+      "utterance": "use these five transformations to forge a Function",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "grind-draft",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5bc8c8b7-5837-492c-a562-b46ac1a7403c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1912,
+      "errors": []
+    },
+    {
+      "name": "testGrindDraft",
+      "platform": "app",
+      "utterance": "test the forged Function",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "bounded model execution dispatched and returned",
+      "persistence": "not-applicable",
+      "animation": {
+        "version": 1,
+        "traceId": "bd683570-e509-4cae-8ed5-f7ddc69a32fe",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2185,
+      "errors": []
+    },
+    {
+      "name": "runFunctionTestBench",
+      "platform": "app",
+      "utterance": "test this Function on five unrelated holdouts and compare the configured models",
+      "args": {
+        "function": "op-pipeline",
+        "fixtures": [
+          {
+            "id": "fixture-a",
+            "input": "Alpha evidence"
+          }
+        ],
+        "holdouts": [
+          {
+            "id": "holdout-a",
+            "input": "Unrelated beta evidence"
+          }
+        ],
+        "models": [
+          "auto"
+        ],
+        "rubric": [
+          "substantive output"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function-test-report",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bda4f5c6-c21a-48af-b3f9-80ea008f6d90",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1348,
+      "errors": []
+    },
+    {
+      "name": "refineGrindDraft",
+      "platform": "app",
+      "utterance": "tighten it",
+      "args": {
+        "instruction": "Tighten the rule"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "99434c1a-63dd-4438-9f47-2d14ad0947c2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2180,
+      "errors": []
+    },
+    {
+      "name": "shapeForgedFunction",
+      "platform": "app",
+      "utterance": "please open the forged Function in the process editor",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "7828cf43-6ab4-4904-8cde-e8046c33b1a4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2216,
+      "errors": []
+    },
+    {
+      "name": "rackSearch",
+      "platform": "app",
+      "utterance": "find my argument Functions",
+      "args": {
+        "query": "Audit"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "431ebb99-2286-4a5c-8e46-bcdb7276d3d7",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1308,
+      "errors": []
+    },
+    {
+      "name": "rackFilter",
+      "platform": "app",
+      "utterance": "please filter and sort the library rack",
+      "args": {
+        "type": "all",
+        "sort": "recent"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8f26802e-a653-4fe2-bfb8-42fb7912bbdb",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1284,
+      "errors": []
+    },
+    {
+      "name": "pinFunction",
+      "platform": "app",
+      "utterance": "please pin or unpin a rack Function",
+      "args": {
+        "function": "op-pipeline",
+        "pinned": true
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b969732f-b3d3-42cf-85cc-6a0191bba5dc",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1291,
+      "errors": []
+    },
+    {
+      "name": "archiveFunction",
+      "platform": "app",
+      "utterance": "please archive a Function without deleting it",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "50bfd549-ab18-4e1e-a3b0-63584dee037b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1798,
+      "errors": []
+    },
+    {
+      "name": "restoreFunction",
+      "platform": "app",
+      "utterance": "please restore an archived Function",
+      "args": {
+        "function": "op-pipeline"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5135cedd-8b51-41ae-b12c-28a18e939e4b",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1510,
+      "errors": []
+    },
+    {
+      "name": "editFunctionByInstruction",
+      "platform": "app",
+      "utterance": "please rewrite a Function from an instruction",
+      "args": {
+        "function": "op-pipeline",
+        "instruction": "Make the Function compare evidence"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "277ce104-383a-4e83-9060-827f706a4984",
+        "status": "completed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1358,
+      "errors": []
+    },
+    {
+      "name": "createLens",
+      "platform": "app",
+      "utterance": "create a New Chat Lens with no context",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3fe50f66-54c8-4c12-b977-7cc7dfef68b2",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1568,
+      "errors": []
+    },
+    {
+      "name": "resolveTasteLens",
+      "platform": "app",
+      "utterance": "use or create my Writing Taste Lens",
+      "args": {
+        "domain": "writing",
+        "name": "Runtime Writing Taste",
+        "scope": "workspace"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3f2212fc-ddde-466a-b279-264fd8459541",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1249,
+      "errors": []
+    },
+    {
+      "name": "saveTasteTeaching",
+      "platform": "app",
+      "utterance": "save this to my taste Lens for writing",
+      "args": {
+        "lens": "generator-a",
+        "instruction": "Remember: avoid filler words",
+        "explicitSave": true,
+        "source": {
+          "sourceId": "runtime-teaching",
+          "sourceType": "instruction",
+          "scope": "workspace",
+          "private": true
+        }
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "042bec4a-8407-4b92-9b23-3feeb727fee2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1266,
+      "errors": []
+    },
+    {
+      "name": "attachTasteBeforeAfter",
+      "platform": "app",
+      "utterance": "make sentences more concise in this way and save this before and after",
+      "args": {
+        "lens": "generator-a",
+        "before": "claim",
+        "after": "evidence",
+        "preserved": [
+          "technical precision"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens-diff",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5966462c-9476-46bf-9a88-af115507cae4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1515,
+      "errors": []
+    },
+    {
+      "name": "inspectTasteLens",
+      "platform": "app",
+      "utterance": "show me how my writing Taste Lens judges",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fb31fe86-99a0-4313-9d27-a3f985171d6a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1739,
+      "errors": []
+    },
+    {
+      "name": "evaluateThroughTasteLens",
+      "platform": "app",
+      "utterance": "use my writing taste but keep the author's unusual rhythm",
+      "args": {
+        "lens": "generator-a",
+        "target": "claim",
+        "preserve": [
+          "unusual rhythm"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "taste-lens-evaluation",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "44f5accb-21c2-469d-b5e3-2c4b3a8fb6d8",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1227,
+      "errors": []
+    },
+    {
+      "name": "addLensMaterial",
+      "platform": "app",
+      "utterance": "attach this observation to my Lens",
+      "args": {
+        "lens": "generator-a",
+        "target": "claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d5b92080-3f0d-4ed2-a42b-116a8f5b2254",
+        "status": "completed",
+        "events": 12,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1674,
+      "errors": []
+    },
+    {
+      "name": "nameLens",
+      "platform": "app",
+      "utterance": "name this emerging Lens evidence-first",
+      "args": {
+        "lens": "generator-a",
+        "name": "Named runtime Lens"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "f1ffe79d-2b5e-478c-bb8e-b334a15ef67b",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1567,
+      "errors": []
+    },
+    {
+      "name": "probeLens",
+      "platform": "app",
+      "utterance": "view this Lens in the healthcare domain",
+      "args": {
+        "lens": "generator-a",
+        "domain": "music"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "659ddf30-3689-48ab-96d2-c0ce67f080da",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1523,
+      "errors": []
+    },
+    {
+      "name": "inferFunctionFromLens",
+      "platform": "app",
+      "utterance": "infer a reusable Function from this Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "49570a3b-4b50-4dca-b094-a0f9139ac0bf",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1595,
+      "errors": []
+    },
+    {
+      "name": "composeObjects",
+      "platform": "app",
+      "utterance": "compose this Move with that Lens",
+      "args": {
+        "a": "op-a",
+        "b": "op-b",
+        "name": "Runtime composition"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "e6341914-6199-4c32-95a5-3c96743534b6",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1394,
+      "errors": []
+    },
+    {
+      "name": "encodeLens",
+      "platform": "app",
+      "utterance": "encode this material as an inspectable Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "058cf5d2-9133-409f-96a4-111069999fd6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1392,
+      "errors": []
+    },
+    {
+      "name": "inspectGenerationPlan",
+      "platform": "app",
+      "utterance": "how many candidates will this Move make",
+      "args": {
+        "artifact": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "640f07c7-4f3b-493e-b1b1-9d382d3f1fb1",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1409,
+      "errors": []
+    },
+    {
+      "name": "setGenerationPlan",
+      "platform": "app",
+      "utterance": "make four candidates with this model",
+      "args": {
+        "artifact": "op-a",
+        "count": 3,
+        "model": "auto",
+        "mode": "single"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "91e68d53-aaaf-4038-a807-7996d7e909da",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1358,
+      "errors": []
+    },
+    {
+      "name": "resetGenerationPlan",
+      "platform": "app",
+      "utterance": "reset this Function's candidate settings",
+      "args": {
+        "artifact": "op-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "2ee270dd-1f03-45e3-8c79-9a763930159c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1376,
+      "errors": []
+    },
+    {
+      "name": "tasteCandidate",
+      "platform": "app",
+      "utterance": "yes, keep this one",
+      "args": {
+        "decision": "yes"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d79183ca-369e-4ebb-8ab7-84aaf5bace1a",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1806,
+      "errors": []
+    },
+    {
+      "name": "moreLikeThis",
+      "platform": "app",
+      "utterance": "make three more like this",
+      "args": {
+        "count": 2
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "39c31888-1ba0-433f-b151-8e80d6764867",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1880,
+      "errors": []
+    },
+    {
+      "name": "keepAllCandidates",
+      "platform": "app",
+      "utterance": "please accept every recoverable sibling candidate without publishing it",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5077a8fd-79b0-4ea3-80e6-622f8ff48552",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1345,
+      "errors": []
+    },
+    {
+      "name": "extendSelectedCandidates",
+      "platform": "app",
+      "utterance": "please generate bounded child batches from every selected candidate",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4cf6c30b-fc11-494e-9b49-040813733930",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1875,
+      "errors": []
+    },
+    {
+      "name": "stopGenerationBatch",
+      "platform": "app",
+      "utterance": "please cancel pending sibling candidates without deleting completed work",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "723eb481-0cde-454f-8969-3aa1c1fd31d8",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1339,
+      "errors": []
+    },
+    {
+      "name": "retryGenerationCandidate",
+      "platform": "app",
+      "utterance": "please retry only the focused failed candidate idempotently",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d0bae7bb-0820-4d3e-8d49-9f1120fb78c2",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1314,
+      "errors": []
+    },
+    {
+      "name": "observeWorkspace",
+      "platform": "app",
+      "utterance": "what is visible on my screen",
+      "args": {
+        "scope": "viewport"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "467fe9d2-a621-470d-9272-1f0e71a5b0ef",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1262,
+      "errors": []
+    },
+    {
+      "name": "interpretThroughLens",
+      "platform": "app",
+      "utterance": "interpret what's on my screen through this Lens",
+      "args": {
+        "lens": "generator-a",
+        "scope": "viewport"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9e4ca380-2c2d-4a89-a643-3b881585180d",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1400,
+      "errors": []
+    },
+    {
+      "name": "interpretVisibleScreenThroughLens",
+      "platform": "app",
+      "utterance": "visually interpret my shared screen through this Lens",
+      "args": {
+        "lens": "generator-a"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9fb3c4b9-d971-4fa7-875b-9c19498673ec",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1372,
+      "errors": []
+    },
+    {
+      "name": "captureInstructionAsMove",
+      "platform": "app",
+      "utterance": "save what I just asked as a Move",
+      "args": {
+        "text": "Verify every primary source",
+        "source": "voice"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "b5826ff3-8020-45b7-a97b-2fb8e9e77281",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1354,
+      "errors": []
+    },
+    {
+      "name": "semanticTransfer",
+      "platform": "app",
+      "utterance": "turn this whole command into a Move exactly as written",
+      "args": {
+        "destination": "moves"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "57586a68-fac8-4c96-9959-61c6fa374c21",
+        "status": "completed",
+        "events": 10,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2023,
+      "errors": []
+    },
+    {
+      "name": "startCritiqueSession",
+      "platform": "app",
+      "utterance": "start critique mode on these branches",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "662f83f3-1c4a-40ea-9eac-3dc246f342e4",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1821,
+      "errors": []
+    },
+    {
+      "name": "ingestCritique",
+      "platform": "app",
+      "utterance": "keep the first one but rewrite the second",
+      "args": {
+        "text": "Keep the first claim but rewrite the second."
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "c123575e-e46d-49be-ac19-2f9b9fe8a097",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2190,
+      "errors": []
+    },
+    {
+      "name": "stopCritiqueSession",
+      "platform": "app",
+      "utterance": "stop critique mode",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "d4608f8a-3ab0-49e3-8ccc-ccacadd6ca60",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 2135,
+      "errors": []
+    },
+    {
+      "name": "openPackageRegistry",
+      "platform": "app",
+      "utterance": "please open the Cognitive Package registry and trust review",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9fb46c7d-adc4-470b-b319-9c3c43954c78",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1419,
+      "errors": []
+    },
+    {
+      "name": "createSignedPackage",
+      "platform": "app",
+      "utterance": "please validate, test, scan, and sign a declarative package draft",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0",
+        "artifactIds": [
+          "op-a"
+        ],
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0ef04f2a-5c1e-447f-a64a-f2a24409848f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1537,
+      "errors": []
+    },
+    {
+      "name": "publishCognitivePackage",
+      "platform": "app",
+      "utterance": "please publish the active signed package after scoped external approval",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "precise setup or authentication boundary before mutation",
+      "persistence": "zero mutation before blocker",
+      "animation": {
+        "version": 1,
+        "traceId": "4df8bfb1-4fee-45af-8ad0-5c7fa05a134f",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1715,
+      "errors": [
+        "sign in is required to publish; signed local export remains available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to publish; signed local export remains available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "installCognitivePackage",
+      "platform": "app",
+      "utterance": "please verify and atomically install a signed package",
+      "args": {
+        "manifest": {}
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "3740d0d9-366b-4963-9c73-b5a7468e273c",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1757,
+      "errors": [
+        "choose a complete signed package manifest before install"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "choose a complete signed package manifest before install"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "rollbackCognitivePackage",
+      "platform": "app",
+      "utterance": "please restore the previous installed package version",
+      "args": {
+        "package": "runtime.audit/evidence-tools"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "96c5d3eb-4a16-477c-8c27-739ac023d472",
+        "status": "failed",
+        "events": 6,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1438,
+      "errors": [
+        "no package install checkpoint is available"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "no package install checkpoint is available"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "deprecateCognitivePackage",
+      "platform": "app",
+      "utterance": "please deprecate an owned package version after scoped approval",
+      "args": {
+        "namespace": "runtime.audit",
+        "name": "evidence-tools",
+        "version": "1.0.0"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "safely-blocked",
+      "typedResult": "safe-blocker",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "02dcb4ae-6674-4ca2-9336-e7a560947c50",
+        "status": "failed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1335,
+      "errors": [
+        "sign in is required to deprecate a published package"
+      ],
+      "debugExecution": {
+        "completed": false,
+        "errors": [
+          "sign in is required to deprecate a published package"
+        ],
+        "value": null
+      }
+    },
+    {
+      "name": "openCognitiveWorkflowStudio",
+      "platform": "app",
+      "utterance": "please open the higher-order, vocabulary, and extraction review studio",
+      "args": {
+        "tab": "higher-order"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5a4b8633-5bea-402a-a4af-68a07df32de0",
+        "status": "completed",
+        "events": 9,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1490,
+      "errors": []
+    },
+    {
+      "name": "proposeHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please create and isolate-test a reviewable ArtifactPatch without mutating its source",
+      "args": {
+        "artifact": "op-a",
+        "purpose": "Require evidence for every claim"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "4e241e57-70fc-4dfa-a195-8b8af4b4b5c6",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1268,
+      "errors": []
+    },
+    {
+      "name": "applyHigherOrderPatch",
+      "platform": "app",
+      "utterance": "please apply selected passing patch hunks as a new artifact version",
+      "args": {
+        "patchId": "last",
+        "acceptedHunkIds": [
+          "primary-hunk"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "612301d8-9cd2-4f82-863d-512440ddd91f",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1420,
+      "errors": []
+    },
+    {
+      "name": "teachPersonalCommand",
+      "platform": "app",
+      "utterance": "please preview and save a scoped inspectable personal command definition",
+      "args": {
+        "trigger": "runtime founder pass",
+        "command": "openCognitiveWorkflowStudio",
+        "scope": "workspace"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "60560351-96f9-4716-8af0-05695ad7b4be",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1193,
+      "errors": []
+    },
+    {
+      "name": "disablePersonalCommand",
+      "platform": "app",
+      "utterance": "please disable a personal command without deleting provenance",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0fdf303b-6b16-4742-9cfc-173049a2415e",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1453,
+      "errors": []
+    },
+    {
+      "name": "forgetPersonalCommand",
+      "platform": "app",
+      "utterance": "please delete a personal command definition from its authorized scope",
+      "args": {
+        "trigger": "runtime founder pass"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "486e0dec-4034-4cee-909f-f5f55efa673d",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1412,
+      "errors": []
+    },
+    {
+      "name": "openCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please extract grounded candidate artifacts into a review-only Cognitive Pull Request",
+      "args": {
+        "source": "claim",
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "5b3b5303-dc03-441c-beb7-75c607222a53",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1455,
+      "errors": []
+    },
+    {
+      "name": "reviewCognitiveCandidate",
+      "platform": "app",
+      "utterance": "please review one grounded extraction candidate without merging",
+      "args": {
+        "requestId": "last",
+        "candidateId": "first",
+        "decision": "accept"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "492d1b82-c4da-410c-ad58-d441541434b3",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1464,
+      "errors": []
+    },
+    {
+      "name": "mergeCognitivePullRequest",
+      "platform": "app",
+      "utterance": "please atomically merge reviewed candidates with an undo receipt",
+      "args": {
+        "requestId": "last",
+        "candidateIds": [
+          "accepted"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "0e900fbc-8d2f-4a22-ac81-c81a85853902",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1693,
+      "errors": []
+    },
+    {
+      "name": "orchestrateCognitiveWorkflow",
+      "platform": "app",
+      "utterance": "please run extract, review, refine, test, package, and approval-gated publish as a typed plan",
+      "args": {
+        "source": "claim",
+        "visibility": "private"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "31895cc9-740a-4838-b7f3-f8e1c3fd6192",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1194,
+      "errors": []
+    },
+    {
+      "name": "createCreativeResearchProposal",
+      "platform": "app",
+      "utterance": "make five evidence-grounded creative process Functions from verified research",
+      "args": {
+        "goal": {
+          "version": 1,
+          "id": "creative-runtime",
+          "rawWording": "Create one evidence-inspired Function",
+          "desiredArtifactKinds": [
+            "function"
+          ],
+          "count": 1,
+          "groundingLevel": "evidence-inspired",
+          "noveltyTarget": 0.6,
+          "diversityDimensions": [
+            "mechanism"
+          ],
+          "constraints": [],
+          "prohibitedImitation": [],
+          "audience": "tester",
+          "useContext": "audit",
+          "modelPolicy": {
+            "strategy": "auto"
+          },
+          "budget": {
+            "maxSources": 3,
+            "maxModelCalls": 4,
+            "maxUsd": 1,
+            "maxLatencyMs": 30000
+          },
+          "rubric": [
+            "grounding"
+          ],
+          "attribution": {
+            "subject": null,
+            "exactFrequencyRequested": false,
+            "endorsementAllowed": false
+          },
+          "sourcePolicy": {
+            "primaryPreferred": true,
+            "independentPerspectives": 1,
+            "datesRequiredWhenAvailable": true
+          }
+        },
+        "research": {
+          "provider": "runtime-mock",
+          "sources": [
+            {
+              "id": "runtime-source",
+              "title": "Runtime source",
+              "url": "https://example.com/runtime",
+              "publisher": "Example",
+              "snippet": "Documented iterative variation.",
+              "retrievedAt": "2026-07-17T18:00:00.000Z"
+            }
+          ]
+        },
+        "patterns": [
+          {
+            "id": "creative-function",
+            "kind": "function",
+            "title": "Inferred variation",
+            "blurb": "Iterate across explicit constraints",
+            "purpose": "Test variation",
+            "category": "variation",
+            "sourceIds": [
+              "runtime-source"
+            ],
+            "steps": [
+              {
+                "name": "Vary",
+                "instruction": "Generate bounded variations."
+              },
+              {
+                "name": "Compare",
+                "instruction": "Compare outcomes."
+              }
+            ]
+          }
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "cognitive-pull-request",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "692d642c-1cff-468f-9132-778bded2afd7",
+        "status": "completed",
+        "events": 5,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1238,
+      "errors": []
+    },
+    {
+      "name": "clearPaper",
+      "platform": "app",
+      "utterance": "please clear paper after confirmation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "bc32a233-0969-470e-b574-1aedd06623ec",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1246,
+      "errors": []
+    },
+    {
+      "name": "clearAiSpace",
+      "platform": "app",
+      "utterance": "please clear AI space after confirmation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "167522b6-f374-447a-81cb-1c97208a17c3",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1289,
+      "errors": []
+    },
+    {
+      "name": "clearFunctions",
+      "platform": "app",
+      "utterance": "please clear user Functions after confirmation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "023e31cd-557b-4512-b91f-6ebc3e1162be",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1592,
+      "errors": []
+    },
+    {
+      "name": "clearLenses",
+      "platform": "app",
+      "utterance": "please clear contextual Lenses after confirmation",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "8a6f52a5-26d2-4757-a0ea-bd03e7ac12b6",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1250,
+      "errors": []
+    },
+    {
+      "name": "clearWorkspaceDomains",
+      "platform": "app",
+      "utterance": "clear all functions, drawings, and AI stuff",
+      "args": {
+        "domains": [
+          "paper",
+          "ai"
+        ]
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "9eb6dc4c-7523-4b32-b1aa-fc4c00b7f2a8",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1253,
+      "errors": []
+    },
+    {
+      "name": "capturePageSelection",
+      "platform": "extension",
+      "utterance": "please capture the current external page selection",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalSaveAs",
+      "platform": "extension",
+      "utterance": "save this page selection as…",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-save-as",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsMove",
+      "platform": "extension",
+      "utterance": "save this text as a Move",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "move",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsFunction",
+      "platform": "extension",
+      "utterance": "save this text as a one-step Function",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "function",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalCaptureAsLens",
+      "platform": "extension",
+      "utterance": "collect these in a Lens",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "lens",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "togglePageHighlighter",
+      "platform": "extension",
+      "utterance": "please toggle the external page highlighter",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "queueExternalAction",
+      "platform": "extension",
+      "utterance": "please queue a Move or Function in the external action stack without running it",
+      "args": {
+        "action": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalLensContext",
+      "platform": "extension",
+      "utterance": "use the evidence Lens as context",
+      "args": {
+        "lens": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "previewExternalGo",
+      "platform": "extension",
+      "utterance": "please preview external-page disclosure and output count",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-preview",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "pressExternalGo",
+      "platform": "extension",
+      "utterance": "please run the external stack only at the explicit GO boundary",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-run",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "copyExternalResult",
+      "platform": "extension",
+      "utterance": "please copy a staged external-page result",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "clipboard-write",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "insertExternalResult",
+      "platform": "extension",
+      "utterance": "please insert a staged result through the verified page adapter",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "replaceExternalSelection",
+      "platform": "extension",
+      "utterance": "please replace an unchanged page selection through the verified adapter",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "annotateExternalResult",
+      "platform": "extension",
+      "utterance": "please annotate a staged result without replacing page material",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-write-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalArtifact",
+      "platform": "extension",
+      "utterance": "please open a staged extension artifact in Lens",
+      "args": {
+        "result": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "showExternalLibraryImport",
+      "platform": "extension",
+      "utterance": "please show pending library import status and review",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-import-review",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "browseExternalPackages",
+      "platform": "extension",
+      "utterance": "please browse verified Cognitive Packages in the extension",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-list",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "installExternalPackage",
+      "platform": "extension",
+      "utterance": "please verify and install a signed package in extension storage",
+      "args": {
+        "manifest": {
+          "columns": 2
+        }
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "package-install-receipt",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitiveStudio",
+      "platform": "extension",
+      "utterance": "please open a preserved web handoff for complex cognitive workflow review",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "teachExternalPersonalCommand",
+      "platform": "extension",
+      "utterance": "please save a scoped personal command through shared extension storage",
+      "args": {
+        "trigger": "fixture",
+        "command": "fixture",
+        "scope": "session"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCognitivePullRequest",
+      "platform": "extension",
+      "utterance": "please open a grounded extraction proposal from explicit selected page material",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalCreativeExtraction",
+      "platform": "extension",
+      "utterance": "create a research-grounded creative proposal from this selection",
+      "args": {
+        "goal": "Create from this selected tradition",
+        "kinds": [
+          "move",
+          "function",
+          "lens"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "saveExternalTasteTeaching",
+      "platform": "extension",
+      "utterance": "save this selection to my Writing Taste Lens",
+      "args": {
+        "lens": "Writing Taste Lens",
+        "text": "explicit-selection",
+        "kind": "example"
+      },
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "openExternalBeforeAfter",
+      "platform": "extension",
+      "utterance": "please open compact external before-and-after learning",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-draft",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalBeforeAfterText",
+      "platform": "extension",
+      "utterance": "please set text in an external before or after capture slot",
+      "args": {
+        "side": "before",
+        "text": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-draft",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "inferExternalBeforeAfter",
+      "platform": "extension",
+      "utterance": "please infer and sync a Move or Function from explicit external examples",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-before-after-inference",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "captureExternalVisibleTab",
+      "platform": "extension",
+      "utterance": "capture what is visible in this tab",
+      "args": {},
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "tasteExternalCandidate",
+      "platform": "extension",
+      "utterance": "yes, keep this external result",
+      "args": {
+        "result": "fixture",
+        "decision": "yes"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "startExternalCritique",
+      "platform": "extension",
+      "utterance": "start critique mode here",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "ingestExternalCritique",
+      "platform": "extension",
+      "utterance": "keep the first result but revise the second",
+      "args": {
+        "text": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "stopExternalCritique",
+      "platform": "extension",
+      "utterance": "stop critique mode here",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "composeExternalObjects",
+      "platform": "extension",
+      "utterance": "compose these two library objects",
+      "args": {
+        "a": "fixture",
+        "b": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "invokeExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please invoke a canonical Primitive Move through the shared external action stack",
+      "args": {
+        "primitive": "Branch",
+        "targets": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "reorderExternalPrimitive",
+      "platform": "extension",
+      "utterance": "please reorder a synced Primitive Move",
+      "args": {
+        "primitive": "fixture",
+        "to": 1
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "setExternalGenerationBranches",
+      "platform": "extension",
+      "utterance": "please persist branch-specific generation perspectives for a synced artifact",
+      "args": {
+        "artifact": "fixture",
+        "branchSpecs": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "armExternalMerge",
+      "platform": "extension",
+      "utterance": "please arm a non-destructive Merge preview for explicit external material",
+      "args": {
+        "targets": [
+          "claim"
+        ]
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "extension-action",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    }
+  ]
+}

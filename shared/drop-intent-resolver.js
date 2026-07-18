@@ -41,6 +41,12 @@ export const DROP_TARGET_KINDS = Object.freeze([
   "primitive-moves",
   "branch-taste",
   "external-insertion",
+  "orb",
+  "context-orbit",
+  "stage",
+  "output-frame",
+  "candidate-constellation",
+  "worker-orb",
   "archive",
   "trash",
   "unknown",
@@ -292,6 +298,41 @@ function contentIntents(sources, target, context) {
   if (target.kind === "ai-space") {
     return [intent("create-ai-source-node", 120, `Create source node from ${count} material${count === 1 ? "" : "s"}`, "ai-node", {
       command: "createAiSourceFromMaterial",
+    })];
+  }
+
+  if (target.kind === "orb" || target.kind === "context-orbit") {
+    return [intent("add-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to the Context Orbit`, "orb-context", {
+      command: "addOrbContext",
+      metadata: { priority: Number.isFinite(context.priority) ? context.priority : 1, target: target.kind },
+    })];
+  }
+
+  if (target.kind === "stage") {
+    return [intent("materialize-on-stage", 120, "Place preserved material in the unbounded Scene", "stage-material", {
+      command: "materializeOnStage",
+      metadata: { worldPoint: context.worldPoint || null },
+    })];
+  }
+
+  if (target.kind === "output-frame") {
+    return [intent("materialize-in-output-frame", 120, "Place preserved material inside this Output Frame", "frame-material", {
+      command: "materializeInOutputFrame",
+      metadata: { frameId: target.id || target.object?.id || null },
+    })];
+  }
+
+  if (target.kind === "candidate-constellation") {
+    return [intent("queue-candidate-branch", 115, "Use preserved material for a reversible candidate branch", "queued-branch", {
+      command: "queueBranchMaterial",
+      prerequisites: ["explicit-go"],
+    })];
+  }
+
+  if (target.kind === "worker-orb") {
+    return [intent("assign-worker-context", 115, "Assign preserved material to this isolated worker", "worker-context", {
+      command: "assignWorkerContext",
+      metadata: { workerId: target.id || target.object?.id || null },
     })];
   }
 

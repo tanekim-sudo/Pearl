@@ -28,7 +28,8 @@ const CAMERA_KEY = "lens.board.camera.v1";
 const OPERATORS_KEY = "lens.board.operators.v2";
 export const AI_NODES_KEY = "lens.ai.nodes.v1";
 const ITEM_HISTORY_KEY = "lens.item.history.v1";
-const UNIFIED_WORKSPACE_KEY = "lens.unified-workspace.v2";
+const UNIFIED_WORKSPACE_KEY = "lens.scenes.v4";
+const LEGACY_UNIFIED_WORKSPACE_KEY = "lens.unified-workspace.v2";
 const GRIND_DRAFT_KEY = "lens.grind.draft.v1";
 const RACK_META_KEY = "lens.rack.meta.v1";
 
@@ -46,6 +47,7 @@ export const BOARD_SYNC_STORAGE_KEYS = [
   AI_NODES_KEY,
   ITEM_HISTORY_KEY,
   UNIFIED_WORKSPACE_KEY,
+  LEGACY_UNIFIED_WORKSPACE_KEY,
   GRIND_DRAFT_KEY,
   RACK_META_KEY,
 ];
@@ -184,6 +186,7 @@ export function parseBoardSnapshot(snapshot) {
     itemHistory: parseJson(ITEM_HISTORY_KEY, {}),
     grindDraft: parseJson(GRIND_DRAFT_KEY, null),
     rackMeta: parseJson(RACK_META_KEY, {}),
+    unifiedWorkspace: parseJson(UNIFIED_WORKSPACE_KEY, parseJson(LEGACY_UNIFIED_WORKSPACE_KEY, null)),
   };
 }
 

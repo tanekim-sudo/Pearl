@@ -225,9 +225,28 @@ export function setDirectorSpeed(speed) {
   emit();
 }
 
-/** Center of a DOM element (scrolled into view first), or null. */
+const LEGACY_SEMANTIC_ANCHORS = Object.freeze({
+  "scene-stage": '[data-semantic-anchor="scene-stage"], [data-tour="paper-canvas"]',
+  "scene-object": "[data-item-id], [data-node-id]",
+  "primary-orb": '[data-semantic-anchor="primary-orb"]',
+  "library-moves": '[data-semantic-anchor="library-moves"], .move-quick-add',
+  "library-functions": '[data-semantic-anchor="library-functions"], [data-tour="transformations-section"]',
+  "library-lenses": '[data-semantic-anchor="library-lenses"], [data-tour="lenses-section"]',
+});
+
+export function resolveSemanticAnchor(anchor, root = document) {
+  if (!anchor) return null;
+  if (typeof anchor !== "string") return anchor;
+  const id = anchor.startsWith("anchor:") ? anchor.slice(7) : anchor;
+  const selector = LEGACY_SEMANTIC_ANCHORS[id] || `[data-semantic-anchor="${CSS.escape(id)}"]`;
+  return root.querySelector(selector);
+}
+
+/** Center of a semantic anchor or DOM element (scrolled into view first), or null. */
 export function elementCenter(selector, { scroll = true } = {}) {
-  const el = typeof selector === "string" ? document.querySelector(selector) : selector;
+  const el = typeof selector === "string"
+    ? (selector.startsWith("anchor:") ? resolveSemanticAnchor(selector) : document.querySelector(selector))
+    : selector;
   if (!el) return null;
   if (scroll) el.scrollIntoView({ block: "nearest", behavior: "auto" });
   const r = el.getBoundingClientRect();

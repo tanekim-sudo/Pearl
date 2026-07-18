@@ -1,8 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
+import OrbUniverseShell from "./components/OrbUniverseShell.jsx";
 import "./styles.css";
 import "./styles-idea.css";
+import "./orb-universe.css";
 
 class RootErrorBoundary extends React.Component {
   constructor(props) {
@@ -78,7 +80,7 @@ class RootErrorBoundary extends React.Component {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RootErrorBoundary>
-      <App />
+      <OrbUniverseShell StageComponent={App} />
     </RootErrorBoundary>
   </React.StrictMode>
 );

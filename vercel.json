@@ -12,7 +12,8 @@
   "rewrites": [
     { "source": "/api/models", "destination": "/api/run?route=models" },
     { "source": "/api/lens-encode", "destination": "/api/run?route=lens-encode" },
-    { "source": "/api/generate-batch", "destination": "/api/run?route=generate-batch" }
+    { "source": "/api/generate-batch", "destination": "/api/run?route=generate-batch" },
+    { "source": "/((?!api/|downloads/|extension/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

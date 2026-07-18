@@ -14,6 +14,11 @@ import {
 } from "../extension/src/sidepanel/companion.js";
 
 const BASE = process.env.AUDIT_URL || "http://127.0.0.1:5190";
+const auditUrl = (value) => {
+  const url = new URL(value);
+  url.searchParams.set("capabilityAudit", "1");
+  return url.href;
+};
 const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/post-audit-r046-r060-2026-07/companion-runtime");
 const INPUT_PATH = process.env.AUDIT_INPUT_PATH === "visible" ? "visible" : "director";
 fs.mkdirSync(OUT, { recursive: true });
@@ -616,7 +621,7 @@ async function runAppCapability(browser, capability) {
   try {
     validateCapabilityArgs(capability, args);
     parseCompanionPlan(JSON.stringify(canonicalPlan(capability, args)));
-    const targetUrl = sharedPathCapabilities.has(capability.name) && sharedPathUrl ? sharedPathUrl : BASE;
+    const targetUrl = auditUrl(sharedPathCapabilities.has(capability.name) && sharedPathUrl ? sharedPathUrl : BASE);
     await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     try {
       await page.waitForSelector(".canvas-column-main", { timeout: 15_000 });
@@ -886,8 +891,8 @@ async function runExtensionCapabilities() {
         typedResult: typed ? result.type : null,
         observableEffect: effect ? "controlled extension state changed" : null,
         persistence: "extension action boundary observed",
-        animation: events[0] === "director-ghost-cursor" ? "director-ghost-cursor completed" : null,
-        status: typed && effect && events[0] === "director-ghost-cursor" ? "passed" : "failed",
+        animation: events.at(-1) === "orb-effect-trace" ? "verified orb effect trace completed" : null,
+        status: typed && effect && events.at(-1) === "orb-effect-trace" ? "passed" : "failed",
         errors: [],
       });
     } catch (error) {
@@ -919,7 +924,7 @@ async function createSharedPathUrl(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   try {
     await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
-    await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.goto(auditUrl(BASE), { waitUntil: "domcontentloaded", timeout: 60_000 });
     await page.waitForFunction(() => window.__lensPathShare?.share, null, { timeout: 60_000 });
     return await page.evaluate(() => window.__lensPathShare.share("node-child"));
   } finally {

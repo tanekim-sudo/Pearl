@@ -107,7 +107,7 @@ test("extension companion manifest and real handlers have exact parity", async (
     animate: async (event) => events.push(event.path),
     action: async (type) => events.push(type),
   });
-  assert.deepEqual(events, ["director-ghost-cursor", "capture-selection"]);
+  assert.deepEqual(events, ["capture-selection", "orb-effect-trace"]);
   assert.equal(parseExtensionIntent("learn from before and after").name, "openExternalBeforeAfter");
   let opened = false;
   await executeExtensionVerb("openExternalBeforeAfter", {}, {

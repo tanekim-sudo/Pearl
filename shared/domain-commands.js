@@ -36,6 +36,94 @@ function appendObject(state, object) {
 }
 
 export const DOMAIN_COMMANDS = Object.freeze({
+  addOrbContext: {
+    schema: { items: "array", priority: "number?", group: "string?" },
+    preconditions: ["material is explicit and preserved"],
+    risk: "low", confirmation: "none", undo: "restore-orb-context",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.workingSet.context",
+    observableEffects: ["orb-context-changed"],
+    execute(state, args) {
+      const byId = new Map((state.orbContext || []).map((entry) => [entry.id, entry]));
+      for (const item of args.items || []) {
+        const id = String(item.id || item.material?.id || "");
+        if (!id) continue;
+        byId.set(id, {
+          ...(byId.get(id) || {}),
+          id,
+          kind: item.kind || item.material?.machineKind || "material",
+          priority: Math.max(0, Math.min(1, Number.isFinite(args.priority) ? args.priority : 1)),
+          group: args.group || null,
+          provenance: item.provenance || item.material?.provenance || null,
+        });
+      }
+      return { state: { ...state, orbContext: [...byId.values()] }, result: { type: "orb-context", id: null, effects: ["orb-context-changed"] } };
+    },
+  },
+  materializeOnStage: {
+    schema: { items: "array", sceneId: "string", worldPoint: "object?" },
+    preconditions: ["Scene is explicit", "material is preserved"],
+    risk: "low", confirmation: "none", undo: "restore-scene-snapshot",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.items.append",
+    observableEffects: ["scene-material-created"],
+    execute(state, args) {
+      const additions = (args.items || []).map((item, index) => ({
+        ...clone(item),
+        sceneId: args.sceneId,
+        x: (Number(args.worldPoint?.x) || 0) + index * 24,
+        y: (Number(args.worldPoint?.y) || 0) + index * 24,
+        frameId: null,
+      }));
+      return { state: { ...state, sceneItems: [...(state.sceneItems || []), ...additions] }, result: { type: "scene-material", id: additions[0]?.id || null, objects: additions, effects: ["scene-material-created"] } };
+    },
+  },
+  materializeInOutputFrame: {
+    schema: { items: "array", sceneId: "string", frameId: "string" },
+    preconditions: ["Output Frame exists", "material is preserved"],
+    risk: "low", confirmation: "none", undo: "restore-scene-snapshot",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.items.append",
+    observableEffects: ["frame-material-created"],
+    execute(state, args) {
+      const additions = (args.items || []).map((item) => ({ ...clone(item), sceneId: args.sceneId, frameId: args.frameId }));
+      return { state: { ...state, sceneItems: [...(state.sceneItems || []), ...additions] }, result: { type: "frame-material", id: additions[0]?.id || null, objects: additions, effects: ["frame-material-created"] } };
+    },
+  },
+  queueBranchMaterial: {
+    schema: { items: "array", sourceId: "string?", idempotencyKey: "string" },
+    preconditions: ["explicit GO before generation"],
+    risk: "low", confirmation: "none", undo: "remove-queued-branch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.pendingBranches.append",
+    observableEffects: ["branch-material-queued"],
+    execute(state, args) {
+      const prior = (state.pendingBranches || []).find((entry) => entry.idempotencyKey === args.idempotencyKey);
+      if (prior) return { state, result: { type: "idempotent-replay", id: prior.id, effects: [] } };
+      const branch = { id: args.idempotencyKey, idempotencyKey: args.idempotencyKey, sourceId: args.sourceId || null, items: clone(args.items || []) };
+      return { state: { ...state, pendingBranches: [...(state.pendingBranches || []), branch] }, result: { type: "queued-branch", id: branch.id, branch, effects: ["branch-material-queued"] } };
+    },
+  },
+  assignWorkerContext: {
+    schema: { workerId: "string", items: "array" },
+    preconditions: ["worker exists", "context is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-worker-context",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.orbInstances.update",
+    observableEffects: ["worker-context-changed"],
+    execute(state, args) {
+      let found = false;
+      const orbInstances = (state.orbInstances || []).map((worker) => {
+        if (worker.id !== args.workerId) return worker;
+        found = true;
+        const byId = new Map((worker.context || []).map((item) => [item.id, item]));
+        for (const item of args.items || []) if (item?.id) byId.set(item.id, clone(item));
+        return { ...worker, context: [...byId.values()] };
+      });
+      if (!found) throw new Error("worker not found");
+      return { state: { ...state, orbInstances }, result: { type: "worker-context", id: args.workerId, effects: ["worker-context-changed"] } };
+    },
+  },
   observeWorkspace: {
     schema: { observation: "object" },
     preconditions: ["scope is explicit", "visibleTab requires user gesture"],
