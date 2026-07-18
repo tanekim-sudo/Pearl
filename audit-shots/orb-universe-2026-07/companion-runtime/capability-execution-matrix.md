@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 206
-- Passed: 206
+- Total: 208
+- Passed: 208
 - Failed: 0
 - Skipped: 0
 
@@ -62,7 +62,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -81,6 +81,7 @@
 - PASS — `organizePage` (app): state-or-visible-artifact-changed
 - PASS — `addBlock` (app): state-or-visible-artifact-changed
 - PASS — `renamePage` (app): state-or-visible-artifact-changed
+- PASS — `toggleOrbCursor` (app): state-or-visible-artifact-changed
 - PASS — `zoomToItem` (app): state-or-visible-artifact-changed
 - PASS — `walkItemPath` (app): state-or-visible-artifact-changed
 - PASS — `stepSharedPath` (app): state-or-visible-artifact-changed
@@ -181,6 +182,7 @@
 - PASS — `saveExternalCaptureAsFunction` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsLens` (extension): controlled extension state changed
 - PASS — `togglePageHighlighter` (extension): controlled extension state changed
+- PASS — `toggleExternalOrbCursor` (extension): controlled extension state changed
 - PASS — `queueExternalAction` (extension): controlled extension state changed
 - PASS — `setExternalLensContext` (extension): controlled extension state changed
 - PASS — `previewExternalGo` (extension): controlled extension state changed

@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-18T18:11:02.007Z",
+  "generatedAt": "2026-07-18T21:30:21.460Z",
   "counts": {
     "features": 30,
-    "companion": 206,
-    "extension": 36,
+    "companion": 208,
+    "extension": 37,
     "commands": 24
   },
   "features": [
@@ -470,14 +470,17 @@
       ],
       "companion": [
         "observeWorkspace",
-        "semanticTransfer"
+        "semanticTransfer",
+        "toggleOrbCursor"
       ],
       "extension": [
         "capturePageSelection",
-        "pressExternalGo"
+        "pressExternalGo",
+        "toggleExternalOrbCursor"
       ],
       "tests": [
-        "shared/orb-universe.test.js"
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js"
       ]
     },
     {

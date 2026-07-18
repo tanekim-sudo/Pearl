@@ -37,10 +37,17 @@ export default function CompanionOrb({
   storageKey = ORB_PLACEMENT_KEY,
   label = "Lens orb",
   compact = false,
+  featured = false,
+  onContextAdd,
+  onEmitView,
+  cursorMode = false,
+  onCursorToggle,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
   const dragRef = useRef(null);
+  const holdRef = useRef(null);
+  const voiceStartedRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState("");
   const [placement, setPlacement] = useState(() => ({ ...state.placement, ...readPlacement(storageKey) }));
@@ -53,12 +60,35 @@ export default function CompanionOrb({
     }
   }, [placement, storageKey]);
 
+  useEffect(() => {
+    if (placement.manual || state.placement?.manual) return;
+    if (placement.x === state.placement?.x && placement.y === state.placement?.y) return;
+    setPlacement((value) => ({ ...value, ...state.placement }));
+  }, [placement.manual, placement.x, placement.y, state.placement?.manual, state.placement?.x, state.placement?.y]);
+
+  useEffect(() => {
+    function keepVisible() {
+      const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
+      const height = rootRef.current?.offsetHeight || width;
+      setPlacement((current) => {
+        const x = Math.max(8, Math.min(window.innerWidth - width - 8, Number(current.x) || 8));
+        const y = Math.max(8, Math.min(window.innerHeight - height - 8, Number(current.y) || 8));
+        return x === current.x && y === current.y ? current : { ...current, x, y };
+      });
+    }
+    keepVisible();
+    window.addEventListener("resize", keepVisible);
+    return () => window.removeEventListener("resize", keepVisible);
+  }, [featured]);
+
   function updatePlacement(next) {
+    const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
+    const height = rootRef.current?.offsetHeight || width;
     const bounded = {
       ...placement,
       ...next,
-      x: Math.max(8, Math.min(window.innerWidth - 80, Number(next.x ?? placement.x))),
-      y: Math.max(8, Math.min(window.innerHeight - 80, Number(next.y ?? placement.y))),
+      x: Math.max(8, Math.min(window.innerWidth - width - 8, Number(next.x ?? placement.x))),
+      y: Math.max(8, Math.min(window.innerHeight - height - 8, Number(next.y ?? placement.y))),
       manual: true,
     };
     setPlacement(bounded);
@@ -69,6 +99,13 @@ export default function CompanionOrb({
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, start: placement, moved: false };
+    voiceStartedRef.current = false;
+    window.clearTimeout(holdRef.current);
+    holdRef.current = window.setTimeout(() => {
+      if (dragRef.current?.moved) return;
+      voiceStartedRef.current = true;
+      onVoiceStart?.();
+    }, 420);
   }
 
   function pointerMove(event) {
@@ -83,8 +120,10 @@ export default function CompanionOrb({
   function pointerUp(event) {
     const drag = dragRef.current;
     dragRef.current = null;
-    if (!drag?.moved) setExpanded((value) => !value);
-    onVoiceEnd?.();
+    window.clearTimeout(holdRef.current);
+    if (voiceStartedRef.current) onVoiceEnd?.();
+    else if (!drag?.moved) setExpanded((value) => !value);
+    voiceStartedRef.current = false;
   }
 
   function keyDown(event) {
@@ -108,16 +147,65 @@ export default function CompanionOrb({
     setDraft("");
   }
 
+  function drop(event) {
+    event.preventDefault();
+    const text = event.dataTransfer?.getData("text/plain")?.trim();
+    const portable = event.dataTransfer?.getData("application/x-lens-object");
+    if (!text && !portable) return;
+    onContextAdd?.({
+      id: `orb-context:${Date.now()}`,
+      kind: portable ? "object" : "text",
+      label: text ? text.slice(0, 42) : "Lens material",
+      text,
+      portable,
+      priority: 1,
+      pinned: false,
+    });
+  }
+
   const phase = state.phase || "idle";
   return (
     <aside
       ref={rootRef}
-      className={`companion-orb-shell ${compact ? "compact" : ""} ${expanded ? "expanded" : ""}`}
+      className={`companion-orb-shell ${compact ? "compact" : ""} ${featured ? "featured" : ""} ${expanded ? "expanded" : ""} ${placement.minimized ? "minimized" : ""}`}
       style={{ "--orb-x": `${placement.x}px`, "--orb-y": `${placement.y}px` }}
       data-orb-state={phase}
       data-semantic-anchor="primary-orb"
       aria-label={`${label}, ${phase}`}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={drop}
     >
+      <div className="orb-emissions" aria-live="polite">
+        {(state.lenses || []).map((lens, index) => (
+          <span
+            className="orb-lens-atmosphere"
+            key={lens.id || lens.name}
+            style={{ "--lens-index": index, "--lens-strength": lens.strength ?? .7 }}
+            aria-label={`${lens.name || "Lens"} atmosphere, strength ${Math.round((lens.strength ?? .7) * 100)} percent`}
+          />
+        ))}
+        {(state.context || []).slice(0, 7).map((item, index) => (
+          <button
+            type="button"
+            className="orb-context-object"
+            key={item.id}
+            style={{ "--context-index": index, "--context-count": Math.min(7, state.context.length) }}
+            title={item.label || item.text || "Context material"}
+            aria-label={`${item.label || "Context material"}, priority ${item.priority ?? 1}`}
+            onClick={() => onEmitView?.("context")}
+          ><span>{item.kind === "image" ? "image" : item.kind === "scene" ? "scene" : "context"}</span></button>
+        ))}
+        {(state.workers || []).slice(0, 4).map((worker, index) => (
+          <span className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}`}>
+            <i />{worker.role || "worker"}
+          </span>
+        ))}
+        {(state.candidates || []).slice(0, 6).map((candidate, index) => (
+          <button type="button" className="orb-candidate" key={candidate.id} style={{ "--candidate-index": index }} onClick={() => onEmitView?.("taste")}>
+            <i />{candidate.distinction || candidate.title || "Candidate"}
+          </button>
+        ))}
+      </div>
       <button
         type="button"
         className="companion-orb"
@@ -129,7 +217,6 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        onMouseDown={() => onVoiceStart?.()}
         title="Hold to speak · click to expand · drag to move"
       >
         <span id={titleId} className="sr-only">{label}. Hold to speak, click to expand, or use arrow keys to move.</span>
@@ -170,7 +257,10 @@ export default function CompanionOrb({
         <div className="orb-ledger" role="region" aria-label="Orb command and task ledger">
           <div className="orb-ledger-head">
             <span>{state.activeIntent?.normalized || state.activeIntent?.raw || phase}</span>
-            <button type="button" aria-label="Minimize orb" onClick={() => setExpanded(false)}>−</button>
+            <button type="button" aria-label="Minimize orb" onClick={() => {
+              setExpanded(false);
+              updatePlacement({ minimized: !placement.minimized });
+            }}>−</button>
           </div>
           <form onSubmit={submit}>
             <input value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Tell the orb your goal" placeholder="Tell the orb your goal…" />
@@ -178,6 +268,13 @@ export default function CompanionOrb({
           </form>
           <div className="orb-controls">
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
+            <button type="button" onClick={() => onEmitView?.("context")}>Context</button>
+            <button type="button" onClick={() => onEmitView?.("library")}>Library</button>
+            <button type="button" aria-pressed={cursorMode} onClick={() => onCursorToggle?.(!cursorMode)}>
+              {cursorMode ? "Native cursor" : "Become cursor"}
+            </button>
+            <button type="button" onClick={() => updatePlacement({ dock: "left", x: 12 })}>Dock left</button>
+            <button type="button" onClick={() => updatePlacement({ dock: "right", x: window.innerWidth - 84 })}>Dock right</button>
             <button type="button" onClick={onStop} disabled={!onStop}>Stop</button>
             <button type="button" onClick={onUndo} disabled={!onUndo}>Undo</button>
           </div>

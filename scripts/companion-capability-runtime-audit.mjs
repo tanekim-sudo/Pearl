@@ -797,6 +797,7 @@ async function runExtensionCapabilities() {
       operation: null,
       artifact: false,
       importShown: false,
+      orbCursor: false,
     };
     const resultRecord = { id: "result-a", text: "Runtime extension result", machineKind: "text", outputSpec: { machineKind: "text" } };
     const context = {
@@ -856,6 +857,10 @@ async function runExtensionCapabilities() {
       saveCaptureAs: (kind) => {
         state.operation = `save-${kind}`;
         return { type: kind, id: `saved-${kind}` };
+      },
+      toggleOrbCursor: (enabled = true) => {
+        state.orbCursor = enabled;
+        return { type: "orb-cursor-state", enabled };
       },
     };
     const originalNavigator = globalThis.navigator;

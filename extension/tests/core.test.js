@@ -9,12 +9,27 @@ import { adapterForUrl } from "../src/content/adapters/specialists.js";
 import { validateExternalAction, validateExternalHandoff } from "../src/core/external-handoff.js";
 import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle } from "../../shared/lens-library.js";
 import { normalizeOutputSpec, suggestedOutputSpec } from "../../shared/output-specifications.js";
+import { createTripleSpaceRecognizer, orbCursorPresentation } from "../../shared/orb-cursor.js";
+import { ORB_CURSOR_HIDE_CSS, orbCursorTabState } from "../src/core/orb-cursor-contract.js";
 
 test("strict messages reject spoofed fields and oversized payloads", () => {
   assert.equal(validateMessage(createMessage("go", {})).ok, true);
+  assert.equal(validateMessage(createMessage("toggle-orb-cursor", { enabled: true })).ok, true);
   assert.equal(validateMessage({ ...createMessage("go", {}), token: "secret" }).ok, false);
   assert.equal(validateMessage(createMessage("go", { text: "x".repeat(513_000) })).ok, false);
   assert.throws(() => assertTrustedSender({ id: "attacker" }, "lens"));
+});
+
+test("orb cursor contract recognizes Triple-Space safely and leases tab state", () => {
+  const target = { closest: () => null };
+  const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 10, target }).matched, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 200, target }).matched, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 620, target }).matched, true);
+  assert.match(ORB_CURSOR_HIDE_CSS, /cursor:\s*none\s*!important/);
+  assert.deepEqual(orbCursorTabState({}, 42, true)["42"].enabled, true);
+  assert.equal("42" in orbCursorTabState({ 42: { enabled: true } }, 42, false), false);
+  assert.equal(orbCursorPresentation({ closest: (selector) => selector.includes("button") ? target : null }), "action");
 });
 
 test("external library handoff requires trusted exact origin and nonce", () => {
@@ -102,6 +117,7 @@ test("highlight and queue remain inert until GO", async () => {
 test("extension companion manifest and real handlers have exact parity", async () => {
   assert.deepEqual(validateExtensionVerbParity(), { undocumented: [], unregistered: [] });
   assert.equal(parseExtensionIntent("press GO").name, "pressExternalGo");
+  assert.equal(parseExtensionIntent("make the orb into my cursor").name, "toggleExternalOrbCursor");
   const events = [];
   await executeExtensionVerb("capturePageSelection", {}, {
     animate: async (event) => events.push(event.path),
@@ -115,6 +131,12 @@ test("extension companion manifest and real handlers have exact parity", async (
     openBeforeAfter: async () => { opened = true; },
   });
   assert.equal(opened, true);
+  let orbCursorEnabled = null;
+  await executeExtensionVerb("toggleExternalOrbCursor", { enabled: true }, {
+    animate: async () => {},
+    toggleOrbCursor: async (enabled) => { orbCursorEnabled = enabled; return { enabled }; },
+  });
+  assert.equal(orbCursorEnabled, true);
   await assert.rejects(
     () => executeExtensionVerb("insertExternalResult", { result: "1" }, {
       resolveResult: () => ({ text: "draft" }),

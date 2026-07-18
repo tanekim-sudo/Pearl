@@ -29,8 +29,13 @@ const ORB_RAYS = Object.freeze([
   [174, 14, 35, -1], [220, 19, 36, 1], [266, 12, 34, -2], [309, 17, 36, 1], [341, 15, 35, -1],
 ]);
 
-function ExtensionOrb({ phase, listening, onVoice, onCommandView }) {
+function ExtensionOrb({ phase, listening, onVoice, onCommandView, contextCount = 0, lensActive = false, candidateCount = 0 }) {
   return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Lens orb, ${phase}`}>
+    <div className="extension-orb-emissions" aria-live="polite">
+      {lensActive && <span className="extension-lens-ring" aria-label="Active Lens atmosphere" />}
+      {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
+      {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <i className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} />)}
+    </div>
     <button type="button" className="extension-orb" aria-label={listening ? "Stop listening" : "Hold to speak"} onClick={onVoice}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <g className="extension-orb-rays">
@@ -80,6 +85,7 @@ function App() {
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [packages, setPackages] = useState([]);
   const [activeView, setActiveView] = useState("command");
+  const [orbCursorEnabled, setOrbCursorEnabled] = useState(false);
   const fileRef = useRef(null);
 
   async function browsePackages() {
@@ -140,6 +146,7 @@ function App() {
     }).catch(() => {});
     call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
     call("model-catalog").then((value) => setModelCatalog(value.models || [])).catch(() => {});
+    call("orb-cursor-get").then((value) => setOrbCursorEnabled(value.enabled === true)).catch(() => {});
     chrome.storage.local.get(["onboardingComplete", "onboardingMode", "generationPlan"], (value) => {
       setOnboardingMode(value.onboardingMode || "");
       setOnboardingStep(value.onboardingComplete ? 0 : 1);
@@ -225,6 +232,12 @@ function App() {
       setError(e.message);
       return null;
     }
+  }
+
+  async function toggleOrbCursor(enabled = !orbCursorEnabled) {
+    const value = await action("toggle-orb-cursor", { enabled, source: "control" });
+    if (value?.enabled != null) setOrbCursorEnabled(value.enabled === true);
+    return value;
   }
 
   async function go() {
@@ -407,6 +420,7 @@ function App() {
           setSaveAsOpen(true);
           return { open: true };
         },
+        toggleOrbCursor,
         saveCaptureAs,
         animate: async () => {
           setGhost(true);
@@ -468,9 +482,9 @@ function App() {
     {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
       {onboardingStep === 1 && <>
-        <div className="onboarding-mark" aria-hidden="true">L</div>
-        <h1 id="onboarding-title">Lens, anywhere you read</h1>
-        <p>Highlight something on a page, choose a lens, and press GO to transform it.</p>
+        <ExtensionOrb phase="idle" listening={false} onVoice={() => {}} onCommandView={() => {}} />
+        <h1 id="onboarding-title">Your orb, anywhere you read</h1>
+        <p>Activate Lens on any ordinary page. Select material, bring it into the orb, then speak or type the outcome you want.</p>
         <button className="gold onboarding-primary" onClick={() => setOnboardingStep(2)}>Get started</button>
       </>}
       {onboardingStep === 2 && <>
@@ -504,7 +518,8 @@ function App() {
       {error && <p role="alert">{error}</p>}
     </div>}
     <header>
-      <ExtensionOrb phase={orbPhase} listening={voiceListening} onVoice={toggleCompanionVoice} onCommandView={() => setActiveView("command")} />
+      <ExtensionOrb phase={orbPhase} listening={voiceListening} onVoice={toggleCompanionVoice} onCommandView={() => setActiveView("command")}
+        contextCount={session.fragments.length} lensActive={Boolean(session.generator)} candidateCount={session.results.flatMap((run) => run.outputs).length} />
       <div>
         <button type="button" onClick={browsePackages}>Packages</button>
         {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
@@ -522,13 +537,13 @@ function App() {
       </article>)}
       {!packages.length && <p>No public or team packages are visible.</p>}
     </section>}
-    {!characters && !session.queue.length && <section className={`orb-panel ${activeView === "command" ? "active" : ""} quick-start`}>
+    {!characters && !session.queue.length && <section className={`orb-panel ${activeView === "context" ? "active" : ""} quick-start`}>
       <p>Highlight anything, choose a Move or Function, optionally add Lens context, then press GO</p>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
         <b>{sampleLens.name}</b><small>Sample Primitive Move</small>
       </button>}
     </section>}
-    <section className={`orb-panel ${activeView === "context" || activeView === "command" ? "active" : ""} capture`}>
+    <section className={`orb-panel ${activeView === "context" ? "active" : ""} capture`}>
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
@@ -617,7 +632,7 @@ function App() {
         <button key={generator.id} onClick={() => action("set-generator", { generator })}><b>{generator.name || generator.title}</b><small>{(generator.material || generator.items || []).length} material items</small></button>
       )}</div>
     </section>
-    <section className={`orb-panel ${activeView === "command" || activeView === "review" ? "active" : ""}`}>
+    <section className={`orb-panel ${activeView === "review" ? "active" : ""}`}>
       <h2>Action stack</h2>
       <ol className="queue">{session.queue.map((lens, index) =>
         <li key={`${lens.id}-${index}`}><span>{lens.name}<small>{lens.outputSpec ? outputContractLabel(lens.outputSpec) : ""}</small></span><button disabled={!index} onClick={() => action("reorder-queue", { from: index, to: index - 1 })}>↑</button><button disabled={index === session.queue.length - 1} onClick={() => action("reorder-queue", { from: index, to: index + 1 })}>↓</button><button onClick={() => action("remove-queue", { index })}>×</button></li>
@@ -660,6 +675,10 @@ function App() {
     <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Orb settings">
       <h2>Settings</h2>
       <p className="muted">Voice stays local until you explicitly run a capability. Page capture always requires your action.</p>
+      <button type="button" aria-pressed={orbCursorEnabled} onClick={() => toggleOrbCursor()}>
+        {orbCursorEnabled ? "Return to native cursor" : "Make the orb my cursor"}
+      </button>
+      <p className="muted">On supported pages, press Space three times to toggle. Triple-Space is ignored while typing.</p>
       <button type="button" onClick={signIn}>{auth ? "Refresh synced library" : "Sign in for sync"}</button>
       <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Models, connectors, vocabulary, and privacy</a>
     </section>

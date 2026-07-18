@@ -6,6 +6,7 @@ import {
   isTransformPrimitive,
   estimatePrimitiveMs,
 } from "../shared/transform-primitives.js";
+import { ORB_CURSOR_SEQUENCE_ATTRIBUTE } from "../shared/orb-cursor.js";
 import {
   isCompressionOperator,
   isExpansionOperator,
@@ -4180,7 +4181,11 @@ export default function App() {
         return;
       }
       // Space: clear highlight marks, then toggle utensil (AI) or cycle tools (paper)
-      if (e.key === " " && !e.repeat) {
+      if (
+        e.key === " " &&
+        !e.repeat &&
+        !document.documentElement.hasAttribute(ORB_CURSOR_SEQUENCE_ATTRIBUTE)
+      ) {
         const typing =
           e.target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(e.target?.tagName || "");
         if (typing) return;
@@ -11992,6 +11997,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(a.ms ?? 1600);
     },
     pause: async (a, tk) => tk.wait(a.ms ?? 600),
+    toggleOrbCursor: async (a, tk) => {
+      document.dispatchEvent(new CustomEvent("lens:orb-cursor-command", {
+        detail: { enabled: a.enabled !== false, source: "companion" },
+      }));
+      await tk.wait(120);
+      return {
+        effectId: `orb-cursor:${a.enabled === false ? "off" : "on"}`,
+        enabled: a.enabled !== false,
+      };
+    },
     switchTool: async (a, tk) => {
       const target =
         tk.elementCenter(`.canvas-tools-bar [data-tool="${a.tool}"]`) ||

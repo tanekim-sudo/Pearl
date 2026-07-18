@@ -67,7 +67,7 @@ try {
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await panel.getByRole("heading", { name: "Lens, anywhere you read" }).waitFor();
+  await panel.getByRole("heading", { name: "Your orb, anywhere you read" }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });
   await panel.getByRole("button", { name: "Get started" }).click();
   await panel.screenshot({ path: path.join(evidence, "02-account-choice.png") });
@@ -81,10 +81,10 @@ try {
   });
   fs.writeFileSync(auditLibraryPath, JSON.stringify(auditLibrary));
   await panel.locator('input[type="file"]').setInputFiles(auditLibraryPath);
-  await panel.getByRole("dialog", { name: "Library import preview" }).waitFor();
+  await panel.getByText(/Moves\/Functions and .* Lenses found/).waitFor();
   await panel.screenshot({ path: path.join(evidence, "04-clean-import-confirm.png") });
   await panel.getByRole("button", { name: "Add library" }).first().click();
-  await panel.getByText(/lenses and .* generators are ready/).first().waitFor();
+  await panel.getByText(/Moves\/Functions and .* Lenses are ready/).first().waitFor();
   await panel.getByRole("button", { name: "Try it now" }).click();
   await panel.screenshot({ path: path.join(evidence, "05-useful-empty-state.png") });
   fs.rmSync(auditLibraryPath, { force: true });
@@ -102,13 +102,16 @@ try {
   });
   await panel.bringToFront();
   await panel.reload();
+  await panel.getByRole("button", { name: "context", exact: true }).click();
   await panel.getByText(/1 fragment/).waitFor();
   await panel.screenshot({ path: path.join(evidence, "06-persistent-page-highlight.png"), fullPage: true });
 
   const before = await page.locator("#field").inputValue();
+  await panel.getByRole("button", { name: "library", exact: true }).click();
   await panel.locator(".rack button").first().click();
   await panel.waitForTimeout(100);
   if (await page.locator("#field").inputValue() !== before) throw new Error("queueing mutated the page before GO");
+  await panel.getByRole("button", { name: "review", exact: true }).click();
   await panel.screenshot({ path: path.join(evidence, "07-queued-explicit-go.png"), fullPage: true });
 
   await panel.getByRole("button", { name: "GO", exact: true }).click();

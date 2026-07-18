@@ -31,7 +31,25 @@ try {
   let worker = context.serviceWorkers()[0];
   if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
-  await worker.evaluate(() => chrome.storage.local.set({ onboardingComplete: true, onboardingMode: "local" }));
+  await worker.evaluate(async () => {
+    await chrome.storage.local.set({ onboardingComplete: true, onboardingMode: "local" });
+    await chrome.storage.session.set({
+      lensEverywhereSession: {
+        fragments: [],
+        queue: [],
+        generator: { id: "audit-lens", name: "Skeptical investor", version: 1, material: [] },
+        results: [{
+          id: "audit-run",
+          outputs: [
+            { id: "candidate-1", text: "Question the revenue assumptions" },
+            { id: "candidate-2", text: "Find the strongest adoption signal" },
+            { id: "candidate-3", text: "Offer a credible contrary path" },
+          ],
+        }],
+        activeRunId: null,
+      },
+    });
+  });
   await Promise.all(context.pages().map((page) => page.close()));
 
   const fixture = await context.newPage();
@@ -52,6 +70,53 @@ try {
   });
   await fixture.locator("#lens-orb-overlay-host").waitFor();
   await fixture.screenshot({ path: path.join(evidence, "06-extension-page-orb.png"), fullPage: true });
+  const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Lens orb\./ });
+  const beforeDrag = await pageOrb.boundingBox();
+  if (!beforeDrag || beforeDrag.width < 90) throw new Error("page orb is not a literal focal control");
+  await pageOrb.click();
+  await fixture.getByRole("region", { name: "Views emitted by the Lens orb" }).waitFor();
+  await fixture.screenshot({ path: path.join(evidence, "06a-extension-page-orb-expanded.png"), fullPage: true });
+  await fixture.locator("#field").selectText();
+  await fixture.getByRole("button", { name: "Absorb selection" }).first().click();
+  await fixture.waitForTimeout(850);
+  await fixture.screenshot({ path: path.join(evidence, "06b-extension-page-orb-context.png"), fullPage: true });
+  await fixture.getByRole("button", { name: "lens", exact: true }).click();
+  await fixture.getByRole("button", { name: "taste", exact: true }).click();
+  await fixture.screenshot({ path: path.join(evidence, "06c-extension-page-orb-lens-candidates.png"), fullPage: true });
+  await pageOrb.dragTo(fixture.locator("h1"));
+  const afterDrag = await pageOrb.boundingBox();
+  if (!afterDrag || Math.abs(afterDrag.x - beforeDrag.x) < 80) throw new Error("page orb did not visibly drag/dock");
+  await fixture.getByRole("button", { name: "Minimize Lens orb" }).click();
+  const minimized = await pageOrb.boundingBox();
+  if (!minimized || minimized.width > 45) throw new Error("page orb did not minimize");
+  await fixture.screenshot({ path: path.join(evidence, "06d-extension-page-orb-minimized.png"), fullPage: true });
+  await fixture.locator("h1").click();
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  await fixture.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
+  await fixture.mouse.move(420, 280);
+  await fixture.waitForTimeout(80);
+  const cursorOrb = await pageOrb.boundingBox();
+  if (!cursorOrb || cursorOrb.width > 36 || Math.abs(cursorOrb.x + cursorOrb.width / 2 - 420) > 8 || Math.abs(cursorOrb.y + cursorOrb.height / 2 - 280) > 8) {
+    throw new Error("orb cursor hotspot did not track the real pointer precisely");
+  }
+  const hiddenCursor = await fixture.locator("h1").evaluate((node) => getComputedStyle(node).cursor);
+  if (hiddenCursor !== "none") throw new Error("native page cursor was not hidden in orb cursor mode");
+  await fixture.screenshot({ path: path.join(evidence, "06e-extension-orb-cursor.png"), fullPage: true });
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  await fixture.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "false");
+  const restoredCursor = await fixture.locator("h1").evaluate((node) => getComputedStyle(node).cursor);
+  if (restoredCursor === "none") throw new Error("native cursor did not restore after Triple-Space");
+  await fixture.locator("#field").focus();
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  await fixture.keyboard.press("Space");
+  if (await fixture.evaluate(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true")) {
+    throw new Error("Triple-Space toggled while typing in an editable field");
+  }
   await panel.screenshot({ path: path.join(evidence, "07-extension-command-360.png"), fullPage: true });
   await panel.getByRole("button", { name: "library", exact: true }).click();
   await panel.screenshot({ path: path.join(evidence, "08-extension-library-360.png"), fullPage: true });
@@ -66,17 +131,23 @@ try {
     extensionId,
     viewport: { width: 360, height: 720 },
     checks: [
-      "Shadow DOM page-edge orb visible",
-      "orb command shell at 360px",
-      "view-based side panel navigation",
-      "library view",
-      "settings and privacy handoff",
+      "literal animated Shadow DOM page-edge orb visible",
+      "page orb emits command/context/Lens/taste views",
+      "selection absorption creates visible context orbit",
+      "Lens atmosphere and candidate constellation visible",
+      "page orb drag/dock and minimize are functional",
+      "Triple-Space makes the orb the precise page cursor",
+      "Triple-Space restores the native cursor",
+      "editable fields exclude the Triple-Space toggle",
+      "same orb identity expands at 360px",
+      "orb-mediated side panel views",
+      "library and settings remain reachable",
       "MV3 service worker loaded",
     ],
-    passed: 6,
+    passed: 12,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 6 checks, 4 screenshots.");
+  console.log("Orb extension audit passed: 12 checks, 9 screenshots.");
 } finally {
   await context.close();
   server.close();

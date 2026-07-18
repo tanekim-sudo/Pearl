@@ -8,6 +8,13 @@ export const EXTENSION_VERBS = Object.freeze({
   saveExternalCaptureAsFunction: ({ saveCaptureAs }) => saveCaptureAs("function"),
   saveExternalCaptureAsLens: ({ saveCaptureAs }) => saveCaptureAs("lens"),
   togglePageHighlighter: ({ args, action }) => action("toggle-highlighter", { enabled: args.enabled }),
+  toggleExternalOrbCursor: async ({ args, toggleOrbCursor }) => {
+    const result = await toggleOrbCursor(args.enabled);
+    return {
+      type: "orb-cursor-state",
+      enabled: result?.enabled ?? args.enabled ?? true,
+    };
+  },
   queueExternalAction: ({ args, action, resolveLens }) => action("queue-lens", { lens: resolveLens(args.action) }),
   setExternalLensContext: ({ args, action, resolveGenerator }) => action("set-generator", { generator: resolveGenerator(args.lens) }),
   previewExternalGo: ({ readPreview }) => Promise.resolve(readPreview()),
@@ -123,6 +130,8 @@ export function parseExtensionIntent(text) {
   if (/^(?:collect|save) (?:this|these|the selected|selected) (?:items|material|content)? ?(?:in|as) (?:a )?lens$/i.test(value)) return { name: "saveExternalCaptureAsLens", args: {} };
   if (/^(turn on|enable|start) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: true } };
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
+  if (/^(?:make|turn) (?:the )?orb (?:into|on as) (?:my |the )?cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: true } };
+  if (/^(?:return to|restore|use) (?:the )?native cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: false } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
   if (/^preview( the)? (stack|go)$/i.test(value)) return { name: "previewExternalGo", args: {} };
   if (/^(show|open|review)( the)? (library )?import$/i.test(value)) return { name: "showExternalLibraryImport", args: {} };

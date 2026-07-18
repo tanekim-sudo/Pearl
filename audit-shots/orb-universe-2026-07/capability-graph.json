@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-00601dff",
+  "fingerprint": "fnv1a-d2f2119b",
   "counts": {
-    "nodes": 206,
+    "nodes": 208,
     "edges": 516
   },
   "nodes": [
@@ -7023,6 +7023,102 @@
       "domains": [
         "paper",
         "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.toggleOrbCursor",
+      "version": 1,
+      "kind": "capability",
+      "name": "toggleOrbCursor",
+      "purpose": "Make the primary orb the literal pointer or restore the native cursor",
+      "examples": [
+        "please make the primary orb the literal pointer or restore the native cursor"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context"
+      ],
+      "undo": [
+        "restore-orb-context"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-context-changed"
+      ],
+      "tests": [
+        "capability-toggleOrbCursor",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
       ],
       "platform": "app"
     },
@@ -16767,6 +16863,101 @@
       "domains": [
         "extension",
         "highlight",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.toggleExternalOrbCursor",
+      "version": 1,
+      "kind": "capability",
+      "name": "toggleExternalOrbCursor",
+      "purpose": "Toggle the literal orb cursor on the supported external page",
+      "examples": [
+        "please toggle the literal orb cursor on the supported external page"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed"
+      ],
+      "persistence": [
+        "scene.workingSet.context"
+      ],
+      "undo": [
+        "restore-orb-context"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "orb-context-changed"
+      ],
+      "tests": [
+        "capability-toggleExternalOrbCursor",
+        "feature:companion.orb-runtime"
+      ],
+      "featureIds": [
+        "companion.orb-runtime"
+      ],
+      "canonicalCommands": [
+        "addOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
         "interface"
       ],
       "platform": "extension"

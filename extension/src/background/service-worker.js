@@ -16,6 +16,11 @@ import {
   writeLocalLibrary,
 } from "./library-store.js";
 import { validateExternalAction, validateExternalHandoff } from "../core/external-handoff.js";
+import {
+  ORB_CURSOR_HIDE_CSS,
+  ORB_CURSOR_TAB_STATE_KEY,
+  orbCursorTabState,
+} from "../core/orb-cursor-contract.js";
 import { inferenceResultToOperator, normalizeBeforeAfterExamples } from "../../../shared/before-after-examples.js";
 import { normalizeGenerationPlan, normalizeTasteFeedback } from "../../../shared/generation-plan.js";
 import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
@@ -83,10 +88,39 @@ async function executeGo(payload) {
   }
 }
 
-async function handle(message) {
+async function handle(message, sender = {}) {
   const { type, payload } = message;
   const session = await readSession();
   if (type === "get-session") return session;
+  if (type === "orb-cursor-get") {
+    const tabId = sender.tab?.id ?? payload.targetTabId ?? (await activeTab().catch(() => null))?.id;
+    if (!Number.isInteger(tabId)) return { enabled: false, supported: false };
+    const stored = await BrowserPlatform.storage.get("session", [ORB_CURSOR_TAB_STATE_KEY]);
+    return {
+      enabled: stored[ORB_CURSOR_TAB_STATE_KEY]?.[String(tabId)]?.enabled === true,
+      supported: true,
+      tabId,
+    };
+  }
+  if (type === "orb-cursor-set") {
+    const tabId = sender.tab?.id ?? payload.targetTabId;
+    if (!Number.isInteger(tabId)) throw new Error("orb cursor requires a supported page tab");
+    const scripting = globalThis.chrome?.scripting;
+    if (!scripting) throw new Error("orb cursor injection is unavailable");
+    const injection = { target: { tabId, allFrames: false }, css: ORB_CURSOR_HIDE_CSS, origin: "USER" };
+    if (payload.enabled === true) await scripting.insertCSS(injection);
+    else await scripting.removeCSS(injection).catch(() => {});
+    const stored = await BrowserPlatform.storage.get("session", [ORB_CURSOR_TAB_STATE_KEY]);
+    const tabs = orbCursorTabState(stored[ORB_CURSOR_TAB_STATE_KEY], tabId, payload.enabled === true);
+    await BrowserPlatform.storage.set("session", { [ORB_CURSOR_TAB_STATE_KEY]: tabs });
+    return { enabled: payload.enabled === true, supported: true, tabId };
+  }
+  if (type === "toggle-orb-cursor") return sendPage(type, payload);
+  if (type === "open-side-panel") {
+    const tab = await activeTab(payload.targetTabId);
+    await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
+    return { opened: true, tabId: tab.id };
+  }
   if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
   if (type === "compose-library-objects") return composeLocalLibraryObjects(payload.a, payload.b, { name: payload.name });
   if (type === "personal-command-save") {
@@ -336,7 +370,13 @@ async function handle(message) {
 
 globalThis.chrome?.runtime?.onInstalled.addListener(() => {
   globalThis.chrome.contextMenus.create({ id: "lens-capture", title: "Capture selection in Lens", contexts: ["selection"] });
-  globalThis.chrome.sidePanel?.setPanelBehavior?.({ openPanelOnActionClick: true });
+  globalThis.chrome.sidePanel?.setPanelBehavior?.({ openPanelOnActionClick: false });
+});
+
+globalThis.chrome?.action?.onClicked.addListener(async (tab) => {
+  if (!tab?.id || !/^https?:/.test(tab.url || "")) return;
+  await ensureBridge(tab);
+  await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
 });
 
 globalThis.chrome?.contextMenus?.onClicked.addListener(async (info, tab) => {
@@ -356,11 +396,17 @@ globalThis.chrome?.runtime?.onMessage.addListener((raw, sender, respond) => {
     assertTrustedSender(sender, globalThis.chrome.runtime.id);
     const validated = validateMessage(raw);
     if (!validated.ok) throw new Error(validated.error);
-    handle(validated.value).then((value) => respond({ ok: true, value }), (error) => respond({ ok: false, error: error.message }));
+    handle(validated.value, sender).then((value) => respond({ ok: true, value }), (error) => respond({ ok: false, error: error.message }));
   } catch (error) {
     respond({ ok: false, error: error.message });
   }
   return true;
+});
+
+globalThis.chrome?.tabs?.onRemoved?.addListener(async (tabId) => {
+  const stored = await BrowserPlatform.storage.get("session", [ORB_CURSOR_TAB_STATE_KEY]).catch(() => ({}));
+  const tabs = orbCursorTabState(stored[ORB_CURSOR_TAB_STATE_KEY], tabId, false);
+  await BrowserPlatform.storage.set("session", { [ORB_CURSOR_TAB_STATE_KEY]: tabs }).catch(() => {});
 });
 
 globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond) => {

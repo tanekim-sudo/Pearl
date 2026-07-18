@@ -21,6 +21,12 @@ import {
   swarmSummary,
   workerProposal,
 } from "./orb-swarm.js";
+import {
+  createTripleSpaceRecognizer,
+  isOrbCursorEditableTarget,
+  normalizeOrbCursorPreference,
+  orbCursorPresentation,
+} from "./orb-cursor.js";
 import { resolveDropIntent } from "./drop-intent-resolver.js";
 
 test("orb state machine carries task and effect IDs through verified canonical execution", async () => {
@@ -101,4 +107,39 @@ test("worker swarm rejects concurrent writes and fuses verified typed proposals"
   assert.equal(fusion.applicable, true);
   assert.equal(fusion.accepted.length, 2);
   assert.equal(swarmSummary(workers, .4).collapsed, true);
+});
+
+function target({ matches = [], cursor = "" } = {}) {
+  return {
+    cursor,
+    closest(selector) {
+      return matches.some((value) => selector.includes(value)) ? this : null;
+    },
+  };
+}
+
+test("Triple-Space recognizes one bounded unmodified sequence and excludes editing or controls", () => {
+  const recognizer = createTripleSpaceRecognizer({ intervalMs: 600 });
+  const page = target();
+  assert.deepEqual(recognizer.accept({ key: " ", timeStamp: 100, target: page }), {
+    accepted: true,
+    matched: false,
+    count: 1,
+  });
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 350, target: page }).matched, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 620, target: page }).matched, true);
+  assert.equal(recognizer.count, 0);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 900, target: target({ matches: ["input"] }) }).accepted, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 1000, target: target({ matches: ["button"] }) }).accepted, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 1100, target: page, metaKey: true }).accepted, false);
+});
+
+test("orb cursor contracts for text and preserves target affordances", () => {
+  const editable = target({ matches: ["contenteditable"] });
+  assert.equal(isOrbCursorEditableTarget(editable), true);
+  assert.equal(orbCursorPresentation(editable), "text");
+  assert.equal(orbCursorPresentation(target({ matches: ["draggable"] })), "grab");
+  assert.equal(orbCursorPresentation(target({ matches: ["a[href]"] })), "action");
+  assert.equal(orbCursorPresentation(target(), () => ({ cursor: "nwse-resize" })), "resize");
+  assert.equal(normalizeOrbCursorPreference({ enabled: true, source: "triple-space", updatedAt: 4 }).enabled, true);
 });

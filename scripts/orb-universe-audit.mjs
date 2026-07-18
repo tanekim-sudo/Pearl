@@ -59,11 +59,16 @@ try {
     await page.evaluate(() => localStorage.removeItem("lens.orb-universe.continued.v1"));
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("heading", { name: /Your cognition/ }).waitFor();
+    const orb = await page.locator(".companion-orb").boundingBox();
+    if (!orb || orb.width < 110) throw new Error("install orb is not a focal interface");
   });
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: "Cognitive library" }).waitFor();
+    await page.getByRole("heading", { name: "Your cognitive universe" }).waitFor();
+    const orb = await page.locator(".companion-orb").boundingBox();
+    if (!orb || orb.width < 110 || orb.x < 360 || orb.x > 820) throw new Error("home orb is not the spatial focal point");
+    if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
@@ -71,6 +76,9 @@ try {
   });
   await shot("04-stage-desktop", { width: 1600, height: 1000 }, "/scene/audit-scene", async (page) => {
     await page.locator('[data-semantic-anchor="scene-stage"]').first().waitFor();
+    const orb = await page.locator('[data-semantic-anchor="primary-orb"] .companion-orb').boundingBox();
+    if (!orb || orb.width < 110) throw new Error("Stage orb is not the primary manipulation handle");
+    if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
   });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
     const animation = await page.locator(".orb-rays").first().evaluate((node) => getComputedStyle(node).animationName);

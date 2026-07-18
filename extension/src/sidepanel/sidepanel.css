@@ -60,3 +60,45 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:1px solid 
 @keyframes extension-orb-trace{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
 @media(prefers-reduced-motion:reduce){.extension-orb-rays,.extension-orb-trace{animation:none!important}}
 @media(prefers-contrast:more){:root{--ex-muted:#d7d7d2;--ex-dim:#b7b8b3;--ex-line:rgba(255,255,255,.38);--ex-line-strong:rgba(255,255,255,.65)}main{background:var(--ex-bg)}}
+
+/* The panel is the expanded page orb, not a dashboard. */
+html,body,#root{min-height:100%}
+body{overflow-x:hidden}
+main{position:relative;min-height:100vh;padding:0 14px 18px;gap:12px;background:radial-gradient(circle at 50% 132px,rgba(216,194,141,.055),transparent 190px),var(--ex-bg)}
+header{position:relative;display:block;height:292px;padding:0;border:0}
+header>div:last-child{position:absolute;right:0;top:12px;z-index:4;display:flex;gap:4px}
+header>div:last-child button{min-height:28px;padding:3px 6px;border:0;color:var(--ex-muted);font-size:9px}
+.extension-orb-shell{position:absolute;left:50%;top:48px;width:148px!important;height:168px;display:block!important;transform:translateX(-50%);overflow:visible}
+.extension-orb{position:absolute;left:6px;top:0;width:136px;height:136px;min-height:136px;filter:drop-shadow(0 6px 25px rgba(216,194,141,.18))}
+.extension-orb svg{width:136px;height:136px}
+.extension-orb-rays path{stroke-width:.8}
+.extension-orb-label{position:absolute;left:50%;top:142px;width:220px;transform:translateX(-50%);text-align:center;color:var(--ex-muted);font-size:11px;letter-spacing:.02em}
+.extension-orb-emissions{position:absolute;left:74px;top:68px;width:0;height:0;pointer-events:none}
+.extension-lens-ring{position:absolute;width:154px;height:154px;transform:translate(-50%,-50%);border:1px solid rgba(216,194,141,.28);border-radius:50%;box-shadow:inset 0 0 24px rgba(216,194,141,.025)}
+.extension-context-star,.extension-candidate-star{position:absolute;width:5px;height:5px;border-radius:50%;background:#f5f2e8;box-shadow:0 0 8px rgba(216,194,141,.35)}
+.extension-context-star{transform:translate(-50%,-50%) rotate(calc(360deg / var(--star-count) * var(--star-index))) translateX(92px)}
+.extension-candidate-star{transform:translate(-50%,-50%) rotate(calc(-55deg + var(--candidate-index)*28deg)) translateX(112px)}
+.orb-view-tabs{position:absolute;z-index:5;left:0;right:0;top:24px;height:230px;display:block;padding:0;border:0;background:transparent;pointer-events:none;overflow:visible}
+.orb-view-tabs button{position:absolute;width:auto;min-height:26px;padding:2px 3px;border:0!important;color:var(--ex-dim);background:transparent!important;pointer-events:auto;font-size:9px;letter-spacing:.05em}
+.orb-view-tabs button[aria-current=page]{color:var(--ex-text);text-decoration:underline;text-decoration-color:var(--ex-focus);text-underline-offset:5px}
+.orb-view-tabs button:nth-child(1){left:50%;top:216px;transform:translateX(-50%)}
+.orb-view-tabs button:nth-child(2){left:9px;top:82px}
+.orb-view-tabs button:nth-child(3){left:12px;top:164px}
+.orb-view-tabs button:nth-child(4){right:8px;top:82px}
+.orb-view-tabs button:nth-child(5){right:12px;top:164px}
+.orb-view-tabs button:nth-child(6){right:0;top:14px}
+.orb-panel.active{position:relative;display:grid!important;max-height:calc(100vh - 316px);overflow:auto;padding:10px 10px 14px 16px;border:0;border-left:1px solid var(--ex-line-strong);background:linear-gradient(90deg,rgba(255,255,255,.018),transparent 65%)}
+.quick-start{display:none!important}
+.capture{gap:11px}
+.rack,.generator-rack,.fragments{max-height:none}
+.rack{grid-template-columns:1fr}
+.result{border-left:1px solid var(--ex-focus)}
+.companion{position:relative;bottom:auto;grid-template-columns:1fr auto auto;margin:0 0 8px;padding:10px 0 0 14px;border-top:0;border-left:1px solid var(--ex-line-strong);background:linear-gradient(90deg,rgba(255,255,255,.018),transparent 65%)}
+.companion .ghost{display:none}
+.companion input{height:48px;border:0;border-bottom:1px solid var(--ex-line-strong);font-size:13px}
+.companion button{align-self:end}
+.onboarding{background:radial-gradient(circle at 50% 38%,rgba(216,194,141,.06),transparent 180px),var(--ex-bg);text-align:center;justify-items:center}
+.onboarding .extension-orb-shell{position:relative;left:auto;top:auto;transform:none;margin-bottom:20px}
+.onboarding h1,.onboarding p{max-width:310px}
+.onboarding-mark{display:none}
+@media(max-width:380px){main{padding:0 12px 16px}.extension-orb{left:12px;width:124px;height:124px;min-height:124px}.extension-orb svg{width:124px;height:124px}.extension-orb-shell{top:54px}.extension-orb-label{top:132px}.orb-panel.active{max-height:calc(100vh - 306px)}}
