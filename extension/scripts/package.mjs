@@ -32,20 +32,24 @@ if (files.length + supplementalFiles.length < 12) {
 
 await new Promise((resolve, reject) => {
   const stream = createWriteStream(output);
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  const archive = new ZipArchive({
+    zlib: { level: 9 },
+    forceLocalTime: false,
+    platform: "UNIX",
+  });
   stream.on("close", resolve);
   stream.on("error", reject);
   archive.on("error", reject);
   archive.pipe(stream);
   for (const file of files) {
-    archive.file(path.join(sourceDir, file), {
+    archive.append(fs.readFileSync(path.join(sourceDir, file)), {
       name: file.split(path.sep).join("/"),
       date: new Date("1980-01-01T00:00:00.000Z"),
       mode: 0o644,
     });
   }
   for (const file of supplementalFiles) {
-    archive.file(file.source, {
+    archive.append(fs.readFileSync(file.source), {
       name: file.name,
       date: new Date("1980-01-01T00:00:00.000Z"),
       mode: 0o644,
