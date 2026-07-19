@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-3572cff4",
+  "fingerprint": "fnv1a-7d9b5eea",
   "counts": {
     "nodes": 238,
     "edges": 516
@@ -6105,7 +6105,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -6140,9 +6143,11 @@
         "boundary": "none"
       },
       "sideEffects": [],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -6151,7 +6156,9 @@
         "companion",
         "direct-ui"
       ],
-      "expectedEffects": [],
+      "expectedEffects": [
+        "semantic-orb-created"
+      ],
       "tests": [
         "capability-openExtensionDownload",
         "feature:extension.distribution",
@@ -6161,7 +6168,9 @@
         "extension.distribution",
         "shell.extension-first"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "read-only",
@@ -17373,7 +17382,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -17408,9 +17420,11 @@
         "boundary": "configured-provider-or-app-gateway"
       },
       "sideEffects": [],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17419,7 +17433,9 @@
         "companion",
         "direct-ui"
       ],
-      "expectedEffects": [],
+      "expectedEffects": [
+        "semantic-orb-created"
+      ],
       "tests": [
         "capability-openPackageRegistry",
         "feature:registry.cognitive-packages",
@@ -17429,7 +17445,9 @@
         "registry.cognitive-packages",
         "shell.extension-first"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "read-only",
@@ -21176,10 +21194,12 @@
       ],
       "tests": [
         "capability-openExternalSemanticOrbScene",
-        "feature:scene.semantic-orbs"
+        "feature:scene.semantic-orbs",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "scene.semantic-orbs"
+        "scene.semantic-orbs",
+        "shell.extension-first"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -22217,7 +22237,9 @@
       "refArgs": {},
       "preconditions": [
         "object validates",
-        "idempotency key is stable"
+        "idempotency key is stable",
+        "Scene is explicit",
+        "source material is preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -22259,10 +22281,12 @@
         "lens-state-changed"
       ],
       "persistence": [
-        "library.objects.upsert"
+        "library.objects.upsert",
+        "scene.semanticOrbs.append"
       ],
       "undo": [
-        "restore-library-snapshot"
+        "restore-library-snapshot",
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -22275,7 +22299,8 @@
         "move-state-changed",
         "function-state-changed",
         "lens-state-changed",
-        "library-changed"
+        "library-changed",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-showExternalLibraryImport",
@@ -22289,7 +22314,8 @@
         "shell.extension-first"
       ],
       "canonicalCommands": [
-        "upsertCanonicalObject"
+        "upsertCanonicalObject",
+        "createSemanticOrb"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -22322,7 +22348,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -22357,9 +22386,11 @@
         "boundary": "configured-provider-or-app-gateway"
       },
       "sideEffects": [],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -22367,7 +22398,9 @@
         "extension",
         "companion"
       ],
-      "expectedEffects": [],
+      "expectedEffects": [
+        "semantic-orb-created"
+      ],
       "tests": [
         "capability-browseExternalPackages",
         "feature:registry.cognitive-packages",
@@ -22377,7 +22410,9 @@
         "registry.cognitive-packages",
         "shell.extension-first"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "read-only",
@@ -22507,7 +22542,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -22547,9 +22585,11 @@
         "function-state-changed",
         "lens-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -22561,16 +22601,21 @@
         "extension-state-changed",
         "move-state-changed",
         "function-state-changed",
-        "lens-state-changed"
+        "lens-state-changed",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-openExternalCognitiveStudio",
-        "feature:artifacts.higher-order"
+        "feature:artifacts.higher-order",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "artifacts.higher-order"
+        "artifacts.higher-order",
+        "shell.extension-first"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -22694,7 +22739,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -22735,9 +22783,11 @@
         "lens-state-changed",
         "highlight-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -22750,16 +22800,21 @@
         "move-state-changed",
         "function-state-changed",
         "lens-state-changed",
-        "highlight-state-changed"
+        "highlight-state-changed",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-openExternalCognitivePullRequest",
-        "feature:extraction.cognitive-pull-request"
+        "feature:extraction.cognitive-pull-request",
+        "feature:shell.extension-first"
       ],
       "featureIds": [
-        "extraction.cognitive-pull-request"
+        "extraction.cognitive-pull-request",
+        "shell.extension-first"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",

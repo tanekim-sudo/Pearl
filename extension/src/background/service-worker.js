@@ -138,14 +138,16 @@ async function handle(message, sender = {}) {
   }
   if (type === "open-web-handoff") {
     await BrowserPlatform.storage.set("local", { cognitiveWorkflowHandoff: { ...payload, createdAt: Date.now() } });
-    await globalThis.chrome.tabs.create({ url: `https://representation-eta.vercel.app/?cognitive=${encodeURIComponent(payload.tab || "integrate")}` });
+    await globalThis.chrome.tabs.create({
+      url: `https://representation-eta.vercel.app/?handoff=${encodeURIComponent(payload.surface || "workspace")}&view=${encodeURIComponent(payload.tab || "integrate")}`,
+    });
     return { type: "cognitive-workflow-handoff", preserved: true };
   }
   if (type === "open-cognitive-pull-request") {
     if (!session.fragments.length) throw new Error("select explicit page material before opening an extraction proposal");
     const handoff = { kinds: payload.kinds, fragments: session.fragments, captureScope: "explicit-selection", createdAt: Date.now() };
     await BrowserPlatform.storage.set("local", { cognitivePullRequestHandoff: handoff });
-    await globalThis.chrome.tabs.create({ url: "https://representation-eta.vercel.app/?cognitive=pull-request" });
+    await globalThis.chrome.tabs.create({ url: "https://representation-eta.vercel.app/?handoff=cognitive-pull-request&view=pull-request" });
     return { type: "cognitive-pull-request-handoff", preserved: true, fragmentCount: session.fragments.length };
   }
   if (type === "invoke-primitive") {
@@ -424,6 +426,28 @@ globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond)
         opened: action.type === "lens-extension-open",
         authenticated: auth.authenticated,
         counts: { lenses: library.operators.length, generators: library.generators.length },
+      };
+    }
+    if (raw?.type === "pearl-workspace-handoff") {
+      validateExternalAction(raw, sender);
+      const local = await BrowserPlatform.storage.get("local", [
+        "cognitiveWorkflowHandoff",
+        "cognitivePullRequestHandoff",
+        "semanticOrbs",
+        "activeSemanticOrbId",
+      ]);
+      const activeSession = await readSession();
+      return {
+        type: "pearl-workspace-handoff",
+        handoff: local.cognitiveWorkflowHandoff || local.cognitivePullRequestHandoff || null,
+        semanticOrbs: (local.semanticOrbs || []).filter((orb) => !orb.archived).slice(0, 80),
+        activeSemanticOrbId: local.activeSemanticOrbId || null,
+        session: {
+          fragments: (activeSession.fragments || []).slice(0, 80),
+          queue: (activeSession.queue || []).slice(0, 40),
+          generator: activeSession.generator || null,
+          results: (activeSession.results || []).slice(-20),
+        },
       };
     }
     const handoff = validateExternalHandoff(raw, sender);

@@ -43,6 +43,22 @@ export async function checkTrustedExtensionInstallation(extensionId = import.met
   });
 }
 
+export async function requestTrustedExtensionHandoff(extensionId = import.meta.env.VITE_LENS_EXTENSION_ID) {
+  if (!extensionId || !globalThis.chrome?.runtime?.sendMessage || !globalThis.crypto?.randomUUID) {
+    return { connected: false, handoff: null };
+  }
+  const nonce = crypto.randomUUID().replaceAll("-", "");
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(extensionId, { type: "pearl-workspace-handoff", version: 1, nonce }, (value) => {
+      if (chrome.runtime.lastError || !value?.ok) {
+        resolve({ connected: false, handoff: null });
+        return;
+      }
+      resolve({ connected: true, ...(value.value || {}), handoff: value.value?.handoff || null });
+    });
+  });
+}
+
 export function trackExtensionFunnel(event, context = {}) {
   const endpoint = import.meta.env.VITE_LENS_ANALYTICS_ENDPOINT;
   if (!endpoint || !FUNNEL_EVENTS.has(event)) return false;

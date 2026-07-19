@@ -39,11 +39,12 @@ test("external library handoff requires trusted exact origin and nonce", () => {
   assert.throws(() => validateExternalHandoff({ ...message, token: "secret" }, { url: "http://localhost:5173/" }), /invalid/);
 });
 
-test("external install handshake permits only trusted status and open actions", () => {
+test("external handshake permits trusted status, open, and workspace continuation actions", () => {
   const sender = { url: "https://representation-eta.vercel.app/" };
   const base = { version: 1, nonce: "1234567890abcdef" };
   assert.equal(validateExternalAction({ ...base, type: "lens-install-check" }, sender).type, "lens-install-check");
   assert.equal(validateExternalAction({ ...base, type: "lens-extension-open" }, sender).type, "lens-extension-open");
+  assert.equal(validateExternalAction({ ...base, type: "pearl-workspace-handoff" }, sender).type, "pearl-workspace-handoff");
   assert.throws(() => validateExternalAction({ ...base, type: "install-extension" }, sender), /invalid/);
   assert.throws(() => validateExternalAction({ ...base, type: "lens-install-check" }, { url: "https://attacker.test" }), /untrusted/);
 });

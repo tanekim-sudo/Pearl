@@ -10,7 +10,18 @@ import {
   createTripleSpaceRecognizer,
   normalizeOrbCursorPreference,
 } from "../../shared/orb-cursor.js";
-import { checkTrustedExtensionInstallation, detectExtensionBrowser, trackExtensionFunnel, validChromeStoreUrl } from "../lib/extension-funnel.js";
+import {
+  checkTrustedExtensionInstallation,
+  detectExtensionBrowser,
+  requestTrustedExtensionHandoff,
+  trackExtensionFunnel,
+  validChromeStoreUrl,
+} from "../lib/extension-funnel.js";
+import {
+  continuationItems,
+  continuationMaterial,
+  continuationMaterialCount,
+} from "../lib/extension-continuation.js";
 import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import {
   LEGACY_UNIFIED_WORKSPACE_KEYS,
@@ -27,8 +38,8 @@ const SpeechRecognitionImpl =
 
 export function parseOrbRoute(locationLike = globalThis.location) {
   const path = String(locationLike?.pathname || "/").replace(/\/+$/, "") || "/";
-  const audit = new URLSearchParams(locationLike?.search || "");
-  if ([...audit.keys()].some((key) => /(?:audit|tour|brush|cognitive|learn)/i.test(key))) {
+  const query = new URLSearchParams(locationLike?.search || "");
+  if ([...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key))) {
     return { kind: "stage", path, sceneId: "release-audit", legacyAudit: true };
   }
   if (/^\/(?:stage|scene)(?:\/|$)/.test(path)) {
@@ -38,7 +49,14 @@ export function parseOrbRoute(locationLike = globalThis.location) {
     return { kind: "stage", path, sceneId: sceneId || null };
   }
   if (path === "/install") return { kind: "install", path };
-  if (path === "/" || path === "/library" || path === "/toolbox") return { kind: "home", path };
+  if (path === "/" || path === "/library" || path === "/toolbox") {
+    return {
+      kind: "home",
+      path,
+      handoff: query.get("handoff") || query.get("cognitive") || null,
+      handoffView: query.get("view") || null,
+    };
+  }
   if (/^\/(?:packages|settings|tasks)(?:\/|$)/.test(path)) return { kind: "library", section: path.split("/")[1], id: path.split("/")[2] || null, path };
   return { kind: "library", section: "library", path };
 }
@@ -196,11 +214,30 @@ function CandidateInspector({ candidates, onTaste }) {
   </ul>;
 }
 
-function LibraryHome({ route, scenes, onCreateScene, activeView, onView, install, context, lenses, candidates, onContextChange, onContextRemove, onLensChange, onLensRemove, onCandidateTaste }) {
+function LibraryHome({
+  route,
+  scenes,
+  onCreateScene,
+  onContinueHandoff,
+  extensionHandoff,
+  activeView,
+  onView,
+  install,
+  context,
+  lenses,
+  candidates,
+  onContextChange,
+  onContextRemove,
+  onLensChange,
+  onLensRemove,
+  onCandidateTaste,
+}) {
   const [query, setQuery] = useState("");
+  const continuationCount = continuationMaterialCount(extensionHandoff);
+  const isRoot = route.path === "/";
   const title = route.section && route.section !== "library"
     ? route.section[0].toUpperCase() + route.section.slice(1)
-    : "Your cognitive universe";
+    : isRoot ? "Continue beyond the tab." : "Your cognitive universe";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
@@ -211,10 +248,29 @@ function LibraryHome({ route, scenes, onCreateScene, activeView, onView, install
       <button type="button" onClick={() => onView(activeView === "library" ? null : "library")}>Library</button>
     </header>
     <section className="orb-home-intro">
-      <div className="orb-kicker">Extension-first · Stage on demand</div>
+      <div className="orb-kicker">{isRoot ? "Pearl continuation space" : "Library and saved work"}</div>
       <h1>{title}</h1>
-      <p>Speak a goal, bring material close, or resume a thought.</p>
+      <p>{isRoot
+        ? "Pearl begins on the page you are already using. This space opens only when the work needs more room: spatial arrangement, deep comparison, editing, history, or a durable Scene."
+        : "Review reusable cognition and resume saved work without leaving the extension-first flow."}</p>
     </section>
+    {isRoot && <section className="orb-continuation" aria-label="Continue extension work">
+      <span className="orb-continuation-pearl" aria-hidden="true" />
+      <div>
+        <small>{extensionHandoff?.connected ? "Pearl extension connected" : "Waiting for the page Pearl"}</small>
+        <h2>{continuationCount
+          ? `${continuationCount} ${continuationCount === 1 ? "piece" : "pieces"} ready to continue`
+          : route.handoff ? "The handoff is ready for more room" : "Open this space from the Pearl on any page"}</h2>
+        <p>{continuationCount
+          ? "The explicit capture, active context, candidates, and saved orbs remain source-linked. Continue them in one Scene without turning this site into a second starting point."
+          : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
+      </div>
+      {continuationCount
+        ? <button className="orb-primary" type="button" onClick={onContinueHandoff}>Continue this work</button>
+        : extensionHandoff?.connected
+          ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
+          : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
+    </section>}
     <section className="orb-recent-orbit" aria-label="Recent scenes and tasks">
       {scenes.slice(0, 2).map((scene, index) => <button
         key={scene.id}
@@ -224,9 +280,11 @@ function LibraryHome({ route, scenes, onCreateScene, activeView, onView, install
         <i />{scene.name || "Untitled Scene"}
         <small>{(scene.items?.length || 0) + (scene.nodes?.length || 0)} materials · {(scene.frames?.length || 0)} frames</small>
       </button>)}
-      <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>
+      {!isRoot && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
     </section>
-    <p className="orb-home-prompt">Hold the orb to speak · click for command · drag material into its orbit</p>
+    <p className="orb-home-prompt">{isRoot
+      ? "The website is a continuation surface, not the starting point."
+      : "Hold Pearl to speak · click for command · drag material into its orbit"}</p>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
       <div>
         <span>{activeView === "library" ? "Cognitive library" : activeView}</span>
@@ -380,7 +438,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const orbUndoRef = useRef(null);
   const approvalResolverRef = useRef(null);
   const [install, setInstall] = useState({ status: "checking", trusted: false });
-  const [continued, setContinued] = useState(() => localStorage.getItem(ORB_CONTINUE_KEY) === "true");
+  const [extensionHandoff, setExtensionHandoff] = useState({ connected: false, handoff: null, session: null, semanticOrbs: [] });
   const [orb, setOrb] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("lens.orb.surface.v1") || "null");
@@ -409,7 +467,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const [externalCursorMode, setExternalCursorMode] = useState(false);
   const [outputFrameOpen, setOutputFrameOpen] = useState(() => {
     const query = new URLSearchParams(location.search);
-    return query.get("frame") === "legacy" || [...query.keys()].some((key) => /(?:audit|tour|brush|cognitive|learn)/i.test(key));
+    return query.get("frame") === "legacy" || [...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key));
   });
   orbRef.current = orb;
 
@@ -437,6 +495,15 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (route.kind !== "home") return undefined;
+    let active = true;
+    requestTrustedExtensionHandoff().then((value) => {
+      if (active) setExtensionHandoff(value);
+    });
+    return () => { active = false; };
+  }, [route.kind, route.handoff]);
 
   useEffect(() => {
     localStorage.setItem("lens.orb.surface.v1", JSON.stringify(orb));
@@ -562,14 +629,15 @@ export default function OrbUniverseShell({ StageComponent }) {
       placement: {
         ...value.placement,
         x: Math.max(28, (window.innerWidth - (route.kind === "stage" ? 120 : 160)) / 2),
-        y: Math.max(120, (window.innerHeight - (route.kind === "stage" ? 120 : 160)) / 2),
+        y: route.kind === "stage"
+          ? Math.max(120, (window.innerHeight - 120) / 2)
+          : Math.max(120, window.innerHeight - 86),
       },
     }));
   }, [route.kind]);
 
   function continueToLibrary() {
     localStorage.setItem(ORB_CONTINUE_KEY, "true");
-    setContinued(true);
     navigate("/library");
   }
 
@@ -1235,6 +1303,51 @@ export default function OrbUniverseShell({ StageComponent }) {
     navigate(`/scene/${encodeURIComponent(id)}`);
   }
 
+  async function continueExtensionWork() {
+    const id = `scene-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+    const carriedItems = continuationItems(extensionHandoff);
+    const material = continuationMaterial(extensionHandoff, {
+      id: `extension-working-set-${globalThis.crypto?.randomUUID?.() || Date.now()}`,
+      surface: route.handoff,
+    });
+    const execution = await executeOrbCommand({
+      orb: createOrbState(),
+      command: "createSemanticOrb",
+      state: { semanticOrbs: [], activeSemanticOrbId: null },
+      args: { sceneId: id, material, placement: { x: 0, y: 0 }, activate: true },
+      taskId: `extension-handoff:${id}`,
+      observe: async ({ result }) => ({ effects: result.effects }),
+    });
+    const scene = createScene({
+      id,
+      name: extensionHandoff?.handoff?.name || "Continued from Pearl",
+      items: carriedItems,
+      semanticOrbs: execution.state.semanticOrbs,
+      activeSemanticOrbId: execution.state.activeSemanticOrbId,
+      metadata: {
+        createdFrom: "pearl-extension-handoff",
+        handoffSurface: route.handoff || extensionHandoff?.handoff?.surface || "workspace",
+        handoffQueue: (extensionHandoff?.session?.queue || []).map((entry) => entry.id).filter(Boolean),
+      },
+    });
+    const scenes = [...(sceneWorkspace.scenes || []).filter((entry) => entry.id !== scene.id), scene];
+    const serialized = serializeUnifiedWorkspace({
+      scenes,
+      activeSceneId: scene.id,
+      items: scene.items,
+      nodes: scene.nodes,
+      camera: scene.camera,
+      frames: scene.frames,
+      orbInstances: scene.orbInstances,
+      semanticOrbs: scene.semanticOrbs,
+      activeSemanticOrbId: scene.activeSemanticOrbId,
+      workingSet: scene.workingSet,
+    });
+    localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
+    setSceneWorkspace(JSON.parse(serialized));
+    navigate(`/scene/${encodeURIComponent(id)}`);
+  }
+
   const routedScene = (sceneWorkspace.scenes || []).find((scene) => scene.id === route.sceneId)
     || createScene({ id: route.sceneId || "untitled", name: route.sceneId || "Untitled Scene" });
 
@@ -1273,7 +1386,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     </div>;
   }
 
-  const showInstall = route.kind === "install" || (route.kind === "home" && !continued && install.status !== "installed");
+  const showInstall = route.kind === "install";
   return <div className="orb-universe">
     {showInstall
       ? <InstallLanding install={install} onContinue={continueToLibrary} />
@@ -1281,6 +1394,8 @@ export default function OrbUniverseShell({ StageComponent }) {
           route={route}
           scenes={sceneWorkspace.scenes || []}
           onCreateScene={createBlankScene}
+          onContinueHandoff={continueExtensionWork}
+          extensionHandoff={extensionHandoff}
           activeView={emittedView}
           onView={setEmittedView}
           install={install}

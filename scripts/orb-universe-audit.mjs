@@ -58,19 +58,21 @@ async function shot(name, viewport, url, setup) {
 }
 
 try {
-  await shot("01-install-desktop", { width: 1600, height: 1000 }, "/", async (page) => {
+  await shot("01-continuation-desktop", { width: 1600, height: 1000 }, "/", async (page) => {
     await page.evaluate(() => localStorage.removeItem("lens.orb-universe.continued.v1"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: /Your cognition/ }).waitFor();
+    await page.getByRole("heading", { name: /Continue beyond the tab/ }).waitFor();
+    await page.getByRole("region", { name: "Continue extension work" }).waitFor();
     const orb = await page.locator(".companion-orb").boundingBox();
-    if (!orb || orb.width < 110) throw new Error("install orb is not a focal interface");
+    if (!orb || orb.width < 28 || orb.width > 36) throw new Error("continuation Pearl is not compact");
+    if (await page.getByRole("link", { name: /Add Pearl to Chrome/ }).count()) throw new Error("extension download still dominates the web root");
   });
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "Your cognitive universe" }).waitFor();
     const orb = await page.locator(".companion-orb").boundingBox();
-    if (!orb || orb.width < 110 || orb.x < 360 || orb.x > 820) throw new Error("home orb is not the spatial focal point");
+    if (!orb || orb.width < 28 || orb.width > 36 || orb.x < 360 || orb.x > 820) throw new Error("library Pearl is not compact and centered");
     if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
@@ -117,7 +119,7 @@ try {
     await page.reload({ waitUntil: "networkidle" });
     await page.locator('[data-semantic-anchor="scene-stage"]').first().waitFor();
     const orb = await page.locator('[data-semantic-anchor="primary-orb"] .companion-orb').boundingBox();
-    if (!orb || orb.width < 110) throw new Error("Stage orb is not the primary manipulation handle");
+    if (!orb || orb.width < 28 || orb.width > 36) throw new Error("Stage Pearl is not a compact primary manipulation handle");
     if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
     await page.locator(".semantic-orb-cluster").first().waitFor();
     await page.locator(".semantic-orb-cluster").first().click();

@@ -62,7 +62,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
+- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -179,7 +179,7 @@
 - PASS — `stopCritiqueSession` (app): state-or-visible-artifact-changed
 - PASS — `openPackageRegistry` (app): state-or-visible-artifact-changed
 - PASS — `createSignedPackage` (app): state-or-visible-artifact-changed
-- PASS — `publishCognitivePackage` (app): precise setup or authentication boundary before mutation
+- PASS — `publishCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `installCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `rollbackCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `deprecateCognitivePackage` (app): state-or-visible-artifact-changed

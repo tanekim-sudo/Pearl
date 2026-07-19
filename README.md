@@ -1,6 +1,6 @@
 # Pearl
 
-Pearl is an orb-centered operating environment for reusable cognition. The Chrome extension is the everyday surface; its voice-first Pearl acts on material anywhere. The web root is extension onboarding and the cognitive library, while the full-bleed spatial Stage opens only for explicit deep work. Moves, Functions, Lenses, Scenes, optional Output Frames, selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
+Pearl is an extension-first operating environment for reusable cognition. The small in-page Pearl is the everyday product: it observes only explicit material, accepts voice or direct manipulation, executes bounded capabilities, and stays with the page where the work began. The website is its continuation surface—not a download landing page or a competing blank app. It receives explicit extension handoffs when spatial arrangement, deep editing, comparison, history, durable Scenes, or larger review surfaces cannot fit safely in the original tab.
 
 This README is the canonical product and engineering contract for the fully realized product. “Must” and “shall” describe required behavior. Optional future extensions are isolated in [Expansion roadmap](#expansion-roadmap).
 
@@ -18,7 +18,7 @@ Most AI products make the prompt, model response, and conversation the primary u
 
 ### Experience principles
 
-1. **Extension and orb first.** A person can select material anywhere and state a goal without first opening a blank workspace.
+1. **The page Pearl is primary.** A person selects material and states a goal on the page already in use; the website opens only when that work needs more room.
 2. **Explicit execution.** Selecting, highlighting, queueing, or previewing never runs a model. Only explicit **GO** or an equally explicit command executes.
 3. **Preserve sources.** Branching and interpretation create lineage-linked outputs; they do not silently overwrite source material.
 4. **Progressive disclosure.** Common actions stay immediate. Graphs, model assignments, schemas, provenance, and advanced composition remain inspectable without crowding the default surface.
@@ -29,6 +29,18 @@ Most AI products make the prompt, model response, and conversation the primary u
 9. **Accessible equivalence.** Pointer, touch, keyboard, and voice paths reach the same core outcomes.
 10. **Terminological discipline.** Move means atomic action, Function means process, and Lens means way of seeing/context everywhere.
 11. **Pearl materiality.** Every surface uses depth, softness, subtle iridescence, smooth motion, layered translucency, and quiet luminosity. Decoration that does not clarify state, hierarchy, or action is removed.
+
+## Product topology: page first, continuation second
+
+Pearl has one product distributed across two differently constrained surfaces:
+
+1. **The browser page is the point of origin.** The injected Pearl and side panel capture explicit selections, hold bounded context, apply Moves, Functions, and Lenses, stage candidates, accept taste feedback, and insert reviewed results without forcing a context switch.
+2. **The web root is a continuation receiver.** `/` asks the trusted extension for an explicit preserved working set and shows what is ready to continue. It never makes extension download the primary display, never creates a Scene merely because someone visited, and never pretends to possess page context that was not handed off.
+3. **A Scene is overflow space.** A user opens `/scene/:id` when the original page cannot contain spatial arrangement, many artifacts, branching graphs, detailed provenance, semantic orbs, version review, or Output Frames. The handoff creates source-linked Scene material and one active semantic orb through canonical commands.
+4. **The library is durable memory.** `/library`, `/packages`, `/tasks`, and `/settings` organize reusable and account-level objects. They support the page Pearl; they are not the default place where work must begin.
+5. **Installation is secondary setup.** `/install` remains reachable for first-time setup and store/manual installation, but it is not the home page or the product’s main visual proposition.
+
+The continuation handshake is versioned, nonce-bound, and accepted only from exact trusted origins. It can carry the extension’s explicitly captured fragments, queued action references, active Lens reference, staged results, semantic orbs, and a requested continuation surface. The website materializes only what was explicitly preserved; browser-protected pages and unavailable extension messaging degrade to saved web Scenes and library access without fabricating a handoff.
 
 ## Core ontology
 
@@ -98,17 +110,19 @@ Ambiguous records default to reversible Lens/context classification and retain s
 - A **semantic orb** is a small, user-created, Scene-persistent capsule that may represent an empty emerging idea, material, selection, Move, Function, Lens, candidate, branch, query, transcript, external capture, grouped context, or Scene. Opening one mounts its working set into the agent shell; only one capsule is active at a time.
 - A **worker orb** is a run-scoped read, research, or evaluation process. It returns a typed proposal to the agent shell and never becomes a persistent semantic orb unless the user explicitly promotes a verified result.
 
-### Orb visual and motion language
+### Pearl visual and motion language
 
-The orb uses a warm-white core, a low-chroma pale-gold energy field, sparse irregular traces, and neutral near-black space. Gold is reserved for focus, causality, and acceptance; it is not a general decoration color. Stage and library surfaces use open editorial hierarchy, hairlines, and negative space rather than planetary motifs, glass cards, dotted grids, or pill-heavy dashboards.
+Every AI Pearl is precious because it is small: 28–36 CSS pixels at rest, with a perfectly circular silhouette and a slightly off-center nucleus. The material stack is a warm paper-adjacent interior body, an asymmetric translucent nucleus, a thin nacre layer constrained to unsaturated rose/celadon/pale-gold interference, a blurred low-opacity reflection proxy, and one small sharp softbox highlight. It gathers surrounding light; it does not emit it. Outer glows, radial “energy” rays, saturated cyan/magenta, thick borders, and decorative particle fields are prohibited. A set-down Pearl may use only a whisper of contact shadow.
 
-Only one state motion may dominate at once: slow idle respiration, amplitude-bounded listening, focused interpretation, ordered planning points, arriving research provenance, causal execution traces, controlled branching, a still approval ring, one interrupted blocked path, a quiet completion settle, or checkpoint retraction. Reduced-motion mode renders each state statically. Motion uses transform, opacity, and SVG stroke offsets; full-screen blur and uncontrolled particles are prohibited.
+Two or three internal layers move by fractions of a pixel relative to pointer position and velocity so the object reads as volume rather than a flat disc. Cursor mode uses spring lag with mass, one soft overshoot, and no teleporting. Rotation is nearly imperceptible; nacre shifts because the viewing proxy changes, not because the Pearl spins. Idle breathing is sinusoidal at ±2% over four seconds. Noticing appears as slowly warming interior translucency, never a pulse. Reduced-motion collapses every state and parallax layer to a static, fully legible composition.
+
+The surrounding interface follows the same material logic: depth without spectacle, soft hierarchy, subtle iridescence, smooth settling, layered translucency, quiet luminosity, and aggressive removal of ornamental chrome. Paper remains paper-like; dark space remains neutral; controls appear only when they clarify a current action or state.
 
 The Scene orb input is wired to the same companion planner, director verbs, canonical effects, persistence, and undo stack as the full instrumentation view. Opening that view is an adaptive handoff, not a second implementation. The extension side panel and isolated page overlay use the same restrained state grammar at their smaller scale.
 
 ### Orb cursor, context, and workers
 
-Triple-Space outside editable fields and controls makes the primary orb the literal cursor on web Scenes and ordinary extension-enabled pages. The precision hotspot remains aligned to the real pointer; text, action, grab, and resize targets change the orb presentation without changing native pointer semantics. Escape or a second Triple-Space sequence restores the native cursor. Cursor mode is persisted per web surface and per extension tab. Browser-protected pages, browser chrome, cross-origin frames, and pages where content scripts are prohibited retain the native cursor and offer the side-panel fallback.
+Triple-Space outside editable fields and controls makes the primary Pearl the literal cursor on web Scenes and ordinary extension-enabled pages. Its rendered body follows through spring physics while an invisible precision hotspot remains aligned to the real pointer, so mass never degrades native targeting. Text, action, grab, and resize targets change presentation without changing pointer semantics. Escape or a second Triple-Space sequence restores the native cursor. Cursor mode is persisted per web surface and per extension tab. Browser-protected pages, browser chrome, cross-origin frames, and pages where content scripts are prohibited retain the native cursor and offer the side-panel fallback.
 
 Dragging material onto Pearl adds a source-preserving context object. Dragging a Lens applies an editable atmosphere with explicit strength. Both are inspectable, removable, keyboard reachable, undoable, and persisted in the active Scene working set. Dragging context back to the Stage creates a provenance-linked copy rather than moving or deleting the source. Candidate batches appear as constellations with equivalent Yes, No, and More-like-this controls.
 
@@ -196,7 +210,7 @@ Direct manipulation, companion `semanticTransfer`, and extension capture use the
 
 ### One unbounded Scene, optional bounded Frames
 
-The canonical workspace is a versioned, unbounded Scene with one camera, one selection system, and one persistence envelope for working material, AI nodes, relationships, context, Lenses, candidates, branches, checkpoints, and orb instances. Visiting the web root does not create a Scene; the library creates one only after an explicit New Scene action.
+The canonical overflow workspace is a versioned, unbounded Scene with one camera, one selection system, and one persistence envelope for working material, AI nodes, relationships, context, Lenses, candidates, branches, checkpoints, and Pearl instances. Visiting the web root does not create a Scene. A Scene appears only after an explicit New Scene action or an explicit extension continuation handoff; the latter preserves captured source IDs/provenance and mounts the carried working set into one active semantic orb.
 
 An Output Frame is an optional 8.5×11-inch publication region at 96 DPI (768×1104 world units) with a 24-unit content margin. Only objects and nodes carrying that Frame’s `frameId` are clamped to its bounds. Oversized Frame-local objects scale to fit; strokes retain shape; text width is bounded; nodes retain their full footprint. Scene-local material without a `frameId` remains unbounded.
 
@@ -764,7 +778,7 @@ No subscription row means Free. The newest active/trialing recognized subscripti
 
 ### Adoption and synchronization
 
-On sign-in, Lens compares anonymous/local and account snapshots:
+On sign-in, Pearl compares anonymous/local and account snapshots:
 
 - if the account is empty, local work is adopted;
 - if local work adds distinct content, the user chooses remote, merge, or local;
@@ -774,19 +788,19 @@ On sign-in, Lens compares anonymous/local and account snapshots:
 
 Cloud saves are debounced and flushed when the page hides. Failure leaves the local cache authoritative and retryable. In-flight model jobs and private transient selections do not sync unless explicitly materialized.
 
-## Pearl Everywhere browser extension
+## Pearl browser extension
 
-The extension brings the same capture, queue, GO, result, library, learning, critique, and companion semantics to external web pages.
+The extension is Pearl’s primary surface. It brings capture, queue, GO, result, library, learning, critique, semantic-orb, and companion semantics to the web page where the user’s source material already lives.
 
 ### Capture and execution
 
-1. The user invokes Lens by action, context menu, or `Alt+Shift+L`.
+1. The user invokes Pearl by the in-page object, extension action, context menu, or `Alt+Shift+L`.
 2. The extension requests per-site access only when needed.
 3. The highlighter captures only explicit native selections and renders persistent overlays in an isolated open shadow root.
 4. Raw fragments, queue, tokens, and staged results live in session storage.
 5. The side panel shows source origins, character disclosure, ordered actions, Lens context, generation plan, and preview.
 6. GO sends only disclosed fragments and selected object references under an idempotency key.
-7. Results remain staged until Copy, Insert, Replace, Annotate, Open in Lens, or Save is explicit.
+7. Results remain staged until Copy, Insert, Replace, Annotate, Continue in Pearl, or Save is explicit.
 
 Navigation clears page-bound raw material. Active runs can be cancelled. Anonymous libraries remain local and merge after later sign-in.
 
@@ -802,9 +816,15 @@ Generic textarea/contenteditable insertion uses a revision snapshot and refuses 
 
 ### Companion parity
 
-The extension companion can capture, toggle highlighter, save as Move/Lens, queue an action, bind Lens context, preview/press GO, copy/insert/replace/annotate/open results, manage library import, learn before/after transformations, capture an authorized visible tab, record taste, run critique, compose objects, invoke/reorder Primitive Moves, set generation branches, and arm Merge previews.
+The extension companion can capture, toggle highlighter, save as Move/Function/Lens, queue an action, bind Lens context, preview/press GO, copy/insert/replace/annotate/open results, create and mutate semantic orbs, manage library import, learn before/after transformations, capture an authorized visible tab, record taste, run critique, compose objects, invoke/reorder Primitive Moves, set generation branches, and arm Merge previews.
 
-Extension effects use the same schemas and validation as the web app. Full spatial editing falls back to an authenticated, short-lived Open in Lens artifact.
+Extension effects use the same schemas and validation as the continuation site. Work that exceeds the side panel opens a trusted continuation handoff carrying only explicit page material and stable references.
+
+### Extension-to-site continuation
+
+The extension opens the website for capabilities that genuinely need more room: spatial arrangement, multi-orb composition, full Function editing, large candidate comparison, source/provenance inspection, package review, cognitive pull requests, and durable Output Frames. `open-web-handoff`, `openExternalSemanticOrbScene`, `openExternalCognitiveStudio`, and cognitive-pull-request flows write an idempotent local handoff before opening `/?handoff=<surface>&view=<view>`.
+
+The website then requests that handoff directly from the configured trusted extension ID using a nonce-bound `pearl-workspace-handoff` message. The extension returns only explicitly preserved fragments, queue references, active Lens data, staged results, and saved semantic-orb records. Continuing creates a Scene through the canonical semantic-orb command path and materializes source-linked copies; it does not delete or move extension state. If messaging is unavailable, the root remains a quiet continuation/library surface and offers setup only as a secondary `/install` link.
 
 ### Distribution and platforms
 
@@ -911,13 +931,16 @@ npm run release:check
 
 The release gate must also prove that its mutation sanity check fails when a required handler is intentionally removed, scan release artifacts for secrets, and run model-safe browser audits for transcript learning, before/after learning, account adoption, companion effects, branch geometry, explicit GO, and page/node integration.
 
-Parallel-cognition release evidence must additionally cover continuous natural-language command dispatch, stale-confirmation arbitration, ledger-backed retry, reversible demonstrations, BranchSpec persistence after reload, unique 3–8 word labels, all taste controls, Primitive Move migration/overrides, screen-space proximity Merge, and the complete 177-capability effect matrix.
+Parallel-cognition release evidence must additionally cover continuous natural-language command dispatch, stale-confirmation arbitration, ledger-backed retry, reversible demonstrations, BranchSpec persistence after reload, unique 3–8 word labels, all taste controls, Primitive Move migration/overrides, screen-space proximity Merge, trusted extension continuation, and the complete generated capability effect matrix.
 
 ## Architecture and safe changes
 
 ```mermaid
 flowchart LR
-  UI[Web direct manipulation] --> CMD[Shared domain commands]
+  PAGE[In-page Pearl + side panel] --> CMD[Shared domain commands]
+  PAGE --> HANDOFF[Trusted continuation handoff]
+  HANDOFF --> UI[Web continuation + Scene]
+  UI --> CMD
   COM[Companion / voice / director] --> CMD
   EXT[Browser extension] --> CMD
   CMD --> OBJ[Move / Function / Lens schemas]
@@ -940,6 +963,8 @@ Primary ownership:
 - `shared/generation-plan.js` — candidates, branch specs, budgets, and taste.
 - `shared/lens-perceptual-model.js`, `shared/lens-context.js` — Lens perception and bounded context.
 - `shared/feature-contracts.js` — capability ownership and release baseline.
+- `client/components/OrbUniverseShell.jsx` — continuation receiver, library routes, Scene overflow shell, and canonical handoff materialization.
+- `client/lib/extension-funnel.js` — trusted extension status and nonce-bound continuation retrieval.
 - `client/` — direct gestures, views, companion adapters, and ghost director.
 - `server/` and `api/` — authenticated model and execution boundaries.
 - `extension/` — capture, side panel, adapters, companion, storage, and platform builds.
@@ -965,7 +990,7 @@ cp .env.example .env
 npm run dev
 ```
 
-The Vite client opens at `http://localhost:5173`; the API server uses `http://localhost:8787`.
+The Vite client opens the continuation receiver at `http://localhost:5173`; the API server uses `http://localhost:8787`. Extension setup remains at `/install`, durable objects at `/library`, and full overflow work at `/scene/:id`.
 
 Production-style local run:
 

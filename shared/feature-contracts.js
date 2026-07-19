@@ -256,12 +256,25 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("shell.extension-first", {
     migrationVersion: 4,
     domains: ["interface", "extension", "scene"],
-    commands: [],
-    ui: ["client/components/OrbUniverseShell.jsx"],
+    commands: ["createSemanticOrb"],
+    ui: [
+      "client/components/OrbUniverseShell.jsx:orb-continuation",
+      "client/components/OrbUniverseShell.jsx:InstallLanding",
+    ],
     companion: ["openExtensionDownload", "openPackageRegistry"],
-    extension: ["showExternalLibraryImport", "browseExternalPackages"],
-    persistence: ["lens.orb-universe.continued.v1"],
-    tests: ["client/lib/extension-funnel.test.js", "shared/orb-universe.test.js"],
+    extension: [
+      "showExternalLibraryImport", "browseExternalPackages",
+      "openExternalSemanticOrbScene", "openExternalCognitiveStudio", "openExternalCognitivePullRequest",
+    ],
+    persistence: [
+      "lens.orb-universe.continued.v1", "cognitiveWorkflowHandoff",
+      "cognitivePullRequestHandoff", "lens.scenes.v4",
+    ],
+    tests: [
+      "client/lib/extension-funnel.test.js", "client/lib/extension-continuation.test.js",
+      "shared/orb-universe.test.js",
+      "extension/tests/core.test.js",
+    ],
     owner: "client/components/OrbUniverseShell.jsx",
   }),
 ]);

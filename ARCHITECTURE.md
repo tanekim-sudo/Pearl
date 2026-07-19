@@ -14,7 +14,7 @@
 - `shared/lens-context.js` — bounded/isolated Lens context compilation and provenance.
 - `shared/transcript-learning.js` and `shared/before-after-examples.js` — private evidence parsing and canonical inference inputs.
 - `client/lib/unified-workspace.js` — Scene v4 migration, atomic latest-snapshot Scene updates, semantic-orb persistence, optional Output Frames, unbounded world coordinates, frame-local bounds, and legacy aliases.
-- `client/components/OrbUniverseShell.jsx` — extension install/library routing, explicit Stage entry, and the visible orb-to-companion runtime bridge.
+- `client/components/OrbUniverseShell.jsx` — extension-first continuation reception, secondary install/library routing, canonical handoff-to-Scene materialization, explicit Stage entry, and the visible Pearl-to-companion runtime bridge.
 - `client/components/CompanionOrb.jsx`, `client/components/SemanticOrbLayer.jsx`, `client/orb-visual-tokens.css`, and `client/orb-universe.css` — the singular agent shell, compact persistent capsules, restrained motion tokens, accessible static states, and adaptive repository/Stage surfaces.
 - `client/styles.css`, `client/styles-idea.css`, and `extension/src/sidepanel/sidepanel.css` — Pearl’s shared material language: soft depth, subtle iridescence, layered translucent surfaces, quiet luminosity, and reduced decorative chrome across every interactive layer.
 - `client/` — gestures and views; director animation consumes semantic anchors and verified effect traces.
