@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 238
-- Passed: 238
+- Total: 251
+- Passed: 251
 - Failed: 0
 - Skipped: 0
 
@@ -11,6 +11,12 @@
 - PASS — `fitPaper` (app): state-or-visible-artifact-changed
 - PASS — `zoomPaper` (app): state-or-visible-artifact-changed
 - PASS — `panPaper` (app): state-or-visible-artifact-changed
+- PASS — `redoWorkspace` (app): state-or-visible-artifact-changed
+- PASS — `exportWorkspace` (app): state-or-visible-artifact-changed
+- PASS — `shareWorkspace` (app): state-or-visible-artifact-changed
+- PASS — `toggleWorkspaceTheme` (app): state-or-visible-artifact-changed
+- PASS — `startWorkspaceTour` (app): state-or-visible-artifact-changed
+- PASS — `openRoleSetup` (app): state-or-visible-artifact-changed
 - PASS — `spawnText` (app): state-or-visible-artifact-changed
 - PASS — `createMove` (app): state-or-visible-artifact-changed
 - PASS — `editMove` (app): state-or-visible-artifact-changed
@@ -62,7 +68,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -179,7 +185,7 @@
 - PASS — `stopCritiqueSession` (app): state-or-visible-artifact-changed
 - PASS — `openPackageRegistry` (app): state-or-visible-artifact-changed
 - PASS — `createSignedPackage` (app): state-or-visible-artifact-changed
-- PASS — `publishCognitivePackage` (app): state-or-visible-artifact-changed
+- PASS — `publishCognitivePackage` (app): precise setup or authentication boundary before mutation
 - PASS — `installCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `rollbackCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `deprecateCognitivePackage` (app): state-or-visible-artifact-changed
@@ -209,9 +215,16 @@
 - PASS — `createExternalSemanticOrb` (extension): controlled extension state changed
 - PASS — `openExternalSemanticOrb` (extension): controlled extension state changed
 - PASS — `addExternalSemanticOrbContext` (extension): controlled extension state changed
+- PASS — `removeExternalSemanticOrbContext` (extension): controlled extension state changed
 - PASS — `applyExternalSemanticOrbLens` (extension): controlled extension state changed
+- PASS — `removeExternalSemanticOrbLens` (extension): controlled extension state changed
+- PASS — `renameExternalSemanticOrb` (extension): controlled extension state changed
 - PASS — `mergeExternalSemanticOrbs` (extension): controlled extension state changed
+- PASS — `duplicateExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `splitExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `unnestExternalSemanticOrb` (extension): controlled extension state changed
 - PASS — `archiveExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `deleteExternalSemanticOrb` (extension): controlled extension state changed
 - PASS — `openExternalSemanticOrbScene` (extension): controlled extension state changed
 - PASS — `queueExternalAction` (extension): controlled extension state changed
 - PASS — `setExternalLensContext` (extension): controlled extension state changed

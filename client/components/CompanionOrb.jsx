@@ -19,6 +19,7 @@ export default function CompanionOrb({
   onVoiceEnd,
   onStop,
   onUndo,
+  onRedo,
   storageKey = ORB_PLACEMENT_KEY,
   label = "Pearl",
   compact = false,
@@ -329,6 +330,7 @@ export default function CompanionOrb({
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
             <button type="button" onClick={() => onEmitView?.("context")}>Context</button>
             <button type="button" onClick={() => onEmitView?.("library")}>Library</button>
+            <button type="button" onClick={() => onEmitView?.("actions")}>Actions</button>
             <button type="button" onClick={() => onOrbCreate?.()}>New orb</button>
             <button type="button" aria-pressed={cursorMode} onClick={() => onCursorToggle?.(!cursorMode)}>
               {cursorMode ? "Native cursor" : "Become cursor"}
@@ -337,6 +339,7 @@ export default function CompanionOrb({
             <button type="button" onClick={() => updatePlacement({ dock: "right", x: window.innerWidth - 84 })}>Dock right</button>
             <button type="button" onClick={onStop} disabled={!onStop}>Stop</button>
             <button type="button" onClick={onUndo} disabled={!onUndo}>Undo</button>
+            <button type="button" onClick={onRedo} disabled={!onRedo}>Redo</button>
           </div>
           {(state.trace || []).length > 0 && (
             <ol className="orb-trace" aria-label="Recent task evidence">

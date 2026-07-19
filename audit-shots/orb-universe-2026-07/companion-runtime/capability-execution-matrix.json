@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-07-19T02:47:09.584Z",
+  "generatedAt": "2026-07-19T07:02:53.127Z",
   "harness": "controlled real director/extension handler execution",
   "inputPath": "director",
   "counts": {
-    "total": 238,
-    "passed": 238,
+    "total": 251,
+    "passed": 251,
     "failed": 0,
     "skipped": 0,
-    "app": 194,
-    "extension": 44
+    "app": 200,
+    "extension": 51
   },
   "rows": [
     {
@@ -26,7 +26,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "79a26123-478c-471d-ba08-322f87fdf07a",
+        "traceId": "3c85391e-af79-4f20-9c61-ec1c238e62e8",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -36,7 +36,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1665,
+      "durationMs": 1682,
       "errors": []
     },
     {
@@ -54,7 +54,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c3853651-c9f7-454e-a181-b99f11a36be6",
+        "traceId": "e2093152-0a30-4b22-a8bf-202b48af1ed6",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -64,7 +64,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1564,
+      "durationMs": 1469,
       "errors": []
     },
     {
@@ -82,7 +82,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "38f51475-4877-4c0d-a18f-85ecc8acfaed",
+        "traceId": "1f274490-5241-4f76-adef-0c25e56650bf",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -92,7 +92,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1803,
+      "durationMs": 1796,
       "errors": []
     },
     {
@@ -108,7 +108,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d009bda4-dcbf-424b-9ae7-d533a7c22c16",
+        "traceId": "e27ee642-e4e4-461f-ab29-f9daac05e63a",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -118,7 +118,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1716,
+      "durationMs": 1639,
       "errors": []
     },
     {
@@ -136,7 +136,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "29b709a4-a0bc-44ee-8f13-2de1bcdf66c1",
+        "traceId": "467008c1-7777-4b14-a963-300d500d1716",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -146,7 +146,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1832,
+      "durationMs": 1800,
       "errors": []
     },
     {
@@ -165,7 +165,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c2b1a76b-be1b-4d3e-9fb8-f534271a7974",
+        "traceId": "0a323d2c-3cf0-4d6b-90db-200c2ca7bbd2",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -175,7 +175,165 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1705,
+      "durationMs": 1673,
+      "errors": []
+    },
+    {
+      "name": "redoWorkspace",
+      "platform": "app",
+      "utterance": "redo the last workspace change",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "a405fe97-097d-45f8-842f-3cdbba1fb78f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1485,
+      "errors": []
+    },
+    {
+      "name": "exportWorkspace",
+      "platform": "app",
+      "utterance": "export this workspace as markdown",
+      "args": {
+        "format": "txt"
+      },
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "137cb6c2-074b-4265-a224-86ee85b5124c",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1526,
+      "errors": []
+    },
+    {
+      "name": "shareWorkspace",
+      "platform": "app",
+      "utterance": "share this journey",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "fdc8eafc-a9fa-46d6-8e73-62c5e8ba959f",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1455,
+      "errors": []
+    },
+    {
+      "name": "toggleWorkspaceTheme",
+      "platform": "app",
+      "utterance": "switch the workspace theme",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "ab0cb27b-4e9c-4a44-a6e2-28288279c5de",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1429,
+      "errors": []
+    },
+    {
+      "name": "startWorkspaceTour",
+      "platform": "app",
+      "utterance": "show me what Pearl can do",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "37dbeeb7-b594-4892-bd75-8063a91eeedf",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1365,
+      "errors": []
+    },
+    {
+      "name": "openRoleSetup",
+      "platform": "app",
+      "utterance": "set Pearl up for my role",
+      "args": {},
+      "planner": "canonical adaptive plan parsed and validated",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "73d90cf2-f40b-4e97-ac81-5b060baf1e56",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
+      },
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
+      "status": "passed",
+      "durationMs": 1475,
       "errors": []
     },
     {
@@ -193,7 +351,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "5fe9d84e-3326-432d-a090-7617bca152de",
+        "traceId": "b4b2d3c0-48c9-4adf-8626-63cc20a69d0c",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -203,7 +361,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1772,
+      "durationMs": 1748,
       "errors": []
     },
     {
@@ -222,7 +380,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e304640c-2074-4ac6-8dc0-dba3651c6f13",
+        "traceId": "95ac5011-7e4f-4487-9713-f93286d8bde7",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -232,7 +390,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1799,
+      "durationMs": 1785,
       "errors": []
     },
     {
@@ -251,7 +409,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "372f437b-90c5-4af1-9d6d-cd1e523f66c3",
+        "traceId": "7b43a629-b401-419c-a2b1-faa78ac7881d",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -261,7 +419,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1622,
+      "durationMs": 1602,
       "errors": []
     },
     {
@@ -280,7 +438,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2ae57b58-c782-4d8a-b283-edd0f7988f9c",
+        "traceId": "f0cae9b0-6e3f-4780-a2b4-6e27fb0b5be8",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -290,7 +448,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1635,
+      "durationMs": 1749,
       "errors": []
     },
     {
@@ -310,7 +468,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "46552757-3de1-45b9-93c5-6e7e127958a4",
+        "traceId": "667f7f94-0c6d-497e-9899-5367339c5d69",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -320,7 +478,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1633,
+      "durationMs": 1654,
       "errors": []
     },
     {
@@ -339,7 +497,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9b6e017d-52fb-41c1-b3ed-365419331527",
+        "traceId": "a709b5cc-3860-486b-8840-13ebb9707abd",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -349,7 +507,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2039,
+      "durationMs": 2103,
       "errors": []
     },
     {
@@ -367,7 +525,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9cf3aef6-68d4-4c18-8cc3-8fcc3f34a20f",
+        "traceId": "5cce9442-5582-4640-9d91-5e171e4eec72",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -377,7 +535,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1568,
+      "durationMs": 1583,
       "errors": []
     },
     {
@@ -395,7 +553,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "4a34949f-fd65-4409-9162-d149cb853030",
+        "traceId": "f6247bcf-a0f1-412e-8888-f25b37989ef9",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -405,7 +563,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1560,
+      "durationMs": 1550,
       "errors": []
     },
     {
@@ -424,7 +582,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e34db094-28fe-4a17-a87c-f4b751b9ca49",
+        "traceId": "c09f42fb-f600-48cd-bd6b-d113ce233a5c",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -434,7 +592,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1553,
+      "durationMs": 1602,
       "errors": []
     },
     {
@@ -453,7 +611,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "76e6096a-e25a-4f9f-8428-d41eea360f3d",
+        "traceId": "6602274a-1fe1-4231-b089-8910ede114b6",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -463,7 +621,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2084,
+      "durationMs": 2155,
       "errors": []
     },
     {
@@ -481,7 +639,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "20c65191-ceee-45ee-ab51-af046abc6639",
+        "traceId": "30a560ac-762b-447e-91cf-4d2ee24ef123",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -491,7 +649,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2141,
+      "durationMs": 2184,
       "errors": []
     },
     {
@@ -509,7 +667,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "4444efe3-4d9d-44d1-ad51-be1e549ebe22",
+        "traceId": "b4cc08bc-1528-4604-903e-b11187d19889",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -519,7 +677,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2644,
+      "durationMs": 2721,
       "errors": []
     },
     {
@@ -535,7 +693,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f158aaf3-200b-466b-9e5f-010feb55abd1",
+        "traceId": "fe3a32f8-5587-4a86-a526-a13b94004329",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -545,7 +703,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1644,
+      "durationMs": 1684,
       "errors": []
     },
     {
@@ -564,7 +722,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "7709f21f-f3be-41b4-8478-425945748078",
+        "traceId": "e8a3e887-d805-477c-b2ac-10b28fcd8e40",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -574,7 +732,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1960,
+      "durationMs": 1983,
       "errors": []
     },
     {
@@ -592,7 +750,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "bbdcd776-a35a-4fb7-8362-f57b01e340eb",
+        "traceId": "5d998f28-5679-4b61-b4b0-68351ad55b04",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -602,7 +760,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1904,
+      "durationMs": 1833,
       "errors": []
     },
     {
@@ -622,7 +780,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2a5a7137-20c3-4ca2-ab1f-d1119c0a153c",
+        "traceId": "0a87b4cf-b51b-4ca9-be8b-8c5b486ad1dc",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -632,7 +790,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2188,
+      "durationMs": 2219,
       "errors": []
     },
     {
@@ -651,7 +809,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "fb5abf65-2253-4a5b-bb80-ab6d26c76358",
+        "traceId": "6901ad63-6fc9-4b3c-acf3-83fa89a9948d",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -661,7 +819,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2151,
+      "durationMs": 2217,
       "errors": []
     },
     {
@@ -677,7 +835,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "1607ab23-2987-4d7b-a42b-04c0208e4336",
+        "traceId": "73bf862b-d1a6-4cb4-be4b-149706cbf350",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -687,7 +845,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2424,
+      "durationMs": 2356,
       "errors": []
     },
     {
@@ -706,7 +864,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9cacd632-ab20-47ea-8be4-13333d836461",
+        "traceId": "95ad12ee-cd65-4d70-a89c-1b920198c6bd",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -716,7 +874,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2610,
+      "durationMs": 2615,
       "errors": []
     },
     {
@@ -736,7 +894,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e661ed1e-fcf4-420f-8cc2-b112e7814e26",
+        "traceId": "0120cbdf-4351-43a8-aab4-0c2e0ffaf9fa",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -746,7 +904,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2698,
+      "durationMs": 2667,
       "errors": []
     },
     {
@@ -768,7 +926,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2801ac1b-8397-49b4-acc8-9f0b77b6eccc",
+        "traceId": "d63b1496-08f6-4965-9823-bc493daea083",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -778,7 +936,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2603,
+      "durationMs": 2551,
       "errors": []
     },
     {
@@ -797,7 +955,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "90b3bc71-984e-41d0-addc-c47715b1a556",
+        "traceId": "1cb107e4-4b3f-47b3-a789-a7a691fd761d",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -807,7 +965,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1625,
+      "durationMs": 1645,
       "errors": []
     },
     {
@@ -826,7 +984,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "3040094c-f71d-42a0-a997-9bc74ef23f0f",
+        "traceId": "bd418ea7-b7fa-4a4c-b453-6c521864c13a",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -836,7 +994,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1606,
+      "durationMs": 1650,
       "errors": []
     },
     {
@@ -862,7 +1020,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b80065b8-5649-44ae-9d66-31be44f0407f",
+        "traceId": "253ddb63-d2b8-4734-ac52-f4a9e6fa69c1",
         "status": "completed",
         "events": 17,
         "reducedMotion": false
@@ -872,7 +1030,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2330,
+      "durationMs": 2349,
       "errors": []
     },
     {
@@ -888,7 +1046,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "4ea7c5ac-9b94-48e3-b243-12e330b7b05c",
+        "traceId": "9f9ca37f-bb15-405c-8a28-5fc71808ed27",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -898,7 +1056,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1723,
+      "durationMs": 1672,
       "errors": []
     },
     {
@@ -917,7 +1075,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "3c0da0c1-cfa4-4b41-9afa-c30f9a85cae1",
+        "traceId": "1cf6e97b-6965-4d9c-bfb2-e217041d35a7",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -927,7 +1085,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2147,
+      "durationMs": 2138,
       "errors": []
     },
     {
@@ -946,7 +1104,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "821e5930-59a8-4f87-81c2-08d096567451",
+        "traceId": "19ed5480-9ee8-4bff-8c15-228c614d66f1",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -956,7 +1114,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2261,
+      "durationMs": 2290,
       "errors": []
     },
     {
@@ -972,7 +1130,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "44168e77-4d4b-4c4e-abc1-165dba6be6e0",
+        "traceId": "1095a028-349c-4e04-9c1f-9f9e0681a975",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -982,7 +1140,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2086,
+      "durationMs": 2103,
       "errors": []
     },
     {
@@ -1000,7 +1158,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "39163aeb-b449-495d-a001-85026f5b658d",
+        "traceId": "5cacc11b-cc5a-4e4c-b898-e32902679cb1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1010,7 +1168,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2357,
+      "durationMs": 2309,
       "errors": []
     },
     {
@@ -1026,7 +1184,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "7bea18b6-5a59-4eaf-b9d8-d46b365e9a4c",
+        "traceId": "2801c642-a5f2-48ec-a5fb-8f65d0d19cd0",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1036,7 +1194,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3084,
+      "durationMs": 3122,
       "errors": []
     },
     {
@@ -1054,7 +1212,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "4e878f2a-c922-4b0e-b093-7875de8c50a1",
+        "traceId": "445a2a98-a5a0-496c-bd81-ca18beb22037",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1064,7 +1222,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3390,
+      "durationMs": 3402,
       "errors": []
     },
     {
@@ -1084,7 +1242,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "630ab5ea-41ca-413c-abc8-d69843082d97",
+        "traceId": "199d1273-afc1-4ce5-a5ef-f8561a3a1487",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -1094,7 +1252,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3407,
+      "durationMs": 3376,
       "errors": []
     },
     {
@@ -1110,7 +1268,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "76e10afe-0cb7-4fad-9978-4db36fa2943f",
+        "traceId": "89c11aa7-13bf-4399-a195-2632ce4e204e",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1120,7 +1278,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3647,
+      "durationMs": 3666,
       "errors": []
     },
     {
@@ -1136,7 +1294,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ea55d781-6bd0-4c56-9f07-190897ec245d",
+        "traceId": "6317a3f6-2881-40e7-afea-9b8b0612e4df",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1146,7 +1304,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 5992,
+      "durationMs": 5953,
       "errors": []
     },
     {
@@ -1166,7 +1324,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e8272d44-ec3a-4216-8848-e9062d9fb189",
+        "traceId": "73efdf2c-dfa8-4c38-8f8d-28ddadb70608",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -1176,7 +1334,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1966,
+      "durationMs": 1952,
       "errors": []
     },
     {
@@ -1194,7 +1352,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "57a80ac0-955a-4734-9f62-47708485a505",
+        "traceId": "13c55157-d1e2-45c6-bd3e-a7e4a00baca3",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -1204,7 +1362,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2022,
+      "durationMs": 1968,
       "errors": []
     },
     {
@@ -1222,7 +1380,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0ba90766-cf45-4eeb-8b79-73171a5729c5",
+        "traceId": "873117ab-4ec2-482d-8a2a-f5e122591fba",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -1232,7 +1390,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1837,
+      "durationMs": 1814,
       "errors": []
     },
     {
@@ -1248,7 +1406,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8556e0f6-58fe-43a4-bb5d-d4650c598d15",
+        "traceId": "5ceff887-d127-4f6a-a6da-1462484d4a81",
         "status": "completed",
         "events": 7,
         "reducedMotion": false
@@ -1258,7 +1416,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1736,
+      "durationMs": 1682,
       "errors": []
     },
     {
@@ -1274,7 +1432,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ec9f5ff9-2c15-40d5-ba75-6a31ddb70d8c",
+        "traceId": "81a0269d-5485-43b5-8820-0969e0d325ef",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1284,7 +1442,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1657,
+      "durationMs": 1630,
       "errors": []
     },
     {
@@ -1302,7 +1460,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "a482c2d5-43b5-4918-860e-09a168564d93",
+        "traceId": "87b2cb38-542c-4048-b5a8-27ab5e02f122",
         "status": "completed",
         "events": 8,
         "reducedMotion": false
@@ -1312,7 +1470,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1838,
+      "durationMs": 1767,
       "errors": []
     },
     {
@@ -1328,7 +1486,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "a3829ac8-9760-4847-a6c9-8f671ca32c25",
+        "traceId": "bacd91c2-fc78-4055-88ac-895b01e0cae4",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -1338,7 +1496,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1907,
+      "durationMs": 1886,
       "errors": []
     },
     {
@@ -1359,7 +1517,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e3548203-09fc-441e-b6ff-93878611050c",
+        "traceId": "47350500-d7eb-4ff3-841b-b67f46af0536",
         "status": "completed",
         "events": 17,
         "reducedMotion": false
@@ -1369,7 +1527,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2303,
+      "durationMs": 2140,
       "errors": []
     },
     {
@@ -1387,7 +1545,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "241c52d3-e235-40b4-bcea-9629157664f9",
+        "traceId": "bfb1f0b0-11ca-46fe-b693-c90bcf9d5330",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1397,7 +1555,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1574,
+      "durationMs": 1580,
       "errors": []
     },
     {
@@ -1415,7 +1573,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "63ff6bc7-cb73-4d55-8918-8f06fe91a452",
+        "traceId": "afdbdb3f-b0c3-4da2-a7c0-5a98e8714282",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1425,7 +1583,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1547,
+      "durationMs": 1564,
       "errors": []
     },
     {
@@ -1443,7 +1601,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ead21648-d6d1-4b61-8447-6d2c8bca6c80",
+        "traceId": "ee2e85d9-f82e-44ec-b7b6-0b018ac1db81",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1453,7 +1611,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1753,
+      "durationMs": 1706,
       "errors": []
     },
     {
@@ -1469,7 +1627,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "1a4e20c4-c894-4825-aeb1-3f01df549a90",
+        "traceId": "008c5ed2-f6cb-47ae-b6bf-244d6d65d6e4",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1479,7 +1637,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1602,
+      "durationMs": 1501,
       "errors": []
     },
     {
@@ -1495,7 +1653,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "be67d4a3-2269-4618-a578-f2d2fbaf438c",
+        "traceId": "5a7e30da-09a7-4f8f-979e-d68217f4f6aa",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1505,7 +1663,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4671,
+      "durationMs": 4663,
       "errors": []
     },
     {
@@ -1523,7 +1681,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "09a62037-c042-4a71-b1ec-1a072a1f5876",
+        "traceId": "006bfe7a-2bb7-4f2b-9bc4-deb8aad3f9cc",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1533,7 +1691,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1604,
+      "durationMs": 1538,
       "errors": []
     },
     {
@@ -1551,7 +1709,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e7e1d0c1-e4c6-4e6a-a134-fe1fbbd316ce",
+        "traceId": "6aadefd0-13a8-487c-a382-557bc2027767",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1561,7 +1719,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1732,
+      "durationMs": 1712,
       "errors": []
     },
     {
@@ -1580,7 +1738,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "700ab804-97a8-4b2c-8eb8-f46c0a4859a8",
+        "traceId": "e44b810d-a53c-43df-8ed5-0b3e723d6284",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1590,7 +1748,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2223,
+      "durationMs": 2070,
       "errors": []
     },
     {
@@ -1608,7 +1766,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "7dc0315e-3a93-4600-944c-830672fa9db6",
+        "traceId": "5cb8d468-e478-4b9e-8369-8bf3f6c8338e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1618,7 +1776,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1874,
+      "durationMs": 1807,
       "errors": []
     },
     {
@@ -1630,11 +1788,11 @@
       "schema": "pass",
       "runtimeHandler": "invoked",
       "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
+      "observableEffect": "Read-only compatibility preview; typed preview is the expected artifact.",
+      "persistence": "not-applicable",
       "animation": {
         "version": 1,
-        "traceId": "757853a1-d228-4236-9cb6-518256d4005d",
+        "traceId": "c4ff3ef4-0a5b-4a5c-bad7-15488b52a413",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1644,7 +1802,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1754,
+      "durationMs": 1776,
       "errors": []
     },
     {
@@ -1660,7 +1818,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8d7b339b-42b3-49d0-85c7-6da638bdae30",
+        "traceId": "052663ce-f3d7-4a59-a223-65cef56159a1",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1670,7 +1828,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4708,
+      "durationMs": 4652,
       "errors": []
     },
     {
@@ -1686,7 +1844,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c80d4be6-9f08-4872-b8cd-80161e2d41b7",
+        "traceId": "9e4d89b1-1937-476d-a584-6745d35a0892",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1696,7 +1854,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2030,
+      "durationMs": 1957,
       "errors": []
     },
     {
@@ -1712,7 +1870,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "6ae79d24-1043-4f0e-9f85-8980acc38848",
+        "traceId": "d9995621-125e-4cd3-a6c9-57b1c3e9764e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1722,7 +1880,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2134,
+      "durationMs": 2112,
       "errors": []
     },
     {
@@ -1738,7 +1896,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "59ec2108-a7b9-41bd-b321-dc4a6aab2b42",
+        "traceId": "6294ab72-2885-47ad-b457-2f42b491fdc8",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1748,7 +1906,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2803,
+      "durationMs": 2726,
       "errors": []
     },
     {
@@ -1764,7 +1922,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f0b18c66-5e0d-4d22-8602-94edfcc25de5",
+        "traceId": "4b68d49c-68b5-40cd-b4be-362cce87cf4d",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -1774,7 +1932,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2337,
+      "durationMs": 2218,
       "errors": []
     },
     {
@@ -1793,7 +1951,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "3274ee4b-962a-4644-878c-bd7c11b04aac",
+        "traceId": "2ad1aec2-56e6-49b4-ae13-cc28f006f881",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1803,7 +1961,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2352,
+      "durationMs": 2267,
       "errors": []
     },
     {
@@ -1819,7 +1977,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "abb08a6f-1fdb-478e-af7c-dce7bcca2b7a",
+        "traceId": "88a778b5-bc0c-4779-b08c-9123867cf179",
         "status": "completed",
         "events": 8,
         "reducedMotion": false
@@ -1829,7 +1987,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1790,
+      "durationMs": 1653,
       "errors": []
     },
     {
@@ -1845,7 +2003,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c0b4a982-7637-4a2b-a732-cbb8eb2061b6",
+        "traceId": "04debc26-e306-4306-b837-5540cbdfb76d",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1855,7 +2013,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1839,
+      "durationMs": 1781,
       "errors": []
     },
     {
@@ -1871,7 +2029,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "dbb96f82-dda4-4b77-b909-df7c47698179",
+        "traceId": "78a6fbac-06ea-4fd0-8a25-00b46e98c3c0",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1881,7 +2039,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1853,
+      "durationMs": 1850,
       "errors": []
     },
     {
@@ -1897,7 +2055,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "1032da02-1348-47d5-979e-2a8a0dc0f21e",
+        "traceId": "c7ba8ea3-179f-4450-a8cd-264d396652dd",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -1907,7 +2065,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1831,
+      "durationMs": 1749,
       "errors": []
     },
     {
@@ -1923,7 +2081,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c2c2302e-c898-49e5-aab7-a65e9a13568e",
+        "traceId": "6ebbf2c7-19bf-40f4-81ab-2acdc11a8bde",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -1933,7 +2091,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1636,
+      "durationMs": 1583,
       "errors": []
     },
     {
@@ -1953,7 +2111,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c06a138b-fe7c-4c64-9df3-400e4c36741a",
+        "traceId": "1d23c7f5-8b09-4764-814b-6f6672b13d0f",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -1963,7 +2121,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1887,
+      "durationMs": 1829,
       "errors": []
     },
     {
@@ -1982,7 +2140,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2d5b3d1f-6759-41e6-9ec6-0a42a9ad08d3",
+        "traceId": "203f6ad3-6c83-4d11-ba1d-759a990534d4",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -1992,7 +2150,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1760,
+      "durationMs": 1765,
       "errors": []
     },
     {
@@ -2010,7 +2168,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f98bffc5-c986-4f92-902a-9ec601208fc8",
+        "traceId": "5dd9803c-e82d-4724-a7a9-53c09e7ed721",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -2020,7 +2178,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1800,
+      "durationMs": 1806,
       "errors": []
     },
     {
@@ -2041,7 +2199,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "089ca9bb-e96a-4518-ad11-802734af8a4d",
+        "traceId": "874847f3-c1db-46e0-b9ed-07ffd5db4150",
         "status": "completed",
         "events": 8,
         "reducedMotion": false
@@ -2051,7 +2209,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1802,
+      "durationMs": 1913,
       "errors": []
     },
     {
@@ -2067,7 +2225,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "fc871e8f-4971-41e5-8296-8a90e07e4dfe",
+        "traceId": "2ae2318e-8eb2-4afa-98df-342f861cfc97",
         "status": "completed",
         "events": 23,
         "reducedMotion": false
@@ -2077,7 +2235,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2371,
+      "durationMs": 2309,
       "errors": []
     },
     {
@@ -2096,7 +2254,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "012b79bc-d622-4faf-9124-2605710a6926",
+        "traceId": "33b46e1c-d8a9-4a74-9d09-386f421e58ab",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -2106,7 +2264,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1762,
+      "durationMs": 1758,
       "errors": []
     },
     {
@@ -2124,7 +2282,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "747165dd-8563-4a81-9409-ee095103b749",
+        "traceId": "eedc220f-91af-427c-8f18-30ed7fa981a6",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -2134,7 +2292,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1727,
+      "durationMs": 1821,
       "errors": []
     },
     {
@@ -2150,7 +2308,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e52f05ef-a4cb-44a9-a498-5401222a9925",
+        "traceId": "01a2ad33-7428-4c9a-a3c3-ff2a09cf7eba",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2160,7 +2318,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1576,
+      "durationMs": 1486,
       "errors": []
     },
     {
@@ -2186,7 +2344,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8c0daab0-843f-4682-b419-bcff3c16819b",
+        "traceId": "a0627bcb-5578-4ea8-a93f-de6a20881b67",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2196,7 +2354,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1489,
+      "durationMs": 1484,
       "errors": []
     },
     {
@@ -2216,7 +2374,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "998ae8f9-445d-45c5-9d98-4b1e379053ad",
+        "traceId": "9fed3f89-08c2-4ee6-a91e-ff00bce8b46e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2226,7 +2384,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1720,
+      "durationMs": 1678,
       "errors": []
     },
     {
@@ -2244,7 +2402,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "da69e687-c99d-4149-bab1-092a566a8e10",
+        "traceId": "6a2d1497-c19e-4eac-a483-fb3d889927b7",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2254,7 +2412,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1706,
+      "durationMs": 1688,
       "errors": []
     },
     {
@@ -2277,7 +2435,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "70006cad-dc1e-4471-9468-d112248a8707",
+        "traceId": "75334983-75a3-4af7-85e4-6df052d4278b",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2287,7 +2445,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1522,
+      "durationMs": 1418,
       "errors": []
     },
     {
@@ -2306,7 +2464,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "83418bfa-8949-4450-8ef5-a37ecc601e04",
+        "traceId": "673a527f-91e7-4fc0-8e75-bff360322131",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2316,7 +2474,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1766,
+      "durationMs": 1686,
       "errors": []
     },
     {
@@ -2334,7 +2492,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "063bc346-c19f-4ebe-af30-9f53306b9be1",
+        "traceId": "f892425e-97b2-454b-8b2c-e21c371c338a",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2344,7 +2502,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1736,
+      "durationMs": 1751,
       "errors": []
     },
     {
@@ -2368,7 +2526,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "72f37a36-18cc-4789-8421-c8b738b38236",
+        "traceId": "a3e23bfa-9af9-42ca-a5e3-3cacc65070db",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2378,7 +2536,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1504,
+      "durationMs": 1503,
       "errors": []
     },
     {
@@ -2396,7 +2554,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8a0a670e-89d2-49ac-9652-12dcaf393f41",
+        "traceId": "570e2d07-9f39-4c74-806c-28d9eb3d634b",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2406,7 +2564,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1435,
+      "durationMs": 1599,
       "errors": []
     },
     {
@@ -2428,7 +2586,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d7755b13-7e40-4c11-b48f-79f5da137691",
+        "traceId": "55ff8fe3-16d5-408c-988a-d059b67220ce",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2438,7 +2596,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1487,
+      "durationMs": 1486,
       "errors": []
     },
     {
@@ -2457,7 +2615,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "57cfe0d2-6500-4d6d-96df-c806c89dbd3c",
+        "traceId": "6fb3ee49-1dee-4ba8-b8e6-1d56d25cc38f",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2467,7 +2625,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1488,
+      "durationMs": 1442,
       "errors": []
     },
     {
@@ -2492,7 +2650,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "19dea2bb-51a3-44c2-8cb3-d76d16dfa800",
+        "traceId": "57e5c584-ae76-476c-8bff-738a54ef968e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2502,7 +2660,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1344,
+      "durationMs": 1502,
       "errors": []
     },
     {
@@ -2527,7 +2685,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f11e289c-244a-4be0-8c2f-d2189b3b6da7",
+        "traceId": "5defc002-239e-4656-b230-ddd40a8d075f",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2537,7 +2695,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1514,
+      "durationMs": 1450,
       "errors": []
     },
     {
@@ -2556,7 +2714,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "457ea8bd-fa2a-4fcb-8a10-3b5138f0bc64",
+        "traceId": "b7856497-7f40-4510-aac2-b420df2df353",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2566,7 +2724,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1517,
+      "durationMs": 1420,
       "errors": []
     },
     {
@@ -2590,7 +2748,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "bdde35ea-33e6-488f-acb1-a21731986b32",
+        "traceId": "ffd7bb36-4c1e-432a-b18e-b6e7b86c62aa",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2600,7 +2758,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1418,
+      "durationMs": 1481,
       "errors": []
     },
     {
@@ -2619,7 +2777,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e74cc9f8-8c77-4584-85ba-af68587bb625",
+        "traceId": "e6a1424f-e324-48bb-8b48-59a98063aead",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2629,7 +2787,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1490,
+      "durationMs": 1491,
       "errors": []
     },
     {
@@ -2648,7 +2806,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "3cfd31cf-ad56-4b06-9499-d58ae6222997",
+        "traceId": "7dfb7c97-2018-4857-aae3-09a44e40fbe1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2658,7 +2816,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1449,
+      "durationMs": 1492,
       "errors": []
     },
     {
@@ -2676,7 +2834,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0e32abcf-340a-45c9-a28a-03055d5047e4",
+        "traceId": "37860389-7426-44a1-b851-7f279708e8c1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2686,7 +2844,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1437,
+      "durationMs": 1518,
       "errors": []
     },
     {
@@ -2709,7 +2867,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ad4fb507-5a1a-4cfe-95cb-952187acaf16",
+        "traceId": "e0807ff9-4d50-4084-8443-504302085593",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2719,7 +2877,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1412,
+      "durationMs": 1487,
       "errors": []
     },
     {
@@ -2742,7 +2900,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "89cac310-2fe5-4f17-9af5-25147dcc1e3d",
+        "traceId": "fe7bb27a-4643-4c2d-b0d5-e41249f314fd",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2752,7 +2910,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1481,
+      "durationMs": 1456,
       "errors": []
     },
     {
@@ -2771,7 +2929,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e331b14f-137d-42e7-a9dd-3575a5819c89",
+        "traceId": "87907826-67b0-4ade-b0ea-58dd388fd384",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2781,7 +2939,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1431,
+      "durationMs": 1500,
       "errors": []
     },
     {
@@ -2800,7 +2958,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "992e458c-fb00-4b3d-96d4-11676f468bd6",
+        "traceId": "37864e5c-0719-4a46-81a2-486e9a607a9e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2810,7 +2968,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1522,
+      "durationMs": 1450,
       "errors": []
     },
     {
@@ -2829,7 +2987,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "de42fd3b-0955-4122-a2f2-ff7fec46cd3b",
+        "traceId": "7e684d90-d01b-4fc9-a4c2-1d50c3aae367",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2839,7 +2997,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1448,
+      "durationMs": 1465,
       "errors": []
     },
     {
@@ -2857,7 +3015,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "eea093e6-2fec-4fd5-8900-b0da4d4e6ed7",
+        "traceId": "c3177a28-8919-410c-a3cb-bd490d4c7048",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2867,7 +3025,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1635,
+      "durationMs": 1459,
       "errors": []
     },
     {
@@ -2885,7 +3043,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "82c4012f-989c-4a42-95ae-3a5b9a498427",
+        "traceId": "dcfe9616-d817-4efa-9949-60f3f2d1183e",
         "status": "completed",
         "events": 6,
         "reducedMotion": false
@@ -2895,7 +3053,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1685,
+      "durationMs": 1681,
       "errors": []
     },
     {
@@ -2913,7 +3071,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "af1ecc74-c299-471d-b43b-844ab73bb8da",
+        "traceId": "fc507c11-5418-472f-b9f1-a7d1060927e6",
         "status": "completed",
         "events": 8,
         "reducedMotion": false
@@ -2923,7 +3081,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1752,
+      "durationMs": 1779,
       "errors": []
     },
     {
@@ -2941,7 +3099,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ea8b3fae-213b-4ada-be56-21a738bd6178",
+        "traceId": "e963c95d-e5f6-430a-8c43-7b5644eea746",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -2951,7 +3109,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1641,
+      "durationMs": 1621,
       "errors": []
     },
     {
@@ -2969,7 +3127,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "fdc0c8b4-c9de-4ced-a907-09258c2db9ec",
+        "traceId": "87137a83-d8da-4e56-a7db-b6264a82c52b",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -2979,7 +3137,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1837,
+      "durationMs": 1836,
       "errors": []
     },
     {
@@ -2995,7 +3153,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0de8dc12-e54a-44d2-b263-7f12850f66f2",
+        "traceId": "69dbf49b-d4d7-489a-ae8d-628a397bd114",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -3005,7 +3163,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1903,
+      "durationMs": 1878,
       "errors": []
     },
     {
@@ -3021,7 +3179,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d8797c6e-df03-4cbf-b516-75b22c5e5268",
+        "traceId": "cc83e78a-b4f5-49a4-9e66-e610d780aa39",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -3031,7 +3189,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1834,
+      "durationMs": 1833,
       "errors": []
     },
     {
@@ -3047,7 +3205,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9d0a7965-fb38-4030-9e6b-e4404d4ccb4b",
+        "traceId": "3563eeba-d885-4b9c-b2af-a39221893d8b",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -3057,7 +3215,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1827,
+      "durationMs": 1785,
       "errors": []
     },
     {
@@ -3077,7 +3235,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f6bef61c-0e5c-45a6-bc35-9f415fd2fe2b",
+        "traceId": "9f627e7e-0f01-4130-85e8-b6847639adac",
         "status": "completed",
         "events": 11,
         "reducedMotion": false
@@ -3087,7 +3245,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1888,
+      "durationMs": 1815,
       "errors": []
     },
     {
@@ -3114,7 +3272,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "5a1a2bbe-3ae6-4ea9-80f7-542c7d97c316",
+        "traceId": "f765012d-d276-42f0-9de6-1cde415367d9",
         "status": "completed",
         "events": 22,
         "reducedMotion": false
@@ -3124,7 +3282,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 22238,
+      "durationMs": 2219,
       "errors": []
     },
     {
@@ -3146,7 +3304,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "405b5cc7-7b5d-4284-aa76-f6e9528d5176",
+        "traceId": "0bc5255f-b95d-469f-97f5-18b5051af08a",
         "status": "completed",
         "events": 8,
         "reducedMotion": false
@@ -3156,7 +3314,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1861,
+      "durationMs": 1789,
       "errors": []
     },
     {
@@ -3176,7 +3334,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "1b45b341-630b-4625-a8e6-97c3939ec84f",
+        "traceId": "64b4c61b-f1e7-4f1b-9bb0-2e69b48f840c",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -3186,7 +3344,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1819,
+      "durationMs": 1876,
       "errors": []
     },
     {
@@ -3209,7 +3367,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "46e06220-7c83-4d6b-b071-bab5d6364c80",
+        "traceId": "1868f63a-aabd-4e85-982f-7542e09487c1",
         "status": "completed",
         "events": 6,
         "reducedMotion": false
@@ -3219,7 +3377,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1715,
+      "durationMs": 1723,
       "errors": []
     },
     {
@@ -3239,7 +3397,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "15e4681e-324e-4f55-8d8a-412688fefccc",
+        "traceId": "62473a0b-1949-41e7-b4b7-5abe70c74889",
         "status": "completed",
         "events": 6,
         "reducedMotion": false
@@ -3249,7 +3407,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1704,
+      "durationMs": 1718,
       "errors": []
     },
     {
@@ -3267,7 +3425,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "6abb27b6-5128-41af-9c3a-1ac2e4c7277d",
+        "traceId": "650e1371-4889-4d1b-ab38-d45795672e23",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3277,7 +3435,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1632,
+      "durationMs": 1656,
       "errors": []
     },
     {
@@ -3296,7 +3454,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d5a5e697-1802-4017-97f7-c6eb0f083925",
+        "traceId": "ae035aa6-3e7b-4e0e-ba5d-b1a3e292eb4c",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3306,7 +3464,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1653,
+      "durationMs": 1617,
       "errors": []
     },
     {
@@ -3324,7 +3482,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "de692643-fe05-4a8d-a659-e67fbfde529a",
+        "traceId": "04175c9b-a4b6-4167-84b2-be9e434aab0c",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3334,7 +3492,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1722,
+      "durationMs": 1679,
       "errors": []
     },
     {
@@ -3356,7 +3514,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "eab6ad66-1cda-434e-9912-6ea00ae583fc",
+        "traceId": "526f955d-4ab7-434b-9c4f-c30d1fc10230",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3366,7 +3524,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1659,
+      "durationMs": 1901,
       "errors": []
     },
     {
@@ -3387,7 +3545,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "99cb51d5-f656-408a-aa8b-1d70780d1139",
+        "traceId": "518bc6b5-98a0-4350-ae79-4ef9255efa31",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -3397,7 +3555,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1811,
+      "durationMs": 1878,
       "errors": []
     },
     {
@@ -3416,7 +3574,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "da47a974-5116-4894-931f-e9d59b282d8d",
+        "traceId": "f27a74dd-ebc2-4e08-bc1d-9e9422036ec6",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -3426,7 +3584,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1857,
+      "durationMs": 1908,
       "errors": []
     },
     {
@@ -3444,7 +3602,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d4f5ae85-2afe-4fff-858c-2edce00e2a92",
+        "traceId": "f192664b-e553-4ed4-8195-f21d0693837b",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3454,7 +3612,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1634,
+      "durationMs": 52386,
       "errors": []
     },
     {
@@ -3473,7 +3631,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "86d89231-0374-4da0-8261-de3dcbe5b9fa",
+        "traceId": "bcabebe7-7b16-4907-9f12-be1f5e63811d",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3483,7 +3641,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1636,
+      "durationMs": 1750,
       "errors": []
     },
     {
@@ -3503,7 +3661,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "1bd9fc6e-4844-4edf-af43-5ffab83ca097",
+        "traceId": "71770d3b-d8b0-450b-bac8-6441c281688b",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3513,7 +3671,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1667,
+      "durationMs": 1629,
       "errors": []
     },
     {
@@ -3533,7 +3691,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "4db9f4ae-c839-4369-8b9c-3e4755a85f64",
+        "traceId": "8947011e-1297-4380-a79d-32dca465e6f4",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3543,7 +3701,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1682,
+      "durationMs": 1635,
       "errors": []
     },
     {
@@ -3562,7 +3720,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "6a70c6ed-4fd3-4172-95ec-40ec05a24f46",
+        "traceId": "1976bc5c-16fb-4996-965b-bfd13e7b9c11",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -3572,7 +3730,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1673,
+      "durationMs": 1649,
       "errors": []
     },
     {
@@ -3591,7 +3749,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "32084ffd-6222-46d1-bf0a-7b6c6e62142e",
+        "traceId": "4fac2552-52ec-46f6-aef6-2f3bb843cbb0",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -3601,7 +3759,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1854,
+      "durationMs": 1852,
       "errors": []
     },
     {
@@ -3621,7 +3779,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "86d2a868-7eda-4429-b2d6-a4f1e126721f",
+        "traceId": "fcfe4ae0-becc-42e3-ade6-2fff2f86ae46",
         "status": "completed",
         "events": 13,
         "reducedMotion": false
@@ -3631,7 +3789,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1887,
+      "durationMs": 1868,
       "errors": []
     },
     {
@@ -3650,7 +3808,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0de80e13-4ccb-48fd-9b58-243cef50e6c0",
+        "traceId": "245c7a6e-2743-42f5-9fc1-3b8a455ad655",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3660,7 +3818,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1437,
+      "durationMs": 1459,
       "errors": []
     },
     {
@@ -3680,7 +3838,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e94cb2e6-1887-4368-8fbe-996258735ace",
+        "traceId": "748d29ea-4236-4b9b-91c5-7a88c5eb2f63",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3690,7 +3848,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1628,
+      "durationMs": 1569,
       "errors": []
     },
     {
@@ -3708,7 +3866,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "16d155a5-164c-4e93-b564-c2b4d3c213a4",
+        "traceId": "97fe9c52-3b27-4ff6-aa7a-17a95da669b5",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3718,7 +3876,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1964,
+      "durationMs": 1864,
       "errors": []
     },
     {
@@ -3738,7 +3896,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "6fb8abe7-1d73-42f7-afd7-0cc791665250",
+        "traceId": "c1f30bdd-c192-4a49-8a9c-f7466dec4dea",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3748,7 +3906,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1521,
+      "durationMs": 1503,
       "errors": []
     },
     {
@@ -3766,7 +3924,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ac24821c-aed5-49a5-83c9-17548a4e0598",
+        "traceId": "1e5abdaf-a7e9-422b-9b51-b54fea29ed10",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3776,7 +3934,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1830,
+      "durationMs": 1904,
       "errors": []
     },
     {
@@ -3795,7 +3953,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "dd6d774d-f035-4893-b51a-91dc080ce6c3",
+        "traceId": "037fa2c7-5083-45b0-a867-cfeb838663a1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3805,7 +3963,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2058,
+      "durationMs": 2548,
       "errors": []
     },
     {
@@ -3821,7 +3979,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "70f7c864-0678-4612-9a15-ad9587780862",
+        "traceId": "4dffc279-df0f-4824-8afa-4c780ca6f5f0",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3831,7 +3989,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2455,
+      "durationMs": 2593,
       "errors": []
     },
     {
@@ -3847,7 +4005,7 @@
       "persistence": "not-applicable",
       "animation": {
         "version": 1,
-        "traceId": "3dda8267-04d2-42dc-a861-6a0a043d9794",
+        "traceId": "251a9317-92c2-41bf-8ab9-080bb98c92ec",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3857,7 +4015,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2540,
+      "durationMs": 2389,
       "errors": []
     },
     {
@@ -3893,7 +4051,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b45d67dc-923a-40f7-9dad-98e5e83fbbd2",
+        "traceId": "dca8d12f-ec75-4e85-b135-430f5876ed73",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3903,7 +4061,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2851,
+      "durationMs": 1543,
       "errors": []
     },
     {
@@ -3921,7 +4079,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2ff4ce9a-9c47-4e8f-b480-889366ef8231",
+        "traceId": "b2fa5a10-2a80-456a-8ff2-0e1efa054493",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3931,7 +4089,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3694,
+      "durationMs": 2439,
       "errors": []
     },
     {
@@ -3947,7 +4105,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d932c6f3-540d-4bbc-9fa8-d9146d3f39db",
+        "traceId": "b5ac4e34-0e80-46e3-a8cc-d96b6991fa0f",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3957,7 +4115,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 5670,
+      "durationMs": 2488,
       "errors": []
     },
     {
@@ -3975,7 +4133,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "608ca7f2-1946-418a-8f93-d959ef9f4880",
+        "traceId": "5d06679a-fab2-4da1-b42b-ea56340778e1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -3985,7 +4143,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 3806,
+      "durationMs": 1615,
       "errors": []
     },
     {
@@ -4004,7 +4162,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b4fdc895-3e77-4258-a175-2af1432d70c6",
+        "traceId": "f64c85e5-5ba1-460e-9952-058b9386480e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4014,7 +4172,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4618,
+      "durationMs": 1521,
       "errors": []
     },
     {
@@ -4033,7 +4191,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "6e35daab-59bf-4409-814a-eb53e15597be",
+        "traceId": "770b5e0d-694d-411a-8ef9-7fddecd4b6db",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4043,7 +4201,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 4697,
+      "durationMs": 1517,
       "errors": []
     },
     {
@@ -4061,7 +4219,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "60b82f18-9c64-48e5-abaa-54bdc8d5416a",
+        "traceId": "9dbc784d-f07f-48d7-9134-b6ef9812451e",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4071,7 +4229,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1534,
+      "durationMs": 1586,
       "errors": []
     },
     {
@@ -4089,7 +4247,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "a7b7ce29-c9d6-47c2-99e6-bef42548c0a3",
+        "traceId": "789478ac-3a1c-4c5a-970e-4bde91c6a7f5",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4099,7 +4257,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1824,
+      "durationMs": 1759,
       "errors": []
     },
     {
@@ -4118,7 +4276,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "fa338fb2-7fc4-4a04-a13a-243860197a1c",
+        "traceId": "0558841c-13ea-4ec4-ba78-78ec7556af83",
         "status": "completed",
         "events": 6,
         "reducedMotion": false
@@ -4128,7 +4286,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1723,
+      "durationMs": 1658,
       "errors": []
     },
     {
@@ -4144,7 +4302,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "404859e6-1183-4715-866e-5114af75deb3",
+        "traceId": "ec67f51a-689b-470d-9944-1d47884c0f57",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -4154,7 +4312,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1932,
+      "durationMs": 1786,
       "errors": []
     },
     {
@@ -4174,7 +4332,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "68460332-6bbc-4568-891d-25f889fd746a",
+        "traceId": "c13af4dd-93be-4160-8b09-ecdd61040ffa",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4184,7 +4342,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1582,
+      "durationMs": 1448,
       "errors": []
     },
     {
@@ -4210,7 +4368,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "7ae119f6-64a1-4794-929d-92c5da7b4ba2",
+        "traceId": "92386ea5-ce67-45bd-9c10-41d804685ef3",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4220,7 +4378,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1647,
+      "durationMs": 1454,
       "errors": []
     },
     {
@@ -4243,7 +4401,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ae188342-2bf3-4a04-9871-191b168a8b12",
+        "traceId": "89677ab0-cb30-4189-85d9-f488c296d95d",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4253,7 +4411,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1575,
+      "durationMs": 1466,
       "errors": []
     },
     {
@@ -4271,7 +4429,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "94ed5fe4-d3e6-4e20-a6e9-1fbc1967f952",
+        "traceId": "648f457c-d6de-44a1-b95c-42469d70cab1",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4281,7 +4439,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1859,
+      "durationMs": 1491,
       "errors": []
     },
     {
@@ -4303,7 +4461,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ab349b1d-ff51-4f10-b08d-180791035874",
+        "traceId": "81c0f221-9106-459e-b19f-c1990162bd85",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4313,7 +4471,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1513,
+      "durationMs": 1501,
       "errors": []
     },
     {
@@ -4332,7 +4490,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "468e358a-a030-461d-a6d5-0a3b4235784b",
+        "traceId": "5013d3da-9de3-41b2-805e-61d0bfd54a2a",
         "status": "completed",
         "events": 12,
         "reducedMotion": false
@@ -4342,7 +4500,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1991,
+      "durationMs": 1925,
       "errors": []
     },
     {
@@ -4361,7 +4519,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ae73f84c-5134-4eed-8f0c-d01c201ef7ff",
+        "traceId": "611918b4-5cf6-46f5-94a6-c99ecd99b768",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -4371,7 +4529,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1877,
+      "durationMs": 1836,
       "errors": []
     },
     {
@@ -4390,7 +4548,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "c96f0dc6-0222-49b0-9a80-5d1b561527b3",
+        "traceId": "91c57e7c-9c06-43fe-9080-90ac38aa5a41",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -4400,7 +4558,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1836,
+      "durationMs": 1768,
       "errors": []
     },
     {
@@ -4418,7 +4576,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "43c04d76-541c-43c4-a815-1e2964574118",
+        "traceId": "591e80bb-df77-4ced-b8d5-d5f7129f0071",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -4428,7 +4586,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1832,
+      "durationMs": 1816,
       "errors": []
     },
     {
@@ -4448,7 +4606,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e87e08bf-88e8-4f67-ac5e-cdc9ab4ba404",
+        "traceId": "85ef7b7d-b495-44da-899b-6b2378b2e731",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -4458,7 +4616,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1789,
+      "durationMs": 1681,
       "errors": []
     },
     {
@@ -4476,7 +4634,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "389311f9-b427-467e-8307-4ef07a67d9c1",
+        "traceId": "896de447-0b01-44ee-bb38-82f16cf6c2cb",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4486,7 +4644,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1771,
+      "durationMs": 1629,
       "errors": []
     },
     {
@@ -4504,7 +4662,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b9fdc1d0-8eb5-44e5-9559-b3466b993203",
+        "traceId": "a8e33cae-95d1-438a-bf04-23ddc8ee2d86",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4514,7 +4672,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1649,
+      "durationMs": 1676,
       "errors": []
     },
     {
@@ -4535,7 +4693,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "148bb72b-dc2f-416e-bf9c-7ecad7fb7bbe",
+        "traceId": "888f73a6-a1c0-4a2e-b91d-7e560fc6eeca",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4545,7 +4703,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1877,
+      "durationMs": 1636,
       "errors": []
     },
     {
@@ -4563,7 +4721,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "20dcd384-1657-4de6-a8fa-029c0670758f",
+        "traceId": "460a6bc5-9f43-4143-95ad-b8ad21f9b1d2",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4573,7 +4731,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1738,
+      "durationMs": 1607,
       "errors": []
     },
     {
@@ -4591,7 +4749,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2d6b3cee-3d6d-47f7-99f9-e8f5e09d4120",
+        "traceId": "37b045d0-8335-4f88-a0ff-f1ed41f84733",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4601,7 +4759,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2028,
+      "durationMs": 2070,
       "errors": []
     },
     {
@@ -4619,7 +4777,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "e98ce417-0289-425d-8da5-b97383b0ea7c",
+        "traceId": "cc0ab1ad-9057-4426-874e-5622913e1d15",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4629,7 +4787,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2259,
+      "durationMs": 2133,
       "errors": []
     },
     {
@@ -4645,7 +4803,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8232d58e-d614-4b5f-8bc0-9e8b4b586b53",
+        "traceId": "3e318b90-927c-4f8f-ad04-e803afc70b0c",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4655,7 +4813,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1906,
+      "durationMs": 1712,
       "errors": []
     },
     {
@@ -4671,7 +4829,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0430ab55-ade8-4bc3-80ea-138f1ecb782e",
+        "traceId": "36632b0e-5fc1-4e3b-b0e2-569e77166219",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4681,7 +4839,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2177,
+      "durationMs": 2098,
       "errors": []
     },
     {
@@ -4697,7 +4855,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "bb4ec741-ada9-4bdd-8af0-60df2d81219e",
+        "traceId": "4637b9ba-cfd2-47cb-bb39-e2584e1baef5",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4707,7 +4865,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1604,
+      "durationMs": 1615,
       "errors": []
     },
     {
@@ -4723,7 +4881,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9fd21a77-5848-4441-bd9d-a19493cac32d",
+        "traceId": "2f952989-7bba-4c46-87d1-e3266662b0c8",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4733,7 +4891,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2014,
+      "durationMs": 1562,
       "errors": []
     },
     {
@@ -4751,7 +4909,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "76f27f03-3b85-417e-8b8c-475740459d86",
+        "traceId": "54ae08c9-df98-4ad6-bc57-4132cc8a18ad",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4761,7 +4919,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1562,
+      "durationMs": 1492,
       "errors": []
     },
     {
@@ -4780,7 +4938,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "774309d8-7699-488d-ac81-0c5d54dd836a",
+        "traceId": "749427c7-f9ed-4501-8230-3d670073f5db",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4790,7 +4948,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1701,
+      "durationMs": 1657,
       "errors": []
     },
     {
@@ -4808,7 +4966,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "530eb682-9e51-4d08-bfe1-58e8d3361d38",
+        "traceId": "71a1b0a9-a931-483c-a9d3-9bb7cee78462",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -4818,7 +4976,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1651,
+      "durationMs": 1657,
       "errors": []
     },
     {
@@ -4837,7 +4995,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "5a6c6b55-c0be-4eba-b091-af3e65fdb57d",
+        "traceId": "4ba67e2c-2fe7-4f44-8542-3c533b1a89eb",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4847,7 +5005,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2458,
+      "durationMs": 1590,
       "errors": []
     },
     {
@@ -4865,7 +5023,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "551294d5-5820-43db-8a1c-e7b4aafc8da1",
+        "traceId": "e8dcfbd5-6456-42e7-99b6-5ec20ef0d780",
         "status": "completed",
         "events": 10,
         "reducedMotion": false
@@ -4875,7 +5033,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 5537,
+      "durationMs": 2364,
       "errors": []
     },
     {
@@ -4891,7 +5049,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "0bed1e08-8b20-4cfa-89e8-e9bb135ce95b",
+        "traceId": "1b998c17-226a-4aa9-b93d-eb8823291a85",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4901,7 +5059,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2412,
+      "durationMs": 2153,
       "errors": []
     },
     {
@@ -4919,7 +5077,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b403d7f2-8b48-4bbd-b678-9d760e8ca86d",
+        "traceId": "9cf05e50-c439-40cc-9c0a-6e1270682344",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4929,7 +5087,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2766,
+      "durationMs": 2480,
       "errors": []
     },
     {
@@ -4945,7 +5103,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "250a23ab-9356-40b0-bb36-0b761b5a59fb",
+        "traceId": "b4b0a4d1-1a1b-4308-86f8-73e98f446591",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -4955,7 +5113,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2490,
+      "durationMs": 2420,
       "errors": []
     },
     {
@@ -4971,7 +5129,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "12f4899f-d110-4fbf-8aca-6354014ba959",
+        "traceId": "01ac6863-59d3-4190-a355-de114b2495a2",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -4981,7 +5139,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1712,
+      "durationMs": 1622,
       "errors": []
     },
     {
@@ -5005,7 +5163,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f34ec65f-ec74-4fa5-a174-ccc7f5fd9e1e",
+        "traceId": "a1c0acd4-1fd6-4f48-9ded-b92159f77ce2",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5015,7 +5173,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1671,
+      "durationMs": 1645,
       "errors": []
     },
     {
@@ -5027,11 +5185,11 @@
       "schema": "pass",
       "runtimeHandler": "safely-blocked",
       "typedResult": "safe-blocker",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
+      "observableEffect": "precise setup or authentication boundary before mutation",
+      "persistence": "zero mutation before blocker",
       "animation": {
         "version": 1,
-        "traceId": "ee62c7e7-d0d4-40ea-9050-0fd5a33a3e81",
+        "traceId": "bbb82a47-f3c3-4136-9a52-4c646b8b27b2",
         "status": "failed",
         "events": 5,
         "reducedMotion": false
@@ -5041,7 +5199,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 2026,
+      "durationMs": 1962,
       "errors": [
         "sign in is required to publish; signed local export remains available"
       ],
@@ -5068,7 +5226,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f75651fd-e24e-489c-bd2d-4a577e6f10bb",
+        "traceId": "fb24cf1f-2cf6-4488-b8b4-2efb6d06bd5d",
         "status": "failed",
         "events": 5,
         "reducedMotion": false
@@ -5078,7 +5236,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1668,
+      "durationMs": 1647,
       "errors": [
         "choose a complete signed package manifest before install"
       ],
@@ -5105,7 +5263,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "8b5bdc9c-86a6-476c-a34c-9b8ee5b25fe5",
+        "traceId": "afe9ebcd-9270-48d8-897d-92967877aa37",
         "status": "failed",
         "events": 6,
         "reducedMotion": false
@@ -5115,7 +5273,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1744,
+      "durationMs": 1611,
       "errors": [
         "no package install checkpoint is available"
       ],
@@ -5144,7 +5302,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "3b89cb49-1eda-4202-9fe8-06468bcbc7fc",
+        "traceId": "1751bbc4-60db-481d-95f0-3e6c91e68321",
         "status": "failed",
         "events": 5,
         "reducedMotion": false
@@ -5154,7 +5312,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1656,
+      "durationMs": 1607,
       "errors": [
         "sign in is required to deprecate a published package"
       ],
@@ -5181,7 +5339,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "01147aa5-3440-4c82-8ef7-feefc8a81d07",
+        "traceId": "bd6e22d3-e6b7-4ad4-9d0a-8239e6671b8a",
         "status": "completed",
         "events": 9,
         "reducedMotion": false
@@ -5191,7 +5349,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1779,
+      "durationMs": 1768,
       "errors": []
     },
     {
@@ -5210,7 +5368,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "7ea12639-a916-4e96-91d6-e30edd6cfc12",
+        "traceId": "c5b28879-9467-425d-bd77-bfb05a228d61",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5220,7 +5378,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1440,
+      "durationMs": 1490,
       "errors": []
     },
     {
@@ -5241,7 +5399,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f62cf563-df2c-4452-ac13-6659a378da97",
+        "traceId": "9a43f816-c1c8-41c7-8010-2e1f8225b40d",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5251,7 +5409,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1755,
+      "durationMs": 1817,
       "errors": []
     },
     {
@@ -5271,7 +5429,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "ce8a179f-5924-489e-bd11-c63432509d3f",
+        "traceId": "4379d01f-c5b0-42b8-ae71-e1657ffbb0b7",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5281,7 +5439,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1504,
+      "durationMs": 1484,
       "errors": []
     },
     {
@@ -5299,7 +5457,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2f4d0545-aeb5-4bc5-9c50-13ede2fa6812",
+        "traceId": "4d606664-ad73-4c89-b0bc-4a52bd4a989c",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5309,7 +5467,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1933,
+      "durationMs": 1711,
       "errors": []
     },
     {
@@ -5327,7 +5485,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "af2cb59a-0cb7-465e-971f-0831b9239ba5",
+        "traceId": "b1f19918-b910-4777-a078-b8283d2472d9",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5337,7 +5495,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1668,
+      "durationMs": 1697,
       "errors": []
     },
     {
@@ -5360,7 +5518,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "912ea68f-8fd8-4941-8f48-9b343dc5cb73",
+        "traceId": "a5721561-87ca-4401-bdf0-378271cddb63",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5370,7 +5528,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1543,
+      "durationMs": 1513,
       "errors": []
     },
     {
@@ -5390,7 +5548,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b54e8b1b-993e-462a-95e7-595ce4d5bfff",
+        "traceId": "25c52fbc-fbc0-41b3-8d76-12869d3ee61d",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5400,7 +5558,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1789,
+      "durationMs": 1731,
       "errors": []
     },
     {
@@ -5421,7 +5579,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "070e71db-d835-4154-b1e3-89d17ca2b149",
+        "traceId": "544ea386-5cd7-495e-bf19-fc1fc7e96293",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5431,7 +5589,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1988,
+      "durationMs": 1877,
       "errors": []
     },
     {
@@ -5450,7 +5608,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "d4c44502-9cdb-4bb3-abaf-de5c2ff85844",
+        "traceId": "5050713b-03e6-4ff5-a387-11d21ab0c174",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5460,7 +5618,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1550,
+      "durationMs": 1298,
       "errors": []
     },
     {
@@ -5553,7 +5711,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "25d40b86-bbb1-4089-adfb-1248638edf7a",
+        "traceId": "62a49c6b-dab0-47f6-859c-3635870f2653",
         "status": "completed",
         "events": 5,
         "reducedMotion": false
@@ -5563,7 +5721,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1486,
+      "durationMs": 1446,
       "errors": []
     },
     {
@@ -5579,7 +5737,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "f227dfed-dad2-4664-9ce6-1c1b0448fb7c",
+        "traceId": "c2c9699d-1fdb-425b-95ab-99ef74be28ae",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -5589,7 +5747,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1539,
+      "durationMs": 1463,
       "errors": []
     },
     {
@@ -5605,7 +5763,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "b5abfb1d-92ac-490b-a5cd-e1d26e06af65",
+        "traceId": "659dfbac-98fc-4d79-9374-a2358a63087d",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -5615,7 +5773,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1533,
+      "durationMs": 1445,
       "errors": []
     },
     {
@@ -5631,7 +5789,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2fbe8789-4963-44e5-ac46-c919eba28d90",
+        "traceId": "b4544b92-dad3-4c32-a24d-04068860bb49",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -5641,7 +5799,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1516,
+      "durationMs": 1476,
       "errors": []
     },
     {
@@ -5657,7 +5815,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "9c2e25ce-9eb5-4417-aefa-8f8f8090950f",
+        "traceId": "9d776ac1-0358-461f-a04d-3dc828d5a701",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -5667,7 +5825,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1503,
+      "durationMs": 1488,
       "errors": []
     },
     {
@@ -5688,7 +5846,7 @@
       "persistence": "local store or visible runtime state observed",
       "animation": {
         "version": 1,
-        "traceId": "2bf36cee-953c-4020-929e-44cdbed33645",
+        "traceId": "5ab30be8-9d76-4c20-b874-134df5e244fe",
         "status": "completed",
         "events": 4,
         "reducedMotion": false
@@ -5698,7 +5856,7 @@
       "ledgerStatus": null,
       "rawErrorLeak": false,
       "status": "passed",
-      "durationMs": 1650,
+      "durationMs": 1467,
       "errors": []
     },
     {
@@ -5856,12 +6014,66 @@
       "errors": []
     },
     {
+      "name": "removeExternalSemanticOrbContext",
+      "platform": "extension",
+      "utterance": "remove that capture from the research orb",
+      "args": {
+        "id": "fixture",
+        "contextId": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
       "name": "applyExternalSemanticOrbLens",
       "platform": "extension",
       "utterance": "please apply a synced Lens to a saved orb",
       "args": {
         "id": "fixture",
         "lensId": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "removeExternalSemanticOrbLens",
+      "platform": "extension",
+      "utterance": "remove the skeptical Lens from the research orb",
+      "args": {
+        "id": "fixture",
+        "lensId": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "renameExternalSemanticOrb",
+      "platform": "extension",
+      "utterance": "rename the research orb Visual grammar",
+      "args": {
+        "id": "fixture",
+        "name": "fixture"
       },
       "planner": "canonical extension plan",
       "schema": "pass",
@@ -5893,6 +6105,57 @@
       "errors": []
     },
     {
+      "name": "duplicateExternalSemanticOrb",
+      "platform": "extension",
+      "utterance": "duplicate the research orb",
+      "args": {
+        "id": "fixture"
+      },
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "splitExternalSemanticOrb",
+      "platform": "extension",
+      "utterance": "split the research orb into its source ideas",
+      "args": {
+        "id": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "unnestExternalSemanticOrb",
+      "platform": "extension",
+      "utterance": "take the color orb out of its parent",
+      "args": {
+        "id": "fixture"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
       "name": "archiveExternalSemanticOrb",
       "platform": "extension",
       "utterance": "please archive or restore a saved orb",
@@ -5900,6 +6163,23 @@
         "id": "fixture"
       },
       "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "external-semantic-orb",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "deleteExternalSemanticOrb",
+      "platform": "extension",
+      "utterance": "delete only the abandoned extension orb",
+      "args": {
+        "id": "fixture"
+      },
+      "planner": "deterministic extension intent",
       "schema": "pass",
       "runtimeHandler": "invoked",
       "typedResult": "external-semantic-orb",

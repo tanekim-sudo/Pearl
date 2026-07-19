@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-19T02:47:22.874Z",
+  "generatedAt": "2026-07-19T07:03:05.691Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -33,8 +33,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 141,
-        "loadMs": 143,
+        "domContentLoadedMs": 103,
+        "loadMs": 104,
         "transferBytes": 44700,
         "longTasks": 0
       },
@@ -70,8 +70,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 101,
-        "loadMs": 102,
+        "domContentLoadedMs": 127,
+        "loadMs": 128,
         "transferBytes": 44700,
         "longTasks": 0
       },
@@ -107,8 +107,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 145,
-        "loadMs": 146,
+        "domContentLoadedMs": 115,
+        "loadMs": 116,
         "transferBytes": 44700,
         "longTasks": 0
       },
@@ -144,8 +144,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 143,
-        "loadMs": 144,
+        "domContentLoadedMs": 148,
+        "loadMs": 150,
         "transferBytes": 45000,
         "longTasks": 0
       },
@@ -176,9 +176,9 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 473,
-        "loadMs": 475,
-        "transferBytes": 12423385,
+        "domContentLoadedMs": 452,
+        "loadMs": 455,
+        "transferBytes": 12506082,
         "longTasks": 0
       },
       "snapshot": "- main:\n  - text: Pearl Everywhere\n  - heading \"Your cognition, available on every page.\" [level=1]\n  - paragraph: Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Continue to Pearl\"\n  - status: Installation status is unknown. You can check again after installing.\n  - complementary \"Pearl, idle\":\n    - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""

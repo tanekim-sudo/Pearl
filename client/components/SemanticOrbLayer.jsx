@@ -43,16 +43,24 @@ export default function SemanticOrbLayer({
   onMove,
   onRename,
   onArchive,
+  onBind,
   onAddContext,
+  onRemoveContext,
   onApplyLens,
+  onRemoveLens,
   onNest,
+  onUnnest,
   onMerge,
   onCompose,
+  onSplit,
+  onDuplicate,
+  onDelete,
 }) {
   const rootRef = useRef(null);
   const dragRef = useRef(null);
   const [expandedCluster, setExpandedCluster] = useState(null);
   const [composition, setComposition] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [rename, setRename] = useState("");
   const active = orbs.find((orb) => orb.id === activeId) || null;
   const clusters = useMemo(() => clusterSemanticOrbs(orbs, { zoom: 1 }), [orbs]);
@@ -132,6 +140,12 @@ export default function SemanticOrbLayer({
       const source = JSON.parse(portable);
       if (source.kind === "semantic-orb") {
         if (source.id !== targetOrb.id) setComposition({ sourceId: source.id, targetId: targetOrb.id });
+      } else if (["move", "function", "operator"].includes(source.kind || source.type || source.libraryKind)) {
+        onBind?.(targetOrb.id, {
+          kind: source.libraryKind || source.kind || source.type,
+          refs: [source.id],
+          label: source.name || source.label || "Bound object",
+        });
       } else if (["lens", "generator"].includes(source.kind || source.type)) {
         onApplyLens?.(targetOrb.id, source);
       } else {
@@ -217,10 +231,32 @@ export default function SemanticOrbLayer({
               <button type="submit">Rename</button>
             </form>
             <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context · {orb.workingSet?.lenses?.length || 0} Lenses</small>
-            <div>
+            {(orb.workingSet?.context || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Orb context">
+              {orb.workingSet.context.slice(0, 6).map((item) => <li key={item.id}>
+                <span>{item.label || item.name || item.text || "Context material"}</span>
+                <button type="button" onClick={() => onRemoveContext?.(orb.id, item.id)}>Remove</button>
+              </li>)}
+            </ul>}
+            {(orb.workingSet?.lenses || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Orb Lenses">
+              {orb.workingSet.lenses.slice(0, 6).map((lens) => <li key={lens.id}>
+                <span>{lens.name || lens.label || "Lens"}</span>
+                <button type="button" onClick={() => onRemoveLens?.(orb.id, lens.id)}>Remove</button>
+              </li>)}
+            </ul>}
+            <div className="semantic-orb-inspector-actions">
+              <button type="button" onClick={() => onDuplicate?.(orb.id)}>Duplicate</button>
+              <button type="button" disabled={(orb.sourceIds?.length || orb.representation?.refs?.length || 0) < 2} onClick={() => onSplit?.(orb.id)}>Split</button>
+              {orb.parentOrbId && <button type="button" onClick={() => onUnnest?.(orb.id)}>Unnest</button>}
               <button type="button" onClick={() => onActivate?.(null)}>Close</button>
               <button type="button" onClick={() => onArchive?.(orb.id, true)}>Archive</button>
             </div>
+            {confirmDelete === orb.id
+              ? <div className="semantic-orb-delete-confirm" role="alert">
+                  <span>Delete this orb? Referenced source material remains.</span>
+                  <button type="button" onClick={() => { onDelete?.(orb.id); setConfirmDelete(null); }}>Delete</button>
+                  <button type="button" onClick={() => setConfirmDelete(null)}>Cancel</button>
+                </div>
+              : <button className="semantic-orb-delete" type="button" onClick={() => setConfirmDelete(orb.id)}>Delete orb…</button>}
           </aside>}
         </div>)}
     {composition && <aside className="semantic-orb-compose-chooser" role="dialog" aria-label="Combine semantic orbs">

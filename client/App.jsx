@@ -12222,6 +12222,32 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       setCamera((current) => ({ ...current, x: current.x + dx, y: current.y + dy }));
       await tk.wait(420);
     },
+    redoWorkspace: async () => {
+      redo();
+      return { effectId: `workspace-redo:${Date.now()}`, effects: ["workspace-redone"] };
+    },
+    exportWorkspace: async (a) => {
+      const format = a.format === "txt" ? "txt" : "md";
+      emitTourEvent("export");
+      exportSelection(format);
+      return { effectId: `workspace-export:${format}:${Date.now()}`, format, effects: ["workspace-exported"] };
+    },
+    shareWorkspace: async () => {
+      handleShareBoard();
+      return { effectId: `workspace-share:${Date.now()}`, effects: ["workspace-share-opened"] };
+    },
+    toggleWorkspaceTheme: async () => {
+      setTheme((value) => (value === "idea" ? "chalk" : "idea"));
+      return { effectId: `workspace-theme:${Date.now()}`, effects: ["workspace-theme-changed"] };
+    },
+    startWorkspaceTour: async () => {
+      startFeatureTour();
+      return { effectId: `workspace-tour:${Date.now()}`, effects: ["workspace-tour-opened"] };
+    },
+    openRoleSetup: async () => {
+      setOnboard({ step: "role" });
+      return { effectId: `workspace-role-setup:${Date.now()}`, effects: ["workspace-role-setup-opened"] };
+    },
     spawnText: async (a, tk, ctx) => {
       const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);
       const center = paperViewportCenterWorld();
@@ -15989,6 +16015,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       undo() {
         undo();
         return { type: "workspace-undo", persisted: true };
+      },
+      redo() {
+        redo();
+        return { type: "workspace-redo", persisted: true };
       },
     };
     window.__lensOrbRuntime = bridge;

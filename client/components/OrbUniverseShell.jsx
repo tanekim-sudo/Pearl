@@ -3,6 +3,7 @@ import CompanionOrb from "./CompanionOrb.jsx";
 import OrbCursorLayer from "./OrbCursorLayer.jsx";
 import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
 import { createOrbState, executeOrbCommand, markUtteranceDispatched, recordOrbUtterance, transitionOrb } from "../../shared/orb-runtime.js";
+import { normalizeSemanticOrbs } from "../../shared/semantic-orbs.js";
 import {
   ORB_CURSOR_EVENT,
   ORB_CURSOR_SEQUENCE_ATTRIBUTE,
@@ -214,6 +215,51 @@ function CandidateInspector({ candidates, onTaste }) {
   </ul>;
 }
 
+const PEARL_NATIVE_ACTIONS = Object.freeze([
+  { group: "Make", label: "Sticky note", note: "Place an editable note", verb: "addBlock", args: { type: "sticky" } },
+  { group: "Make", label: "Observation", note: "Add a structured observation", verb: "addBlock", args: { type: "callout", variant: "observation", text: "Your observation…" } },
+  { group: "Make", label: "Question", note: "Add a structured question", verb: "addBlock", args: { type: "callout", variant: "question", text: "Your question?" } },
+  { group: "Make", label: "Diagram", note: "Place a diagram block", verb: "addBlock", args: { type: "diagram" } },
+  { group: "Select", label: "Select + type", note: "Move, select, or create text", verb: "switchTool", args: { tool: "select" } },
+  { group: "Select", label: "Highlighter", note: "Build a persistent cross-domain selection", verb: "switchTool", args: { tool: "highlighter" } },
+  { group: "Select", label: "Make one node", note: "Combine highlighted material without running it", verb: "makeHighlightNode", args: {} },
+  { group: "Select", label: "Save selection as…", note: "Choose Move, Function, or Lens", verb: "openSaveAsChooser", args: {} },
+  { group: "Learn", label: "Before → after", note: "Infer an editable transformation", verb: "openBeforeAfterCreation", args: {} },
+  { group: "Learn", label: "Learn from chat", note: "Extract reusable cognition from a transcript", verb: "openTranscriptLearning", args: {} },
+  { group: "Learn", label: "Capture lineage", note: "Save the contributing path as a Function", verb: "captureThreadAsFunction", args: {} },
+  { group: "Learn", label: "Save page as Lens", note: "Preserve the page as bounded context", verb: "savePageAsLens", args: {} },
+  { group: "Arrange", label: "Organize", note: "Arrange current material coherently", verb: "organizePage", args: {} },
+  { group: "Arrange", label: "Fit frame", note: "Fit the full paper frame", verb: "fitPaper", args: {} },
+  { group: "Arrange", label: "Zoom in", note: "Move closer without losing context", verb: "zoomPaper", args: { direction: "in" } },
+  { group: "Arrange", label: "Zoom out", note: "Reveal more of the workspace", verb: "zoomPaper", args: { direction: "out" } },
+  { group: "Preserve", label: "Export markdown", note: "Download selected or visible material", verb: "exportWorkspace", args: { format: "md" } },
+  { group: "Preserve", label: "Export text", note: "Download a plain-text copy", verb: "exportWorkspace", args: { format: "txt" } },
+  { group: "Preserve", label: "Share", note: "Share the selected journey or workspace", verb: "shareWorkspace", args: {} },
+  { group: "Preserve", label: "Capability tour", note: "See the interaction system in context", verb: "startWorkspaceTour", args: {} },
+  { group: "Preserve", label: "Set up for role", note: "Adapt Pearl to the work you do", verb: "openRoleSetup", args: {} },
+  { group: "Preserve", label: "Switch material", note: "Toggle the workspace material theme", verb: "toggleWorkspaceTheme", args: {} },
+]);
+
+function PearlActionPalette({ onRun }) {
+  const groups = [...new Set(PEARL_NATIVE_ACTIONS.map((action) => action.group))];
+  const [group, setGroup] = useState(groups[0]);
+  return <section className="pearl-action-palette" aria-label="Pearl actions">
+    <nav aria-label="Action groups">
+      {groups.map((name) => <button type="button" key={name} aria-pressed={group === name} onClick={() => setGroup(name)}>{name}</button>)}
+    </nav>
+    <div>
+      {PEARL_NATIVE_ACTIONS.filter((action) => action.group === group).map((action) => <button
+        type="button"
+        key={action.label}
+        onClick={() => onRun?.(action)}
+      >
+        <b>{action.label}</b>
+        <small>{action.note}</small>
+      </button>)}
+    </div>
+  </section>;
+}
+
 function LibraryHome({
   route,
   scenes,
@@ -290,7 +336,9 @@ function LibraryHome({
         <span>{activeView === "library" ? "Cognitive library" : activeView}</span>
         <button type="button" aria-label="Close emitted view" onClick={() => onView(null)}>×</button>
       </div>
-      {activeView === "context"
+      {activeView === "actions"
+        ? <p role="status">Pearl’s material actions appear inside a continued Scene, where selection, history, undo, and provenance are explicit.</p>
+        : activeView === "context"
         ? <ContextInspector items={context} onChange={onContextChange} onRemove={onContextRemove} />
         : activeView === "lenses"
           ? <LensAtmosphereInspector lenses={lenses} onChange={onLensChange} onRemove={onLensRemove} />
@@ -417,12 +465,19 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semantic
       onActivate={semanticOrbActions?.activate}
       onMove={semanticOrbActions?.move}
       onRename={semanticOrbActions?.rename}
+      onBind={semanticOrbActions?.bind}
       onArchive={semanticOrbActions?.archive}
       onAddContext={semanticOrbActions?.addContext}
+      onRemoveContext={semanticOrbActions?.removeContext}
       onApplyLens={semanticOrbActions?.applyLens}
+      onRemoveLens={semanticOrbActions?.removeLens}
       onNest={semanticOrbActions?.nest}
+      onUnnest={semanticOrbActions?.unnest}
       onMerge={semanticOrbActions?.merge}
       onCompose={semanticOrbActions?.compose}
+      onSplit={semanticOrbActions?.split}
+      onDuplicate={semanticOrbActions?.duplicate}
+      onDelete={semanticOrbActions?.delete}
     />
   </main>;
 }
@@ -436,6 +491,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const contextCommandQueueRef = useRef(Promise.resolve());
   const activeRunAbortRef = useRef(null);
   const orbUndoRef = useRef(null);
+  const orbRedoRef = useRef(null);
   const approvalResolverRef = useRef(null);
   const [install, setInstall] = useState({ status: "checking", trusted: false });
   const [extensionHandoff, setExtensionHandoff] = useState({ connected: false, handoff: null, session: null, semanticOrbs: [] });
@@ -456,6 +512,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   });
   const [emittedView, setEmittedView] = useState(null);
   const [hasOrbUndo, setHasOrbUndo] = useState(false);
+  const [hasOrbRedo, setHasOrbRedo] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(null);
   const [cursorMode, setCursorModeState] = useState(() => {
     try {
@@ -777,6 +834,59 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
   }
 
+  async function executePearlAction(action) {
+    if (!action?.verb) return;
+    if (route.kind !== "stage") {
+      setOrb((value) => createOrbState({
+        ...value,
+        phase: "blocked",
+        trace: [...(value.trace || []), {
+          id: `pearl-action-blocked:${Date.now()}`,
+          from: value.phase,
+          to: "blocked",
+          at: new Date().toISOString(),
+          evidence: { boundary: "Continue or open a Scene before using material actions." },
+        }],
+      }));
+      return;
+    }
+    setOutputFrameOpen(true);
+    setOrb((value) => createOrbState({
+      ...value,
+      phase: "executing",
+      commandId: action.verb,
+      taskId: `pearl-action:${action.verb}:${Date.now()}`,
+    }));
+    try {
+      const runtime = await waitForOrbRuntime();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const result = await runtime.execute([{ verb: action.verb, args: action.args || {} }], {
+        title: action.label || "Pearl action",
+      });
+      if (!result?.completed) throw new Error(result?.errors?.[0] || `${action.label || action.verb} could not complete`);
+      const candidates = runtime.candidates?.() || orbRef.current.candidates || [];
+      setOrb((value) => transitionOrb({ ...value, candidates }, "completed", {
+        taskId: value.taskId,
+        commandId: action.verb,
+        effectId: result.effects?.at?.(-1)?.id || `pearl-action:${action.verb}:${Date.now()}`,
+        evidence: { observed: result.effects || [`${action.verb}-completed`] },
+      }));
+      setEmittedView(null);
+    } catch (error) {
+      setOrb((value) => createOrbState({
+        ...value,
+        phase: "blocked",
+        trace: [...(value.trace || []), {
+          id: `pearl-action-error:${Date.now()}`,
+          from: value.phase,
+          to: "blocked",
+          at: new Date().toISOString(),
+          evidence: { boundary: error.message },
+        }],
+      }));
+    }
+  }
+
   function stopOrb() {
     approvalResolverRef.current?.({ decision: "reject" });
     approvalResolverRef.current = null;
@@ -809,6 +919,8 @@ export default function OrbUniverseShell({ StageComponent }) {
     if (orbUndoRef.current) {
       const record = orbUndoRef.current;
       const prior = record.orb || record;
+      const redoStorage = localStorage.getItem(UNIFIED_WORKSPACE_KEY);
+      const redoOrb = orbRef.current;
       record.restore?.();
       const at = new Date().toISOString();
       const restored = createOrbState({
@@ -826,7 +938,16 @@ export default function OrbUniverseShell({ StageComponent }) {
         }],
       });
       orbUndoRef.current = null;
+      orbRedoRef.current = {
+        orb: redoOrb,
+        restore() {
+          if (redoStorage == null) localStorage.removeItem(UNIFIED_WORKSPACE_KEY);
+          else localStorage.setItem(UNIFIED_WORKSPACE_KEY, redoStorage);
+          setSceneWorkspace(loadSceneWorkspace());
+        },
+      };
       setHasOrbUndo(false);
+      setHasOrbRedo(true);
       orbRef.current = restored;
       setOrb(restored);
       return;
@@ -835,6 +956,8 @@ export default function OrbUniverseShell({ StageComponent }) {
       const runtime = await waitForOrbRuntime();
       setOrb((value) => createOrbState({ ...value, phase: "recovery", effectId: null }));
       const receipt = runtime.undo();
+      orbRedoRef.current = { runtime: true };
+      setHasOrbRedo(true);
       setOrb((value) => transitionOrb(value, "completed", {
         taskId: value.taskId || `undo:${Date.now()}`,
         commandId: "undo",
@@ -849,6 +972,55 @@ export default function OrbUniverseShell({ StageComponent }) {
         trace: [...(value.trace || []), { id: `undo-error:${Date.now()}`, from: value.phase, to: "blocked", evidence: { boundary: error.message } }],
       }));
     }
+  }
+
+  async function redoOrbEffect() {
+    const record = orbRedoRef.current;
+    if (!record) return;
+    if (record.runtime) {
+      try {
+        const runtime = await waitForOrbRuntime();
+        const receipt = runtime.redo();
+        setOrb((value) => transitionOrb(value, "completed", {
+          taskId: value.taskId || `redo:${Date.now()}`,
+          commandId: "redoWorkspace",
+          effectId: `redo:${Date.now()}`,
+          evidence: receipt,
+        }));
+        orbRedoRef.current = null;
+        setHasOrbRedo(false);
+        setHasOrbUndo(true);
+      } catch (error) {
+        setOrb((value) => createOrbState({
+          ...value,
+          phase: "blocked",
+          trace: [...(value.trace || []), { id: `redo-error:${Date.now()}`, from: value.phase, to: "blocked", evidence: { boundary: error.message } }],
+        }));
+      }
+      return;
+    }
+    const undoStorage = localStorage.getItem(UNIFIED_WORKSPACE_KEY);
+    const undoOrb = orbRef.current;
+    record.restore?.();
+    const restored = createOrbState({
+      ...(record.orb || undoOrb),
+      phase: "completed",
+      commandId: "redoWorkspace",
+      effectId: `redo:orb:${Date.now()}`,
+    });
+    orbUndoRef.current = {
+      orb: undoOrb,
+      restore() {
+        if (undoStorage == null) localStorage.removeItem(UNIFIED_WORKSPACE_KEY);
+        else localStorage.setItem(UNIFIED_WORKSPACE_KEY, undoStorage);
+        setSceneWorkspace(loadSceneWorkspace());
+      },
+    };
+    orbRedoRef.current = null;
+    setHasOrbRedo(false);
+    setHasOrbUndo(true);
+    orbRef.current = restored;
+    setOrb(restored);
   }
 
   function finishVoice({ send = true } = {}) {
@@ -1033,7 +1205,9 @@ export default function OrbUniverseShell({ StageComponent }) {
       lenses: workingSet.lenses || [],
     });
     orbUndoRef.current = { orb: currentOrb, restore };
+    orbRedoRef.current = null;
     setHasOrbUndo(true);
+    setHasOrbRedo(false);
     orbRef.current = nextOrb;
     setOrb(nextOrb);
     return execution;
@@ -1049,12 +1223,19 @@ export default function OrbUniverseShell({ StageComponent }) {
     activate: (id) => applySemanticOrbCommand("activateSemanticOrb", { id }),
     move: (id, placement) => applySemanticOrbCommand("moveSemanticOrb", { id, placement }),
     rename: (id, name) => applySemanticOrbCommand("renameSemanticOrb", { id, name }),
+    bind: (id, representation) => applySemanticOrbCommand("bindSemanticOrb", { id, representation }),
     archive: (id, archived = true) => applySemanticOrbCommand("archiveSemanticOrb", { id, archived }),
     addContext: (id, item) => applySemanticOrbCommand("addSemanticOrbContext", { id, items: [item] }),
+    removeContext: (id, itemId) => applySemanticOrbCommand("removeSemanticOrbContext", { id, itemId }),
     applyLens: (id, lens) => applySemanticOrbCommand("applySemanticOrbLens", { id, lens, strength: lens.strength }),
+    removeLens: (id, lensId) => applySemanticOrbCommand("removeSemanticOrbLens", { id, lensId }),
     nest: (childId, parentId) => applySemanticOrbCommand("nestSemanticOrb", { childId, parentId }),
+    unnest: (id) => applySemanticOrbCommand("unnestSemanticOrb", { id }),
     merge: (ids) => applySemanticOrbCommand("mergeSemanticOrbs", { ids, sceneId: route.sceneId }),
     compose: (ids) => applySemanticOrbCommand("composeSemanticOrbs", { ids, sceneId: route.sceneId }),
+    split: (id) => applySemanticOrbCommand("splitSemanticOrb", { id, sceneId: route.sceneId }),
+    duplicate: (id) => applySemanticOrbCommand("duplicateSemanticOrb", { id }),
+    delete: (id) => applySemanticOrbCommand("deleteSemanticOrb", { id }),
   };
 
   function applyOrbContextCommand(name, args) {
@@ -1077,7 +1258,9 @@ export default function OrbUniverseShell({ StageComponent }) {
       };
       const restore = persistActiveWorkingSet({ context: next.context });
       orbUndoRef.current = { orb: current, restore };
+      orbRedoRef.current = null;
       setHasOrbUndo(true);
+      setHasOrbRedo(false);
       orbRef.current = next;
       setOrb(next);
       return execution;
@@ -1132,7 +1315,9 @@ export default function OrbUniverseShell({ StageComponent }) {
       const next = { ...execution.orb, lenses: execution.state.orbLenses.slice(-8) };
       const restore = persistActiveWorkingSet({ lenses: next.lenses });
       orbUndoRef.current = { orb: current, restore };
+      orbRedoRef.current = null;
       setHasOrbUndo(true);
+      setHasOrbRedo(false);
       orbRef.current = next;
       setOrb(next);
       return execution;
@@ -1218,7 +1403,9 @@ export default function OrbUniverseShell({ StageComponent }) {
         setSceneWorkspace(loadSceneWorkspace());
       },
     };
+    orbRedoRef.current = null;
     setHasOrbUndo(true);
+    setHasOrbRedo(false);
     orbRef.current = execution.orb;
     setOrb(execution.orb);
   }
@@ -1310,11 +1497,27 @@ export default function OrbUniverseShell({ StageComponent }) {
       id: `extension-working-set-${globalThis.crypto?.randomUUID?.() || Date.now()}`,
       surface: route.handoff,
     });
+    const carriedOrbs = normalizeSemanticOrbs(extensionHandoff?.semanticOrbs || []).map((semanticOrb, index) => ({
+      ...semanticOrb,
+      sceneId: id,
+      placement: {
+        ...semanticOrb.placement,
+        x: Number(semanticOrb.placement?.x) || -180 + (index % 5) * 90,
+        y: Number(semanticOrb.placement?.y) || -110 + Math.floor(index / 5) * 90,
+      },
+      provenance: {
+        ...(semanticOrb.provenance || {}),
+        continuedFrom: "pearl-extension",
+      },
+    }));
+    const carriedActiveId = carriedOrbs.some((semanticOrb) => semanticOrb.id === extensionHandoff?.activeSemanticOrbId)
+      ? extensionHandoff.activeSemanticOrbId
+      : null;
     const execution = await executeOrbCommand({
       orb: createOrbState(),
       command: "createSemanticOrb",
-      state: { semanticOrbs: [], activeSemanticOrbId: null },
-      args: { sceneId: id, material, placement: { x: 0, y: 0 }, activate: true },
+      state: { semanticOrbs: carriedOrbs, activeSemanticOrbId: carriedActiveId },
+      args: { sceneId: id, material, placement: { x: 0, y: 0 }, activate: !carriedActiveId },
       taskId: `extension-handoff:${id}`,
       observe: async ({ result }) => ({ effects: result.effects }),
     });
@@ -1328,6 +1531,8 @@ export default function OrbUniverseShell({ StageComponent }) {
         createdFrom: "pearl-extension-handoff",
         handoffSurface: route.handoff || extensionHandoff?.handoff?.surface || "workspace",
         handoffQueue: (extensionHandoff?.session?.queue || []).map((entry) => entry.id).filter(Boolean),
+        handoffLens: extensionHandoff?.session?.generator?.id || null,
+        handoffCandidates: (extensionHandoff?.session?.results || []).flatMap((run) => (run.outputs || []).map((output) => output.id)).filter(Boolean),
       },
     });
     const scenes = [...(sceneWorkspace.scenes || []).filter((entry) => entry.id !== scene.id), scene];
@@ -1365,7 +1570,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         onContextAdd={addOrbContext}
         semanticOrbActions={semanticOrbActions}
       />}
-      {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect}
+      {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
         onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
         onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
@@ -1374,8 +1579,10 @@ export default function OrbUniverseShell({ StageComponent }) {
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
       {emittedView && <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
         <button type="button" onClick={() => setEmittedView(null)}>Close</button>
-        <b>{emittedView === "context" ? "Working context" : "Cognitive library"}</b>
-        {emittedView === "context"
+        <b>{emittedView === "context" ? "Working context" : emittedView === "actions" ? "Pearl actions" : emittedView === "taste" ? "Candidate taste" : "Cognitive library"}</b>
+        {emittedView === "actions"
+          ? <PearlActionPalette onRun={executePearlAction} />
+          : emittedView === "context"
           ? <ContextInspector items={orb.context || []} onChange={updateOrbContext} onRemove={removeOrbContext} />
           : emittedView === "lenses"
             ? <LensAtmosphereInspector lenses={orb.lenses || []} onChange={updateOrbLens} onRemove={removeOrbLens} />
@@ -1408,7 +1615,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
         />}
-    {!showInstall && !cursorMode && <CompanionOrb key="home-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={hasOrbUndo ? undoOrbEffect : undefined}
+    {!showInstall && !cursorMode && <CompanionOrb key="home-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={hasOrbUndo ? undoOrbEffect : undefined} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
       onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
       cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
       approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}

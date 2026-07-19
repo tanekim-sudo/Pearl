@@ -380,6 +380,16 @@
 .orb-context-inspector button { min-height: 28px; padding: 3px 6px; border-bottom: 1px solid var(--orb-line); }
 .orb-candidate-inspector li { grid-template-columns: minmax(0,1fr) auto auto auto; }
 .orb-candidate-inspector li > span small { white-space: normal; line-height: 1.35; }
+.pearl-action-palette { display:grid; gap:14px; }
+.pearl-action-palette > nav { display:flex; gap:4px; overflow:auto; padding-bottom:8px; border-bottom:1px solid var(--orb-line); }
+.pearl-action-palette > nav button { flex:none; min-height:30px; padding:4px 8px; color:var(--orb-text-3); border:0; border-bottom:1px solid transparent; background:transparent; }
+.pearl-action-palette > nav button[aria-pressed="true"] { color:var(--orb-text-1); border-bottom-color:var(--orb-focus); }
+.pearl-action-palette > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.pearl-action-palette > div button { display:grid; gap:3px; min-height:62px; padding:9px 10px; text-align:left; border:1px solid var(--orb-line); border-radius:12px; background:rgba(255,255,255,.025); }
+.pearl-action-palette > div button:hover,
+.pearl-action-palette > div button:focus-visible { border-color:var(--orb-line-strong); background:rgba(255,255,255,.045); }
+.pearl-action-palette b { color:var(--orb-text-1); font-size:11px; font-weight:560; }
+.pearl-action-palette small { color:var(--orb-text-3); font-size:9px; line-height:1.35; }
 .orb-stage-shell { min-height: 100vh; background: var(--orb-space-0); }
 .orb-stage-bar { position: fixed; top: 12px; left: 12px; z-index: 9999; display: flex; gap: 8px; }
 .orb-stage-bar a, .orb-stage-bar button { color: var(--orb-text-2); background: rgba(6,7,7,.92); border: 0; border-bottom: 1px solid var(--orb-line-strong); padding: 8px 4px; border-radius: 0; text-decoration: none; font: 11px Inter, sans-serif; cursor: pointer; }
@@ -454,6 +464,7 @@
   .scene-c { display: none; }
   .orb-home-prompt { width: calc(100vw - 36px); white-space: normal; text-align: center; }
   .companion-orb-shell.featured { --orb-size: 34px; }
+  .pearl-action-palette > div { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   .orb-pearl,
@@ -575,6 +586,15 @@ html[data-lens-orb-cursor-active="true"] * {
 .semantic-orb-inspector small { display:block; margin:9px 0; color:rgba(255,249,230,.52); }
 .semantic-orb-inspector div,.semantic-orb-compose-chooser { display:flex; gap:6px; }
 .semantic-orb-inspector button,.semantic-orb-compose-chooser button { border:1px solid rgba(241,218,153,.16); border-radius:999px; background:rgba(255,255,255,.035); color:rgba(255,249,230,.8); }
+.semantic-orb-inspector-list { display:grid; gap:0; max-height:118px; margin:8px 0; padding:0; overflow:auto; list-style:none; border-top:1px solid var(--orb-line); }
+.semantic-orb-inspector-list li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--orb-line); }
+.semantic-orb-inspector-list span { overflow:hidden; color:var(--orb-text-2); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.semantic-orb-inspector-list button { min-height:26px; padding:2px 7px; font-size:9px; }
+.semantic-orb-inspector-actions { flex-wrap:wrap; }
+.semantic-orb-inspector button:disabled { opacity:.35; cursor:not-allowed; }
+.semantic-orb-delete { width:100%; margin-top:8px; border-color:transparent!important; color:var(--orb-danger)!important; }
+.semantic-orb-delete-confirm { display:grid!important; grid-template-columns:1fr auto auto; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--orb-line); }
+.semantic-orb-delete-confirm span { color:var(--orb-text-2); font-size:9px; line-height:1.35; }
 .semantic-orb-compose-chooser { position:absolute; left:50%; bottom:24px; z-index:12; align-items:center; padding:10px 12px; border:1px solid rgba(241,218,153,.22); border-radius:18px; background:rgba(10,9,8,.96); color:rgba(255,249,230,.82); pointer-events:auto; transform:translateX(-50%); }
 @keyframes semantic-orb-breathe { 0%,100% { transform:scale(.98); opacity:.42; } 50% { transform:scale(1.02); opacity:.58; } }
 @media (max-width:640px) {

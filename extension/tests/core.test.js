@@ -149,6 +149,25 @@ test("extension companion manifest and real handlers have exact parity", async (
   });
   assert.equal(semanticAction.name, "create");
   assert.equal(createdOrb.id, "orb-1");
+  assert.equal(parseExtensionIntent("rename the Research orb to Visual grammar").name, "renameExternalSemanticOrb");
+  assert.equal(parseExtensionIntent("duplicate the Research orb").name, "duplicateExternalSemanticOrb");
+  assert.equal(parseExtensionIntent("split the Research orb").name, "splitExternalSemanticOrb");
+  assert.equal(parseExtensionIntent("unnest the Research orb").name, "unnestExternalSemanticOrb");
+  assert.equal(parseExtensionIntent("delete the Research orb").name, "deleteExternalSemanticOrb");
+  await executeExtensionVerb("duplicateExternalSemanticOrb", { id: "orb-1" }, {
+    animate: async () => {},
+    semanticOrbAction: async (name) => {
+      semanticAction = { name };
+      return { id: "orb-2" };
+    },
+  });
+  assert.equal(semanticAction.name, "duplicate");
+  await assert.rejects(
+    () => executeExtensionVerb("deleteExternalSemanticOrb", { id: "orb-1" }, {
+      semanticOrbAction: async () => ({}),
+    }),
+    /scoped preview approval/
+  );
   await assert.rejects(
     () => executeExtensionVerb("insertExternalResult", { result: "1" }, {
       resolveResult: () => ({ text: "draft" }),

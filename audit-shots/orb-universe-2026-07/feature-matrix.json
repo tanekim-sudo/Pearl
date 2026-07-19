@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-19T02:39:09.163Z",
+  "generatedAt": "2026-07-19T06:50:52.598Z",
   "counts": {
     "features": 31,
-    "companion": 238,
-    "extension": 44,
+    "companion": 251,
+    "extension": 51,
     "commands": 47
   },
   "features": [
@@ -540,9 +540,16 @@
         "createExternalSemanticOrb",
         "openExternalSemanticOrb",
         "addExternalSemanticOrbContext",
+        "removeExternalSemanticOrbContext",
         "applyExternalSemanticOrbLens",
+        "removeExternalSemanticOrbLens",
+        "renameExternalSemanticOrb",
         "mergeExternalSemanticOrbs",
+        "duplicateExternalSemanticOrb",
+        "splitExternalSemanticOrb",
+        "unnestExternalSemanticOrb",
         "archiveExternalSemanticOrb",
+        "deleteExternalSemanticOrb",
         "openExternalSemanticOrbScene"
       ],
       "tests": [

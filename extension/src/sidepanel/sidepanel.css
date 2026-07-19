@@ -151,3 +151,21 @@ button:hover{border-color:var(--ex-line-strong);background:rgba(255,255,255,.045
 @keyframes extension-pearl-breathe{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
 @media(max-width:380px){header{height:238px}.extension-orb{left:14px;width:104px;height:104px;min-height:104px}.extension-orb svg{width:104px;height:104px}.extension-orb-label{top:110px}.orb-view-tabs{top:188px}.orb-panel.active{max-height:calc(100vh - 264px)}}
 @media(prefers-reduced-motion:reduce){.extension-orb-pearl{animation:none!important}.extension-orb-nacre,.extension-orb-reflection{transform:none!important;transition:none!important}}
+
+/* Pearl rests as a small tool; controls gather around it only when needed. */
+main{background:radial-gradient(circle at 32px 38px,rgba(216,194,141,.055),transparent 86px),var(--ex-bg)}
+header{height:82px}
+.extension-orb-shell{left:0;top:18px;width:100%!important;height:40px;transform:none}
+.extension-orb{left:0;top:0;width:36px;height:36px;min-height:36px;filter:none}
+.extension-orb svg{width:36px;height:36px}
+.extension-orb-label{left:46px;top:1px;width:calc(100% - 118px);min-height:34px;transform:none;text-align:left;font-size:10px}
+.extension-orb-emissions{display:none}
+.orb-view-tabs{position:sticky;top:0;left:auto;right:auto;height:auto;display:flex;gap:2px;padding:6px 0;border-bottom:1px solid var(--ex-line);background:rgba(10,12,13,.94);pointer-events:auto;overflow-x:auto}
+.orb-view-tabs button,
+.orb-view-tabs button:nth-child(n){position:static;flex:none;min-height:28px;padding:3px 7px;transform:none;font-size:9px}
+.orb-panel.active{max-height:calc(100vh - 146px)}
+.extension-semantic-orb-detail{align-items:stretch}
+.extension-semantic-orb-detail>input{flex:1 0 100%;min-width:0}
+.extension-semantic-orb-detail>span{display:flex;flex:1 0 100%;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border-left:1px solid var(--ex-line);color:var(--ex-muted);font-size:10px}
+.extension-semantic-orb-detail>span button{min-height:24px;padding:1px 6px}
+@media(max-width:380px){header{height:76px}.extension-orb{left:0;width:32px;height:32px;min-height:32px}.extension-orb svg{width:32px;height:32px}.extension-orb-label{left:41px;top:0}.orb-view-tabs{top:0}.orb-panel.active{max-height:calc(100vh - 136px)}}

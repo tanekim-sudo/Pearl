@@ -351,7 +351,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     schema: { id: "string", name: "string?" },
     preconditions: ["orb exists"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
-    surfaces: ["web", "companion"],
+    surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.append",
     observableEffects: ["semantic-orb-created"],
     execute(state, args, context) {
@@ -377,7 +377,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     schema: { id: "string", sceneId: "string" },
     preconditions: ["orb exists", "orb has referenced context or child orbs"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
-    surfaces: ["web", "companion"],
+    surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.append",
     observableEffects: ["semantic-orb-created"],
     execute(state, args, context) {
@@ -424,7 +424,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     schema: { id: "string" },
     preconditions: ["scoped destructive confirmation was granted"],
     risk: "high", confirmation: "framework", undo: "restore-semantic-orbs",
-    surfaces: ["web", "companion"],
+    surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.delete",
     observableEffects: ["semantic-orb-deleted"],
     execute(state, args) {

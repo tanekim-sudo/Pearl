@@ -307,17 +307,78 @@ function App() {
       const context = new Map((orb.workingSet.context || []).map((item) => [item.id, item]));
       items.forEach((item) => item?.id && context.set(item.id, item));
       byId.set(orb.id, createSemanticOrb({ ...orb, workingSet: { ...orb.workingSet, context: [...context.values()] } }));
+    } else if (name === "remove-context") {
+      byId.set(orb.id, createSemanticOrb({
+        ...orb,
+        workingSet: { ...orb.workingSet, context: (orb.workingSet.context || []).filter((item) => item.id !== args.contextId) },
+      }));
     } else if (name === "apply-lens") {
       const lens = args.lens || generators.find((entry) => entry.id === args.lensId) || library.find((entry) => entry.id === args.lensId)?.operator;
       if (!lens?.id) throw new Error("Lens not found");
       const lenses = new Map((orb.workingSet.lenses || []).map((entry) => [entry.id, entry]));
       lenses.set(lens.id, { ...lens, strength: args.strength ?? .7 });
       byId.set(orb.id, createSemanticOrb({ ...orb, workingSet: { ...orb.workingSet, lenses: [...lenses.values()] } }));
+    } else if (name === "remove-lens") {
+      byId.set(orb.id, createSemanticOrb({
+        ...orb,
+        workingSet: { ...orb.workingSet, lenses: (orb.workingSet.lenses || []).filter((lens) => lens.id !== args.lensId) },
+      }));
+    } else if (name === "rename") {
+      byId.set(orb.id, createSemanticOrb({ ...orb, name: String(args.name || "Untitled orb").slice(0, 80) }));
+    } else if (name === "duplicate") {
+      const duplicate = createSemanticOrb({
+        ...orb,
+        id: `external-orb:${crypto.randomUUID()}`,
+        name: args.name || `${orb.name} copy`,
+        placement: { ...orb.placement, x: orb.placement.x + 42, y: orb.placement.y + 42 },
+        parentOrbId: null,
+        childOrbIds: [],
+        lineage: [...(orb.lineage || []), { orbId: orb.id, operation: "duplicate" }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      byId.set(duplicate.id, duplicate);
+      await persistSemanticOrbs([...byId.values()], duplicate.id);
+      return { type: "external-semantic-orb-duplicate", id: duplicate.id, orb: duplicate };
+    } else if (name === "split") {
+      const parts = orb.workingSet.context?.length
+        ? orb.workingSet.context
+        : (orb.childOrbIds || []).map((id) => ({ id, kind: "grouped-context", label: id }));
+      if (!parts.length) throw new Error("orb has nothing to split");
+      const additions = parts.map((part, index) => createSemanticOrb(semanticOrbFromMaterial(part, {
+        id: `external-orb:${crypto.randomUUID()}`,
+        sceneId: orb.sceneId,
+        placement: {
+          x: orb.placement.x + Math.cos(index * 2.3999632297) * 70,
+          y: orb.placement.y + Math.sin(index * 2.3999632297) * 70,
+        },
+      })));
+      additions.forEach((entry) => byId.set(entry.id, createSemanticOrb({
+        ...entry,
+        lineage: [...(entry.lineage || []), { orbId: orb.id, operation: "split" }],
+      })));
+    } else if (name === "unnest") {
+      if (orb.parentOrbId && byId.has(orb.parentOrbId)) {
+        const parent = byId.get(orb.parentOrbId);
+        byId.set(parent.id, createSemanticOrb({ ...parent, childOrbIds: (parent.childOrbIds || []).filter((id) => id !== orb.id) }));
+      }
+      byId.set(orb.id, createSemanticOrb({ ...orb, parentOrbId: null }));
+    } else if (name === "delete") {
+      byId.delete(orb.id);
+      for (const entry of byId.values()) {
+        if (entry.parentOrbId === orb.id || entry.childOrbIds?.includes(orb.id)) {
+          byId.set(entry.id, createSemanticOrb({
+            ...entry,
+            parentOrbId: entry.parentOrbId === orb.id ? null : entry.parentOrbId,
+            childOrbIds: (entry.childOrbIds || []).filter((id) => id !== orb.id),
+          }));
+        }
+      }
     } else if (name === "archive") {
       byId.set(orb.id, createSemanticOrb({ ...orb, archived: args.archived !== false }));
     }
     const next = [...byId.values()];
-    await persistSemanticOrbs(next, name === "archive" && args.archived !== false && activeSemanticOrbId === orb.id ? null : activeSemanticOrbId);
+    await persistSemanticOrbs(next, (name === "archive" && args.archived !== false || name === "delete") && activeSemanticOrbId === orb.id ? null : activeSemanticOrbId);
     return { type: `external-semantic-orb-${name}`, id: orb.id, orb: byId.get(orb.id) };
   }
 
@@ -650,10 +711,32 @@ function App() {
         {!semanticOrbs.some((orb) => !orb.archived) && <p>No saved orbs yet. Capture a selection or make an empty one.</p>}
       </div>
       {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
-        <b>{semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}</b>
+        <input
+          aria-label="Semantic orb name"
+          key={`${activeSemanticOrbId}:${semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}`}
+          defaultValue={semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}
+          onBlur={(event) => {
+            const name = event.currentTarget.value.trim();
+            if (name) semanticOrbAction("rename", { id: activeSemanticOrbId, name });
+          }}
+        />
         <button type="button" disabled={!session.fragments.length} onClick={() => semanticOrbAction("add-context", { id: activeSemanticOrbId, items: session.fragments.slice(-1) })}>Add current capture</button>
+        {(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context || []).map((item) => <span key={item.id}>
+          {item.label || item.quote || item.text || item.id}
+          <button type="button" aria-label={`Remove ${item.label || item.id} context`} onClick={() => semanticOrbAction("remove-context", { id: activeSemanticOrbId, contextId: item.id })}>×</button>
+        </span>)}
+        {(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.lenses || []).map((lens) => <span key={lens.id}>
+          {lens.name || lens.label || lens.id}
+          <button type="button" aria-label={`Remove ${lens.name || lens.id} Lens`} onClick={() => semanticOrbAction("remove-lens", { id: activeSemanticOrbId, lensId: lens.id })}>×</button>
+        </span>)}
+        <button type="button" onClick={() => semanticOrbAction("duplicate", { id: activeSemanticOrbId })}>Duplicate</button>
+        <button type="button" disabled={!(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context?.length || semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).childOrbIds?.length)} onClick={() => semanticOrbAction("split", { id: activeSemanticOrbId })}>Split</button>
+        {semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).parentOrbId && <button type="button" onClick={() => semanticOrbAction("unnest", { id: activeSemanticOrbId })}>Unnest</button>}
         <button type="button" onClick={() => action("open-web-handoff", { surface: "semantic-orb-scene", orbId: activeSemanticOrbId, preservePayload: true })}>Arrange in full Scene</button>
         <button type="button" onClick={() => semanticOrbAction("archive", { id: activeSemanticOrbId, archived: true })}>Archive</button>
+        <button type="button" onClick={() => {
+          if (confirm("Delete this orb? Its source material and library objects will remain.")) semanticOrbAction("delete", { id: activeSemanticOrbId });
+        }}>Delete</button>
       </div>}
     </section>
     {packagesOpen && <section className={`orb-panel ${activeView === "library" ? "active" : ""} extension-packages`} aria-label="Cognitive Packages">

@@ -221,8 +221,10 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ],
     extension: [
       "createExternalSemanticOrb", "openExternalSemanticOrb", "addExternalSemanticOrbContext",
-      "applyExternalSemanticOrbLens", "mergeExternalSemanticOrbs", "archiveExternalSemanticOrb",
-      "openExternalSemanticOrbScene",
+      "removeExternalSemanticOrbContext", "applyExternalSemanticOrbLens", "removeExternalSemanticOrbLens",
+      "renameExternalSemanticOrb", "mergeExternalSemanticOrbs", "duplicateExternalSemanticOrb",
+      "splitExternalSemanticOrb", "unnestExternalSemanticOrb", "archiveExternalSemanticOrb",
+      "deleteExternalSemanticOrb", "openExternalSemanticOrbScene",
     ],
     persistence: ["lens.scenes.v4", "semanticOrbs", "activeSemanticOrbId"],
     tests: [

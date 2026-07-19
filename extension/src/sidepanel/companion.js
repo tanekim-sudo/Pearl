@@ -18,9 +18,16 @@ export const EXTENSION_VERBS = Object.freeze({
   createExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("create", args),
   openExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("open", args),
   addExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("add-context", args),
+  removeExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("remove-context", args),
   applyExternalSemanticOrbLens: ({ args, semanticOrbAction }) => semanticOrbAction("apply-lens", args),
+  removeExternalSemanticOrbLens: ({ args, semanticOrbAction }) => semanticOrbAction("remove-lens", args),
+  renameExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("rename", args),
   mergeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("merge", args),
+  duplicateExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("duplicate", args),
+  splitExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("split", args),
+  unnestExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("unnest", args),
   archiveExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("archive", args),
+  deleteExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("delete", args),
   openExternalSemanticOrbScene: ({ args, action }) => action("open-web-handoff", {
     surface: "semantic-orb-scene",
     orbId: args.id,
@@ -145,6 +152,16 @@ export function parseExtensionIntent(text) {
   if (/^(?:return to|restore|use) (?:the )?native cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: false } };
   const createOrb = value.match(/^(?:make|create|save)(?: this| the selection)? (?:as )?(?:a )?new orb(?: called (.+))?$/i);
   if (createOrb) return { name: "createExternalSemanticOrb", args: { name: createOrb[1] || "Untitled orb" } };
+  const renameOrb = value.match(/^rename (?:the )?(.+?) orb to (.+)$/i);
+  if (renameOrb) return { name: "renameExternalSemanticOrb", args: { id: renameOrb[1], name: renameOrb[2] } };
+  const duplicateOrb = value.match(/^duplicate (?:the )?(.+?) orb$/i);
+  if (duplicateOrb) return { name: "duplicateExternalSemanticOrb", args: { id: duplicateOrb[1] } };
+  const splitOrb = value.match(/^split (?:the )?(.+?) orb$/i);
+  if (splitOrb) return { name: "splitExternalSemanticOrb", args: { id: splitOrb[1] } };
+  const unnestOrb = value.match(/^unnest (?:the )?(.+?) orb$/i);
+  if (unnestOrb) return { name: "unnestExternalSemanticOrb", args: { id: unnestOrb[1] } };
+  const deleteOrb = value.match(/^delete (?:the )?(.+?) orb$/i);
+  if (deleteOrb) return { name: "deleteExternalSemanticOrb", args: { id: deleteOrb[1] } };
   const openOrb = value.match(/^open (?:the )?(.+?) orb$/i);
   if (openOrb) return { name: "openExternalSemanticOrb", args: { id: openOrb[1] } };
   const addOrb = value.match(/^add (?:this|the selection|current capture) to (?:the )?(.+?) orb$/i);
