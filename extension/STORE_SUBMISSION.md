@@ -14,7 +14,7 @@ and select the unzipped folder until the Chrome Web Store release is signed
 and published.
 
 Set `VITE_CHROME_WEB_STORE_URL` to the final HTTPS Chrome Web Store listing URL
-at web build time. The web funnel then makes **Add Lens to Chrome** the primary
+at web build time. The web funnel then makes **Add Pearl to Chrome** the primary
 action and keeps the ZIP as a recovery path. Until that URL exists, the product
 honestly presents **Download for Chrome** followed by the three developer-mode
 steps. `VITE_LENS_EXTENSION_ID` enables the trusted install check and direct
@@ -41,7 +41,7 @@ Incognito is disabled. There is no remote executable code, `eval`, dynamic code 
 
 ## Limited Use disclosure
 
-Data obtained from browser APIs is used only to provide the visible Lens Everywhere features, is not sold, is not used for advertising or credit decisions, and is not transferred except to the Lens API/model processor when the user presses GO.
+Data obtained from browser APIs is used only to provide the visible Pearl Everywhere features, is not sold, is not used for advertising or credit decisions, and is not transferred except to the Pearl API/model processor when the user presses GO.
 
 ## Reviewer instructions
 

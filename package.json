@@ -1,7 +1,7 @@
 {
   "name": "lens",
   "version": "1.0.0",
-  "description": "Create prompt symbols and drag them onto text to transform it with open models via Hugging Face.",
+  "description": "Pearl — an orb-centered operating environment for reusable cognition.",
   "private": true,
   "type": "module",
   "scripts": {

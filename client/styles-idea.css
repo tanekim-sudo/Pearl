@@ -7208,3 +7208,303 @@ svg.gen-item-selected {
     stroke-dashoffset: 0;
   }
 }
+
+/* ── Pearl visual system ────────────────────────────────────────────────
+   A quiet, tactile layer shared by the rail, paper, AI space, and editors.
+   Interaction geometry stays unchanged; the visual hierarchy becomes softer
+   and relies on depth, translucency, and nacre-like color instead of borders. */
+.idea-app {
+  background:
+    radial-gradient(ellipse at 8% 0%, var(--pearl-mint), transparent 34%),
+    radial-gradient(ellipse at 92% 14%, var(--pearl-lilac), transparent 32%),
+    radial-gradient(ellipse at 52% 100%, var(--pearl-rose), transparent 36%),
+    var(--paper-deep);
+}
+
+.idea-toolbar {
+  border-bottom: 1px solid var(--line) !important;
+  background: color-mix(in srgb, var(--pearl-glass) 88%, transparent) !important;
+  box-shadow: 0 12px 34px rgba(35, 45, 43, .045);
+  backdrop-filter: blur(var(--pearl-blur)) saturate(112%);
+}
+
+.toolbar-wordmark {
+  color: var(--ink) !important;
+  font-weight: 560 !important;
+  letter-spacing: .16em !important;
+  text-transform: lowercase;
+}
+
+.unified-workspace-grid .canvas-column,
+.unified-workspace-grid .viewport {
+  background:
+    radial-gradient(ellipse at 12% 4%, var(--pearl-mint), transparent 38%),
+    radial-gradient(ellipse at 88% 16%, var(--pearl-lilac), transparent 34%),
+    #f1f2ef;
+}
+
+.canvas-column,
+.ai-column,
+.functions-column {
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+}
+
+.board-rail,
+.rail-pane,
+.functions-column-body,
+.ai-column-body {
+  border-color: var(--line) !important;
+  background: color-mix(in srgb, var(--pearl-glass) 84%, transparent) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(var(--pearl-blur)) saturate(112%);
+}
+
+.rail-head {
+  padding-block: 16px 10px;
+}
+
+.rail-tabs,
+.rail-pane-head,
+.column-head {
+  border-color: var(--line) !important;
+}
+
+.rail-tab,
+.rail-icon,
+.rail-create,
+.move-quick-btn,
+.lens-btn,
+.struct-card-actions button,
+.toolbar-hover-actions button {
+  border-radius: 999px !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: color .2s ease, background .2s ease, transform .2s ease !important;
+}
+
+.rail-tab:hover,
+.rail-tab.on,
+.rail-icon:hover,
+.rail-create:hover,
+.move-quick-btn:hover,
+.lens-btn:hover,
+.struct-card-actions button:hover,
+.toolbar-hover-actions button:hover {
+  color: var(--ink) !important;
+  background: color-mix(in srgb, var(--accent-soft) 72%, transparent) !important;
+}
+
+.move-quick-input,
+.lens-rack-search-row input,
+.lens-rack-filter-row select,
+.modal input,
+.modal textarea,
+.modal select {
+  border-color: var(--line) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--pearl-glass) 72%, transparent) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.42) !important;
+}
+
+.struct-card,
+.lens-card,
+.git-history-item,
+.plans-card,
+.package-draft-card,
+.package-trust-card,
+.fn-flow-card {
+  border-color: var(--line) !important;
+  border-radius: var(--pearl-radius) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.28), transparent 42%),
+    color-mix(in srgb, var(--pearl-glass) 88%, transparent) !important;
+  box-shadow: 0 10px 30px rgba(38, 48, 46, .045), inset 0 1px rgba(255,255,255,.5) !important;
+  backdrop-filter: blur(14px) saturate(108%);
+}
+
+.struct-card:hover,
+.lens-card:hover,
+.git-history-item:hover,
+.plans-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line)) !important;
+  box-shadow: 0 15px 38px rgba(38, 48, 46, .075), inset 0 1px rgba(255,255,255,.58) !important;
+  transform: translateY(-1px);
+}
+
+.lens-card.active,
+.struct-card.drop-target,
+.plans-card-current {
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 16px 42px rgba(70, 94, 89, .08) !important;
+}
+
+.paper-sheet,
+.three-column-grid.unified-workspace-grid .paper-sheet {
+  border: 1px solid rgba(69, 79, 76, .055) !important;
+  border-radius: 5px !important;
+  background: #fbfaf6 !important;
+  box-shadow:
+    0 1px 1px rgba(43, 51, 49, .035),
+    0 18px 48px rgba(43, 51, 49, .085),
+    0 55px 110px rgba(43, 51, 49, .045) !important;
+}
+
+.paper-content,
+.three-column-grid.unified-workspace-grid .paper-content {
+  background: linear-gradient(145deg, rgba(255,255,255,.52), transparent 38%), #fbfaf6 !important;
+}
+
+.interpret-boundary,
+.interpret-boundary-hit::before,
+.interpret-boundary-hit::after {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent) !important;
+  box-shadow: none !important;
+  opacity: .52;
+}
+
+.interpret-boundary-grip {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--accent) 34%, transparent) !important;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-soft) 62%, transparent) !important;
+}
+
+.ai-node-viewport-embedded .ai-node-ring {
+  border-color: rgba(74, 84, 82, .22) !important;
+  background:
+    radial-gradient(circle at 34% 27%, rgba(255,255,255,.92), rgba(244,244,239,.78) 38%, rgba(215,222,218,.6) 70%, rgba(190,195,190,.38)) !important;
+  box-shadow: 0 12px 28px rgba(50, 63, 60, .1), inset 0 1px 1px rgba(255,255,255,.82) !important;
+  backdrop-filter: blur(8px);
+}
+
+.ai-node-viewport-embedded .ai-node.selected .ai-node-ring,
+.ai-node-viewport-embedded .ai-node.multi-selected .ai-node-ring {
+  border-color: rgba(114, 139, 132, .45) !important;
+  box-shadow: 0 0 0 5px rgba(180, 210, 201, .14), 0 15px 32px rgba(50, 63, 60, .12) !important;
+}
+
+.ai-node-viewport-embedded .ai-node-content-text,
+.ai-node-viewport-embedded .ai-strand-choice-hud {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--pearl-radius) !important;
+  background: rgba(251, 251, 247, .86) !important;
+  box-shadow: 0 18px 48px rgba(40, 51, 48, .11) !important;
+  backdrop-filter: blur(18px) saturate(110%);
+}
+
+.modal-scrim {
+  background: rgba(31, 38, 37, .18) !important;
+  backdrop-filter: blur(14px) saturate(92%);
+}
+
+.modal,
+.menu-panel,
+.symbol-draw-panel,
+.item-stages-panel,
+.transfer-explore-panel,
+.git-history-panel {
+  border: 1px solid rgba(255,255,255,.38) !important;
+  border-radius: calc(var(--pearl-radius) + 4px) !important;
+  background:
+    radial-gradient(ellipse at 0% 0%, var(--pearl-mint), transparent 40%),
+    radial-gradient(ellipse at 100% 0%, var(--pearl-lilac), transparent 38%),
+    color-mix(in srgb, var(--pearl-glass) 92%, transparent) !important;
+  box-shadow: 0 32px 90px rgba(27, 36, 34, .2), inset 0 1px rgba(255,255,255,.58) !important;
+  backdrop-filter: blur(30px) saturate(116%);
+}
+
+.modal-foot button,
+.extension-download-button {
+  border-radius: 999px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .struct-card,
+  .lens-card,
+  .git-history-item,
+  .plans-card {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+.companion-panel {
+  border: 1px solid rgba(255,255,255,.38);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 0 0, var(--pearl-mint), transparent 42%),
+    radial-gradient(ellipse at 100% 0, var(--pearl-lilac), transparent 40%),
+    rgba(249,249,245,.78);
+  box-shadow: 0 30px 90px rgba(32,42,40,.2), inset 0 1px rgba(255,255,255,.62);
+  backdrop-filter: blur(28px) saturate(112%);
+}
+
+.companion-head {
+  border-bottom: 1px solid var(--line);
+  background: rgba(28,33,33,.82);
+  color: rgba(244,245,241,.94);
+}
+
+.companion-fab {
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(24,29,29,.78);
+  color: rgba(244,245,241,.94);
+  box-shadow: 0 14px 38px rgba(26,35,33,.2);
+  backdrop-filter: blur(18px);
+}
+
+.companion-fab-orb,
+.companion-head-orb {
+  background:
+    radial-gradient(circle at 32% 25%, #fff 0 12%, #f2f2ed 22%, #d9e5e0 46%, #ddd2df 68%, #91958f 100%);
+  box-shadow: 0 4px 10px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.8);
+}
+
+.companion-mode-bar {
+  border-bottom-color: var(--line);
+  background: rgba(255,255,252,.35);
+}
+
+.companion-mode-bar select,
+.companion-mode-bar button,
+.companion-head-btn {
+  border-color: var(--line) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.companion-msg.user {
+  background: rgba(183,211,202,.2);
+  color: var(--ink);
+}
+
+.companion-msg.companion {
+  background: rgba(45,55,53,.055);
+  color: var(--ink);
+}
+
+.companion-memory {
+  border-bottom-color: var(--line);
+  background: rgba(194,215,208,.12);
+}
+
+.companion-input-row {
+  border-top-color: var(--line) !important;
+  background: rgba(255,255,252,.32) !important;
+}
+
+.library-kind-guide {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.library-save-as-drop,
+.learn-chat-entry,
+.rail-create,
+.library-kind-empty {
+  border-style: solid !important;
+  border-color: var(--line) !important;
+  background: rgba(255,255,255,.16) !important;
+}

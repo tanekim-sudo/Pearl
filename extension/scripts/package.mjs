@@ -67,7 +67,7 @@ const sha256 = crypto.createHash("sha256").update(fs.readFileSync(output)).diges
 fs.writeFileSync(
   path.join(appPublicDir, "release.json"),
   `${JSON.stringify({
-    name: "Lens Everywhere",
+    name: "Pearl Everywhere",
     version: extensionPackage.version,
     browser: "chrome",
     bytes,

@@ -32,7 +32,7 @@ export function createHighlighter() {
     if (marks.size) {
       const capsule = document.createElement("button");
       capsule.className = "capsule";
-      capsule.textContent = `${marks.size} selected · Open Lens`;
+      capsule.textContent = `${marks.size} selected · Open Pearl`;
       capsule.addEventListener("click", () => globalThis.chrome?.runtime?.sendMessage({ version: 1, type: "get-session", requestId: "capsule", payload: { open: true } }));
       shadow.append(capsule);
     }

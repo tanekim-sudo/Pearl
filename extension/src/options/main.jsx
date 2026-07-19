@@ -61,7 +61,7 @@ function Options() {
   }
 
   return <main>
-    <h1>Lens Everywhere settings</h1>
+    <h1>Pearl Everywhere settings</h1>
     <p>Highlighting stays in extension session storage. Nothing is sent until you press GO.</p>
     <label>Never capture on these domains<textarea rows="9" value={settings.denylist} onChange={(event) => update("denylist", event.target.value)} /></label>
     <label>Raw selection retention<select value={settings.retention} onChange={(event) => update("retention", event.target.value)}><option value="session">Until browser session ends</option><option value="navigation">Until page navigation</option></select></label>
@@ -70,7 +70,7 @@ function Options() {
     <div><button onClick={save}>Save settings</button>{saved && <span> Saved</span>}</div>
     <hr />
     <h2>Site access</h2>
-    <p>Lens requests access only when you activate it on a site. Remove access any time in your browser’s extension settings.</p>
+    <p>Pearl requests access only when you activate it on a site. Remove access any time in your browser’s extension settings.</p>
     <h2>Library</h2>
     <label>Import .lens-library.json or .lens.json<input type="file" accept=".json,.lens.json,.lens-library.json,application/json" onChange={(event) => importLibrary(event.target.files?.[0])} /></label>
     {libraryStatus && <p role="status">{libraryStatus}</p>}
@@ -80,6 +80,6 @@ function Options() {
 }
 
 const style = document.createElement("style");
-style.textContent = "body{font:15px system-ui;max-width:720px;margin:40px auto;padding:0 20px;color:#222}main,label{display:grid;gap:12px}label{font-weight:600}input,textarea,select,button{font:inherit;padding:9px}button{width:max-content}";
+style.textContent = "html{min-height:100%;background:radial-gradient(ellipse at 8% 0,rgba(170,211,200,.2),transparent 34%),radial-gradient(ellipse at 92% 12%,rgba(210,186,216,.18),transparent 34%),#e9ebe7}body{font:15px/1.5 Inter,system-ui;max-width:720px;margin:40px auto;padding:28px;color:#202524;background:rgba(255,255,252,.68);border:1px solid rgba(35,45,44,.08);border-radius:22px;box-shadow:0 28px 80px rgba(35,45,44,.12);backdrop-filter:blur(24px)}main,label{display:grid;gap:12px}h1{font-weight:560;letter-spacing:-.03em}label{font-weight:560}input,textarea,select,button{font:inherit;padding:10px 12px;border:1px solid rgba(35,45,44,.11);border-radius:12px;background:rgba(255,255,255,.48)}button{width:max-content;border-radius:999px;cursor:pointer}hr{width:100%;border:0;border-top:1px solid rgba(35,45,44,.08)}";
 document.head.append(style);
 createRoot(document.getElementById("root")).render(<Options />);

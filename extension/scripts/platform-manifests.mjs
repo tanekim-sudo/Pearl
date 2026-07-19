@@ -15,7 +15,7 @@ function copyPlatform(name, manifest) {
 const firefox = {
   ...base,
   background: { scripts: ["assets/background.js"], type: "module" },
-  sidebar_action: { default_title: "Lens Everywhere", default_panel: "sidepanel.html" },
+  sidebar_action: { default_title: "Pearl Everywhere", default_panel: "sidepanel.html" },
   browser_specific_settings: {
     gecko: { id: "lens-everywhere@lens.app", strict_min_version: "121.0" },
   },
@@ -25,7 +25,7 @@ firefox.permissions = firefox.permissions.filter((permission) => !["sidePanel"].
 
 const safari = {
   ...base,
-  name: "Lens Everywhere for Safari",
+  name: "Pearl Everywhere for Safari",
   description: `${base.description} Requires the native Safari Web Extension container generated from this package.`,
 };
 delete safari.side_panel;

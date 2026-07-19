@@ -145,7 +145,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
       setInstallState("installed");
       setHandoffStatus(response.imported
         ? `${response.counts.lenses} Moves/Functions and ${response.counts.generators} Lenses are ready.`
-        : "Open Lens to review one import choice.");
+        : "Open Pearl to review one import choice.");
     } catch {
       downloadJson(bundle);
       setHandoffStatus("Next: open Lens and drop this file.");
@@ -176,7 +176,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
       <section className="modal extension-download-modal" onClick={(event) => event.stopPropagation()}>
         <div className="extension-download-head">
           <div>
-            <p className="extension-download-kicker">Lens Everywhere · v{release.version}{size ? ` · ${size}` : ""}</p>
+            <p className="extension-download-kicker">Pearl Everywhere · v{release.version}{size ? ` · ${size}` : ""}</p>
             <h3 id="extension-download-title">Use Lens on any page</h3>
           </div>
           <button
@@ -196,13 +196,13 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
 
         {installState === "installed" ? (
           <div className="extension-installed-actions">
-            <button className="extension-download-button" type="button" onClick={openLens}>Open Lens</button>
+            <button className="extension-download-button" type="button" onClick={openLens}>Open Pearl</button>
             <button type="button" onClick={moveLibrary} disabled={exporting}>{exporting ? "Sending…" : "Send my library"}</button>
           </div>
         ) : support.supported ? (
           storeUrl ? (
             <a className="extension-download-button" href={storeUrl} onClick={() => trackExtensionFunnel("install_cta", { mode: "store" })}>
-              Add Lens to Chrome
+              Add Pearl to Chrome
             </a>
           ) : (
             <a className="extension-download-button" href={release.versionedUrl} onClick={downloadExtension}>
@@ -228,7 +228,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
             <button type="button" onClick={() => setInstructions(false)} aria-label="Collapse setup instructions">−</button>
           </div>
           <div className="extension-walkthrough" aria-hidden="true">
-            <i>ZIP</i><b>→</b><i>▣</i><b>→</b><i className="extension-walkthrough-pin">Lens</i>
+            <i>ZIP</i><b>→</b><i>▣</i><b>→</b><i className="extension-walkthrough-pin">Pearl</i>
           </div>
           <ol className="extension-download-steps" aria-label="Developer installation steps">
             <li><b>Unzip</b> the downloaded file.</li>
@@ -257,7 +257,7 @@ export default function ExtensionDownloadModal({ onClose, operators = [], genera
             </label>
           </details>
           {handoffStatus && <p role="status">{handoffStatus}</p>}
-          {handoffStatus.startsWith("Next:") && <div className="extension-drop-next" aria-label="Next step: drop the library file into Lens"><span>↓</span><b>Drop .lens-library.json in Lens</b></div>}
+          {handoffStatus.startsWith("Next:") && <div className="extension-drop-next" aria-label="Next step: drop the library file into Pearl"><span>↓</span><b>Drop .lens-library.json in Pearl</b></div>}
         </section>
 
         <nav className="extension-download-links" aria-label="Extension resources">

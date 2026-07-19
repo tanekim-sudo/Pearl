@@ -68,7 +68,7 @@ const RAW_CAPABILITIES = [
   ["clearHighlight", {}, false, ["highlight", "paper", "ai", "move", "function", "lens"], "Clear the persistent cross-domain highlight selection"],
   ["captureThreadAsFunction", { target: "string?", name: "string?" }, false, ["function", "paper", "ai"], "Save the selected node's contributing lineage as a Function"],
   ["showLenses", {}, false, ["lens", "interface"], "Open the Lenses rail"],
-  ["openExtensionDownload", {}, false, ["extension", "interface"], "Open Lens Everywhere download and installation help"],
+  ["openExtensionDownload", {}, false, ["extension", "interface"], "Open Pearl Everywhere download and installation help"],
   ["openExtensionLibraryExport", {}, false, ["extension", "move", "function", "lens", "interface"], "Open the explicit library privacy review and export surface"],
   ["savePageAsLens", {}, false, ["lens", "paper"], "Capture the page as contextual Lens material"],
   ["waitForJobs", {}, false, ["interface"], "Wait for running transformations"],

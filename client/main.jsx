@@ -16,7 +16,7 @@ class RootErrorBoundary extends React.Component {
     return { error };
   }
   componentDidCatch(error, info) {
-    console.error("Lens failed to render:", error, info);
+    console.error("Pearl failed to render:", error, info);
   }
   render() {
     if (this.state.error) {

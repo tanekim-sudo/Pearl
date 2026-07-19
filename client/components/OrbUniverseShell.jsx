@@ -111,16 +111,16 @@ function InstallLanding({ install, onContinue }) {
   const installUrl = storeUrl || release?.versionedUrl || "/extension/lens-everywhere-chrome.zip";
   return <main className="orb-install">
     <section>
-      <div className="orb-kicker">Lens Everywhere</div>
+      <div className="orb-kicker">Pearl Everywhere</div>
       <h1>Your cognition, available on every page.</h1>
       <p>Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.</p>
       <div className="orb-actions">
         {install.status === "installed"
           ? <button className="orb-primary" type="button" onClick={onContinue}>Open cognitive library</button>
           : <a className="orb-primary" href={installUrl} onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}>
-              {browser.supported ? "Add Lens to Chrome" : "Get Lens for desktop Chrome"}
+              {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
             </a>}
-        <button className="orb-secondary" type="button" onClick={onContinue}>Continue to Lens</button>
+        <button className="orb-secondary" type="button" onClick={onContinue}>Continue to Pearl</button>
       </div>
       <p className="orb-status" role="status">
         {install.status === "checking" ? "Checking trusted extension status…"
@@ -128,7 +128,7 @@ function InstallLanding({ install, onContinue }) {
             : "Installation status is unknown. You can check again after installing."}
       </p>
     </section>
-    <div className="orb-install-card" aria-label="The Lens orb">
+    <div className="orb-install-card" aria-label="Pearl">
       <CompanionOrb key="install-orb" compact featured state={createOrbState()} />
     </div>
   </main>;
@@ -206,7 +206,7 @@ function LibraryHome({ route, scenes, onCreateScene, activeView, onView, install
   );
   return <main className="orb-library-home">
     <header className="orb-universe-head">
-      <a href="/library" onClick={(event) => { event.preventDefault(); navigate("/library"); }}>LENS</a>
+      <a href="/library" onClick={(event) => { event.preventDefault(); navigate("/library"); }}>PEARL</a>
       <span>{install.status === "installed" ? "Extension connected" : install.status === "checking" ? "Checking extension" : "Local universe"} · {install.trusted ? "trusted handoff" : "private by default"}</span>
       <button type="button" onClick={() => onView(activeView === "library" ? null : "library")}>Library</button>
     </header>

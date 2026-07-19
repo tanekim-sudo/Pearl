@@ -338,7 +338,7 @@ export function parseExtensionDownloadCommand(text) {
   const normalized = String(text || "").replace(/\s+/g, " ").trim();
   if (
     /\b(?:download|get|install|export|send|transfer)\b/i.test(normalized) &&
-    /\b(?:lens everywhere|chrome extension|browser extension|library)\b/i.test(normalized)
+    /\b(?:pearl everywhere|lens everywhere|chrome extension|browser extension|library)\b/i.test(normalized)
   ) {
     return { kind: "open-extension-download" };
   }

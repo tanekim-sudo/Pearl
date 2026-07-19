@@ -1,8 +1,8 @@
-# Lens Everywhere privacy policy
+# Pearl Everywhere privacy policy
 
 Effective: July 13, 2026
 
-Lens Everywhere captures only text the user explicitly selects on a permitted page. Highlighting and queueing are local actions and never execute a lens or transmit page text. Before the user presses **GO**, the side panel shows the exact selected character count and source origins. Pressing GO sends the selected fragments, chosen lens identifiers, and provenance needed to perform the requested transformation to the configured Lens API.
+Pearl Everywhere captures only text the user explicitly selects on a permitted page. Highlighting and queueing are local actions and never execute a Lens or transmit page text. Before the user presses **GO**, the side panel shows the exact selected character count and source origins. Pressing GO sends the selected fragments, chosen Lens identifiers, and provenance needed to perform the requested transformation to the configured Pearl API.
 
 Raw page selections, pending stacks, access tokens, and staged results use browser session storage and expire when the browser session ends. Saved artifacts and generator items are associated with the signed-in Lens account. Short-lived Open in Lens artifacts expire after 15 minutes. Users can clear page selections in the panel and delete all extension data in Settings.
 

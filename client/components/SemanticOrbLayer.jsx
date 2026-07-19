@@ -8,9 +8,28 @@ function labelFor(orb) {
 }
 
 function OrbGlyph({ active = false }) {
+  const id = React.useId();
   return <svg viewBox="0 0 64 64" aria-hidden="true">
-    <circle className="semantic-orb-halo" cx="32" cy="32" r={active ? 28 : 24} />
-    <circle className="semantic-orb-core" cx="32" cy="32" r="13" />
+    <defs>
+      <radialGradient id={`semantic-pearl-${id}`} cx="39%" cy="58%" r="72%">
+        <stop offset="0" stopColor="#fff7e8" />
+        <stop offset=".28" stopColor="#f7f0e4" />
+        <stop offset=".64" stopColor="#e9e8de" />
+        <stop offset=".86" stopColor="#d4d5cc" />
+        <stop offset="1" stopColor="#b5b8b1" />
+      </radialGradient>
+      <linearGradient id={`semantic-nacre-${id}`} x1="10%" y1="12%" x2="90%" y2="84%">
+        <stop offset="0" stopColor="#e8cbc5" stopOpacity=".2" />
+        <stop offset=".32" stopColor="#c9ddd4" stopOpacity=".3" />
+        <stop offset=".62" stopColor="#f0dfba" stopOpacity=".24" />
+        <stop offset=".88" stopColor="#e5c7c1" stopOpacity=".18" />
+      </linearGradient>
+    </defs>
+    <ellipse className="semantic-orb-shadow" cx="32" cy="61" rx="17" ry="1.5" />
+    <circle className="semantic-orb-core" cx="32" cy="31" r="27" fill={`url(#semantic-pearl-${id})`} />
+    <circle className="semantic-orb-nacre" cx="32" cy="31" r="25.8" fill={`url(#semantic-nacre-${id})`} />
+    <ellipse className="semantic-orb-glint" cx="22" cy="18.5" rx="5.5" ry="2.8" transform="rotate(-38 22 18.5)" />
+    <circle className="semantic-orb-pinlight" cx="18.5" cy="15.5" r="1.25" />
     <path className="semantic-orb-trace" d="M9 31 C18 9 46 8 55 31 C48 53 18 55 9 31Z" />
   </svg>;
 }

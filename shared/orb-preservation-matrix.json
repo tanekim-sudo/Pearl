@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-19T00:20:07.299Z",
+  "generatedAt": "2026-07-19T01:08:10.681Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -2166,7 +2166,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "platform": "app",
-      "orbVoice": "please open Lens Everywhere download and installation help",
+      "orbVoice": "please open Pearl Everywhere download and installation help",
       "gestureOrControl": "Scene orb command ledger",
       "emittedViewOrHandoff": "Scene runtime instrumentation view",
       "canonicalEffect": [],

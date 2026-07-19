@@ -830,7 +830,7 @@ function parseJSON(raw) {
 }
 
 // Teaches Claude how to architect deep function trees for the thinking canvas.
-const LENS_SYSTEM = `You architect functions for Lens — a thinking canvas where users drag symbolic transformation pipelines onto sparse notes.
+const LENS_SYSTEM = `You architect functions for Pearl — a thinking canvas where users drag symbolic transformation pipelines onto sparse notes.
 
 RUNTIME: plans compile to phases — resolve (internal, sparse input only) → research (one leaf max with research:true) → synthesize (all perceptual moves merged). Resolve/research are NEVER user-facing deliverables.
 
@@ -18108,7 +18108,7 @@ function DraggableOpCard({ op, opMap, expanded, onToggle, onEdit, onCompose, onS
             const escape = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
             e.dataTransfer.setData(OP_MIME, op.id);
             e.dataTransfer.setData("text/plain", `${op.name}\n${op.description || ""}\n${href}`);
-            e.dataTransfer.setData("text/html", `<p><strong>${escape(op.name)}</strong></p><p>${escape(op.description)}</p><p><a href="${href}">Open in Lens</a></p>`);
+            e.dataTransfer.setData("text/html", `<p><strong>${escape(op.name)}</strong></p><p>${escape(op.description)}</p><p><a href="${href}">Open in Pearl</a></p>`);
             e.dataTransfer.setData("text/uri-list", href);
             e.dataTransfer.setData(EXTERNAL_LENS_PACK_MIME, JSON.stringify(pack));
             e.dataTransfer.effectAllowed = "copy";
@@ -18672,7 +18672,7 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
     return (
       <div className="onboard-scrim">
         <div className="onboard">
-          <div className="onboard-mark">lens</div>
+          <div className="onboard-mark">pearl</div>
           <h2>What do you do?</h2>
           <div className="role-grid">
             {ROLES.map((r) => (
@@ -18705,7 +18705,7 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
     return (
       <div className="onboard-scrim">
         <div className="onboard">
-          <div className="onboard-mark">lens</div>
+          <div className="onboard-mark">pearl</div>
           <h2>Building your toolbox</h2>
           <div className="progress">
             <div className="progress-bar" style={{ width: `${pct}%` }} />
@@ -18722,7 +18722,7 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
     return (
       <div className="onboard-scrim">
         <div className="onboard">
-          <div className="onboard-mark">lens</div>
+          <div className="onboard-mark">pearl</div>
           <h2>Your toolbox is ready</h2>
           <button className="onboard-go" onClick={onClose}>
             start thinking
@@ -18735,7 +18735,7 @@ function Onboarding({ state, onStart, onSkip, onClose }) {
   return (
     <div className="onboard-scrim">
       <div className="onboard">
-        <div className="onboard-mark">lens</div>
+        <div className="onboard-mark">pearl</div>
         <h2>Hm, that didn't work</h2>
         <p className="onboard-sub">{state.message}</p>
         <div className="onboard-custom">

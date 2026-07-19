@@ -13,10 +13,6 @@ import { captureNativeSelection, selectionRects } from "./selection.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
-const PAGE_ORB_RAYS = [
-  [4, 13, 35, 2], [43, 18, 36, -1], [82, 11, 34, 1], [129, 18, 36, 2],
-  [174, 14, 35, -1], [220, 19, 36, 1], [266, 12, 34, -2], [309, 17, 36, 1], [341, 15, 35, -1],
-];
 
 function mountPageOrb() {
   if (document.getElementById("lens-orb-overlay-host") || !document.documentElement) return;
@@ -28,21 +24,22 @@ function mountPageOrb() {
   style.textContent = `
     :host{all:initial;color-scheme:dark}
     *{box-sizing:border-box}
-    .shell{--focus:#ddcda3;position:relative;width:96px;height:96px;font:11px/1.3 Inter,ui-sans-serif,system-ui,sans-serif;color:#eeede8;touch-action:none;user-select:none}
+    .shell{--focus:#d8ddd9;--pearl-light-x:0;--pearl-light-y:0;--pearl-motion:0;position:relative;width:36px;height:36px;font:11px/1.3 Inter,ui-sans-serif,system-ui,sans-serif;color:#eeede8;touch-action:none;user-select:none}
     button{font:inherit;color:inherit;cursor:pointer}
-    .orb{position:absolute;inset:0;width:96px;height:96px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:radial-gradient(circle,rgba(8,9,9,.17) 0 28%,rgba(8,9,9,.055) 42%,transparent 70%);filter:drop-shadow(0 5px 18px rgba(216,194,141,.24));touch-action:none}
-    svg{width:96px;height:96px;overflow:visible}.rays{transform-origin:50px 50px;animation:respire 8s cubic-bezier(.22,.72,.18,1) infinite}.rays path{fill:none;stroke:rgba(155,130,72,.9);stroke-width:1.15;stroke-linecap:round;opacity:.72}.rays path:nth-child(2n){stroke-width:.72;opacity:.48}.halo,.state{fill:none;stroke:rgba(137,110,51,.48);stroke-width:.9}.state{opacity:0;stroke-dasharray:2 4}.core{fill:#fbf8ed;stroke:rgba(116,91,37,.82);stroke-width:1}.glint{fill:#fff;opacity:.72}
-    .shell[data-state=listening] .rays{animation:listen 1.1s ease-in-out infinite}.shell[data-state=listening] .state{opacity:1;animation:turn 4s linear infinite}.shell[data-state=absorbing] .halo{stroke:var(--focus);animation:absorb .7s ease-out}.shell[data-state=planning] .state{opacity:.75}.shell[data-state=branching] .rays path{animation:branch 1s ease-out both}
-    .phase{position:absolute;top:92px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#5d5544;background:rgba(250,248,240,.92);padding:2px 5px;border-radius:2px;opacity:0}.shell:not([data-state=idle]) .phase{opacity:1}
-    .orbit{position:absolute;left:48px;top:48px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:8px;height:8px;border:1px solid #796943;border-radius:50%;background:#f7f4e9;box-shadow:0 0 10px rgba(216,194,141,.48);transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(68px)}.lens-ring{width:126px;height:126px;transform:translate(-50%,-50%);border:1px solid rgba(123,98,43,.62);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:1}.candidate{width:108px;color:#39362f;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(112px) rotate(calc(-125deg - var(--i)*28deg));opacity:0}.candidate i{display:inline-block;width:5px;height:5px;margin-right:5px;border-radius:50%;background:#7e6b3e;box-shadow:0 0 7px #bda66d}.shell.candidates .candidate{opacity:1}
-    .emission{position:absolute;right:106px;top:-60px;width:260px;display:none;padding:14px 14px 12px;color:#efeee8;background:rgba(7,8,8,.97);border-right:1px solid rgba(236,226,198,.28);box-shadow:0 18px 55px rgba(0,0,0,.38)}.shell.open .emission{display:grid;gap:10px}.emission header{display:flex;align-items:center;justify-content:space-between;color:#aaa89f}.emission header b{color:#efeee8;font-weight:580}.emission button,.emission input{min-height:34px;border:0;border-bottom:1px solid rgba(255,255,255,.14);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:7px}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:5px}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:-8px;top:-8px;width:22px;height:22px;display:none;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#090a0a}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
+    .orb{position:absolute;inset:0;width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;filter:none;touch-action:none}
+    svg{width:36px;height:36px;overflow:visible}.pearl{transform-origin:50px 50px;animation:respire 4s ease-in-out infinite}.shadow{fill:rgba(0,0,0,.18);filter:blur(1.4px)}.state{fill:none;stroke:rgba(232,239,235,.4);stroke-width:.8;opacity:0;stroke-dasharray:2 4}.core{stroke:rgba(255,255,255,.58);stroke-width:.72}.nacre{mix-blend-mode:screen;opacity:calc(.38 + var(--pearl-motion) * .36);transform:translate(calc(var(--pearl-light-x) * 2.4px),calc(var(--pearl-light-y) * 2.4px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .18s ease-out}.reflection{fill:rgba(74,84,83,.12);filter:blur(4px);transform:translate(calc(var(--pearl-light-x) * -1.5px),calc(var(--pearl-light-y) * -1.5px));transition:transform .22s ease-out}.glint{fill:rgba(255,255,255,.46);filter:blur(.65px)}.pinlight{fill:#fff;opacity:.94}
+    .shell[data-state=listening] .core,.shell[data-state=absorbing] .core,.shell[data-state=planning] .core{filter:sepia(.08) saturate(1.08) brightness(1.025)}.shell[data-state=absorbing] .state,.shell[data-state=planning] .state{opacity:.7}.shell[data-state=branching] .nacre{opacity:.72}
+    .phase{position:absolute;top:40px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#5d5544;background:rgba(250,248,240,.92);padding:2px 5px;border-radius:2px;opacity:0}.shell:not([data-state=idle]) .phase{opacity:1}
+    .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:6px;height:6px;border:1px solid rgba(238,244,240,.34);border-radius:50%;background:#eef0eb;transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:5px;height:5px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate i{display:block;width:5px;height:5px;margin:0;border-radius:50%;background:#d9dfdc;box-shadow:0 0 7px rgba(186,213,205,.42)}.shell.candidates .candidate{opacity:.72}.shell.open .orbit{opacity:.18}
+    .emission{position:absolute;right:106px;top:-60px;width:260px;display:none;padding:15px;color:#efeee8;background:rgba(16,20,20,.86);border:1px solid rgba(235,240,237,.13);border-radius:18px;box-shadow:0 24px 65px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.025);backdrop-filter:blur(24px) saturate(112%)}.shell.open .emission{display:grid;gap:10px}.emission header{display:flex;align-items:center;justify-content:space-between;color:#aeb3b0}.emission header b{color:#efeee8;font-weight:580}.emission button,.emission input{min-height:34px;border:0;border-bottom:1px solid rgba(255,255,255,.11);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:7px}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:5px}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:-8px;top:-8px;width:22px;height:22px;display:none;place-items:center;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(14,17,18,.9)}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
     .shell.dock-left .emission{left:106px;right:auto;border-right:0;border-left:1px solid rgba(236,226,198,.28)}
-    .shell.cursor-mode{width:26px;height:26px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:26px;height:26px;pointer-events:none;filter:drop-shadow(0 0 8px rgba(216,194,141,.55))}.shell.cursor-mode svg{width:34px;height:34px}.shell.cursor-mode .core{r:12}.shell.cursor-mode .glint{r:2.5}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{width:14px;height:22px}.shell.cursor-mode[data-cursor-presentation=text] .rays,.shell.cursor-mode[data-cursor-presentation=text] .halo{opacity:.28}.shell.cursor-mode[data-cursor-presentation=action] .halo{stroke:rgba(255,255,255,.8)}.shell.cursor-mode[data-cursor-presentation=grab]{width:32px;height:32px}.shell.cursor-mode[data-cursor-presentation=resize]{width:18px;height:18px}.shell.cursor-mode.pressed .orb{transform:scale(.8);filter:drop-shadow(0 0 13px rgba(255,246,213,.75))}
+    .shell.cursor-mode{width:28px;height:28px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:28px;height:28px;pointer-events:none;filter:none}.shell.cursor-mode svg{width:28px;height:28px}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{width:28px;height:28px;opacity:.72}.shell.cursor-mode[data-cursor-presentation=action]{width:32px;height:32px}.shell.cursor-mode[data-cursor-presentation=grab]{width:34px;height:34px}.shell.cursor-mode[data-cursor-presentation=resize]{width:28px;height:28px;opacity:.78}.shell.cursor-mode.pressed .orb{transform:scale(.82)}
+    .shell .emission{right:46px}.shell.dock-left .emission{left:46px;right:auto}
     button:focus-visible,input:focus-visible{outline:1px solid #fff;outline-offset:3px}
-    @keyframes respire{0%,100%{transform:scale(.98);opacity:.5}50%{transform:scale(1.025);opacity:.82}}@keyframes listen{0%,100%{transform:scale(.92)}50%{transform:scale(1.12)}}@keyframes turn{to{transform:rotate(360deg)}}@keyframes absorb{from{r:31;opacity:1}to{r:46;opacity:0}}@keyframes branch{from{stroke-dasharray:0 40}to{stroke-dasharray:40 0}}
+    @keyframes respire{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
     @media(max-width:620px){.emission{right:82px;width:min(260px,calc(100vw - 110px))}}
-    @media(prefers-reduced-motion:reduce){.rays,.state,.halo,.rays path{animation:none!important}}
-    @media(prefers-contrast:more){.rays path{stroke:#fff;opacity:1}.emission{border:1px solid #fff}}
+    @media(prefers-reduced-motion:reduce){.pearl,.state,.nacre{animation:none!important}.nacre,.reflection{transform:none!important;transition:none!important}.shell.cursor-mode.pressed .orb{transform:none}}
+    @media(prefers-contrast:more){.core{stroke:#fff}.emission{border:1px solid #fff}}
   `;
   const shell = document.createElement("div");
   shell.className = "shell";
@@ -50,20 +47,20 @@ function mountPageOrb() {
   const orb = document.createElement("button");
   orb.className = "orb";
   orb.type = "button";
-  orb.setAttribute("aria-label", "Lens orb. Hold to speak, click to expand, drag to move, or drop material here");
+  orb.setAttribute("aria-label", "Pearl. Hold to speak, click to expand, drag to move, or drop material here");
   orb.setAttribute("aria-expanded", "false");
-  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="rays">${PAGE_ORB_RAYS.map(([angle, start, end, bend]) => `<path d="M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}" transform="rotate(${angle} 50 50)"/>`).join("")}</g><circle class="state" cx="50" cy="50" r="38"/><circle class="halo" cx="50" cy="50" r="30"/><circle class="core" cx="50" cy="50" r="19"/><circle class="glint" cx="44" cy="43" r="4"/></svg><span class="phase">Listening</span>`;
+  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pearl-core" cx="39%" cy="58%" r="72%"><stop offset="0" stop-color="#fff7e8"/><stop offset=".3" stop-color="#f7f0e4"/><stop offset=".7" stop-color="#e5e5db"/><stop offset="1" stop-color="#b5b8b1"/></radialGradient><linearGradient id="pearl-nacre" x1="8%" y1="14%" x2="92%" y2="84%"><stop offset="0" stop-color="#e8cac4" stop-opacity=".2"/><stop offset=".35" stop-color="#c7ddd4" stop-opacity=".34"/><stop offset=".64" stop-color="#f0dfb9" stop-opacity=".27"/><stop offset="1" stop-color="#e5c7c1" stop-opacity=".17"/></linearGradient></defs><circle class="state" cx="50" cy="50" r="47"/><ellipse class="shadow" cx="51" cy="95" rx="25" ry="2"/><g class="pearl"><circle class="core" cx="50" cy="50" r="43" fill="url(#pearl-core)"/><circle class="nacre" cx="50" cy="50" r="41.5" fill="url(#pearl-nacre)"/><ellipse class="reflection" cx="58" cy="62" rx="28" ry="17"/><ellipse class="glint" cx="33" cy="28" rx="8" ry="4.5" transform="rotate(-38 33 28)"/><circle class="pinlight" cx="27.5" cy="22.5" r="2"/></g></svg><span class="phase">Listening</span>`;
   const orbit = document.createElement("div");
   orbit.className = "orbit";
   orbit.innerHTML = `<span class="lens-ring"></span>${[0,1,2,3,4].map((i) => `<span class="context-dot" style="--i:${i}" hidden></span>`).join("")}${["Question assumptions","Find strongest signal","Offer contrary path"].map((text, i) => `<span class="candidate" style="--i:${i}"><i></i>${text}</span>`).join("")}`;
   const emission = document.createElement("section");
   emission.className = "emission";
-  emission.setAttribute("aria-label", "Views emitted by the Lens orb");
-  emission.innerHTML = `<header><b>Lens orb</b><span>Page context</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell the orb your goal" placeholder="Tell the orb your goal…"><button type="button" data-action="capture">Absorb selection</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Expand this orb</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="capture">Absorb current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in expanded orb</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Observe explicit context</span><span>2 · Apply selected Lens</span><span>3 · Branch candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize orb</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Open side panel</button></div>`;
+  emission.setAttribute("aria-label", "Views emitted by Pearl");
+  emission.innerHTML = `<header><b>Pearl</b><span>Page context</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="capture">Absorb selection</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Expand Pearl</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="capture">Absorb current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Observe explicit context</span><span>2 · Apply selected Lens</span><span>3 · Branch candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Open side panel</button></div>`;
   const minimize = document.createElement("button");
   minimize.className = "minimize";
   minimize.type = "button";
-  minimize.setAttribute("aria-label", "Minimize Lens orb");
+  minimize.setAttribute("aria-label", "Minimize Pearl");
   minimize.textContent = "−";
   shell.append(orbit, orb, emission, minimize);
   shadow.append(style, shell);
@@ -91,6 +88,9 @@ function mountPageOrb() {
   let cursorEnabled = false;
   let cursorFrame = 0;
   let cursorPoint = { x: innerWidth / 2, y: innerHeight / 2 };
+  let cursorMotion = { x: innerWidth / 2, y: innerHeight / 2, vx: 0, vy: 0, at: 0 };
+  let lightPoint = { x: 0, y: 0, at: 0 };
+  let lightTimer = 0;
   let sequenceTimer = 0;
   let sequenceScroll = null;
   const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
@@ -104,12 +104,27 @@ function mountPageOrb() {
     document.documentElement.setAttribute("data-lens-orb-cursor-active", String(cursorEnabled));
     document.dispatchEvent(new Event(ORB_CURSOR_EVENT));
   };
-  const renderCursor = () => {
-    cursorFrame = 0;
+  const renderCursor = (now = performance.now()) => {
     if (!cursorEnabled) return;
-    host.style.left = `${cursorPoint.x - 13}px`;
-    host.style.right = "auto";
-    host.style.top = `${cursorPoint.y - 13}px`;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const elapsed = Math.min(48, cursorMotion.at ? now - cursorMotion.at : 16);
+    if (reduced || elapsed > 40) {
+      cursorMotion.vx = 0;
+      cursorMotion.vy = 0;
+    } else {
+      const decay = Math.exp(-elapsed / 54);
+      cursorMotion.vx *= decay;
+      cursorMotion.vy *= decay;
+    }
+    cursorMotion.at = now;
+    shell.style.setProperty("--pearl-light-x", String(reduced ? 0 : Math.max(-1, Math.min(1, cursorMotion.vx / 420))));
+    shell.style.setProperty("--pearl-light-y", String(reduced ? 0 : Math.max(-1, Math.min(1, cursorMotion.vy / 420))));
+    shell.style.setProperty("--pearl-motion", String(reduced ? 0 : Math.min(1, Math.hypot(cursorMotion.vx, cursorMotion.vy) / 900)));
+    if (!reduced && Math.hypot(cursorMotion.vx, cursorMotion.vy) > 4) {
+      cursorFrame = requestAnimationFrame(renderCursor);
+    } else {
+      cursorFrame = 0;
+    }
   };
   const clearSpaceSequence = () => {
     recognizer.reset();
@@ -127,8 +142,17 @@ function mountPageOrb() {
     shell.dataset.cursorPresentation = "precision";
     host.style.pointerEvents = value ? "none" : "";
     orb.setAttribute("aria-expanded", "false");
-    if (value) renderCursor();
+    if (value) {
+      cursorMotion.x = cursorPoint.x;
+      cursorMotion.y = cursorPoint.y;
+      host.style.left = `${cursorMotion.x - 14}px`;
+      host.style.right = "auto";
+      host.style.top = `${cursorMotion.y - 14}px`;
+      renderCursor();
+    }
     else {
+      cancelAnimationFrame(cursorFrame);
+      cursorFrame = 0;
       host.style.left = docked.left;
       host.style.right = docked.right || "18px";
       host.style.top = docked.top || "42%";
@@ -146,8 +170,30 @@ function mountPageOrb() {
   };
   const toggleCursor = (source = "control") => setCursorEnabled(!cursorEnabled, { source });
   const onCursorMove = (event) => {
-    if (!cursorEnabled) return;
+    const now = event.timeStamp || performance.now();
+    if (!cursorEnabled) {
+      const bounds = orb.getBoundingClientRect();
+      const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left - bounds.width / 2) / 80));
+      const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top - bounds.height / 2) / 80));
+      const speed = Math.min(1, Math.hypot(x - lightPoint.x, y - lightPoint.y) * 120 / Math.max(16, now - lightPoint.at));
+      shell.style.setProperty("--pearl-light-x", x.toFixed(3));
+      shell.style.setProperty("--pearl-light-y", y.toFixed(3));
+      shell.style.setProperty("--pearl-motion", speed.toFixed(3));
+      window.clearTimeout(lightTimer);
+      lightTimer = window.setTimeout(() => shell.style.setProperty("--pearl-motion", "0"), 140);
+      lightPoint = { x, y, at: now };
+      return;
+    }
+    const elapsed = Math.max(8, Math.min(48, now - (cursorMotion.at || now - 16)));
     cursorPoint = { x: event.clientX, y: event.clientY };
+    cursorMotion.vx = (cursorPoint.x - cursorMotion.x) / elapsed * 1000;
+    cursorMotion.vy = (cursorPoint.y - cursorMotion.y) / elapsed * 1000;
+    cursorMotion.x = cursorPoint.x;
+    cursorMotion.y = cursorPoint.y;
+    cursorMotion.at = now;
+    host.style.left = `${cursorMotion.x - 14}px`;
+    host.style.right = "auto";
+    host.style.top = `${cursorMotion.y - 14}px`;
     shell.dataset.cursorPresentation = orbCursorPresentation(event.target, (target) => getComputedStyle(target));
     if (!cursorFrame) cursorFrame = requestAnimationFrame(renderCursor);
   };
@@ -283,6 +329,7 @@ function mountPageOrb() {
     get enabled() { return cursorEnabled; },
     destroy() {
       clearSpaceSequence();
+      window.clearTimeout(lightTimer);
       cancelAnimationFrame(cursorFrame);
       removeEventListener("pointermove", onCursorMove, true);
       removeEventListener("pointerdown", onCursorDown, true);

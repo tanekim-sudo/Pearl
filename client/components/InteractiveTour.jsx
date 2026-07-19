@@ -219,7 +219,7 @@ export default function InteractiveTour({
 
       <div className={"tour-card" + (entered ? " entered" : "")}>
         <div className="tour-card-head">
-          <span className="tour-mark">lens</span>
+          <span className="tour-mark">pearl</span>
           <span className="tour-phase">{step.phase}</span>
         </div>
 

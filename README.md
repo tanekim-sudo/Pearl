@@ -1,12 +1,12 @@
-# Lens
+# Pearl
 
-Lens is an orb-centered operating environment for reusable cognition. The Chrome extension is the everyday surface; its voice-first orb acts on material anywhere. The web root is extension onboarding and the cognitive library, while the full-bleed black spatial Stage opens only for explicit deep work. Moves, Functions, Lenses, Scenes, optional Output Frames, selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
+Pearl is an orb-centered operating environment for reusable cognition. The Chrome extension is the everyday surface; its voice-first Pearl acts on material anywhere. The web root is extension onboarding and the cognitive library, while the full-bleed spatial Stage opens only for explicit deep work. Moves, Functions, Lenses, Scenes, optional Output Frames, selections, drawings, transcripts, and model outputs remain movable material with visible lineage rather than disappearing into a chat transcript.
 
 This README is the canonical product and engineering contract for the fully realized product. “Must” and “shall” describe required behavior. Optional future extensions are isolated in [Expansion roadmap](#expansion-roadmap).
 
 ## Product thesis
 
-Most AI products make the prompt, model response, and conversation the primary unit. Lens makes the user’s evolving way of thinking the primary unit:
+Most AI products make the prompt, model response, and conversation the primary unit. Pearl makes the user’s evolving way of thinking the primary unit:
 
 - Work begins as material, not as a mandatory chat.
 - Instructions become reusable objects instead of disposable prompt history.
@@ -28,6 +28,7 @@ Most AI products make the prompt, model response, and conversation the primary u
 8. **Private by default.** Local work stays local unless the user signs in, exports, shares, captures a screen, or presses GO with disclosed material.
 9. **Accessible equivalence.** Pointer, touch, keyboard, and voice paths reach the same core outcomes.
 10. **Terminological discipline.** Move means atomic action, Function means process, and Lens means way of seeing/context everywhere.
+11. **Pearl materiality.** Every surface uses depth, softness, subtle iridescence, smooth motion, layered translucency, and quiet luminosity. Decoration that does not clarify state, hierarchy, or action is removed.
 
 ## Core ontology
 
@@ -109,7 +110,7 @@ The Scene orb input is wired to the same companion planner, director verbs, cano
 
 Triple-Space outside editable fields and controls makes the primary orb the literal cursor on web Scenes and ordinary extension-enabled pages. The precision hotspot remains aligned to the real pointer; text, action, grab, and resize targets change the orb presentation without changing native pointer semantics. Escape or a second Triple-Space sequence restores the native cursor. Cursor mode is persisted per web surface and per extension tab. Browser-protected pages, browser chrome, cross-origin frames, and pages where content scripts are prohibited retain the native cursor and offer the side-panel fallback.
 
-Dragging material onto the orb adds a source-preserving context object. Dragging a Lens applies an editable atmosphere with explicit strength. Both are inspectable, removable, keyboard reachable, undoable, and persisted in the active Scene working set. Dragging context back to the Stage creates a provenance-linked copy rather than moving or deleting the source. Candidate batches appear as constellations with equivalent Yes, No, and More-like-this controls.
+Dragging material onto Pearl adds a source-preserving context object. Dragging a Lens applies an editable atmosphere with explicit strength. Both are inspectable, removable, keyboard reachable, undoable, and persisted in the active Scene working set. Dragging context back to the Stage creates a provenance-linked copy rather than moving or deleting the source. Candidate batches appear as constellations with equivalent Yes, No, and More-like-this controls.
 
 Read, evaluation, and research work may split into bounded worker orbs. Each worker has an isolated context, model/tool budget, checkpoint, status, typed proposal, and cancellation control. Parallel mutation scopes are rejected. Completed proposals return to the parent orb, which records fusion provenance and applies nothing until verification succeeds. A cancelled or failed worker preserves the exact parent checkpoint and the surviving worker evidence.
 
@@ -732,7 +733,7 @@ Every response records profile/version, requested and resolved model, gateway/ad
 
 ## Accounts, persistence, and sync
 
-Lens is anonymous-first. Without account configuration, the complete local workspace remains usable.
+Pearl is anonymous-first. Without account configuration, the complete local workspace remains usable.
 
 ### Local state
 
@@ -773,7 +774,7 @@ On sign-in, Lens compares anonymous/local and account snapshots:
 
 Cloud saves are debounced and flushed when the page hides. Failure leaves the local cache authoritative and retryable. In-flight model jobs and private transient selections do not sync unless explicitly materialized.
 
-## Lens Everywhere browser extension
+## Pearl Everywhere browser extension
 
 The extension brings the same capture, queue, GO, result, library, learning, critique, and companion semantics to external web pages.
 

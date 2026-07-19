@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Lens Everywhere",
+  "name": "Pearl Everywhere",
   "version": "1.0.0",
   "description": "Capture page material, queue ordered lenses, and run only when you press GO.",
   "icons": {
@@ -21,7 +21,7 @@
   },
   "options_page": "options.html",
   "action": {
-    "default_title": "Open Lens Everywhere",
+    "default_title": "Open Pearl Everywhere",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"

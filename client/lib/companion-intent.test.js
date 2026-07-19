@@ -131,6 +131,9 @@ test("extension download requests use the deterministic local path", () => {
   assert.deepEqual(parseExtensionDownloadCommand("download the Lens Everywhere Chrome extension"), {
     kind: "open-extension-download",
   });
+  assert.deepEqual(parseExtensionDownloadCommand("install Pearl Everywhere"), {
+    kind: "open-extension-download",
+  });
   assert.equal(parseExtensionDownloadCommand("download this page"), null);
 });
 

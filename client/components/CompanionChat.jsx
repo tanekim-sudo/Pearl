@@ -460,10 +460,10 @@ export default function CompanionChat({
           setForeground(true);
           setOpen(true);
         }}
-        title="Ask the companion"
+        title="Ask Pearl"
       >
         <span className="companion-fab-orb" />
-        <span className="companion-fab-label">companion</span>
+        <span className="companion-fab-label">pearl</span>
       </button>
     );
   }
@@ -475,8 +475,8 @@ export default function CompanionChat({
     >
       <div className="companion-head">
         <span className="companion-head-orb" />
-        <span className="companion-head-title">companion</span>
-        <button type="button" className="companion-head-btn" onClick={() => setMemoryOpen((v) => !v)} title="Inspect companion memory">
+        <span className="companion-head-title">pearl</span>
+        <button type="button" className="companion-head-btn" onClick={() => setMemoryOpen((v) => !v)} title="Inspect Pearl memory">
           memory
         </button>
         <button
@@ -709,7 +709,7 @@ export default function CompanionChat({
           type="button"
           className={"companion-mic" + (listening ? " listening" : "")}
           onClick={toggleMic}
-          title={listening ? "Stop listening" : "Speak to the companion"}
+          title={listening ? "Stop listening" : "Speak to Pearl"}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <rect x="9" y="2" width="6" height="12" rx="3" />

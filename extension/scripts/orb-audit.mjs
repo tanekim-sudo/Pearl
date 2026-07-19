@@ -17,7 +17,7 @@ fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
 const server = http.createServer((_req, res) => {
   res.setHeader("content-type", "text/html");
-  res.end("<!doctype html><title>Orb fixture</title><main style='max-width:700px;margin:80px auto;font:20px system-ui'><h1>Selected material</h1><textarea id='field' style='width:100%;height:180px'>Lens orb extension audit material.</textarea></main>");
+  res.end("<!doctype html><title>Pearl fixture</title><main style='max-width:700px;margin:80px auto;font:20px system-ui'><h1>Selected material</h1><textarea id='field' style='width:100%;height:180px'>Pearl extension audit material.</textarea></main>");
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const profile = path.join(extensionRoot, ".audit-orb-profile");
@@ -95,11 +95,11 @@ try {
   });
   await fixture.locator("#lens-orb-overlay-host").waitFor();
   await fixture.screenshot({ path: path.join(evidence, "06-extension-page-orb.png"), fullPage: true });
-  const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Lens orb\./ });
+  const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Pearl\./ });
   const beforeDrag = await pageOrb.boundingBox();
-  if (!beforeDrag || beforeDrag.width < 90) throw new Error("page orb is not a literal focal control");
+  if (!beforeDrag || beforeDrag.width < 32) throw new Error(`page Pearl is not a compact literal control: ${JSON.stringify(beforeDrag)}`);
   await pageOrb.click();
-  await fixture.getByRole("region", { name: "Views emitted by the Lens orb" }).waitFor();
+  await fixture.getByRole("region", { name: "Views emitted by Pearl" }).waitFor();
   await fixture.screenshot({ path: path.join(evidence, "06a-extension-page-orb-expanded.png"), fullPage: true });
   await fixture.locator("#field").selectText();
   await fixture.getByRole("button", { name: "Absorb selection" }).first().click();
@@ -111,7 +111,7 @@ try {
   await pageOrb.dragTo(fixture.locator("h1"));
   const afterDrag = await pageOrb.boundingBox();
   if (!afterDrag || Math.abs(afterDrag.x - beforeDrag.x) < 80) throw new Error("page orb did not visibly drag/dock");
-  await fixture.getByRole("button", { name: "Minimize Lens orb" }).click();
+  await fixture.getByRole("button", { name: "Minimize Pearl" }).click();
   const minimized = await pageOrb.boundingBox();
   if (!minimized || minimized.width > 45) throw new Error("page orb did not minimize");
   await fixture.screenshot({ path: path.join(evidence, "06d-extension-page-orb-minimized.png"), fullPage: true });

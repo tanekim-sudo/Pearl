@@ -107,10 +107,10 @@ test("download UI is linked, responsive, and exposes accessible install guidance
   const component = fs.readFileSync(path.join(repo, "client/components/ExtensionDownloadModal.jsx"), "utf8");
   const styles = fs.readFileSync(path.join(repo, "client/styles.css"), "utf8");
   const toolbar = fs.readFileSync(path.join(repo, "client/components/TopToolbar.jsx"), "utf8");
-  assert.match(toolbar, /Get Lens Everywhere/);
+  assert.match(toolbar, /Get Pearl Everywhere/);
   assert.match(component, /release\.versionedUrl/);
   assert.match(component, /VITE_CHROME_WEB_STORE_URL/);
-  assert.match(component, /Add Lens to Chrome/);
+  assert.match(component, /Add Pearl to Chrome/);
   assert.match(component, /Download for Chrome/);
   assert.match(component, /role="dialog"/);
   assert.match(component, /aria-modal="true"/);

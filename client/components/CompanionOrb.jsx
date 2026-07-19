@@ -2,21 +2,6 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
-const RAYS = Object.freeze([
-  { angle: 4, start: 13, end: 35, bend: 2.1 },
-  { angle: 39, start: 17, end: 36, bend: -1.4 },
-  { angle: 76, start: 11, end: 34, bend: .7 },
-  { angle: 121, start: 18, end: 36, bend: 1.8 },
-  { angle: 164, start: 14, end: 35, bend: -1.2 },
-  { angle: 207, start: 19, end: 36, bend: .9 },
-  { angle: 251, start: 12, end: 34, bend: -1.8 },
-  { angle: 299, start: 17, end: 36, bend: 1.1 },
-  { angle: 337, start: 15, end: 35, bend: -.6 },
-]);
-
-function rayPath({ start, end, bend }) {
-  return `M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}`;
-}
 
 function readPlacement(storageKey) {
   try {
@@ -35,7 +20,7 @@ export default function CompanionOrb({
   onStop,
   onUndo,
   storageKey = ORB_PLACEMENT_KEY,
-  label = "Lens orb",
+  label = "Pearl",
   compact = false,
   featured = false,
   onContextAdd,
@@ -53,6 +38,7 @@ export default function CompanionOrb({
   const dragRef = useRef(null);
   const holdRef = useRef(null);
   const voiceStartedRef = useRef(false);
+  const lightRef = useRef({ x: 0, y: 0, at: 0 });
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState("");
   const [placement, setPlacement] = useState(() => ({ ...state.placement, ...readPlacement(storageKey) }));
@@ -114,6 +100,23 @@ export default function CompanionOrb({
   }
 
   function pointerMove(event) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
+    const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - .5) * 2));
+    const now = event.timeStamp || performance.now();
+    const elapsed = Math.max(16, now - lightRef.current.at);
+    const speed = Math.min(1, Math.hypot(x - lightRef.current.x, y - lightRef.current.y) * 120 / elapsed);
+    event.currentTarget.style.setProperty("--pearl-light-x", x.toFixed(3));
+    event.currentTarget.style.setProperty("--pearl-light-y", y.toFixed(3));
+    event.currentTarget.style.setProperty("--pearl-motion", speed.toFixed(3));
+    window.clearTimeout(lightRef.current.timer);
+    const target = event.currentTarget;
+    lightRef.current = {
+      x,
+      y,
+      at: now,
+      timer: window.setTimeout(() => target.style.setProperty("--pearl-motion", "0"), 140),
+    };
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     const dx = event.clientX - drag.x;
@@ -248,34 +251,46 @@ export default function CompanionOrb({
         <span id={titleId} className="sr-only">{label}. Hold to speak, click to expand, or use arrow keys to move.</span>
         <svg viewBox="0 0 100 100" aria-hidden="true">
           <defs>
-            <radialGradient id={`orb-core-${titleId}`} cx="42%" cy="38%">
-              <stop offset="0" stopColor="#fffef4" />
-              <stop offset=".48" stopColor="#f8f6ee" />
-              <stop offset=".78" stopColor="#d8c89f" />
-              <stop offset="1" stopColor="#9a865a" stopOpacity=".12" />
+            <radialGradient id={`orb-core-${titleId}`} cx="39%" cy="58%" r="72%">
+              <stop offset="0" stopColor="#fff7e8" />
+              <stop offset=".24" stopColor="#f8f1e5" />
+              <stop offset=".62" stopColor="#ebe9df" />
+              <stop offset=".86" stopColor="#d8d8ce" />
+              <stop offset="1" stopColor="#b9bbb3" />
             </radialGradient>
-            <radialGradient id={`orb-aura-${titleId}`}>
-              <stop offset="0" stopColor="#f3e8c8" stopOpacity=".2" />
-              <stop offset=".6" stopColor="#d8c28d" stopOpacity=".05" />
-              <stop offset="1" stopColor="#d8c28d" stopOpacity="0" />
-            </radialGradient>
+            <linearGradient id={`orb-nacre-${titleId}`} x1="8%" y1="16%" x2="92%" y2="82%">
+              <stop offset="0" stopColor="#edcfc8" stopOpacity=".18" />
+              <stop offset=".34" stopColor="#c9ddd4" stopOpacity=".3" />
+              <stop offset=".57" stopColor="#f0dfba" stopOpacity=".22" />
+              <stop offset=".76" stopColor="#e7c9c4" stopOpacity=".2" />
+              <stop offset="1" stopColor="#c4d9d1" stopOpacity=".14" />
+            </linearGradient>
+            <linearGradient id={`orb-reflection-${titleId}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#ffffff" stopOpacity=".32" />
+              <stop offset=".42" stopColor="#77807f" stopOpacity=".08" />
+              <stop offset=".72" stopColor="#ffffff" stopOpacity=".13" />
+              <stop offset="1" stopColor="#383d3e" stopOpacity=".06" />
+            </linearGradient>
+            <filter id={`orb-soft-${titleId}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3" />
+            </filter>
           </defs>
-          <circle className="orb-aura" cx="50" cy="50" r="45" fill={`url(#orb-aura-${titleId})`} />
-          <g className="orb-rays">
-            {RAYS.map((ray) => (
-              <path key={ray.angle} d={rayPath(ray)} transform={`rotate(${ray.angle} 50 50)`} />
-            ))}
-          </g>
           <path className="orb-causal-trace" d="M50 14 C66 20 76 34 78 50" />
           <g className="orb-satellites">
             <circle cx="50" cy="12" r="1.5" />
             <circle cx="82" cy="56" r="1.2" />
             <circle cx="25" cy="72" r="1" />
           </g>
-          <circle className="orb-halo" cx="50" cy="50" r="31" />
+          <ellipse className="orb-shadow" cx="51" cy="94" rx="27" ry="2.2" />
           <circle className="orb-approval-ring" cx="50" cy="50" r="37" />
-          <circle className="orb-core" cx="50" cy="50" r="20" fill={`url(#orb-core-${titleId})`} />
-          <circle className="orb-glint" cx="43" cy="42" r="5" />
+          <g className="orb-pearl">
+            <circle className="orb-core" cx="50" cy="50" r="43" fill={`url(#orb-core-${titleId})`} />
+            <circle className="orb-nacre" cx="50" cy="50" r="41.6" fill={`url(#orb-nacre-${titleId})`} />
+            <path className="orb-nacre-fold" d="M12 55 C23 24 58 13 84 35 C65 31 48 39 40 54 C31 69 20 70 12 55Z" fill={`url(#orb-nacre-${titleId})`} filter={`url(#orb-soft-${titleId})`} />
+            <circle className="orb-reflection" cx="50" cy="50" r="40.5" fill={`url(#orb-reflection-${titleId})`} />
+            <ellipse className="orb-glint" cx="33" cy="28" rx="9" ry="5" transform="rotate(-38 33 28)" />
+            <circle className="orb-pinlight" cx="27.5" cy="22.5" r="2.1" />
+          </g>
         </svg>
         <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
       </button>
@@ -289,7 +304,7 @@ export default function CompanionOrb({
             }}>−</button>
           </div>
           <form onSubmit={submit}>
-            <input value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Tell the orb your goal" placeholder="Tell the orb your goal…" />
+            <input value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…" />
             <button type="submit">Run</button>
           </form>
           {approval && <section className="orb-approval" aria-label="Plan approval required">

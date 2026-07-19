@@ -6091,9 +6091,9 @@
       "version": 1,
       "kind": "capability",
       "name": "openExtensionDownload",
-      "purpose": "Open Lens Everywhere download and installation help",
+      "purpose": "Open Pearl Everywhere download and installation help",
       "examples": [
-        "please open Lens Everywhere download and installation help"
+        "please open Pearl Everywhere download and installation help"
       ],
       "inputSchema": {
         "type": "object",

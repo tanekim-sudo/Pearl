@@ -148,7 +148,7 @@ try {
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "false");
     await page.locator(".companion-orb").click();
-    const command = page.getByRole("textbox", { name: "Tell the orb your goal" });
+    const command = page.getByRole("textbox", { name: "Tell Pearl your goal" });
     await command.focus();
     await command.fill("before");
     await page.keyboard.press("Space");
@@ -185,8 +185,8 @@ try {
     await page.locator(".orb-stage-table").waitFor();
   });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
-    const animation = await page.locator(".orb-rays").first().evaluate((node) => getComputedStyle(node).animationName);
-    if (animation !== "none") throw new Error(`reduced-motion orb still animates: ${animation}`);
+    const animation = await page.locator(".orb-pearl").first().evaluate((node) => getComputedStyle(node).animationName);
+    if (animation !== "none") throw new Error(`reduced-motion Pearl still animates: ${animation}`);
   });
   fs.writeFileSync(path.join(evidence, "web-results.json"), `${JSON.stringify({
     version: 1,

@@ -115,3 +115,39 @@ header>div:last-child button{min-height:28px;padding:3px 6px;border:0;color:var(
 .extension-semantic-orb-tray small{color:var(--ex-muted);font-size:9px}
 .extension-semantic-orb-detail{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;padding:9px;border:1px solid rgba(235,211,145,.14);border-radius:14px;background:rgba(255,255,255,.025)}
 .extension-semantic-orb-detail b{flex:1 0 100%}
+
+/* Pearl — one soft focal object with quiet, translucent controls. */
+:root{--ex-bg:#0a0c0d;--ex-surface:rgba(22,26,27,.7);--ex-text:#f1f1ed;--ex-muted:#aeb2af;--ex-dim:#737a77;--ex-line:rgba(235,240,237,.09);--ex-line-strong:rgba(235,240,237,.16);--ex-focus:#d8ddd9;--ex-mint:rgba(164,210,198,.14);--ex-lilac:rgba(205,178,212,.12);--ex-rose:rgba(215,190,178,.1);--ex-ease:cubic-bezier(.2,.72,.2,1)}
+body{background:var(--ex-bg)}
+main{gap:14px;background:radial-gradient(ellipse at 12% 0,var(--ex-mint),transparent 38%),radial-gradient(ellipse at 92% 12%,var(--ex-lilac),transparent 36%),var(--ex-bg)}
+header{height:248px}
+.extension-orb-shell{top:34px;width:132px!important;height:150px}
+.extension-orb{left:10px;width:112px;height:112px;min-height:112px;--pearl-light-x:0;--pearl-light-y:0;--pearl-motion:0;filter:none}
+.extension-orb svg{width:112px;height:112px}
+.extension-orb-pearl{transform-origin:50px 50px;animation:extension-pearl-breathe 4s ease-in-out infinite}
+.extension-orb-shadow{fill:rgba(0,0,0,.2);filter:blur(1.6px)}
+.extension-orb-core{stroke:rgba(255,255,255,.58);stroke-width:.72}
+.extension-orb-nacre{mix-blend-mode:screen;opacity:calc(.38 + var(--pearl-motion) * .34);transform:translate(calc(var(--pearl-light-x) * 2.4px),calc(var(--pearl-light-y) * 2.4px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .18s ease-out}
+.extension-orb-reflection{fill:rgba(75,86,84,.12);filter:blur(4px);transform:translate(calc(var(--pearl-light-x) * -1.5px),calc(var(--pearl-light-y) * -1.5px));transition:transform .22s ease-out}
+.extension-orb-glint{fill:rgba(255,255,255,.46);filter:blur(.65px)}
+.extension-orb-pinlight{fill:#fff;opacity:.9}
+.extension-orb-label{top:118px;color:var(--ex-muted);font-size:10px}
+.extension-orb-shell[data-orb-state=listening] .extension-orb-core,
+.extension-orb-shell[data-orb-state=executing] .extension-orb-core{filter:sepia(.08) saturate(1.08) brightness(1.025)}
+.orb-view-tabs{top:198px;display:flex;height:38px;gap:2px;padding:0 2px;overflow-x:auto;pointer-events:auto}
+.orb-view-tabs button,
+.orb-view-tabs button:nth-child(n){position:static;flex:0 0 auto;min-width:46px;min-height:30px;padding:4px 7px;transform:none;border:0!important;border-radius:999px!important;color:var(--ex-dim);background:transparent!important}
+.orb-view-tabs button[aria-current=page]{color:var(--ex-text);text-decoration:none;background:rgba(255,255,255,.055)!important}
+.orb-panel.active{max-height:calc(100vh - 274px);padding:14px;border:1px solid var(--ex-line);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.028),transparent 42%),var(--ex-surface);box-shadow:0 20px 52px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.025);backdrop-filter:blur(22px) saturate(112%)}
+button,input,select,.quick-start,.learn-panel,.extension-packages,.extension-packages article,.save-as-chooser,.import-preview,.fragments article,.result,.library-import,.kind-guide{border-color:var(--ex-line);border-radius:11px;background:rgba(255,255,255,.025);box-shadow:none}
+button:hover{border-color:var(--ex-line-strong);background:rgba(255,255,255,.045)}
+.gold,.go{border-color:rgba(255,255,255,.34);border-radius:999px;background:linear-gradient(135deg,#f7f7f3,#d7ddd9 58%,#dcd3df);color:#171a1b;box-shadow:0 10px 28px rgba(0,0,0,.2),inset 0 1px #fff}
+.companion{margin-top:0;padding:12px;border:1px solid var(--ex-line);border-radius:16px;background:var(--ex-surface);backdrop-filter:blur(22px)}
+.companion input{height:44px;padding:8px 4px;border:0;border-bottom:1px solid var(--ex-line-strong);border-radius:0;background:transparent}
+.extension-semantic-orb-tray>button{border-radius:14px}
+.extension-semantic-orb-tray>button i{border-color:rgba(255,255,255,.24);background:linear-gradient(135deg,rgba(231,201,194,.18),rgba(196,220,211,.3) 42%,rgba(240,222,184,.2) 68%,transparent),radial-gradient(circle at 39% 58%,#fff7e8 0 13%,#f4eee3 32%,#e1e3d9 70%,#b4b8b0 100%);box-shadow:0 3px 5px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.55)}
+.extension-semantic-orb-tray>button[aria-pressed=true] i{border-color:rgba(255,255,255,.5);box-shadow:0 3px 6px rgba(0,0,0,.2)}
+.extension-semantic-orb-detail{border-color:var(--ex-line);background:rgba(255,255,255,.02)}
+@keyframes extension-pearl-breathe{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
+@media(max-width:380px){header{height:238px}.extension-orb{left:14px;width:104px;height:104px;min-height:104px}.extension-orb svg{width:104px;height:104px}.extension-orb-label{top:110px}.orb-view-tabs{top:188px}.orb-panel.active{max-height:calc(100vh - 264px)}}
+@media(prefers-reduced-motion:reduce){.extension-orb-pearl{animation:none!important}.extension-orb-nacre,.extension-orb-reflection{transform:none!important;transition:none!important}}

@@ -68,14 +68,14 @@ export default function TopToolbar({
     { id: "feature-tour", label: "Feature tour" },
     { id: "setup-role", label: "Set up for role" },
     { id: "new-function", label: "Create lens" },
-    { id: "get-extension", label: "Get Lens Everywhere" },
+    { id: "get-extension", label: "Get Pearl Everywhere" },
   ];
   if (showPlans) allItems.push({ id: "open-plans", label: "Plans" });
 
   return (
     <header className="idea-toolbar idea-toolbar-minimal">
       <div className="toolbar-row toolbar-row-minimal">
-        <span className="toolbar-wordmark">lens</span>
+        <span className="toolbar-wordmark">pearl</span>
 
         <div className="toolbar-hover-actions" data-tour="toolbar-actions">
           <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo">

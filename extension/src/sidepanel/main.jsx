@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { previewCompositionSequence } from "../../../shared/lens-grammar.js";
@@ -25,13 +25,28 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
-const ORB_RAYS = Object.freeze([
-  [4, 13, 35, 2], [43, 18, 36, -1], [82, 11, 34, 1], [129, 18, 36, 2],
-  [174, 14, 35, -1], [220, 19, 36, 1], [266, 12, 34, -2], [309, 17, 36, 1], [341, 15, 35, -1],
-]);
-
 function ExtensionOrb({ phase, listening, onVoice, onCommandView, contextCount = 0, lensActive = false, candidateCount = 0 }) {
-  return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Lens orb, ${phase}`}>
+  const id = useId();
+  const lightRef = useRef({ x: 0, y: 0, at: 0 });
+  function moveLight(event) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
+    const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - .5) * 2));
+    const now = event.timeStamp || performance.now();
+    const speed = Math.min(1, Math.hypot(x - lightRef.current.x, y - lightRef.current.y) * 120 / Math.max(16, now - lightRef.current.at));
+    event.currentTarget.style.setProperty("--pearl-light-x", x.toFixed(3));
+    event.currentTarget.style.setProperty("--pearl-light-y", y.toFixed(3));
+    event.currentTarget.style.setProperty("--pearl-motion", speed.toFixed(3));
+    window.clearTimeout(lightRef.current.timer);
+    const target = event.currentTarget;
+    lightRef.current = {
+      x,
+      y,
+      at: now,
+      timer: window.setTimeout(() => target.style.setProperty("--pearl-motion", "0"), 140),
+    };
+  }
+  return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Pearl, ${phase}`} onPointerMove={moveLight}>
     <div className="extension-orb-emissions" aria-live="polite">
       {lensActive && <span className="extension-lens-ring" aria-label="Active Lens atmosphere" />}
       {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
@@ -39,16 +54,33 @@ function ExtensionOrb({ phase, listening, onVoice, onCommandView, contextCount =
     </div>
     <button type="button" className="extension-orb" aria-label={listening ? "Stop listening" : "Hold to speak"} onClick={onVoice}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
-        <g className="extension-orb-rays">
-          {ORB_RAYS.map(([angle, start, end, bend]) => <path key={angle} d={`M50 ${start} C${50 + bend} ${start + 7} ${50 - bend} ${end - 5} 50 ${end}`} transform={`rotate(${angle} 50 50)`} />)}
-        </g>
+        <defs>
+          <radialGradient id={`extension-pearl-core-${id}`} cx="39%" cy="58%" r="72%">
+            <stop offset="0" stopColor="#fff7e8" />
+            <stop offset=".3" stopColor="#f7f0e4" />
+            <stop offset=".7" stopColor="#e5e5db" />
+            <stop offset="1" stopColor="#b5b8b1" />
+          </radialGradient>
+          <linearGradient id={`extension-pearl-nacre-${id}`} x1="8%" y1="14%" x2="92%" y2="84%">
+            <stop offset="0" stopColor="#e8cac4" stopOpacity=".2" />
+            <stop offset=".35" stopColor="#c7ddd4" stopOpacity=".34" />
+            <stop offset=".64" stopColor="#f0dfb9" stopOpacity=".27" />
+            <stop offset="1" stopColor="#e5c7c1" stopOpacity=".17" />
+          </linearGradient>
+        </defs>
         <path className="extension-orb-trace" d="M50 14 C66 20 76 34 78 50" />
-        <circle cx="50" cy="50" r="29" className="extension-orb-halo" />
+        <ellipse cx="51" cy="95" rx="25" ry="2" className="extension-orb-shadow" />
         <circle cx="50" cy="50" r="36" className="extension-orb-state-ring" />
-        <circle cx="50" cy="50" r="19" className="extension-orb-core" />
+        <g className="extension-orb-pearl">
+          <circle cx="50" cy="50" r="43" className="extension-orb-core" fill={`url(#extension-pearl-core-${id})`} />
+          <circle cx="50" cy="50" r="41.5" className="extension-orb-nacre" fill={`url(#extension-pearl-nacre-${id})`} />
+          <ellipse cx="58" cy="62" rx="28" ry="17" className="extension-orb-reflection" />
+          <ellipse cx="33" cy="28" rx="8" ry="4.5" className="extension-orb-glint" transform="rotate(-38 33 28)" />
+          <circle cx="27.5" cy="22.5" r="2" className="extension-orb-pinlight" />
+        </g>
       </svg>
     </button>
-    <button type="button" className="extension-orb-label" onClick={onCommandView}>{phase === "listening" ? "Listening…" : phase === "executing" ? "Working…" : "Tell the orb your goal"}</button>
+    <button type="button" className="extension-orb-label" onClick={onCommandView}>{phase === "listening" ? "Listening…" : phase === "executing" ? "Working…" : "Tell Pearl your goal"}</button>
   </div>;
 }
 
@@ -778,7 +810,7 @@ function App() {
       <button type="button" onClick={signIn}>{auth ? "Refresh synced library" : "Sign in for sync"}</button>
       <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Models, connectors, vocabulary, and privacy</a>
     </section>
-    <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Lens orb command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell the orb your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
+    <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Pearl command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell Pearl your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
     {error && <aside role="alert">{error}</aside>}
   </main>;
 }

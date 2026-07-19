@@ -119,7 +119,7 @@ export async function validateLensLibraryBundle(raw) {
     assertPlain(bundle);
     const bytes = new TextEncoder().encode(JSON.stringify(bundle)).byteLength;
     if (bytes > LENS_LIBRARY_LIMITS.bytes) throw new Error("library exceeds 10 MB");
-    if (bundle?.kind !== LENS_LIBRARY_KIND) throw new Error("not a Lens Everywhere library");
+    if (bundle?.kind !== LENS_LIBRARY_KIND) throw new Error("not a Pearl Everywhere library");
     if (![1, LENS_LIBRARY_VERSION].includes(bundle.version)) throw new Error("unsupported library version");
     if (bundle.integrity?.algorithm !== "SHA-256" || !/^[a-f0-9]{64}$/.test(bundle.integrity?.payloadHash || "")) {
       throw new Error("missing library checksum");
