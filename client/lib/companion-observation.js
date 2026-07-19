@@ -45,6 +45,8 @@ function conciseObject(value, domain) {
 export function buildWorkspaceSnapshot({
   items = [],
   nodes = [],
+  semanticOrbs = [],
+  activeSemanticOrbId = null,
   selectedItemIds = [],
   selectedNodeIds = [],
   highlightedIds = [],
@@ -66,6 +68,17 @@ export function buildWorkspaceSnapshot({
   const objects = [
     ...items.map((value) => conciseObject(value, "paper")),
     ...nodes.map((value) => conciseObject(value, "ai")),
+    ...semanticOrbs.map((value) => conciseObject({
+      ...value,
+      x: value.placement?.x,
+      y: value.placement?.y,
+      w: (value.placement?.radius || 24) * 2,
+      h: (value.placement?.radius || 24) * 2,
+      parentId: value.parentOrbId,
+      sourceIds: value.representation?.refs || [],
+      type: "semantic-orb",
+      summary: `${value.name || "Untitled orb"} · ${value.representation?.kind || "empty"}`,
+    }, "semantic-orb")),
   ];
   const edges = nodes.slice(0, MAX_LIMIT).flatMap((node) => [
     ...(node.parentId ? [{ id: `${node.parentId}->${node.id}`, fromId: node.parentId, toId: node.id, kind: "parent" }] : []),
@@ -83,12 +96,14 @@ export function buildWorkspaceSnapshot({
     pageRef: page ? { id: page.id, version: page.version || 1 } : null,
     focus: focused,
     openEditor,
+    semanticOrbId: activeSemanticOrbId,
     source: { surface: "web", authorizedScope: scope },
   };
   const observation = createWorkspaceObservation(observationInput);
   const viewportObservation = createWorkspaceObservation({ ...observationInput, scope: "viewport" });
   const paperObservation = createWorkspaceObservation({ ...observationInput, scope: "paper" });
   const selectionObservation = createWorkspaceObservation({ ...observationInput, scope: "selection" });
+  const semanticOrbObservation = createWorkspaceObservation({ ...observationInput, scope: "semantic-orb", semanticOrbId: activeSemanticOrbId });
   return {
     version: 1,
     observedAt: new Date().toISOString(),
@@ -97,6 +112,7 @@ export function buildWorkspaceSnapshot({
       selection: selectionObservation,
       viewport: viewportObservation,
       paper: paperObservation,
+      "semantic-orb": semanticOrbObservation,
     },
     scene: {
       viewport: sceneRelationships(viewportObservation),

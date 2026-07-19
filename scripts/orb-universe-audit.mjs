@@ -93,6 +93,22 @@ try {
           nodes: [],
           frames: [],
           orbInstances: [],
+          semanticOrbs: Array.from({ length: 20 }, (_, index) => ({
+            version: 1,
+            id: `audit-orb-${index + 1}`,
+            kind: "semantic-orb",
+            sceneId: "audit-scene",
+            name: `Audit orb ${index + 1}`,
+            placement: { x: -280 + index * 10, y: -120 + index * 6, radius: 24 },
+            representation: { kind: index % 3 === 0 ? "lens" : "material", refs: [index % 3 === 0 ? "lens-audit" : "audit-material"], label: `Audit orb ${index + 1}`, snapshot: null },
+            workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+            parentOrbId: null,
+            childOrbIds: [],
+            lineage: [],
+            provenance: { source: "orb-universe-audit" },
+            archived: false,
+          })),
+          activeSemanticOrbId: null,
           workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
           camera: { x: 0, y: 0, scale: 1 },
         }],
@@ -103,6 +119,21 @@ try {
     const orb = await page.locator('[data-semantic-anchor="primary-orb"] .companion-orb').boundingBox();
     if (!orb || orb.width < 110) throw new Error("Stage orb is not the primary manipulation handle");
     if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
+    await page.locator(".semantic-orb-cluster").first().waitFor();
+    await page.locator(".semantic-orb-cluster").first().click();
+    await page.getByRole("button", { name: "New orb" }).first().click();
+    await page.locator(".semantic-orb-capsule.active").waitFor();
+    await page.waitForFunction(() => {
+      const workspace = JSON.parse(localStorage.getItem("lens.scenes.v4") || "null");
+      const scene = workspace?.scenes?.find((entry) => entry.id === "audit-scene");
+      return scene?.semanticOrbs?.length === 21 && Boolean(scene.activeSemanticOrbId);
+    });
+    const activeId = await page.evaluate(() => JSON.parse(localStorage.getItem("lens.scenes.v4")).scenes[0].activeSemanticOrbId);
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator(`[data-semantic-orb-id="${activeId}"]`).waitFor();
+    if (!(await page.locator(`[data-semantic-orb-id="${activeId}"] .semantic-orb-button`).getAttribute("aria-pressed"))) {
+      throw new Error("active semantic orb did not survive reload");
+    }
     await page.keyboard.press("Space");
     await page.keyboard.press("Space");
     await page.keyboard.press("Space");

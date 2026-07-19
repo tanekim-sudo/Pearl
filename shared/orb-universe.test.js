@@ -27,6 +27,12 @@ import {
   normalizeOrbCursorPreference,
   orbCursorPresentation,
 } from "./orb-cursor.js";
+import {
+  clusterSemanticOrbs,
+  createSemanticOrb,
+  placeSemanticOrb,
+  semanticOrbFromMaterial,
+} from "./semantic-orbs.js";
 import { resolveDropIntent } from "./drop-intent-resolver.js";
 
 test("orb state machine carries task and effect IDs through verified canonical execution", async () => {
@@ -85,6 +91,7 @@ test("orb drop matrix covers context, Stage, Frame, candidate, and workers", () 
     stage: "materializeOnStage",
     "output-frame": "materializeInOutputFrame",
     "candidate-constellation": "queueBranchMaterial",
+    "semantic-orb": "addSemanticOrbContext",
     "worker-orb": "assignWorkerContext",
   };
   for (const [kind, command] of Object.entries(expected)) {
@@ -92,6 +99,26 @@ test("orb drop matrix covers context, Stage, Frame, candidate, and workers", () 
     assert.equal(resolved.defaultIntent.command, command, kind);
     assert.equal(resolved.preserved, true, kind);
   }
+});
+
+test("semantic orb capsules stay compact, collision-free, and cluster under density", () => {
+  const source = semanticOrbFromMaterial({ id: "note", type: "text", text: "A durable idea" }, {
+    id: "orb-a",
+    sceneId: "scene-1",
+    placement: { x: 0, y: 0 },
+    now: 100,
+  });
+  const placement = placeSemanticOrb([source], { x: 0, y: 0 });
+  const second = createSemanticOrb({ id: "orb-b", placement });
+  assert.ok(Math.hypot(second.placement.x, second.placement.y) >= 60);
+  assert.equal(source.workingSet.context[0].text, "A durable idea");
+  const dense = Array.from({ length: 20 }, (_, index) => createSemanticOrb({
+    id: `dense-${index}`,
+    placement: { x: index * 8, y: index * 5 },
+  }));
+  const clusters = clusterSemanticOrbs(dense, { zoom: .4 });
+  assert.ok(clusters.some((cluster) => cluster.count > 1));
+  assert.equal(dense.every((orb) => orb.placement.radius <= 44), true);
 });
 
 test("worker swarm rejects concurrent writes and fuses verified typed proposals", () => {

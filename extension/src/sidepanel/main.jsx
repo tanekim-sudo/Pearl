@@ -10,6 +10,7 @@ import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
 import { outputContractFor, outputContractLabel } from "../../../shared/output-specifications.js";
 import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
+import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {
@@ -86,6 +87,8 @@ function App() {
   const [packages, setPackages] = useState([]);
   const [activeView, setActiveView] = useState("command");
   const [orbCursorEnabled, setOrbCursorEnabled] = useState(false);
+  const [semanticOrbs, setSemanticOrbs] = useState([]);
+  const [activeSemanticOrbId, setActiveSemanticOrbId] = useState(null);
   const fileRef = useRef(null);
 
   async function browsePackages() {
@@ -147,10 +150,12 @@ function App() {
     call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
     call("model-catalog").then((value) => setModelCatalog(value.models || [])).catch(() => {});
     call("orb-cursor-get").then((value) => setOrbCursorEnabled(value.enabled === true)).catch(() => {});
-    chrome.storage.local.get(["onboardingComplete", "onboardingMode", "generationPlan"], (value) => {
+    chrome.storage.local.get(["onboardingComplete", "onboardingMode", "generationPlan", "semanticOrbs", "activeSemanticOrbId"], (value) => {
       setOnboardingMode(value.onboardingMode || "");
       setOnboardingStep(value.onboardingComplete ? 0 : 1);
       if (value.generationPlan) setGenerationPlan(normalizeGenerationPlan(value.generationPlan));
+      setSemanticOrbs((value.semanticOrbs || []).map((orb) => createSemanticOrb(orb)));
+      setActiveSemanticOrbId(value.activeSemanticOrbId || null);
     });
     const listener = () => refresh().catch(() => {});
     chrome.storage?.onChanged.addListener(listener);
@@ -220,6 +225,69 @@ function App() {
     ? [...importPreview.conflicts.lenses, ...importPreview.conflicts.generators]
       .filter((entry) => entry.status === "id-conflict")
     : [];
+
+  async function persistSemanticOrbs(next, activeId = activeSemanticOrbId) {
+    const normalized = next.map((orb) => createSemanticOrb(orb));
+    await chrome.storage.local.set({ semanticOrbs: normalized, activeSemanticOrbId: activeId || null });
+    setSemanticOrbs(normalized);
+    setActiveSemanticOrbId(activeId || null);
+    return { type: "external-semantic-orbs", orbs: normalized, activeId: activeId || null };
+  }
+
+  async function semanticOrbAction(name, args = {}) {
+    const byId = new Map(semanticOrbs.map((orb) => [orb.id, orb]));
+    if (name === "create") {
+      const id = args.id || `external-orb:${crypto.randomUUID()}`;
+      const captured = args.material || session.fragments.at(-1);
+      const orb = captured
+        ? semanticOrbFromMaterial(captured, { id, sceneId: "extension-captures", placement: { x: 0, y: 0 } })
+        : createSemanticOrb({ id, sceneId: "extension-captures", name: args.name || "Untitled orb" });
+      await persistSemanticOrbs([...semanticOrbs, orb], id);
+      setActiveView("orbs");
+      return { type: "external-semantic-orb", id, orb };
+    }
+    if (name === "merge") {
+      const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
+      if (sources.length < 2) throw new Error("choose at least two orbs");
+      const context = new Map(sources.flatMap((entry) => entry.workingSet.context || []).map((item) => [item.id, item]));
+      const merged = createSemanticOrb({
+        id: `external-orb:${crypto.randomUUID()}`,
+        sceneId: "extension-captures",
+        name: args.name || sources.map((entry) => entry.name).join(" + "),
+        representation: { kind: "grouped-context", refs: sources.map((entry) => entry.id), label: args.name || "Merged orb" },
+        workingSet: { context: [...context.values()] },
+        lineage: sources.map((entry) => ({ orbId: entry.id, operation: "merge" })),
+      });
+      byId.set(merged.id, merged);
+      await persistSemanticOrbs([...byId.values()], merged.id);
+      setActiveView("orbs");
+      return { type: "external-semantic-orb", id: merged.id, orb: merged };
+    }
+    const orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
+    if (!orb) throw new Error("orb not found");
+    if (name === "open") {
+      await persistSemanticOrbs(semanticOrbs, orb.id);
+      setActiveView("orbs");
+      return { type: "external-semantic-orb-active", id: orb.id };
+    }
+    if (name === "add-context") {
+      const items = args.items?.length ? args.items : session.fragments.slice(-1);
+      const context = new Map((orb.workingSet.context || []).map((item) => [item.id, item]));
+      items.forEach((item) => item?.id && context.set(item.id, item));
+      byId.set(orb.id, createSemanticOrb({ ...orb, workingSet: { ...orb.workingSet, context: [...context.values()] } }));
+    } else if (name === "apply-lens") {
+      const lens = args.lens || generators.find((entry) => entry.id === args.lensId) || library.find((entry) => entry.id === args.lensId)?.operator;
+      if (!lens?.id) throw new Error("Lens not found");
+      const lenses = new Map((orb.workingSet.lenses || []).map((entry) => [entry.id, entry]));
+      lenses.set(lens.id, { ...lens, strength: args.strength ?? .7 });
+      byId.set(orb.id, createSemanticOrb({ ...orb, workingSet: { ...orb.workingSet, lenses: [...lenses.values()] } }));
+    } else if (name === "archive") {
+      byId.set(orb.id, createSemanticOrb({ ...orb, archived: args.archived !== false }));
+    }
+    const next = [...byId.values()];
+    await persistSemanticOrbs(next, name === "archive" && args.archived !== false && activeSemanticOrbId === orb.id ? null : activeSemanticOrbId);
+    return { type: `external-semantic-orb-${name}`, id: orb.id, orb: byId.get(orb.id) };
+  }
 
   async function action(type, payload) {
     setError("");
@@ -422,6 +490,7 @@ function App() {
         },
         toggleOrbCursor,
         saveCaptureAs,
+        semanticOrbAction,
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -526,8 +595,35 @@ function App() {
       </div>
     </header>
     <nav className="orb-view-tabs" aria-label="Orb views">
-      {["command", "context", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view}</button>)}
+      {["command", "context", "orbs", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view}</button>)}
     </nav>
+    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved semantic orbs">
+      <div className="extension-semantic-orb-head">
+        <div><h2>Orbs</h2><small>Compact capsules for anything you want to keep working with.</small></div>
+        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled orb", material: session.fragments.at(-1) || null })}>
+          {session.fragments.length ? "Orb from capture" : "New orb"}
+        </button>
+      </div>
+      <div className="extension-semantic-orb-tray">
+        {semanticOrbs.filter((orb) => !orb.archived).map((orb) => <button
+          type="button"
+          key={orb.id}
+          aria-pressed={activeSemanticOrbId === orb.id}
+          onClick={() => semanticOrbAction("open", { id: orb.id })}
+        >
+          <i />
+          <b>{orb.name}</b>
+          <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context</small>
+        </button>)}
+        {!semanticOrbs.some((orb) => !orb.archived) && <p>No saved orbs yet. Capture a selection or make an empty one.</p>}
+      </div>
+      {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
+        <b>{semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}</b>
+        <button type="button" disabled={!session.fragments.length} onClick={() => semanticOrbAction("add-context", { id: activeSemanticOrbId, items: session.fragments.slice(-1) })}>Add current capture</button>
+        <button type="button" onClick={() => action("open-web-handoff", { surface: "semantic-orb-scene", orbId: activeSemanticOrbId, preservePayload: true })}>Arrange in full Scene</button>
+        <button type="button" onClick={() => semanticOrbAction("archive", { id: activeSemanticOrbId, archived: true })}>Archive</button>
+      </div>}
+    </section>
     {packagesOpen && <section className={`orb-panel ${activeView === "library" ? "active" : ""} extension-packages`} aria-label="Cognitive Packages">
       <div><b>Cognitive Packages</b><button type="button" onClick={() => setPackagesOpen(false)}>×</button></div>
       {packages.map((pkg) => <article key={`${pkg.namespace}/${pkg.name}@${pkg.version}`}>

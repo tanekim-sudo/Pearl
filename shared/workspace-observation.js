@@ -7,6 +7,7 @@ export const OBSERVATION_SCOPES = Object.freeze([
   "stage",
   "frame",
   "orb-context",
+  "semantic-orb",
   "paper",
   "ai-space",
   "workspace",
@@ -55,7 +56,7 @@ function normalizeObject(value = {}, index, context) {
   return {
     id: bounded(value.id || `object-${index + 1}`, 256),
     version: Math.max(1, Number(value.version) || 1),
-    domain: bounded(value.domain || (value.nodeKind ? "ai" : "paper"), 40),
+    domain: bounded(value.domain || (value.kind === "semantic-orb" ? "semantic-orb" : value.nodeKind ? "ai" : "paper"), 40),
     kind: bounded(value.kind || value.type || value.nodeKind || "object", 80),
     summary: bounded(value.summary || text || value.label || value.name),
     exactText: value.private || value.system || value.hiddenInput ? "" : text,
@@ -65,8 +66,8 @@ function normalizeObject(value = {}, index, context) {
     selected,
     highlighted,
     groupIds: (value.groupIds || [value.groupId].filter(Boolean)).slice(0, 20).map((entry) => bounded(entry, 256)),
-    parentId: bounded(value.parentId, 256) || null,
-    sourceIds: [...(value.sourceIds || []), ...(value.sourceNodeIds || [])].slice(0, 50).map((entry) => bounded(entry, 256)),
+    parentId: bounded(value.parentOrbId || value.parentId, 256) || null,
+    sourceIds: [...(value.sourceIds || []), ...(value.sourceNodeIds || []), ...(value.representation?.refs || [])].slice(0, 50).map((entry) => bounded(entry, 256)),
     outputRef: value.outputRef ? structuredClone(value.outputRef) : null,
     historyRefs: (value.historyRefs || []).slice(0, 50).map((entry) => structuredClone(entry)),
     taste: value.tasteFeedback?.decision || value.feedback?.decision || null,
@@ -102,6 +103,13 @@ export function createWorkspaceObservation(value = {}) {
         : normalized.filter((object) => Boolean(object.frameId));
   } else if (scope === "stage") eligible = normalized.filter((object) => !object.frameId);
   else if (scope === "orb-context") eligible = normalized.filter((object) => contextIds.has(object.id) || object.domain === "orb-context");
+  else if (scope === "semantic-orb") {
+    const orbId = value.semanticOrbId || value.focus?.semanticOrbId;
+    const referencedIds = new Set(normalized.find((object) => object.id === orbId)?.sourceIds || []);
+    eligible = orbId
+      ? normalized.filter((object) => object.id === orbId || object.parentId === orbId || object.sourceIds.includes(orbId) || referencedIds.has(object.id))
+      : normalized.filter((object) => object.domain === "semantic-orb");
+  }
   else if (scope === "ai-space") eligible = normalized.filter((object) => object.domain === "ai");
   else eligible = normalized;
   eligible = [...eligible].sort((a, b) =>

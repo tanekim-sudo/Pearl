@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompanionOrb from "./CompanionOrb.jsx";
 import OrbCursorLayer from "./OrbCursorLayer.jsx";
+import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
 import { createOrbState, executeOrbCommand, markUtteranceDispatched, recordOrbUtterance, transitionOrb } from "../../shared/orb-runtime.js";
 import {
   ORB_CURSOR_EVENT,
@@ -17,6 +18,7 @@ import {
   createScene,
   migrateUnifiedWorkspace,
   serializeUnifiedWorkspace,
+  updateSceneWorkspace,
 } from "../lib/unified-workspace.js";
 
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
@@ -257,7 +259,7 @@ function LibraryHome({ route, scenes, onCreateScene, activeView, onView, install
   </main>;
 }
 
-function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd }) {
+function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semanticOrbActions }) {
   const [view, setView] = useState("Stage");
   useEffect(() => setView("Stage"), [scene?.id]);
   const materials = useMemo(() => [
@@ -280,6 +282,12 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd }) {
     className="orb-black-stage"
     aria-label={`Scene ${scene?.name || scene?.id || "untitled"}`}
     data-stage-view={view.toLowerCase()}
+    onDoubleClick={(event) => {
+      if (event.target.closest?.("article,button,input,.semantic-orb-capsule")) return;
+      semanticOrbActions?.create?.({
+        placement: { x: event.clientX - innerWidth / 2, y: event.clientY - innerHeight / 2 },
+      });
+    }}
     onDragOver={(event) => {
       if (event.dataTransfer?.types?.includes("application/x-lens-object")) event.preventDefault();
     }}
@@ -307,7 +315,7 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd }) {
         onClick={() => chooseView(option)}
       >{option}</button>)}
     </nav>
-    {!materials.length
+    {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty">
           <span className="orb-stage-locus" aria-hidden="true" />
           <h1>Bring material into this Scene.</h1>
@@ -337,8 +345,27 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd }) {
               <p>{String(material.label).slice(0, 420)}</p>
               {view === "Timeline" && <time>{material.createdAt || material.updatedAt || `Step ${index + 1}`}</time>}
               <button type="button" className="orb-material-context-action" onClick={() => onContextAdd(material)}>Add to orb context</button>
+              <button type="button" className="orb-material-context-action" onClick={() => semanticOrbActions?.create?.({
+                material,
+                placement: { x: Number(material.x) || index * 64, y: Number(material.y) || index * 48 },
+              })}>Make orb</button>
             </article>)}
           </section>}
+    <SemanticOrbLayer
+      sceneId={scene?.id}
+      orbs={(scene?.semanticOrbs || []).filter((orb) => !orb.archived)}
+      activeId={scene?.activeSemanticOrbId || null}
+      onCreate={semanticOrbActions?.create}
+      onActivate={semanticOrbActions?.activate}
+      onMove={semanticOrbActions?.move}
+      onRename={semanticOrbActions?.rename}
+      onArchive={semanticOrbActions?.archive}
+      onAddContext={semanticOrbActions?.addContext}
+      onApplyLens={semanticOrbActions?.applyLens}
+      onNest={semanticOrbActions?.nest}
+      onMerge={semanticOrbActions?.merge}
+      onCompose={semanticOrbActions?.compose}
+    />
   </main>;
 }
 
@@ -392,10 +419,13 @@ export default function OrbUniverseShell({ StageComponent }) {
     const sceneId = route.sceneId || workspace.activeSceneId;
     const scene = (workspace.scenes || []).find((entry) => entry.id === sceneId);
     if (scene) {
+      const activeCapsule = scene.semanticOrbs?.find((entry) => entry.id === scene.activeSemanticOrbId && !entry.archived);
+      const workingSet = activeCapsule?.workingSet || scene.workingSet || {};
       setOrb((value) => createOrbState({
         ...value,
-        context: scene.workingSet?.context || [],
-        lenses: scene.workingSet?.lenses || [],
+        activeSemanticOrbId: activeCapsule?.id || null,
+        context: workingSet.context || [],
+        lenses: workingSet.lenses || [],
       }));
     }
   }, [route.path]);
@@ -466,17 +496,28 @@ export default function OrbUniverseShell({ StageComponent }) {
         detail.reject?.(error);
       }
     }
+    async function commandSemanticOrb(event) {
+      const detail = event.detail || {};
+      try {
+        const execution = await applySemanticOrbCommand(detail.command, detail.args || {});
+        detail.resolve?.({ completed: true, id: execution.result?.id || null, result: execution.result });
+      } catch (error) {
+        detail.reject?.(error);
+      }
+    }
     document.addEventListener(ORB_CURSOR_EVENT, syncExtensionCursor);
     document.addEventListener("lens:orb-cursor-command", commandCursor);
     document.addEventListener("lens:orb-context-command", commandContext);
     document.addEventListener("lens:orb-lens-command", commandLens);
+    document.addEventListener("lens:semantic-orb-command", commandSemanticOrb);
     return () => {
       document.removeEventListener(ORB_CURSOR_EVENT, syncExtensionCursor);
       document.removeEventListener("lens:orb-cursor-command", commandCursor);
       document.removeEventListener("lens:orb-context-command", commandContext);
       document.removeEventListener("lens:orb-lens-command", commandLens);
+      document.removeEventListener("lens:semantic-orb-command", commandSemanticOrb);
     };
-  }, [setCursorMode]);
+  }, [route.path, setCursorMode]);
 
   useEffect(() => {
     const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
@@ -846,36 +887,107 @@ export default function OrbUniverseShell({ StageComponent }) {
     finishVoice({ send: false });
   }, []);
 
-  function persistActiveWorkingSet(patch) {
-    const workspace = loadSceneWorkspace();
-    const sceneId = route.sceneId || workspace.activeSceneId;
-    const scene = (workspace.scenes || []).find((entry) => entry.id === sceneId);
-    if (!scene) return null;
-    const nextScene = createScene({
-      ...scene,
-      workingSet: { ...(scene.workingSet || {}), ...patch },
-    });
-    const scenes = workspace.scenes.map((entry) => entry.id === sceneId ? nextScene : entry);
+  function persistWorkspace(workspace) {
     const previousStorage = localStorage.getItem(UNIFIED_WORKSPACE_KEY);
-    const serialized = serializeUnifiedWorkspace({
-      ...workspace,
-      scenes,
-      activeSceneId: sceneId,
-      items: nextScene.items,
-      nodes: nextScene.nodes,
-      camera: nextScene.camera,
-      frames: nextScene.frames,
-      orbInstances: nextScene.orbInstances,
-      workingSet: nextScene.workingSet,
-    });
+    const serialized = serializeUnifiedWorkspace(workspace);
     localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
     setSceneWorkspace(JSON.parse(serialized));
     return () => {
       if (previousStorage == null) localStorage.removeItem(UNIFIED_WORKSPACE_KEY);
       else localStorage.setItem(UNIFIED_WORKSPACE_KEY, previousStorage);
-      setSceneWorkspace(loadSceneWorkspace());
+      const restored = loadSceneWorkspace();
+      setSceneWorkspace(restored);
+      const restoredScene = restored.scenes?.find((entry) => entry.id === (route.sceneId || restored.activeSceneId));
+      const restoredWorkingSet = restoredScene?.activeSemanticOrbId
+        ? restoredScene.semanticOrbs?.find((entry) => entry.id === restoredScene.activeSemanticOrbId)?.workingSet
+        : restoredScene?.workingSet;
+      if (restoredWorkingSet) setOrb((value) => createOrbState({
+        ...value,
+        activeSemanticOrbId: restoredScene?.activeSemanticOrbId || null,
+        context: restoredWorkingSet.context || [],
+        lenses: restoredWorkingSet.lenses || [],
+      }));
     };
   }
+
+  function persistActiveWorkingSet(patch) {
+    const workspace = loadSceneWorkspace();
+    const sceneId = route.sceneId || workspace.activeSceneId;
+    const scene = (workspace.scenes || []).find((entry) => entry.id === sceneId);
+    if (!scene) return null;
+    const updated = updateSceneWorkspace(workspace, sceneId, (current) => {
+      if (!current.activeSemanticOrbId) {
+        return { ...current, workingSet: { ...(current.workingSet || {}), ...patch } };
+      }
+      return {
+        ...current,
+        semanticOrbs: current.semanticOrbs.map((semanticOrb) => semanticOrb.id === current.activeSemanticOrbId
+          ? { ...semanticOrb, workingSet: { ...(semanticOrb.workingSet || {}), ...patch }, updatedAt: new Date().toISOString() }
+          : semanticOrb),
+      };
+    });
+    return persistWorkspace(updated);
+  }
+
+  async function applySemanticOrbCommand(name, args) {
+    const currentOrb = orbRef.current;
+    const ready = ["idle", "completed"].includes(currentOrb.phase)
+      ? currentOrb
+      : createOrbState({ ...currentOrb, phase: "idle", effectId: null, commandId: null });
+    const workspace = loadSceneWorkspace();
+    const sceneId = route.sceneId || workspace.activeSceneId;
+    const scene = workspace.scenes?.find((entry) => entry.id === sceneId);
+    if (!scene) throw new Error("Open a Scene before creating an orb");
+    const execution = await executeOrbCommand({
+      orb: ready,
+      command: name,
+      state: {
+        semanticOrbs: scene.semanticOrbs || [],
+        activeSemanticOrbId: scene.activeSemanticOrbId || null,
+      },
+      args,
+      taskId: `semantic-orb:${name}:${Date.now()}`,
+      observe: async ({ result }) => ({ effects: result.effects }),
+    });
+    const updated = updateSceneWorkspace(workspace, sceneId, (current) => ({
+      ...current,
+      semanticOrbs: execution.state.semanticOrbs,
+      activeSemanticOrbId: execution.state.activeSemanticOrbId,
+    }));
+    const restore = persistWorkspace(updated);
+    const nextScene = updated.scenes.find((entry) => entry.id === sceneId);
+    const activeCapsule = nextScene.semanticOrbs.find((entry) => entry.id === nextScene.activeSemanticOrbId);
+    const workingSet = activeCapsule?.workingSet || nextScene.workingSet || {};
+    const nextOrb = createOrbState({
+      ...execution.orb,
+      activeSemanticOrbId: nextScene.activeSemanticOrbId || null,
+      context: workingSet.context || [],
+      lenses: workingSet.lenses || [],
+    });
+    orbUndoRef.current = { orb: currentOrb, restore };
+    setHasOrbUndo(true);
+    orbRef.current = nextOrb;
+    setOrb(nextOrb);
+    return execution;
+  }
+
+  const semanticOrbActions = {
+    create: ({ placement = { x: 0, y: 0 }, material = null, name = null } = {}) => applySemanticOrbCommand("createSemanticOrb", {
+      sceneId: route.sceneId,
+      placement,
+      activate: true,
+      ...(material ? { material } : { orb: { name: name || "Untitled orb" } }),
+    }),
+    activate: (id) => applySemanticOrbCommand("activateSemanticOrb", { id }),
+    move: (id, placement) => applySemanticOrbCommand("moveSemanticOrb", { id, placement }),
+    rename: (id, name) => applySemanticOrbCommand("renameSemanticOrb", { id, name }),
+    archive: (id, archived = true) => applySemanticOrbCommand("archiveSemanticOrb", { id, archived }),
+    addContext: (id, item) => applySemanticOrbCommand("addSemanticOrbContext", { id, items: [item] }),
+    applyLens: (id, lens) => applySemanticOrbCommand("applySemanticOrbLens", { id, lens, strength: lens.strength }),
+    nest: (childId, parentId) => applySemanticOrbCommand("nestSemanticOrb", { childId, parentId }),
+    merge: (ids) => applySemanticOrbCommand("mergeSemanticOrbs", { ids, sceneId: route.sceneId }),
+    compose: (ids) => applySemanticOrbCommand("composeSemanticOrbs", { ids, sceneId: route.sceneId }),
+  };
 
   function applyOrbContextCommand(name, args) {
     const operation = contextCommandQueueRef.current.then(async () => {
@@ -1133,9 +1245,16 @@ export default function OrbUniverseShell({ StageComponent }) {
         <button type="button" onClick={() => setOutputFrameOpen((value) => !value)}>{outputFrameOpen ? "Close Output Frame" : "Open Output Frame"}</button>
       </div>
       <div className="orb-output-frame-host" data-semantic-anchor="output-frame" hidden={!outputFrameOpen}><StageComponent key={route.sceneId || "untitled"} sceneId={route.sceneId} /></div>
-      {!outputFrameOpen && <SceneStage scene={routedScene} onOpenFrame={() => setOutputFrameOpen(true)} onMaterialDrop={materializeOnStage} onContextAdd={addOrbContext} />}
+      {!outputFrameOpen && <SceneStage
+        scene={routedScene}
+        onOpenFrame={() => setOutputFrameOpen(true)}
+        onMaterialDrop={materializeOnStage}
+        onContextAdd={addOrbContext}
+        semanticOrbActions={semanticOrbActions}
+      />}
       {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect}
         onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
+        onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}

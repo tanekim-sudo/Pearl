@@ -24,6 +24,7 @@ export const DROP_SOURCE_KINDS = Object.freeze([
   "canonical-move",
   "canonical-function",
   "canonical-lens",
+  "semantic-orb",
   "unknown",
 ]);
 
@@ -46,6 +47,7 @@ export const DROP_TARGET_KINDS = Object.freeze([
   "stage",
   "output-frame",
   "candidate-constellation",
+  "semantic-orb",
   "worker-orb",
   "archive",
   "trash",
@@ -98,6 +100,7 @@ function sourceKind(value = {}) {
   if (raw.includes("instruction")) return "instruction-event";
   if (raw.includes("transcript")) return "transcript";
   if (raw.includes("external")) return "external-capture";
+  if (raw === "semantic-orb") return "semantic-orb";
   if (raw === "material") return "material";
   if (Array.isArray(value.items) || Array.isArray(value.sources)) return "collection";
   if (["text", "sticky", "paper-object"].includes(raw) || exactText(value)) return raw === "paper-object" ? raw : "text";
@@ -305,6 +308,33 @@ function contentIntents(sources, target, context) {
     return [intent("add-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to the Context Orbit`, "orb-context", {
       command: "addOrbContext",
       metadata: { priority: Number.isFinite(context.priority) ? context.priority : 1, target: target.kind },
+    })];
+  }
+
+  if (target.kind === "semantic-orb") {
+    const targetId = target.id || target.object?.id || null;
+    const sourceOrbIds = sources.filter((source) => source.kind === "semantic-orb").map((source) => source.id);
+    if (sourceOrbIds.length === sources.length) {
+      const ids = [...sourceOrbIds, targetId].filter(Boolean);
+      return [
+        intent("nest-semantic-orb", 130, "Nest this orb inside the target orb", "semantic-orb", {
+          command: "nestSemanticOrb",
+          choices: ["nest", "merge", "compose"],
+          metadata: { childId: sourceOrbIds[0], parentId: targetId },
+        }),
+        intent("merge-semantic-orbs", 120, "Merge preserved contexts into a new orb", "semantic-orb", {
+          command: "mergeSemanticOrbs",
+          metadata: { ids },
+        }),
+        intent("compose-semantic-orbs", 110, "Compose the orbs in source-to-target order", "semantic-orb", {
+          command: "composeSemanticOrbs",
+          metadata: { ids },
+        }),
+      ];
+    }
+    return [intent("add-semantic-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to this orb`, "semantic-orb-context", {
+      command: "addSemanticOrbContext",
+      metadata: { id: targetId },
     })];
   }
 

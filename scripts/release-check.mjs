@@ -56,6 +56,10 @@ if (full) {
       await new Promise((resolve) => setTimeout(resolve, 250));
       if (attempt === 79) throw new Error("Vite did not become ready");
     }
+    // Exercise the persistent extension context first. Running it after
+    // hundreds of short-lived Chromium contexts can destabilize extension
+    // service workers on constrained CI hosts even when every context closes.
+    run("node", ["extension/scripts/orb-audit.mjs"]);
     run("node", ["scripts/companion-capability-runtime-audit.mjs"], {
       env: {
         AUDIT_URL: auditUrl,
@@ -63,7 +67,6 @@ if (full) {
       },
     });
     run("node", ["scripts/orb-universe-audit.mjs"], { env: { AUDIT_URL: auditUrl } });
-    run("node", ["extension/scripts/orb-audit.mjs"]);
   } finally {
     server.kill("SIGTERM");
   }

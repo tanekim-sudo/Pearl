@@ -137,6 +137,17 @@ test("extension companion manifest and real handlers have exact parity", async (
     toggleOrbCursor: async (enabled) => { orbCursorEnabled = enabled; return { enabled }; },
   });
   assert.equal(orbCursorEnabled, true);
+  assert.equal(parseExtensionIntent("make this a new orb called Research").name, "createExternalSemanticOrb");
+  let semanticAction = null;
+  const createdOrb = await executeExtensionVerb("createExternalSemanticOrb", { id: "orb-1", name: "Research" }, {
+    animate: async () => {},
+    semanticOrbAction: async (name, args) => {
+      semanticAction = { name, args };
+      return { type: "external-semantic-orb", id: args.id };
+    },
+  });
+  assert.equal(semanticAction.name, "create");
+  assert.equal(createdOrb.id, "orb-1");
   await assert.rejects(
     () => executeExtensionVerb("insertExternalResult", { result: "1" }, {
       resolveResult: () => ({ text: "draft" }),

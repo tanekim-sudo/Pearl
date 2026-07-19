@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 214
-- Passed: 214
+- Total: 238
+- Passed: 238
 - Failed: 0
 - Skipped: 0
 
@@ -62,7 +62,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -88,6 +88,23 @@
 - PASS — `addOrbLens` (app): state-or-visible-artifact-changed
 - PASS — `updateOrbLens` (app): state-or-visible-artifact-changed
 - PASS — `removeOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `createSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `activateSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `moveSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `renameSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `bindSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `addSemanticOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `removeSemanticOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `applySemanticOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `removeSemanticOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `nestSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `unnestSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `mergeSemanticOrbs` (app): state-or-visible-artifact-changed
+- PASS — `composeSemanticOrbs` (app): state-or-visible-artifact-changed
+- PASS — `splitSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `duplicateSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `archiveSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `deleteSemanticOrb` (app): state-or-visible-artifact-changed
 - PASS — `zoomToItem` (app): state-or-visible-artifact-changed
 - PASS — `walkItemPath` (app): state-or-visible-artifact-changed
 - PASS — `stepSharedPath` (app): state-or-visible-artifact-changed
@@ -189,6 +206,13 @@
 - PASS — `saveExternalCaptureAsLens` (extension): controlled extension state changed
 - PASS — `togglePageHighlighter` (extension): controlled extension state changed
 - PASS — `toggleExternalOrbCursor` (extension): controlled extension state changed
+- PASS — `createExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `openExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `addExternalSemanticOrbContext` (extension): controlled extension state changed
+- PASS — `applyExternalSemanticOrbLens` (extension): controlled extension state changed
+- PASS — `mergeExternalSemanticOrbs` (extension): controlled extension state changed
+- PASS — `archiveExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `openExternalSemanticOrbScene` (extension): controlled extension state changed
 - PASS — `queueExternalAction` (extension): controlled extension state changed
 - PASS — `setExternalLensContext` (extension): controlled extension state changed
 - PASS — `previewExternalGo` (extension): controlled extension state changed

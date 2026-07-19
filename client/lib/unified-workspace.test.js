@@ -12,7 +12,9 @@ import {
   hitUnifiedMaterial,
   migrateUnifiedWorkspace,
   routeUnifiedGesture,
+  serializeUnifiedWorkspace,
   selectSceneWorkspace,
+  updateSceneWorkspace,
 } from "./unified-workspace.js";
 
 test("legacy paper and AI records migrate inside page without losing metadata", () => {
@@ -74,6 +76,33 @@ test("Scene v4 preserves unknown fields and leaves world objects unbounded", () 
   assert.equal(migrated.items[0].x, -9000);
   assert.deepEqual(migrated.items[0].futureField, { safe: true });
   assert.equal(migrated.scenes[0].futureSceneField, "kept");
+});
+
+test("semantic orbs migrate and serialize without leaking worker instances", () => {
+  const scene = createScene({
+    id: "scene-orbs",
+    orbInstances: [{ id: "worker-1", role: "specialist", status: "completed" }],
+    semanticOrbs: [{
+      id: "orb-1",
+      name: "Picasso",
+      placement: { x: 120, y: -40 },
+      representation: { kind: "lens", refs: ["lens-picasso"] },
+      workingSet: { context: [{ id: "study-1" }] },
+    }],
+    activeSemanticOrbId: "orb-1",
+  });
+  const workspace = updateSceneWorkspace({
+    version: UNIFIED_WORKSPACE_VERSION,
+    activeSceneId: scene.id,
+    scenes: [scene],
+  }, scene.id, (current) => ({ ...current, items: [{ id: "new-material" }] }));
+  const serialized = JSON.parse(serializeUnifiedWorkspace(workspace));
+  const restored = migrateUnifiedWorkspace({ unified: serialized });
+  assert.equal(restored.scenes[0].semanticOrbs[0].name, "Picasso");
+  assert.deepEqual(restored.scenes[0].semanticOrbs[0].representation.refs, ["lens-picasso"]);
+  assert.equal(restored.scenes[0].activeSemanticOrbId, "orb-1");
+  assert.deepEqual(restored.scenes[0].orbInstances.map((entry) => entry.id), ["worker-1"]);
+  assert.deepEqual(restored.items.map((entry) => entry.id), ["new-material"]);
 });
 
 test("only frame-local material is clamped", () => {

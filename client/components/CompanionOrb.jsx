@@ -46,6 +46,7 @@ export default function CompanionOrb({
   approval = null,
   onApproval,
   onWorkerCancel,
+  onOrbCreate,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -281,7 +282,7 @@ export default function CompanionOrb({
       {expanded && (
         <div className="orb-ledger" role="region" aria-label="Orb command and task ledger">
           <div className="orb-ledger-head">
-            <span>{state.activeIntent?.normalized || state.activeIntent?.raw || phase}</span>
+            <span>{state.activeSemanticOrbId ? `Active orb · ${state.activeSemanticOrbId}` : state.activeIntent?.normalized || state.activeIntent?.raw || phase}</span>
             <button type="button" aria-label="Minimize orb" onClick={() => {
               setExpanded(false);
               updatePlacement({ minimized: !placement.minimized });
@@ -313,6 +314,7 @@ export default function CompanionOrb({
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
             <button type="button" onClick={() => onEmitView?.("context")}>Context</button>
             <button type="button" onClick={() => onEmitView?.("library")}>Library</button>
+            <button type="button" onClick={() => onOrbCreate?.()}>New orb</button>
             <button type="button" aria-pressed={cursorMode} onClick={() => onCursorToggle?.(!cursorMode)}>
               {cursorMode ? "Native cursor" : "Become cursor"}
             </button>

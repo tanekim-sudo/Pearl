@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-18T23:50:06.135Z",
+  "generatedAt": "2026-07-19T00:42:03.924Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -18,9 +18,10 @@
     "editable fields exclude the Triple-Space toggle",
     "same orb identity expands at 360px",
     "orb-mediated side panel views",
+    "extension semantic orb tray creates and persists captured capsules",
     "library and settings remain reachable",
     "MV3 service worker loaded"
   ],
-  "passed": 12,
+  "passed": 13,
   "failed": 0
 }

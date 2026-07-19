@@ -25,7 +25,12 @@ fs.rmSync(profile, { recursive: true, force: true });
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
   ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
-  args: [`--disable-extensions-except=${auditDist}`, `--load-extension=${auditDist}`],
+  args: [
+    "--disable-gpu",
+    "--disable-dev-shm-usage",
+    `--disable-extensions-except=${auditDist}`,
+    `--load-extension=${auditDist}`,
+  ],
 });
 
 try {
@@ -33,7 +38,26 @@ try {
   if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
   await worker.evaluate(async () => {
-    await chrome.storage.local.set({ onboardingComplete: true, onboardingMode: "local" });
+    await chrome.storage.local.set({
+      onboardingComplete: true,
+      onboardingMode: "local",
+      semanticOrbs: [{
+        version: 1,
+        id: "extension-audit-orb",
+        kind: "semantic-orb",
+        sceneId: "extension-captures",
+        name: "Extension audit orb",
+        placement: { x: 0, y: 0, radius: 24 },
+        representation: { kind: "external-capture", refs: [], label: "Extension audit orb", snapshot: null },
+        workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+        parentOrbId: null,
+        childOrbIds: [],
+        lineage: [],
+        provenance: { source: "extension-audit" },
+        archived: false,
+      }],
+      activeSemanticOrbId: "extension-audit-orb",
+    });
     await chrome.storage.session.set({
       lensEverywhereSession: {
         fragments: [],
@@ -119,6 +143,12 @@ try {
     throw new Error("Triple-Space toggled while typing in an editable field");
   }
   await panel.screenshot({ path: path.join(evidence, "07-extension-command-360.png"), fullPage: true });
+  await panel.getByRole("button", { name: "orbs", exact: true }).click();
+  await panel.getByRole("heading", { name: "Orbs" }).waitFor();
+  await panel.getByRole("button", { name: /Extension audit orb/ }).click();
+  await panel.getByRole("button", { name: /Orb from capture|New orb/ }).click();
+  await panel.waitForFunction(async () => (await chrome.storage.local.get("semanticOrbs")).semanticOrbs?.length === 2);
+  await panel.screenshot({ path: path.join(evidence, "07a-extension-semantic-orbs.png"), fullPage: true });
   await panel.getByRole("button", { name: "library", exact: true }).click();
   await panel.screenshot({ path: path.join(evidence, "08-extension-library-360.png"), fullPage: true });
   await panel.getByRole("button", { name: "settings", exact: true }).click();
@@ -142,13 +172,14 @@ try {
       "editable fields exclude the Triple-Space toggle",
       "same orb identity expands at 360px",
       "orb-mediated side panel views",
+      "extension semantic orb tray creates and persists captured capsules",
       "library and settings remain reachable",
       "MV3 service worker loaded",
     ],
-    passed: 12,
+    passed: 13,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 12 checks, 9 screenshots.");
+  console.log("Orb extension audit passed: 13 checks, 10 screenshots.");
 } finally {
   await context.close();
   server.close();

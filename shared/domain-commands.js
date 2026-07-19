@@ -21,6 +21,11 @@ import {
 } from "./generation-plan.js";
 import { createWorkspaceObservation } from "./workspace-observation.js";
 import { applyTasteLensDiff } from "./taste-lens.js";
+import {
+  createSemanticOrb,
+  placeSemanticOrb,
+  semanticOrbFromMaterial,
+} from "./semantic-orbs.js";
 
 export const DOMAIN_COMMAND_VERSION = 1;
 
@@ -35,7 +40,408 @@ function appendObject(state, object) {
   return { ...state, objects };
 }
 
+function updateSemanticOrb(state, id, update) {
+  let found = false;
+  const semanticOrbs = (state.semanticOrbs || []).map((orb) => {
+    if (orb.id !== id) return orb;
+    found = true;
+    return createSemanticOrb(typeof update === "function" ? update(orb) : { ...orb, ...update });
+  });
+  if (!found) throw new Error("semantic orb not found");
+  return { ...state, semanticOrbs };
+}
+
 export const DOMAIN_COMMANDS = Object.freeze({
+  openOrbCreationPreview: {
+    schema: { sceneId: "string", source: "object?", placement: "object?" },
+    preconditions: ["Scene is explicit"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "none",
+    observableEffects: ["semantic-orb-preview-opened"],
+    execute(state, args) {
+      const placement = placeSemanticOrb(state.semanticOrbs, args.placement || {});
+      return {
+        state,
+        result: {
+          type: "semantic-orb-preview",
+          id: null,
+          preview: {
+            sceneId: args.sceneId,
+            source: clone(args.source || null),
+            placement,
+            choices: ["create-empty", "create-from-source", "cancel"],
+          },
+          effects: ["semantic-orb-preview-opened"],
+        },
+      };
+    },
+  },
+  createSemanticOrb: {
+    schema: { sceneId: "string", orb: "object?", material: "object?", placement: "object?", activate: "boolean?" },
+    preconditions: ["Scene is explicit", "source material is preserved"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created"],
+    execute(state, args, context) {
+      const id = String(args.orb?.id || context.idFactory());
+      if ((state.semanticOrbs || []).some((orb) => orb.id === id)) {
+        return { state, result: { type: "idempotent-replay", id, effects: [] } };
+      }
+      const placement = placeSemanticOrb(state.semanticOrbs, args.placement || args.orb?.placement || {});
+      const orb = args.material
+        ? semanticOrbFromMaterial(args.material, { id, sceneId: args.sceneId, placement, now: context.now })
+        : createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+      return {
+        state: {
+          ...state,
+          semanticOrbs: [...(state.semanticOrbs || []), orb],
+          activeSemanticOrbId: args.activate === true ? id : state.activeSemanticOrbId || null,
+        },
+        result: { type: "semantic-orb", id, object: orb, effects: ["semantic-orb-created"] },
+      };
+    },
+  },
+  activateSemanticOrb: {
+    schema: { id: "string?" },
+    preconditions: ["orb exists when id is supplied"],
+    risk: "low", confirmation: "none", undo: "restore-active-semantic-orb",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.activeSemanticOrbId",
+    observableEffects: ["semantic-orb-activation-changed"],
+    execute(state, args) {
+      if (args.id && !(state.semanticOrbs || []).some((orb) => orb.id === args.id && !orb.archived)) {
+        throw new Error("semantic orb not found");
+      }
+      return {
+        state: { ...state, activeSemanticOrbId: args.id || null },
+        result: { type: "semantic-orb-activation", id: args.id || null, effects: ["semantic-orb-activation-changed"] },
+      };
+    },
+  },
+  moveSemanticOrb: {
+    schema: { id: "string", placement: "object" },
+    preconditions: ["orb exists"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-moved"],
+    execute(state, args, context) {
+      const next = updateSemanticOrb(state, args.id, (orb) => ({
+        ...orb,
+        placement: { ...orb.placement, ...args.placement },
+        updatedAt: new Date(context.now).toISOString(),
+      }));
+      return { state: next, result: { type: "semantic-orb-moved", id: args.id, effects: ["semantic-orb-moved"] } };
+    },
+  },
+  renameSemanticOrb: {
+    schema: { id: "string", name: "string" },
+    preconditions: ["orb exists", "name is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-updated"],
+    execute(state, args, context) {
+      const name = String(args.name || "").trim();
+      if (!name) throw new Error("semantic orb name is required");
+      const next = updateSemanticOrb(state, args.id, (orb) => ({
+        ...orb,
+        name: name.slice(0, 80),
+        representation: { ...orb.representation, label: name.slice(0, 120) },
+        updatedAt: new Date(context.now).toISOString(),
+      }));
+      return { state: next, result: { type: "semantic-orb-updated", id: args.id, effects: ["semantic-orb-updated"] } };
+    },
+  },
+  bindSemanticOrb: {
+    schema: { id: "string", representation: "object" },
+    preconditions: ["orb exists", "representation is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-updated"],
+    execute(state, args, context) {
+      const next = updateSemanticOrb(state, args.id, (orb) => ({
+        ...orb,
+        representation: { ...orb.representation, ...clone(args.representation) },
+        updatedAt: new Date(context.now).toISOString(),
+      }));
+      return { state: next, result: { type: "semantic-orb-updated", id: args.id, effects: ["semantic-orb-updated"] } };
+    },
+  },
+  addSemanticOrbContext: {
+    schema: { id: "string", items: "array" },
+    preconditions: ["orb exists", "material is explicit and preserved"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-context-changed"],
+    execute(state, args, context) {
+      const next = updateSemanticOrb(state, args.id, (orb) => {
+        const byId = new Map((orb.workingSet.context || []).map((item) => [item.id, item]));
+        for (const item of args.items || []) if (item?.id) byId.set(String(item.id), clone(item));
+        return {
+          ...orb,
+          workingSet: { ...orb.workingSet, context: [...byId.values()] },
+          updatedAt: new Date(context.now).toISOString(),
+        };
+      });
+      return { state: next, result: { type: "semantic-orb-context", id: args.id, effects: ["semantic-orb-context-changed"] } };
+    },
+  },
+  removeSemanticOrbContext: {
+    schema: { id: "string", itemId: "string" },
+    preconditions: ["orb and context item exist"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-context-changed"],
+    execute(state, args, context) {
+      const next = updateSemanticOrb(state, args.id, (orb) => {
+        const contextItems = (orb.workingSet.context || []).filter((item) => item.id !== args.itemId);
+        if (contextItems.length === (orb.workingSet.context || []).length) throw new Error("semantic orb context item not found");
+        return { ...orb, workingSet: { ...orb.workingSet, context: contextItems }, updatedAt: new Date(context.now).toISOString() };
+      });
+      return { state: next, result: { type: "semantic-orb-context", id: args.id, effects: ["semantic-orb-context-changed"] } };
+    },
+  },
+  applySemanticOrbLens: {
+    schema: { id: "string", lens: "object", strength: "number?" },
+    preconditions: ["orb exists", "Lens is explicit and preserved"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-lenses-changed"],
+    execute(state, args, context) {
+      if (!args.lens?.id) throw new Error("Lens id is required");
+      const next = updateSemanticOrb(state, args.id, (orb) => {
+        const byId = new Map((orb.workingSet.lenses || []).map((lens) => [lens.id, lens]));
+        byId.set(args.lens.id, { ...clone(args.lens), strength: Math.max(0, Math.min(1, Number(args.strength ?? args.lens.strength) || .7)) });
+        return { ...orb, workingSet: { ...orb.workingSet, lenses: [...byId.values()] }, updatedAt: new Date(context.now).toISOString() };
+      });
+      return { state: next, result: { type: "semantic-orb-lens", id: args.id, effects: ["semantic-orb-lenses-changed"] } };
+    },
+  },
+  removeSemanticOrbLens: {
+    schema: { id: "string", lensId: "string" },
+    preconditions: ["orb and Lens exist"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-lenses-changed"],
+    execute(state, args, context) {
+      const next = updateSemanticOrb(state, args.id, (orb) => {
+        const lenses = (orb.workingSet.lenses || []).filter((lens) => lens.id !== args.lensId);
+        if (lenses.length === (orb.workingSet.lenses || []).length) throw new Error("semantic orb Lens not found");
+        return { ...orb, workingSet: { ...orb.workingSet, lenses }, updatedAt: new Date(context.now).toISOString() };
+      });
+      return { state: next, result: { type: "semantic-orb-lens", id: args.id, effects: ["semantic-orb-lenses-changed"] } };
+    },
+  },
+  nestSemanticOrb: {
+    schema: { childId: "string", parentId: "string" },
+    preconditions: ["both orbs exist", "nesting remains acyclic"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-hierarchy-changed"],
+    execute(state, args, context) {
+      if (args.childId === args.parentId) throw new Error("an orb cannot contain itself");
+      const byId = new Map((state.semanticOrbs || []).map((orb) => [orb.id, orb]));
+      const child = byId.get(args.childId);
+      const parent = byId.get(args.parentId);
+      if (!child || !parent) throw new Error("semantic orb not found");
+      let cursor = parent;
+      while (cursor?.parentOrbId) {
+        if (cursor.parentOrbId === child.id) throw new Error("semantic orb nesting must remain acyclic");
+        cursor = byId.get(cursor.parentOrbId);
+      }
+      const priorParent = child.parentOrbId ? byId.get(child.parentOrbId) : null;
+      const at = new Date(context.now).toISOString();
+      const semanticOrbs = (state.semanticOrbs || []).map((orb) => {
+        if (orb.id === child.id) return createSemanticOrb({ ...orb, parentOrbId: parent.id, updatedAt: at });
+        if (orb.id === parent.id) return createSemanticOrb({ ...orb, childOrbIds: [...new Set([...(orb.childOrbIds || []), child.id])], updatedAt: at });
+        if (priorParent && orb.id === priorParent.id) return createSemanticOrb({ ...orb, childOrbIds: (orb.childOrbIds || []).filter((id) => id !== child.id), updatedAt: at });
+        return orb;
+      });
+      return { state: { ...state, semanticOrbs }, result: { type: "semantic-orb-hierarchy", id: child.id, effects: ["semantic-orb-hierarchy-changed"] } };
+    },
+  },
+  unnestSemanticOrb: {
+    schema: { id: "string" },
+    preconditions: ["orb exists"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-hierarchy-changed"],
+    execute(state, args, context) {
+      const child = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
+      if (!child) throw new Error("semantic orb not found");
+      const parentId = child.parentOrbId;
+      const at = new Date(context.now).toISOString();
+      const semanticOrbs = (state.semanticOrbs || []).map((orb) => {
+        if (orb.id === child.id) return createSemanticOrb({ ...orb, parentOrbId: null, updatedAt: at });
+        if (orb.id === parentId) return createSemanticOrb({ ...orb, childOrbIds: (orb.childOrbIds || []).filter((id) => id !== child.id), updatedAt: at });
+        return orb;
+      });
+      return { state: { ...state, semanticOrbs }, result: { type: "semantic-orb-hierarchy", id: child.id, effects: ["semantic-orb-hierarchy-changed"] } };
+    },
+  },
+  mergeSemanticOrbs: {
+    schema: { ids: "array", name: "string?", sceneId: "string" },
+    preconditions: ["at least two orbs exist"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created"],
+    execute(state, args, context) {
+      const ids = [...new Set(args.ids || [])];
+      const sources = (state.semanticOrbs || []).filter((orb) => ids.includes(orb.id));
+      if (sources.length < 2) throw new Error("at least two semantic orbs are required");
+      const id = context.idFactory();
+      const placement = placeSemanticOrb(state.semanticOrbs, {
+        x: sources.reduce((sum, orb) => sum + orb.placement.x, 0) / sources.length,
+        y: sources.reduce((sum, orb) => sum + orb.placement.y, 0) / sources.length,
+      });
+      const byContext = new Map(sources.flatMap((orb) => orb.workingSet.context || []).map((item) => [item.id, item]));
+      const byLens = new Map(sources.flatMap((orb) => orb.workingSet.lenses || []).map((lens) => [lens.id, lens]));
+      const merged = createSemanticOrb({
+        id,
+        sceneId: args.sceneId,
+        name: args.name || sources.map((orb) => orb.name).join(" + "),
+        placement,
+        representation: { kind: "grouped-context", refs: sources.map((orb) => orb.id), label: args.name || "Merged orb" },
+        workingSet: { context: [...byContext.values()], lenses: [...byLens.values()] },
+        lineage: sources.map((orb) => ({ orbId: orb.id, operation: "merge" })),
+      }, { now: context.now });
+      return { state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), merged] }, result: { type: "semantic-orb", id, object: merged, effects: ["semantic-orb-created"] } };
+    },
+  },
+  composeSemanticOrbs: {
+    schema: { ids: "array", name: "string?", sceneId: "string" },
+    preconditions: ["at least two orbs exist", "composition order is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created"],
+    execute(state, args, context) {
+      const execution = DOMAIN_COMMANDS.mergeSemanticOrbs.execute(state, args, context);
+      const composed = createSemanticOrb({
+        ...execution.result.object,
+        name: args.name || (args.ids || []).map((id) => (state.semanticOrbs || []).find((orb) => orb.id === id)?.name || id).join(" → "),
+        lineage: (args.ids || []).map((orbId, index) => ({ orbId, operation: "compose", order: index })),
+        representation: {
+          ...execution.result.object.representation,
+          label: args.name || "Composed orb",
+          composition: { order: [...(args.ids || [])] },
+        },
+      });
+      return {
+        state: {
+          ...execution.state,
+          semanticOrbs: execution.state.semanticOrbs.map((orb) => orb.id === composed.id ? composed : orb),
+        },
+        result: { ...execution.result, object: composed },
+      };
+    },
+  },
+  duplicateSemanticOrb: {
+    schema: { id: "string", name: "string?" },
+    preconditions: ["orb exists"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created"],
+    execute(state, args, context) {
+      const source = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
+      if (!source) throw new Error("semantic orb not found");
+      const id = context.idFactory();
+      const placement = placeSemanticOrb(state.semanticOrbs, { x: source.placement.x + 36, y: source.placement.y + 36 });
+      const duplicate = createSemanticOrb({
+        ...clone(source),
+        id,
+        name: args.name || `${source.name} copy`,
+        placement,
+        parentOrbId: null,
+        childOrbIds: [],
+        lineage: [...(source.lineage || []), { orbId: source.id, operation: "duplicate" }],
+        createdAt: null,
+        updatedAt: null,
+      }, { now: context.now });
+      return { state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), duplicate] }, result: { type: "semantic-orb", id, object: duplicate, effects: ["semantic-orb-created"] } };
+    },
+  },
+  splitSemanticOrb: {
+    schema: { id: "string", sceneId: "string" },
+    preconditions: ["orb exists", "orb has referenced context or child orbs"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created"],
+    execute(state, args, context) {
+      const source = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
+      if (!source) throw new Error("semantic orb not found");
+      const parts = source.workingSet.context?.length
+        ? source.workingSet.context
+        : (source.childOrbIds || []).map((id) => ({ id, kind: "grouped-context", label: id }));
+      if (!parts.length) throw new Error("semantic orb has nothing to split");
+      let occupied = [...(state.semanticOrbs || [])];
+      const additions = parts.map((part, index) => {
+        const id = context.idFactory();
+        const placement = placeSemanticOrb(occupied, {
+          x: source.placement.x + Math.cos(index * 2.3999632297) * 80,
+          y: source.placement.y + Math.sin(index * 2.3999632297) * 80,
+        });
+        const orb = semanticOrbFromMaterial(part, { id, sceneId: args.sceneId, placement, now: context.now });
+        occupied = [...occupied, orb];
+        return createSemanticOrb({ ...orb, lineage: [...(orb.lineage || []), { orbId: source.id, operation: "split" }] });
+      });
+      return {
+        state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), ...additions] },
+        result: { type: "semantic-orb-split", id: source.id, objects: additions, effects: ["semantic-orb-created"] },
+      };
+    },
+  },
+  archiveSemanticOrb: {
+    schema: { id: "string", archived: "boolean?" },
+    preconditions: ["orb exists"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["semantic-orb-archived"],
+    execute(state, args, context) {
+      const archived = args.archived !== false;
+      const next = updateSemanticOrb(state, args.id, (orb) => ({ ...orb, archived, updatedAt: new Date(context.now).toISOString() }));
+      return {
+        state: { ...next, activeSemanticOrbId: archived && state.activeSemanticOrbId === args.id ? null : state.activeSemanticOrbId },
+        result: { type: "semantic-orb-archived", id: args.id, effects: ["semantic-orb-archived"] },
+      };
+    },
+  },
+  deleteSemanticOrb: {
+    schema: { id: "string" },
+    preconditions: ["scoped destructive confirmation was granted"],
+    risk: "high", confirmation: "framework", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion"],
+    persistenceEffect: "scene.semanticOrbs.delete",
+    observableEffects: ["semantic-orb-deleted"],
+    execute(state, args) {
+      if (!(state.semanticOrbs || []).some((orb) => orb.id === args.id)) throw new Error("semantic orb not found");
+      const semanticOrbs = (state.semanticOrbs || [])
+        .filter((orb) => orb.id !== args.id)
+        .map((orb) => createSemanticOrb({
+          ...orb,
+          parentOrbId: orb.parentOrbId === args.id ? null : orb.parentOrbId,
+          childOrbIds: (orb.childOrbIds || []).filter((id) => id !== args.id),
+        }));
+      return {
+        state: { ...state, semanticOrbs, activeSemanticOrbId: state.activeSemanticOrbId === args.id ? null : state.activeSemanticOrbId },
+        result: { type: "semantic-orb-deleted", id: args.id, effects: ["semantic-orb-deleted"] },
+      };
+    },
+  },
   addOrbLens: {
     schema: { lens: "object", strength: "number?" },
     preconditions: ["Lens is explicit and preserved"],

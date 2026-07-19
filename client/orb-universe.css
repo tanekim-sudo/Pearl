@@ -468,3 +468,35 @@ html[data-lens-orb-cursor-active="true"] * {
 @media (prefers-reduced-motion: reduce) {
   .orb-cursor-layer { transition: none; }
 }
+
+.semantic-orb-layer { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; }
+.semantic-orb-new { position:absolute; left:22px; bottom:22px; z-index:3; display:flex; align-items:center; gap:8px; min-height:38px; padding:7px 12px; border:1px solid rgba(243,221,160,.22); border-radius:999px; background:rgba(9,9,8,.82); color:rgba(255,249,230,.9); pointer-events:auto; backdrop-filter:blur(14px); }
+.semantic-orb-new span { color:#efd894; font-size:19px; }
+.semantic-orb-capsule,.semantic-orb-cluster { position:absolute; left:calc(50% + var(--semantic-x)); top:calc(50% + var(--semantic-y)); transform:translate(-50%,-50%); pointer-events:auto; }
+.semantic-orb-capsule { z-index:2; }
+.semantic-orb-capsule.active { z-index:8; }
+.semantic-orb-button,.semantic-orb-cluster { width:54px; height:54px; padding:0; border:0; border-radius:50%; background:transparent; color:rgba(255,249,230,.86); touch-action:none; }
+.semantic-orb-button svg,.semantic-orb-cluster svg { display:block; width:54px; height:54px; overflow:visible; filter:drop-shadow(0 0 10px rgba(235,207,128,.18)); }
+.semantic-orb-halo { fill:rgba(238,218,161,.035); stroke:rgba(244,225,168,.3); stroke-width:.7; }
+.semantic-orb-core { fill:rgba(255,250,229,.86); stroke:rgba(255,242,198,.7); stroke-width:.8; }
+.semantic-orb-trace { fill:none; stroke:rgba(231,204,132,.25); stroke-width:.7; stroke-dasharray:1.5 4; }
+.semantic-orb-button[aria-pressed="true"] .semantic-orb-halo { fill:rgba(238,218,161,.08); stroke:rgba(255,233,169,.72); animation:semantic-orb-breathe 2.4s ease-in-out infinite; }
+.semantic-orb-button>span { position:absolute; top:51px; left:50%; max-width:112px; transform:translateX(-50%); overflow:hidden; color:rgba(255,250,232,.72); font-size:10px; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+.semantic-orb-button>i { position:absolute; top:1px; right:0; display:grid; width:17px; height:17px; place-items:center; border:1px solid rgba(250,229,168,.28); border-radius:50%; background:#11100d; color:#ead28d; font-size:9px; font-style:normal; }
+.semantic-orb-cluster { z-index:6; }
+.semantic-orb-cluster b { position:absolute; inset:0; display:grid; place-items:center; color:#312913; font-size:12px; }
+.semantic-orb-inspector { position:absolute; left:64px; top:-24px; width:min(260px,calc(100vw - 110px)); padding:12px; border:1px solid rgba(241,218,153,.18); border-radius:16px; background:rgba(12,11,9,.94); box-shadow:0 18px 50px rgba(0,0,0,.42); backdrop-filter:blur(18px); }
+.semantic-orb-inspector form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+.semantic-orb-inspector input { min-width:0; border:1px solid rgba(241,218,153,.14); border-radius:8px; background:rgba(255,255,255,.035); color:#fff9e8; }
+.semantic-orb-inspector small { display:block; margin:9px 0; color:rgba(255,249,230,.52); }
+.semantic-orb-inspector div,.semantic-orb-compose-chooser { display:flex; gap:6px; }
+.semantic-orb-inspector button,.semantic-orb-compose-chooser button { border:1px solid rgba(241,218,153,.16); border-radius:999px; background:rgba(255,255,255,.035); color:rgba(255,249,230,.8); }
+.semantic-orb-compose-chooser { position:absolute; left:50%; bottom:24px; z-index:12; align-items:center; padding:10px 12px; border:1px solid rgba(241,218,153,.22); border-radius:18px; background:rgba(10,9,8,.96); color:rgba(255,249,230,.82); pointer-events:auto; transform:translateX(-50%); }
+@keyframes semantic-orb-breathe { 50% { transform:scale(1.08); opacity:.76; } }
+@media (max-width:640px) {
+  .semantic-orb-inspector { position:fixed; left:12px; right:12px; top:auto; bottom:72px; width:auto; }
+  .semantic-orb-compose-chooser { right:12px; bottom:70px; left:12px; flex-wrap:wrap; transform:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .semantic-orb-button[aria-pressed="true"] .semantic-orb-halo { animation:none; }
+}

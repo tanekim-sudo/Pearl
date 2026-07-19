@@ -15,6 +15,17 @@ export const EXTENSION_VERBS = Object.freeze({
       enabled: result?.enabled ?? args.enabled ?? true,
     };
   },
+  createExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("create", args),
+  openExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("open", args),
+  addExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("add-context", args),
+  applyExternalSemanticOrbLens: ({ args, semanticOrbAction }) => semanticOrbAction("apply-lens", args),
+  mergeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("merge", args),
+  archiveExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("archive", args),
+  openExternalSemanticOrbScene: ({ args, action }) => action("open-web-handoff", {
+    surface: "semantic-orb-scene",
+    orbId: args.id,
+    preservePayload: true,
+  }),
   queueExternalAction: ({ args, action, resolveLens }) => action("queue-lens", { lens: resolveLens(args.action) }),
   setExternalLensContext: ({ args, action, resolveGenerator }) => action("set-generator", { generator: resolveGenerator(args.lens) }),
   previewExternalGo: ({ readPreview }) => Promise.resolve(readPreview()),
@@ -132,6 +143,12 @@ export function parseExtensionIntent(text) {
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
   if (/^(?:make|turn) (?:the )?orb (?:into|on as) (?:my |the )?cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: true } };
   if (/^(?:return to|restore|use) (?:the )?native cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: false } };
+  const createOrb = value.match(/^(?:make|create|save)(?: this| the selection)? (?:as )?(?:a )?new orb(?: called (.+))?$/i);
+  if (createOrb) return { name: "createExternalSemanticOrb", args: { name: createOrb[1] || "Untitled orb" } };
+  const openOrb = value.match(/^open (?:the )?(.+?) orb$/i);
+  if (openOrb) return { name: "openExternalSemanticOrb", args: { id: openOrb[1] } };
+  const addOrb = value.match(/^add (?:this|the selection|current capture) to (?:the )?(.+?) orb$/i);
+  if (addOrb) return { name: "addExternalSemanticOrbContext", args: { id: addOrb[1] } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
   if (/^preview( the)? (stack|go)$/i.test(value)) return { name: "previewExternalGo", args: {} };
   if (/^(show|open|review)( the)? (library )?import$/i.test(value)) return { name: "showExternalLibraryImport", args: {} };

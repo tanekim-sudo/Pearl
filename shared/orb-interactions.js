@@ -6,6 +6,7 @@ export const ORB_DROP_TARGETS = Object.freeze([
   "stage",
   "output-frame",
   "candidate-constellation",
+  "semantic-orb",
   "worker-orb",
 ]);
 
@@ -87,6 +88,10 @@ export function resolveOrbGesture({ source, target, modifiers = {}, ambiguity = 
       return { type: "frame-materialize", command: "materializeInOutputFrame", preserving: true, reversible: true };
     case "candidate-constellation":
       return { type: "candidate-branch", command: "queueBranchMaterial", preserving: true, reversible: true };
+    case "semantic-orb":
+      return source.kind === "semantic-orb"
+        ? { type: "orb-composition-chooser", command: "nestSemanticOrb", preserving: true, reversible: true, choices: ["nest", "merge", "compose"] }
+        : { type: "semantic-orb-context", command: "addSemanticOrbContext", preserving: true, reversible: true };
     case "worker-orb":
       return { type: "worker-context", command: "assignWorkerContext", preserving: true, reversible: true };
     default:

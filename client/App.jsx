@@ -138,6 +138,7 @@ import {
   migrateUnifiedWorkspace,
   selectSceneWorkspace,
   serializeUnifiedWorkspace,
+  updateSceneWorkspace,
 } from "./lib/unified-workspace.js";
 import LensTreeEditor from "./components/LensTreeEditor.jsx";
 import CognitionGitHeader from "./components/CognitionGitHeader.jsx";
@@ -2697,16 +2698,21 @@ export default function App({ sceneId = null }) {
   }, [aiNodes]);
   useEffect(() => {
     try {
-      const serialized = serializeUnifiedWorkspace({
+      // Rebase canvas writes onto the latest Scene snapshot. The orb shell can
+      // update working sets and semantic capsules while this frame is mounted;
+      // serializing the mount-time snapshot would silently erase those edits.
+      const latest = migrateUnifiedWorkspace({
+        unified: load(UNIFIED_WORKSPACE_KEY, null) || initialUnifiedWorkspace,
+      });
+      const activeSceneId = sceneId || initialUnifiedWorkspace.activeSceneId || latest.activeSceneId;
+      const rebased = updateSceneWorkspace(latest, activeSceneId, (current) => ({
+        ...current,
         items,
         nodes: aiNodes,
         camera,
-        scenes: initialUnifiedWorkspace.scenes,
-        activeSceneId: initialUnifiedWorkspace.activeSceneId,
-        frames: sceneFrames,
-        orbInstances: initialUnifiedWorkspace.orbInstances,
-        workingSet: initialUnifiedWorkspace.workingSet,
-      });
+        frames: current.frames?.length ? current.frames : sceneFrames,
+      }));
+      const serialized = serializeUnifiedWorkspace(rebased);
       localStorage.setItem(
         UNIFIED_WORKSPACE_KEY,
         serialized
@@ -2724,7 +2730,7 @@ export default function App({ sceneId = null }) {
     } catch {
       /* quota / privacy mode: legacy stores still provide recovery */
     }
-  }, [items, aiNodes, camera, initialUnifiedWorkspace, sceneFrames]);
+  }, [items, aiNodes, camera, initialUnifiedWorkspace, sceneFrames, sceneId]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
@@ -12043,6 +12049,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     });
   }
 
+  function currentSemanticScene() {
+    try {
+      const workspace = migrateUnifiedWorkspace({ unified: load(UNIFIED_WORKSPACE_KEY, null) || initialUnifiedWorkspace });
+      return workspace.scenes?.find((entry) => entry.id === (sceneId || workspace.activeSceneId)) || null;
+    } catch {
+      return null;
+    }
+  }
+
   registerDirectorVerbs({
     caption: async (a, tk) => {
       tk.caption(a.text || "");
@@ -12092,6 +12107,89 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     removeOrbLens: async (a, tk) => {
       await dispatchOrbSurfaceCommand("lens:orb-lens-command", { action: "remove", id: a.id });
       return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
+    },
+    createSemanticOrb: async (a) => {
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "createSemanticOrb",
+        args: {
+          sceneId: a.sceneId || sceneId,
+          placement: a.placement,
+          material: a.material,
+          orb: a.material ? (a.id ? { id: a.id } : undefined) : { id: a.id, name: a.name || "Untitled orb" },
+          activate: true,
+        },
+      });
+      return { effectId: `semantic-orb-created:${receipt.id}`, id: receipt.id };
+    },
+    activateSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: a.id } });
+      return { effectId: `semantic-orb-active:${a.id || "scene"}`, id: a.id || null };
+    },
+    moveSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "moveSemanticOrb", args: a });
+      return { effectId: `semantic-orb-moved:${a.id}`, id: a.id };
+    },
+    renameSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "renameSemanticOrb", args: a });
+      return { effectId: `semantic-orb-renamed:${a.id}`, id: a.id };
+    },
+    bindSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "bindSemanticOrb", args: a });
+      return { effectId: `semantic-orb-bound:${a.id}`, id: a.id };
+    },
+    addSemanticOrbContext: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "addSemanticOrbContext", args: a });
+      return { effectId: `semantic-orb-context:${a.id}`, id: a.id };
+    },
+    removeSemanticOrbContext: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "removeSemanticOrbContext", args: a });
+      return { effectId: `semantic-orb-context:${a.id}`, id: a.id };
+    },
+    applySemanticOrbLens: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "applySemanticOrbLens", args: a });
+      return { effectId: `semantic-orb-lens:${a.id}`, id: a.id };
+    },
+    removeSemanticOrbLens: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "removeSemanticOrbLens", args: a });
+      return { effectId: `semantic-orb-lens:${a.id}`, id: a.id };
+    },
+    nestSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "nestSemanticOrb", args: a });
+      return { effectId: `semantic-orb-nested:${a.childId}`, id: a.childId };
+    },
+    unnestSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "unnestSemanticOrb", args: a });
+      return { effectId: `semantic-orb-unnested:${a.id}`, id: a.id };
+    },
+    mergeSemanticOrbs: async (a) => {
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "mergeSemanticOrbs", args: { ...a, sceneId: a.sceneId || sceneId },
+      });
+      return { effectId: `semantic-orb-merged:${receipt.id}`, id: receipt.id };
+    },
+    composeSemanticOrbs: async (a) => {
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "composeSemanticOrbs", args: { ...a, sceneId: a.sceneId || sceneId },
+      });
+      return { effectId: `semantic-orb-composed:${receipt.id}`, id: receipt.id };
+    },
+    splitSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "splitSemanticOrb", args: { ...a, sceneId: a.sceneId || sceneId },
+      });
+      return { effectId: `semantic-orb-split:${a.id}`, id: a.id };
+    },
+    duplicateSemanticOrb: async (a) => {
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "duplicateSemanticOrb", args: a });
+      return { effectId: `semantic-orb-duplicated:${receipt.id}`, id: receipt.id };
+    },
+    archiveSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "archiveSemanticOrb", args: a });
+      return { effectId: `semantic-orb-archived:${a.id}`, id: a.id };
+    },
+    deleteSemanticOrb: async (a) => {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "deleteSemanticOrb", args: a });
+      return { effectId: `semantic-orb-deleted:${a.id}`, id: a.id };
     },
     switchTool: async (a, tk) => {
       const target =
@@ -13999,9 +14097,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "generation-candidate", id: node.id, effects: ["generation-candidate-retried"] };
     },
     observeWorkspace: async (a) => {
+      const semanticScene = currentSemanticScene();
       const snapshot = buildWorkspaceSnapshot({
         items: itemsRef.current.filter((item) => itemVisibleOnPage(item, activePageId, worldFilter)),
         nodes: aiNodesRef.current,
+        semanticOrbs: semanticScene?.semanticOrbs || [],
+        activeSemanticOrbId: semanticScene?.activeSemanticOrbId || null,
         selectedItemIds: selRef.current,
         selectedNodeIds: selectedAiNodeIdsRef.current,
         highlightedIds: highlightSelectionRef.current,
@@ -14015,9 +14116,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     interpretThroughLens: async (a, tk, ctx) => {
       const lens = directorResolveGenerator(a.lens, ctx);
       if (!lens) throw new Error("choose a Lens");
+      const semanticScene = currentSemanticScene();
       const snapshot = buildWorkspaceSnapshot({
         items: itemsRef.current.filter((item) => itemVisibleOnPage(item, activePageId, worldFilter)),
         nodes: aiNodesRef.current,
+        semanticOrbs: semanticScene?.semanticOrbs || [],
+        activeSemanticOrbId: semanticScene?.activeSemanticOrbId || null,
         selectedItemIds: selRef.current,
         selectedNodeIds: selectedAiNodeIdsRef.current,
         highlightedIds: highlightSelectionRef.current,

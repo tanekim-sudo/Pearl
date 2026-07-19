@@ -70,6 +70,22 @@ test("Scene scopes distinguish unbounded Stage, Output Frame, orb context, and A
   );
 });
 
+test("semantic orb scope resolves the active capsule, children, and referenced sources", () => {
+  const scoped = [
+    { id: "orb-a", kind: "semantic-orb", sceneId: "scene-1", placement: { x: 0, y: 0 }, representation: { refs: ["note-a"] } },
+    { id: "orb-child", kind: "semantic-orb", sceneId: "scene-1", parentOrbId: "orb-a", placement: { x: 20, y: 20 } },
+    { id: "note-a", type: "text", sceneId: "scene-1", text: "Grounded source" },
+    { id: "other", kind: "semantic-orb", sceneId: "scene-1", placement: { x: 300, y: 300 } },
+  ];
+  const observation = createWorkspaceObservation({
+    scope: "semantic-orb",
+    semanticOrbId: "orb-a",
+    objects: scoped,
+  });
+  assert.deepEqual(observation.objects.map((object) => object.id), ["orb-a", "orb-child", "note-a"]);
+  assert.equal(observation.objects[0].sourceIds[0], "note-a");
+});
+
 test("scene relationships remain grounded to stable object IDs", () => {
   const observation = createWorkspaceObservation({
     scope: "paper",

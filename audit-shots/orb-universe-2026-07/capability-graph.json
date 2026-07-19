@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-fd3d9ec8",
+  "fingerprint": "fnv1a-3572cff4",
   "counts": {
-    "nodes": 214,
+    "nodes": 238,
     "edges": 516
   },
   "nodes": [
@@ -7792,6 +7792,2479 @@
       "platform": "app"
     },
     {
+      "id": "companion.capability.app.createSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "createSemanticOrb",
+      "purpose": "Create and activate a compact persistent orb representing explicit material or an emerging idea",
+      "examples": [
+        "make these notes a new orb called Picasso studies"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sceneId": "string",
+          "id": "string?",
+          "name": "string?",
+          "material": "object?",
+          "placement": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted",
+        "material is preserved",
+        "Output Frame exists",
+        "explicit GO before generation",
+        "worker exists",
+        "context is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "scene.items.append",
+        "scene.pendingBranches.append",
+        "scene.orbInstances.update"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-scene-snapshot",
+        "remove-queued-branch",
+        "restore-worker-context"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "scene-material-created",
+        "frame-material-created",
+        "branch-material-queued",
+        "worker-context-changed"
+      ],
+      "tests": [
+        "capability-createSemanticOrb",
+        "feature:scene.semantic-orbs",
+        "feature:interaction.orb-gesture"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs",
+        "interaction.orb-gesture"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb",
+        "addOrbContext",
+        "addOrbLens",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.activateSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "activateSemanticOrb",
+      "purpose": "Open one semantic orb as the active agent capsule or return to the Scene shell",
+      "examples": [
+        "open the Picasso studies orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-activateSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.moveSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "moveSemanticOrb",
+      "purpose": "Move a semantic orb without changing what it represents",
+      "examples": [
+        "move the Picasso orb to the upper left"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "placement": "object"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-moveSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.renameSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "renameSemanticOrb",
+      "purpose": "Rename a semantic orb",
+      "examples": [
+        "rename this orb Visual grammar"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "name": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-renameSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.bindSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "bindSemanticOrb",
+      "purpose": "Bind a semantic orb to a Move, Function, Lens, Scene, query, candidate, branch, transcript, or material",
+      "examples": [
+        "make this orb represent my investor memo Function"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "representation": "object"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-bindSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.addSemanticOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "addSemanticOrbContext",
+      "purpose": "Add preserved material to a semantic orb",
+      "examples": [
+        "put these three references into the Picasso orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "items": "array"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-addSemanticOrbContext",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeSemanticOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeSemanticOrbContext",
+      "purpose": "Remove context from a semantic orb without deleting the source",
+      "examples": [
+        "remove that draft from this orb but keep the source"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "itemId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-removeSemanticOrbContext",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.applySemanticOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "applySemanticOrbLens",
+      "purpose": "Apply an editable Lens atmosphere to a semantic orb",
+      "examples": [
+        "apply my skeptical Lens to the Picasso orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "lens": "object",
+          "strength": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "model",
+        "maxCalls": 1
+      },
+      "timeoutMs": 120000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": true,
+        "boundary": "configured-provider-or-app-gateway"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "lens-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-applySemanticOrbLens",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeSemanticOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeSemanticOrbLens",
+      "purpose": "Remove a Lens from a semantic orb",
+      "examples": [
+        "remove the skeptical Lens from this orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "lensId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "lens-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-removeSemanticOrbLens",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.nestSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "nestSemanticOrb",
+      "purpose": "Nest one semantic orb inside another",
+      "examples": [
+        "put the color orb inside the Picasso orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "childId": "string",
+          "parentId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-nestSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.unnestSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "unnestSemanticOrb",
+      "purpose": "Move a nested semantic orb back to the Scene",
+      "examples": [
+        "take the color orb back out"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-unnestSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.mergeSemanticOrbs",
+      "version": 1,
+      "kind": "capability",
+      "name": "mergeSemanticOrbs",
+      "purpose": "Merge semantic orb contexts into a new preserved capsule",
+      "examples": [
+        "merge these three orbs into one"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ids": "array",
+          "name": "string?",
+          "sceneId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-mergeSemanticOrbs",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.composeSemanticOrbs",
+      "version": 1,
+      "kind": "capability",
+      "name": "composeSemanticOrbs",
+      "purpose": "Compose semantic orbs in an explicit order",
+      "examples": [
+        "compose the evidence orb then the concise writing orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ids": "array",
+          "name": "string?",
+          "sceneId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-composeSemanticOrbs",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.splitSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "splitSemanticOrb",
+      "purpose": "Split a semantic orb into source-preserving capsules",
+      "examples": [
+        "split this orb back into its source ideas"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "sceneId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-splitSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.duplicateSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "duplicateSemanticOrb",
+      "purpose": "Duplicate a semantic orb with lineage",
+      "examples": [
+        "duplicate this orb for a new direction"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-duplicateSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.archiveSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "archiveSemanticOrb",
+      "purpose": "Archive or restore a semantic orb without deleting it",
+      "examples": [
+        "archive this orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "archived": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-archiveSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.deleteSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "deleteSemanticOrb",
+      "purpose": "Delete one semantic orb after scoped confirmation",
+      "examples": [
+        "delete only the abandoned orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-deleteSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
       "id": "companion.capability.app.zoomToItem",
       "version": 1,
       "kind": "capability",
@@ -14477,7 +16950,12 @@
         "Lens is active on the orb",
         "explicit GO before generation",
         "worker exists",
-        "context is explicit"
+        "context is explicit",
+        "orb exists",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit"
       ],
       "requiredObservations": [
         "selection",
@@ -14525,7 +17003,9 @@
         "scene.workingSet.context",
         "scene.workingSet.lenses",
         "scene.pendingBranches.append",
-        "scene.orbInstances.update"
+        "scene.orbInstances.update",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.append"
       ],
       "undo": [
         "remove-created-version",
@@ -14534,7 +17014,8 @@
         "restore-orb-context",
         "restore-orb-lenses",
         "remove-queued-branch",
-        "restore-worker-context"
+        "restore-worker-context",
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -14559,7 +17040,10 @@
         "orb-context-changed",
         "orb-lenses-changed",
         "branch-material-queued",
-        "worker-context-changed"
+        "worker-context-changed",
+        "semantic-orb-context-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-semanticTransfer",
@@ -14589,7 +17073,11 @@
         "updateOrbLens",
         "removeOrbLens",
         "queueBranchMaterial",
-        "assignWorkerContext"
+        "assignWorkerContext",
+        "addSemanticOrbContext",
+        "nestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17676,6 +20164,1053 @@
       "platform": "extension"
     },
     {
+      "id": "companion.capability.extension.createExternalSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "createExternalSemanticOrb",
+      "purpose": "Create a compact persistent orb from the current capture or an emerging idea",
+      "examples": [
+        "please create a compact persistent orb from the current capture or an emerging idea"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?",
+          "name": "string?",
+          "material": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted",
+        "material is preserved",
+        "Output Frame exists",
+        "explicit GO before generation",
+        "worker exists",
+        "context is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "scene.items.append",
+        "scene.pendingBranches.append",
+        "scene.orbInstances.update"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-scene-snapshot",
+        "remove-queued-branch",
+        "restore-worker-context"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "scene-material-created",
+        "frame-material-created",
+        "branch-material-queued",
+        "worker-context-changed"
+      ],
+      "tests": [
+        "capability-createExternalSemanticOrb",
+        "feature:scene.semantic-orbs",
+        "feature:interaction.orb-gesture"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs",
+        "interaction.orb-gesture"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb",
+        "addOrbContext",
+        "addOrbLens",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.openExternalSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "openExternalSemanticOrb",
+      "purpose": "Open a saved semantic orb in the extension tray",
+      "examples": [
+        "please open a saved semantic orb in the extension tray"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-openExternalSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.addExternalSemanticOrbContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "addExternalSemanticOrbContext",
+      "purpose": "Add the current capture or explicit material to a saved orb",
+      "examples": [
+        "please add the current capture or explicit material to a saved orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "items": "array?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-addExternalSemanticOrbContext",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.applyExternalSemanticOrbLens",
+      "version": 1,
+      "kind": "capability",
+      "name": "applyExternalSemanticOrbLens",
+      "purpose": "Apply a synced Lens to a saved orb",
+      "examples": [
+        "please apply a synced Lens to a saved orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "lensId": "string",
+          "strength": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "model",
+        "maxCalls": 1
+      },
+      "timeoutMs": 120000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": true,
+        "boundary": "configured-provider-or-app-gateway"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "lens-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-applyExternalSemanticOrbLens",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "lens"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.mergeExternalSemanticOrbs",
+      "version": 1,
+      "kind": "capability",
+      "name": "mergeExternalSemanticOrbs",
+      "purpose": "Merge saved orb contexts into a new capsule",
+      "examples": [
+        "please merge saved orb contexts into a new capsule"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ids": "array",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-mergeExternalSemanticOrbs",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.archiveExternalSemanticOrb",
+      "version": 1,
+      "kind": "capability",
+      "name": "archiveExternalSemanticOrb",
+      "purpose": "Archive or restore a saved orb",
+      "examples": [
+        "please archive or restore a saved orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string",
+          "archived": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-archiveExternalSemanticOrb",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.openExternalSemanticOrbScene",
+      "version": 1,
+      "kind": "capability",
+      "name": "openExternalSemanticOrbScene",
+      "purpose": "Open the authoritative web Scene to spatially arrange a saved orb",
+      "examples": [
+        "please open the authoritative web Scene to spatially arrange a saved orb"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-openExternalSemanticOrbScene",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
       "id": "companion.capability.extension.queueExternalAction",
       "version": 1,
       "kind": "capability",
@@ -18542,7 +22077,12 @@
         "Output Frame exists",
         "explicit GO before generation",
         "worker exists",
-        "context is explicit"
+        "context is explicit",
+        "orb exists",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit"
       ],
       "requiredObservations": [
         "selection",
@@ -18588,7 +22128,9 @@
         "scene.workingSet.lenses",
         "scene.items.append",
         "scene.pendingBranches.append",
-        "scene.orbInstances.update"
+        "scene.orbInstances.update",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.append"
       ],
       "undo": [
         "none",
@@ -18597,7 +22139,8 @@
         "restore-orb-lenses",
         "restore-scene-snapshot",
         "remove-queued-branch",
-        "restore-worker-context"
+        "restore-worker-context",
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -18616,7 +22159,10 @@
         "scene-material-created",
         "frame-material-created",
         "branch-material-queued",
-        "worker-context-changed"
+        "worker-context-changed",
+        "semantic-orb-context-changed",
+        "semantic-orb-hierarchy-changed",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-openExternalArtifact",
@@ -18635,7 +22181,11 @@
         "materializeOnStage",
         "materializeInOutputFrame",
         "queueBranchMaterial",
-        "assignWorkerContext"
+        "assignWorkerContext",
+        "addSemanticOrbContext",
+        "nestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",

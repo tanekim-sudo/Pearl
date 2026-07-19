@@ -96,6 +96,37 @@ test("orb Lens atmosphere uses canonical reversible commands", async () => {
   assert.deepEqual(removed.undo(), updated.state);
 });
 
+test("semantic orb capsules preserve sources, activate singly, nest, merge, and undo", async () => {
+  let nextId = 0;
+  const options = { idFactory: () => `orb-${++nextId}`, now: 100 };
+  const initial = { semanticOrbs: [], activeSemanticOrbId: null };
+  const created = await executeDomainCommand("createSemanticOrb", initial, {
+    sceneId: "scene-1",
+    material: { id: "note-1", type: "text", text: "Keep this source." },
+    placement: { x: 20, y: 30 },
+  }, options);
+  assert.equal(created.state.semanticOrbs[0].representation.refs[0], "note-1");
+  assert.equal(created.state.semanticOrbs[0].workingSet.context[0].text, "Keep this source.");
+  const second = await executeDomainCommand("createSemanticOrb", created.state, {
+    sceneId: "scene-1",
+    orb: { name: "Taste", representation: { kind: "lens", refs: ["lens-1"] } },
+    placement: { x: 20, y: 30 },
+  }, options);
+  assert.notDeepEqual(second.state.semanticOrbs[0].placement, second.state.semanticOrbs[1].placement);
+  const active = await executeDomainCommand("activateSemanticOrb", second.state, { id: "orb-1" }, options);
+  assert.equal(active.state.activeSemanticOrbId, "orb-1");
+  const nested = await executeDomainCommand("nestSemanticOrb", active.state, { childId: "orb-1", parentId: "orb-2" }, options);
+  assert.equal(nested.state.semanticOrbs.find((orb) => orb.id === "orb-1").parentOrbId, "orb-2");
+  const merged = await executeDomainCommand("mergeSemanticOrbs", nested.state, {
+    ids: ["orb-1", "orb-2"],
+    sceneId: "scene-1",
+    name: "Combined",
+  }, options);
+  assert.equal(merged.state.semanticOrbs.length, 3);
+  assert.deepEqual(merged.result.object.representation.refs, ["orb-1", "orb-2"]);
+  assert.equal(merged.undo().semanticOrbs.length, 2);
+});
+
 test("every command declares complete release contract metadata", () => {
   for (const [name, command] of Object.entries(DOMAIN_COMMANDS)) {
     for (const field of ["schema", "preconditions", "risk", "confirmation", "undo", "surfaces", "persistenceEffect", "observableEffects", "execute"]) {

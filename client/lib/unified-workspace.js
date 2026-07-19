@@ -1,5 +1,6 @@
 import { AI_NODE_RADIUS } from "./ai-constants.js";
 import { PAPER_HEIGHT, PAPER_MARGIN, PAPER_WIDTH, bboxClampOffset } from "./paper.js";
+import { normalizeSemanticOrbs } from "../../shared/semantic-orbs.js";
 
 export const UNIFIED_WORKSPACE_VERSION = 4;
 export const UNIFIED_WORKSPACE_KEY = "lens.scenes.v4";
@@ -155,6 +156,10 @@ export function createOutputFrame(value = {}) {
 
 export function createScene(value = {}) {
   const frames = Array.isArray(value.frames) ? value.frames.map(createOutputFrame) : [];
+  const semanticOrbs = normalizeSemanticOrbs(value.semanticOrbs);
+  const activeSemanticOrbId = semanticOrbs.some((orb) => orb.id === value.activeSemanticOrbId && !orb.archived)
+    ? value.activeSemanticOrbId
+    : null;
   return {
     ...value,
     version: UNIFIED_WORKSPACE_VERSION,
@@ -166,6 +171,8 @@ export function createScene(value = {}) {
     items: Array.isArray(value.items) ? value.items : [],
     nodes: Array.isArray(value.nodes) ? value.nodes : [],
     orbInstances: Array.isArray(value.orbInstances) ? value.orbInstances : [],
+    semanticOrbs,
+    activeSemanticOrbId,
     camera: finiteCamera(value.camera),
     workingSet: {
       context: [],
@@ -177,6 +184,30 @@ export function createScene(value = {}) {
     },
     metadata: { createdFrom: "explicit", ...(value.metadata || {}) },
     frames,
+  };
+}
+
+export function updateSceneWorkspace(workspace, sceneId, update) {
+  const source = migrateUnifiedWorkspace({ unified: workspace });
+  const index = (source.scenes || []).findIndex((scene) => scene.id === sceneId);
+  if (index < 0) throw new Error(`Scene "${sceneId}" was not found`);
+  const current = createScene(source.scenes[index]);
+  const next = createScene(typeof update === "function" ? update(current) : { ...current, ...(update || {}) });
+  if (next.id !== current.id) throw new Error("Scene identity cannot change during an update");
+  const scenes = [...source.scenes];
+  scenes[index] = next;
+  return {
+    ...source,
+    scenes,
+    activeSceneId: sceneId,
+    items: next.items,
+    nodes: next.nodes,
+    frames: next.frames,
+    orbInstances: next.orbInstances,
+    semanticOrbs: next.semanticOrbs,
+    activeSemanticOrbId: next.activeSemanticOrbId,
+    workingSet: next.workingSet,
+    camera: next.camera,
   };
 }
 
@@ -203,6 +234,8 @@ export function selectSceneWorkspace(workspace, sceneId, { createIfMissing = fal
     nodes: scene.nodes || [],
     frames: scene.frames || [],
     orbInstances: scene.orbInstances || [],
+    semanticOrbs: scene.semanticOrbs || [],
+    activeSemanticOrbId: scene.activeSemanticOrbId || null,
     workingSet: scene.workingSet || {},
     camera: finiteCamera(scene.camera),
   };
@@ -261,6 +294,8 @@ export function migrateUnifiedWorkspace({ items = [], nodes = [], pages = [], ac
       nodes: Array.isArray(activeScene?.nodes) ? activeScene.nodes : (Array.isArray(unified.nodes) ? unified.nodes : nodes),
       frames: activeScene?.frames || unified.frames || [],
       orbInstances: activeScene?.orbInstances || unified.orbInstances || [],
+      semanticOrbs: activeScene?.semanticOrbs || unified.semanticOrbs || [],
+      activeSemanticOrbId: activeScene?.activeSemanticOrbId || unified.activeSemanticOrbId || null,
       workingSet: activeScene?.workingSet || unified.workingSet || {},
       camera: finiteCamera(activeScene?.camera || unified.camera || camera),
     };
@@ -299,6 +334,8 @@ export function migrateUnifiedWorkspace({ items = [], nodes = [], pages = [], ac
       nodes: legacyFrameNodes(pageNodes, alreadyUnified, frame.id, sceneId),
       camera: finiteCamera(page.camera || (index === 0 ? unified?.camera || camera : null)),
       orbInstances: index === 0 ? unified?.orbInstances || [] : [],
+      semanticOrbs: index === 0 ? unified?.semanticOrbs || [] : [],
+      activeSemanticOrbId: index === 0 ? unified?.activeSemanticOrbId || null : null,
       workingSet: {
         context: [],
         lenses: [],
@@ -330,15 +367,28 @@ export function migrateUnifiedWorkspace({ items = [], nodes = [], pages = [], ac
     items: migratedItems,
     nodes: migratedNodes,
     orbInstances: scene.orbInstances,
+    semanticOrbs: scene.semanticOrbs,
+    activeSemanticOrbId: scene.activeSemanticOrbId,
     workingSet: scene.workingSet,
   };
 }
 
-export function serializeUnifiedWorkspace({ items, nodes, camera, scenes, activeSceneId, frames, orbInstances, workingSet, ...safeFields }) {
+export function serializeUnifiedWorkspace({ items, nodes, camera, scenes, activeSceneId, frames, orbInstances, semanticOrbs, activeSemanticOrbId, workingSet, ...safeFields }) {
   const sceneId = activeSceneId || scenes?.[0]?.id || DEFAULT_SCENE_ID;
   const sceneList = Array.isArray(scenes) && scenes.length
-    ? scenes.map((scene) => scene.id === sceneId ? createScene({ ...scene, items, nodes, camera, frames: frames || scene.frames, orbInstances: orbInstances || scene.orbInstances, workingSet: workingSet || scene.workingSet }) : createScene(scene))
-    : [createScene({ id: sceneId, items, nodes, camera, frames: frames || [], orbInstances, workingSet })];
+    ? scenes.map((scene) => scene.id === sceneId ? createScene({
+        ...scene,
+        items,
+        nodes,
+        camera,
+        frames: frames ?? scene.frames,
+        orbInstances: orbInstances ?? scene.orbInstances,
+        semanticOrbs: semanticOrbs ?? scene.semanticOrbs,
+        activeSemanticOrbId: activeSemanticOrbId ?? scene.activeSemanticOrbId,
+        workingSet: workingSet ?? scene.workingSet,
+      }) : createScene(scene))
+    : [createScene({ id: sceneId, items, nodes, camera, frames: frames || [], orbInstances, semanticOrbs, activeSemanticOrbId, workingSet })];
+  const activeScene = sceneList.find((scene) => scene.id === sceneId) || sceneList[0];
   return JSON.stringify({
     ...safeFields,
     version: UNIFIED_WORKSPACE_VERSION,
@@ -348,9 +398,11 @@ export function serializeUnifiedWorkspace({ items, nodes, camera, scenes, active
     camera: finiteCamera(camera),
     items: Array.isArray(items) ? items : [],
     nodes: Array.isArray(nodes) ? nodes : [],
-    frames: sceneList.find((scene) => scene.id === sceneId)?.frames || [],
-    orbInstances: Array.isArray(orbInstances) ? orbInstances : [],
-    workingSet: workingSet || {},
+    frames: activeScene?.frames || [],
+    orbInstances: activeScene?.orbInstances || [],
+    semanticOrbs: activeScene?.semanticOrbs || [],
+    activeSemanticOrbId: activeScene?.activeSemanticOrbId || null,
+    workingSet: activeScene?.workingSet || {},
   });
 }
 

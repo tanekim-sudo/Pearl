@@ -89,11 +89,13 @@ Ambiguous records default to reversible Lens/context classification and retain s
 
 ### Scene, Output Frame, node, candidate, and orb
 
-- A **Scene** is a versioned, unbounded cognitive world carrying its explicit working set, camera, branches, checkpoints, and orb instances. It is never created merely by visiting the web app.
+- A **Scene** is a versioned, unbounded cognitive world carrying its explicit working set, camera, branches, checkpoints, and semantic orbs. It is never created merely by visiting the web app.
 - An **Output Frame** is an optional bounded publication region inside a Scene. Legacy Pages migrate into legacy-compatible Output Frames without changing object IDs, lineage, history, or coordinates.
 - A **node** is lineage-bearing AI material in a Scene. It can be moved, read, highlighted, branched, linked, or placed in an Output Frame.
 - A **candidate** is one typed output in a generation batch, with its requested/resolved model, branch specification, differentiation blurb, status, provenance, and taste feedback.
-- The **orb** is the companion, cursor, context and execution interface. It plans, observes, executes canonical commands, verifies effects, checkpoints, confirms, recovers, and may split into bounded read/evaluation workers whose typed proposals require parent verification.
+- The **agent shell** is the singular companion, cursor, command, context, and execution interface. It plans, observes, executes canonical commands, verifies effects, checkpoints, confirms, and recovers.
+- A **semantic orb** is a small, user-created, Scene-persistent capsule that may represent an empty emerging idea, material, selection, Move, Function, Lens, candidate, branch, query, transcript, external capture, grouped context, or Scene. Opening one mounts its working set into the agent shell; only one capsule is active at a time.
+- A **worker orb** is a run-scoped read, research, or evaluation process. It returns a typed proposal to the agent shell and never becomes a persistent semantic orb unless the user explicitly promotes a verified result.
 
 ### Orb visual and motion language
 
@@ -112,6 +114,16 @@ Dragging material onto the orb adds a source-preserving context object. Dragging
 Read, evaluation, and research work may split into bounded worker orbs. Each worker has an isolated context, model/tool budget, checkpoint, status, typed proposal, and cancellation control. Parallel mutation scopes are rejected. Completed proposals return to the parent orb, which records fusion provenance and applies nothing until verification succeeds. A cancelled or failed worker preserves the exact parent checkpoint and the surviving worker evidence.
 
 Normal companion execution invokes capability handlers directly, emits a typed direct-effect receipt, observes the resulting state, and retains undo/checkpoint evidence. The ghost cursor is reserved for an explicit “show me” demonstration or a controlled animation test; it is not mutation authority.
+
+### Semantic orb capsules
+
+Inactive semantic orbs remain compact, constant-readable points on the Stage. New orbs appear at the pointer or beside their source with collision-aware placement; dense groups collapse to a counted cluster that can be revealed without changing persisted coordinates. A person can create an empty orb, turn any Stage material or external page capture into one, drag material or a Lens into it, move it, rename it, duplicate it, archive it, or use keyboard and touch equivalents.
+
+Orb-on-orb drops always remain productive and source-preserving: **Nest** establishes reversible hierarchy, **Merge** creates a grouped-context capsule, and **Compose** creates an ordered capsule. Splitting produces lineage-linked capsules from the represented sources. Merely adding context never executes a model; execution still requires an explicit command or GO.
+
+The authoritative record is `scene.semanticOrbs[]` plus `scene.activeSemanticOrbId` in Scene v4. Each record has a stable ID, schema version, placement, representation kind and references, working set, parent/children, lineage, provenance, and archive state. Runtime phase, live traces, candidate streams, and worker records are not serialized into semantic capsules. Canvas saves rebase onto the latest Scene snapshot so they cannot erase capsule or working-set edits.
+
+In the extension, saved capsules appear in a compact searchable tray around the single injected page orb. Current page selections can become capsules or be added to the active capsule, and synced Lenses can be applied there. Spatial multi-orb arrangement opens the authoritative web Scene because browser pages and protected surfaces cannot safely host an unrestricted world; this handoff preserves the capsule payload rather than simulating the operation.
 
 ## Primitive Moves
 

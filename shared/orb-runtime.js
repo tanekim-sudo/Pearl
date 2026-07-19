@@ -41,6 +41,7 @@ export function createOrbState(overrides = {}) {
     taskId: null,
     effectId: null,
     commandId: null,
+    activeSemanticOrbId: null,
     placement: { x: 28, y: 28, dock: "bottom-right", minimized: false, manual: false },
     activeIntent: null,
     context: [],

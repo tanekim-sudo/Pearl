@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-18T22:58:41.769Z",
+  "generatedAt": "2026-07-19T00:20:06.627Z",
   "counts": {
-    "features": 30,
-    "companion": 214,
-    "extension": 37,
-    "commands": 29
+    "features": 31,
+    "companion": 238,
+    "extension": 44,
+    "commands": 47
   },
   "features": [
     {
@@ -496,6 +496,63 @@
       ]
     },
     {
+      "id": "scene.semantic-orbs",
+      "commands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "companion": [
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "extension": [
+        "createExternalSemanticOrb",
+        "openExternalSemanticOrb",
+        "addExternalSemanticOrbContext",
+        "applyExternalSemanticOrbLens",
+        "mergeExternalSemanticOrbs",
+        "archiveExternalSemanticOrb",
+        "openExternalSemanticOrbScene"
+      ],
+      "tests": [
+        "shared/orb-universe.test.js",
+        "shared/domain-commands.test.js",
+        "client/lib/unified-workspace.test.js",
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
       "id": "interaction.orb-gesture",
       "commands": [
         "addOrbContext",
@@ -503,13 +560,19 @@
         "materializeOnStage",
         "materializeInOutputFrame",
         "queueBranchMaterial",
-        "assignWorkerContext"
+        "assignWorkerContext",
+        "addSemanticOrbContext",
+        "nestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs"
       ],
       "companion": [
-        "semanticTransfer"
+        "semanticTransfer",
+        "createSemanticOrb"
       ],
       "extension": [
-        "openExternalArtifact"
+        "openExternalArtifact",
+        "createExternalSemanticOrb"
       ],
       "tests": [
         "shared/orb-universe.test.js",

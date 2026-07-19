@@ -1,15 +1,31 @@
 # Companion capability runtime-effect matrix
 
-- Total: 8
-- Passed: 8
+- Total: 24
+- Passed: 24
 - Failed: 0
 - Skipped: 0
 
-- PASS — `createFunction` (app): state-or-visible-artifact-changed
-- PASS — `addOrbContext` (app): state-or-visible-artifact-changed
-- PASS — `addOrbLens` (app): state-or-visible-artifact-changed
-- PASS — `updateOrbLens` (app): state-or-visible-artifact-changed
-- PASS — `removeOrbLens` (app): state-or-visible-artifact-changed
-- PASS — `semanticTransfer` (app): state-or-visible-artifact-changed
-- PASS — `orchestrateCognitiveWorkflow` (app): state-or-visible-artifact-changed
-- PASS — `clearWorkspaceDomains` (app): state-or-visible-artifact-changed
+- PASS — `createSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `activateSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `moveSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `renameSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `bindSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `addSemanticOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `removeSemanticOrbContext` (app): state-or-visible-artifact-changed
+- PASS — `applySemanticOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `removeSemanticOrbLens` (app): state-or-visible-artifact-changed
+- PASS — `nestSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `unnestSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `mergeSemanticOrbs` (app): state-or-visible-artifact-changed
+- PASS — `composeSemanticOrbs` (app): state-or-visible-artifact-changed
+- PASS — `splitSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `duplicateSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `archiveSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `deleteSemanticOrb` (app): state-or-visible-artifact-changed
+- PASS — `createExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `openExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `addExternalSemanticOrbContext` (extension): controlled extension state changed
+- PASS — `applyExternalSemanticOrbLens` (extension): controlled extension state changed
+- PASS — `mergeExternalSemanticOrbs` (extension): controlled extension state changed
+- PASS — `archiveExternalSemanticOrb` (extension): controlled extension state changed
+- PASS — `openExternalSemanticOrbScene` (extension): controlled extension state changed

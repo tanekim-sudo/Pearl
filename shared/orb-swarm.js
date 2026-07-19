@@ -8,6 +8,7 @@ export function createOrbInstance(value = {}) {
   return {
     version: ORB_INSTANCE_VERSION,
     id: String(value.id),
+    lifespan: "run",
     role: value.role || "specialist",
     parentId: value.parentId || null,
     goal: value.goal || "",
