@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "baselineCommit": "0f01e19aed86b1122992d4b7efcf1dbdde474533",
+  "status": "verified",
+  "verification": {
+    "releaseGate": "npm run release:check",
+    "result": "passed",
+    "reachability": {
+      "domainCommands": 47,
+      "companionCapabilities": 251,
+      "extensionVerbs": 51
+    },
+    "unresolved": 0
+  },
+  "defects": [
+    {
+      "id": "PI-001",
+      "severity": "high",
+      "surface": "web-root",
+      "reproduction": "Open / at 1600x1000 without a trusted handoff.",
+      "evidence": "audit-shots/orb-universe-2026-07/01-continuation-desktop.png",
+      "issue": "A marketing hero, rounded continuation card, footer prompt, and Pearl compete in one nominally idle surface.",
+      "fix": "Remove persistent hero and footer copy; reduce continuation recovery to one aligned hairline row."
+    },
+    {
+      "id": "PI-002",
+      "severity": "high",
+      "surface": "extension-sidepanel",
+      "reproduction": "Open Command in a 360px sidepanel.",
+      "evidence": "audit-shots/orb-universe-2026-07/07-extension-command-360.png",
+      "issue": "The command form occupies a nearly full-height rounded sheet with no information density or hierarchy.",
+      "fix": "Use a content-sized left-rule emission, one 44px command row, and no decorative container."
+    },
+    {
+      "id": "PI-003",
+      "severity": "high",
+      "surface": "injected-page-pearl",
+      "reproduction": "Expand the injected Pearl on a normal page.",
+      "evidence": "audit-shots/orb-universe-2026-07/06b-extension-page-orb-context.png",
+      "issue": "A floating rounded glass card, six persistent tabs, and weak 34px targets make the overlay feel detached and imprecise.",
+      "fix": "Convert the emission to a sharp edge-aligned instrument with 40px targets and hairline navigation."
+    },
+    {
+      "id": "PI-004",
+      "severity": "medium",
+      "surface": "scene",
+      "reproduction": "Open a populated Scene and emit Scene controls.",
+      "evidence": "audit-shots/orb-universe-2026-07/04-stage-desktop.png",
+      "issue": "The detached panel, capsule button, circular graph cards, and unrelated radii create four competing container languages.",
+      "fix": "Standardize emitted panels, material surfaces, graph nodes, and semantic controls on square 2px geometry and one separator system."
+    },
+    {
+      "id": "PI-005",
+      "severity": "medium",
+      "surface": "cross-surface",
+      "reproduction": "Compare web ledger, sidepanel actions, and injected overlay.",
+      "evidence": "audit-shots/orb-universe-2026-07/07-extension-command-360.png",
+      "issue": "Spacing, target size, type scale, focus, line opacity, and radius are independently defined by each surface.",
+      "fix": "Import shared/pearl-interface-tokens.css in web and extension entry points and map all emitted UI to that system."
+    },
+    {
+      "id": "PI-006",
+      "severity": "medium",
+      "surface": "accessibility",
+      "reproduction": "Use keyboard, touch, 360px width, 200% zoom, reduced motion, or increased contrast.",
+      "evidence": "audit-shots/orb-universe-2026-07/10a-extension-sidepanel-reduced-360.png",
+      "issue": "Several overlay targets are 22-34px and fixed-height sheets create avoidable clipping at zoom.",
+      "fix": "Keep controls at 40-44px, use content-sized emissions, preserve visible focus, and retain reduced-motion/high-contrast branches."
+    }
+  ]
+}

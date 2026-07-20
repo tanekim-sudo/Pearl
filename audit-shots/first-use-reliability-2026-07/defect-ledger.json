@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T02:38:36.058Z",
+  "generatedAt": "2026-07-20T03:09:32.620Z",
   "baseline": {
     "command": "npm run release:check",
     "result": "local unit/build/parity gates passed; browser gate initially blocked by a missing bundled Playwright executable",

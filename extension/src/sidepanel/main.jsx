@@ -12,6 +12,7 @@ import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
 import { PEARL_ACTION_CATEGORIES, searchPearlActions } from "../../../client/lib/pearl-shell.js";
+import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {

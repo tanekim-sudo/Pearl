@@ -1,0 +1,37 @@
+:root {
+  --pearl-ui-bg: #090b0c;
+  --pearl-ui-surface: #0d1011;
+  --pearl-ui-surface-raised: #111415;
+  --pearl-ui-text: #f2f1ed;
+  --pearl-ui-text-muted: #a4a7a4;
+  --pearl-ui-text-dim: #737875;
+  --pearl-ui-line: rgba(238, 241, 238, .1);
+  --pearl-ui-line-strong: rgba(238, 241, 238, .22);
+  --pearl-ui-focus: #f3f2ec;
+  --pearl-ui-danger: #d5a6a0;
+  --pearl-ui-success: #b8cfbd;
+  --pearl-ui-space-1: 4px;
+  --pearl-ui-space-2: 8px;
+  --pearl-ui-space-3: 12px;
+  --pearl-ui-space-4: 16px;
+  --pearl-ui-space-5: 24px;
+  --pearl-ui-space-6: 32px;
+  --pearl-ui-control: 44px;
+  --pearl-ui-radius: 2px;
+  --pearl-ui-width: 360px;
+  --pearl-ui-font-xs: 10px;
+  --pearl-ui-font-sm: 12px;
+  --pearl-ui-font-md: 14px;
+  --pearl-ui-font-lg: 20px;
+  --pearl-ui-tracking: .11em;
+  --pearl-ui-shadow: 0 24px 64px rgba(0, 0, 0, .34);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --pearl-ui-text-muted: #d9d9d4;
+    --pearl-ui-text-dim: #b9bbb7;
+    --pearl-ui-line: rgba(255, 255, 255, .38);
+    --pearl-ui-line-strong: rgba(255, 255, 255, .68);
+  }
+}

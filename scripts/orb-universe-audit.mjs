@@ -66,10 +66,11 @@ try {
   await shot("01-continuation-desktop", { width: 1600, height: 1000 }, "/", async (page) => {
     await page.evaluate(() => localStorage.removeItem("lens.orb-universe.continued.v1"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: /The world is your oyster/ }).waitFor();
     await page.getByRole("region", { name: "Continue extension work" }).waitFor();
-    const orb = await page.locator(".orb-continuation-pearl").boundingBox();
-    if (!orb || orb.width < 28 || orb.width > 36) throw new Error("continuation Pearl is not compact");
+    if (await page.getByRole("heading", { name: /The world is your oyster/ }).isVisible()) {
+      throw new Error("idle root still exposes competing marketing chrome");
+    }
+    if (await page.locator(".orb-continuation-pearl").isVisible()) throw new Error("idle root duplicates the primary Pearl");
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("off-Scene Pearl is not the single persistent command affordance");
     await page.locator(".companion-orb").click();
     if (!await page.getByRole("searchbox", { name: "Search every Pearl action" }).isVisible()) throw new Error("off-Scene Pearl did not emit complete action search");
@@ -79,9 +80,11 @@ try {
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: "Your cognitive universe" }).waitFor();
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("library lost its single Pearl command affordance");
     if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
+    if (await page.getByRole("heading", { name: "Your cognitive universe" }).isVisible()) {
+      throw new Error("library still exposes a redundant persistent heading");
+    }
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));

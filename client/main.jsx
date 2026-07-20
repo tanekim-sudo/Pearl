@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import OrbUniverseShell from "./components/OrbUniverseShell.jsx";
+import "../shared/pearl-interface-tokens.css";
 import "./styles.css";
 import "./styles-idea.css";
 import "./orb-visual-tokens.css";
