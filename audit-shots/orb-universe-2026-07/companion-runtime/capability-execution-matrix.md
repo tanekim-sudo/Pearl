@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 251
-- Passed: 251
+- Total: 286
+- Passed: 286
 - Failed: 0
 - Skipped: 0
 
@@ -68,7 +68,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
+- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed
@@ -205,6 +205,12 @@
 - PASS — `clearFunctions` (app): state-or-visible-artifact-changed
 - PASS — `clearLenses` (app): state-or-visible-artifact-changed
 - PASS — `clearWorkspaceDomains` (app): state-or-visible-artifact-changed
+- PASS — `inspectLocalPrivacy` (app): state-or-visible-artifact-changed
+- PASS — `exportLocalData` (app): state-or-visible-artifact-changed
+- PASS — `setBoardSync` (app): state-or-visible-artifact-changed
+- PASS — `lockLocalPearls` (app): state-or-visible-artifact-changed
+- PASS — `unlockLocalPearls` (app): state-or-visible-artifact-changed
+- PASS — `deleteLocalData` (app): state-or-visible-artifact-changed
 - PASS — `capturePageSelection` (extension): controlled extension state changed
 - PASS — `openExternalSaveAs` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsMove` (extension): controlled extension state changed
@@ -256,3 +262,32 @@
 - PASS — `reorderExternalPrimitive` (extension): controlled extension state changed
 - PASS — `setExternalGenerationBranches` (extension): controlled extension state changed
 - PASS — `armExternalMerge` (extension): controlled extension state changed
+- PASS — `inspectExternalPrivacy` (extension): controlled extension state changed
+- PASS — `exportExternalLocalData` (extension): controlled extension state changed
+- PASS — `setExternalSync` (extension): controlled extension state changed
+- PASS — `deleteExternalLocalData` (extension): controlled extension state changed
+- PASS — `lockExternalPearls` (extension): controlled extension state changed
+- PASS — `unlockExternalPearls` (extension): controlled extension state changed
+- PASS — `activateExternalPearlCanvas` (extension): controlled extension state changed
+- PASS — `deactivateExternalPearlCanvas` (extension): controlled extension state changed
+- PASS — `setExternalCanvasMode` (extension): controlled extension state changed
+- PASS — `bindExternalCanvasContext` (extension): controlled extension state changed
+- PASS — `setExternalOutputDestination` (extension): controlled extension state changed
+- PASS — `undoExternalPearlCanvas` (extension): controlled extension state changed
+- PASS — `exportExternalPearlCanvasPdf` (extension): controlled extension state changed
+- PASS — `searchExternalPearlSoundscape` (extension): controlled extension state changed
+- PASS — `uploadExternalPearlAudio` (extension): controlled extension state changed
+- PASS — `useExternalPearlAudioTrack` (extension): controlled extension state changed
+- PASS — `controlExternalPearlSoundscape` (extension): controlled extension state changed
+- PASS — `updateExternalPearlSoundscape` (extension): controlled extension state changed
+- PASS — `saveExternalPearlTrackOffline` (extension): controlled extension state changed
+- PASS — `removeExternalPearlAudioTrack` (extension): controlled extension state changed
+- PASS — `expandExternalResultPearl` (extension): controlled extension state changed
+- PASS — `collapseExternalResultPearl` (extension): controlled extension state changed
+- PASS — `openExternalResultPearlTab` (extension): controlled extension state changed
+- PASS — `presentExternalResultAsChat` (extension): controlled extension state changed
+- PASS — `redirectExternalResult` (extension): controlled extension state changed
+- PASS — `acceptExternalResultPearl` (extension): controlled extension state changed
+- PASS — `archiveExternalResultPearl` (extension): controlled extension state changed
+- PASS — `deleteExternalResultPearl` (extension): controlled extension state changed
+- PASS — `undoExternalResultPearl` (extension): controlled extension state changed

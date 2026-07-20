@@ -1,3 +1,5 @@
+import { createSecureExtensionStorage } from "./secure-storage.js";
+
 function api() {
   return globalThis.browser || globalThis.chrome;
 }
@@ -15,6 +17,13 @@ function callbackPromise(fn, ...args) {
   });
 }
 
+const rawStorage = {
+  async get(area, keys) { return callbackPromise(api()?.storage?.[area]?.get.bind(api().storage[area]), keys); },
+  async set(area, value) { return callbackPromise(api()?.storage?.[area]?.set.bind(api().storage[area]), value); },
+  async remove(area, keys) { return callbackPromise(api()?.storage?.[area]?.remove.bind(api().storage[area]), keys); },
+};
+const secureStorage = createSecureExtensionStorage(rawStorage);
+
 export const BrowserPlatform = Object.freeze({
   runtime: {
     sendMessage(message) { return callbackPromise(api()?.runtime?.sendMessage.bind(api().runtime), message); },
@@ -23,9 +32,14 @@ export const BrowserPlatform = Object.freeze({
     get url() { return api()?.runtime?.getURL?.("") || ""; },
   },
   storage: {
-    async get(area, keys) { return callbackPromise(api()?.storage?.[area]?.get.bind(api().storage[area]), keys); },
-    async set(area, value) { return callbackPromise(api()?.storage?.[area]?.set.bind(api().storage[area]), value); },
-    async remove(area, keys) { return callbackPromise(api()?.storage?.[area]?.remove.bind(api().storage[area]), keys); },
+    get: secureStorage.get,
+    set: secureStorage.set,
+    remove: secureStorage.remove,
+    switchProfile: secureStorage.switchProfile,
+    exportLocal: secureStorage.exportLocal,
+    deleteLocal: secureStorage.deleteLocal,
+    lock: secureStorage.lock,
+    unlock: secureStorage.unlock,
   },
   tabs: {
     async active() {

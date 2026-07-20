@@ -36,7 +36,7 @@ test("Pearl motion stays restrained and reduced-motion becomes static", async ()
   assert.doesNotMatch(panelCss, /\.extension-orb-pearl\{[^}]*spin/);
   assert.match(webCss, /prefers-reduced-motion[\s\S]+orb-nucleus[\s\S]+transform: none !important/);
   assert.match(panelCss, /prefers-reduced-motion:reduce[\s\S]+extension-orb-nucleus[\s\S]+transform:none!important/);
-  assert.match(bridge, /prefers-reduced-motion:reduce[\s\S]+\.nacre,.reflection\{transform:none!important/);
+  assert.match(bridge, /prefers-reduced-motion:reduce[\s\S]+\.nucleus,.nacre,.nacre-fold,.reflection\{transform:none!important/);
 });
 
 test("resting Pearls use compact circles without an outer glow", async () => {
@@ -50,4 +50,20 @@ test("resting Pearls use compact circles without an outer glow", async () => {
   assert.match(bridge, /\.orb\{[^}]*width:36px;height:36px[^}]*border-radius:50%/);
   assert.doesNotMatch(webCss, /\.companion-orb\s*\{[^}]*drop-shadow/s);
   assert.match(webCss, /\.orb-shadow \{ fill: rgba\(0, 0, 0, \.16\); filter: blur\(1\.1px\); \}/);
+});
+
+test("physical Pearl layers lag with mass and page seams adapt without neon", async () => {
+  const webCss = await source("client/orb-universe.css");
+  const panelCss = await source("extension/src/sidepanel/sidepanel.css");
+  const panel = await source("extension/src/sidepanel/main.jsx");
+  const bridge = await source("extension/src/content/bridge.js");
+  assert.match(panel, /extension-orb-nacre-fold/);
+  assert.match(bridge, /class="nacre-fold"/);
+  assert.match(webCss, /orb-pearl-mass 4s/);
+  assert.match(panelCss, /extension-pearl-mass 4s/);
+  assert.match(webCss, /rotate\(-\.12deg\)/);
+  assert.match(panelCss, /extension-pearl-ember 8s/);
+  assert.match(bridge, /--field-bg/);
+  assert.match(bridge, /pageColor\[3\] === 0/);
+  assert.doesNotMatch(bridge, /drop-shadow/);
 });

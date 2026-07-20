@@ -21,7 +21,7 @@ export function validateExternalAction(raw, sender = {}) {
   if (Object.keys(raw).some((key) => !["type", "version", "nonce"].includes(key))) {
     throw new Error("invalid external message");
   }
-  if (!["lens-install-check", "lens-extension-open", "pearl-workspace-handoff"].includes(raw.type)
+  if (!["lens-install-check", "lens-extension-open", "pearl-workspace-handoff", "pearl-result-handoff"].includes(raw.type)
     || raw.version !== 1
     || !/^[a-zA-Z0-9_-]{16,128}$/.test(raw.nonce || "")) {
     throw new Error("invalid external schema");

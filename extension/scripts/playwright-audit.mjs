@@ -58,6 +58,7 @@ try {
   let worker = context.serviceWorkers()[0];
   if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
+  await worker.evaluate(() => chrome.storage.local.set({ onboardingComplete: true, onboardingMode: "local", pearlSyncConsent: "disabled" }));
   await Promise.all(context.pages().map((existing) => existing.close()));
   const page = await context.newPage();
   await page.goto(`http://127.0.0.1:${port}`);
@@ -68,14 +69,22 @@ try {
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
   const openPanelView = async (name) => {
+    const requests = {
+      Context: "show me what you noticed",
+      Library: "show me the things I can reuse",
+      Generate: "show me what you are about to do",
+      Settings: "open my preferences",
+    };
+    if (!["idle", "command"].includes(await panel.locator("main").getAttribute("data-orb-view"))) {
+      await panel.getByRole("button", { name: "Collapse view into Pearl" }).click();
+    }
     await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
-    await panel.getByRole("navigation", { name: "Immediate Pearl views" }).getByRole("button", { name, exact: true }).click();
+    await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
+    await panel.getByRole("button", { name: "Send command" }).click();
   };
-  await panel.getByRole("heading", { name: "The world is your oyster. Make pearls." }).waitFor();
+  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });
-  await panel.getByRole("button", { name: "Get started" }).click();
-  await panel.screenshot({ path: path.join(evidence, "02-account-choice.png") });
-  await panel.getByRole("button", { name: /Continue locally/ }).click();
+  await openPanelView("Library");
   await panel.screenshot({ path: path.join(evidence, "03-local-library-drop.png") });
   await panel.evaluate(() => chrome.storage.session.set({ accessToken: "audit-token" }));
   const auditLibraryPath = path.join(extensionRoot, ".audit-library.lens-library.json");
@@ -84,15 +93,17 @@ try {
     generators: [{ id: "audit-generator", name: "Audit generator", items: [{ id: "material", text: "User-owned material" }] }],
   });
   fs.writeFileSync(auditLibraryPath, JSON.stringify(auditLibrary));
-  await panel.locator('input[type="file"]').setInputFiles(auditLibraryPath);
-  await panel.getByText(/Moves\/Functions and .* Lenses found/).waitFor();
+  await panel.locator('input[type="file"][accept*="application/json"]').setInputFiles(auditLibraryPath);
+  await panel.getByRole("dialog", { name: "Library import preview" }).getByText(/Moves\/Functions · .* Lenses/).waitFor();
   await panel.screenshot({ path: path.join(evidence, "04-clean-import-confirm.png") });
   await panel.getByRole("button", { name: "Add library" }).first().click();
   await panel.getByText(/Moves\/Functions and .* Lenses are ready/).first().waitFor();
-  await panel.getByRole("button", { name: "Make your first pearl today" }).click();
+  await openPanelView("Context");
   await panel.screenshot({ path: path.join(evidence, "05-useful-empty-state.png") });
   fs.rmSync(auditLibraryPath, { force: true });
   await page.bringToFront();
+  await page.locator("#field").focus();
+  await page.locator("#field").evaluate((element) => element.setSelectionRange(6, 23));
   await page.keyboard.press("Alt+Shift+L");
   await page.waitForTimeout(300);
   await panel.evaluate(async () => {
@@ -101,16 +112,16 @@ try {
     const targetTabId = tabs.find((tab) => tab.id !== current?.id && !tab.url?.startsWith("chrome://"))?.id;
     if (!targetTabId) throw new Error(`fixture tab unavailable: ${JSON.stringify(tabs)}`);
     const toggled = await chrome.runtime.sendMessage({ version: 1, type: "toggle-highlighter", requestId: "audit", payload: { enabled: true, targetTabId } });
-    const captured = await chrome.runtime.sendMessage({ version: 1, type: "capture-selection", requestId: "audit", payload: { targetTabId } });
-    if (!toggled?.ok || !captured?.ok) throw new Error(toggled?.error || captured?.error || "capture failed");
+    if (!toggled?.ok) throw new Error(toggled?.error || "capture mode failed");
   });
+  const pagePearl = page.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Pearl\./ });
+  await pagePearl.click();
+  await page.locator("#field").selectText();
+  await page.locator("#lens-orb-overlay-host").locator('[data-action="contextual"]').click();
   await panel.bringToFront();
-  await panel.reload();
-  await openPanelView("Context");
-  await panel.getByText(/1 fragment/).waitFor();
-  await panel.getByRole("button", { name: "Make a pearl", exact: true }).click();
   await panel.waitForFunction(async () => {
-    const local = await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]);
+    const response = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+    const local = response?.value || {};
     return local.semanticOrbs?.length === 1
       && local.semanticOrbs[0].workingSet?.context?.length === 1
       && local.activeSemanticOrbId === local.semanticOrbs[0].id;

@@ -18,6 +18,7 @@ import {
 
 export const BOARD_SYNC_VERSION = 1;
 export const BOARD_SYNC_META_KEY = "lens.board.sync-meta.v1";
+export const BOARD_SYNC_CONSENT_KEY = "lens.board.sync-consent.v1";
 
 const ITEMS_KEY = "lens.board.items.v1";
 const PAGES_KEY = "lens.board.pages.v1";
@@ -51,6 +52,21 @@ export const BOARD_SYNC_STORAGE_KEYS = [
   GRIND_DRAFT_KEY,
   RACK_META_KEY,
 ];
+
+export function boardSyncEnabled(storage = globalThis.localStorage) {
+  try {
+    return storage?.getItem(BOARD_SYNC_CONSENT_KEY) === "enabled";
+  } catch {
+    return false;
+  }
+}
+
+export function setBoardSyncEnabled(enabled, storage = globalThis.localStorage) {
+  if (enabled) storage?.setItem(BOARD_SYNC_CONSENT_KEY, "enabled");
+  else storage?.removeItem(BOARD_SYNC_CONSENT_KEY);
+  globalThis.dispatchEvent?.(new CustomEvent("pearl-board-sync-consent", { detail: { enabled: Boolean(enabled) } }));
+  return Boolean(enabled);
+}
 
 /** Keys whose values are arrays of {id}-bearing records, mergeable by id. */
 const ID_ARRAY_KEYS = [
@@ -428,6 +444,7 @@ export async function pushCloudBoardSnapshot(supabase, userId, snapshot) {
 export function useBoardCloudSync({
   session,
   sessionResolved,
+  syncEnabled = false,
   onHydrate,
   onSynced,
   onConflict,
@@ -458,7 +475,7 @@ export function useBoardCloudSync({
   }, [dirtyToken]);
 
   useEffect(() => {
-    if (!sessionResolved || !session?.user?.id) {
+    if (!syncEnabled || !sessionResolved || !session?.user?.id) {
       hydratedUserRef.current = null;
       return;
     }
@@ -527,8 +544,8 @@ export function useBoardCloudSync({
                   await pushCloudBoardSnapshot(supabase, userId, merged);
                 }
                 onSynced?.();
-              } catch (err) {
-                console.warn("[lens] board conflict resolution failed:", err);
+              } catch {
+                console.warn("[lens] board conflict resolution failed");
               }
             },
           });
@@ -572,17 +589,17 @@ export function useBoardCloudSync({
           hydratedUserRef.current = userId;
         }
       } catch (err) {
-        console.warn("[lens] board cloud sync failed:", err);
+        console.warn("[lens] board cloud sync failed");
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id, sessionResolved, onHydrate, onSynced, onConflict]);
+  }, [session?.user?.id, sessionResolved, syncEnabled, onHydrate, onSynced, onConflict]);
 
   useEffect(() => {
-    if (!sessionResolved || !session?.user?.id || !hydratedUserRef.current) return;
+    if (!syncEnabled || !sessionResolved || !session?.user?.id || !hydratedUserRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       const supabase = getSupabase();
@@ -596,19 +613,19 @@ export function useBoardCloudSync({
         await pushCloudBoardSnapshot(supabase, session.user.id, stamped);
         dirtyRef.current = false;
         onSynced?.();
-      } catch (err) {
-        console.warn("[lens] board cloud save failed:", err);
+      } catch {
+        console.warn("[lens] board cloud save failed");
       }
     }, 2500);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [dirtyToken, session?.user?.id, sessionResolved, onSynced]);
+  }, [dirtyToken, session?.user?.id, sessionResolved, syncEnabled, onSynced]);
 
   // Flush pending changes when the tab is backgrounded or closed so quick
   // edits right before leaving aren't lost to the debounce window.
   useEffect(() => {
-    if (!sessionResolved || !session?.user?.id) return undefined;
+    if (!syncEnabled || !sessionResolved || !session?.user?.id) return undefined;
     const userId = session.user.id;
     const flush = () => {
       if (!hydratedUserRef.current || !dirtyRef.current) return;
@@ -632,5 +649,5 @@ export function useBoardCloudSync({
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [session?.user?.id, sessionResolved]);
+  }, [session?.user?.id, sessionResolved, syncEnabled]);
 }

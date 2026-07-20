@@ -21,7 +21,7 @@ const firefox = {
   },
 };
 delete firefox.side_panel;
-firefox.permissions = firefox.permissions.filter((permission) => !["sidePanel"].includes(permission));
+firefox.permissions = firefox.permissions.filter((permission) => !["sidePanel", "offscreen"].includes(permission));
 
 const safari = {
   ...base,
@@ -29,7 +29,7 @@ const safari = {
   description: `${base.description} Requires the native Safari Web Extension container generated from this package.`,
 };
 delete safari.side_panel;
-safari.permissions = safari.permissions.filter((permission) => !["sidePanel", "identity"].includes(permission));
+safari.permissions = safari.permissions.filter((permission) => !["sidePanel", "identity", "offscreen"].includes(permission));
 
 copyPlatform("firefox", firefox);
 copyPlatform("safari", safari);

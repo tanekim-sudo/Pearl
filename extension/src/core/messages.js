@@ -12,6 +12,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "orb-cursor-set",
   "open-side-panel",
   "get-session",
+  "pearl-state-get",
   "session-state",
   "queue-lens",
   "reorder-queue",
@@ -37,19 +38,42 @@ export const MESSAGE_TYPES = Object.freeze([
   "copy-result",
   "open-artifact",
   "auth-login",
+  "auth-logout",
   "auth-status",
   "library-refresh",
   "library-import-preview",
   "library-import",
   "library-pending",
   "infer-before-after",
+  "page-canvas-get",
+  "page-canvas-command",
+  "page-canvas-create-textbox",
+  "page-canvas-state",
+  "page-canvas-export-pdf",
+  "pearl-audio-search",
+  "pearl-audio-upload",
+  "pearl-audio-add",
+  "pearl-audio-control",
+  "pearl-audio-save-offline",
+  "pearl-audio-delete",
+  "pearl-audio-status",
+  "result-pearl-layout-request",
+  "result-pearl-get",
+  "result-pearl-state",
+  "result-pearl-command",
+  "result-pearl-open-tab",
+  "result-pearl-open-web",
+  "result-pearl-create-region",
+  "result-pearl-redeem",
+  "result-pearl-cancel",
+  "result-pearl-retry",
 ]);
 
 const allowedKeys = new Set(["version", "type", "requestId", "payload"]);
 
 export function createMessage(type, payload = {}, requestId = "") {
   if (!MESSAGE_TYPES.includes(type)) throw new Error(`unsupported message type: ${type}`);
-  return { version: MESSAGE_VERSION, type, requestId: String(requestId || ""), payload };
+  return { version: MESSAGE_VERSION, type, requestId: String(requestId || globalThis.crypto?.randomUUID?.() || ""), payload };
 }
 
 export function validateMessage(value) {

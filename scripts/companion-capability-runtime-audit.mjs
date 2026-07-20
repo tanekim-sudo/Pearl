@@ -551,12 +551,20 @@ function canonicalPlan(capability, args) {
 }
 
 async function snapshot(page) {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
     const storage = {};
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
       if (key?.startsWith("lens.")) storage[key] = localStorage.getItem(key);
     }
+    const secureExport = await window.__pearlPrivacy?.exportLocal?.();
+    const secureEntries = secureExport?.entries || {};
+    const secureBytes = new TextEncoder().encode(JSON.stringify(secureEntries));
+    const secureDigest = secureBytes.length
+      ? [...new Uint8Array(await crypto.subtle.digest("SHA-256", secureBytes))]
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("")
+      : "";
     const visible = [...document.querySelectorAll(
       ".page-title-input,.page-title-chip,.companion-confirmation,.extension-download-modal,.lens-editor-overlay,.path-walk,.walk-overlay,.brush-status,.highlight-toolbar,.omni-highlight-bar,[aria-pressed='true'],.selected"
     )].map((node) => `${node.tagName}:${node.className}:${node.textContent?.trim().slice(0, 120)}`);
@@ -566,7 +574,14 @@ async function snapshot(page) {
     const transcript = [...document.querySelectorAll(
       ".learn-chat-modal input,.learn-chat-modal textarea,.learn-chat-modal button,.learn-chat-results,.learn-chat-stats"
     )].map((node) => `${node.tagName}:${node.getAttribute("aria-label") || ""}:${"value" in node ? node.value : node.textContent?.trim().slice(0, 160)}`);
-    return { storage, visible, beforeAfter, transcript, url: location.href };
+    return {
+      storage,
+      secureStorage: { keys: Object.keys(secureEntries).sort(), digest: secureDigest },
+      visible,
+      beforeAfter,
+      transcript,
+      url: location.href,
+    };
   });
 }
 
@@ -956,6 +971,54 @@ async function runExtensionCapabilities() {
       semanticOrbAction: (name, args) => {
         state.operation = `semantic-orb:${name}`;
         return { type: "external-semantic-orb", id: args.id || "runtime-orb" };
+      },
+      inspectPrivacy: () => {
+        state.operation = "privacy-inspected";
+        return { type: "local-privacy-summary", mode: "local-only", encrypted: true };
+      },
+      exportLocalData: () => {
+        state.operation = "privacy-exported";
+        return { type: "local-privacy-export", profile: "anonymous" };
+      },
+      setSync: (enabled) => {
+        state.operation = `privacy-sync:${enabled === true}`;
+        return { type: "local-privacy-sync", enabled: enabled === true };
+      },
+      deleteLocalData: () => {
+        state.operation = "privacy-deleted";
+        return { type: "local-privacy-deletion", deleted: true };
+      },
+      lockPearls: () => {
+        state.operation = "privacy-locked";
+        return { type: "local-privacy-lock", locked: true };
+      },
+      unlockPearls: () => {
+        state.operation = "privacy-unlocked";
+        return { type: "local-privacy-lock", locked: false };
+      },
+      bindCanvasContext: () => {
+        state.operation = "canvas-context-bound";
+        return { type: "pearl-canvas-context", bounded: true };
+      },
+      searchAudio: (query, provider) => {
+        state.operation = `audio-search:${provider || "licensed"}`;
+        return { type: "pearl-audio-search", query, results: [] };
+      },
+      chooseAudio: () => {
+        state.operation = "audio-upload-chosen";
+        return { type: "pearl-audio-upload", accepted: true };
+      },
+      addAudio: (track) => {
+        state.operation = "audio-track-added";
+        return { type: "pearl-soundscape", track };
+      },
+      controlAudio: (action) => {
+        state.operation = `audio-control:${action}`;
+        return { type: "pearl-audio-status", action };
+      },
+      updateAudio: (preferences) => {
+        state.operation = "audio-updated";
+        return { type: "pearl-soundscape", preferences };
       },
     };
     const originalNavigator = globalThis.navigator;

@@ -15,6 +15,7 @@ import {
   checkTrustedExtensionInstallation,
   detectExtensionBrowser,
   requestTrustedExtensionHandoff,
+  requestTrustedResultHandoff,
   trackExtensionFunnel,
   validChromeStoreUrl,
 } from "../lib/extension-funnel.js";
@@ -24,6 +25,7 @@ import {
   continuationMaterialCount,
 } from "../lib/extension-continuation.js";
 import { createCompanionVoiceSession } from "../lib/companion-voice.js";
+import { boardSyncEnabled, setBoardSyncEnabled } from "../lib/board-sync.js";
 import {
   LEGACY_UNIFIED_WORKSPACE_KEYS,
   UNIFIED_WORKSPACE_KEY,
@@ -59,6 +61,7 @@ export function parseOrbRoute(locationLike = globalThis.location) {
       handoff: handoff || legacyCognitive || null,
       handoffSource: handoff ? "handoff" : legacyCognitive ? "legacy-cognitive" : null,
       handoffView: query.get("view") || null,
+      handoffToken: query.get("token") || null,
     };
   }
   if (/^\/(?:packages|settings|tasks)(?:\/|$)/.test(path)) return { kind: "library", section: path.split("/")[1], id: path.split("/")[2] || null, path };
@@ -133,16 +136,15 @@ function InstallLanding({ install, onContinue, onRetry }) {
   const installUrl = storeUrl || release?.versionedUrl || "/extension/lens-everywhere-chrome.zip";
   return <main className="orb-install">
     <section>
-      <div className="orb-kicker">Pearl Everywhere</div>
-      <h1>The world is your oyster. Make pearls.</h1>
-      <p>Notice something on any page, make it a source-linked pearl, then reopen that compact agent shell whenever you want to shape or use it. Make your first pearl today.</p>
+      <div className="orb-kicker">Pearl</div>
+      <h1>Add Pearl to Chrome</h1>
+      <p>Use the same companion on any page.</p>
       <div className="orb-actions">
         {install.status === "installed"
           ? <button className="orb-primary" type="button" onClick={onContinue}>Open cognitive library</button>
           : <a className="orb-primary" href={installUrl} onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}>
               {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
             </a>}
-        <button className="orb-secondary" type="button" onClick={onContinue}>Open saved Scenes</button>
         {install.status === "unknown" && <button className="orb-secondary" type="button" onClick={onRetry}>Check extension again</button>}
       </div>
       <p className="orb-status" role="status">
@@ -151,19 +153,18 @@ function InstallLanding({ install, onContinue, onRetry }) {
             : "Installation status is unknown. You can check again after installing."}
       </p>
     </section>
-    <div className="orb-install-card" aria-label="Pearl"><span className="orb-install-pearl" aria-hidden="true" /></div>
   </main>;
 }
 
 const libraryObjects = [
-  ["Moves", "Single reusable actions and primitive operations.", "/library?kind=moves", "wide"],
-  ["Functions", "Visible ordered and branched choreographies.", "/library?kind=functions"],
-  ["Lenses", "Context atmospheres, Taste Lenses, and perceptual models.", "/library?kind=lenses"],
-  ["Packages", "Signed cognition with trust, versions, tests, and provenance.", "/packages", "wide"],
-  ["Saved Scenes", "Resume an explicit working set, camera, branches, and checkpoints.", "/tasks?view=scenes"],
-  ["Tasks & history", "Review plans, diffs, checkpoints, recovery, and semantic rewind.", "/tasks"],
-  ["Vocabulary", "Teach personal phrases without weakening privacy boundaries.", "/settings?vocabulary=1"],
-  ["Models & connectors", "Control execution models, research policy, and handoffs.", "/settings?connectors=1"],
+  ["Actions", "Things Pearl can repeat.", "/library?kind=moves", "wide"],
+  ["Processes", "Ways Pearl can carry work through several steps.", "/library?kind=functions"],
+  ["Context", "Material that shapes how Pearl responds.", "/library?kind=lenses"],
+  ["Shared tools", "Trusted reusable work from you or your team.", "/packages", "wide"],
+  ["Saved spaces", "Return to material you were working with.", "/tasks?view=scenes"],
+  ["Activity", "Review, recover, or continue earlier work.", "/tasks"],
+  ["Phrases", "Teach Pearl language you use.", "/settings?vocabulary=1"],
+  ["Connections", "Choose where Pearl can work.", "/settings?connectors=1"],
   ["Sync health", "Anonymous local work, account adoption, import, and export.", "/settings?sync=1"],
 ];
 
@@ -302,7 +303,7 @@ function LibraryHome({
         ? "A pearl is noticed material preserved with its source, context, and optional shaping. Make your first pearl on a real page; come here when it needs a Scene, an Output Frame, or deeper work."
         : "Review reusable cognition and resume saved work without leaving the extension-first flow."}</p>
     </section>
-    {isRoot && <section className="orb-continuation" aria-label="Continue extension work">
+    {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
       <span className="orb-continuation-pearl" aria-hidden="true" />
       <div>
         <small>{extensionHandoff?.connected ? "Pearl extension connected" : handoffStatus === "loading" ? "Checking the page Pearl" : "Waiting for the page Pearl"}</small>
@@ -506,6 +507,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
   });
   const [emittedView, setEmittedView] = useState(null);
+  const [privacyNotice, setPrivacyNotice] = useState(null);
   const [hasOrbUndo, setHasOrbUndo] = useState(false);
   const [hasOrbRedo, setHasOrbRedo] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(null);
@@ -558,11 +560,13 @@ export default function OrbUniverseShell({ StageComponent }) {
 
   const refreshHandoff = useCallback(async () => {
     setHandoffStatus("loading");
-    const value = await requestTrustedExtensionHandoff();
+    const value = route.handoff === "result-pearl"
+      ? await requestTrustedResultHandoff(route.handoffToken)
+      : await requestTrustedExtensionHandoff();
     setExtensionHandoff(value);
     setHandoffStatus(continuationMaterialCount(value) > 0 ? "ready" : "blocked");
     return value;
-  }, []);
+  }, [route.handoff, route.handoffToken]);
 
   useEffect(() => {
     if (route.kind !== "home") return;
@@ -740,10 +744,94 @@ export default function OrbUniverseShell({ StageComponent }) {
       }));
       return;
     }
+    const privacyIntent = recorded.entry.normalized;
+    if (/^what(?:'s| is) stored(?: here| locally| on this device)?\??$/i.test(privacyIntent)) {
+      const summary = window.__pearlPrivacy?.describe?.() || { locked: true, profile: "unknown", keys: [] };
+      setPrivacyNotice({
+        title: summary.locked ? "Local Pearls are locked" : boardSyncEnabled() ? "Local storage · sync enabled" : "Local only",
+        detail: `${summary.itemCount || 0} private data categories · ${summary.profile || "this"} profile`,
+      });
+      setEmittedView("privacy");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "inspectLocalPrivacy" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "inspectLocalPrivacy", effectId: "privacy:inspected" }));
+      return;
+    }
+    if (/^export (?:my )?local pearl data$/i.test(privacyIntent)) {
+      const local = await window.__pearlPrivacy?.exportLocal?.();
+      if (!local) throw new Error("local privacy storage is unavailable");
+      const url = URL.createObjectURL(new Blob([JSON.stringify(local, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "pearl-local-data.json";
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "exportLocalData" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "exportLocalData", effectId: "privacy:exported" }));
+      return;
+    }
+    if (/^(?:enable|turn on|disable|turn off) sync$/i.test(privacyIntent)) {
+      const enabled = /^(?:enable|turn on)/i.test(privacyIntent);
+      setBoardSyncEnabled(enabled);
+      window.dispatchEvent(new CustomEvent("pearl-board-sync-consent", { detail: { enabled } }));
+      setPrivacyNotice({ title: enabled ? "Sync enabled for this profile" : "Local only", detail: enabled ? "Account sync was explicitly enabled." : "No Pearl metadata will sync." });
+      setEmittedView("privacy");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "setBoardSync" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "setBoardSync", effectId: `privacy:sync:${enabled}` }));
+      return;
+    }
+    if (/^(?:lock|unlock) (?:my |these )?pearls$/i.test(privacyIntent)) {
+      const unlock = /^unlock/i.test(privacyIntent);
+      await window.__pearlPrivacy?.[unlock ? "unlock" : "lock"]?.();
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: unlock ? "unlockLocalPearls" : "lockLocalPearls" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: unlock ? "unlockLocalPearls" : "lockLocalPearls", effectId: `privacy:${unlock ? "unlocked" : "locked"}` }));
+      location.reload();
+      return;
+    }
+    if (/^delete (?:my |this profile(?:'s)? )?local pearl data$/i.test(privacyIntent)) {
+      setOrb(transitionOrb(next, "approval", {
+        taskId: recorded.entry.id,
+        evidence: { title: "Delete this profile’s local Pearl metadata?", preview: true, steps: ["Account data is untouched", "A local deletion receipt is created"] },
+      }));
+      setPendingApproval({ title: "Delete this profile’s local Pearl metadata?", steps: ["Account data is untouched", "A local deletion receipt is created"] });
+      const approval = await new Promise((resolve) => { approvalResolverRef.current = resolve; });
+      if (approval?.decision !== "accept") {
+        setOrb((value) => createOrbState({ ...value, phase: "paused", effectId: null, commandId: null }));
+        return;
+      }
+      await window.__pearlPrivacy?.deleteLocal?.();
+      setOrb((value) => transitionOrb(value, "executing", { taskId: recorded.entry.id, commandId: "deleteLocalData" }));
+      setOrb((value) => transitionOrb(value, "completed", { taskId: recorded.entry.id, commandId: "deleteLocalData", effectId: "privacy:deleted" }));
+      location.reload();
+      return;
+    }
     if (/\b(?:open|start|new)\b.*\bscene\b/i.test(recorded.entry.normalized)) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openScene" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openScene", effectId: "route:scene" }));
       navigate(`/scene/${crypto.randomUUID()}`);
+      return;
+    }
+    if (/\b(?:install|set up|add)\b.*\b(?:pearl|extension)\b/i.test(recorded.entry.normalized)) {
+      const executing = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openExtensionDownload" });
+      setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "openExtensionDownload", effectId: "route:install" }));
+      navigate("/install");
+      return;
+    }
+    if (/\b(?:show|inspect|open)\b.*\b(?:context|what you noticed|source material)\b/i.test(recorded.entry.normalized)) {
+      setEmittedView("context");
+      const executing = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "inspectContext" });
+      setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "inspectContext", effectId: "view:context" }));
+      return;
+    }
+    if (/\b(?:show|inspect|open)\b.*\b(?:saved|history|library|settings|packages|past work)\b/i.test(recorded.entry.normalized)) {
+      setEmittedView("library");
+      const executing = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "inspectLibrary" });
+      setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "inspectLibrary", effectId: "view:library" }));
+      return;
+    }
+    if (/\b(?:show|inspect|open|change)\b.*\b(?:scene controls|layout|view)\b/i.test(recorded.entry.normalized)) {
+      setEmittedView("scene");
+      const executing = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "inspectScene" });
+      setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "inspectScene", effectId: "view:scene" }));
       return;
     }
     if (route.kind !== "stage") {
@@ -1531,6 +1619,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
     const handoffIdentity = String(
       extensionHandoff?.handoff?.id
+      || extensionHandoff?.resultPearl?.id
       || extensionHandoff?.handoff?.createdAt
       || [
         ...(extensionHandoff?.session?.fragments || []).map((entry) => entry.id),
@@ -1602,6 +1691,11 @@ export default function OrbUniverseShell({ StageComponent }) {
     navigate(`/scene/${encodeURIComponent(id)}?frame=workspace`);
   }
 
+  useEffect(() => {
+    if (route.handoff !== "result-pearl" || handoffStatus !== "ready" || !extensionHandoff?.resultPearl) return;
+    continueExtensionWork();
+  }, [route.handoff, handoffStatus, extensionHandoff?.resultPearl?.id]);
+
   const routedScene = (sceneWorkspace.scenes || []).find((scene) => scene.id === route.sceneId)
     || createScene({ id: route.sceneId || "untitled", name: route.sceneId || "Untitled Scene" });
 
@@ -1624,25 +1718,27 @@ export default function OrbUniverseShell({ StageComponent }) {
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
       {emittedView && <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
         <button type="button" onClick={() => setEmittedView(null)}>Close</button>
-        <b>{emittedView === "context" ? "Working context" : emittedView === "actions" ? "Pearl actions" : emittedView === "taste" ? "Candidate taste" : "Cognitive library"}</b>
+        <b>{emittedView === "context" ? "What Pearl noticed" : emittedView === "actions" ? "Actions" : emittedView === "taste" ? "Choices" : emittedView === "scene" ? "View" : emittedView === "privacy" ? privacyNotice?.title : "Saved work"}</b>
         {emittedView === "actions"
           ? <PearlActionPalette onRun={executePearlAction} />
           : emittedView === "scene"
           ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
-              <button type="button" onClick={() => navigate("/library")}>Library and recent work</button>
+              <button type="button" onClick={() => navigate("/library")}>Past work</button>
               <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
-                {outputFrameOpen ? "Return to Scene" : "Open Output Frame"}
+                {outputFrameOpen ? "Return to space" : "Focus on the result"}
               </button>
               {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
-                {outputToolsOpen ? "Collapse paper tools" : "Paper tools"}
+                {outputToolsOpen ? "Hide editing tools" : "Editing tools"}
               </button>}
-              {["Stage", "Gallery", "Graph", "Table", "Timeline"].map((option) => <button
+              {[["Stage", "Space"], ["Gallery", "Grid"], ["Graph", "Connections"], ["Table", "Details"], ["Timeline", "Sequence"]].map(([option, optionLabel]) => <button
                 type="button"
                 key={option}
                 aria-pressed={!outputFrameOpen && sceneView === option}
                 onClick={() => { setOutputFrameOpen(false); setSceneView(option); }}
-              >{option}</button>)}
+              >{optionLabel}</button>)}
             </nav>
+          : emittedView === "privacy"
+          ? <span>{privacyNotice?.detail}</span>
           : emittedView === "context"
           ? <ContextInspector items={orb.context || []} onChange={updateOrbContext} onRemove={removeOrbContext} />
           : emittedView === "lenses"
@@ -1699,5 +1795,10 @@ export default function OrbUniverseShell({ StageComponent }) {
       onApproval={decideApproval}
       onWorkerCancel={cancelWorker}
     />}
+    {emittedView === "privacy" && privacyNotice && <aside className="orb-stage-emission" aria-label="Privacy view emitted by Pearl">
+      <button type="button" onClick={() => setEmittedView(null)}>Close</button>
+      <b>{privacyNotice.title}</b>
+      <span>{privacyNotice.detail}</span>
+    </aside>}
   </div>;
 }

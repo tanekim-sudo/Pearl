@@ -1,548 +1,25 @@
 {
-  "generatedAt": "2026-07-19T00:30:12.136Z",
+  "generatedAt": "2026-07-20T07:32:18.058Z",
   "harness": "controlled real director/extension handler execution",
   "inputPath": "director",
   "counts": {
-    "total": 24,
-    "passed": 24,
+    "total": 12,
+    "passed": 12,
     "failed": 0,
     "skipped": 0,
-    "app": 17,
-    "extension": 7
+    "app": 0,
+    "extension": 12
   },
   "rows": [
     {
-      "name": "createSemanticOrb",
-      "platform": "app",
-      "utterance": "make these notes a new orb called Picasso studies",
-      "args": {
-        "sceneId": "release-audit",
-        "id": "semantic-created",
-        "name": "Created semantic orb",
-        "placement": {
-          "x": 260,
-          "y": 30
-        }
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "b70f6623-8245-4615-a3bf-6a259b31e288",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1523,
-      "errors": []
-    },
-    {
-      "name": "activateSemanticOrb",
-      "platform": "app",
-      "utterance": "open the Picasso studies orb",
-      "args": {
-        "id": "semantic-a"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "6a800e67-d58c-4f72-9a78-aa2014b67541",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1490,
-      "errors": []
-    },
-    {
-      "name": "moveSemanticOrb",
-      "platform": "app",
-      "utterance": "move the Picasso orb to the upper left",
-      "args": {
-        "id": "semantic-a",
-        "placement": {
-          "x": 60,
-          "y": 70
-        }
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "d4cf1e1a-debb-4220-9035-885c3ee154eb",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1526,
-      "errors": []
-    },
-    {
-      "name": "renameSemanticOrb",
-      "platform": "app",
-      "utterance": "rename this orb Visual grammar",
-      "args": {
-        "id": "semantic-a",
-        "name": "Renamed semantic orb"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "51956574-e012-4b58-a47a-5dea5b6608d9",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1452,
-      "errors": []
-    },
-    {
-      "name": "bindSemanticOrb",
-      "platform": "app",
-      "utterance": "make this orb represent my investor memo Function",
-      "args": {
-        "id": "semantic-a",
-        "representation": {
-          "kind": "function",
-          "refs": [
-            "op-pipeline"
-          ],
-          "label": "Pipeline Function"
-        }
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "6190229d-f7ca-4ac8-9aa0-0c3489e44b14",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1460,
-      "errors": []
-    },
-    {
-      "name": "addSemanticOrbContext",
-      "platform": "app",
-      "utterance": "put these three references into the Picasso orb",
-      "args": {
-        "id": "semantic-a",
-        "items": [
-          {
-            "id": "orb-note",
-            "kind": "text",
-            "text": "Orb note"
-          }
-        ]
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "fc6d1ebd-3f24-4d2d-87bf-c5a84237d9ed",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1506,
-      "errors": []
-    },
-    {
-      "name": "removeSemanticOrbContext",
-      "platform": "app",
-      "utterance": "remove that draft from this orb but keep the source",
-      "args": {
-        "id": "semantic-a",
-        "itemId": "orb-note"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "9295010a-addd-46b2-9de9-8436a4eca9e3",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1447,
-      "errors": []
-    },
-    {
-      "name": "applySemanticOrbLens",
-      "platform": "app",
-      "utterance": "apply my skeptical Lens to the Picasso orb",
-      "args": {
-        "id": "semantic-a",
-        "lens": {
-          "id": "generator-a",
-          "kind": "lens",
-          "name": "Generator A"
-        },
-        "strength": 0.6
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "4f153af0-8764-4d50-b8e2-fe68c303a75e",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1491,
-      "errors": []
-    },
-    {
-      "name": "removeSemanticOrbLens",
-      "platform": "app",
-      "utterance": "remove the skeptical Lens from this orb",
-      "args": {
-        "id": "semantic-a",
-        "lensId": "generator-a"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "191ad8d9-79ed-43d3-a0bb-cf14f4ef9dd2",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1476,
-      "errors": []
-    },
-    {
-      "name": "nestSemanticOrb",
-      "platform": "app",
-      "utterance": "put the color orb inside the Picasso orb",
-      "args": {
-        "childId": "semantic-a",
-        "parentId": "semantic-parent"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "7632faeb-b951-4d2a-aec0-e05da828f8f5",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1447,
-      "errors": []
-    },
-    {
-      "name": "unnestSemanticOrb",
-      "platform": "app",
-      "utterance": "take the color orb back out",
-      "args": {
-        "id": "semantic-a"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "574c354f-bdad-43b0-b78c-c2c753419353",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1506,
-      "errors": []
-    },
-    {
-      "name": "mergeSemanticOrbs",
-      "platform": "app",
-      "utterance": "merge these three orbs into one",
-      "args": {
-        "ids": [
-          "semantic-a",
-          "semantic-parent"
-        ],
-        "sceneId": "release-audit",
-        "name": "Merged runtime orbs"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "cf110d7a-f867-4231-aa83-5a0d35dd18e2",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1526,
-      "errors": []
-    },
-    {
-      "name": "composeSemanticOrbs",
-      "platform": "app",
-      "utterance": "compose the evidence orb then the concise writing orb",
-      "args": {
-        "ids": [
-          "semantic-a",
-          "semantic-parent"
-        ],
-        "sceneId": "release-audit",
-        "name": "Composed runtime orbs"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "713d8e90-e12b-4e09-93d0-8bdc85ea4b14",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1500,
-      "errors": []
-    },
-    {
-      "name": "splitSemanticOrb",
-      "platform": "app",
-      "utterance": "split this orb back into its source ideas",
-      "args": {
-        "id": "semantic-parent",
-        "sceneId": "release-audit"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "f3d82c6e-c43f-4087-a811-13badde3e24d",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1522,
-      "errors": []
-    },
-    {
-      "name": "duplicateSemanticOrb",
-      "platform": "app",
-      "utterance": "duplicate this orb for a new direction",
-      "args": {
-        "id": "semantic-a",
-        "name": "Semantic copy"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "9a3ed07a-c42a-4086-a48e-82366ae2eb1d",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1467,
-      "errors": []
-    },
-    {
-      "name": "archiveSemanticOrb",
-      "platform": "app",
-      "utterance": "archive this orb",
-      "args": {
-        "id": "semantic-a",
-        "archived": true
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "7da7c1c4-962c-4d62-873d-6a42689b9df2",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1492,
-      "errors": []
-    },
-    {
-      "name": "deleteSemanticOrb",
-      "platform": "app",
-      "utterance": "delete only the abandoned orb",
-      "args": {
-        "id": "semantic-parent"
-      },
-      "planner": "canonical adaptive plan parsed and validated",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "action-result",
-      "observableEffect": "state-or-visible-artifact-changed",
-      "persistence": "local store or visible runtime state observed",
-      "animation": {
-        "version": 1,
-        "traceId": "1bd82af0-5b49-4aec-bdd1-7a68c3382380",
-        "status": "completed",
-        "events": 4,
-        "reducedMotion": false
-      },
-      "directExecution": null,
-      "dispatchCount": null,
-      "ledgerStatus": null,
-      "rawErrorLeak": false,
-      "status": "passed",
-      "durationMs": 1592,
-      "errors": []
-    },
-    {
-      "name": "createExternalSemanticOrb",
+      "name": "inspectExternalPrivacy",
       "platform": "extension",
-      "utterance": "please create a compact persistent orb from the current capture or an emerging idea",
+      "utterance": "what is stored on this device",
       "args": {},
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-summary",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -550,16 +27,14 @@
       "errors": []
     },
     {
-      "name": "openExternalSemanticOrb",
+      "name": "exportExternalLocalData",
       "platform": "extension",
-      "utterance": "please open a saved semantic orb in the extension tray",
-      "args": {
-        "id": "fixture"
-      },
+      "utterance": "export my local Pearl data",
+      "args": {},
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-export",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -567,16 +42,16 @@
       "errors": []
     },
     {
-      "name": "addExternalSemanticOrbContext",
+      "name": "setExternalSync",
       "platform": "extension",
-      "utterance": "please add the current capture or explicit material to a saved orb",
+      "utterance": "keep sync off",
       "args": {
-        "id": "fixture"
+        "enabled": true
       },
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-sync",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -584,17 +59,14 @@
       "errors": []
     },
     {
-      "name": "applyExternalSemanticOrbLens",
+      "name": "deleteExternalLocalData",
       "platform": "extension",
-      "utterance": "please apply a synced Lens to a saved orb",
-      "args": {
-        "id": "fixture",
-        "lensId": "fixture"
-      },
+      "utterance": "delete this profile's local Pearl data",
+      "args": {},
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-deletion",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -602,18 +74,14 @@
       "errors": []
     },
     {
-      "name": "mergeExternalSemanticOrbs",
+      "name": "lockExternalPearls",
       "platform": "extension",
-      "utterance": "please merge saved orb contexts into a new capsule",
-      "args": {
-        "ids": [
-          "claim"
-        ]
-      },
-      "planner": "canonical extension plan",
+      "utterance": "lock my Pearls",
+      "args": {},
+      "planner": "deterministic extension intent",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-lock",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -621,16 +89,14 @@
       "errors": []
     },
     {
-      "name": "archiveExternalSemanticOrb",
+      "name": "unlockExternalPearls",
       "platform": "extension",
-      "utterance": "please archive or restore a saved orb",
-      "args": {
-        "id": "fixture"
-      },
-      "planner": "canonical extension plan",
+      "utterance": "unlock my Pearls",
+      "args": {},
+      "planner": "deterministic extension intent",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "external-semantic-orb",
+      "typedResult": "local-privacy-lock",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",
@@ -638,16 +104,97 @@
       "errors": []
     },
     {
-      "name": "openExternalSemanticOrbScene",
+      "name": "bindExternalCanvasContext",
       "platform": "extension",
-      "utterance": "please open the authoritative web Scene to spatially arrange a saved orb",
+      "utterance": "draw this context into the Pearl",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "pearl-canvas-context",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "searchExternalPearlSoundscape",
+      "platform": "extension",
+      "utterance": "give this Pearl rain ambience",
       "args": {
-        "id": "fixture"
+        "query": "fixture"
+      },
+      "planner": "deterministic extension intent",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "pearl-audio-search",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "uploadExternalPearlAudio",
+      "platform": "extension",
+      "utterance": "upload my track for this Pearl",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "pearl-audio-upload",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "useExternalPearlAudioTrack",
+      "platform": "extension",
+      "utterance": "use this licensed track",
+      "args": {
+        "track": {
+          "columns": 2
+        }
       },
       "planner": "canonical extension plan",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "extension-action",
+      "typedResult": "pearl-soundscape",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "controlExternalPearlSoundscape",
+      "platform": "extension",
+      "utterance": "pause this Pearl's sound",
+      "args": {
+        "action": "play"
+      },
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "pearl-audio-status",
+      "observableEffect": "controlled extension state changed",
+      "persistence": "extension action boundary observed",
+      "animation": "verified orb effect trace completed",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "updateExternalPearlSoundscape",
+      "platform": "extension",
+      "utterance": "turn this Pearl's sound down",
+      "args": {},
+      "planner": "canonical extension plan",
+      "schema": "pass",
+      "runtimeHandler": "invoked",
+      "typedResult": "pearl-soundscape",
       "observableEffect": "controlled extension state changed",
       "persistence": "extension action boundary observed",
       "animation": "verified orb effect trace completed",

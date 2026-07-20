@@ -66,15 +66,22 @@ try {
   await shot("01-continuation-desktop", { width: 1600, height: 1000 }, "/", async (page) => {
     await page.evaluate(() => localStorage.removeItem("lens.orb-universe.continued.v1"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("region", { name: "Continue extension work" }).waitFor();
+    if (await page.getByRole("region", { name: "Continue extension work" }).count()) {
+      throw new Error("zero-state root exposes a continuation panel without material");
+    }
     if (await page.getByRole("heading", { name: /The world is your oyster/ }).isVisible()) {
       throw new Error("idle root still exposes competing marketing chrome");
     }
     if (await page.locator(".orb-continuation-pearl").isVisible()) throw new Error("idle root duplicates the primary Pearl");
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("off-Scene Pearl is not the single persistent command affordance");
     await page.locator(".companion-orb").click();
-    if (!await page.getByRole("searchbox", { name: "Search every Pearl action" }).isVisible()) throw new Error("off-Scene Pearl did not emit complete action search");
-    await page.getByRole("button", { name: "Minimize orb" }).click();
+    if (!await page.getByRole("textbox", { name: "Tell Pearl your goal" }).isVisible()) throw new Error("off-Scene Pearl did not emit one focused command");
+    if (await page.getByRole("navigation").count()) throw new Error("Pearl click exposed persistent navigation");
+    await page.keyboard.press("Escape");
+    if (await page.getByRole("textbox", { name: "Tell Pearl your goal" }).isVisible()) throw new Error("Escape did not collapse Pearl completely");
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
+    if (!await page.getByRole("searchbox", { name: /Search every Pearl action/ }).isVisible()) throw new Error("keyboard universal search is unreachable");
+    await page.keyboard.press("Escape");
     if (await page.getByRole("link", { name: /Add Pearl to Chrome/ }).count()) throw new Error("extension download still dominates the web root");
   });
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
@@ -218,7 +225,7 @@ try {
     if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
     await page.locator(".semantic-orb-cluster").first().waitFor();
     await page.locator(".semantic-orb-cluster").first().click();
-    await page.getByRole("button", { name: "New pearl" }).first().click();
+    await page.locator(".orb-black-stage").dblclick({ position: { x: 1200, y: 700 } });
     await page.locator(".semantic-orb-capsule.active").waitFor();
     await page.waitForFunction(() => {
       const workspace = JSON.parse(localStorage.getItem("lens.scenes.v4") || "null");
@@ -263,8 +270,9 @@ try {
     await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
     await page.keyboard.press("Escape");
     await page.locator(".companion-orb").click();
-    await page.getByRole("button", { name: "Scene", exact: true }).click();
-    await page.locator(".pearl-scene-actions").getByRole("button", { name: "Gallery", exact: true }).click();
+    await page.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("show me the scene controls");
+    await page.getByRole("button", { name: "Send command" }).click();
+    await page.locator(".pearl-scene-actions").getByRole("button", { name: "Grid", exact: true }).click();
     await page.waitForFunction(() => document.querySelector(".orb-black-stage")?.dataset.stageView === "gallery");
     await page.getByRole("button", { name: "Add to Pearl context" }).click();
     await page.locator(".orb-context-object").waitFor();
@@ -278,12 +286,12 @@ try {
     const beforeDrop = await page.locator(".orb-stage-materials article").count();
     await page.locator(".orb-context-object").dragTo(page.locator(".orb-black-stage"), { targetPosition: { x: 980, y: 620 } });
     await page.waitForFunction((count) => document.querySelectorAll(".orb-stage-materials article").length > count, beforeDrop);
-    await page.getByRole("button", { name: "Table", exact: true }).click();
+    await page.getByRole("button", { name: "Details", exact: true }).click();
     await page.locator(".orb-stage-table").waitFor();
   });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
-    const animation = await page.locator(".orb-install-pearl").evaluate((node) => getComputedStyle(node).animationName);
-    if (animation !== "none") throw new Error(`reduced-motion Pearl still animates: ${animation}`);
+    const animations = await page.evaluate(() => document.getAnimations().filter((entry) => entry.playState === "running").length);
+    if (animations) throw new Error(`reduced-motion setup still animates: ${animations}`);
   });
   fs.writeFileSync(path.join(evidence, "web-results.json"), `${JSON.stringify({
     version: 1,

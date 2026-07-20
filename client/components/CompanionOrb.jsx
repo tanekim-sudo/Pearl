@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
-import { PEARL_ACTION_CATEGORIES, searchPearlActions } from "../lib/pearl-shell.js";
+import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -43,9 +43,9 @@ export default function CompanionOrb({
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
   const actionSearchRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
+  const [powerSearch, setPowerSearch] = useState(false);
   const [draft, setDraft] = useState("");
   const [actionQuery, setActionQuery] = useState("");
-  const [actionCategory, setActionCategory] = useState(null);
   const [placement, setPlacement] = useState(() => ({ ...state.placement, ...readPlacement(storageKey) }));
 
   useEffect(() => {
@@ -83,11 +83,29 @@ export default function CompanionOrb({
       if (typing || !((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) return;
       event.preventDefault();
       setExpanded(true);
+      setPowerSearch(true);
       requestAnimationFrame(() => actionSearchRef.current?.focus());
     }
     window.addEventListener("keydown", openActionSearch);
     return () => window.removeEventListener("keydown", openActionSearch);
   }, []);
+
+  useEffect(() => {
+    if (!expanded) return;
+    function collapse(event) {
+      if (event.type === "keydown" && event.key !== "Escape") return;
+      if (event.type === "pointerdown" && rootRef.current?.contains(event.target)) return;
+      setExpanded(false);
+      setPowerSearch(false);
+      setActionQuery("");
+    }
+    document.addEventListener("pointerdown", collapse, true);
+    window.addEventListener("keydown", collapse, true);
+    return () => {
+      document.removeEventListener("pointerdown", collapse, true);
+      window.removeEventListener("keydown", collapse, true);
+    };
+  }, [expanded]);
 
   function updatePlacement(next) {
     const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
@@ -147,7 +165,10 @@ export default function CompanionOrb({
     dragRef.current = null;
     window.clearTimeout(holdRef.current);
     if (voiceStartedRef.current) onVoiceEnd?.();
-    else if (!drag?.moved) setExpanded((value) => !value);
+    else if (!drag?.moved) {
+      setPowerSearch(false);
+      setExpanded((value) => !value);
+    }
     voiceStartedRef.current = false;
   }
 
@@ -159,6 +180,7 @@ export default function CompanionOrb({
     else if (event.key === "ArrowDown") updatePlacement({ y: placement.y + delta });
     else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
+      setPowerSearch(false);
       setExpanded((value) => !value);
     } else return;
     event.preventDefault();
@@ -196,7 +218,18 @@ export default function CompanionOrb({
   }
 
   const phase = state.phase || "idle";
-  const visibleActions = searchPearlActions(actionQuery, { category: actionCategory }).slice(0, 12);
+  const visibleActions = powerSearch && actionQuery.trim()
+    ? searchPearlActions(actionQuery).slice(0, 8)
+    : [];
+  const nextAction = (state.candidates || []).length
+    ? { label: "Choose a result", run: () => onEmitView?.("taste") }
+    : phase === "executing"
+      ? { label: "Stop", run: onStop }
+      : phase === "blocked" && onUndo
+        ? { label: "Undo", run: onUndo }
+        : (state.context || []).length && onOrbCreate
+          ? { label: "Keep this", run: onOrbCreate }
+          : null;
   return (
     <aside
       ref={rootRef}
@@ -264,9 +297,9 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        title="Hold to speak · click to expand · drag to move"
+        title="Pearl · hold to speak"
       >
-        <span id={titleId} className="sr-only">{label}. Hold to speak, click to expand, or use arrow keys to move.</span>
+        <span id={titleId} className="sr-only">{label}. Hold to speak, click for a command, drop material, or use arrow keys to move.</span>
         <svg viewBox="0 0 100 100" aria-hidden="true">
           <defs>
             <radialGradient id={`orb-core-${titleId}`} cx="39%" cy="58%" r="72%">
@@ -327,17 +360,16 @@ export default function CompanionOrb({
         <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
       </button>
       {expanded && (
-        <div className="orb-ledger" role="region" aria-label="Orb command and task ledger">
-          <div className="orb-ledger-head">
-            <span>{state.activeSemanticOrbId ? `Active orb · ${state.activeSemanticOrbId}` : state.activeIntent?.normalized || state.activeIntent?.raw || phase}</span>
-            <button type="button" aria-label="Minimize orb" onClick={() => {
-              setExpanded(false);
-              updatePlacement({ minimized: !placement.minimized });
-            }}>−</button>
-          </div>
+        <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
           <form onSubmit={submit}>
-            <input value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…" />
-            <button type="submit">Run</button>
+            <input
+              autoFocus={!powerSearch}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              aria-label="Tell Pearl your goal"
+              placeholder="What do you want?"
+            />
+            <button type="submit" aria-label="Send command">→</button>
           </form>
           {approval && <section className="orb-approval" aria-label="Plan approval required">
             <b>{approval.title || "Review plan"}</b>
@@ -347,27 +379,18 @@ export default function CompanionOrb({
               <button type="button" onClick={() => onApproval?.("reject")}>Reject</button>
             </div>
           </section>}
-          <section className="pearl-action-search" aria-label="All Pearl actions">
+          {powerSearch && <section className="pearl-action-search" aria-label="Universal Pearl command search">
             <label>
-              <span className="sr-only">Search every Pearl action</span>
+              <span className="sr-only">Search every Pearl action by intent</span>
               <input
                 ref={actionSearchRef}
                 type="search"
                 value={actionQuery}
                 onChange={(event) => setActionQuery(event.target.value)}
-                placeholder="Find any action…  ⌘K"
+                placeholder="Search by intent…"
                 aria-keyshortcuts="Meta+K Control+K"
               />
             </label>
-            <nav aria-label="Pearl action categories">
-              <button type="button" aria-pressed={!actionCategory} onClick={() => setActionCategory(null)}>All</button>
-              {PEARL_ACTION_CATEGORIES.map((category) => <button
-                type="button"
-                key={category.id}
-                aria-pressed={actionCategory === category.id}
-                onClick={() => setActionCategory((value) => value === category.id ? null : category.id)}
-              >{category.label}</button>)}
-            </nav>
             <div className="pearl-action-results" role="list">
               {visibleActions.map((action) => <button
                 type="button"
@@ -378,48 +401,20 @@ export default function CompanionOrb({
                   if (!action.destructive) setExpanded(false);
                 }}
               >
-                <span><b>{action.label}</b><small>{action.purpose}</small></span>
+                <span><b>{pearlActionPrompt(action)}</b></span>
                 <i>{action.destructive ? "Confirm" : "Run"}</i>
               </button>)}
-              {!visibleActions.length && <span role="status">No action matches “{actionQuery}”. Try saying the goal naturally.</span>}
+              {actionQuery.trim() && !visibleActions.length && <span role="status">No match. Describe the outcome instead.</span>}
             </div>
-          </section>
-          {(state.checkpoints || []).length > 0 && <details className="orb-checkpoints">
-            <summary>{state.checkpoints.length} checkpoint{state.checkpoints.length === 1 ? "" : "s"}</summary>
-            <ol>{state.checkpoints.slice(-8).map((checkpoint, index) => <li key={checkpoint.id || checkpoint.at || index}>
-              {checkpoint.label || checkpoint.id || checkpoint.status || `Checkpoint ${index + 1}`}
-            </li>)}</ol>
-          </details>}
-          {state.fusion?.provenance?.length > 0 && <details className="orb-checkpoints orb-fusion">
-            <summary>{state.fusion.applicable ? "Verified worker fusion" : "Worker fusion needs review"}</summary>
-            <ol>{state.fusion.provenance.map((entry) => <li key={`${entry.workerId}:${entry.type}`}>{entry.workerId} · {entry.type}</li>)}</ol>
-          </details>}
-          <div className="orb-controls">
-            <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
-            <button type="button" onClick={() => { onEmitView?.("context"); setExpanded(false); }}>Context</button>
-            <button type="button" onClick={() => { onEmitView?.("library"); setExpanded(false); }}>Library</button>
-            <button type="button" onClick={() => { onEmitView?.("actions"); setExpanded(false); }}>Actions</button>
-            <button type="button" onClick={() => { onEmitView?.("scene"); setExpanded(false); }}>Scene</button>
-            <button type="button" onClick={() => onOrbCreate?.()}>New orb</button>
-            <button type="button" aria-pressed={cursorMode} onClick={() => onCursorToggle?.(!cursorMode)}>
-              {cursorMode ? "Native cursor" : "Become cursor"}
-            </button>
-            <button type="button" onClick={() => updatePlacement({ dock: "left", x: 12 })}>Dock left</button>
-            <button type="button" onClick={() => updatePlacement({ dock: "right", x: window.innerWidth - 84 })}>Dock right</button>
-            <button type="button" onClick={onStop} disabled={!onStop}>Stop</button>
-            <button type="button" onClick={onUndo} disabled={!onUndo}>Undo</button>
-            <button type="button" onClick={onRedo} disabled={!onRedo}>Redo</button>
-          </div>
-          {(state.trace || []).length > 0 && (
-            <ol className="orb-trace" aria-label="Recent task evidence">
-              {state.trace.slice(-3).reverse().map((entry) => (
-                <li key={entry.id}>
-                  <b>{entry.to}</b>
-                  <span>{entry.evidence?.boundary || entry.evidence?.error || entry.commandId || entry.taskId || "orb task"}</span>
-                </li>
-              ))}
-            </ol>
-          )}
+          </section>}
+          {!powerSearch && !approval && nextAction && <button
+            type="button"
+            className="pearl-next-action"
+            onClick={() => {
+              nextAction.run?.();
+              setExpanded(false);
+            }}
+          >{nextAction.label}</button>}
         </div>
       )}
     </aside>

@@ -9,7 +9,9 @@ import { EXTENSION_VERBS } from "../../extension/src/sidepanel/companion.js";
 import {
   PEARL_ACTIONS,
   PEARL_ACTION_CATEGORIES,
+  PEARL_NOVICE_INTENT_PROBES,
   PEARL_REACHABILITY,
+  pearlActionPrompt,
   pearlReachabilityFor,
   searchPearlActions,
 } from "./pearl-shell.js";
@@ -67,6 +69,40 @@ test("web and extension render transient Pearl-emitted surfaces instead of persi
   assert.match(panel, /extension-pearl-halo/);
   assert.doesNotMatch(panel, /className="orb-view-tabs"/);
   assert.match(panel, /onDropMaterial=\{dropOnPearl\}/);
-  assert.match(bridge, /Find every Pearl action/);
+  assert.match(bridge, /What do you want\?/);
+  assert.doesNotMatch(bridge, /data-view=/);
   assert.match(bridge, /\["move", "function", "operator"\]/);
+});
+
+test("novice outcome language reaches every representative capability family", () => {
+  assert.ok(PEARL_NOVICE_INTENT_PROBES.length >= 16);
+  for (const probe of PEARL_NOVICE_INTENT_PROBES) {
+    const matches = searchPearlActions(probe.intent);
+    assert.ok(
+      matches.some((entry) => entry.capability === probe.capability),
+      `${probe.family} novice intent did not reach ${probe.capability}`,
+    );
+    assert.doesNotMatch(probe.intent, /\b(?:move|function|lens|model|output spec|semantic orb|scene|plan|mode|package)\b/i);
+  }
+});
+
+test("click surfaces remain single-field while keyboard search preserves exhaustive reachability", () => {
+  const orb = source("client/components/CompanionOrb.jsx");
+  const panel = source("extension/src/sidepanel/main.jsx");
+  assert.match(orb, /powerSearch && <section/);
+  assert.doesNotMatch(orb, /Pearl action categories/);
+  assert.doesNotMatch(orb, />Context<\/button>|>Library<\/button>|>Actions<\/button>|>Scene<\/button>/);
+  assert.match(panel, /powerSearch &&/);
+  assert.doesNotMatch(panel, /Immediate Pearl views/);
+  assert.equal(searchPearlActions("").length, COMPANION_CAPABILITIES.length);
+});
+
+test("power search presents outcomes without requiring internal ontology", () => {
+  for (const action of PEARL_ACTIONS) {
+    assert.doesNotMatch(
+      pearlActionPrompt(action),
+      /\b(?:move|function|lens|model|output spec|semantic orb|scene|package|branch|plan)\b/i,
+      `${action.capability} leaks internal ontology`,
+    );
+  }
 });

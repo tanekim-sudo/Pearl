@@ -13,6 +13,8 @@ export default defineConfig({
       input: {
         sidepanel: path.resolve(import.meta.dirname, "sidepanel.html"),
         options: path.resolve(import.meta.dirname, "options.html"),
+        offscreen: path.resolve(import.meta.dirname, "offscreen.html"),
+        result: path.resolve(import.meta.dirname, "result.html"),
         background: path.resolve(import.meta.dirname, "src/background/service-worker.js"),
       },
       output: {

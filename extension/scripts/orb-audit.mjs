@@ -101,12 +101,32 @@ try {
   await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "05-extension-idle-pearl-360.png"), fullPage: true });
   await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+  await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).waitFor();
+  if (await panel.getByRole("navigation").count()) throw new Error("Pearl click exposed persistent navigation");
+  await panel.keyboard.press("Escape");
+  await panel.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
   await panel.getByRole("searchbox", { name: "Search every Pearl action" }).fill("before after");
   await panel.screenshot({ path: path.join(evidence, "05a-extension-action-search-360.png"), fullPage: true });
-  await panel.getByRole("button", { name: "Close Pearl actions" }).click();
+  await panel.keyboard.press("Escape");
   const openPanelView = async (name) => {
+    const requests = {
+      Context: "show me what you noticed",
+      Library: "show me the things I can reuse",
+      Generate: "show me what you are about to do",
+      Command: null,
+      Pearls: "show me what I kept",
+      Settings: "open my preferences",
+    };
+    if (await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).isVisible().catch(() => false)) {
+      await panel.keyboard.press("Escape");
+    }
+    if (!["idle", "command"].includes(await panel.locator("main").getAttribute("data-orb-view"))) {
+      await panel.getByRole("button", { name: "Collapse view into Pearl" }).click();
+    }
     await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
-    await panel.getByRole("navigation", { name: "Immediate Pearl views" }).getByRole("button", { name, exact: true }).click();
+    if (!requests[name]) return;
+    await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
+    await panel.getByRole("button", { name: "Send command" }).click();
   };
   await panel.evaluate(async () => {
     const tabs = await chrome.tabs.query({});
@@ -133,17 +153,20 @@ try {
     });
   });
   await pageOrb.click();
-  await fixture.getByRole("region", { name: "Views emitted by Pearl" }).waitFor();
+  await fixture.getByRole("region", { name: "Pearl command" }).waitFor();
   await fixture.screenshot({ path: path.join(evidence, "06a-extension-page-orb-expanded.png"), fullPage: true });
   await fixture.locator("#field").selectText();
-  await fixture.getByRole("button", { name: "Make a pearl from this" }).click();
+  await fixture.locator("#lens-orb-overlay-host").locator('[data-action="contextual"]').click();
   await fixture.waitForTimeout(850);
   let firstPearlState;
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    firstPearlState = await panel.evaluate(async () => ({
-      local: await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]),
-      active: await chrome.storage.session.get("lensEverywhereSession"),
-    }));
+    firstPearlState = await panel.evaluate(async () => {
+      const response = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+      return {
+        local: response?.value || {},
+        active: await chrome.storage.session.get("lensEverywhereSession"),
+      };
+    });
     if (firstPearlState.local.semanticOrbs?.length === 1
       && firstPearlState.local.activeSemanticOrbId === firstPearlState.local.semanticOrbs[0].id
       && firstPearlState.active.lensEverywhereSession?.fragments?.length >= 1) break;
@@ -152,8 +175,44 @@ try {
   if (firstPearlState.local.semanticOrbs?.length !== 1) {
     throw new Error(`page Pearl did not persist: ${JSON.stringify(firstPearlState)}`);
   }
+  await openPanelView("Command");
+  await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("use this Pearl here");
+  await panel.getByRole("button", { name: "Send command" }).click();
+  try {
+    await fixture.locator("#pearl-page-canvas-host[data-active=true]").waitFor({ timeout: 5_000 });
+  } catch {
+    const diagnostics = await panel.evaluate(async () => {
+      const state = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+      return { text: document.body.innerText, state: state?.value };
+    });
+    throw new Error(`companion canvas activation failed: ${JSON.stringify(diagnostics)}`);
+  }
+  await openPanelView("Command");
+  await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("let me draw on this with Pearl");
+  await panel.getByRole("button", { name: "Send command" }).click();
+  await fixture.locator("#pearl-page-canvas-host[data-mode=pen]").waitFor();
+  await fixture.mouse.move(820, 190);
+  await fixture.mouse.down();
+  await fixture.mouse.move(900, 240, { steps: 8 });
+  await fixture.mouse.up();
+  const canvasState = await panel.evaluate(async ({ pageIdentity }) => {
+    const response = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "page-canvas-get",
+      requestId: "orb-audit-canvas-state",
+      payload: { pageIdentity },
+    });
+    return response?.value?.canvas;
+  }, { pageIdentity: `http://127.0.0.1:${server.address().port}/` });
+  if (!canvasState?.artifacts?.some((entry) => entry.type === "ink")) throw new Error("companion drawing did not persist in the active Pearl canvas");
+  await fixture.screenshot({ path: path.join(evidence, "06b1-extension-pearl-canvas-ink.png"), fullPage: true });
+  await openPanelView("Command");
+  await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("let me edit the page again");
+  await panel.getByRole("button", { name: "Send command" }).click();
+  await fixture.locator("#pearl-page-canvas-host[data-mode=native]").waitFor();
   await panel.evaluate(async () => {
-    const local = await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]);
+    const response = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+    const local = response?.value || {};
     const active = local.semanticOrbs.find((entry) => entry.id === local.activeSemanticOrbId) || local.semanticOrbs[0];
     if (!active) throw new Error(`persisted pearl disappeared before reopen: ${JSON.stringify(globalThis.__semanticChanges)}`);
     await chrome.runtime.sendMessage({
@@ -189,6 +248,38 @@ try {
   if (!generationState.session?.results?.flatMap((run) => run.outputs || []).length) {
     throw new Error(`GO did not create a candidate: ${JSON.stringify(generationState)}`);
   }
+  const marginPearl = fixture.locator("#pearl-result-pearls-host").locator("button.result").first();
+  await marginPearl.waitFor({ state: "visible" });
+  const resultId = await marginPearl.getAttribute("data-id");
+  if (!resultId?.startsWith("result-pearl:")) throw new Error("GO did not persist a real margin result Pearl");
+  await marginPearl.click();
+  const resultPlane = fixture.locator("#pearl-result-pearls-host").locator(".plane");
+  await resultPlane.waitFor({ state: "visible" });
+  await fixture.screenshot({ path: path.join(evidence, "06c1-celadon-margin-result-expanded.png"), fullPage: true });
+  const newTabPromise = context.waitForEvent("page");
+  await resultPlane.getByRole("button", { name: "Open in new tab" }).click();
+  const resultTab = await newTabPromise;
+  await resultTab.waitForLoadState();
+  await resultTab.locator("article").filter({ hasText: "Reviewed: Pearl extension audit material." }).waitFor();
+  if (decodeURIComponent(resultTab.url()).includes("Reviewed:") || resultTab.url().includes(resultId)) {
+    throw new Error("result text or stable result identity leaked into the new-tab URL");
+  }
+  await resultTab.close();
+  await marginPearl.press("Escape");
+  await resultPlane.waitFor({ state: "detached" });
+  await fixture.setViewportSize({ width: 390, height: 720 });
+  await fixture.evaluate(() => {
+    document.body.style.zoom = "1.25";
+    scrollTo(0, 120);
+  });
+  const narrowBox = await marginPearl.boundingBox();
+  if (!narrowBox || narrowBox.x < 0 || narrowBox.x + narrowBox.width > 390) throw new Error("result Pearl did not dock safely after narrow zoomed reflow");
+  await fixture.screenshot({ path: path.join(evidence, "06c2-celadon-result-narrow-zoom.png"), fullPage: true });
+  await fixture.evaluate(() => {
+    document.body.style.zoom = "";
+    scrollTo(0, 0);
+  });
+  await fixture.setViewportSize({ width: 1280, height: 800 });
   await panel.reload();
   await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
   await openPanelView("Generate");
@@ -226,15 +317,10 @@ try {
     return response.value?.url || "";
   });
   if (!continuedUrl.includes("view=integrate")) throw new Error(`continuation route mismatch: ${continuedUrl}`);
-  await fixture.getByRole("button", { name: "lens", exact: true }).click();
-  await fixture.getByRole("button", { name: "taste", exact: true }).click();
   await fixture.screenshot({ path: path.join(evidence, "06e-extension-page-orb-lens-candidates.png"), fullPage: true });
   await pageOrb.dragTo(fixture.locator("h1"));
   const afterDrag = await pageOrb.boundingBox();
   if (!afterDrag || Math.abs(afterDrag.x - beforeDrag.x) < 80) throw new Error("page orb did not visibly drag/dock");
-  await fixture.getByRole("button", { name: "Minimize Pearl" }).click();
-  const minimized = await pageOrb.boundingBox();
-  if (!minimized || minimized.width > 45) throw new Error("page orb did not minimize");
   await fixture.screenshot({ path: path.join(evidence, "06f-extension-page-orb-minimized.png"), fullPage: true });
   await fixture.locator("h1").click();
   await fixture.keyboard.press("Space");
@@ -268,7 +354,10 @@ try {
   await openPanelView("Pearls");
   await panel.getByRole("heading", { name: "Pearls" }).waitFor();
   await panel.getByRole("button", { name: /Make a pearl|New empty pearl/ }).click();
-  await panel.waitForFunction(async () => (await chrome.storage.local.get("semanticOrbs")).semanticOrbs?.length === 2);
+  await panel.waitForFunction(async () => {
+    const response = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+    return response?.value?.semanticOrbs?.length === 2;
+  });
   await panel.screenshot({ path: path.join(evidence, "07a-extension-semantic-orbs.png"), fullPage: true });
   await openPanelView("Library");
   await panel.screenshot({ path: path.join(evidence, "08-extension-library-360.png"), fullPage: true });
@@ -297,20 +386,20 @@ try {
     viewport: { width: 360, height: 720 },
     checks: [
       "literal animated Shadow DOM page-edge orb visible",
-      "page orb emits command/context/Lens/taste views",
+      "page orb emits one command and one contextual action",
       "selection absorption creates visible context orbit",
       "capture queues an action and remains inert until explicit GO",
       "GO creates a reviewable candidate",
       "candidate insertion is verified in the page target",
       "web continuation uses the trusted handoff route",
       "Lens atmosphere and candidate constellation visible",
-      "page orb drag/dock and minimize are functional",
+      "page orb drag and dock are functional",
       "Triple-Space makes the orb the precise page cursor",
       "Triple-Space restores the native cursor",
       "editable fields exclude the Triple-Space toggle",
-      "same orb identity expands at 360px",
+      "same orb identity opens one focused field at 360px",
       "idle side panel is Pearl-only and action search discovers the full capability model",
-      "orb-mediated side panel views",
+      "explicit natural-language inspection reveals focused side panel views",
       "extension semantic orb tray creates and persists captured capsules",
       "library and settings remain reachable",
       "page and side-panel Pearls are static under reduced motion",

@@ -40,8 +40,13 @@ function captureField(element) {
 export function captureNativeSelection(options = {}) {
   if (isOriginDenied(location.href, options.denylist)) throw new Error("capture disabled on this origin");
   const active = document.activeElement;
-  if (active?.matches?.("input,textarea")) {
-    const field = captureField(active);
+  const selectedField = active?.matches?.("input,textarea")
+    ? active
+    : [...document.querySelectorAll("input,textarea")].find((element) =>
+        element.selectionStart != null && element.selectionEnd != null && element.selectionStart !== element.selectionEnd
+      );
+  if (selectedField) {
+    const field = captureField(selectedField);
     return field ? [field] : [];
   }
   const selection = globalThis.getSelection?.();

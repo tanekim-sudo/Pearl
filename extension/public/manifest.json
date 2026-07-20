@@ -10,8 +10,9 @@
     "128": "icons/icon-128.png"
   },
   "minimum_chrome_version": "116",
-  "permissions": ["activeTab", "storage", "scripting", "sidePanel", "contextMenus", "identity", "clipboardWrite"],
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel", "contextMenus", "identity", "clipboardWrite", "offscreen"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "host_permissions": ["https://archive.org/*", "https://api.jamendo.com/*", "https://usercontent.jamendo.com/*"],
   "background": {
     "service_worker": "assets/background.js",
     "type": "module"

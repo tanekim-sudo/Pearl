@@ -36,6 +36,7 @@ const result = await page.evaluate(async () => {
 });
 if (!result.idempotent || result.operators !== 1 || result.lenses !== 1) throw new Error(`adoption duplicate regression: ${JSON.stringify(result)}`);
 await page.reload();
+await page.waitForFunction(() => Boolean(window.__pearlPrivacy), null, { timeout: 60_000 });
 const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem("lens.release-adoption-fixture")));
 if (!persisted) throw new Error("adoption fixture did not survive reload");
 await page.screenshot({ path: path.join(out, "account-adoption-reload.png"), fullPage: true });

@@ -98,3 +98,41 @@ export function requireLensUser(req, res, next) {
   }
   next();
 }
+
+export async function exchangeExtensionAuthorizationCode({ code, verifier, redirectUri }) {
+  const config = readServerSupabaseConfig();
+  if (!config) throw Object.assign(new Error("account service unavailable"), { status: 503 });
+  if (!/^[A-Za-z0-9_-]{20,512}$/.test(String(code || ""))) throw Object.assign(new Error("invalid authorization code"), { status: 400 });
+  if (!/^[a-f0-9]{64}$/i.test(String(verifier || ""))) throw Object.assign(new Error("invalid authorization verifier"), { status: 400 });
+  const redirect = new URL(String(redirectUri || ""));
+  if (redirect.protocol !== "https:" || !/\.chromiumapp\.org$/i.test(redirect.hostname) || redirect.pathname !== "/auth") {
+    throw Object.assign(new Error("invalid extension redirect"), { status: 400 });
+  }
+  const response = await fetch(`${config.url}/auth/v1/token?grant_type=pkce`, {
+    method: "POST",
+    headers: { "content-type": "application/json", apikey: config.secret },
+    body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.access_token) throw Object.assign(new Error("authorization code exchange failed"), { status: 401 });
+  return { accessToken: body.access_token, expiresIn: body.expires_in || null };
+}
+
+export function extensionAuthorizationUrl({ redirectUri, state, codeChallenge }) {
+  const config = readServerSupabaseConfig();
+  if (!config) throw Object.assign(new Error("account service unavailable"), { status: 503 });
+  const redirect = new URL(String(redirectUri || ""));
+  if (redirect.protocol !== "https:" || !/\.chromiumapp\.org$/i.test(redirect.hostname) || redirect.pathname !== "/auth") {
+    throw Object.assign(new Error("invalid extension redirect"), { status: 400 });
+  }
+  if (!/^[a-f0-9-]{36}$/i.test(String(state || "")) || !/^[A-Za-z0-9_-]{43,128}$/.test(String(codeChallenge || ""))) {
+    throw Object.assign(new Error("invalid authorization request"), { status: 400 });
+  }
+  const url = new URL("/auth/v1/authorize", config.url);
+  url.searchParams.set("provider", process.env.SUPABASE_EXTENSION_PROVIDER || "google");
+  url.searchParams.set("redirect_to", redirect.href);
+  url.searchParams.set("state", state);
+  url.searchParams.set("code_challenge", codeChallenge);
+  url.searchParams.set("code_challenge_method", "s256");
+  return url.href;
+}

@@ -45,14 +45,64 @@ export const PEARL_ACTION_CATEGORIES = Object.freeze(CATEGORY_ORDER.map((id) => 
   label: id[0].toUpperCase() + id.slice(1),
 })));
 
+export function pearlActionPrompt(action) {
+  return String(action?.example || action?.purpose || action?.label || "")
+    .replace(/\bsemantic orbs?\b/gi, "pearls")
+    .replace(/\bmoves?\b/gi, "reusable actions")
+    .replace(/\bfunctions?\b/gi, "reusable processes")
+    .replace(/\blens(?:es)?\b/gi, "context")
+    .replace(/\bscenes?\b/gi, "spaces")
+    .replace(/\boutput frames?\b/gi, "focused results")
+    .replace(/\boutput specs?\b/gi, "result formats")
+    .replace(/\bpackages?\b/gi, "shared tools")
+    .replace(/\bmodels?\b/gi, "intelligence")
+    .replace(/\bbranch(?:es)?\b/gi, "directions")
+    .replace(/\bplans?\b/gi, "steps")
+    .replace(/\ba reusable actions\b/gi, "a reusable action")
+    .replace(/\ba reusable processes\b/gi, "a reusable process")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export const PEARL_NOVICE_INTENT_PROBES = Object.freeze([
+  { family: "preserve", intent: "help me remember this", capability: "createSemanticOrb" },
+  { family: "shape", intent: "make this easier to understand", capability: "transformMaterial" },
+  { family: "arrange", intent: "put these in a sensible order", capability: "organizePage" },
+  { family: "generate", intent: "show me a few different directions", capability: "setGenerationPlan" },
+  { family: "choose", intent: "this one feels right", capability: "tasteCandidate" },
+  { family: "research", intent: "look into this and bring back reliable sources", capability: "createCreativeResearchProposal" },
+  { family: "learn", intent: "learn the change from these two examples", capability: "openBeforeAfterCreation" },
+  { family: "reuse", intent: "learn what I keep doing in this conversation", capability: "openTranscriptLearning" },
+  { family: "use", intent: "put this result into the page", capability: "insertExternalResult" },
+  { family: "share", intent: "let someone else continue this work", capability: "shareWorkspace" },
+  { family: "preserve-copy", intent: "give me a copy I can keep", capability: "exportWorkspace" },
+  { family: "personalize", intent: "adapt this to the kind of work I do", capability: "openRoleSetup" },
+  { family: "appearance", intent: "make this space easier on my eyes", capability: "toggleWorkspaceTheme" },
+  { family: "recover", intent: "restore the earlier version", capability: "restoreFunction" },
+  { family: "import", intent: "bring in the things I used before", capability: "showExternalLibraryImport" },
+  { family: "safety", intent: "remove everything here", capability: "clearWorkspaceDomains" },
+]);
+
+const NOVICE_CAPABILITY_ALIASES = PEARL_NOVICE_INTENT_PROBES.map((probe) => ({
+  ...probe,
+  words: probe.intent.toLowerCase().split(/\s+/).filter((word) => word.length > 3),
+}));
+
 export function searchPearlActions(query = "", options = {}) {
   const normalized = String(query).trim().toLowerCase();
   const platform = options.platform || "all";
   const category = options.category || null;
+  const aliased = new Set(NOVICE_CAPABILITY_ALIASES
+    .filter((probe) => {
+      const overlap = probe.words.filter((word) => normalized.includes(word)).length;
+      return normalized === probe.intent || overlap >= Math.min(2, probe.words.length);
+    })
+    .map((probe) => probe.capability));
   return PEARL_ACTIONS.filter((action) => {
     if (platform !== "all" && platform !== action.platform && !(platform === "extension" && action.platform === "app")) return false;
     if (category && action.category !== category) return false;
     if (!normalized) return true;
+    if (aliased.has(action.capability)) return true;
     return [action.label, action.capability, action.purpose, action.example, ...action.domains]
       .join(" ")
       .toLowerCase()

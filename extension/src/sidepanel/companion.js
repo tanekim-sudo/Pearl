@@ -15,6 +15,45 @@ export const EXTENSION_VERBS = Object.freeze({
       enabled: result?.enabled ?? args.enabled ?? true,
     };
   },
+  inspectExternalPrivacy: ({ inspectPrivacy }) => inspectPrivacy(),
+  exportExternalLocalData: ({ exportLocalData }) => exportLocalData(),
+  setExternalSync: ({ args, setSync }) => setSync(args.enabled),
+  deleteExternalLocalData: ({ deleteLocalData }) => deleteLocalData(),
+  lockExternalPearls: ({ lockPearls }) => lockPearls(),
+  unlockExternalPearls: ({ unlockPearls }) => unlockPearls(),
+  activateExternalPearlCanvas: ({ action }) => action("page-canvas-command", { command: "activatePearlPageCanvas", args: {} }),
+  deactivateExternalPearlCanvas: ({ action }) => action("page-canvas-command", { command: "deactivatePearlPageCanvas", args: {} }),
+  setExternalCanvasMode: ({ args, action }) => action("page-canvas-command", { command: "setPearlCanvasInputMode", args: { mode: args.mode } }),
+  bindExternalCanvasContext: ({ bindCanvasContext }) => bindCanvasContext(),
+  setExternalOutputDestination: ({ args, action }) => action("page-canvas-command", { command: "setPearlCanvasOutputDestination", args: { destination: { type: args.type } } }),
+  undoExternalPearlCanvas: ({ action }) => action("page-canvas-command", { command: "undoPearlPageCanvas", args: {} }),
+  exportExternalPearlCanvasPdf: ({ action }) => action("page-canvas-export-pdf"),
+  searchExternalPearlSoundscape: ({ args, searchAudio }) => searchAudio(args.query, args.provider),
+  uploadExternalPearlAudio: ({ chooseAudio }) => chooseAudio(),
+  useExternalPearlAudioTrack: ({ args, addAudio }) => addAudio(args.track),
+  controlExternalPearlSoundscape: ({ args, controlAudio }) => controlAudio(args.action),
+  updateExternalPearlSoundscape: ({ args, updateAudio }) => updateAudio(args),
+  saveExternalPearlTrackOffline: ({ args, action }) => action("pearl-audio-save-offline", { trackId: args.trackId, confirmed: true }),
+  removeExternalPearlAudioTrack: ({ args, action }) => action("pearl-audio-delete", { trackId: args.trackId, confirmed: true }),
+  expandExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "expandResultPearl", resultId: args.resultId }),
+  collapseExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "collapseResultPearl", resultId: args.resultId }),
+  openExternalResultPearlTab: ({ args, action }) => action("result-pearl-open-tab", { resultId: args.resultId }),
+  presentExternalResultAsChat: ({ args, action }) => action("result-pearl-command", { command: "presentResultPearlAsChat", resultId: args.resultId }),
+  redirectExternalResult: async ({ args, action }) => {
+    const redirected = await action("result-pearl-command", { command: "redirectResultPearl", resultId: args.resultId, destination: { type: args.destination } });
+    if (args.destination === "web-scene") await action("result-pearl-open-web", { resultId: args.resultId });
+    if (args.destination === "companion-region") {
+      await action("result-pearl-create-region", { resultId: args.resultId });
+    } else if (["canvas-textbox", "canvas-region"].includes(args.destination)) {
+      await action("page-canvas-command", { command: "activatePearlPageCanvas", args: {} });
+      await action("page-canvas-command", { command: "setPearlCanvasInputMode", args: { mode: "select-type" } });
+    }
+    return redirected;
+  },
+  acceptExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "acceptResultPearl", resultId: args.resultId }),
+  archiveExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "archiveResultPearl", resultId: args.resultId }),
+  deleteExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "deleteResultPearl", resultId: args.resultId }),
+  undoExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "undoResultPearl", resultId: args.resultId }),
   createExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("create", args),
   openExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("open", args),
   addExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("add-context", args),
@@ -191,5 +230,36 @@ export function parseExtensionIntent(text) {
   if (/^copy (result )?(.+)$/i.test(value)) return { name: "copyExternalResult", args: { result: value.match(/^copy (?:result )?(.+)$/i)[1] } };
   if (/^insert (result )?(.+)$/i.test(value)) return { name: "insertExternalResult", args: { result: value.match(/^insert (?:result )?(.+)$/i)[1] } };
   if (/^replace (with )?(.+)$/i.test(value)) return { name: "replaceExternalSelection", args: { result: value.match(/^replace (?:with )?(.+)$/i)[1] } };
+  if (/^(?:use|activate) this pearl here$/i.test(value)) return { name: "activateExternalPearlCanvas", args: {} };
+  if (/^(?:let me|return to) edit(?:ing)? the page(?: again)?$/i.test(value)) return { name: "deactivateExternalPearlCanvas", args: {} };
+  if (/\b(?:draw|pen)\b/i.test(value)) return { name: "setExternalCanvasMode", args: { mode: "pen" } };
+  if (/\bhighlighter?\b/i.test(value)) return { name: "setExternalCanvasMode", args: { mode: "highlighter" } };
+  if (/\beraser?\b/i.test(value)) return { name: "setExternalCanvasMode", args: { mode: "eraser" } };
+  if (/\b(?:text box|textbox)\b/i.test(value)) return { name: "setExternalOutputDestination", args: { type: "canvas-textbox" } };
+  if (/\bdownload\b.*\bpdf\b/i.test(value)) return { name: "exportExternalPearlCanvasPdf", args: {} };
+  const soundSearch = value.match(/^(?:give this pearl|search for|find)\s+(.+?)(?:\s+(?:soundscape|music|audio))?$/i);
+  if (soundSearch && /\b(?:rain|ambience|music|audio|song|soundscape|room tone)\b/i.test(value)) {
+    return { name: "searchExternalPearlSoundscape", args: { query: soundSearch[1], provider: /\b(?:rain|room tone|noise)\b/i.test(value) ? "procedural" : "internet-archive" } };
+  }
+  if (/^upload my (?:track|audio|song)$/i.test(value)) return { name: "uploadExternalPearlAudio", args: {} };
+  if (/^(?:play|preview|pause|stop)(?: (?:the )?(?:music|soundscape|track))?$/i.test(value)) {
+    return { name: "controlExternalPearlSoundscape", args: { action: /^pause/i.test(value) ? "pause" : /^stop/i.test(value) ? "stop" : "play" } };
+  }
+  if (/^turn (?:it|the music) down$/i.test(value)) return { name: "updateExternalPearlSoundscape", args: { volume: .35 } };
+  if (/^what is stored(?: here| locally)?$/i.test(value)) return { name: "inspectExternalPrivacy", args: {} };
+  if (/^lock (?:my |these )?pearls$/i.test(value)) return { name: "lockExternalPearls", args: {} };
+  if (/^unlock (?:my |these )?pearls$/i.test(value)) return { name: "unlockExternalPearls", args: {} };
+  if (/^(?:enable|turn on) sync$/i.test(value)) return { name: "setExternalSync", args: { enabled: true } };
+  if (/^(?:disable|turn off) sync$/i.test(value)) return { name: "setExternalSync", args: { enabled: false } };
+  if (/^open (?:this|the|latest) result in (?:a )?new tab$/i.test(value)) return { name: "openExternalResultPearlTab", args: { resultId: "latest" } };
+  if (/^open (?:this|the|latest) result in chat$/i.test(value)) return { name: "presentExternalResultAsChat", args: { resultId: "latest" } };
+  if (/^(?:open|expand) (?:this|the|latest) result$/i.test(value)) return { name: "expandExternalResultPearl", args: { resultId: "latest" } };
+  if (/^collapse (?:this|the|latest) result$/i.test(value)) return { name: "collapseExternalResultPearl", args: { resultId: "latest" } };
+  if (/^keep (?:this|the|latest) result$/i.test(value)) return { name: "acceptExternalResultPearl", args: { resultId: "latest" } };
+  if (/^archive (?:this|the|latest) result(?: pearl)?$/i.test(value)) return { name: "archiveExternalResultPearl", args: { resultId: "latest" } };
+  if (/^delete (?:this|the|latest) result(?: pearl)?$/i.test(value)) return { name: "deleteExternalResultPearl", args: { resultId: "latest" } };
+  if (/^undo (?:the )?(?:last )?(?:change to )?(?:this|the|latest) result$/i.test(value)) return { name: "undoExternalResultPearl", args: { resultId: "latest" } };
+  if (/^put (?:it|this result) here$/i.test(value)) return { name: "redirectExternalResult", args: { resultId: "latest", destination: "canvas-region" } };
+  if (/^make (?:a |some )?space(?: for (?:it|this result))?$/i.test(value)) return { name: "redirectExternalResult", args: { resultId: "latest", destination: "companion-region" } };
   throw new Error("Use capture selection, learn from before/after, review library import, preview GO, press GO, copy, insert, or replace.");
 }

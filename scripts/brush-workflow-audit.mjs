@@ -107,8 +107,22 @@ try {
   });
   await page.goto(`${BASE}/scene/brush-audit?frame=workspace`);
   await page.locator(".companion-orb").click();
-  await page.getByRole("button", { name: "Scene", exact: true }).click();
-  await page.locator(".pearl-scene-actions").getByRole("button", { name: "Paper tools", exact: true }).click();
+  await page.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("change view");
+  await page.getByRole("button", { name: "Send command" }).click();
+  const sceneActions = page.locator(".pearl-scene-actions");
+  await sceneActions.waitFor({ state: "visible", timeout: 5_000 }).catch(async () => {
+    const state = await page.evaluate(() => ({
+      text: document.body.innerText.slice(0, 1_500),
+      emitted: document.querySelector(".orb-stage-emission")?.getAttribute("aria-label") || null,
+      phase: document.querySelector(".companion-orb-shell")?.getAttribute("data-phase") || null,
+    }));
+    throw new Error(`Pearl did not emit view controls: ${JSON.stringify(state)}`);
+  });
+  const editingTools = sceneActions.getByRole("button", { name: "Editing tools", exact: true });
+  if (!(await editingTools.isVisible())) {
+    await sceneActions.getByRole("button", { name: "Focus on the result", exact: true }).click();
+  }
+  await editingTools.click();
   await page.waitForSelector('[data-tool="highlight"]');
 
   const brushTool = page.locator('[data-tool="highlight"]');

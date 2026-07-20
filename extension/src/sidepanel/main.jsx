@@ -11,7 +11,8 @@ import { outputContractFor, outputContractLabel } from "../../../shared/output-s
 import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
-import { PEARL_ACTION_CATEGORIES, searchPearlActions } from "../../../client/lib/pearl-shell.js";
+import { pearlActionPrompt, searchPearlActions } from "../../../client/lib/pearl-shell.js";
+import { BrowserPlatform } from "../platform/browser-platform.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -108,14 +109,15 @@ function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, context
           <circle cx="50" cy="50" r="43" className="extension-orb-core" fill={`url(#extension-pearl-core-${id})`} />
           <ellipse cx="43" cy="57" rx="25" ry="29" className="extension-orb-nucleus" fill={`url(#extension-pearl-nucleus-${id})`} />
           <circle cx="50" cy="50" r="41.5" className="extension-orb-nacre" fill={`url(#extension-pearl-nacre-${id})`} />
-          <ellipse cx="58" cy="62" rx="28" ry="17" className="extension-orb-reflection" />
+          <path className="extension-orb-nacre-fold" d="M14 57 C25 28 57 17 82 36 C63 33 48 40 40 55 C32 68 22 70 14 57Z" fill={`url(#extension-pearl-nacre-${id})`} />
+          <ellipse cx="59" cy="64" rx="26" ry="13" className="extension-orb-reflection" />
           <circle cx="50" cy="50" r="42.2" className="extension-orb-rim" fill="none" stroke={`url(#extension-pearl-rim-${id})`} />
           <ellipse cx="33" cy="28" rx="8" ry="4.5" className="extension-orb-glint" transform="rotate(-38 33 28)" />
           <circle cx="27.5" cy="22.5" r="2" className="extension-orb-pinlight" />
         </g>
       </svg>
     </button>
-    <button type="button" className="extension-orb-label" onClick={onCommandView}>{phase === "listening" ? "Listening…" : phase === "executing" ? "Working…" : "Tell Pearl your goal"}</button>
+    <span className="extension-orb-label sr-only">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : "Pearl command"}</span>
   </div>;
 }
 
@@ -155,12 +157,16 @@ function App() {
   const [packages, setPackages] = useState([]);
   const [activeView, setActiveView] = useState("idle");
   const [pearlOpen, setPearlOpen] = useState(false);
+  const [powerSearch, setPowerSearch] = useState(false);
   const [pearlQuery, setPearlQuery] = useState("");
-  const [pearlCategory, setPearlCategory] = useState(null);
   const [orbCursorEnabled, setOrbCursorEnabled] = useState(false);
   const [semanticOrbs, setSemanticOrbs] = useState([]);
   const [activeSemanticOrbId, setActiveSemanticOrbId] = useState(null);
+  const [pendingPearlIntent, setPendingPearlIntent] = useState(null);
+  const [pearlSoundscapes, setPearlSoundscapes] = useState({});
+  const [audioSearchResults, setAudioSearchResults] = useState([]);
   const fileRef = useRef(null);
+  const audioFileRef = useRef(null);
 
   useEffect(() => {
     function pearlKeys(event) {
@@ -168,14 +174,28 @@ function App() {
       if (!typing && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPearlOpen(true);
+        setPowerSearch(true);
       } else if (event.key === "Escape") {
         setPearlOpen(false);
+        setPowerSearch(false);
         setActiveView("idle");
       }
     }
     addEventListener("keydown", pearlKeys);
     return () => removeEventListener("keydown", pearlKeys);
   }, []);
+
+  useEffect(() => {
+    if (!pearlOpen) return;
+    function collapse(event) {
+      if (event.target?.closest?.(".extension-pearl-halo,.extension-orb")) return;
+      setPearlOpen(false);
+      setPowerSearch(false);
+      setPearlQuery("");
+    }
+    document.addEventListener("pointerdown", collapse, true);
+    return () => document.removeEventListener("pointerdown", collapse, true);
+  }, [pearlOpen]);
 
   async function browsePackages() {
     setPackagesOpen(true);
@@ -196,11 +216,11 @@ function App() {
     try {
       const publicKey = await crypto.subtle.importKey("jwk", pkg.author.publicKey, { name: "Ed25519" }, true, ["verify"]);
       await verifyCognitivePackage(pkg, { publicKey });
-      const current = await chrome.storage.local.get("cognitivePackages");
+      const current = await BrowserPlatform.storage.get("local", ["cognitivePackages"]);
       const key = `${pkg.namespace}/${pkg.name}`;
-      const history = await chrome.storage.local.get("cognitivePackageHistory");
-      await chrome.storage.local.set({ cognitivePackages: { ...(current.cognitivePackages || {}), [key]: pkg } });
-      await chrome.storage.local.set({ cognitivePackageHistory: [...(history.cognitivePackageHistory || []), { key, previous: current.cognitivePackages?.[key] || null, installedAt: Date.now() }].slice(-30) });
+      const history = await BrowserPlatform.storage.get("local", ["cognitivePackageHistory"]);
+      await BrowserPlatform.storage.set("local", { cognitivePackages: { ...(current.cognitivePackages || {}), [key]: pkg } });
+      await BrowserPlatform.storage.set("local", { cognitivePackageHistory: [...(history.cognitivePackageHistory || []), { key, previous: current.cognitivePackages?.[key] || null, installedAt: Date.now() }].slice(-30) });
       setReadyMessage(`Verified and installed ${key}@${pkg.version}. Complex graph edits open in the web editor.`);
       return { type: "package-install-receipt", package: `${key}@${pkg.version}`, verified: true };
     } catch (reason) {
@@ -236,13 +256,20 @@ function App() {
     call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
     call("model-catalog").then((value) => setModelCatalog(value.models || [])).catch(() => {});
     call("orb-cursor-get").then((value) => setOrbCursorEnabled(value.enabled === true)).catch(() => {});
-    chrome.storage.local.get(["onboardingComplete", "onboardingMode", "generationPlan", "semanticOrbs", "activeSemanticOrbId"], (value) => {
+    Promise.all([
+      BrowserPlatform.storage.get("local", ["onboardingComplete", "onboardingMode", "generationPlan", "semanticOrbs", "activeSemanticOrbId", "pearlSoundscapes"]),
+      BrowserPlatform.storage.get("session", ["pendingPearlIntent"]),
+    ]).then(([local, ephemeral]) => {
+      const value = { ...local, ...ephemeral };
       setOnboardingMode(value.onboardingMode || "");
-      setOnboardingStep(value.onboardingComplete ? 0 : 1);
+      setOnboardingStep(0);
+      if (!value.onboardingComplete) BrowserPlatform.storage.set("local", { onboardingComplete: true });
       if (value.generationPlan) setGenerationPlan(normalizeGenerationPlan(value.generationPlan));
       setSemanticOrbs((value.semanticOrbs || []).map((orb) => createSemanticOrb(orb)));
       setActiveSemanticOrbId(value.activeSemanticOrbId || null);
-    });
+      setPearlSoundscapes(value.pearlSoundscapes || {});
+      setPendingPearlIntent(value.pendingPearlIntent || null);
+    }).catch(() => {});
     const listener = (changes, area) => {
       if (area === "session" && changes.lensEverywhereSession?.newValue) {
         setSession(changes.lensEverywhereSession.newValue);
@@ -255,13 +282,25 @@ function App() {
       if (area === "local" && changes.activeSemanticOrbId) {
         setActiveSemanticOrbId(changes.activeSemanticOrbId.newValue || null);
       }
+      if (area === "session" && changes.pendingPearlIntent?.newValue) {
+        setPendingPearlIntent(changes.pendingPearlIntent.newValue);
+      }
     };
     chrome.storage?.onChanged.addListener(listener);
     return () => chrome.storage?.onChanged.removeListener(listener);
   }, []);
 
   useEffect(() => {
-    chrome.storage.local.set({ generationPlan });
+    const text = String(pendingPearlIntent?.text || "").trim();
+    if (!text) return;
+    BrowserPlatform.storage.remove("session", ["pendingPearlIntent"]);
+    setPendingPearlIntent(null);
+    setCompanion(text);
+    queueMicrotask(() => runCompanionCommand(text));
+  }, [pendingPearlIntent]);
+
+  useEffect(() => {
+    BrowserPlatform.storage.set("local", { generationPlan });
   }, [generationPlan]);
 
   useEffect(() => {
@@ -334,7 +373,7 @@ function App() {
 
   async function persistSemanticOrbs(next, activeId = activeSemanticOrbId) {
     const normalized = next.map((orb) => createSemanticOrb(orb));
-    await chrome.storage.local.set({ semanticOrbs: normalized, activeSemanticOrbId: activeId || null });
+    await BrowserPlatform.storage.set("local", { semanticOrbs: normalized, activeSemanticOrbId: activeId || null });
     setSemanticOrbs(normalized);
     setActiveSemanticOrbId(activeId || null);
     return { type: "external-semantic-orbs", orbs: normalized, activeId: activeId || null };
@@ -376,12 +415,20 @@ function App() {
     const orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
     if (!orb) throw new Error("orb not found");
     if (name === "open") {
+      const previousPearlId = activeSemanticOrbId;
       const fragments = (orb.workingSet.context || []).filter((item) => item?.id && (item.quote || item.text));
       if (fragments.length) {
         const restored = await action("fragments-changed", { fragments });
         if (restored) setSession(restored);
       }
       await persistSemanticOrbs(semanticOrbs, orb.id);
+      await action("page-canvas-command", { command: "activatePearlPageCanvas", args: { pearlId: orb.id } }).catch(() => {});
+      if (previousPearlId && previousPearlId !== orb.id && pearlSoundscapes[previousPearlId]?.playback === "playing") {
+        await controlPearlAudio("stop", { pearlId: previousPearlId }).catch(() => {});
+      }
+      if (pearlSoundscapes[orb.id]?.activation?.onPearlActivation && pearlSoundscapes[orb.id]?.activeTrackId) {
+        await controlPearlAudio("play", { pearlId: orb.id }).catch(() => {});
+      }
       setActiveView("orbs");
       return { type: "external-semantic-orb-active", id: orb.id };
     }
@@ -503,10 +550,10 @@ function App() {
       const result = await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID() });
       if (result) {
         setActiveView("review");
-        chrome.storage.local.get(["firstGoTracked"], (value) => {
+        BrowserPlatform.storage.get("local", ["firstGoTracked"]).then((value) => {
           if (!value.firstGoTracked) {
             trackFunnel("first_go");
-            chrome.storage.local.set({ firstGoTracked: true });
+            BrowserPlatform.storage.set("local", { firstGoTracked: true });
           }
         });
       }
@@ -536,6 +583,48 @@ function App() {
     if (result?.ok) setReadyMessage(operation === "replace" ? "Candidate replaced the verified page selection." : "Candidate was inserted into the verified page target.");
   }
 
+  function applySoundscapeResult(value) {
+    if (!value?.soundscape?.pearlId) return value;
+    setPearlSoundscapes((current) => ({ ...current, [value.soundscape.pearlId]: value.soundscape }));
+    return value;
+  }
+
+  async function searchPearlAudio(search, provider = "internet-archive") {
+    if (!activeSemanticOrbId) throw new Error("Choose a Pearl before adding a soundscape.");
+    const value = await call("pearl-audio-search", { pearlId: activeSemanticOrbId, query: search, provider });
+    setAudioSearchResults(value.tracks || []);
+    return value;
+  }
+
+  async function addPearlAudio(track) {
+    const value = await call("pearl-audio-add", { pearlId: activeSemanticOrbId, track });
+    setAudioSearchResults([]);
+    return applySoundscapeResult(value);
+  }
+
+  async function uploadPearlAudio(file) {
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) throw new Error("Choose a supported audio file.");
+    const value = await call("pearl-audio-upload", {
+      pearlId: activeSemanticOrbId,
+      title: file.name.replace(/\.[^.]+$/, "").slice(0, 240),
+      mime: file.type,
+      bytes: await file.arrayBuffer(),
+    });
+    applySoundscapeResult(value);
+  }
+
+  async function controlPearlAudio(actionName, options = {}) {
+    const { pearlId = activeSemanticOrbId, ...controlOptions } = options;
+    const value = await call("pearl-audio-control", {
+      pearlId,
+      action: actionName,
+      userGesture: true,
+      ...controlOptions,
+    });
+    return applySoundscapeResult(value);
+  }
+
   async function signIn() {
     setError("");
     try {
@@ -545,8 +634,19 @@ function App() {
       setReadyMessage(`${value.counts.lenses} Moves/Functions and ${value.counts.generators} Lenses are ready.`);
       setOnboardingMode("signed-in");
       setOnboardingStep(3);
-      chrome.storage.local.set({ onboardingMode: "signed-in" });
+      BrowserPlatform.storage.set("local", { onboardingMode: "signed-in" });
       trackFunnel("sign_in");
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function signOut() {
+    setError("");
+    try {
+      await call("auth-logout");
+      setAuth(false);
+      location.reload();
     } catch (e) {
       setError(e.message);
     }
@@ -629,28 +729,150 @@ function App() {
   function continueLocal() {
     setOnboardingMode("local");
     setOnboardingStep(3);
-    chrome.storage.local.set({ onboardingMode: "local" });
+    BrowserPlatform.storage.set("local", { onboardingMode: "local" });
     trackFunnel("continue_local");
   }
 
   function finishOnboarding() {
-    chrome.storage.local.set({ onboardingComplete: true, onboardingMode });
+    BrowserPlatform.storage.set("local", { onboardingComplete: true, onboardingMode });
     setOnboardingStep(0);
   }
 
   function skipOnboarding() {
-    chrome.storage.local.set({ onboardingComplete: true, onboardingMode: onboardingMode || "local" });
+    BrowserPlatform.storage.set("local", { onboardingComplete: true, onboardingMode: onboardingMode || "local" });
     setOnboardingStep(0);
   }
 
   async function runCompanionCommand(raw = companion) {
     try {
+      const request = String(raw || "").trim();
+      const inspectView = /\b(?:show|inspect|let me see|what)\b.*\b(?:noticed|selected|source|context)\b/i.test(request)
+        ? "context"
+        : /\b(?:show|inspect|let me see)\b.*\b(?:kept|saved|pearls?)\b/i.test(request)
+          ? "orbs"
+          : /\b(?:show|inspect|let me see)\b.*\b(?:tools|library|things i can reuse)\b/i.test(request)
+            ? "library"
+            : /\b(?:show|inspect|let me see)\b.*\b(?:results?|choices?|options?)\b/i.test(request)
+              ? "taste"
+              : /\b(?:show|inspect|let me see|what)\b.*\b(?:next|about to do|queued)\b/i.test(request)
+                ? "review"
+                : /\b(?:show|open|change)\b.*\b(?:preferences|account|settings)\b/i.test(request)
+                  ? "settings"
+                  : null;
+      if (inspectView) {
+        setActiveView(inspectView);
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\b(?:use|activate|open)\b.*\b(?:this )?pearl\b.*\bhere\b/i.test(request)) {
+        await action("page-canvas-command", { command: "activatePearlPageCanvas", args: { pearlId: activeSemanticOrbId } });
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\b(?:edit|use|return to)\b.*\b(?:page|website)\b.*\b(?:again|normally|native)?\b/i.test(request)) {
+        await action("page-canvas-command", { command: "deactivatePearlPageCanvas", args: { pearlId: activeSemanticOrbId } });
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      const canvasMode = /\b(?:draw|pen)\b/i.test(request) ? "pen"
+        : /\bhighlight(?:er)?\b/i.test(request) ? "highlighter"
+          : /\berase|eraser\b/i.test(request) ? "eraser"
+            : /\blasso|select several\b/i.test(request) ? "lasso"
+              : /\b(?:text box|textbox|type placement)\b/i.test(request) ? "select-type"
+                : /\b(?:paste|drop|place) (?:an )?image\b/i.test(request) ? "image"
+                  : null;
+      if (canvasMode) {
+        if (/\bcontext\b/i.test(request) && session.fragments.length) {
+          await action("page-canvas-command", {
+            command: "bindPearlCanvasContext",
+            args: {
+              pearlId: activeSemanticOrbId,
+              entries: session.fragments.map((entry) => ({
+                id: entry.id,
+                kind: "page-selection",
+                ref: entry.id,
+                summary: String(entry.quote || "").slice(0, 160),
+                provenance: entry.provenance,
+              })),
+            },
+          });
+        }
+        if (canvasMode === "select-type" && /\b(?:answer|output|result)\b/i.test(request)) {
+          await action("page-canvas-command", {
+            command: "setPearlCanvasOutputDestination",
+            args: { pearlId: activeSemanticOrbId, destination: { type: "canvas-textbox", scope: "selected-output" } },
+          });
+        }
+        await action("page-canvas-command", {
+          command: "setPearlCanvasInputMode",
+          args: { pearlId: activeSemanticOrbId, mode: canvasMode },
+        });
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      const audioSearch = request.match(/\b(?:search for|find|give (?:this )?pearl)\s+(.+?)(?:\s+(?:music|audio|ambience|soundscape|song))?$/i);
+      if (audioSearch && /\b(?:music|audio|ambience|soundscape|song|rain|room tone)\b/i.test(request)) {
+        const queryText = audioSearch[1].replace(/\b(?:music|audio|soundscape|song)\b/gi, "").trim();
+        const procedural = /\b(?:rain|room tone|brown noise|soft noise)\b/i.test(queryText);
+        const found = await searchPearlAudio(queryText, procedural ? "procedural" : "internet-archive");
+        if (procedural && found.tracks[0]) await addPearlAudio(found.tracks[0]);
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\buse (?:this|that|the) (?:song|track|sound)\b/i.test(request) && audioSearchResults[0]) {
+        await addPearlAudio(audioSearchResults[0]);
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\bupload\b.*\b(?:track|audio|song)\b/i.test(request)) {
+        audioFileRef.current?.click();
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/^(?:preview|play|resume)(?: (?:the )?(?:music|soundscape|track))?$/i.test(request)) {
+        await controlPearlAudio("play");
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\b(?:pause|stop)\b.*\b(?:music|soundscape|track|audio)?\b/i.test(request)) {
+        await controlPearlAudio(/\bstop\b/i.test(request) ? "stop" : "pause");
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\bturn (?:it|the music) down\b/i.test(request)) {
+        const currentVolume = pearlSoundscapes[activeSemanticOrbId]?.volume ?? .55;
+        await controlPearlAudio("volume", { volume: Math.max(0, currentVolume - .15) });
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
       const command = parseExtensionIntent(raw);
       const outputs = session.results.flatMap((run) => run.outputs);
-      const approvalRequired = ["insertExternalResult", "replaceExternalSelection", "annotateExternalResult", "installExternalPackage", "teachExternalPersonalCommand"].includes(command.name);
+      const approvalRequired = [
+        "insertExternalResult", "replaceExternalSelection", "annotateExternalResult",
+        "installExternalPackage", "teachExternalPersonalCommand", "deleteExternalLocalData",
+        "removeExternalPearlAudioTrack", "saveExternalPearlTrackOffline", "deleteExternalResultPearl",
+      ].includes(command.name);
       const confirmed = !approvalRequired || window.confirm(
         command.name === "teachExternalPersonalCommand"
           ? `Remember “${command.args.trigger}” in ${command.args.scope} scope?`
+          : command.name === "deleteExternalLocalData"
+            ? "Delete only this profile’s local Pearl metadata? This does not delete account data."
+            : command.name === "removeExternalPearlAudioTrack"
+              ? "Remove this track and its current-profile local audio copy?"
+              : command.name === "saveExternalPearlTrackOffline"
+                ? "Save this rights-eligible track locally for offline playback?"
+                : command.name === "deleteExternalResultPearl"
+                  ? "Delete this persisted result Pearl? Its source material will not be changed."
           : command.name === "installExternalPackage"
             ? `Verify and install ${command.args.manifest?.namespace}/${command.args.manifest?.name}@${command.args.manifest?.version}?`
             : `${command.name === "insertExternalResult" ? "Insert into" : command.name === "replaceExternalSelection" ? "Replace selection in" : "Annotate"} the current verified page target?\n\nOnly the staged result and current target are in scope.`
@@ -704,6 +926,92 @@ function App() {
         toggleOrbCursor,
         saveCaptureAs,
         semanticOrbAction,
+        inspectPrivacy: async () => {
+          const consent = await BrowserPlatform.storage.get("local", ["pearlSyncConsent"]);
+          const local = await BrowserPlatform.storage.exportLocal();
+          const summary = {
+            mode: consent.pearlSyncConsent === "enabled" ? "explicit sync enabled" : "local only",
+            profile: local.profile,
+            storedCategories: Object.keys(local.entries || {}).length,
+          };
+          setReadyMessage(`${summary.mode}. ${summary.storedCategories} local data categories in this ${summary.profile} profile.`);
+          return summary;
+        },
+        exportLocalData: async () => {
+          const local = await BrowserPlatform.storage.exportLocal();
+          const url = URL.createObjectURL(new Blob([JSON.stringify(local, null, 2)], { type: "application/json" }));
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = "pearl-local-data.json";
+          anchor.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          return { exported: true, profile: local.profile };
+        },
+        setSync: async (enabled) => {
+          await BrowserPlatform.storage.set("local", { pearlSyncConsent: enabled ? "enabled" : "disabled" });
+          if (enabled) {
+            let synced = await call("library-refresh", { sync: true });
+            if (synced.requiresAdoption) {
+              const merge = window.confirm(`This device has ${synced.adoption.localCount} local items and the account has ${synced.adoption.accountCount}. Merge both into this profile? Cancel keeps local work separate and leaves sync off.`);
+              if (!merge) {
+                await BrowserPlatform.storage.set("local", { pearlSyncConsent: "disabled" });
+                setReadyMessage("Sync remains off. Local and account work stayed separate.");
+                return { enabled: false, adoption: "keep-local" };
+              }
+              synced = await call("library-refresh", { sync: true, adoption: "merge" });
+            }
+            applyLibrary(synced);
+          }
+          setReadyMessage(enabled ? "Sync is enabled for this profile." : "Sync is off. Local work remains on this device.");
+          return { enabled };
+        },
+        deleteLocalData: async () => {
+          const receipt = await BrowserPlatform.storage.deleteLocal();
+          setReadyMessage(`Local profile data deleted at ${receipt.at}.`);
+          return receipt;
+        },
+        lockPearls: async () => {
+          const value = await BrowserPlatform.storage.lock();
+          setSession(emptySession());
+          setLibrary([]);
+          setGenerators([]);
+          setSemanticOrbs([]);
+          setReadyMessage("Local Pearls are locked on this device.");
+          return value;
+        },
+        unlockPearls: async () => {
+          const value = await BrowserPlatform.storage.unlock();
+          const [restoredSession, restoredLocal] = await Promise.all([
+            call("get-session"),
+            BrowserPlatform.storage.get("local", ["operators", "generators", "rack", "semanticOrbs", "activeSemanticOrbId"]),
+          ]);
+          setSession(restoredSession);
+          applyLibrary(restoredLocal);
+          setSemanticOrbs(restoredLocal.semanticOrbs || []);
+          setActiveSemanticOrbId(restoredLocal.activeSemanticOrbId || null);
+          setReadyMessage("Local Pearls are unlocked.");
+          return value;
+        },
+        bindCanvasContext: () => action("page-canvas-command", {
+          command: "bindPearlCanvasContext",
+          args: {
+            entries: session.fragments.map((entry) => ({
+              id: entry.id,
+              kind: "page-selection",
+              ref: entry.id,
+              summary: String(entry.quote || "").slice(0, 160),
+              provenance: entry.provenance,
+            })),
+          },
+        }),
+        searchAudio: searchPearlAudio,
+        chooseAudio: () => {
+          audioFileRef.current?.click();
+          return { chooser: "audio" };
+        },
+        addAudio: addPearlAudio,
+        controlAudio: controlPearlAudio,
+        updateAudio: (args) => controlPearlAudio("volume", args),
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -738,16 +1046,23 @@ function App() {
 
   async function dropOnPearl(event) {
     event.preventDefault();
+    const audioFile = [...(event.dataTransfer?.files || [])].find((entry) => entry.type.startsWith("audio/"));
+    if (audioFile) {
+      await uploadPearlAudio(audioFile);
+      setActiveView("idle");
+      setPearlOpen(false);
+      return;
+    }
     const portable = event.dataTransfer?.getData("application/x-lens-object");
     const text = event.dataTransfer?.getData("text/plain")?.trim();
     let object = null;
     try { object = portable ? JSON.parse(portable) : null; } catch { /* plain text remains valid material */ }
     if (object && ["lens", "generator"].includes(object.kind || object.type)) {
       await action("set-generator", { generator: object });
-      setReadyMessage(`${object.name || object.label || "Lens"} is active context.`);
+      setReadyMessage("Context noticed.");
     } else if (object && ["move", "function", "operator"].includes(object.kind || object.type || object.libraryKind)) {
       await action("queue-lens", { lens: object });
-      setReadyMessage(`${object.name || object.label || "Action"} is queued. Review, then press GO.`);
+      setReadyMessage("Ready.");
     } else if (text || object) {
       const fragment = {
         ...(object || {}),
@@ -756,9 +1071,9 @@ function App() {
         provenance: object?.provenance || { title: "Dropped into Pearl", origin: "sidepanel", capturedAt: new Date().toISOString() },
       };
       await action("fragments-changed", { fragments: [...session.fragments.filter((entry) => entry.id !== fragment.id), fragment] });
-      setReadyMessage("Material added to Pearl context.");
+      setReadyMessage("Noticed.");
     }
-    setActiveView("context");
+    setActiveView("idle");
     setPearlOpen(false);
   }
 
@@ -808,76 +1123,69 @@ function App() {
   }
 
   const orbPhase = voiceListening ? "listening" : running || chatRunning || learning ? "executing" : error ? "blocked" : "idle";
+  const latestResult = session.results.at(-1)?.outputs?.at(-1) || null;
+  const latestFragment = session.fragments.at(-1) || null;
+  const contextualAction = latestFragment && (session.queue.length || session.generator)
+    ? { label: "Make it", run: go }
+    : latestFragment
+      ? { label: "Keep this", run: () => semanticOrbAction("create", { material: latestFragment }) }
+      : { label: "Notice selection", run: () => action("capture-selection") };
+  const activeSoundscape = pearlSoundscapes[activeSemanticOrbId] || null;
+  const activeTrack = activeSoundscape?.tracks?.find((entry) => entry.id === activeSoundscape.activeTrackId) || null;
   return <main data-orb-view={activeView}>
-    {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-      <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
-      {onboardingStep === 1 && <>
-        <ExtensionOrb phase="idle" listening={false} onCommandView={() => {}} />
-        <h1 id="onboarding-title">The world is your oyster. Make pearls.</h1>
-        <p>A pearl is something you notice in the world and choose to keep: source-linked material inside a compact agent shell. Make your first pearl from a real page selection; shape it later with Moves, Functions, or Lenses.</p>
-        <button className="gold onboarding-primary" onClick={() => setOnboardingStep(2)}>Get started</button>
-      </>}
-      {onboardingStep === 2 && <>
-        <h1 id="onboarding-title">Choose how to continue</h1>
-        <p>Sign in to bring over your web library automatically, or keep everything on this browser.</p>
-        <div className="onboarding-choices">
-          <button className="gold" onClick={signIn}><b>Sign in</b><small>Sync my Pearl library</small></button>
-          <button onClick={continueLocal}><b>Continue locally</b><small>No account needed</small></button>
-        </div>
-        <a href="https://representation-eta.vercel.app/extension/privacy.html" target="_blank" rel="noreferrer">How Pearl handles data</a>
-      </>}
-      {onboardingStep === 3 && <>
-        <h1 id="onboarding-title">{onboardingMode === "signed-in" ? "Your library is ready" : "Bring your library—or start now"}</h1>
-        {onboardingMode === "signed-in" ? <p role="status">{readyMessage || "Your web library syncs automatically when you sign in."}</p> : <div
-          className="onboarding-drop"
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => { event.preventDefault(); readImportFile(event.dataTransfer.files?.[0]); }}
-        >
-          <span aria-hidden="true">↓</span>
-          <b>Drop .lens-library.json here</b>
-          <button onClick={() => fileRef.current?.click()}>Choose file</button>
-        </div>}
-        {importPreview && <div className="onboarding-import" role="status">
-          <b>{importPreview.counts.lenses} Moves/Functions and {importPreview.counts.generators} Lenses found</b>
-          <button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Review choices below" : "Add library"}</button>
-        </div>}
-        {readyMessage && <p role="status">{readyMessage}</p>}
-        <div className="onboarding-demo"><span>1. Notice + select</span><span>2. Make a pearl</span><span>3. Optionally shape it</span><span>4. Use, insert, or copy</span><span>5. Reopen it in a Scene</span></div>
-        <button className="gold onboarding-primary" onClick={() => { finishOnboarding(); setActiveView("context"); }}>Make your first pearl today</button>
-      </>}
-      {error && <p role="alert">{error}</p>}
-    </div>}
     <header>
-      <ExtensionOrb phase={orbPhase} listening={voiceListening} onCommandView={() => setPearlOpen((value) => !value)}
+      <ExtensionOrb phase={orbPhase} listening={voiceListening} onCommandView={() => {
+        setPowerSearch(false);
+        setPearlOpen((value) => !value);
+      }}
         onDropMaterial={dropOnPearl}
         contextCount={session.fragments.length} lensActive={Boolean(session.generator)} candidateCount={session.results.flatMap((run) => run.outputs).length} />
     </header>
-    {pearlOpen && <aside className="extension-pearl-halo" aria-label="Pearl actions">
-      <div className="extension-pearl-halo-head">
-        <span>{orbPhase === "idle" ? "What would you like to do?" : orbPhase}</span>
-        <button type="button" aria-label="Close Pearl actions" onClick={() => setPearlOpen(false)}>×</button>
-      </div>
-      <form onSubmit={directCompanion}>
-        <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Say anything…" />
-        <button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "Voice"}</button>
-        <button type="submit">Run</button>
-      </form>
-      <nav aria-label="Immediate Pearl views">
-        {[
-          ["command", "Command"], ["context", "Context"], ["orbs", "Pearls"], ["library", "Library"],
-          ["review", "Generate"], ["taste", "Taste"], ["settings", "Settings"],
-        ].map(([view, label]) => <button type="button" key={view} onClick={() => { setActiveView(view); setPearlOpen(false); }}>{label}</button>)}
-      </nav>
-      <input type="search" aria-label="Search every Pearl action" value={pearlQuery} onChange={(event) => setPearlQuery(event.target.value)} placeholder="Find any action…" />
-      <div className="extension-pearl-categories">
-        <button type="button" aria-pressed={!pearlCategory} onClick={() => setPearlCategory(null)}>All</button>
-        {PEARL_ACTION_CATEGORIES.map((category) => <button type="button" key={category.id} aria-pressed={pearlCategory === category.id} onClick={() => setPearlCategory((value) => value === category.id ? null : category.id)}>{category.label}</button>)}
-      </div>
-      <div className="extension-pearl-actions">
-        {searchPearlActions(pearlQuery, { platform: "extension", category: pearlCategory }).slice(0, 10).map((pearlAction) => <button type="button" key={pearlAction.id} onClick={() => runPearlAction(pearlAction)}>
-          <b>{pearlAction.label}</b><small>{pearlAction.purpose}</small>
-        </button>)}
-      </div>
+    <input
+      ref={audioFileRef}
+      className="sr-only"
+      type="file"
+      accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/webm,audio/flac"
+      onChange={(event) => uploadPearlAudio(event.target.files?.[0]).catch((reason) => setError(reason.message))}
+      aria-label="Upload local audio for this Pearl"
+    />
+    {activeView === "idle" && !pearlOpen && (latestResult || latestFragment) && <section className="pearl-transient-material" aria-label={latestResult ? "Latest result" : "Current material"}>
+      <p>{String(latestResult?.text || latestFragment?.quote || latestFragment?.text || "").slice(0, 600)}</p>
+      {latestResult && <div>
+        <button type="button" onClick={() => applyResult(latestResult, "insert")}>Use</button>
+        <button type="button" onClick={() => semanticOrbAction("create", { material: latestResult })}>Keep</button>
+      </div>}
+    </section>}
+    {activeView === "idle" && !pearlOpen && audioSearchResults.length > 0 && <section className="pearl-audio-choices" aria-label="Licensed audio choices">
+      {audioSearchResults.slice(0, 3).map((track) => <button type="button" key={track.id} onClick={() => addPearlAudio(track).catch((reason) => setError(reason.message))}>
+        <span>{track.title}</span><small>{track.artist || track.provider} · {track.license.spdx || "Provider terms"}</small>
+      </button>)}
+    </section>}
+    {activeView === "idle" && !pearlOpen && activeTrack && <section className="pearl-now-playing" aria-label="Pearl soundscape" aria-live="polite">
+      <span><b>{activeTrack.title}</b><small>{activeSoundscape.playback}</small></span>
+      <button type="button" onClick={() => controlPearlAudio(activeSoundscape.playback === "playing" ? "pause" : "play").catch((reason) => setError(reason.message))}>
+        {activeSoundscape.playback === "playing" ? "Pause" : "Play"}
+      </button>
+      <label><span className="sr-only">Soundscape volume</span><input type="range" min="0" max="1" step=".05" value={activeSoundscape.volume} onChange={(event) => controlPearlAudio("volume", { volume: Number(event.target.value) }).catch(() => {})} /></label>
+      <button type="button" onClick={() => controlPearlAudio("stop").catch(() => {})}>Stop</button>
+    </section>}
+    {pearlOpen && <aside className="extension-pearl-halo" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
+      {!powerSearch && <form onSubmit={directCompanion}>
+        <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="What do you want?" />
+        <button type="submit" aria-label="Send command">→</button>
+      </form>}
+      {!powerSearch && <button type="button" className="pearl-contextual-action" onClick={() => {
+        contextualAction.run?.();
+        setPearlOpen(false);
+      }}>{contextualAction.label}</button>}
+      {powerSearch && <>
+        <input autoFocus type="search" aria-label="Search every Pearl action" value={pearlQuery} onChange={(event) => setPearlQuery(event.target.value)} placeholder="Search by intent…" />
+        <div className="extension-pearl-actions">
+          {pearlQuery.trim() && searchPearlActions(pearlQuery, { platform: "extension" }).slice(0, 5).map((pearlAction) => <button type="button" key={pearlAction.id} onClick={() => runPearlAction(pearlAction)}>
+            <b>{pearlActionPrompt(pearlAction)}</b>
+          </button>)}
+        </div>
+      </>}
     </aside>}
     {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
     <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved pearls">
@@ -1087,11 +1395,11 @@ function App() {
       <h2>Settings</h2>
       <p className="muted">Voice stays local until you explicitly run a capability. Page capture always requires your action.</p>
       <button type="button" aria-pressed={orbCursorEnabled} onClick={() => toggleOrbCursor()}>
-        {orbCursorEnabled ? "Return to native cursor" : "Make the orb my cursor"}
+        {orbCursorEnabled ? "Return to native cursor" : "Let Pearl follow my cursor"}
       </button>
       <p className="muted">On supported pages, press Space three times to toggle. Triple-Space is ignored while typing.</p>
-      <button type="button" onClick={signIn}>{auth ? "Refresh synced library" : "Sign in for sync"}</button>
-      <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Models, connectors, vocabulary, and privacy</a>
+      <button type="button" onClick={auth ? signOut : signIn}>{auth ? "Sign out and return to local Pearls" : "Sign in for sync"}</button>
+      <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Connections, phrases, and privacy</a>
     </section>
     <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Pearl command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell Pearl your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
     {error && <aside className="recovery-alert" role="alert"><span>{error}</span>{retryAction && <button type="button" onClick={retryAction}>Retry</button>}<button type="button" aria-label="Dismiss error" onClick={() => { setError(""); setRetryAction(null); }}>Dismiss</button></aside>}

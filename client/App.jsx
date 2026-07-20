@@ -125,6 +125,8 @@ import {
   readLocalBoardSnapshot,
   writeLocalBoardSnapshot,
   dedupeLocalBoardStores,
+  boardSyncEnabled as readBoardSyncEnabled,
+  setBoardSyncEnabled,
 } from "./lib/board-sync.js";
 import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
@@ -2843,11 +2845,19 @@ export default function App({ sceneId = null, pearlShell = false }) {
   }, []);
 
   const [boardConflict, setBoardConflict] = useState(null);
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => readBoardSyncEnabled());
   const handleBoardConflict = useCallback((conflict) => setBoardConflict(conflict), []);
+
+  useEffect(() => {
+    const update = (event) => setCloudSyncEnabled(event.detail?.enabled === true);
+    window.addEventListener("pearl-board-sync-consent", update);
+    return () => window.removeEventListener("pearl-board-sync-consent", update);
+  }, []);
 
   useBoardCloudSync({
     session: supaAuth.session,
     sessionResolved: supaAuth.sessionResolved,
+    syncEnabled: cloudSyncEnabled,
     onHydrate: hydrateBoardFromCloud,
     onSynced: () => setSavedIndicator(true),
     onConflict: handleBoardConflict,
@@ -2892,6 +2902,11 @@ export default function App({ sceneId = null, pearlShell = false }) {
     const prev = prevSessionRef.current;
     prevSessionRef.current = supaAuth.session;
     if (!prev && supaAuth.session) {
+      window.__pearlPrivacy?.switchProfile(supaAuth.session.user.id, {
+        carry: (key) => key.startsWith("sb-"),
+      }).then((changed) => {
+        if (changed) window.location.reload();
+      }).catch(() => {});
       // Any SIGNED_IN closes the auth overlay regardless of its internal view
       // (covers cross-tab confirmation).
       setAuthOpen(false);
@@ -2899,6 +2914,9 @@ export default function App({ sceneId = null, pearlShell = false }) {
         showToast("signed in as " + (supaAuth.session.user?.email || "your account"));
       }
     } else if (prev && !supaAuth.session) {
+      window.__pearlPrivacy?.switchProfile("anonymous").then((changed) => {
+        if (changed) window.location.reload();
+      }).catch(() => {});
       // Passive UI swap only — cross-tab sign-out and refresh failures must
       // never unmount the canvas or interrupt drafts, jobs, or recordings.
       showToast("signed out");
@@ -12076,6 +12094,41 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         effectId: `orb-cursor:${a.enabled === false ? "off" : "on"}`,
         enabled: a.enabled !== false,
       };
+    },
+    inspectLocalPrivacy: async () => {
+      const summary = window.__pearlPrivacy?.describe?.();
+      if (!summary) throw new Error("local privacy storage is unavailable");
+      return { effectId: `privacy-inspected:${Date.now()}`, ...summary };
+    },
+    exportLocalData: async () => {
+      const local = await window.__pearlPrivacy?.exportLocal?.();
+      if (!local) throw new Error("local privacy storage is unavailable");
+      const url = URL.createObjectURL(new Blob([JSON.stringify(local, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "pearl-local-data.json";
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return { effectId: `privacy-exported:${Date.now()}`, profile: local.profile };
+    },
+    setBoardSync: async (a) => {
+      const enabled = a.enabled === true;
+      setBoardSyncEnabled(enabled);
+      window.dispatchEvent(new CustomEvent("pearl-board-sync-consent", { detail: { enabled } }));
+      return { effectId: `privacy-sync:${enabled}`, enabled };
+    },
+    lockLocalPearls: async () => {
+      await window.__pearlPrivacy?.lock?.();
+      return { effectId: `privacy-locked:${Date.now()}`, locked: true };
+    },
+    unlockLocalPearls: async () => {
+      await window.__pearlPrivacy?.unlock?.();
+      return { effectId: `privacy-unlocked:${Date.now()}`, locked: false };
+    },
+    deleteLocalData: async () => {
+      const receipt = await window.__pearlPrivacy?.deleteLocal?.();
+      if (!receipt) throw new Error("local privacy storage is unavailable");
+      return { effectId: `privacy-deleted:${receipt.at}`, receipt };
     },
     addOrbContext: async (a, tk) => {
       await dispatchOrbSurfaceCommand("lens:orb-context-command", {

@@ -21,13 +21,48 @@ export async function authStatus() {
 export async function login() {
   const { origin } = await settings();
   const redirect = BrowserPlatform.identity.redirectUrl("auth");
-  const authUrl = `${origin}/auth/extension?redirect_uri=${encodeURIComponent(redirect)}`;
-  const callback = await BrowserPlatform.identity.launch(authUrl, true);
+  const state = crypto.randomUUID();
+  const verifier = [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const challengeBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  const challenge = btoa(String.fromCharCode(...challengeBytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  const configUrl = new URL("/api/extension/auth/config", origin);
+  configUrl.searchParams.set("redirect_uri", redirect);
+  configUrl.searchParams.set("state", state);
+  configUrl.searchParams.set("code_challenge", challenge);
+  const configResponse = await fetch(configUrl, { credentials: "omit" });
+  const config = await configResponse.json().catch(() => ({}));
+  if (!configResponse.ok || !config.authorizeUrl) throw new Error("hosted login is unavailable");
+  const callback = await BrowserPlatform.identity.launch(config.authorizeUrl, true);
   const url = new URL(callback);
-  const token = url.searchParams.get("access_token") || new URLSearchParams(url.hash.slice(1)).get("access_token");
-  if (!token) throw new Error("hosted login did not return an access token");
+  const code = url.searchParams.get("code");
+  if (!code || url.searchParams.get("state") !== state) throw new Error("hosted login did not return a valid authorization code");
+  const exchange = await fetch(new URL("/api/extension/auth/exchange", origin), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify({ code, verifier, redirectUri: redirect }),
+  });
+  const payload = await exchange.json().catch(() => ({}));
+  const token = payload.accessToken;
+  if (!exchange.ok || !token) throw new Error("hosted login authorization failed");
+  let profileId = "";
+  try {
+    const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+    profileId = String(claims.sub || "");
+  } catch {
+    profileId = "";
+  }
+  if (!profileId) throw new Error("hosted login did not return a stable account identity");
+  await BrowserPlatform.storage.switchProfile(profileId);
   await BrowserPlatform.storage.set("session", { accessToken: token });
-  return true;
+  return { authenticated: true };
+}
+
+export async function logout() {
+  await BrowserPlatform.storage.remove("session", ["accessToken"]);
+  await BrowserPlatform.storage.switchProfile(null);
+  return { authenticated: false };
 }
 
 export async function apiRequest(path, options = {}) {
@@ -48,7 +83,7 @@ export async function apiRequest(path, options = {}) {
     credentials: "omit",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `request failed (${response.status})`);
+  if (!response.ok) throw new Error(`request failed (${response.status})`);
   return data;
 }
 

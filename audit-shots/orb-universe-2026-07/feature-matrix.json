@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T01:47:31.338Z",
+  "generatedAt": "2026-07-20T07:21:57.471Z",
   "counts": {
-    "features": 32,
-    "companion": 251,
-    "extension": 51,
-    "commands": 47
+    "features": 37,
+    "companion": 286,
+    "extension": 80,
+    "commands": 80
   },
   "features": [
     {
@@ -654,6 +654,133 @@
         "client/lib/pearl-shell.test.js",
         "shared/orb-universe.test.js",
         "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "id": "privacy.local-profile-vault",
+      "commands": [],
+      "companion": [
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData"
+      ],
+      "extension": [
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls"
+      ],
+      "tests": [
+        "shared/local-privacy-vault.test.js"
+      ]
+    },
+    {
+      "id": "extension.pearl-page-canvas",
+      "commands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "companion": [],
+      "extension": [
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf"
+      ],
+      "tests": [
+        "shared/pearl-page-canvas.test.js",
+        "extension/scripts/orb-audit.mjs"
+      ]
+    },
+    {
+      "id": "privacy.bounded-page-observation",
+      "commands": [
+        "bindPearlCanvasContext"
+      ],
+      "companion": [],
+      "extension": [
+        "bindExternalCanvasContext"
+      ],
+      "tests": [
+        "shared/page-observation.test.js"
+      ]
+    },
+    {
+      "id": "semantic-pearl.soundscape",
+      "commands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "companion": [],
+      "extension": [
+        "searchExternalPearlSoundscape",
+        "uploadExternalPearlAudio",
+        "useExternalPearlAudioTrack",
+        "controlExternalPearlSoundscape",
+        "updateExternalPearlSoundscape",
+        "saveExternalPearlTrackOffline",
+        "removeExternalPearlAudioTrack"
+      ],
+      "tests": [
+        "shared/pearl-soundscape.test.js"
+      ]
+    },
+    {
+      "id": "output.result-pearl",
+      "commands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "companion": [],
+      "extension": [
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl"
+      ],
+      "tests": [
+        "shared/result-pearls.test.js",
+        "extension/scripts/orb-audit.mjs"
       ]
     }
   ],

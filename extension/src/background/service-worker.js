@@ -1,5 +1,5 @@
 import { createExecutionRequest, createExecutionResult, createProvenance } from "../../../shared/lens-runtime.js";
-import { apiRequest, authStatus, login, openArtifact } from "./api-client.js";
+import { apiRequest, authStatus, login, logout, openArtifact } from "./api-client.js";
 import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
@@ -27,13 +27,304 @@ import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/tr
 import { createCritiqueSession } from "../../../shared/critique-session.js";
 import { createPersonalCommandDefinition } from "../../../shared/personal-command-vocabulary.js";
 import { executeDomainCommand } from "../../../shared/domain-commands.js";
+import { canonicalPageIdentity, pearlCanvasKey } from "../../../shared/pearl-page-canvas.js";
+import { normalizePearlTrack, pearlTrackAllowsOffline } from "../../../shared/pearl-soundscape.js";
+import {
+  createInternetArchiveAudioProvider,
+  createJamendoAudioProvider,
+  createProceduralAudioProvider,
+} from "../../../shared/pearl-audio-providers.js";
+import { deletePearlAudio, readPearlAudio, storePearlAudio } from "./audio-store.js";
+import { createDisclosureReceipt } from "../../../shared/local-privacy-vault.js";
+import { normalizeResultPearl, spawnResultPearl } from "../../../shared/result-pearls.js";
 
 const runs = new Map();
+const handledRequests = new Map();
+const canvasCommands = new Set([
+  "activatePearlPageCanvas",
+  "deactivatePearlPageCanvas",
+  "setPearlCanvasInputMode",
+  "createPearlCanvasArtifact",
+  "updatePearlCanvasArtifact",
+  "deletePearlCanvasArtifacts",
+  "selectPearlCanvasArtifacts",
+  "bindPearlCanvasContext",
+  "setPearlCanvasOutputDestination",
+  "placePearlCanvasOutput",
+  "undoPearlPageCanvas",
+]);
+const resultCommands = new Set([
+  "placeResultPearl",
+  "moveResultPearl",
+  "undoResultPearl",
+  "setResultPearlStatus",
+  "expandResultPearl",
+  "collapseResultPearl",
+  "redirectResultPearl",
+  "presentResultPearlAsChat",
+  "createResultPlacementRegion",
+  "acceptResultPearl",
+  "archiveResultPearl",
+  "deleteResultPearl",
+]);
+const audioProviders = new Map([
+  ["procedural", createProceduralAudioProvider()],
+  ["internet-archive", createInternetArchiveAudioProvider()],
+  ["jamendo", createJamendoAudioProvider({ clientId: import.meta.env.VITE_JAMENDO_CLIENT_ID || "" })],
+]);
+
+async function canvasStore() {
+  const stored = await BrowserPlatform.storage.get("local", ["pearlPageCanvases", "activeSemanticOrbId"]);
+  return {
+    pageCanvases: stored.pearlPageCanvases || {},
+    activeSemanticOrbId: stored.activeSemanticOrbId || null,
+  };
+}
+
+function assertPageIdentity(pageIdentity, sender) {
+  if (!/^https?:/.test(sender.tab?.url || "")) return pageIdentity;
+  const actual = canonicalPageIdentity(sender.tab.url);
+  if (pageIdentity && pageIdentity !== actual) throw new Error("Pearl canvas page identity mismatch");
+  return actual;
+}
+
+async function executeCanvasCommand(command, args, sender) {
+  if (!canvasCommands.has(command)) throw new Error("unsupported Pearl canvas command");
+  const state = await canvasStore();
+  const pearlId = String(args.pearlId || state.activeSemanticOrbId || "");
+  if (!pearlId) throw new Error("choose a Pearl before using the page canvas");
+  const senderIsPage = /^https?:/.test(sender.tab?.url || "");
+  const pageIdentity = args.pageIdentity
+    ? senderIsPage ? assertPageIdentity(args.pageIdentity, sender) : String(args.pageIdentity)
+    : senderIsPage ? canonicalPageIdentity(sender.tab.url) : canonicalPageIdentity((await activeTab()).url);
+  const execution = await executeDomainCommand(command, state, { ...args, pearlId, pageIdentity }, {
+    persist: (next) => BrowserPlatform.storage.set("local", {
+      pearlPageCanvases: next.pageCanvases,
+      activeSemanticOrbId: pearlId,
+    }),
+  });
+  const key = pearlCanvasKey(pearlId, pageIdentity);
+  const canvas = execution.state.pageCanvases[key];
+  if (!senderIsPage) {
+    const tab = await activeTab();
+    await ensureBridge(tab);
+    await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("page-canvas-state", { canvas }));
+  }
+  return { ...execution.result, canvas };
+}
+
+async function ensureAudioDocument() {
+  if (!globalThis.chrome?.offscreen) throw new Error("persistent audio is unavailable on this browser");
+  const url = chrome.runtime.getURL("offscreen.html");
+  const existing = await chrome.runtime.getContexts?.({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [url],
+  });
+  if (existing?.length) return;
+  await chrome.offscreen.createDocument({
+    url: "offscreen.html",
+    reasons: ["AUDIO_PLAYBACK"],
+    justification: "Play a user-activated Pearl soundscape after the side panel closes.",
+  });
+}
+
+async function soundscapeStore() {
+  const stored = await BrowserPlatform.storage.get("local", ["pearlSoundscapes", "activeSemanticOrbId"]);
+  return {
+    pearlSoundscapes: stored.pearlSoundscapes || {},
+    activeSemanticOrbId: stored.activeSemanticOrbId || null,
+  };
+}
+
+async function executeSoundscapeCommand(command, pearlId, args = {}) {
+  const state = await soundscapeStore();
+  const selectedPearlId = String(pearlId || state.activeSemanticOrbId || "");
+  if (!selectedPearlId) throw new Error("choose a Pearl before changing its soundscape");
+  const execution = await executeDomainCommand(command, state, { pearlId: selectedPearlId, ...args }, {
+    persist: (next) => BrowserPlatform.storage.set("local", {
+      pearlSoundscapes: next.pearlSoundscapes,
+      activeSemanticOrbId: selectedPearlId,
+    }),
+  });
+  return { ...execution.result, soundscape: execution.state.pearlSoundscapes[selectedPearlId] };
+}
+
+async function resultStore() {
+  const stored = await BrowserPlatform.storage.get("local", ["resultPearls", "resultChats", "activeSemanticOrbId", "pearlPageCanvases"]);
+  const resultPearls = {};
+  for (const [id, entry] of Object.entries(stored.resultPearls || {})) {
+    try {
+      resultPearls[id] = normalizeResultPearl(entry);
+    } catch {
+      if (!entry?.id || !entry?.pearlId || !entry?.pageIdentity) continue;
+      resultPearls[id] = spawnResultPearl({
+        id: entry.id,
+        pearlId: entry.pearlId,
+        pageIdentity: entry.pageIdentity,
+        outputId: entry.outputId || entry.id,
+        status: "failed",
+        failure: { code: "CORRUPT_RESULT", recoverable: true },
+        sourceRefs: entry.sourceRefs || [],
+        text: "",
+        placement: entry.placement || null,
+        destination: entry.destination || { type: "margin-pearl" },
+      });
+    }
+  }
+  return {
+    resultPearls,
+    resultChats: stored.resultChats || [],
+    activeSemanticOrbId: stored.activeSemanticOrbId || null,
+    pageCanvases: stored.pearlPageCanvases || {},
+  };
+}
+
+async function persistResultState(next) {
+  await BrowserPlatform.storage.set("local", {
+    resultPearls: next.resultPearls || {},
+    resultChats: next.resultChats || [],
+    ...(next.pageCanvases ? { pearlPageCanvases: next.pageCanvases } : {}),
+  });
+}
+
+async function resultPearlsForPage(pageIdentity, pearlId) {
+  const state = await resultStore();
+  return Object.values(state.resultPearls).filter((entry) =>
+    entry.pageIdentity === pageIdentity && (!pearlId || entry.pearlId === pearlId)
+  );
+}
+
+async function publishResultPearls(tab, pageIdentity, pearlId) {
+  const results = await resultPearlsForPage(pageIdentity, pearlId);
+  const current = await globalThis.chrome.tabs.get(tab.id).catch(() => null);
+  if (current && /^https?:/.test(current.url || "") && canonicalPageIdentity(current.url) === pageIdentity) {
+    await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("result-pearl-state", { results })).catch(() => {});
+  }
+  return results;
+}
+
+async function executeResultCommand(command, args, sender = {}) {
+  if (!resultCommands.has(command)) throw new Error("unsupported result Pearl command");
+  const state = await resultStore();
+  const resolvedArgs = { ...args };
+  if (resolvedArgs.resultId === "latest") {
+    const latest = Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (!latest) throw new Error("no result Pearl is available");
+    resolvedArgs.resultId = latest.id;
+  }
+  const execution = await executeDomainCommand(command, state, resolvedArgs, { persist: persistResultState });
+  const object = execution.result.object;
+  if (object?.pageIdentity) {
+    const pageTab = /^https?:/.test(sender.tab?.url || "") ? sender.tab : await activeTab().catch(() => null);
+    if (pageTab) await publishResultPearls(pageTab, object.pageIdentity, object.pearlId);
+  }
+  if (command === "createResultPlacementRegion" && object?.pageIdentity) {
+    const tab = sender.tab?.id ? sender.tab : await activeTab();
+    const canvas = execution.state.pageCanvases?.[pearlCanvasKey(object.pearlId, object.pageIdentity)] || null;
+    await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("page-canvas-state", { canvas })).catch(() => {});
+  }
+  return execution.result;
+}
+
+async function materializeResultPearls(session, run, disclosureReceipt, options = {}) {
+  const stored = await resultStore();
+  const existing = Object.values(stored.resultPearls)
+    .filter((entry) => entry.execution?.runId === run.runId)
+    .sort((a, b) => (a.branch?.index || 0) - (b.branch?.index || 0));
+  const tab = options.tab || await activeTab();
+  if (!existing.length) await ensureBridge(tab);
+  const pageIdentity = existing[0]?.pageIdentity || canonicalPageIdentity(tab.url);
+  const pearlId = existing[0]?.pearlId || stored.activeSemanticOrbId || "pearl:extension-default";
+  const sourceRefs = (session.fragments || []).map((entry) => ({
+    id: entry.id,
+    anchor: entry.anchor || null,
+    provenance: entry.provenance || null,
+  }));
+  let placements = existing.map((entry) => entry.placement);
+  if (!existing.length || existing.length !== run.outputs.length) {
+    const layoutResponse = await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("result-pearl-layout-request", {
+      sourceRefs,
+      count: run.outputs.length,
+    })).catch(() => null);
+    placements = layoutResponse?.placements || Array.from({ length: run.outputs.length }, (_, index) => ({
+      ...(existing[index]?.placement || existing[0]?.placement || { x: 8, y: 80, width: 32, height: 32, coordinateSpace: "document", side: "right", docked: true }),
+      y: (existing[index]?.placement?.y || existing[0]?.placement?.y || 80) + index * 40,
+    }));
+  }
+  let state = stored;
+  const spawnedResults = [];
+  for (let index = 0; index < run.outputs.length; index += 1) {
+    const output = run.outputs[index];
+    const idempotencyKey = `${run.runId}:${output.id || index}:result-pearl`;
+    const resultId = `result-pearl:${run.runId}:${index}`;
+    const spawned = await executeDomainCommand("spawnResultPearl", state, {
+      idempotencyKey,
+      result: {
+        id: resultId,
+        outputId: output.id || resultId,
+        pearlId,
+        pageIdentity,
+        text: "",
+        status: "streaming",
+        sourceRefs,
+        lens: session.generator
+          ? { id: session.generator.id, version: session.generator.version || 1, strength: 1 }
+          : session.queue.at(-1)
+            ? { id: session.queue.at(-1).id, version: session.queue.at(-1).version || 1, strength: 1 }
+            : null,
+        execution: { runId: run.runId, idempotencyKey, model: run.provenance?.resolvedModel || run.provenance?.model || "configured" },
+        branch: { index, total: run.outputs.length, spec: output.branchSpec || null },
+        outputSpec: output.outputSpec || null,
+        disclosureReceipt,
+        lineage: output.lineage || sourceRefs.map((entry) => ({ id: entry.id })),
+        destination: { type: "margin-pearl", placement: placements[index] || null },
+        placement: placements[index] || null,
+        provenance: output.provenance || run.provenance || {},
+      },
+    });
+    state = spawned.state;
+    spawnedResults.push({ resultId, output });
+  }
+  await persistResultState(state);
+  await publishResultPearls(tab, pageIdentity, pearlId);
+  if (options.streamingOnly) return Object.values(state.resultPearls).filter((entry) => entry.execution?.runId === run.runId);
+  for (const { resultId, output } of spawnedResults) {
+    const ready = await executeDomainCommand("setResultPearlStatus", state, {
+      resultId,
+      status: run.failed ? "failed" : "ready",
+      text: run.failed ? "" : output.text || "",
+      patch: {
+        outputId: output.id || resultId,
+        outputSpec: output.outputSpec || null,
+        branch: { index: output.branchIndex ?? spawnedResults.findIndex((entry) => entry.resultId === resultId), total: spawnedResults.length, id: output.branchId || null, spec: output.branchSpec || output.branchProvenance || output.branch || null },
+        lineage: output.lineage || sourceRefs.map((entry) => ({ id: entry.id })),
+        provenance: output.provenance || output.branchProvenance || run.provenance || {},
+      },
+      ...(run.failed ? { failure: run.failure || { code: "GENERATION_FAILED", recoverable: true } } : {}),
+    });
+    state = ready.state;
+  }
+  for (const stale of existing.slice(spawnedResults.length)) {
+    const failed = await executeDomainCommand("setResultPearlStatus", state, {
+      resultId: stale.id,
+      status: "failed",
+      text: "",
+      failure: { code: "OUTPUT_MISSING", recoverable: true },
+    });
+    state = failed.state;
+  }
+  await persistResultState(state);
+  return publishResultPearls(tab, pageIdentity, pearlId);
+}
 
 async function activeTab(preferredId) {
-  const tab = preferredId
+  let tab = preferredId
     ? await globalThis.chrome.tabs.get(Number(preferredId))
     : await BrowserPlatform.tabs.active();
+  if (!tab?.id || !/^https?:/.test(tab.url || "")) {
+    const candidates = await globalThis.chrome.tabs.query({ currentWindow: true });
+    tab = candidates.filter((entry) => /^https?:/.test(entry.url || "")).sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0] || tab;
+  }
   if (!tab?.id || !/^https?:/.test(tab.url || "")) throw new Error("open a supported web page");
   return tab;
 }
@@ -70,7 +361,29 @@ async function executeGo(payload) {
     disclosedCharacters: payload.disclosedCharacters,
     generationPlan: payload.generationPlan,
   });
+  const executionTab = await activeTab();
   await writeSession({ activeRunId: runId });
+  const disclosureReceipt = await createDisclosureReceipt({
+    id: `disclosure:${runId}`,
+    action: "extension-model-execution",
+    fragmentIds: session.fragments.map((entry) => entry.id),
+    disclosedCharacters: request.disclosedCharacters || session.fragments.reduce((sum, entry) => sum + String(entry.quote || "").length, 0),
+    destination: "configured-model",
+  });
+  const receipts = await BrowserPlatform.storage.get("local", ["disclosureReceipts"]);
+  await BrowserPlatform.storage.set("local", {
+    disclosureReceipts: [...(receipts.disclosureReceipts || []), disclosureReceipt].slice(-500),
+  });
+  const plannedOutputs = Array.from({ length: request.generationPlan?.candidateCount || 1 }, (_, index) => ({
+    id: `pending:${runId}:${index}`,
+    branchSpec: request.generationPlan?.branchSpecs?.[index] || null,
+    outputSpec: request.generationPlan?.branchSpecs?.[index]?.outputSpecOverride || null,
+  }));
+  await materializeResultPearls(session, {
+    runId,
+    outputs: plannedOutputs,
+    provenance: { model: "pending" },
+  }, disclosureReceipt, { streamingOnly: true, tab: executionTab }).catch(() => {});
   try {
     const response = await apiRequest("/api/extension/execute", {
       method: "POST",
@@ -83,9 +396,18 @@ async function executeGo(payload) {
       outputs: response.outputs || response.results || [],
       provenance: response.provenance || createProvenance(session.fragments, { runId }),
     });
-    return writeSession({ results: [result], activeRunId: null });
+    const next = await writeSession({ results: [result], activeRunId: null });
+    await materializeResultPearls(session, result, disclosureReceipt, { tab: executionTab }).catch(() => {});
+    return next;
   } catch (error) {
     await writeSession({ activeRunId: null });
+    await materializeResultPearls(session, {
+      runId,
+      failed: true,
+      failure: { code: error.name === "AbortError" ? "CANCELED" : "GENERATION_FAILED", recoverable: true },
+      outputs: plannedOutputs.map((entry, index) => ({ ...entry, id: `failed:${runId}:${index}`, text: "", lineage: session.fragments.map((fragment) => ({ id: fragment.id })) })),
+      provenance: createProvenance(session.fragments, { runId }),
+    }, disclosureReceipt, { tab: executionTab }).catch(() => {});
     throw new Error(`GO stopped before all candidates completed. Your capture and action stack were preserved for retry. ${error.message}`);
   } finally {
     runs.delete(runId);
@@ -96,6 +418,291 @@ async function handle(message, sender = {}) {
   const { type, payload } = message;
   const session = await readSession();
   if (type === "get-session") return session;
+  if (type === "pearl-state-get") {
+    const local = await BrowserPlatform.storage.get("local", [
+      "semanticOrbs", "activeSemanticOrbId", "pearlPageCanvases", "resultPearls", "pearlSoundscapes",
+    ]);
+    return {
+      semanticOrbs: local.semanticOrbs || [],
+      activeSemanticOrbId: local.activeSemanticOrbId || null,
+      pageCanvases: local.pearlPageCanvases || {},
+      resultPearls: local.resultPearls || {},
+      pearlSoundscapes: local.pearlSoundscapes || {},
+    };
+  }
+  if (type === "page-canvas-get") {
+    const state = await canvasStore();
+    const pearlId = String(payload.pearlId || state.activeSemanticOrbId || "");
+    if (!pearlId) return { canvas: null };
+    const pageIdentity = assertPageIdentity(payload.pageIdentity, sender);
+    return { canvas: state.pageCanvases[pearlCanvasKey(pearlId, pageIdentity)] || null };
+  }
+  if (type === "result-pearl-get") {
+    const state = await resultStore();
+    const pageIdentity = assertPageIdentity(payload.pageIdentity, sender);
+    return {
+      results: Object.values(state.resultPearls).filter((entry) =>
+        entry.pageIdentity === pageIdentity && (!state.activeSemanticOrbId || entry.pearlId === state.activeSemanticOrbId)
+      ),
+    };
+  }
+  if (type === "page-canvas-command") {
+    return executeCanvasCommand(payload.command, payload.args || {}, sender);
+  }
+  if (type === "page-canvas-export-pdf") return sendPage("page-canvas-export-pdf", payload);
+  if (type === "result-pearl-command") return executeResultCommand(payload.command, {
+    resultId: payload.resultId,
+    ...(payload.destination ? { destination: payload.destination } : {}),
+  }, sender);
+  if (type === "result-pearl-open-tab") {
+    const state = await resultStore();
+    const object = payload.resultId === "latest"
+      ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
+      : state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    const redirected = await executeDomainCommand("openResultPearlInTab", state, {
+      resultId: object.id,
+    }, { persist: persistResultState });
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    const handoffs = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs"]);
+    await BrowserPlatform.storage.set("local", {
+      resultPearlHandoffs: {
+        ...(handoffs.resultPearlHandoffs || {}),
+        [nonce]: { resultId: object.id, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60_000, tabId: null },
+      },
+    });
+    let tab;
+    try {
+      tab = await BrowserPlatform.tabs.create(chrome.runtime.getURL(`result.html?handoff=${nonce}`));
+    } catch {
+      await executeDomainCommand("redirectResultPearl", redirected.state, {
+        resultId: object.id,
+        destination: { type: "margin-pearl", placement: object.placement },
+      }, { persist: persistResultState });
+      throw new Error("the browser blocked the result tab; the margin Pearl is preserved");
+    }
+    const current = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs"]);
+    await BrowserPlatform.storage.set("local", {
+      resultPearlHandoffs: {
+        ...(current.resultPearlHandoffs || {}),
+        [nonce]: { ...(current.resultPearlHandoffs?.[nonce] || {}), tabId: tab.id },
+      },
+    });
+    return { ...redirected.result, opened: true };
+  }
+  if (type === "result-pearl-open-web") {
+    const state = await resultStore();
+    const object = payload.resultId === "latest"
+      ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
+      : state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    const stored = await BrowserPlatform.storage.get("local", ["webResultHandoffs"]);
+    await BrowserPlatform.storage.set("local", {
+      webResultHandoffs: {
+        ...(stored.webResultHandoffs || {}),
+        [nonce]: { resultId: object.id, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60_000 },
+      },
+    });
+    const tab = await BrowserPlatform.tabs.create(`https://representation-eta.vercel.app/?handoff=result-pearl&token=${nonce}`);
+    const current = await BrowserPlatform.storage.get("local", ["webResultHandoffs"]);
+    await BrowserPlatform.storage.set("local", {
+      webResultHandoffs: {
+        ...(current.webResultHandoffs || {}),
+        [nonce]: { ...(current.webResultHandoffs?.[nonce] || {}), tabId: tab.id },
+      },
+    });
+    return { type: "result-pearl-web-handoff", resultId: object.id };
+  }
+  if (type === "result-pearl-create-region") {
+    const state = await resultStore();
+    const object = payload.resultId === "latest"
+      ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
+      : state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    const tab = await activeTab();
+    await ensureBridge(tab);
+    const layout = await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("result-pearl-layout-request", {
+      sourceRefs: object.sourceRefs,
+      count: 1,
+    }));
+    const anchor = layout?.anchor || { x: 24, y: 80, width: 1, height: 1 };
+    const viewport = layout?.viewport || { width: 1200, height: 800, scrollX: 0, scrollY: 0 };
+    const box = {
+      x: viewport.scrollX + Math.max(12, Math.min(viewport.width - 344, anchor.x)),
+      y: viewport.scrollY + Math.max(12, Math.min(viewport.height - 214, anchor.y + anchor.height + 16)),
+      width: Math.min(320, viewport.width - 24),
+      height: Math.min(190, viewport.height - 24),
+    };
+    await executeCanvasCommand("activatePearlPageCanvas", {
+      pearlId: object.pearlId,
+      pageIdentity: object.pageIdentity,
+    }, {});
+    await executeCanvasCommand("setPearlCanvasInputMode", {
+      pearlId: object.pearlId,
+      pageIdentity: object.pageIdentity,
+      mode: "select-type",
+    }, {});
+    return executeResultCommand("createResultPlacementRegion", {
+      resultId: object.id,
+      pearlId: object.pearlId,
+      pageIdentity: object.pageIdentity,
+      box,
+      coordinateSpace: "document",
+      kind: "companion-region",
+    }, {});
+  }
+  if (type === "result-pearl-redeem") {
+    const nonce = String(payload.nonce || "");
+    if (!/^[a-f0-9]{32}$/i.test(nonce)) throw new Error("invalid result handoff");
+    const stored = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs", "resultPearls"]);
+    const handoff = stored.resultPearlHandoffs?.[nonce];
+    if (!handoff || handoff.expiresAt < Date.now() || (handoff.tabId && handoff.tabId !== sender.tab?.id)) throw new Error("result handoff expired or belongs to another tab");
+    const object = stored.resultPearls?.[handoff.resultId];
+    if (!object) throw new Error("result Pearl no longer exists");
+    return { result: object };
+  }
+  if (type === "result-pearl-cancel") {
+    const state = await resultStore();
+    const object = state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    runs.get(object.execution?.runId)?.abort();
+    return executeResultCommand("setResultPearlStatus", {
+      resultId: object.id,
+      status: "failed",
+      failure: { code: "CANCELED", recoverable: true },
+    }, sender);
+  }
+  if (type === "result-pearl-retry") {
+    const state = await resultStore();
+    const object = state.resultPearls[payload.resultId];
+    if (!object?.failure?.recoverable) throw new Error("this result cannot be retried");
+    await executeResultCommand("setResultPearlStatus", { resultId: object.id, status: "streaming" }, sender);
+    return executeGo({ runId: object.execution?.runId, idempotencyKey: `${object.execution?.idempotencyKey}:retry` });
+  }
+  if (type === "page-canvas-create-textbox") {
+    const pendingResults = await resultStore();
+    const pendingResult = Object.values(pendingResults.resultPearls)
+      .filter((entry) => ["canvas-textbox", "canvas-region", "companion-region"].includes(entry.destination?.type))
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (pendingResult) {
+      return executeResultCommand("createResultPlacementRegion", {
+        resultId: pendingResult.id,
+        pearlId: pendingResult.pearlId,
+        pageIdentity: pendingResult.pageIdentity,
+        box: payload.box,
+        coordinateSpace: payload.coordinateSpace,
+        kind: pendingResult.destination.type,
+      }, sender);
+    }
+    const latest = session.results.at(-1)?.outputs?.at(-1);
+    const artifact = {
+      id: String(payload.id || `canvas-text:${message.requestId}`).slice(0, 220),
+      type: latest ? "output" : "text",
+      text: latest?.text || "",
+      box: payload.box,
+      coordinateSpace: payload.coordinateSpace,
+      provenance: latest?.provenance || { kind: "explicit-text-placement", local: true },
+    };
+    const command = latest ? "placePearlCanvasOutput" : "createPearlCanvasArtifact";
+    return executeCanvasCommand(command, {
+      pearlId: payload.pearlId,
+      pageIdentity: payload.pageIdentity,
+      artifact,
+      ...(latest ? { destination: { type: "canvas-textbox", targetId: artifact.id, scope: "selected-output" } } : {}),
+    }, sender);
+  }
+  if (type === "pearl-audio-search") {
+    const provider = audioProviders.get(payload.provider || "internet-archive");
+    if (!provider) throw new Error("audio provider is not configured");
+    await executeSoundscapeCommand("searchPearlAudioCatalog", payload.pearlId, {
+      query: payload.query,
+      provider: provider.id,
+    });
+    return { provider: provider.id, tracks: await provider.search(payload.query, { limit: payload.limit }) };
+  }
+  if (type === "pearl-audio-upload") {
+    const stored = await storePearlAudio({ bytes: payload.bytes, mime: payload.mime });
+    const track = normalizePearlTrack({
+      source: "local",
+      id: `local:${stored.contentHash}`,
+      title: String(payload.title || "Local audio").slice(0, 240),
+      artist: String(payload.artist || "You").slice(0, 240),
+      ...stored,
+      license: {
+        terms: "User-provided local audio. Pearl does not infer redistribution rights.",
+        streamAllowed: true,
+        offlineAllowed: true,
+        redistributionAllowed: false,
+      },
+      provenance: { kind: "explicit-local-audio-upload", importedAt: Date.now() },
+    });
+    return executeSoundscapeCommand("addPearlSoundscapeTrack", payload.pearlId, { track });
+  }
+  if (type === "pearl-audio-add") {
+    let track = normalizePearlTrack(payload.track);
+    const provider = track.provider && audioProviders.get(track.provider);
+    if (provider?.resolve) track = await provider.resolve(track);
+    return executeSoundscapeCommand("addPearlSoundscapeTrack", payload.pearlId, { track });
+  }
+  if (type === "pearl-audio-control") {
+    const action = payload.action;
+    if (!["play", "pause", "stop", "volume"].includes(action)) throw new Error("unsupported Pearl audio control");
+    if (action === "volume") {
+      const updated = await executeSoundscapeCommand("updatePearlSoundscape", payload.pearlId, {
+        patch: { volume: payload.volume, muted: payload.muted, shuffle: payload.shuffle, loop: payload.loop },
+      });
+      await ensureAudioDocument();
+      await chrome.runtime.sendMessage(createMessage("pearl-audio-control", { action: "volume", soundscape: updated.soundscape }));
+      return updated;
+    }
+    const transitioned = await executeSoundscapeCommand("transitionPearlSoundscape", payload.pearlId, {
+      action,
+      userGesture: payload.userGesture === true,
+    });
+    const track = transitioned.soundscape.tracks.find((entry) => entry.id === transitioned.soundscape.activeTrackId);
+    if (action === "play" && transitioned.soundscape.playback === "blocked") return transitioned;
+    await ensureAudioDocument();
+    let bytes;
+    if (action === "play" && track?.localBlobRef) bytes = (await readPearlAudio(track.localBlobRef)).bytes;
+    const playback = await chrome.runtime.sendMessage(createMessage("pearl-audio-control", {
+      action,
+      soundscape: transitioned.soundscape,
+      track,
+      bytes,
+      userGesture: payload.userGesture === true,
+    }));
+    if (playback?.error) throw new Error(playback.error);
+    return { ...transitioned, playback };
+  }
+  if (type === "pearl-audio-save-offline") {
+    const state = await soundscapeStore();
+    const pearlId = String(payload.pearlId || state.activeSemanticOrbId || "");
+    const soundscape = state.pearlSoundscapes[pearlId];
+    const track = soundscape?.tracks?.find((entry) => entry.id === payload.trackId);
+    if (!track || !pearlTrackAllowsOffline(track) || !track.downloadUrl) throw new Error("this track license does not permit offline saving");
+    if (payload.confirmed !== true) throw new Error("confirm this licensed track before saving it offline");
+    const response = await fetch(track.downloadUrl, { credentials: "omit", redirect: "follow" });
+    if (!response.ok) throw new Error("licensed track download is unavailable");
+    const announced = Number(response.headers.get("content-length") || 0);
+    if (announced > 100 * 1024 * 1024) throw new Error("licensed track exceeds the offline size limit");
+    const stored = await storePearlAudio({ bytes: await response.arrayBuffer(), mime: track.mime || response.headers.get("content-type")?.split(";")[0] || "audio/mpeg" });
+    return executeSoundscapeCommand("cachePearlTrackOffline", pearlId, { trackId: track.id, ...stored });
+  }
+  if (type === "pearl-audio-delete") {
+    if (payload.confirmed !== true) throw new Error("confirm removal of this Pearl audio track");
+    const state = await soundscapeStore();
+    const pearlId = String(payload.pearlId || state.activeSemanticOrbId || "");
+    const track = state.pearlSoundscapes[pearlId]?.tracks?.find((entry) => entry.id === payload.trackId);
+    const removed = await executeSoundscapeCommand("removePearlSoundscapeTrack", pearlId, { trackId: payload.trackId });
+    if (track?.localBlobRef) await deletePearlAudio(track.localBlobRef);
+    return removed;
+  }
+  if (type === "pearl-audio-status") {
+    if (!payload.pearlId) return { recorded: false };
+    const action = payload.status === "playing" ? "play" : payload.status === "blocked" ? "pause" : "stop";
+    return executeSoundscapeCommand("transitionPearlSoundscape", payload.pearlId, { action, userGesture: payload.status === "playing" });
+  }
   if (type === "make-pearl") {
     const material = payload.material || session.fragments.at(-1);
     if (!material && !payload.name) throw new Error("capture page material before making a pearl");
@@ -151,6 +758,15 @@ async function handle(message, sender = {}) {
   if (type === "toggle-orb-cursor") return sendPage(type, payload);
   if (type === "open-side-panel") {
     const tab = await activeTab(payload.targetTabId);
+    if (String(payload.intent || "").trim()) {
+      await BrowserPlatform.storage.set("local", {
+        pendingPearlIntent: {
+          text: String(payload.intent).trim().slice(0, 4000),
+          id: `page-intent:${Date.now()}`,
+          createdAt: Date.now(),
+        },
+      });
+    }
     await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
     return { opened: true, tabId: tab.id };
   }
@@ -334,17 +950,29 @@ async function handle(message, sender = {}) {
   if (type === "auth-status") return authStatus();
   if (type === "auth-login") {
     await login();
-    const library = await handle({ type: "library-refresh", payload: {} });
+    const library = await readLocalLibrary();
     return {
       authenticated: true,
       library,
       counts: { lenses: library.operators.length, generators: library.generators.length },
     };
   }
+  if (type === "auth-logout") return logout();
   if (type === "library-refresh") {
     const local = await readLocalLibrary();
+    const consent = await BrowserPlatform.storage.get("local", ["pearlSyncConsent"]);
+    if (payload.sync !== true || consent.pearlSyncConsent !== "enabled") return local;
     try {
       const remote = await apiRequest("/api/extension/library");
+      const remoteCount = (remote.operators?.length || 0) + (remote.generators?.length || 0);
+      const localCount = local.operators.length + local.generators.length;
+      if (remoteCount && localCount && payload.adoption !== "merge") {
+        return {
+          ...local,
+          requiresAdoption: true,
+          adoption: { localCount, accountCount: remoteCount, choices: ["merge", "keep-local"] },
+        };
+      }
       const merged = await mergeRemoteLibrary(remote);
       if (local.operators.length || local.generators.length) {
         await apiRequest("/api/extension/library", {
@@ -361,14 +989,15 @@ async function handle(message, sender = {}) {
   if (type === "library-import") {
     const imported = await importLibraryFile(payload.bundle, payload.choices || {});
     await BrowserPlatform.storage.remove("local", ["pendingLibraryHandoff"]);
-    try {
+    const consent = await BrowserPlatform.storage.get("local", ["pearlSyncConsent"]);
+    if (consent.pearlSyncConsent === "enabled" && payload.sync === true) try {
       await apiRequest("/api/extension/library", {
         method: "POST",
         body: { operators: imported.operators, generators: imported.generators, rack: imported.rack },
         idempotencyKey: payload.bundle?.integrity?.payloadHash,
       });
     } catch {
-      // Anonymous imports remain local and are merged on a later authenticated refresh.
+      // Local import remains authoritative; explicit sync may be retried later.
     }
     return imported;
   }
@@ -432,9 +1061,18 @@ globalThis.chrome?.runtime?.onMessage.addListener((raw, sender, respond) => {
     assertTrustedSender(sender, globalThis.chrome.runtime.id);
     const validated = validateMessage(raw);
     if (!validated.ok) throw new Error(validated.error);
-    handle(validated.value, sender).then((value) => respond({ ok: true, value }), (error) => respond({ ok: false, error: error.message }));
+    if (!validated.value.requestId) throw new Error("request ID required");
+    const replayKey = `${sender.id || "extension"}:${sender.tab?.id || "view"}:${validated.value.requestId}`;
+    let pending = handledRequests.get(replayKey);
+    if (!pending) {
+      pending = handle(validated.value, sender)
+        .then((value) => ({ ok: true, value }), (error) => ({ ok: false, error: String(error?.message || "request failed").slice(0, 300) }));
+      handledRequests.set(replayKey, pending);
+      if (handledRequests.size > 2_000) handledRequests.delete(handledRequests.keys().next().value);
+    }
+    pending.then(respond);
   } catch (error) {
-    respond({ ok: false, error: error.message });
+    respond({ ok: false, error: String(error?.message || "request rejected").slice(0, 300) });
   }
   return true;
 });
@@ -483,6 +1121,15 @@ globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond)
           results: (activeSession.results || []).slice(-20),
         },
       };
+    }
+    if (raw?.type === "pearl-result-handoff") {
+      validateExternalAction(raw, sender);
+      const local = await BrowserPlatform.storage.get("local", ["webResultHandoffs", "resultPearls"]);
+      const handoff = local.webResultHandoffs?.[raw.nonce];
+      if (!handoff || handoff.expiresAt < Date.now() || (handoff.tabId && handoff.tabId !== sender.tab?.id)) throw new Error("result handoff expired or belongs to another tab");
+      const resultPearl = local.resultPearls?.[handoff.resultId];
+      if (!resultPearl) throw new Error("result Pearl no longer exists");
+      return { type: "pearl-result-handoff", resultPearl };
     }
     const handoff = validateExternalHandoff(raw, sender);
     const preview = await previewLibraryFile(handoff.bundle);

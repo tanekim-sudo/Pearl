@@ -5,7 +5,8 @@ export function continuationMaterialCount(handoff = {}) {
     + (handoff.session?.queue?.length || 0)
     + (handoff.session?.results?.flatMap?.((run) => run.outputs || [])?.length || 0)
     + (handoff.session?.generator ? 1 : 0)
-    + (handoff.semanticOrbs?.length || 0);
+    + (handoff.semanticOrbs?.length || 0)
+    + (handoff.resultPearl ? 1 : 0);
 }
 
 export function continuationItems(handoff = {}) {
@@ -15,6 +16,7 @@ export function continuationItems(handoff = {}) {
   );
   const queue = handoff.session?.queue || [];
   const generator = handoff.session?.generator || null;
+  const resultPearl = handoff.resultPearl || null;
   return [...fragments.map((fragment, index) => ({
     id: fragment.id || `extension-fragment-${index}`,
     type: "text",
@@ -65,6 +67,24 @@ export function continuationItems(handoff = {}) {
       lensVersion: generator.version || null,
       contextOnly: true,
     },
+  }] : []), ...(resultPearl ? [{
+    id: resultPearl.id,
+    type: "text",
+    text: resultPearl.text || "Pearl result",
+    x: 180,
+    y: 180,
+    provenance: {
+      ...resultPearl.provenance,
+      source: "pearl-result-handoff",
+      sourceRefs: resultPearl.sourceRefs,
+      lens: resultPearl.lens,
+      disclosureReceipt: resultPearl.disclosureReceipt,
+      lineage: resultPearl.lineage,
+    },
+    outputSpec: resultPearl.outputSpec,
+    machineKind: resultPearl.outputSpec?.machineKind || "text",
+    candidateStatus: resultPearl.status,
+    resultPearlId: resultPearl.id,
   }] : [])];
 }
 

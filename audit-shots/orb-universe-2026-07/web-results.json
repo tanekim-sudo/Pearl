@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T03:09:26.190Z",
+  "generatedAt": "2026-07-20T16:28:47.031Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -22,10 +22,14 @@
           "scrollWidth": 1600,
           "clientWidth": 1600
         },
-        "animationCount": 1,
+        "animationCount": 2,
         "animations": [
           {
-            "name": "orb-respire",
+            "name": "orb-pearl-mass",
+            "playState": "running"
+          },
+          {
+            "name": "orb-pearl-ember",
             "playState": "running"
           }
         ],
@@ -33,12 +37,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 120,
-        "loadMs": 121,
-        "transferBytes": 45300,
+        "domContentLoadedMs": 81,
+        "loadMs": 82,
+        "transferBytes": 46800,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - region \"Continue extension work\":\n    - text: Waiting for the page Pearl\n    - heading \"Open this space from the Pearl on any page\" [level=2]\n    - link \"Extension setup\":\n      - /url: /install\n  - region \"Recent scenes and tasks\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
+      "snapshot": "- main:\n  - region \"Recent scenes and tasks\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click for a command, drop material, or use arrow keys to move.\""
     },
     {
       "name": "02-library-laptop",
@@ -59,10 +63,14 @@
           "scrollWidth": 1280,
           "clientWidth": 1280
         },
-        "animationCount": 1,
+        "animationCount": 2,
         "animations": [
           {
-            "name": "orb-respire",
+            "name": "orb-pearl-mass",
+            "playState": "running"
+          },
+          {
+            "name": "orb-pearl-ember",
             "playState": "running"
           }
         ],
@@ -70,12 +78,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 145,
-        "loadMs": 147,
-        "transferBytes": 45300,
+        "domContentLoadedMs": 80,
+        "loadMs": 81,
+        "transferBytes": 46800,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
+      "snapshot": "- main:\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click for a command, drop material, or use arrow keys to move.\""
     },
     {
       "name": "03-library-narrow",
@@ -96,10 +104,14 @@
           "scrollWidth": 390,
           "clientWidth": 390
         },
-        "animationCount": 1,
+        "animationCount": 2,
         "animations": [
           {
-            "name": "orb-respire",
+            "name": "orb-pearl-mass",
+            "playState": "running"
+          },
+          {
+            "name": "orb-pearl-ember",
             "playState": "running"
           }
         ],
@@ -107,12 +119,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 126,
-        "loadMs": 127,
-        "transferBytes": 45300,
+        "domContentLoadedMs": 55,
+        "loadMs": 57,
+        "transferBytes": 46800,
         "longTasks": 0
       },
-      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
+      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click for a command, drop material, or use arrow keys to move.\""
     },
     {
       "name": "03a-trusted-handoff-output-frame",
@@ -133,10 +145,14 @@
           "scrollWidth": 1280,
           "clientWidth": 1280
         },
-        "animationCount": 1,
+        "animationCount": 2,
         "animations": [
           {
-            "name": "orb-respire",
+            "name": "orb-pearl-mass",
+            "playState": "running"
+          },
+          {
+            "name": "orb-pearl-ember",
             "playState": "running"
           }
         ],
@@ -144,12 +160,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 116,
-        "loadMs": 118,
-        "transferBytes": 45600,
+        "domContentLoadedMs": 57,
+        "loadMs": 58,
+        "transferBytes": 47100,
         "longTasks": 0
       },
-      "snapshot": "- textbox \"Page title\":\n  - /placeholder: Untitled idea\n  - text: Untitled Idea\n- button \"◇\"\n- button \"Open Cognitive Package registry\": pkg\n- button \"Open Cognitive Workflow Studio\": cog\n- img\n- img\n- text: Trusted carried material Verified carried candidate Clarify 8.5 × 11\n- button \"Record voice + drawing\"\n- complementary \"Pearl, idle\":\n  - button \"Context material, priority 1\": context\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
+      "snapshot": "- textbox \"Page title\":\n  - /placeholder: Untitled idea\n  - text: Untitled Idea\n- button \"◇\"\n- button \"Open Cognitive Package registry\": pkg\n- button \"Open Cognitive Workflow Studio\": cog\n- img\n- img\n- text: Trusted carried material Verified carried candidate Clarify 8.5 × 11\n- button \"Record voice + drawing\"\n- complementary \"Pearl, idle\":\n  - button \"Context material, priority 1\": context\n  - button \"Pearl. Hold to speak, click for a command, drop material, or use arrow keys to move.\"\n- status: Orb cursor off"
     },
     {
       "name": "04-stage-desktop",
@@ -170,10 +186,14 @@
           "scrollWidth": 1600,
           "clientWidth": 1600
         },
-        "animationCount": 1,
+        "animationCount": 2,
         "animations": [
           {
             "name": "orb-settle",
+            "playState": "running"
+          },
+          {
+            "name": "orb-pearl-ember",
             "playState": "running"
           }
         ],
@@ -181,12 +201,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 115,
-        "loadMs": 117,
-        "transferBytes": 45900,
+        "domContentLoadedMs": 56,
+        "loadMs": 57,
+        "transferBytes": 47100,
         "longTasks": 0
       },
-      "snapshot": "- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n  - region \"Pearls\":\n    - button \"+ New pearl\"\n    - button \"Open cluster of 6 pearls\": \"6\"\n    - button \"Open cluster of 2 pearls\": \"2\"\n    - button \"Open cluster of 12 pearls\": \"12\"\n    - button \"Untitled orb, empty pearl\": Untitled orb\n- complementary \"Pearl, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off\n- complementary \"scene view emitted by orb\":\n  - button \"Close\"\n  - text: Cognitive library\n  - navigation \"Scene and Output Frame actions\":\n    - button \"Library and recent work\"\n    - button \"Open Output Frame\"\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\" [pressed]\n    - button \"Timeline\""
+      "snapshot": "- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n  - region \"Pearls\":\n    - button \"Open cluster of 6 pearls\": \"6\"\n    - button \"Open cluster of 2 pearls\": \"2\"\n    - button \"Open cluster of 12 pearls\": \"12\"\n    - button \"Untitled orb, empty pearl\": Untitled orb\n- complementary \"Pearl, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Pearl. Hold to speak, click for a command, drop material, or use arrow keys to move.\"\n- status: Orb cursor off\n- complementary \"scene view emitted by orb\":\n  - button \"Close\"\n  - text: View\n  - navigation \"Scene and Output Frame actions\":\n    - button \"Past work\"\n    - button \"Focus on the result\"\n    - button \"Space\"\n    - button \"Grid\"\n    - button \"Connections\"\n    - button \"Details\" [pressed]\n    - button \"Sequence\""
     },
     {
       "name": "05-install-reduced-motion",
@@ -213,12 +233,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 520,
-        "loadMs": 522,
-        "transferBytes": 12606158,
+        "domContentLoadedMs": 426,
+        "loadMs": 427,
+        "transferBytes": 13062159,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - text: Pearl Everywhere\n  - heading \"The world is your oyster. Make pearls.\" [level=1]\n  - paragraph: Notice something on any page, make it a source-linked pearl, then reopen that compact agent shell whenever you want to shape or use it. Make your first pearl today.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Open saved Scenes\"\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing."
+      "snapshot": "- main:\n  - text: Pearl\n  - heading \"Add Pearl to Chrome\" [level=1]\n  - paragraph: Use the same companion on any page.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing."
     }
   ],
   "passed": 6,

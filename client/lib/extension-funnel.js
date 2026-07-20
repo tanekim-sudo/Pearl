@@ -59,6 +59,18 @@ export async function requestTrustedExtensionHandoff(extensionId = import.meta.e
   });
 }
 
+export async function requestTrustedResultHandoff(token, extensionId = import.meta.env.VITE_LENS_EXTENSION_ID) {
+  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !extensionId || !globalThis.chrome?.runtime?.sendMessage) {
+    return { connected: false, resultPearl: null };
+  }
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(extensionId, { type: "pearl-result-handoff", version: 1, nonce: token }, (value) => {
+      if (chrome.runtime.lastError || !value?.ok) resolve({ connected: false, resultPearl: null });
+      else resolve({ connected: true, ...(value.value || {}), resultPearl: value.value?.resultPearl || null });
+    });
+  });
+}
+
 export function trackExtensionFunnel(event, context = {}) {
   const endpoint = import.meta.env.VITE_LENS_ANALYTICS_ENDPOINT;
   if (!endpoint || !FUNNEL_EVENTS.has(event)) return false;

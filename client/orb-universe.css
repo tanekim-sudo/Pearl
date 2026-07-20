@@ -896,3 +896,158 @@ html[data-lens-orb-cursor-active="true"] * {
     width: min(220px, 62vw);
   }
 }
+
+/* Companion-only runtime: Pearl is the interface; everything else is transient. */
+.orb-phase,
+.orb-stage-empty,
+.semantic-orb-new {
+  display: none;
+}
+.orb-context-object span,
+.orb-candidate {
+  font-size: 0;
+}
+.orb-worker {
+  width: 18px;
+  font-size: 0;
+}
+.orb-worker i {
+  margin: 0;
+}
+.orb-ledger {
+  left: clamp(8px, calc(var(--orb-x, 28px) + 54px), calc(100vw - 318px));
+  top: clamp(8px, calc(var(--orb-y, 28px) - 4px), calc(100vh - 160px));
+  width: min(310px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 16px));
+  padding: 0 0 0 var(--pearl-ui-space-3);
+  overflow: auto;
+  border: 0;
+  border-left: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 0;
+  background: rgba(9, 11, 12, .94);
+  box-shadow: none;
+}
+.orb-ledger form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--pearl-ui-control);
+  gap: 0;
+}
+.orb-ledger form input,
+.orb-ledger form button {
+  min-height: var(--pearl-ui-control);
+  padding: 0 var(--pearl-ui-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 0;
+  background: transparent;
+}
+.orb-ledger form button {
+  padding: 0;
+}
+.pearl-next-action {
+  width: 100%;
+  min-height: var(--pearl-ui-control);
+  padding: 0 var(--pearl-ui-space-2) !important;
+  text-align: left;
+  border: 0 !important;
+  border-bottom: 1px solid var(--pearl-ui-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--pearl-ui-text-muted) !important;
+}
+.pearl-action-search {
+  margin: 0;
+  padding: var(--pearl-ui-space-2) 0 0;
+  border: 0;
+}
+.pearl-action-search > label {
+  padding-right: var(--pearl-ui-space-2);
+}
+.pearl-action-search > label input {
+  border-bottom-color: var(--pearl-ui-line);
+}
+.pearl-action-results > button {
+  padding-right: var(--pearl-ui-space-2);
+}
+.pearl-action-results small {
+  display: none;
+}
+@media (max-width: 760px) {
+  .orb-ledger {
+    left: 8px;
+    top: auto;
+    bottom: 8px;
+    width: calc(100vw - 16px);
+  }
+}
+.orb-install {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+  gap: 0;
+  padding: var(--pearl-ui-space-5) 0;
+}
+.orb-install h1 {
+  margin: var(--pearl-ui-space-2) 0;
+  font-size: var(--pearl-ui-font-lg);
+  letter-spacing: -.02em;
+}
+.orb-install p {
+  font-size: var(--pearl-ui-font-sm);
+}
+
+/* Physical Pearl motion and one refractive command seam. */
+.orb-shadow {
+  fill: rgba(0, 0, 0, .12);
+  filter: blur(.8px);
+}
+.orb-pearl {
+  animation: orb-pearl-mass 4s ease-in-out infinite;
+}
+.orb-nucleus {
+  animation: orb-pearl-ember 8s ease-in-out infinite;
+  transition: opacity .52s ease-out, transform .52s cubic-bezier(.18,.82,.2,1.08);
+}
+.orb-nacre {
+  transition: opacity .38s ease-out, transform .38s cubic-bezier(.18,.82,.2,1.08);
+}
+.orb-nacre-fold {
+  transition: opacity .4s ease-out, transform .52s cubic-bezier(.18,.82,.2,1.08);
+}
+.orb-reflection {
+  opacity: .28;
+  filter: blur(1px);
+}
+.orb-glint {
+  opacity: .4;
+}
+.orb-ledger {
+  background: linear-gradient(90deg, rgba(255,255,255,.018), transparent 42%);
+  box-shadow: inset 1px 0 rgba(255,255,255,.035);
+}
+.orb-ledger input {
+  font-size: 12px;
+  font-weight: 410;
+  letter-spacing: .005em;
+  caret-color: var(--pearl-ui-focus);
+}
+.pearl-action-results b {
+  font-size: 11px;
+  font-weight: 430;
+  line-height: 1.45;
+}
+@keyframes orb-pearl-mass {
+  0%,100% { transform: scale(.98) rotate(-.12deg); }
+  50% { transform: scale(1.02) rotate(.12deg); }
+}
+@keyframes orb-pearl-ember {
+  0%,100% { opacity: .54; }
+  50% { opacity: .62; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-pearl,
+  .orb-nucleus { animation: none !important; }
+  .orb-nucleus,
+  .orb-nacre,
+  .orb-nacre-fold,
+  .orb-reflection { transform: none !important; transition: none !important; }
+}

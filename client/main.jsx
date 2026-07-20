@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx";
-import OrbUniverseShell from "./components/OrbUniverseShell.jsx";
+import { redactPrivacyDiagnostic } from "../shared/local-privacy-vault.js";
+import { installSecureLocalStorage } from "./lib/secure-local-storage.js";
 import "../shared/pearl-interface-tokens.css";
 import "./styles.css";
 import "./styles-idea.css";
@@ -17,7 +17,7 @@ class RootErrorBoundary extends React.Component {
     return { error };
   }
   componentDidCatch(error, info) {
-    console.error("Pearl failed to render:", error, info);
+    console.error("Pearl failed to render:", redactPrivacyDiagnostic(error), { componentStack: Boolean(info?.componentStack) });
   }
   render() {
     if (this.state.error) {
@@ -39,24 +39,6 @@ class RootErrorBoundary extends React.Component {
               Something crashed on startup. Try a hard refresh (Cmd+Shift+R). If it persists, clear site
               data for this page.
             </p>
-            {this.state.error?.message && (
-              <pre
-                style={{
-                  margin: "0 0 16px",
-                  padding: 12,
-                  textAlign: "left",
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  background: "#fff",
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  overflow: "auto",
-                  maxHeight: 160,
-                }}
-              >
-                {this.state.error.message}
-              </pre>
-            )}
             <button
               type="button"
               style={{
@@ -79,10 +61,22 @@ class RootErrorBoundary extends React.Component {
   }
 }
 
-createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <RootErrorBoundary>
-      <OrbUniverseShell StageComponent={App} />
-    </RootErrorBoundary>
-  </React.StrictMode>
-);
+async function boot() {
+  await installSecureLocalStorage();
+  const [{ default: App }, { default: OrbUniverseShell }] = await Promise.all([
+    import("./App.jsx"),
+    import("./components/OrbUniverseShell.jsx"),
+  ]);
+  createRoot(document.getElementById("root")).render(
+    <React.StrictMode>
+      <RootErrorBoundary>
+        <OrbUniverseShell StageComponent={App} />
+      </RootErrorBoundary>
+    </React.StrictMode>
+  );
+}
+
+boot().catch((error) => {
+  console.error("Pearl privacy boot failed:", redactPrivacyDiagnostic(error));
+  document.getElementById("root").textContent = "Pearl could not open local data safely.";
+});

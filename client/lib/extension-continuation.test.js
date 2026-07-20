@@ -51,3 +51,25 @@ test("extension continuation group references carried items without duplicating 
   assert.equal(material.provenance.activeLensId, "lens-a");
   assert.deepEqual(material.provenance.candidateIds, ["candidate-a"]);
 });
+
+test("web Scene handoff keeps the same persisted Result Pearl identity and provenance", () => {
+  const resultHandoff = {
+    resultPearl: {
+      id: "result-pearl:run-a:0",
+      text: "Same output object",
+      status: "opened",
+      sourceRefs: [{ id: "fragment-a" }],
+      lens: { id: "lens-a", version: 3, strength: .8 },
+      outputSpec: { machineKind: "text" },
+      disclosureReceipt: { id: "receipt-a", disclosedCharacters: 18 },
+      lineage: [{ id: "fragment-a" }],
+      provenance: { model: "configured" },
+    },
+  };
+  assert.equal(continuationMaterialCount(resultHandoff), 1);
+  const [item] = continuationItems(resultHandoff);
+  assert.equal(item.id, resultHandoff.resultPearl.id);
+  assert.equal(item.resultPearlId, resultHandoff.resultPearl.id);
+  assert.equal(item.provenance.disclosureReceipt.id, "receipt-a");
+  assert.equal(item.provenance.lens.version, 3);
+});

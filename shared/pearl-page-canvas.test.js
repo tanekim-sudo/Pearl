@@ -1,0 +1,62 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  activatePearlCanvas,
+  bindPearlCanvasContext,
+  canonicalPageIdentity,
+  createPearlCanvasArtifact,
+  deactivatePearlCanvas,
+  deletePearlCanvasArtifacts,
+  emptyPearlPageCanvas,
+  pearlCanvasKey,
+  selectPearlCanvasArtifacts,
+  setPearlCanvasDestination,
+  setPearlCanvasMode,
+  undoPearlCanvas,
+  updatePearlCanvasArtifact,
+} from "./pearl-page-canvas.js";
+
+test("canonical page identity excludes queries, fragments, and protected schemes", () => {
+  assert.equal(canonicalPageIdentity("https://example.test/path/?token=secret#private"), "https://example.test/path");
+  assert.throws(() => canonicalPageIdentity("chrome://settings"), /protected browser pages/);
+});
+
+test("Pearl and page keys isolate canvas state without duplication", () => {
+  const page = canonicalPageIdentity("https://example.test/article");
+  assert.notEqual(pearlCanvasKey("pearl-a", page), pearlCanvasKey("pearl-b", page));
+  assert.notEqual(pearlCanvasKey("pearl-a", page), pearlCanvasKey("pearl-a", canonicalPageIdentity("https://example.test/other")));
+  let left = activatePearlCanvas(emptyPearlPageCanvas({ pearlId: "pearl-a", pageIdentity: page }));
+  const right = emptyPearlPageCanvas({ pearlId: "pearl-b", pageIdentity: page });
+  left = createPearlCanvasArtifact(left, { id: "text-a", type: "text", text: "private a", box: { x: 10, y: 20, width: 200, height: 80 } });
+  assert.equal(left.artifacts.length, 1);
+  assert.equal(right.artifacts.length, 0);
+  assert.equal(createPearlCanvasArtifact(left, left.artifacts[0]).artifacts.length, 1);
+});
+
+test("all input modes preserve native pass-through as the safe resting mode", () => {
+  let state = emptyPearlPageCanvas({ pearlId: "p", pageIdentity: "https://example.test/" });
+  for (const mode of ["select-type", "pen", "highlighter", "eraser", "lasso", "image", "dom-select", "voice"]) {
+    state = setPearlCanvasMode(state, mode);
+    assert.equal(state.active, true);
+    assert.equal(state.mode, mode);
+  }
+  state = deactivatePearlCanvas(state);
+  assert.equal(state.active, false);
+  assert.equal(state.mode, "native");
+});
+
+test("artifact edits, selection, context, destinations, deletion, and undo checkpoint exactly", () => {
+  let state = activatePearlCanvas(emptyPearlPageCanvas({ pearlId: "p", pageIdentity: "https://example.test/" }));
+  state = createPearlCanvasArtifact(state, { id: "box", type: "text", text: "", box: { x: 4, y: 8, width: 120, height: 60 } });
+  state = updatePearlCanvasArtifact(state, "box", { text: "streamed result", box: { x: 12, y: 18, width: 240, height: 90 } });
+  state = selectPearlCanvasArtifacts(state, ["box"]);
+  state = bindPearlCanvasContext(state, [{ id: "ink-ctx", kind: "ink", ref: "box", summary: "user ink", provenance: { local: true } }]);
+  state = setPearlCanvasDestination(state, { type: "canvas-textbox", targetId: "box" });
+  const beforeDelete = structuredClone(state);
+  state = deletePearlCanvasArtifacts(state, ["box"]);
+  assert.equal(state.artifacts.length, 0);
+  state = undoPearlCanvas(state);
+  assert.deepEqual(state.artifacts, beforeDelete.artifacts);
+  assert.equal(state.destination.targetId, "box");
+  assert.equal(state.context[0].provenance.local, true);
+});

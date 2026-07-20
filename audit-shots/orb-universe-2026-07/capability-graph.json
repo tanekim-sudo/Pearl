@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-a02f305e",
+  "fingerprint": "fnv1a-b3d8d83b",
   "counts": {
-    "nodes": 251,
+    "nodes": 286,
     "edges": 516
   },
   "nodes": [
@@ -20165,6 +20165,522 @@
       "platform": "extension"
     },
     {
+      "id": "companion.capability.app.inspectLocalPrivacy",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectLocalPrivacy",
+      "purpose": "Inspect this profile's local storage and explicit sync state",
+      "examples": [
+        "what is stored on this device"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-inspectLocalPrivacy",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.exportLocalData",
+      "version": 1,
+      "kind": "capability",
+      "name": "exportLocalData",
+      "purpose": "Export this profile's local Pearl metadata after an explicit request",
+      "examples": [
+        "export my local Pearl data"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-exportLocalData",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.setBoardSync",
+      "version": 1,
+      "kind": "capability",
+      "name": "setBoardSync",
+      "purpose": "Explicitly enable or disable profile-scoped board sync",
+      "examples": [
+        "turn off sync"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": "boolean"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-setBoardSync",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.lockLocalPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "lockLocalPearls",
+      "purpose": "Lock this profile's local Pearl metadata on this device",
+      "examples": [
+        "lock my Pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-lockLocalPearls",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.unlockLocalPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "unlockLocalPearls",
+      "purpose": "Unlock this profile's local Pearl metadata on this device",
+      "examples": [
+        "unlock my Pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-unlockLocalPearls",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.deleteLocalData",
+      "version": 1,
+      "kind": "capability",
+      "name": "deleteLocalData",
+      "purpose": "Delete only this profile's local Pearl metadata after confirmation",
+      "examples": [
+        "delete my local Pearl data"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-deleteLocalData",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
       "id": "companion.capability.extension.openExternalSaveAs",
       "version": 1,
       "kind": "capability",
@@ -26147,6 +26663,3849 @@
       "domains": [
         "extension",
         "move",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.inspectExternalPrivacy",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectExternalPrivacy",
+      "purpose": "Inspect what this local Pearl profile stores and whether explicit sync is enabled",
+      "examples": [
+        "what is stored on this device"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-inspectExternalPrivacy",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.exportExternalLocalData",
+      "version": 1,
+      "kind": "capability",
+      "name": "exportExternalLocalData",
+      "purpose": "Export the current encrypted-profile metadata after an explicit request",
+      "examples": [
+        "export my local Pearl data"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-exportExternalLocalData",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.setExternalSync",
+      "version": 1,
+      "kind": "capability",
+      "name": "setExternalSync",
+      "purpose": "Enable or disable explicit account sync without changing local metadata",
+      "examples": [
+        "keep sync off"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": "boolean"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-setExternalSync",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.deleteExternalLocalData",
+      "version": 1,
+      "kind": "capability",
+      "name": "deleteExternalLocalData",
+      "purpose": "Delete only the current profile's local Pearl metadata and return a local receipt",
+      "examples": [
+        "delete this profile's local Pearl data"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-deleteExternalLocalData",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.lockExternalPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "lockExternalPearls",
+      "purpose": "Lock this profile's local Pearl metadata until explicitly unlocked",
+      "examples": [
+        "lock my Pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-lockExternalPearls",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.unlockExternalPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "unlockExternalPearls",
+      "purpose": "Unlock this profile's local Pearl metadata on this device",
+      "examples": [
+        "unlock my Pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-unlockExternalPearls",
+        "feature:privacy.local-profile-vault"
+      ],
+      "featureIds": [
+        "privacy.local-profile-vault"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "privacy"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.activateExternalPearlCanvas",
+      "version": 1,
+      "kind": "capability",
+      "name": "activateExternalPearlCanvas",
+      "purpose": "Use the active Pearl as a local canvas on the current supported page",
+      "examples": [
+        "use this Pearl here"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-activateExternalPearlCanvas",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.deactivateExternalPearlCanvas",
+      "version": 1,
+      "kind": "capability",
+      "name": "deactivateExternalPearlCanvas",
+      "purpose": "Restore native page input while preserving this Pearl canvas",
+      "examples": [
+        "let me edit the page again"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-deactivateExternalPearlCanvas",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.setExternalCanvasMode",
+      "version": 1,
+      "kind": "capability",
+      "name": "setExternalCanvasMode",
+      "purpose": "Choose one transient input mode for the active Pearl canvas",
+      "examples": [
+        "let me draw on this with Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": "native|select-type|pen|highlighter|eraser|lasso|image|dom-select|voice"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-setExternalCanvasMode",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.bindExternalCanvasContext",
+      "version": 1,
+      "kind": "capability",
+      "name": "bindExternalCanvasContext",
+      "purpose": "Bind the explicit page selection and user marks to the active Pearl",
+      "examples": [
+        "draw this context into the Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-bindExternalCanvasContext",
+        "feature:extension.pearl-page-canvas",
+        "feature:privacy.bounded-page-observation"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas",
+        "privacy.bounded-page-observation"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.setExternalOutputDestination",
+      "version": 1,
+      "kind": "capability",
+      "name": "setExternalOutputDestination",
+      "purpose": "Choose a typed reviewable destination for the next Pearl output",
+      "examples": [
+        "put the answer in a text box I create"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": "canvas-textbox|native-insert|native-replace|new-tab|web-scene|chat|clipboard|download|pdf"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-setExternalOutputDestination",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.undoExternalPearlCanvas",
+      "version": 1,
+      "kind": "capability",
+      "name": "undoExternalPearlCanvas",
+      "purpose": "Restore the active Pearl canvas from its exact previous checkpoint",
+      "examples": [
+        "undo the last page canvas change"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-undoExternalPearlCanvas",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.exportExternalPearlCanvasPdf",
+      "version": 1,
+      "kind": "capability",
+      "name": "exportExternalPearlCanvasPdf",
+      "purpose": "Download a PDF containing only the chosen Pearl canvas scope",
+      "examples": [
+        "download this Pearl canvas as a PDF"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists",
+        "page identity is canonical and supported",
+        "Pearl page canvas exists",
+        "Pearl page canvas can activate",
+        "artifact is bounded",
+        "placement uses page or viewport coordinates",
+        "artifact exists",
+        "artifacts exist",
+        "selection is bounded to current Pearl canvas",
+        "context is explicit, local, and bounded",
+        "destination is typed and reviewable",
+        "output and placement are explicit",
+        "native writes use separate approved insertion command",
+        "canvas checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pageCanvases.upsert",
+        "pageCanvases.artifacts.append",
+        "pageCanvases.artifacts.update",
+        "pageCanvases.artifacts.delete",
+        "pageCanvases.selection.replace",
+        "pageCanvases.context.merge",
+        "pageCanvases.destination.replace",
+        "pageCanvases.restore-checkpoint"
+      ],
+      "undo": [
+        "deactivate-page-canvas",
+        "reactivate-page-canvas",
+        "restore-canvas-mode",
+        "delete-created-canvas-artifact",
+        "restore-canvas-artifact",
+        "restore-deleted-canvas-artifacts",
+        "restore-canvas-selection",
+        "remove-bound-canvas-context",
+        "restore-output-destination",
+        "delete-placed-output",
+        "redo-from-retained-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-page-canvas-activated",
+        "pearl-page-canvas-deactivated",
+        "native-page-input-restored",
+        "pearl-canvas-mode-changed",
+        "pearl-canvas-artifact-created",
+        "pearl-canvas-artifact-updated",
+        "pearl-canvas-artifacts-deleted",
+        "pearl-canvas-selection-changed",
+        "pearl-canvas-context-bound",
+        "pearl-canvas-destination-changed",
+        "pearl-canvas-output-placed",
+        "pearl-canvas-undone"
+      ],
+      "tests": [
+        "capability-exportExternalPearlCanvasPdf",
+        "feature:extension.pearl-page-canvas"
+      ],
+      "featureIds": [
+        "extension.pearl-page-canvas"
+      ],
+      "canonicalCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.searchExternalPearlSoundscape",
+      "version": 1,
+      "kind": "capability",
+      "name": "searchExternalPearlSoundscape",
+      "purpose": "Search a lawful audio provider using only the explicit search terms",
+      "examples": [
+        "give this Pearl rain ambience"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": "string",
+          "provider": "procedural|internet-archive|jamendo?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-searchExternalPearlSoundscape",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.uploadExternalPearlAudio",
+      "version": 1,
+      "kind": "capability",
+      "name": "uploadExternalPearlAudio",
+      "purpose": "Choose and validate one local audio file for the active Pearl",
+      "examples": [
+        "upload my track for this Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-uploadExternalPearlAudio",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.useExternalPearlAudioTrack",
+      "version": 1,
+      "kind": "capability",
+      "name": "useExternalPearlAudioTrack",
+      "purpose": "Bind one rights-validated provider or procedural track to the active Pearl",
+      "examples": [
+        "use this licensed track"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "track": "object"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-useExternalPearlAudioTrack",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.controlExternalPearlSoundscape",
+      "version": 1,
+      "kind": "capability",
+      "name": "controlExternalPearlSoundscape",
+      "purpose": "Play, pause, or stop the active Pearl soundscape under browser autoplay policy",
+      "examples": [
+        "pause this Pearl's sound"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action": "play|pause|stop"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-controlExternalPearlSoundscape",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.updateExternalPearlSoundscape",
+      "version": 1,
+      "kind": "capability",
+      "name": "updateExternalPearlSoundscape",
+      "purpose": "Adjust local Pearl soundscape playback preferences",
+      "examples": [
+        "turn this Pearl's sound down"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "volume": "number?",
+          "muted": "boolean?",
+          "shuffle": "boolean?",
+          "loop": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-updateExternalPearlSoundscape",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.saveExternalPearlTrackOffline",
+      "version": 1,
+      "kind": "capability",
+      "name": "saveExternalPearlTrackOffline",
+      "purpose": "Save one explicitly chosen track offline only when its recorded rights permit it",
+      "examples": [
+        "save this licensed track offline"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "trackId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-saveExternalPearlTrackOffline",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.removeExternalPearlAudioTrack",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeExternalPearlAudioTrack",
+      "purpose": "Remove one track and its current-profile local blob from a Pearl",
+      "examples": [
+        "remove music from this Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "trackId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "track audio and rights metadata are validated before mutation",
+        "track belongs to the current Pearl",
+        "preferences are bounded",
+        "playback follows browser autoplay policy",
+        "track license permits offline use",
+        "download bytes pass audio validation and integrity checks",
+        "only the explicit search query may leave the device"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "audio-state-changed"
+      ],
+      "persistence": [
+        "pearlSoundscapes.tracks.append",
+        "pearlSoundscapes.tracks.delete",
+        "pearlSoundscapes.activeTrackId.replace",
+        "pearlSoundscapes.preferences.update",
+        "pearlSoundscapes.playback.replace",
+        "pearlSoundscapes.tracks.update",
+        "none"
+      ],
+      "undo": [
+        "remove-added-soundscape-track",
+        "restore-removed-soundscape-track",
+        "restore-active-soundscape-track",
+        "restore-soundscape-preferences",
+        "restore-soundscape-playback",
+        "delete-offline-audio-blob",
+        "none"
+      ],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "audio-state-changed",
+        "pearl-soundscape-track-added",
+        "pearl-soundscape-track-removed",
+        "pearl-soundscape-track-selected",
+        "pearl-soundscape-updated",
+        "pearl-soundscape-playback-changed",
+        "pearl-track-cached-offline",
+        "pearl-audio-search-requested"
+      ],
+      "tests": [
+        "capability-removeExternalPearlAudioTrack",
+        "feature:semantic-pearl.soundscape"
+      ],
+      "featureIds": [
+        "semantic-pearl.soundscape"
+      ],
+      "canonicalCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog"
+      ],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "audio"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.expandExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "expandExternalResultPearl",
+      "purpose": "Open one margin result Pearl into its focused result plane",
+      "examples": [
+        "open this new result"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-expandExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.collapseExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "collapseExternalResultPearl",
+      "purpose": "Collapse one result plane back into the same margin Pearl",
+      "examples": [
+        "collapse this result back into its Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-collapseExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.openExternalResultPearlTab",
+      "version": 1,
+      "kind": "capability",
+      "name": "openExternalResultPearlTab",
+      "purpose": "Open the same persisted result object in a nonce-bound new tab",
+      "examples": [
+        "open this result in a new tab"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-openExternalResultPearlTab",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.presentExternalResultAsChat",
+      "version": 1,
+      "kind": "capability",
+      "name": "presentExternalResultAsChat",
+      "purpose": "Present a result as linked chat while preserving branches and citations",
+      "examples": [
+        "open this result in chat with its sources"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-presentExternalResultAsChat",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.redirectExternalResult",
+      "version": 1,
+      "kind": "capability",
+      "name": "redirectExternalResult",
+      "purpose": "Redirect an existing output without rerunning its transformation",
+      "examples": [
+        "put this existing result in a text box I create"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string",
+          "destination": "margin-pearl|new-tab|web-scene|chat|native-insert|native-replace|canvas-textbox|canvas-region|companion-region"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-redirectExternalResult",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.acceptExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "acceptExternalResultPearl",
+      "purpose": "Accept one persisted result Pearl",
+      "examples": [
+        "keep this result"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-acceptExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.archiveExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "archiveExternalResultPearl",
+      "purpose": "Archive one result Pearl without deleting provenance",
+      "examples": [
+        "archive this result Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-archiveExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.deleteExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "deleteExternalResultPearl",
+      "purpose": "Delete one result Pearl after precise confirmation",
+      "examples": [
+        "delete this result Pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-deleteExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.undoExternalResultPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "undoExternalResultPearl",
+      "purpose": "Undo the latest placement, destination, expansion, or status change for a result Pearl",
+      "examples": [
+        "undo the last change to this result"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "output identity, source references, Lens provenance, and disclosure receipt are present",
+        "placement was computed against the current viewport and obstacles",
+        "result Pearl exists and placement is inside the current page coordinate model",
+        "result Pearl has a checkpoint",
+        "result Pearl exists",
+        "result Pearl exists; the surface adapter creates a nonce-bound tab handoff",
+        "destination is typed and validated",
+        "placement rectangle is explicit and bounded",
+        "the selected canvas region exists in the same Pearl and page namespace",
+        "result Pearl is ready or opened"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.upsert",
+        "resultPearls.placement.replace",
+        "resultPearls.checkpoint.restore",
+        "resultPearls.status.update",
+        "resultPearls.expanded.replace",
+        "resultPearls.destination.replace",
+        "resultChats.append",
+        "pageCanvases.artifacts.append,resultPearls.destination.replace",
+        "resultPearls.archived.update",
+        "resultPearls.delete"
+      ],
+      "undo": [
+        "delete-spawned-result-pearl",
+        "restore-result-pearl-placement",
+        "undo-result-pearl",
+        "redo-result-pearl",
+        "restore-result-pearl-status",
+        "collapse-result-pearl",
+        "expand-result-pearl",
+        "restore-result-destination",
+        "remove-linked-chat-message",
+        "delete-created-result-region",
+        "restore-result-status",
+        "restore-result-archive-state",
+        "restore-result-pearl"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "ai-state-changed",
+        "result-pearl-spawned",
+        "result-pearl-placed",
+        "result-pearl-moved",
+        "result-pearl-undone",
+        "result-pearl-status-changed",
+        "result-pearl-expanded",
+        "result-pearl-collapsed",
+        "result-pearl-tab-requested",
+        "result-pearl-redirected",
+        "result-pearl-presented-as-chat",
+        "result-placement-region-created",
+        "result-placement-region-selected",
+        "result-pearl-accepted",
+        "result-pearl-archived",
+        "result-pearl-deleted"
+      ],
+      "tests": [
+        "capability-undoExternalResultPearl",
+        "feature:output.result-pearl"
+      ],
+      "featureIds": [
+        "output.result-pearl"
+      ],
+      "canonicalCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
         "ai"
       ],
       "platform": "extension"

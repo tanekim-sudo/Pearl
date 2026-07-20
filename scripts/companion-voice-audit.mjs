@@ -85,8 +85,9 @@ await page.addInitScript(({ items, nodes }) => {
 }, { items, nodes });
 
 async function speak(parts) {
-  const mic = page.getByRole("button", { name: "Hold to speak", exact: true });
+  const mic = page.locator(".companion-orb");
   await mic.dispatchEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true });
+  await page.waitForTimeout(500);
   for (const part of parts) {
     await page.evaluate((voicePart) => window.__emitVoice([voicePart]), part);
   }

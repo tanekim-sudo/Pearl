@@ -10,6 +10,9 @@ import { sanitizeHtml } from "../core/security.js";
 import { applySpecialistPlan, detectAdapter } from "./adapters/specialists.js";
 import { createHighlighter } from "./highlighter.js";
 import { captureNativeSelection, selectionRects } from "./selection.js";
+import { createPearlPageCanvas } from "./page-canvas.js";
+import { createResultPearlLayer } from "./result-pearls.js";
+import { canonicalPageIdentity } from "../../../shared/pearl-page-canvas.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
@@ -29,16 +32,24 @@ function mountPageOrb() {
     .orb{position:absolute;inset:0;width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;filter:none;touch-action:none}
     svg{width:36px;height:36px;overflow:visible}.pearl{transform-origin:50px 50px;animation:respire 4s ease-in-out infinite}.shadow{fill:rgba(0,0,0,.16);filter:blur(1.1px)}.state{fill:none;stroke:rgba(232,239,235,.4);stroke-width:.8;opacity:0;stroke-dasharray:2 4}.core{stroke:rgba(255,255,255,.46);stroke-width:.62}.nucleus{mix-blend-mode:soft-light;opacity:.58;transform:translate(calc(var(--pearl-light-x) * -1px),calc(var(--pearl-light-y) * -.8px));transition:opacity .24s ease-out,transform .22s ease-out}.nacre{mix-blend-mode:screen;opacity:calc(.34 + var(--pearl-motion) * .3);transform:translate(calc(var(--pearl-light-x) * 2px),calc(var(--pearl-light-y) * 1.7px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .18s ease-out}.reflection{fill:rgba(58,69,69,.1);filter:blur(2.2px);transform:translate(calc(var(--pearl-light-x) * -1.2px),calc(var(--pearl-light-y) * -1px));transition:transform .22s ease-out}.rim{stroke-width:.8}.glint{fill:rgba(255,255,255,.26);filter:blur(.45px)}.pinlight{fill:#fff;opacity:.96}
     .shell[data-state=listening] .nucleus,.shell[data-state=absorbing] .nucleus,.shell[data-state=planning] .nucleus{opacity:.82;filter:sepia(.1) saturate(1.06)}.shell[data-state=absorbing] .state,.shell[data-state=planning] .state{opacity:.55}.shell[data-state=branching] .nacre{opacity:.68}.shell[data-state=blocked] .pearl{filter:saturate(.45) brightness(.88)}.shell[data-state=blocked] .nucleus{opacity:.3}
-    .phase{position:absolute;top:40px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#5d5544;background:rgba(250,248,240,.92);padding:2px 5px;border-radius:2px;opacity:0}.shell:not([data-state=idle]) .phase{opacity:1}
+    .phase{position:absolute;top:40px;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--field-text);background:transparent;padding:2px 0;opacity:0}.shell:not([data-state=idle]) .phase{opacity:.62}
     .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:6px;height:6px;border:1px solid rgba(238,244,240,.34);border-radius:50%;background:#eef0eb;transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:5px;height:5px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate i{display:block;width:5px;height:5px;margin:0;border-radius:50%;background:#d9dfdc;box-shadow:0 0 7px rgba(186,213,205,.42)}.shell.candidates .candidate{opacity:.72}.shell.open .orbit{opacity:.18}
     .emission{position:absolute;right:48px;top:-100px;width:300px;display:none;padding:14px 0 14px 16px;color:#efeee8;background:rgba(9,11,12,.98);border:0;border-left:1px solid rgba(235,240,237,.24);border-radius:0;box-shadow:none}.shell.open .emission{display:grid;gap:8px}.emission header{display:flex;align-items:center;justify-content:space-between;padding-right:12px;color:#8e9390;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.emission header b{color:#efeee8;font-weight:600}.emission button,.emission input{min-height:40px;border:0;border-bottom:1px solid rgba(255,255,255,.11);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.1)}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:0}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:0}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:auto;left:-44px;top:0;width:36px;height:36px;display:none;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#0e1112}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
     .shell.dock-left .emission{left:48px;right:auto}
     .shell.cursor-mode{width:28px;height:28px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:28px;height:28px;pointer-events:none;filter:none}.shell.cursor-mode svg{width:28px;height:28px}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{width:28px;height:28px;opacity:.72}.shell.cursor-mode[data-cursor-presentation=action]{width:32px;height:32px}.shell.cursor-mode[data-cursor-presentation=grab]{width:34px;height:34px}.shell.cursor-mode[data-cursor-presentation=resize]{width:28px;height:28px;opacity:.78}.shell.cursor-mode.pressed .orb{transform:scale(.82)}
     .shell .emission{right:48px}.shell.dock-left .emission{left:48px;right:auto}
-    button:focus-visible,input:focus-visible{outline:1px solid #fff;outline-offset:3px}
+    .emission form{display:grid;grid-template-columns:minmax(0,1fr) 40px}.emission form input{min-width:0}.emission form button{padding:0;text-align:center}.emission>[data-action=contextual]{width:100%;color:#aeb3b0}
+    .emission{color:var(--field-text);background:linear-gradient(90deg,var(--field-edge),transparent 18px),var(--field-bg);border-color:var(--field-line);box-shadow:inset 1px 0 rgba(255,255,255,.08)}
+    .emission button,.emission input,.emission>[data-action=contextual]{color:var(--field-text);border-color:var(--field-line);font-weight:420;letter-spacing:.005em}
+    .emission input:focus-visible{outline:0;border-bottom-color:var(--field-text)}
+    .nacre-fold{mix-blend-mode:screen;opacity:calc(.1 + var(--pearl-motion) * .2);transform:translate(calc(var(--pearl-light-x) * -1.4px),calc(var(--pearl-light-y) * -1.1px));transition:opacity .4s ease-out,transform .52s cubic-bezier(.18,.82,.2,1.08)}
+    .pearl{animation:pearl-mass 4s ease-in-out infinite}.nucleus{animation:pearl-ember 8s ease-in-out infinite;transition:opacity .52s ease-out,transform .52s cubic-bezier(.18,.82,.2,1.08)}.nacre{transition:opacity .38s ease-out,transform .38s cubic-bezier(.18,.82,.2,1.08)}
+    button:focus-visible,input:focus-visible{outline:1px solid var(--field-text);outline-offset:3px}
     @keyframes respire{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
+    @keyframes pearl-mass{0%,100%{transform:scale(.98) rotate(-.12deg)}50%{transform:scale(1.02) rotate(.12deg)}}
+    @keyframes pearl-ember{0%,100%{opacity:.54}50%{opacity:.62}}
     @media(max-width:620px){.emission{right:48px;width:min(300px,calc(100vw - 76px))}}
-    @media(prefers-reduced-motion:reduce){.pearl,.state,.nacre{animation:none!important}.nacre,.reflection{transform:none!important;transition:none!important}.shell.cursor-mode.pressed .orb{transform:none}}
+    @media(prefers-reduced-motion:reduce){.pearl,.state,.nucleus,.nacre,.nacre-fold{animation:none!important}.nucleus,.nacre,.nacre-fold,.reflection{transform:none!important;transition:none!important}.shell.cursor-mode.pressed .orb{transform:none}}
     @media(prefers-contrast:more){.core{stroke:#fff}.emission{border:1px solid #fff}}
   `;
   const shell = document.createElement("div");
@@ -49,22 +60,29 @@ function mountPageOrb() {
   orb.type = "button";
   orb.setAttribute("aria-label", "Pearl. Hold to speak, click to expand, drag to move, or drop material here");
   orb.setAttribute("aria-expanded", "false");
-  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pearl-core" cx="39%" cy="58%" r="72%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".3" stop-color="#f5f0e7"/><stop offset=".68" stop-color="#e7e6de"/><stop offset=".88" stop-color="#d1d4ce"/><stop offset="1" stop-color="#aeb3af"/></radialGradient><radialGradient id="pearl-nucleus" cx="38%" cy="62%" r="58%"><stop offset="0" stop-color="#f2d9ce" stop-opacity=".52"/><stop offset=".36" stop-color="#d2e2da" stop-opacity=".34"/><stop offset=".72" stop-color="#eadcb9" stop-opacity=".15"/><stop offset="1" stop-color="#c6ced0" stop-opacity="0"/></radialGradient><linearGradient id="pearl-nacre" x1="8%" y1="14%" x2="92%" y2="84%"><stop offset="0" stop-color="#dfbfb9" stop-opacity=".11"/><stop offset=".31" stop-color="#bfd8ce" stop-opacity=".28"/><stop offset=".53" stop-color="#f2e4c2" stop-opacity=".18"/><stop offset=".72" stop-color="#d9bdba" stop-opacity=".21"/><stop offset="1" stop-color="#bdd3cc" stop-opacity=".1"/></linearGradient><linearGradient id="pearl-rim" x1="18%" y1="8%" x2="82%" y2="92%"><stop offset="0" stop-color="#fff" stop-opacity=".78"/><stop offset=".5" stop-color="#edf2ee" stop-opacity=".18"/><stop offset=".82" stop-color="#78817e" stop-opacity=".35"/><stop offset="1" stop-color="#f4ecdf" stop-opacity=".48"/></linearGradient></defs><circle class="state" cx="50" cy="50" r="47"/><ellipse class="shadow" cx="51" cy="95" rx="25" ry="2"/><g class="pearl"><circle class="core" cx="50" cy="50" r="43" fill="url(#pearl-core)"/><ellipse class="nucleus" cx="43" cy="57" rx="25" ry="29" fill="url(#pearl-nucleus)"/><circle class="nacre" cx="50" cy="50" r="41.5" fill="url(#pearl-nacre)"/><ellipse class="reflection" cx="58" cy="62" rx="28" ry="17"/><circle class="rim" cx="50" cy="50" r="42.2" fill="none" stroke="url(#pearl-rim)"/><ellipse class="glint" cx="33" cy="28" rx="8" ry="4.5" transform="rotate(-38 33 28)"/><circle class="pinlight" cx="27.5" cy="22.5" r="2"/></g></svg><span class="phase">Listening</span>`;
+  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pearl-core" cx="39%" cy="58%" r="72%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".3" stop-color="#f5f0e7"/><stop offset=".68" stop-color="#e7e6de"/><stop offset=".88" stop-color="#d1d4ce"/><stop offset="1" stop-color="#aeb3af"/></radialGradient><radialGradient id="pearl-nucleus" cx="38%" cy="62%" r="58%"><stop offset="0" stop-color="#f2d9ce" stop-opacity=".52"/><stop offset=".36" stop-color="#d2e2da" stop-opacity=".34"/><stop offset=".72" stop-color="#eadcb9" stop-opacity=".15"/><stop offset="1" stop-color="#c6ced0" stop-opacity="0"/></radialGradient><linearGradient id="pearl-nacre" x1="8%" y1="14%" x2="92%" y2="84%"><stop offset="0" stop-color="#dfbfb9" stop-opacity=".11"/><stop offset=".31" stop-color="#bfd8ce" stop-opacity=".28"/><stop offset=".53" stop-color="#f2e4c2" stop-opacity=".18"/><stop offset=".72" stop-color="#d9bdba" stop-opacity=".21"/><stop offset="1" stop-color="#bdd3cc" stop-opacity=".1"/></linearGradient><linearGradient id="pearl-rim" x1="18%" y1="8%" x2="82%" y2="92%"><stop offset="0" stop-color="#fff" stop-opacity=".78"/><stop offset=".5" stop-color="#edf2ee" stop-opacity=".18"/><stop offset=".82" stop-color="#78817e" stop-opacity=".35"/><stop offset="1" stop-color="#f4ecdf" stop-opacity=".48"/></linearGradient></defs><circle class="state" cx="50" cy="50" r="47"/><ellipse class="shadow" cx="51" cy="95" rx="25" ry="2"/><g class="pearl"><circle class="core" cx="50" cy="50" r="43" fill="url(#pearl-core)"/><ellipse class="nucleus" cx="43" cy="57" rx="25" ry="29" fill="url(#pearl-nucleus)"/><circle class="nacre" cx="50" cy="50" r="41.5" fill="url(#pearl-nacre)"/><path class="nacre-fold" d="M14 57 C25 28 57 17 82 36 C63 33 48 40 40 55 C32 68 22 70 14 57Z" fill="url(#pearl-nacre)"/><ellipse class="reflection" cx="59" cy="64" rx="26" ry="13"/><circle class="rim" cx="50" cy="50" r="42.2" fill="none" stroke="url(#pearl-rim)"/><ellipse class="glint" cx="33" cy="28" rx="8" ry="4.5" transform="rotate(-38 33 28)"/><circle class="pinlight" cx="27.5" cy="22.5" r="2"/></g></svg><span class="phase">Listening</span>`;
   const orbit = document.createElement("div");
   orbit.className = "orbit";
   orbit.innerHTML = `<span class="lens-ring"></span>${[0,1,2,3,4].map((i) => `<span class="context-dot" style="--i:${i}" hidden></span>`).join("")}${["Question assumptions","Find strongest signal","Offer contrary path"].map((text, i) => `<span class="candidate" style="--i:${i}"><i></i>${text}</span>`).join("")}`;
   const emission = document.createElement("section");
   emission.className = "emission";
-  emission.setAttribute("aria-label", "Views emitted by Pearl");
-  emission.innerHTML = `<header><b>Pearl</b><span>The world is your oyster</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="pearl">Make a pearl from this</button><button type="button" data-action="capture">Add to working context</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Find any action…</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="pearl">Make a pearl from current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Notice explicit material</span><span>2 · Shape the pearl</span><span>3 · Review candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Find every Pearl action</button></div>`;
+  emission.setAttribute("aria-label", "Pearl command");
+  emission.innerHTML = `<form><input aria-label="Tell Pearl your goal" placeholder="What do you want?"><button type="submit" aria-label="Send command">→</button></form><button type="button" data-action="contextual">Keep selection</button><span hidden data-context-count></span><span hidden data-active-lens></span><span hidden data-candidate-count></span>`;
   const minimize = document.createElement("button");
   minimize.className = "minimize";
   minimize.type = "button";
   minimize.setAttribute("aria-label", "Minimize Pearl");
   minimize.textContent = "−";
-  shell.append(orbit, orb, emission, minimize);
+  shell.append(orbit, orb, emission);
   shadow.append(style, shell);
   document.documentElement.append(host);
+  const pageColor = getComputedStyle(document.body || document.documentElement).backgroundColor.match(/\d+(?:\.\d+)?/g)?.map(Number) || [255, 255, 255];
+  const pageLuminance = (pageColor[0] * .2126 + pageColor[1] * .7152 + pageColor[2] * .0722) / 255;
+  const lightSurface = pageColor[3] === 0 || pageLuminance > .5;
+  host.style.setProperty("--field-bg", lightSurface ? "rgba(250,250,247,.9)" : "rgba(9,11,12,.9)");
+  host.style.setProperty("--field-text", lightSurface ? "#262a29" : "#efeee9");
+  host.style.setProperty("--field-line", lightSurface ? "rgba(21,25,24,.18)" : "rgba(239,242,239,.16)");
+  host.style.setProperty("--field-edge", lightSurface ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.08)");
 
   let press = null;
   let holdTimer = null;
@@ -76,6 +94,7 @@ function mountPageOrb() {
     contextCount = Math.min(5, session.fragments?.length || contextCount);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
     shell.querySelector("[data-context-count]").textContent = contextCount ? `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}` : "No material yet";
+    shell.querySelector('[data-action="contextual"]').textContent = contextCount ? "Keep this" : "Notice selection";
     shell.classList.toggle("lens", Boolean(session.generator));
     shell.querySelector("[data-active-lens]").textContent = session.generator ? `${session.generator.name || session.generator.title || "Active Lens"} · active` : "New chat · no active Lens";
     const outputs = session.results?.flatMap((run) => run.outputs || []) || [];
@@ -203,6 +222,12 @@ function mountPageOrb() {
   };
   const onCursorUp = () => shell.classList.remove("pressed");
   const onCursorKey = (event) => {
+    if (event.key === "Escape" && shell.classList.contains("open")) {
+      shell.classList.remove("open");
+      orb.setAttribute("aria-expanded", "false");
+      event.preventDefault();
+      return;
+    }
     if (event.key === "Escape" && cursorEnabled) {
       event.preventDefault();
       event.stopPropagation();
@@ -235,6 +260,7 @@ function mountPageOrb() {
     const open = !shell.classList.contains("open");
     shell.classList.toggle("open", open);
     orb.setAttribute("aria-expanded", String(open));
+    if (open) requestAnimationFrame(() => emission.querySelector("input")?.focus());
   };
   const minimizeOrb = () => {
     shell.classList.toggle("minimized");
@@ -254,8 +280,7 @@ function mountPageOrb() {
     contextCount = Math.min(5, contextCount + added);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
     shell.querySelector("[data-context-count]").textContent = `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}`;
-    emission.querySelectorAll("[data-view]").forEach((item) => item.setAttribute("aria-current", String(item.dataset.view === "context")));
-    emission.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === "context"));
+    shell.querySelector('[data-action="contextual"]').textContent = "Keep this";
     send("get-session").then((response) => hydrate(response?.value)).catch(() => {});
     if (settle) window.setTimeout(() => setState("idle"), 700);
     return response;
@@ -271,6 +296,7 @@ function mountPageOrb() {
       contextCount = Math.min(5, contextCount + preselected.length);
       shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
       shell.querySelector("[data-context-count]").textContent = `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}`;
+      shell.querySelector('[data-action="contextual"]').textContent = "Keep this";
     }
     const response = await send("make-pearl", { idempotencyKey: `page-pearl:${Date.now()}` }).catch(() => null);
     if (!response?.ok || !response?.value?.pearl) {
@@ -347,7 +373,7 @@ function mountPageOrb() {
   });
   minimize.addEventListener("click", minimizeOrb);
   emission.addEventListener("pointerdown", (event) => {
-    if (!event.target.closest('[data-action="pearl"]')) return;
+    if (!event.target.closest('[data-action="contextual"]')) return;
     try {
       pendingPearlCapture = Promise.resolve(captureNativeSelection());
     } catch {
@@ -355,21 +381,28 @@ function mountPageOrb() {
     }
   });
   emission.addEventListener("click", (event) => {
-    const tab = event.target.closest("[data-view]");
-    if (tab) {
-      emission.querySelectorAll("[data-view]").forEach((item) => item.setAttribute("aria-current", String(item === tab)));
-      emission.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === tab.dataset.view));
-      if (tab.dataset.view === "taste" && shell.classList.contains("candidates")) setState("branching");
-      return;
-    }
     const action = event.target.closest("[data-action]")?.dataset.action;
-    if (action === "capture") absorb();
-    if (action === "pearl") makePearl();
-    if (action === "cursor") toggleCursor("control");
-    if (action === "minimize") minimizeOrb();
-    if (action === "dock") { host.style.left = "auto"; host.style.right = "18px"; shell.classList.remove("dock-left"); }
-    if (action === "panel") send("open-side-panel").catch(() => {});
+    if (action === "contextual") {
+      makePearl();
+      shell.classList.remove("open");
+      orb.setAttribute("aria-expanded", "false");
+    }
   });
+  emission.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = emission.querySelector("input");
+    const intent = input?.value?.trim();
+    if (!intent) return;
+    send("open-side-panel", { intent }).catch(() => {});
+    input.value = "";
+    shell.classList.remove("open");
+    orb.setAttribute("aria-expanded", "false");
+  });
+  addEventListener("pointerdown", (event) => {
+    if (!shell.classList.contains("open") || event.composedPath().includes(host)) return;
+    shell.classList.remove("open");
+    orb.setAttribute("aria-expanded", "false");
+  }, true);
   addEventListener("pointermove", onCursorMove, { capture: true, passive: true });
   addEventListener("pointerdown", onCursorDown, { capture: true, passive: true });
   addEventListener("pointerup", onCursorUp, { capture: true, passive: true });
@@ -400,10 +433,17 @@ function mountPageOrb() {
 }
 
 async function send(type, payload = {}) {
-  return globalThis.chrome?.runtime?.sendMessage(createMessage(type, payload));
+  const response = await globalThis.chrome?.runtime?.sendMessage(createMessage(type, payload));
+  if (response?.ok === false) throw new Error(response.error || "extension request failed");
+  return response?.value ?? response;
 }
 
 const pageOrb = mountPageOrb();
+const pageCanvas = createPearlPageCanvas({ send });
+const resultPearls = createResultPearlLayer({ send });
+send("result-pearl-get", { pageIdentity: canonicalPageIdentity(location.href) })
+  .then((value) => resultPearls.hydrate(value?.results || []))
+  .catch(() => {});
 
 async function capture() {
   if (!highlighter.enabled) return [];
@@ -443,6 +483,16 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
       return { ok: true, enabled };
     }
     if (type === "capture-selection") return { ok: true, fragments: await capture(), adapter: detectAdapter() };
+    if (type === "page-canvas-state") {
+      pageCanvas.hydrate(payload.canvas || null);
+      return { ok: true };
+    }
+    if (type === "page-canvas-export-pdf") return { ok: true, ...pageCanvas.downloadPdf() };
+    if (type === "result-pearl-layout-request") return { ok: true, ...resultPearls.layout(payload) };
+    if (type === "result-pearl-state") {
+      resultPearls.hydrate(payload.results || []);
+      return { ok: true };
+    }
     if (type === "remove-fragment") {
       captured.delete(payload.id);
       highlighter.remove(payload.id);

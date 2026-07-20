@@ -1,31 +1,19 @@
 # Companion capability runtime-effect matrix
 
-- Total: 24
-- Passed: 24
+- Total: 12
+- Passed: 12
 - Failed: 0
 - Skipped: 0
 
-- PASS — `createSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `activateSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `moveSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `renameSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `bindSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `addSemanticOrbContext` (app): state-or-visible-artifact-changed
-- PASS — `removeSemanticOrbContext` (app): state-or-visible-artifact-changed
-- PASS — `applySemanticOrbLens` (app): state-or-visible-artifact-changed
-- PASS — `removeSemanticOrbLens` (app): state-or-visible-artifact-changed
-- PASS — `nestSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `unnestSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `mergeSemanticOrbs` (app): state-or-visible-artifact-changed
-- PASS — `composeSemanticOrbs` (app): state-or-visible-artifact-changed
-- PASS — `splitSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `duplicateSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `archiveSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `deleteSemanticOrb` (app): state-or-visible-artifact-changed
-- PASS — `createExternalSemanticOrb` (extension): controlled extension state changed
-- PASS — `openExternalSemanticOrb` (extension): controlled extension state changed
-- PASS — `addExternalSemanticOrbContext` (extension): controlled extension state changed
-- PASS — `applyExternalSemanticOrbLens` (extension): controlled extension state changed
-- PASS — `mergeExternalSemanticOrbs` (extension): controlled extension state changed
-- PASS — `archiveExternalSemanticOrb` (extension): controlled extension state changed
-- PASS — `openExternalSemanticOrbScene` (extension): controlled extension state changed
+- PASS — `inspectExternalPrivacy` (extension): controlled extension state changed
+- PASS — `exportExternalLocalData` (extension): controlled extension state changed
+- PASS — `setExternalSync` (extension): controlled extension state changed
+- PASS — `deleteExternalLocalData` (extension): controlled extension state changed
+- PASS — `lockExternalPearls` (extension): controlled extension state changed
+- PASS — `unlockExternalPearls` (extension): controlled extension state changed
+- PASS — `bindExternalCanvasContext` (extension): controlled extension state changed
+- PASS — `searchExternalPearlSoundscape` (extension): controlled extension state changed
+- PASS — `uploadExternalPearlAudio` (extension): controlled extension state changed
+- PASS — `useExternalPearlAudioTrack` (extension): controlled extension state changed
+- PASS — `controlExternalPearlSoundscape` (extension): controlled extension state changed
+- PASS — `updateExternalPearlSoundscape` (extension): controlled extension state changed

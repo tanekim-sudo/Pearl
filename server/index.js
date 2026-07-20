@@ -15,7 +15,7 @@ import {
   buildShareUrl,
   SHARE_BUNDLE_VERSION,
 } from "../shared/share-bundle.js";
-import { attachLensUser } from "./supabase-auth.js";
+import { attachLensUser, exchangeExtensionAuthorizationCode, extensionAuthorizationUrl } from "./supabase-auth.js";
 import { guardAiRequest } from "./api-guard.js";
 import { corsOptions, rateLimit, securityHeaders } from "./http-security.js";
 import {
@@ -124,6 +124,21 @@ const extensionHandler = (handler) => async (req, res) => {
   }
 };
 app.get("/api/extension/library", extensionLimiter, extensionHandler(extensionLibrary));
+app.get("/api/extension/auth/config", extensionLimiter, extensionHandler(async (req, res) => {
+  res.setHeader("cache-control", "no-store");
+  res.json({
+    authorizeUrl: extensionAuthorizationUrl({
+      redirectUri: req.query.redirect_uri,
+      state: req.query.state,
+      codeChallenge: req.query.code_challenge,
+    }),
+  });
+}));
+app.post("/api/extension/auth/exchange", extensionLimiter, express.json({ limit: "8kb" }), extensionHandler(async (req, res) => {
+  const exchanged = await exchangeExtensionAuthorizationCode(req.body || {});
+  res.setHeader("cache-control", "no-store");
+  res.json(exchanged);
+}));
 app.post("/api/extension/execute", extensionLimiter, express.json({ limit: "512kb" }), extensionHandler(extensionExecute));
 app.post("/api/extension/artifacts", extensionLimiter, express.json({ limit: "512kb" }), extensionHandler(extensionArtifact));
 app.delete("/api/extension/artifacts/:id", extensionLimiter, extensionHandler(extensionArtifact));
