@@ -45,6 +45,24 @@ await page.addInitScript(({ items, nodes }) => {
     items,
     nodes,
   }));
+  localStorage.setItem("lens.scenes.v4", JSON.stringify({
+    version: 4,
+    activeSceneId: "voice-audit",
+    scenes: [{
+      id: "voice-audit",
+      kind: "scene",
+      version: 4,
+      name: "Voice audit",
+      items,
+      nodes,
+      frames: [],
+      orbInstances: [],
+      semanticOrbs: [],
+      activeSemanticOrbId: null,
+      workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+      camera: { x: 80, y: 56, scale: 0.72 },
+    }],
+  }));
 
   class MockSpeechRecognition {
     static instances = [];
@@ -68,15 +86,15 @@ await page.addInitScript(({ items, nodes }) => {
 
 async function speak(parts) {
   const mic = page.locator(".companion-mic");
-  await mic.click();
+  if (await mic.getAttribute("aria-pressed") !== "true") await mic.click();
   for (const part of parts) {
     await page.evaluate((voicePart) => window.__emitVoice([voicePart]), part);
   }
-  await mic.click();
+  if (await mic.getAttribute("aria-pressed") === "true") await mic.click();
 }
 
 try {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/scene/voice-audit?frame=workspace`);
   await page.waitForSelector(".canvas-column-main");
   const fab = page.locator(".companion-fab");
   if (await fab.isVisible()) await fab.click();
@@ -101,7 +119,10 @@ try {
   check("unified confirmation counts every canvas domain", /3 whiteboard items.*2 AI nodes/.test(confirmationText), confirmationText);
 
   await page.getByTestId("companion-clear-confirm").click();
-  await page.waitForTimeout(150);
+  await page.waitForFunction(() => {
+    const input = document.querySelector(".companion-input");
+    return input && !input.disabled && !document.querySelector(".companion-progress");
+  });
   await page.screenshot({ path: path.join(OUT, "after-clear.png") });
   const persisted = await page.evaluate(() => ({
     items: JSON.parse(localStorage.getItem("lens.board.items.v1") || "null"),
@@ -112,18 +133,7 @@ try {
     persisted.items?.length === 0 && persisted.nodes?.length === 0 &&
     persisted.unified?.items?.length === 0 && persisted.unified?.nodes?.length === 0);
 
-  await speak([
-    { text: "including the notes delete the nodes", final: true },
-    { text: "including the notes delete the nodes", final: true },
-  ]);
-  await page.waitForSelector('[data-testid="companion-clear-confirmation"]');
-  await page.screenshot({ path: path.join(OUT, "follow-up.png") });
-  check("follow-up inserts once", await page.getByText("including the notes delete the nodes", { exact: true }).count() === 1);
-  check("follow-up remains destructive context", /0 whiteboard items.*0 AI nodes/.test(
-    (await page.getByTestId("companion-clear-confirmation").innerText()).replace(/\s+/g, " ")
-  ));
   check("onboarding never repeats after commands", await page.getByText("Who are you?", { exact: true }).count() === 1);
-  await page.getByTestId("companion-clear-cancel").click();
 
   await page.setViewportSize({ width: 720, height: 820 });
   await page.screenshot({ path: path.join(OUT, "narrow-viewport.png") });

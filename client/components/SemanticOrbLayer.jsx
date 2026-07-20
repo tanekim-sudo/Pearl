@@ -4,7 +4,7 @@ import { clusterSemanticOrbs } from "../../shared/semantic-orbs.js";
 const PAYLOAD = "application/x-lens-object";
 
 function labelFor(orb) {
-  return orb.name || orb.representation?.label || "Untitled orb";
+  return orb.name || orb.representation?.label || "Untitled pearl";
 }
 
 function OrbGlyph({ active = false }) {
@@ -171,7 +171,7 @@ export default function SemanticOrbLayer({
   return <section
     ref={rootRef}
     className="semantic-orb-layer"
-    aria-label="Semantic orbs"
+    aria-label="Pearls"
     data-scene-id={sceneId}
     onDoubleClick={(event) => {
       if (event.target !== event.currentTarget) return;
@@ -179,7 +179,7 @@ export default function SemanticOrbLayer({
     }}
   >
     <button className="semantic-orb-new" type="button" onClick={() => onCreate?.({ placement: { x: 0, y: 0 } })}>
-      <span>+</span> New orb
+      <span>+</span> New pearl
     </button>
     {visible.map(({ orb, cluster, display }) => cluster
       ? <button
@@ -188,7 +188,7 @@ export default function SemanticOrbLayer({
           key={cluster.id}
           style={{ "--semantic-x": `${cluster.x}px`, "--semantic-y": `${cluster.y}px` }}
           onClick={() => setExpandedCluster(cluster.id)}
-          aria-label={`Open cluster of ${cluster.count} orbs`}
+          aria-label={`Open cluster of ${cluster.count} pearls`}
         ><OrbGlyph /><b>{cluster.count}</b></button>
       : <div
           className={`semantic-orb-capsule ${activeId === orb.id ? "active" : ""}`}
@@ -203,7 +203,7 @@ export default function SemanticOrbLayer({
           <button
             type="button"
             className="semantic-orb-button"
-            aria-label={`${labelFor(orb)}, ${orb.representation?.kind || "empty"} orb${activeId === orb.id ? ", active" : ""}`}
+            aria-label={`${labelFor(orb)}, ${orb.representation?.kind || "empty"} pearl${activeId === orb.id ? ", active" : ""}`}
             aria-pressed={activeId === orb.id}
             draggable="true"
             onDragStart={(event) => {
@@ -222,7 +222,7 @@ export default function SemanticOrbLayer({
             <span>{labelFor(orb)}</span>
             {(orb.workingSet?.context?.length || 0) > 0 && <i>{orb.workingSet.context.length}</i>}
           </button>
-          {activeId === orb.id && <aside className="semantic-orb-inspector" aria-label={`${labelFor(orb)} orb controls`}>
+          {activeId === orb.id && <aside className="semantic-orb-inspector" aria-label={`${labelFor(orb)} pearl controls`}>
             <form onSubmit={(event) => {
               event.preventDefault();
               if (rename.trim() && rename.trim() !== orb.name) onRename?.(orb.id, rename.trim());
@@ -252,15 +252,15 @@ export default function SemanticOrbLayer({
             </div>
             {confirmDelete === orb.id
               ? <div className="semantic-orb-delete-confirm" role="alert">
-                  <span>Delete this orb? Referenced source material remains.</span>
+                  <span>Delete this pearl? Referenced source material remains.</span>
                   <button type="button" onClick={() => { onDelete?.(orb.id); setConfirmDelete(null); }}>Delete</button>
                   <button type="button" onClick={() => setConfirmDelete(null)}>Cancel</button>
                 </div>
-              : <button className="semantic-orb-delete" type="button" onClick={() => setConfirmDelete(orb.id)}>Delete orb…</button>}
+              : <button className="semantic-orb-delete" type="button" onClick={() => setConfirmDelete(orb.id)}>Delete pearl…</button>}
           </aside>}
         </div>)}
-    {composition && <aside className="semantic-orb-compose-chooser" role="dialog" aria-label="Combine semantic orbs">
-      <b>Combine these orbs</b>
+    {composition && <aside className="semantic-orb-compose-chooser" role="dialog" aria-label="Combine pearls">
+      <b>Combine these pearls</b>
       <button type="button" onClick={() => { onNest?.(composition.sourceId, composition.targetId); setComposition(null); }}>Nest</button>
       <button type="button" onClick={() => { onMerge?.([composition.sourceId, composition.targetId]); setComposition(null); }}>Merge</button>
       <button type="button" onClick={() => { onCompose?.([composition.sourceId, composition.targetId]); setComposition(null); }}>Compose</button>

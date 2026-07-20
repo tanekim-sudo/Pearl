@@ -25,6 +25,10 @@ const PRIMITIVE_SPECS = Object.freeze({
   reframe: ["reframed perspective", "text", "The source expressed from a meaningfully different vantage point."],
   merge: ["structured synthesis", "richText", "One coherent structure synthesized from multiple inputs."],
   transcend: ["integrative resolution", "richText", "A higher-order resolution that preserves the useful tension."],
+  branch: ["possibility map", "list", "Distinct grounded possibilities that preserve the source."],
+  deepen: ["underlying-principles brief", "richText", "Assumptions, mechanisms, and principles linked to the source."],
+  challenge: ["challenge brief", "richText", "Weak assumptions, counterevidence, failure modes, and the strongest opposition case."],
+  embody: ["concrete examples", "list", "Observable examples and artifacts traceable to the source concept."],
 });
 
 const clone = (value) => value == null ? value : globalThis.structuredClone

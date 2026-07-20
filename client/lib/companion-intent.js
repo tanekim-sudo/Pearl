@@ -125,6 +125,16 @@ export function parseSemanticTransferCommand(text) {
   return null;
 }
 
+export function parsePearlCreationCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  const match = value.match(/^(?:make|create|save) (?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i);
+  if (!match) return null;
+  return {
+    verb: "createSemanticOrb",
+    args: { sceneId: "", ...(match[1] ? { name: match[1].trim() } : {}) },
+  };
+}
+
 export function parseCognitiveWorkflowCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   const teach = value.match(/^(?:from now on,?\s*)?when i say [“"'‘]?(.+?)[”"'’]?,?\s*(?:do|run|mean)\s+(.+?)(?:\.\s*)?(?:only remember this in (?:this )?(session|workspace|account|team))?$/i);

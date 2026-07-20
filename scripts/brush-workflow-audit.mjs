@@ -63,6 +63,28 @@ try {
       JSON.stringify([{ id: "page-main", name: "Brush audit", camera: { x: 100, y: 50, scale: 0.78 }, sessions: [] }])
     );
     localStorage.setItem("lens.board.camera.v1", JSON.stringify({ x: 100, y: 50, scale: 0.78 }));
+    localStorage.setItem("lens.scenes.v4", JSON.stringify({
+      version: 4,
+      activeSceneId: "brush-audit",
+      scenes: [{
+        id: "brush-audit",
+        kind: "scene",
+        version: 4,
+        name: "Brush audit",
+        items: [
+          { id: "brush-text", type: "text", x: 130, y: 170, w: 280, text: "Brush this exact phrase into a reusable idea.", pageId: "page-main", frameId: null },
+          { id: "brush-note", type: "sticky", x: 160, y: 310, w: 190, text: "A disconnected observation", pageId: "page-main", frameId: null },
+          { id: "brush-ink", type: "stroke", points: [{ x: 120, y: 430 }, { x: 330, y: 465 }], color: "#171717", width: 3, pageId: "page-main", frameId: null },
+        ],
+        nodes: [],
+        frames: [],
+        orbInstances: [],
+        semanticOrbs: [],
+        activeSemanticOrbId: null,
+        workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+        camera: { x: 100, y: 50, scale: 0.78 },
+      }],
+    }));
     localStorage.setItem(
       "lens.lenses.v2",
       JSON.stringify([{
@@ -83,7 +105,7 @@ try {
       }])
     );
   });
-  await page.goto(BASE);
+  await page.goto(`${BASE}/scene/brush-audit?frame=workspace`);
   await page.waitForSelector('[data-tool="highlight"]');
 
   const brushTool = page.locator('[data-tool="highlight"]');

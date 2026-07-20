@@ -150,8 +150,8 @@ export function parseExtensionIntent(text) {
   if (/^(turn off|disable|stop) (the )?highlighter$/i.test(value)) return { name: "togglePageHighlighter", args: { enabled: false } };
   if (/^(?:make|turn) (?:the )?orb (?:into|on as) (?:my |the )?cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: true } };
   if (/^(?:return to|restore|use) (?:the )?native cursor$/i.test(value)) return { name: "toggleExternalOrbCursor", args: { enabled: false } };
-  const createOrb = value.match(/^(?:make|create|save)(?: this| the selection)? (?:as )?(?:a )?new orb(?: called (.+))?$/i);
-  if (createOrb) return { name: "createExternalSemanticOrb", args: { name: createOrb[1] || "Untitled orb" } };
+  const createOrb = value.match(/^(?:(?:make|create|save)(?: this| the selection)? (?:as )?(?:a )?new orb|make (?:a )?pearl(?: from (?:this|the selection))?)(?: called (.+))?$/i);
+  if (createOrb) return { name: "createExternalSemanticOrb", args: { name: createOrb[1] || "Untitled pearl" } };
   const renameOrb = value.match(/^rename (?:the )?(.+?) orb to (.+)$/i);
   if (renameOrb) return { name: "renameExternalSemanticOrb", args: { id: renameOrb[1], name: renameOrb[2] } };
   const duplicateOrb = value.match(/^duplicate (?:the )?(.+?) orb$/i);

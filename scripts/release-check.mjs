@@ -5,6 +5,11 @@ import path from "node:path";
 const root = process.cwd();
 const full = !process.argv.includes("--fast");
 const auditUrl = process.env.AUDIT_URL || "http://127.0.0.1:41737";
+const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const workspaceChrome = path.join(root, ".pw-browsers/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
+const preferredChrome = process.env.PW_CHROMIUM
+  || (fs.existsSync(workspaceChrome) ? workspaceChrome : fs.existsSync(systemChrome) ? systemChrome : "");
+const browserEnv = preferredChrome ? { PW_CHROMIUM: preferredChrome } : {};
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { cwd: root, stdio: "inherit", env: { ...process.env, ...options.env } });
@@ -46,7 +51,14 @@ if (full) {
     "--host", parsedAuditUrl.hostname,
     "--port", parsedAuditUrl.port,
     "--strictPort",
-  ], { cwd: root, stdio: "inherit" });
+  ], {
+    cwd: root,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      VITE_LENS_EXTENSION_ID: process.env.VITE_LENS_EXTENSION_ID || "audit-extension-id",
+    },
+  });
   try {
     for (let attempt = 0; attempt < 80; attempt += 1) {
       try {
@@ -59,14 +71,19 @@ if (full) {
     // Exercise the persistent extension context first. Running it after
     // hundreds of short-lived Chromium contexts can destabilize extension
     // service workers on constrained CI hosts even when every context closes.
-    run("node", ["extension/scripts/orb-audit.mjs"]);
+    run("node", ["extension/scripts/orb-audit.mjs"], { env: browserEnv });
+    run("node", ["extension/scripts/playwright-audit.mjs"], { env: browserEnv });
     run("node", ["scripts/companion-capability-runtime-audit.mjs"], {
       env: {
         AUDIT_URL: auditUrl,
         AUDIT_OUT: path.join(root, "audit-shots/orb-universe-2026-07/companion-runtime"),
       },
     });
-    run("node", ["scripts/orb-universe-audit.mjs"], { env: { AUDIT_URL: auditUrl } });
+    run("node", ["scripts/orb-universe-audit.mjs"], { env: { ...browserEnv, AUDIT_URL: auditUrl } });
+    run("node", ["scripts/brush-workflow-audit.mjs"], { env: { ...browserEnv, AUDIT_URL: auditUrl } });
+    run("node", ["scripts/companion-voice-audit.mjs"], { env: { ...browserEnv, AUDIT_URL: auditUrl } });
+    run("node", ["scripts/account-adoption-preservation-audit.mjs"], { env: { ...browserEnv, AUDIT_URL: auditUrl } });
+    run("node", ["scripts/first-use-defect-ledger.mjs"]);
   } finally {
     server.kill("SIGTERM");
   }

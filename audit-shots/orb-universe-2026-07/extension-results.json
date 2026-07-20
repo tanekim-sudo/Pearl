@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-19T06:55:19.908Z",
+  "generatedAt": "2026-07-20T00:54:50.108Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -11,6 +11,10 @@
     "literal animated Shadow DOM page-edge orb visible",
     "page orb emits command/context/Lens/taste views",
     "selection absorption creates visible context orbit",
+    "capture queues an action and remains inert until explicit GO",
+    "GO creates a reviewable candidate",
+    "candidate insertion is verified in the page target",
+    "web continuation uses the trusted handoff route",
     "Lens atmosphere and candidate constellation visible",
     "page orb drag/dock and minimize are functional",
     "Triple-Space makes the orb the precise page cursor",
@@ -22,6 +26,6 @@
     "library and settings remain reachable",
     "MV3 service worker loaded"
   ],
-  "passed": 13,
+  "passed": 17,
   "failed": 0
 }

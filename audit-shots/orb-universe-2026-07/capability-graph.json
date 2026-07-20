@@ -8287,9 +8287,9 @@
       "version": 1,
       "kind": "capability",
       "name": "createSemanticOrb",
-      "purpose": "Create and activate a compact persistent orb representing explicit material or an emerging idea",
+      "purpose": "Make and activate a provenance-preserving pearl: a compact semantic capsule representing noticed material or an emerging idea",
       "examples": [
-        "make these notes a new orb called Picasso studies"
+        "make a pearl from these notes called Picasso studies"
       ],
       "inputSchema": {
         "type": "object",
@@ -20668,9 +20668,9 @@
       "version": 1,
       "kind": "capability",
       "name": "createExternalSemanticOrb",
-      "purpose": "Create a compact persistent orb from the current capture or an emerging idea",
+      "purpose": "Make a provenance-preserving pearl from the current page capture or an emerging idea",
       "examples": [
-        "please create a compact persistent orb from the current capture or an emerging idea"
+        "make a pearl from this"
       ],
       "inputSchema": {
         "type": "object",

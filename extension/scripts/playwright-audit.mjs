@@ -67,7 +67,7 @@ try {
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await panel.getByRole("heading", { name: "Your orb, anywhere you read" }).waitFor();
+  await panel.getByRole("heading", { name: "The world is your oyster. Make pearls." }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });
   await panel.getByRole("button", { name: "Get started" }).click();
   await panel.screenshot({ path: path.join(evidence, "02-account-choice.png") });
@@ -85,7 +85,7 @@ try {
   await panel.screenshot({ path: path.join(evidence, "04-clean-import-confirm.png") });
   await panel.getByRole("button", { name: "Add library" }).first().click();
   await panel.getByText(/Moves\/Functions and .* Lenses are ready/).first().waitFor();
-  await panel.getByRole("button", { name: "Try it now" }).click();
+  await panel.getByRole("button", { name: "Make your first pearl today" }).click();
   await panel.screenshot({ path: path.join(evidence, "05-useful-empty-state.png") });
   fs.rmSync(auditLibraryPath, { force: true });
   await page.bringToFront();
@@ -104,6 +104,13 @@ try {
   await panel.reload();
   await panel.getByRole("button", { name: "context", exact: true }).click();
   await panel.getByText(/1 fragment/).waitFor();
+  await panel.getByRole("button", { name: "Make a pearl", exact: true }).click();
+  await panel.waitForFunction(async () => {
+    const local = await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]);
+    return local.semanticOrbs?.length === 1
+      && local.semanticOrbs[0].workingSet?.context?.length === 1
+      && local.activeSemanticOrbId === local.semanticOrbs[0].id;
+  });
   await panel.screenshot({ path: path.join(evidence, "06-persistent-page-highlight.png"), fullPage: true });
 
   const before = await page.locator("#field").inputValue();
@@ -145,9 +152,9 @@ try {
   await page.screenshot({ path: path.join(evidence, "09-verified-field-insertion.png"), fullPage: true });
 
   fs.writeFileSync(path.join(evidence, "audit-results.json"), JSON.stringify({
-    passed: 11,
+    passed: 12,
     failed: 0,
-    checks: ["three-step onboarding", "local no-account path", "clean one-confirm import", "360px panel", "library ready result", "useful empty state", "persistent selection", "queue has no auto-run", "preview before mutation", "field insertion verification", "reduced-motion CSS"],
+    checks: ["three-step onboarding", "local no-account path", "clean one-confirm import", "360px panel", "library ready result", "useful empty state", "first pearl preserves source context", "persistent selection", "queue has no auto-run", "preview before mutation", "field insertion verification", "reduced-motion CSS"],
     browser: await context.browser()?.version?.(),
     generatedAt: new Date().toISOString(),
   }, null, 2));
@@ -160,7 +167,7 @@ try {
 - Persistent selection and explicit GO boundary: passed
 - Preview-before-mutation and verified insertion: passed
 - Reduced-motion and keyboard-visible styles: present
-- Automated checks: 11 passed, 0 failed
+- Automated checks: 12 passed, 0 failed
 
 The funnel follows the dominant patterns used by Grammarly, Notion Web Clipper,
 Loom, 1Password, and Readwise: one install action, a short first run, equal
@@ -170,7 +177,7 @@ from a website. One-click **Add Pearl to Chrome** activates only after a real
 Chrome Web Store URL is configured; until then the honest three-step manual
 setup remains.
 `);
-  console.log("Extension audit passed: 11 checks, 9 screenshots.");
+  console.log("Extension audit passed: 12 checks, 9 screenshots.");
 } finally {
   await context.close();
   server.close();

@@ -87,7 +87,7 @@ export function semanticOrbFromMaterial(material, options = {}) {
       : sourceKind.includes("candidate")
         ? "candidate"
         : "material";
-  const label = material.name || material.label || material.text || options.name || "Untitled orb";
+  const label = material.name || material.label || material.text || material.quote || options.name || "Untitled orb";
   return createSemanticOrb({
     id: options.id,
     sceneId: options.sceneId || material.sceneId || null,

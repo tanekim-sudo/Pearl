@@ -15,16 +15,35 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 manifest.host_permissions = ["http://127.0.0.1/*"];
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-const server = http.createServer((_req, res) => {
+const server = http.createServer((req, res) => {
+  if (req.url === "/api/extension/execute") {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", () => {
+      const request = JSON.parse(body || "{}");
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({
+        outputs: [{
+          id: "first-use-candidate",
+          text: `Reviewed: ${request.fragments?.[0]?.quote || "captured material"}`,
+          outputSpec: { machineKind: "text" },
+        }],
+      }));
+    });
+    return;
+  }
   res.setHeader("content-type", "text/html");
   res.end("<!doctype html><title>Pearl fixture</title><main style='max-width:700px;margin:80px auto;font:20px system-ui'><h1>Selected material</h1><textarea id='field' style='width:100%;height:180px'>Pearl extension audit material.</textarea></main>");
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const profile = path.join(extensionRoot, ".audit-orb-profile");
 fs.rmSync(profile, { recursive: true, force: true });
+const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const bundledChrome = chromium.executablePath();
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
-  ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
+  executablePath: process.env.PW_CHROMIUM
+    || (fs.existsSync(bundledChrome) ? bundledChrome : fs.existsSync(systemChrome) ? systemChrome : undefined),
   args: [
     "--disable-gpu",
     "--disable-dev-shm-usage",
@@ -34,47 +53,42 @@ const context = await chromium.launchPersistentContext(profile, {
 });
 
 try {
+  await context.route("https://representation-eta.vercel.app/api/extension/execute", async (route) => {
+    const request = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        outputs: [{
+          id: "first-use-candidate",
+          text: `Reviewed: ${request.fragments?.[0]?.quote || "captured material"}`,
+          outputSpec: { machineKind: "text" },
+        }],
+      }),
+    });
+  });
   let worker = context.serviceWorkers()[0];
   if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
-  await worker.evaluate(async () => {
+  await worker.evaluate(async ({ apiOrigin }) => {
     await chrome.storage.local.set({
       onboardingComplete: true,
       onboardingMode: "local",
-      semanticOrbs: [{
-        version: 1,
-        id: "extension-audit-orb",
-        kind: "semantic-orb",
-        sceneId: "extension-captures",
-        name: "Extension audit orb",
-        placement: { x: 0, y: 0, radius: 24 },
-        representation: { kind: "external-capture", refs: [], label: "Extension audit orb", snapshot: null },
-        workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
-        parentOrbId: null,
-        childOrbIds: [],
-        lineage: [],
-        provenance: { source: "extension-audit" },
-        archived: false,
-      }],
-      activeSemanticOrbId: "extension-audit-orb",
+      apiOrigin,
+      semanticOrbs: [],
+      activeSemanticOrbId: null,
     });
     await chrome.storage.session.set({
+      accessToken: "orb-audit-token",
       lensEverywhereSession: {
         fragments: [],
         queue: [],
-        generator: { id: "audit-lens", name: "Skeptical investor", version: 1, material: [] },
-        results: [{
-          id: "audit-run",
-          outputs: [
-            { id: "candidate-1", text: "Question the revenue assumptions" },
-            { id: "candidate-2", text: "Find the strongest adoption signal" },
-            { id: "candidate-3", text: "Offer a credible contrary path" },
-          ],
-        }],
+        generator: null,
+        results: [],
         activeRunId: null,
       },
     });
-  });
+  }, { apiOrigin: `http://127.0.0.1:${server.address().port}` });
   await Promise.all(context.pages().map((page) => page.close()));
 
   const fixture = await context.newPage();
@@ -98,23 +112,121 @@ try {
   const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Pearl\./ });
   const beforeDrag = await pageOrb.boundingBox();
   if (!beforeDrag || beforeDrag.width < 32) throw new Error(`page Pearl is not a compact literal control: ${JSON.stringify(beforeDrag)}`);
+  await panel.evaluate(() => {
+    globalThis.__semanticChanges = [];
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && (changes.semanticOrbs || changes.activeSemanticOrbId)) {
+        globalThis.__semanticChanges.push({
+          orbs: changes.semanticOrbs?.newValue?.map((entry) => entry.id),
+          active: changes.activeSemanticOrbId?.newValue,
+        });
+      }
+    });
+  });
   await pageOrb.click();
   await fixture.getByRole("region", { name: "Views emitted by Pearl" }).waitFor();
   await fixture.screenshot({ path: path.join(evidence, "06a-extension-page-orb-expanded.png"), fullPage: true });
   await fixture.locator("#field").selectText();
-  await fixture.getByRole("button", { name: "Absorb selection" }).first().click();
+  await fixture.getByRole("button", { name: "Make a pearl from this" }).click();
   await fixture.waitForTimeout(850);
+  let firstPearlState;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    firstPearlState = await panel.evaluate(async () => ({
+      local: await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]),
+      active: await chrome.storage.session.get("lensEverywhereSession"),
+    }));
+    if (firstPearlState.local.semanticOrbs?.length === 1
+      && firstPearlState.local.activeSemanticOrbId === firstPearlState.local.semanticOrbs[0].id
+      && firstPearlState.active.lensEverywhereSession?.fragments?.length >= 1) break;
+    await panel.waitForTimeout(100);
+  }
+  if (firstPearlState.local.semanticOrbs?.length !== 1) {
+    throw new Error(`page Pearl did not persist: ${JSON.stringify(firstPearlState)}`);
+  }
+  await panel.evaluate(async () => {
+    const local = await chrome.storage.local.get(["semanticOrbs", "activeSemanticOrbId"]);
+    const active = local.semanticOrbs.find((entry) => entry.id === local.activeSemanticOrbId) || local.semanticOrbs[0];
+    if (!active) throw new Error(`persisted pearl disappeared before reopen: ${JSON.stringify(globalThis.__semanticChanges)}`);
+    await chrome.runtime.sendMessage({
+      version: 1,
+      type: "fragments-changed",
+      requestId: "audit-reopen-pearl",
+      payload: { fragments: active.workingSet.context },
+    });
+  });
+  await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.fragments?.length >= 1);
   await fixture.screenshot({ path: path.join(evidence, "06b-extension-page-orb-context.png"), fullPage: true });
+  await panel.getByRole("button", { name: "context", exact: true }).click();
+  await panel.getByText(/\d+ fragments?/).waitFor();
+  await panel.getByRole("button", { name: "library", exact: true }).click();
+  await panel.locator(".rack button").filter({ hasText: /compress/i }).first().click();
+  await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.queue?.length >= 1);
+  await panel.getByRole("button", { name: "review", exact: true }).click();
+  await panel.getByRole("button", { name: "GO", exact: true }).waitFor({ state: "visible" });
+  const goBlocked = await panel.getByRole("button", { name: "GO", exact: true }).isDisabled();
+  if (goBlocked) {
+    const diagnostics = await panel.evaluate(async () => ({
+      session: (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession,
+      text: document.querySelector(".orb-panel.active")?.innerText,
+    }));
+    throw new Error(`GO remained blocked after capture and queue: ${JSON.stringify(diagnostics)}`);
+  }
+  await panel.getByRole("button", { name: "GO", exact: true }).click();
+  await panel.waitForTimeout(800);
+  const generationState = await panel.evaluate(async () => ({
+    session: (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession,
+    text: document.body.innerText,
+  }));
+  if (!generationState.session?.results?.flatMap((run) => run.outputs || []).length) {
+    throw new Error(`GO did not create a candidate: ${JSON.stringify(generationState)}`);
+  }
+  await panel.reload();
+  await panel.getByRole("button", { name: /Hold to speak/ }).waitFor();
+  await panel.getByRole("button", { name: "review", exact: true }).click();
+  await panel.getByText(/Reviewed:/).waitFor();
+  await panel.screenshot({ path: path.join(evidence, "06c-extension-go-candidate.png"), fullPage: true });
+  const targetTabId = await panel.evaluate(async () => {
+    const tabs = await chrome.tabs.query({});
+    const current = await chrome.tabs.getCurrent();
+    return tabs.find((tab) => tab.id !== current?.id && tab.url?.startsWith("http://127.0.0.1:"))?.id;
+  });
+  await panel.evaluate(async ({ targetTabId }) => {
+    const response = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "result-action",
+      requestId: "orb-audit-insert",
+      payload: {
+        targetTabId,
+        text: "Reviewed: Pearl extension audit material.",
+        outputSpec: { machineKind: "text" },
+        plan: { operation: "insert", anchor: { selector: "#field", start: 0, end: 0 } },
+      },
+    });
+    if (!response?.ok || !response.value?.ok) throw new Error(response?.error || response?.value?.error || "verified insertion failed");
+  }, { targetTabId });
+  await fixture.waitForFunction(() => document.querySelector("#field").value.startsWith("Reviewed:"));
+  await fixture.screenshot({ path: path.join(evidence, "06d-extension-verified-insertion.png"), fullPage: true });
+  const continuedUrl = await panel.evaluate(async () => {
+    const response = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "open-web-handoff",
+      requestId: "orb-audit-continue",
+      payload: { surface: "semantic-orb-scene", preservePayload: true },
+    });
+    if (!response?.ok) throw new Error(response?.error || "web continuation failed");
+    return response.value?.url || "";
+  });
+  if (!continuedUrl.includes("view=integrate")) throw new Error(`continuation route mismatch: ${continuedUrl}`);
   await fixture.getByRole("button", { name: "lens", exact: true }).click();
   await fixture.getByRole("button", { name: "taste", exact: true }).click();
-  await fixture.screenshot({ path: path.join(evidence, "06c-extension-page-orb-lens-candidates.png"), fullPage: true });
+  await fixture.screenshot({ path: path.join(evidence, "06e-extension-page-orb-lens-candidates.png"), fullPage: true });
   await pageOrb.dragTo(fixture.locator("h1"));
   const afterDrag = await pageOrb.boundingBox();
   if (!afterDrag || Math.abs(afterDrag.x - beforeDrag.x) < 80) throw new Error("page orb did not visibly drag/dock");
   await fixture.getByRole("button", { name: "Minimize Pearl" }).click();
   const minimized = await pageOrb.boundingBox();
   if (!minimized || minimized.width > 45) throw new Error("page orb did not minimize");
-  await fixture.screenshot({ path: path.join(evidence, "06d-extension-page-orb-minimized.png"), fullPage: true });
+  await fixture.screenshot({ path: path.join(evidence, "06f-extension-page-orb-minimized.png"), fullPage: true });
   await fixture.locator("h1").click();
   await fixture.keyboard.press("Space");
   await fixture.keyboard.press("Space");
@@ -128,7 +240,7 @@ try {
   }
   const hiddenCursor = await fixture.locator("h1").evaluate((node) => getComputedStyle(node).cursor);
   if (hiddenCursor !== "none") throw new Error("native page cursor was not hidden in orb cursor mode");
-  await fixture.screenshot({ path: path.join(evidence, "06e-extension-orb-cursor.png"), fullPage: true });
+  await fixture.screenshot({ path: path.join(evidence, "06g-extension-orb-cursor.png"), fullPage: true });
   await fixture.keyboard.press("Space");
   await fixture.keyboard.press("Space");
   await fixture.keyboard.press("Space");
@@ -143,10 +255,9 @@ try {
     throw new Error("Triple-Space toggled while typing in an editable field");
   }
   await panel.screenshot({ path: path.join(evidence, "07-extension-command-360.png"), fullPage: true });
-  await panel.getByRole("button", { name: "orbs", exact: true }).click();
-  await panel.getByRole("heading", { name: "Orbs" }).waitFor();
-  await panel.getByRole("button", { name: /Extension audit orb/ }).click();
-  await panel.getByRole("button", { name: /Orb from capture|New orb/ }).click();
+  await panel.getByRole("button", { name: "pearls", exact: true }).click();
+  await panel.getByRole("heading", { name: "Pearls" }).waitFor();
+  await panel.getByRole("button", { name: /Make a pearl|New empty pearl/ }).click();
   await panel.waitForFunction(async () => (await chrome.storage.local.get("semanticOrbs")).semanticOrbs?.length === 2);
   await panel.screenshot({ path: path.join(evidence, "07a-extension-semantic-orbs.png"), fullPage: true });
   await panel.getByRole("button", { name: "library", exact: true }).click();
@@ -165,6 +276,10 @@ try {
       "literal animated Shadow DOM page-edge orb visible",
       "page orb emits command/context/Lens/taste views",
       "selection absorption creates visible context orbit",
+      "capture queues an action and remains inert until explicit GO",
+      "GO creates a reviewable candidate",
+      "candidate insertion is verified in the page target",
+      "web continuation uses the trusted handoff route",
       "Lens atmosphere and candidate constellation visible",
       "page orb drag/dock and minimize are functional",
       "Triple-Space makes the orb the precise page cursor",
@@ -176,10 +291,10 @@ try {
       "library and settings remain reachable",
       "MV3 service worker loaded",
     ],
-    passed: 13,
+    passed: 17,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 13 checks, 10 screenshots.");
+  console.log("Orb extension audit passed: 17 checks, 12 screenshots.");
 } finally {
   await context.close();
   server.close();

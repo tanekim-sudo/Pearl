@@ -247,6 +247,7 @@ import {
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
+  parsePearlCreationCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTasteNavigationCommand,
@@ -15513,6 +15514,34 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["semantic-transfer-completed"] }
         : { status: "failed", failure: result.errors?.[0] || "Semantic transfer failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
+    const pearlCreation = parsePearlCreationCommand(text);
+    if (pearlCreation) {
+      const ids = highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current;
+      const selected = itemsRef.current.filter((item) => ids.includes(item.id));
+      if (!selected.length) {
+        const error = "Select or highlight material before making a pearl.";
+        updateCommand(commandEntry.id, { status: "failed", failure: error });
+        return { visible: true, text: error };
+      }
+      const material = {
+        id: `pearl-selection:${selected.map((item) => item.id).join("+")}`,
+        kind: "selection",
+        label: pearlCreation.args.name || selected[0]?.text || "Pearl from selection",
+        sourceIds: selected.map((item) => item.id),
+        items: selected,
+        provenance: { source: "explicit-scene-selection" },
+      };
+      const step = {
+        ...pearlCreation,
+        args: { ...pearlCreation.args, sceneId, material },
+      };
+      const result = await executeCompanionScript([step], { title: "Make a pearl" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["semantic-orb-created"] }
+        : { status: "failed", failure: result.errors?.[0] || "Pearl creation failed" });
       return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
     }
 

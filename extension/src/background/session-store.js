@@ -1,6 +1,7 @@
 import { BrowserPlatform } from "../platform/browser-platform.js";
 
 const KEY = "lensEverywhereSession";
+let writeChain = Promise.resolve();
 const empty = () => ({
   fragments: [],
   queue: [],
@@ -15,11 +16,15 @@ export async function readSession() {
   return { ...empty(), ...(data[KEY] || {}) };
 }
 
-export async function writeSession(patch) {
-  const current = await readSession();
-  const next = { ...current, ...patch, updatedAt: Date.now() };
-  await BrowserPlatform.storage.set("session", { [KEY]: next });
-  return next;
+export function writeSession(patch) {
+  const write = writeChain.then(async () => {
+    const current = await readSession();
+    const next = { ...current, ...patch, updatedAt: Date.now() };
+    await BrowserPlatform.storage.set("session", { [KEY]: next });
+    return next;
+  });
+  writeChain = write.catch(() => {});
+  return write;
 }
 
 export async function clearPageMaterial() {

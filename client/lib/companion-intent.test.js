@@ -15,6 +15,7 @@ import {
   parseFunctionOutputCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
+  parsePearlCreationCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
@@ -22,6 +23,17 @@ import {
   parseMixedProfileCommand,
   parseSaveChainCommand,
 } from "./companion-intent.js";
+
+test("pearl creation intent uses the canonical semantic capsule command", () => {
+  assert.deepEqual(parsePearlCreationCommand("make a pearl from this"), {
+    verb: "createSemanticOrb",
+    args: { sceneId: "" },
+  });
+  assert.deepEqual(parsePearlCreationCommand("make a pearl from these notes called Evidence"), {
+    verb: "createSemanticOrb",
+    args: { sceneId: "", name: "Evidence" },
+  });
+});
 
 test("cognitive workflow intents preserve teaching scope and grounded review boundaries", () => {
   assert.deepEqual(parseCognitiveWorkflowCommand("From now on, when I say 'Founder pass', run orchestrateCognitiveWorkflow only remember this in workspace"), {

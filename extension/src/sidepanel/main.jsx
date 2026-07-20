@@ -19,6 +19,16 @@ async function call(type, payload = {}) {
   return response.value;
 }
 
+function recoveryMessage(error, type = "") {
+  const message = String(error?.message || error || "The action could not be completed.");
+  if (/permission|cannot access|supported web page|chrome:\/\//i.test(message)) return `Page access is blocked. Open a normal web page, grant Pearl access when Chrome asks, then retry. (${message})`;
+  if (/offline|network|fetch|unavailable|model|gateway/i.test(message)) return `Pearl could not reach the selected model. Check your connection or choose another model, then retry. (${message})`;
+  if (/auth|token|sign.?in|expired|unauthorized|401/i.test(message)) return `Your sign-in has expired. Sign in again; the local capture and action stack are preserved. (${message})`;
+  if (/selection|fragment|highlight material/i.test(message) || type === "capture-selection") return `No page selection was captured. Select text on the page, choose Capture selection, then retry. (${message})`;
+  if (/target|editable|insert|replace/i.test(message) || type === "result-action") return `The page insertion target is no longer available. Focus an editable field, select text before Replace, or use Copy, then retry. (${message})`;
+  return message;
+}
+
 const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   ...lensRackRecord(operator),
   operator,
@@ -90,6 +100,7 @@ function App() {
   const [generators, setGenerators] = useState([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [retryAction, setRetryAction] = useState(null);
   const [running, setRunning] = useState(false);
   const [companion, setCompanion] = useState("");
   const [ghost, setGhost] = useState(false);
@@ -189,7 +200,19 @@ function App() {
       setSemanticOrbs((value.semanticOrbs || []).map((orb) => createSemanticOrb(orb)));
       setActiveSemanticOrbId(value.activeSemanticOrbId || null);
     });
-    const listener = () => refresh().catch(() => {});
+    const listener = (changes, area) => {
+      if (area === "session" && changes.lensEverywhereSession?.newValue) {
+        setSession(changes.lensEverywhereSession.newValue);
+      } else {
+        refresh().catch(() => {});
+      }
+      if (area === "local" && changes.semanticOrbs) {
+        setSemanticOrbs((changes.semanticOrbs.newValue || []).map((orb) => createSemanticOrb(orb)));
+      }
+      if (area === "local" && changes.activeSemanticOrbId) {
+        setActiveSemanticOrbId(changes.activeSemanticOrbId.newValue || null);
+      }
+    };
     chrome.storage?.onChanged.addListener(listener);
     return () => chrome.storage?.onChanged.removeListener(listener);
   }, []);
@@ -197,6 +220,14 @@ function App() {
   useEffect(() => {
     chrome.storage.local.set({ generationPlan });
   }, [generationPlan]);
+
+  useEffect(() => {
+    if (session.fragments.length || !activeSemanticOrbId) return;
+    const activePearl = semanticOrbs.find((orb) => orb.id === activeSemanticOrbId);
+    const fragments = (activePearl?.workingSet?.context || []).filter((item) => item?.id && (item.quote || item.text));
+    if (!fragments.length) return;
+    call("fragments-changed", { fragments }).then(setSession).catch((reason) => setError(recoveryMessage(reason, "make-pearl")));
+  }, [activeSemanticOrbId, semanticOrbs, session.fragments.length]);
 
   async function previewBundle(bundle) {
     setError("");
@@ -270,13 +301,17 @@ function App() {
     const byId = new Map(semanticOrbs.map((orb) => [orb.id, orb]));
     if (name === "create") {
       const id = args.id || `external-orb:${crypto.randomUUID()}`;
-      const captured = args.material || session.fragments.at(-1);
-      const orb = captured
-        ? semanticOrbFromMaterial(captured, { id, sceneId: "extension-captures", placement: { x: 0, y: 0 } })
-        : createSemanticOrb({ id, sceneId: "extension-captures", name: args.name || "Untitled orb" });
-      await persistSemanticOrbs([...semanticOrbs, orb], id);
+      const value = await action("make-pearl", {
+        id,
+        name: args.name,
+        material: args.material || session.fragments.at(-1),
+        idempotencyKey: args.idempotencyKey || id,
+      });
+      if (!value?.pearl) throw new Error("Pearl could not be created");
+      await persistSemanticOrbs(value.semanticOrbs || [...semanticOrbs, value.pearl], value.activeSemanticOrbId || id);
       setActiveView("orbs");
-      return { type: "external-semantic-orb", id, orb };
+      setReadyMessage(`Pearl “${value.pearl.name}” is saved with its source and ready to reopen.`);
+      return { type: "external-semantic-orb", id, orb: value.pearl };
     }
     if (name === "merge") {
       const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
@@ -298,6 +333,11 @@ function App() {
     const orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
     if (!orb) throw new Error("orb not found");
     if (name === "open") {
+      const fragments = (orb.workingSet.context || []).filter((item) => item?.id && (item.quote || item.text));
+      if (fragments.length) {
+        const restored = await action("fragments-changed", { fragments });
+        if (restored) setSession(restored);
+      }
       await persistSemanticOrbs(semanticOrbs, orb.id);
       setActiveView("orbs");
       return { type: "external-semantic-orb-active", id: orb.id };
@@ -384,13 +424,15 @@ function App() {
 
   async function action(type, payload) {
     setError("");
+    setRetryAction(null);
     try {
       const value = await call(type, payload);
       if (value?.fragments || value?.queue || value?.results) setSession(value);
       else await refresh();
       return value;
     } catch (e) {
-      setError(e.message);
+      setError(recoveryMessage(e, type));
+      setRetryAction(() => () => action(type, payload));
       return null;
     }
   }
@@ -402,17 +444,53 @@ function App() {
   }
 
   async function go() {
-    if (!characters || (!session.queue.length && !session.generator)) return;
+    if (!characters) {
+      setError("GO is blocked until page material is captured. Select text on the page, then choose Capture selection.");
+      setActiveView("context");
+      return;
+    }
+    if (!session.queue.length && !session.generator) {
+      setError("GO is blocked until you choose a Move or Function, or apply Lens context.");
+      setActiveView("library");
+      return;
+    }
     if ((preview?.requiresConfirmation || characters > 50_000) && !confirm(`Send ${characters.toLocaleString()} selected characters and produce up to ${preview?.predictedOutputCount || 1} outputs?`)) return;
     setRunning(true);
-    await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID() });
-    chrome.storage.local.get(["firstGoTracked"], (value) => {
-      if (!value.firstGoTracked) {
-        trackFunnel("first_go");
-        chrome.storage.local.set({ firstGoTracked: true });
+    try {
+      const result = await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID() });
+      if (result) {
+        setActiveView("review");
+        chrome.storage.local.get(["firstGoTracked"], (value) => {
+          if (!value.firstGoTracked) {
+            trackFunnel("first_go");
+            chrome.storage.local.set({ firstGoTracked: true });
+          }
+        });
       }
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function copyResult(output) {
+    setError("");
+    try {
+      await navigator.clipboard.writeText(output.text);
+      setReadyMessage("Candidate copied. The page was not changed.");
+    } catch (reason) {
+      setError(recoveryMessage(reason, "copy-result"));
+      setRetryAction(() => () => copyResult(output));
+    }
+  }
+
+  async function applyResult(output, operation) {
+    const result = await action("result-action", {
+      text: output.text,
+      outputSpec: output.outputSpec,
+      machineKind: output.machineKind,
+      plan: { operation },
     });
-    setRunning(false);
+    if (result?.ok) setReadyMessage(operation === "replace" ? "Candidate replaced the verified page selection." : "Candidate was inserted into the verified page target.");
   }
 
   async function signIn() {
@@ -604,7 +682,7 @@ function App() {
     }
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) {
-      setError("voice recognition is unavailable in this browser");
+      setError("Voice recognition is unavailable in this browser. Type the same command in Tell Pearl your goal, then choose Run.");
       return;
     }
     const recognizer = new Recognition();
@@ -630,7 +708,9 @@ function App() {
       }
     };
     recognizer.onerror = (event) => {
-      if (event.error !== "aborted") setError(`voice recognition failed: ${event.error}`);
+      if (event.error !== "aborted") setError(event.error === "not-allowed"
+        ? "Microphone permission was denied. Allow microphone access in Chrome settings or type the command instead."
+        : `Voice recognition stopped (${event.error}). Type the command or retry voice.`);
       setVoiceListening(false);
     };
     recognizer.onend = () => setVoiceListening(false);
@@ -645,18 +725,18 @@ function App() {
       <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
       {onboardingStep === 1 && <>
         <ExtensionOrb phase="idle" listening={false} onVoice={() => {}} onCommandView={() => {}} />
-        <h1 id="onboarding-title">Your orb, anywhere you read</h1>
-        <p>Activate Lens on any ordinary page. Select material, bring it into the orb, then speak or type the outcome you want.</p>
+        <h1 id="onboarding-title">The world is your oyster. Make pearls.</h1>
+        <p>A pearl is something you notice in the world and choose to keep: source-linked material inside a compact agent shell. Make your first pearl from a real page selection; shape it later with Moves, Functions, or Lenses.</p>
         <button className="gold onboarding-primary" onClick={() => setOnboardingStep(2)}>Get started</button>
       </>}
       {onboardingStep === 2 && <>
         <h1 id="onboarding-title">Choose how to continue</h1>
         <p>Sign in to bring over your web library automatically, or keep everything on this browser.</p>
         <div className="onboarding-choices">
-          <button className="gold" onClick={signIn}><b>Sign in</b><small>Sync my Lens library</small></button>
+          <button className="gold" onClick={signIn}><b>Sign in</b><small>Sync my Pearl library</small></button>
           <button onClick={continueLocal}><b>Continue locally</b><small>No account needed</small></button>
         </div>
-        <a href="https://representation-eta.vercel.app/extension/privacy.html" target="_blank" rel="noreferrer">How Lens handles data</a>
+        <a href="https://representation-eta.vercel.app/extension/privacy.html" target="_blank" rel="noreferrer">How Pearl handles data</a>
       </>}
       {onboardingStep === 3 && <>
         <h1 id="onboarding-title">{onboardingMode === "signed-in" ? "Your library is ready" : "Bring your library—or start now"}</h1>
@@ -674,8 +754,8 @@ function App() {
           <button className="gold" disabled={importing} onClick={commitImport}>{importing ? "Adding…" : importConflicts.length ? "Review choices below" : "Add library"}</button>
         </div>}
         {readyMessage && <p role="status">{readyMessage}</p>}
-        <div className="onboarding-demo"><span>1. Highlight</span><span>2. Choose {sampleLens?.name || "a lens"}</span><span>3. GO</span></div>
-        <button className="gold onboarding-primary" onClick={finishOnboarding}>Try it now</button>
+        <div className="onboarding-demo"><span>1. Notice + select</span><span>2. Make a pearl</span><span>3. Optionally shape it</span><span>4. Use, insert, or copy</span><span>5. Reopen it in a Scene</span></div>
+        <button className="gold onboarding-primary" onClick={() => { finishOnboarding(); setActiveView("context"); }}>Make your first pearl today</button>
       </>}
       {error && <p role="alert">{error}</p>}
     </div>}
@@ -688,13 +768,13 @@ function App() {
       </div>
     </header>
     <nav className="orb-view-tabs" aria-label="Orb views">
-      {["command", "context", "orbs", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view}</button>)}
+      {["command", "context", "orbs", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view === "orbs" ? "pearls" : view}</button>)}
     </nav>
-    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved semantic orbs">
+    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved pearls">
       <div className="extension-semantic-orb-head">
-        <div><h2>Orbs</h2><small>Compact capsules for anything you want to keep working with.</small></div>
-        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled orb", material: session.fragments.at(-1) || null })}>
-          {session.fragments.length ? "Orb from capture" : "New orb"}
+        <div><h2>Pearls</h2><small>Source-linked semantic capsules you can reopen and keep shaping.</small></div>
+        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
+          {session.fragments.length ? "Make a pearl" : "New empty pearl"}
         </button>
       </div>
       <div className="extension-semantic-orb-tray">
@@ -708,7 +788,7 @@ function App() {
           <b>{orb.name}</b>
           <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context</small>
         </button>)}
-        {!semanticOrbs.some((orb) => !orb.archived) && <p>No saved orbs yet. Capture a selection or make an empty one.</p>}
+        {!semanticOrbs.some((orb) => !orb.archived) && <p>No saved pearls yet. Select page material and make your first pearl.</p>}
       </div>
       {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
         <input
@@ -757,6 +837,11 @@ function App() {
     <section className={`orb-panel ${activeView === "context" ? "active" : ""} capture`}>
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
+      {characters > 0 && !semanticOrbs.length && <div className="first-pearl">
+        <b>Your first material is ready.</b>
+        <small>Preserve it with provenance and context before deciding whether to shape it.</small>
+        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { material: session.fragments.at(-1) }).catch(() => {})}>Make a pearl</button>
+      </div>}
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
       {saveAsOpen && <div className="save-as-chooser" role="dialog" aria-label="Save capture as">
         <button onClick={() => saveCaptureAs("move")}><b>↦ Move</b><small>Use selected text verbatim as one instruction</small></button>
@@ -874,6 +959,11 @@ function App() {
         </select>
       </label>
       <div className="disclosure">GO sends exactly <b>{characters.toLocaleString()}</b> selected characters from {[...new Set(session.fragments.map((item) => item.provenance.origin))].join(", ") || "no origin"}.</div>
+      {(!characters || (!session.queue.length && !session.generator)) && <p className="blocked-guidance" role="status">
+        {!characters ? "1. Capture a page selection. " : "1. Capture ready. "}
+        {!session.queue.length && !session.generator ? "2. Choose a Move or Function, or apply Lens context. " : "2. Action or Lens ready. "}
+        3. Press GO to create reviewable candidates.
+      </p>}
       <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go}>{running ? "Running…" : "GO"}</button>
       {running && <button onClick={() => action("cancel-run", { runId: session.activeRunId })}>Cancel</button>}
     </section>
@@ -881,7 +971,7 @@ function App() {
       <h2>Preview results</h2>
       {!session.results.length && <p className="muted">Results stage here. The page never changes automatically.</p>}
       {session.results.flatMap((run) => run.outputs.map((output) =>
-        <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => navigator.clipboard.writeText(output.text)}>Copy</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "insert" } })}>Insert</button><button onClick={() => action("result-action", { text: output.text, outputSpec: output.outputSpec, machineKind: output.machineKind, plan: { operation: "replace" } })}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Lens</button></div></article>
+        <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => copyResult(output)}>Copy</button><button onClick={() => applyResult(output, "insert")}>Insert</button><button onClick={() => applyResult(output, "replace")}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Pearl</button></div></article>
       ))}</section>
     <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Orb settings">
       <h2>Settings</h2>
@@ -894,7 +984,7 @@ function App() {
       <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Models, connectors, vocabulary, and privacy</a>
     </section>
     <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Pearl command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell Pearl your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
-    {error && <aside role="alert">{error}</aside>}
+    {error && <aside className="recovery-alert" role="alert"><span>{error}</span>{retryAction && <button type="button" onClick={retryAction}>Retry</button>}<button type="button" aria-label="Dismiss error" onClick={() => { setError(""); setRetryAction(null); }}>Dismiss</button></aside>}
   </main>;
 }
 

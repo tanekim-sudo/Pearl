@@ -56,7 +56,7 @@ function mountPageOrb() {
   const emission = document.createElement("section");
   emission.className = "emission";
   emission.setAttribute("aria-label", "Views emitted by Pearl");
-  emission.innerHTML = `<header><b>Pearl</b><span>Page context</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="capture">Absorb selection</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Expand Pearl</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="capture">Absorb current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Observe explicit context</span><span>2 · Apply selected Lens</span><span>3 · Branch candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Open side panel</button></div>`;
+  emission.innerHTML = `<header><b>Pearl</b><span>The world is your oyster</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="pearl">Make a pearl from this</button><button type="button" data-action="capture">Add to working context</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Expand Pearl</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="pearl">Make a pearl from current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Notice explicit material</span><span>2 · Shape the pearl</span><span>3 · Review candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Open side panel</button></div>`;
   const minimize = document.createElement("button");
   minimize.className = "minimize";
   minimize.type = "button";
@@ -70,6 +70,7 @@ function mountPageOrb() {
   let holdTimer = null;
   let moved = false;
   let contextCount = 0;
+  let pendingPearlCapture = null;
   const hydrate = (session) => {
     if (!session) return;
     contextCount = Math.min(5, session.fragments?.length || contextCount);
@@ -240,10 +241,15 @@ function mountPageOrb() {
     shell.classList.remove("open");
     orb.setAttribute("aria-expanded", "false");
   };
-  const absorb = async () => {
+  const absorb = async (settle = true) => {
     setState("absorbing");
     await send("toggle-highlighter", { enabled: true }).catch(() => {});
     const response = await send("capture-selection").catch(() => null);
+    if (!response?.ok) {
+      setState("blocked");
+      shell.querySelector(".phase").textContent = "Select page material, then retry";
+      return null;
+    }
     const added = response?.value?.fragments?.length || response?.fragments?.length || 1;
     contextCount = Math.min(5, contextCount + added);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
@@ -251,7 +257,30 @@ function mountPageOrb() {
     emission.querySelectorAll("[data-view]").forEach((item) => item.setAttribute("aria-current", String(item.dataset.view === "context")));
     emission.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === "context"));
     send("get-session").then((response) => hydrate(response?.value)).catch(() => {});
-    window.setTimeout(() => setState("idle"), 700);
+    if (settle) window.setTimeout(() => setState("idle"), 700);
+    return response;
+  };
+  const makePearl = async () => {
+    const preselected = await pendingPearlCapture;
+    pendingPearlCapture = null;
+    const captured = preselected?.length
+      ? await send("fragments-changed", { fragments: preselected }).catch(() => null)
+      : await absorb(false);
+    if (!captured) return;
+    if (preselected?.length) {
+      contextCount = Math.min(5, contextCount + preselected.length);
+      shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
+      shell.querySelector("[data-context-count]").textContent = `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}`;
+    }
+    const response = await send("make-pearl", { idempotencyKey: `page-pearl:${Date.now()}` }).catch(() => null);
+    if (!response?.ok || !response?.value?.pearl) {
+      setState("blocked");
+      shell.querySelector(".phase").textContent = "Select page material, then retry";
+      return;
+    }
+    setState("settling");
+    shell.querySelector(".phase").textContent = `Pearl made · ${response.value.pearl.name}`;
+    window.setTimeout(() => setState("idle"), 1600);
   };
   orb.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
@@ -299,6 +328,14 @@ function mountPageOrb() {
     window.setTimeout(() => setState("idle"), 700);
   });
   minimize.addEventListener("click", minimizeOrb);
+  emission.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest('[data-action="pearl"]')) return;
+    try {
+      pendingPearlCapture = Promise.resolve(captureNativeSelection());
+    } catch {
+      pendingPearlCapture = Promise.resolve([]);
+    }
+  });
   emission.addEventListener("click", (event) => {
     const tab = event.target.closest("[data-view]");
     if (tab) {
@@ -309,6 +346,7 @@ function mountPageOrb() {
     }
     const action = event.target.closest("[data-action]")?.dataset.action;
     if (action === "capture") absorb();
+    if (action === "pearl") makePearl();
     if (action === "cursor") toggleCursor("control");
     if (action === "minimize") minimizeOrb();
     if (action === "dock") { host.style.left = "auto"; host.style.right = "18px"; shell.classList.remove("dock-left"); }

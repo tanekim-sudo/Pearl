@@ -2,6 +2,7 @@ export const MESSAGE_VERSION = 1;
 
 export const MESSAGE_TYPES = Object.freeze([
   "capture-selection",
+  "make-pearl",
   "fragments-changed",
   "remove-fragment",
   "clear-fragments",

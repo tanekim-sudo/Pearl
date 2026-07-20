@@ -23,14 +23,14 @@ export const TOUR_STORAGE_KEY = "lens.tour.v1";
 
 export const TOUR_PHASES = [
   "Welcome",
-  "Paper",
+  "Scene",
   "Navigate",
-  "Select & transfer",
-  "AI void",
+  "Capture & arrange",
+  "Output Frame",
   "Functions",
   "Lenses",
-  "Share & worlds",
-  "Extras",
+  "Share & Scenes",
+  "Reference",
 ];
 
 /** @param {TourContext} ctx @param {string} name */
@@ -81,16 +81,16 @@ export const TOUR_STEPS = [
   {
     id: "welcome",
     phase: "Welcome",
-    title: "Two spaces, one thought",
+    title: "The world is your oyster. Make pearls.",
     instruction:
-      "Left is ambiguous paper — sketch, highlight, and capture ideas with no structure. Right is AI spacetime — a living web of brain cells you operate on.",
+      "A pearl is noticed material preserved with provenance and context inside a compact agent shell. Make your first pearl today, then optionally shape it with Moves, Functions, or Lenses.",
     demo: "split-pulse",
     verifyKind: "manual",
     allowSkip: true,
   },
   {
     id: "tools-bar",
-    phase: "Paper",
+    phase: "Scene",
     title: "Drawing tools",
     instruction: "Expand **Tools** at the top of the paper column. Three utensils: **↖ Select** (which also types), **✎ Pen** (with eraser), and **▬ Highlighter**.",
     target: '[data-tour="canvas-tools"]',
@@ -103,7 +103,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "pen-draw",
-    phase: "Paper",
+    phase: "Scene",
     title: "Draw freely",
     instruction: "Tap **✎ Pen** and draw a stroke anywhere on the page. One 8.5×11 sheet — zoom in for detail, the page always stays with you.",
     target: '[data-tour="tool-pen"]',
@@ -120,7 +120,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "marker",
-    phase: "Paper",
+    phase: "Scene",
     title: "Pen ⇄ eraser",
     instruction: "Click **✎ Pen** again to flip it into the **⌫ Eraser** — one utensil, two sides. Click once more to get the pen back.",
     target: '[data-tour="canvas-tools"]',
@@ -130,7 +130,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "highlight-select",
-    phase: "Paper",
+    phase: "Scene",
     title: "Precision highlighter",
     instruction:
       "Switch to **▬ Highlight**. Every stroke adds to one living selection — loop ink, sweep across text, even mark AI nodes. **Esc** clears it.",
@@ -146,7 +146,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "highlight-delete",
-    phase: "Paper",
+    phase: "Scene",
     title: "Delete or transfer",
     instruction:
       "With a highlight selection active, press **Delete** or **Backspace** to remove those fragments — or **drag** the golden selection across the boundary into AI.",
@@ -159,10 +159,10 @@ export const TOUR_STEPS = [
   },
   {
     id: "highlight-to-ai",
-    phase: "Paper",
+    phase: "Scene",
     title: "Highlight → AI node",
     instruction:
-      "Re-hover the **golden selection** and drag across the center boundary. A preview frame follows your cursor through the glow — release on the black void to spawn **one brain cell**.",
+      "Drag the **golden selection** across the visible boundary. A preview follows the pointer; release in the Output Frame to create one source-linked candidate node.",
     target: '[data-tour="interpret-boundary"]',
     demo: "highlight-drag-hint",
     verifyKind: "event",
@@ -178,7 +178,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "space-cycle-tools",
-    phase: "Paper",
+    phase: "Scene",
     title: "Cycle utensils",
     instruction: "Press **Space** to cycle **↖ Select** → **✎ Pen** → **▬ Highlight**. Select is the default — drag objects, marquee on empty, click empty paper to type.",
     verifyKind: "event",
@@ -187,7 +187,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "text-sticky",
-    phase: "Paper",
+    phase: "Scene",
     title: "Click to type",
     instruction:
       "With **↖ Select**, click any empty spot on the page and start typing — the select cursor is the text cursor, like Google Slides. Sticky notes live in the **···** menu.",
@@ -198,7 +198,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "image-tool",
-    phase: "Paper",
+    phase: "Scene",
     title: "Images",
     instruction: "Paste an image (**⌘V**) or drag a file from your desktop onto the page.",
     target: '[data-semantic-anchor="scene-stage"]',
@@ -208,7 +208,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "voice-record",
-    phase: "Paper",
+    phase: "Scene",
     title: "Voice + draw",
     instruction: "Tap the **record dot** in Tools (or bottom-left). Talk while you draw — strokes link to your speech. Stop, then transfer to AI.",
     target: '[data-tour="voice-record"]',
@@ -249,7 +249,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "select-clone",
-    phase: "Select & transfer",
+    phase: "Capture & arrange",
     title: "Select and move",
     instruction:
       "With **↖ Select**, click a shape to select it and **drag from anywhere** on it to move. **Double-click** text to edit. Hold **Alt** while dragging to duplicate.",
@@ -265,7 +265,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "shift-transfer",
-    phase: "Select & transfer",
+    phase: "Capture & arrange",
     title: "Shift + drag (Select tool)",
     instruction:
       "With **↖ Select** active, hold **Shift** and drag a selection toward the other column. Highlight has its own drag — no Shift needed.",
@@ -277,17 +277,16 @@ export const TOUR_STEPS = [
   },
   {
     id: "capture-chip",
-    phase: "Select & transfer",
-    title: "→ AI chip",
-    instruction: "When something is selected, a **→ AI** chip appears above it. Drag that chip to send material across — the golden streak animates the transfer.",
-    target: '[data-tour="capture-chip"]',
+    phase: "Capture & arrange",
+    title: "Make a pearl",
+    instruction: "With material highlighted, choose the visible pearl action to preserve it as a source-linked semantic capsule. Creation comes before optional shaping or generation.",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("transfer") || ctx.events.has("expand-ai"),
     allowSkip: true,
   },
   {
     id: "undo-redo",
-    phase: "Select & transfer",
+    phase: "Capture & arrange",
     title: "Undo & redo",
     instruction: "Hover the title bar for **↩ Undo** and **↪ Redo**. Or use **⌘Z** / **⌘⇧Z**.",
     target: '[data-tour="toolbar-actions"]',
@@ -297,20 +296,20 @@ export const TOUR_STEPS = [
   },
   {
     id: "ai-constellation",
-    phase: "AI void",
-    title: "Brain-cell constellation",
+    phase: "Output Frame",
+    title: "Candidate constellation",
     instruction:
-      "The right side is AI spacetime at rest: glowing **brain cells** connected by a universal web. This is the default view — zoom out to return here.",
+      "The Output Frame shows generated candidates and their source-linked relationships. Nothing is inserted until you choose a result action.",
     target: '[data-tour="ai-spacetime"]',
     demo: "constellation-glow",
     verifyKind: "manual",
   },
   {
     id: "strand-drag",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Expand outward",
     instruction:
-      "When brain cells are visible, **drag outward from a cell** to branch deeper — expand, research, explore. Release on a strand to grow that thread. Moves, Functions, and Lenses live in the left column; AI only explores what you send across.",
+      "When candidate nodes are visible, **drag outward from a node** to branch deeper. Moves and Functions act on explicit material; Lenses provide bounded context.",
     hint: "Tap without dragging to select. Double-click to explore.",
     target: '[data-tour="ai-spacetime"]',
     demo: "strand-fan",
@@ -320,7 +319,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "strand-hover",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Web connections",
     instruction: "Hover the luminous **threads** between cells to see operation and method names on existing connections.",
     target: '[data-tour="ai-spacetime"]',
@@ -330,9 +329,9 @@ export const TOUR_STEPS = [
   },
   {
     id: "explore-node",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Explore a thought",
-    instruction: "**Double-click** a brain cell (or tap when zoomed in) to explore — text appears in the dark field overlay.",
+    instruction: "**Double-click** a candidate node (or tap when zoomed in) to inspect its text and provenance in the Output Frame.",
     target: '[data-tour="ai-spacetime"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("explore-node") || ctx.events.has("ai-zoom-in"),
@@ -340,10 +339,10 @@ export const TOUR_STEPS = [
   },
   {
     id: "highlight-from-ai",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Drag back to paper",
     instruction:
-      "Keep **▬ Highlight** on. Tap a brain cell to select it, then drag across the boundary to paper — the golden preview crosses both sides. Works the same in reverse as paper → AI.",
+      "Keep **▬ Highlight** on. Select a candidate node, then use the visible transfer control to materialize it in the Scene. The preview preserves its source link.",
     target: '[data-tour="interpret-boundary"]',
     demo: "highlight-drag-hint",
     verifyKind: "event",
@@ -359,7 +358,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "fragment-highlight",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Fragment highlight",
     instruction:
       "With Highlight active and a node explored, draw over AI text. Default release **replaces** a golden fragment in place. **Shift+release** or drag across the boundary **spawns** it on paper.",
@@ -370,7 +369,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "return-constellation",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Return to constellation",
     instruction: "Zoom **out** past the threshold, or use the **return** control when exploring, to see the full brain-web again.",
     target: '[data-tour="ai-spacetime"]',
@@ -380,7 +379,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "ai-pan-zoom",
-    phase: "AI void",
+    phase: "Output Frame",
     title: "Navigate the void",
     instruction: "Drag **empty starfield** to pan AI space. Same pinch / ⌘+scroll zoom as paper. Zoom out past the threshold to return to constellation.",
     target: '[data-tour="ai-spacetime"]',
@@ -419,7 +418,7 @@ export const TOUR_STEPS = [
     id: "drag-function",
     phase: "Functions",
     title: "Drag Functions",
-    instruction: "Drag any **Function** from the rail onto paper (transform selection) or into AI spacetime (expand a node).",
+    instruction: "Drag any **Function** from the rail onto selected Scene material to transform it, or into the Output Frame to expand a candidate node.",
     target: '[data-semantic-anchor="library-functions"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("drag-function") || ctx.events.has("expand-ai"),
@@ -456,9 +455,9 @@ export const TOUR_STEPS = [
   },
   {
     id: "page-tabs",
-    phase: "Share & worlds",
-    title: "Worlds",
-    instruction: "**World tabs** at the top switch between pages — each keeps its own camera and content. **+** adds a world; double-click a tab to rename.",
+    phase: "Share & Scenes",
+    title: "Scenes",
+    instruction: "**Scene tabs** switch between durable workspaces — each keeps its own camera, material, candidates, and Output Frames. **+** adds a Scene; double-click a tab to rename.",
     target: '[data-semantic-anchor="scene-stage"]',
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("page-switch") || ctx.events.has("page-add"),
@@ -466,7 +465,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "share-export",
-    phase: "Share & worlds",
+    phase: "Share & Scenes",
     title: "Share & export",
     instruction: "Use **↗ Share** in the title bar, or **Menu ···** for export as text/markdown, import paths, and theme toggle.",
     target: '[data-tour="toolbar-menu"]',
@@ -476,7 +475,7 @@ export const TOUR_STEPS = [
   },
   {
     id: "history-replay",
-    phase: "Extras",
+    phase: "Reference",
     title: "Operator stages",
     instruction: "Select any object and tap **◷** to see which Moves and Functions were applied — no motion, just the thread.",
     verifyKind: "event",
@@ -485,19 +484,19 @@ export const TOUR_STEPS = [
   },
   {
     id: "gestures-ref",
-    phase: "Extras",
-    title: "Hidden gestures",
+    phase: "Reference",
+    title: "Optional shortcuts",
     instruction:
-      "**Space** = cycle Pen / Highlight / Select · **Highlight drag** = bidirectional boundary transfer (grab golden selection) · **Shift+drag** = Select-tool transfer · **Shift+lasso** = area select · **Alt+drag** = pan · **⌘V** = paste",
+      "Every primary action has a visible control. Optional shortcuts: **Space** cycles tools · **Shift+drag** transfers with Select · **Alt+drag** pans · **⌘V** pastes.",
     verifyKind: "event",
     verify: (ctx) => ctx.events.has("space-toggle-tool"),
     allowSkip: true,
   },
   {
     id: "complete",
-    phase: "Extras",
+    phase: "Reference",
     title: "You're ready",
-    instruction: "Every feature is wired — nothing hidden, only gestural. Reopen this tour anytime from **Menu → Feature tour**.",
+    instruction: "Primary actions remain visible and keyboard reachable. Reopen this tour anytime from **Menu → Feature tour**.",
     demo: "complete-glow",
     verifyKind: "manual",
   },

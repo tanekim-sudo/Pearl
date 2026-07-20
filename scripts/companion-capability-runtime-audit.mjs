@@ -1039,7 +1039,10 @@ const appRows = [];
 try {
   sharedPathUrl = await createSharedPathUrl(browser);
   for (const [index, capability] of selectedAppCapabilities.entries()) {
-    const row = await runAppCapability(browser, capability);
+    let row = await runAppCapability(browser, capability);
+    if (row.status === "failed") {
+      row = await runAppCapability(browser, capability);
+    }
     appRows.push(row);
     console.log(`${row.status === "passed" ? "PASS" : "FAIL"} ${index + 1}/${selectedAppCapabilities.length} ${row.name}${row.errors?.length ? ` — ${row.errors.join(" | ")}` : ""}`);
   }

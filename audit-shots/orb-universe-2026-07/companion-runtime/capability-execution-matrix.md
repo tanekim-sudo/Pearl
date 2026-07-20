@@ -68,7 +68,7 @@
 - PASS — `setBrushLensContext` (app): state-or-visible-artifact-changed
 - PASS — `reorderBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `removeBrushQueue` (app): state-or-visible-artifact-changed
-- PASS — `previewBrushQueue` (app): Read-only compatibility preview; typed preview is the expected artifact.
+- PASS — `previewBrushQueue` (app): state-or-visible-artifact-changed
 - PASS — `pressBrushGo` (app): state-or-visible-artifact-changed
 - PASS — `cancelPendingBrush` (app): state-or-visible-artifact-changed
 - PASS — `saveBrushQueueAsFunction` (app): state-or-visible-artifact-changed

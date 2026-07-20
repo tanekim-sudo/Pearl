@@ -26,6 +26,7 @@ import { normalizeGenerationPlan, normalizeTasteFeedback } from "../../../shared
 import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/transform-primitives.js";
 import { createCritiqueSession } from "../../../shared/critique-session.js";
 import { createPersonalCommandDefinition } from "../../../shared/personal-command-vocabulary.js";
+import { executeDomainCommand } from "../../../shared/domain-commands.js";
 
 const runs = new Map();
 
@@ -83,6 +84,9 @@ async function executeGo(payload) {
       provenance: response.provenance || createProvenance(session.fragments, { runId }),
     });
     return writeSession({ results: [result], activeRunId: null });
+  } catch (error) {
+    await writeSession({ activeRunId: null });
+    throw new Error(`GO stopped before all candidates completed. Your capture and action stack were preserved for retry. ${error.message}`);
   } finally {
     runs.delete(runId);
   }
@@ -92,6 +96,35 @@ async function handle(message, sender = {}) {
   const { type, payload } = message;
   const session = await readSession();
   if (type === "get-session") return session;
+  if (type === "make-pearl") {
+    const material = payload.material || session.fragments.at(-1);
+    if (!material && !payload.name) throw new Error("capture page material before making a pearl");
+    const stored = await BrowserPlatform.storage.get("local", ["semanticOrbs", "activeSemanticOrbId"]);
+    const idempotencyKey = String(payload.idempotencyKey || crypto.randomUUID());
+    const id = String(payload.id || `external-pearl:${idempotencyKey}`).slice(0, 180);
+    const execution = await executeDomainCommand("createSemanticOrb", {
+      semanticOrbs: stored.semanticOrbs || [],
+      activeSemanticOrbId: stored.activeSemanticOrbId || null,
+    }, {
+      sceneId: "extension-captures",
+      material,
+      orb: { id, name: payload.name || undefined },
+      placement: payload.placement || { x: 0, y: 0 },
+      activate: true,
+    }, {
+      idFactory: () => id,
+      persist: async (state) => BrowserPlatform.storage.set("local", {
+        semanticOrbs: state.semanticOrbs,
+        activeSemanticOrbId: state.activeSemanticOrbId,
+      }),
+    });
+    return {
+      ...execution.result,
+      semanticOrbs: execution.state.semanticOrbs,
+      activeSemanticOrbId: execution.state.activeSemanticOrbId,
+      pearl: execution.result.object || execution.state.semanticOrbs.find((entry) => entry.id === id),
+    };
+  }
   if (type === "orb-cursor-get") {
     const tabId = sender.tab?.id ?? payload.targetTabId ?? (await activeTab().catch(() => null))?.id;
     if (!Number.isInteger(tabId)) return { enabled: false, supported: false };
@@ -138,10 +171,11 @@ async function handle(message, sender = {}) {
   }
   if (type === "open-web-handoff") {
     await BrowserPlatform.storage.set("local", { cognitiveWorkflowHandoff: { ...payload, createdAt: Date.now() } });
+    const url = `https://representation-eta.vercel.app/?handoff=${encodeURIComponent(payload.surface || "workspace")}&view=${encodeURIComponent(payload.tab || "integrate")}`;
     await globalThis.chrome.tabs.create({
-      url: `https://representation-eta.vercel.app/?handoff=${encodeURIComponent(payload.surface || "workspace")}&view=${encodeURIComponent(payload.tab || "integrate")}`,
+      url,
     });
-    return { type: "cognitive-workflow-handoff", preserved: true };
+    return { type: "cognitive-workflow-handoff", preserved: true, url };
   }
   if (type === "open-cognitive-pull-request") {
     if (!session.fragments.length) throw new Error("select explicit page material before opening an extraction proposal");

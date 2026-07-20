@@ -5,9 +5,12 @@ import path from "node:path";
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:41737";
 const evidence = path.resolve(process.env.AUDIT_OUT || "audit-shots/orb-universe-2026-07");
 fs.mkdirSync(evidence, { recursive: true });
+const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const bundledChrome = chromium.executablePath();
 const browser = await chromium.launch({
   headless: true,
-  ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
+  executablePath: process.env.PW_CHROMIUM
+    || (fs.existsSync(bundledChrome) ? bundledChrome : fs.existsSync(systemChrome) ? systemChrome : undefined),
 });
 const results = [];
 
@@ -19,8 +22,10 @@ async function shot(name, viewport, url, setup) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  if (setup && typeof setup !== "function" && setup.before) await page.addInitScript(setup.before);
   await page.goto(`${baseUrl}${url}`, { waitUntil: "networkidle" });
-  await setup?.(page);
+  if (typeof setup === "function") await setup(page);
+  else await setup?.after?.(page);
   await page.screenshot({ path: path.join(evidence, `${name}.png`), fullPage: true });
   const snapshot = await page.locator("body").ariaSnapshot();
   const diagnostics = await page.evaluate(() => {
@@ -61,23 +66,107 @@ try {
   await shot("01-continuation-desktop", { width: 1600, height: 1000 }, "/", async (page) => {
     await page.evaluate(() => localStorage.removeItem("lens.orb-universe.continued.v1"));
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: /Continue beyond the tab/ }).waitFor();
+    await page.getByRole("heading", { name: /The world is your oyster/ }).waitFor();
     await page.getByRole("region", { name: "Continue extension work" }).waitFor();
-    const orb = await page.locator(".companion-orb").boundingBox();
+    const orb = await page.locator(".orb-continuation-pearl").boundingBox();
     if (!orb || orb.width < 28 || orb.width > 36) throw new Error("continuation Pearl is not compact");
+    if (await page.locator(".companion-orb").count()) throw new Error("off-Scene Pearl still exposes a command affordance");
     if (await page.getByRole("link", { name: /Add Pearl to Chrome/ }).count()) throw new Error("extension download still dominates the web root");
   });
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "Your cognitive universe" }).waitFor();
-    const orb = await page.locator(".companion-orb").boundingBox();
-    if (!orb || orb.width < 28 || orb.width > 36 || orb.x < 360 || orb.x > 820) throw new Error("library Pearl is not compact and centered");
+    if (await page.locator(".companion-orb").count()) throw new Error("library exposes an off-Scene Pearl command affordance");
     if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
+  });
+  await shot("03a-trusted-handoff-output-frame", { width: 1280, height: 800 }, "/?handoff=semantic-orb-scene&view=integrate", {
+    before: () => {
+      const handoff = {
+        type: "pearl-workspace-handoff",
+        handoff: { id: "audit-handoff", surface: "semantic-orb-scene", createdAt: 42, name: "Audit continuation" },
+        semanticOrbs: [{
+          version: 1,
+          id: "first-pearl",
+          kind: "semantic-orb",
+          sceneId: "extension-captures",
+          name: "First pearl",
+          placement: { x: 0, y: 0, radius: 24 },
+          representation: { kind: "selection", refs: ["handoff-fragment"], label: "First pearl", snapshot: null },
+          workingSet: { context: [{ id: "handoff-fragment", quote: "Trusted carried material" }], lenses: [], selections: [], branches: [], checkpoints: [] },
+          parentOrbId: null,
+          childOrbIds: [],
+          lineage: [],
+          provenance: { sourceId: "handoff-fragment", sourceKind: "selection" },
+          archived: false,
+        }],
+        activeSemanticOrbId: "first-pearl",
+        session: {
+          fragments: [{ id: "handoff-fragment", quote: "Trusted carried material", provenance: { origin: "https://example.test", title: "Fixture" } }],
+          queue: [{ id: "clarify", name: "Clarify", libraryKind: "move" }],
+          generator: null,
+          results: [{ id: "handoff-run", outputs: [{ id: "handoff-candidate", text: "Verified carried candidate" }] }],
+        },
+      };
+      globalThis.__handoffMessages = [];
+      Object.defineProperty(globalThis, "chrome", {
+        configurable: false,
+        writable: false,
+        value: {
+          runtime: {
+            lastError: null,
+            sendMessage(_id, message, callback) {
+              globalThis.__handoffMessages.push({ id: _id, type: message?.type });
+              callback(message.type === "lens-install-check"
+                ? { ok: true, value: { installed: true } }
+                : { ok: true, value: handoff });
+            },
+          },
+        },
+      });
+    },
+    after: async (page) => {
+      await page.waitForTimeout(500);
+      const heading = await page.locator(".orb-continuation h2").textContent();
+      if (!/First pearl is ready to continue/.test(heading || "")) {
+        const messages = await page.evaluate(() => ({
+          calls: globalThis.__handoffMessages,
+          send: typeof globalThis.chrome?.runtime?.sendMessage,
+          random: typeof globalThis.crypto?.randomUUID,
+        }));
+        throw new Error(`trusted handoff did not expose the pearl: ${heading || "missing continuation"}; ${JSON.stringify(messages)}`);
+      }
+      await page.getByRole("button", { name: "Continue this work" }).click();
+      await page.waitForURL(/\/scene\/scene-extension-audit-handoff\?frame=workspace/);
+      const outputFrame = page.locator('[data-semantic-anchor="output-frame"]');
+      await outputFrame.waitFor({ state: "visible" });
+      const persisted = await page.evaluate(() => {
+        const workspace = JSON.parse(localStorage.getItem("lens.scenes.v4") || "null");
+        const scene = workspace?.scenes?.find((entry) => entry.id === "scene-extension-audit-handoff");
+        return {
+          items: scene?.items?.map((entry) => entry.id),
+          createdFrom: scene?.metadata?.createdFrom,
+          queue: scene?.metadata?.handoffQueue,
+          candidates: scene?.metadata?.handoffCandidates,
+          pearls: scene?.semanticOrbs?.map((entry) => entry.id),
+        };
+      });
+      if (JSON.stringify(persisted) !== JSON.stringify({
+        items: ["handoff-fragment", "handoff-candidate", "extension-queue:clarify"],
+        createdFrom: "pearl-extension-handoff",
+        queue: ["clarify"],
+        candidates: ["handoff-candidate"],
+        pearls: ["first-pearl", "extension-working-set-audit-handoff"],
+      })) throw new Error(`handoff material mismatch: ${JSON.stringify(persisted)}`);
+      await page.reload({ waitUntil: "networkidle" });
+      await outputFrame.waitFor({ state: "visible" });
+      const count = await page.evaluate(() => JSON.parse(localStorage.getItem("lens.scenes.v4")).scenes.filter((entry) => entry.id === "scene-extension-audit-handoff").length);
+      if (count !== 1) throw new Error(`handoff duplicated after reload: ${count}`);
+    },
   });
   await shot("04-stage-desktop", { width: 1600, height: 1000 }, "/scene/audit-scene", async (page) => {
     await page.evaluate(() => {
@@ -123,7 +212,7 @@ try {
     if (await page.locator(".orb-context-drawer").count()) throw new Error("legacy permanent Stage drawer remains");
     await page.locator(".semantic-orb-cluster").first().waitFor();
     await page.locator(".semantic-orb-cluster").first().click();
-    await page.getByRole("button", { name: "New orb" }).first().click();
+    await page.getByRole("button", { name: "New pearl" }).first().click();
     await page.locator(".semantic-orb-capsule.active").waitFor();
     await page.waitForFunction(() => {
       const workspace = JSON.parse(localStorage.getItem("lens.scenes.v4") || "null");
@@ -171,7 +260,7 @@ try {
     await page.waitForFunction(() =>
       document.querySelector('.orb-adaptive-views button[aria-pressed="true"]')?.textContent === "Gallery"
     );
-    await page.getByRole("button", { name: "Add to orb context" }).click();
+    await page.getByRole("button", { name: "Add to Pearl context" }).click();
     await page.locator(".orb-context-object").waitFor();
     await page.evaluate(() => {
       const transfer = new DataTransfer();
@@ -187,7 +276,7 @@ try {
     await page.locator(".orb-stage-table").waitFor();
   });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
-    const animation = await page.locator(".orb-pearl").first().evaluate((node) => getComputedStyle(node).animationName);
+    const animation = await page.locator(".orb-install-pearl").evaluate((node) => getComputedStyle(node).animationName);
     if (animation !== "none") throw new Error(`reduced-motion Pearl still animates: ${animation}`);
   });
   fs.writeFileSync(path.join(evidence, "web-results.json"), `${JSON.stringify({

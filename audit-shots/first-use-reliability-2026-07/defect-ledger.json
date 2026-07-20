@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-20T01:02:07.825Z",
+  "baseline": {
+    "command": "npm run release:check",
+    "result": "local unit/build/parity gates passed; browser gate initially blocked by a missing bundled Playwright executable",
+    "remediation": "audits now use the configured browser or installed system Chrome deterministically"
+  },
+  "totals": {
+    "defects": 11,
+    "resolved": 11,
+    "unresolved": 0
+  },
+  "defects": [
+    {
+      "id": "FU-001",
+      "severity": "critical",
+      "surface": "extension",
+      "summary": "First-use chain stopped before explicit GO and verified insertion",
+      "reproduction": "Open a fresh side panel, capture a selection, queue an action, press GO, and insert a candidate.",
+      "expected": "One continuous, inert-until-GO path with a verified write receipt.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "extension/scripts/orb-audit.mjs",
+      "screenshot": "orb-universe-2026-07/06d-extension-verified-insertion.png"
+    },
+    {
+      "id": "FU-002",
+      "severity": "high",
+      "surface": "web",
+      "summary": "Website-first visitors reached a misleading Pearl command affordance",
+      "reproduction": "Open / without a trusted extension working set.",
+      "expected": "Show setup/recovery actions; reserve executable Pearl commands for a Scene.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "scripts/orb-universe-audit.mjs",
+      "screenshot": "orb-universe-2026-07/01-continuation-desktop.png"
+    },
+    {
+      "id": "FU-003",
+      "severity": "high",
+      "surface": "cross-surface",
+      "summary": "Handoff route and cognitive query could claim an empty continuation",
+      "reproduction": "Open /?handoff=semantic-orb-scene without extension payload.",
+      "expected": "Report the missing working set and offer a retry without creating a Scene.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "scripts/orb-universe-audit.mjs",
+      "screenshot": "orb-universe-2026-07/01-continuation-desktop.png"
+    },
+    {
+      "id": "FU-004",
+      "severity": "high",
+      "surface": "web",
+      "summary": "Continued work hid the expected Output Frame",
+      "reproduction": "Continue a trusted extension working set into a Scene and reload.",
+      "expected": "Open the Output Frame immediately and preserve one idempotent Scene.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "scripts/orb-universe-audit.mjs",
+      "screenshot": "orb-universe-2026-07/03a-trusted-handoff-output-frame.png"
+    },
+    {
+      "id": "FU-005",
+      "severity": "high",
+      "surface": "onboarding",
+      "summary": "Tour used stale paper/AI-void language and targeted a missing capture chip",
+      "reproduction": "Run the feature tour and advance to capture.",
+      "expected": "Use Scene/Output Frame/Pearl vocabulary and only reachable spotlight targets.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "client/lib/onboarding-steps.test.js",
+      "screenshot": "extension-distribution/easy-onboarding/01-welcome.png"
+    },
+    {
+      "id": "FU-006",
+      "severity": "high",
+      "surface": "extension",
+      "summary": "Disabled GO did not explain missing capture or action/Lens prerequisites",
+      "reproduction": "Open Review with no capture and no queued operation.",
+      "expected": "Show ordered prerequisites and keep GO inert.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "extension/scripts/playwright-audit.mjs",
+      "screenshot": "extension-distribution/easy-onboarding/07-queued-explicit-go.png"
+    },
+    {
+      "id": "FU-007",
+      "severity": "high",
+      "surface": "extension",
+      "summary": "Failures lacked actionable retry and safe insertion fallback",
+      "reproduction": "Deny page/mic permission, go offline, expire auth, or remove the insertion target.",
+      "expected": "Classify the blocker, preserve local state, and expose Retry or Copy guidance.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "extension/src/sidepanel/main.jsx",
+      "screenshot": "orb-universe-2026-07/07-extension-command-360.png"
+    },
+    {
+      "id": "FU-008",
+      "severity": "medium",
+      "surface": "accessibility",
+      "summary": "Primary controls were smaller than touch targets at narrow widths",
+      "reproduction": "Use a 360px panel, keyboard, touch, or 200% zoom.",
+      "expected": "Keep primary controls at least 40–44px while preserving 28–36px Pearl geometry.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "extension/scripts/orb-audit.mjs",
+      "screenshot": "orb-universe-2026-07/07-extension-command-360.png"
+    },
+    {
+      "id": "FU-009",
+      "severity": "medium",
+      "surface": "release",
+      "summary": "Existing first-use and semantic tests were omitted from the main runner",
+      "reproduction": "Run npm test and inspect the explicit test list.",
+      "expected": "Run continuation, streaming generation, Lens grammar/grinding/rack, and output-specification tests.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "package.json",
+      "screenshot": "orb-universe-2026-07/03a-trusted-handoff-output-frame.png"
+    },
+    {
+      "id": "FU-010",
+      "severity": "medium",
+      "surface": "release",
+      "summary": "First-use browser journeys were not one release-gated suite",
+      "reproduction": "Run npm run release:check.",
+      "expected": "Gate extension onboarding/capture/GO/insert, web continuation, brush, voice, adoption, and persistence.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "scripts/release-check.mjs",
+      "screenshot": "orb-universe-2026-07/06c-extension-go-candidate.png"
+    },
+    {
+      "id": "FU-011",
+      "severity": "critical",
+      "surface": "cross-surface",
+      "summary": "First use explained capture and generation without creating a durable pearl",
+      "reproduction": "Select real page material and choose Make a pearl from this.",
+      "expected": "Persist one provenance-preserving semantic capsule, reopen its working context, expose the same canonical companion action, and carry it into a Scene.",
+      "owner": "first-use-reliability",
+      "status": "resolved",
+      "regressionTest": "extension/scripts/orb-audit.mjs",
+      "screenshot": "orb-universe-2026-07/07a-extension-semantic-orbs.png"
+    }
+  ],
+  "externalChecks": [
+    {
+      "id": "live-ai",
+      "status": "skipped-external-only",
+      "reason": "No live model credential is required or available to the deterministic release fixture."
+    },
+    {
+      "id": "live-supabase-adoption",
+      "status": "skipped-external-only",
+      "reason": "Account adoption is exhaustively fixture-tested; a live Supabase account requires external credentials."
+    },
+    {
+      "id": "store-installed-extension",
+      "status": "skipped-external-only",
+      "reason": "The unpacked production extension is browser-tested; Chrome Web Store signing and installation require store access."
+    }
+  ]
+}

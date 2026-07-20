@@ -1,5 +1,5 @@
 {
-  "passed": 11,
+  "passed": 12,
   "failed": 0,
   "checks": [
     "three-step onboarding",
@@ -8,6 +8,7 @@
     "360px panel",
     "library ready result",
     "useful empty state",
+    "first pearl preserves source context",
     "persistent selection",
     "queue has no auto-run",
     "preview before mutation",
@@ -15,5 +16,5 @@
     "reduced-motion CSS"
   ],
   "browser": "149.0.7827.55",
-  "generatedAt": "2026-07-18T23:12:42.981Z"
+  "generatedAt": "2026-07-20T00:54:53.833Z"
 }

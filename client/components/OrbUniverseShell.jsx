@@ -51,10 +51,13 @@ export function parseOrbRoute(locationLike = globalThis.location) {
   }
   if (path === "/install") return { kind: "install", path };
   if (path === "/" || path === "/library" || path === "/toolbox") {
+    const handoff = query.get("handoff");
+    const legacyCognitive = query.get("cognitive");
     return {
       kind: "home",
       path,
-      handoff: query.get("handoff") || query.get("cognitive") || null,
+      handoff: handoff || legacyCognitive || null,
+      handoffSource: handoff ? "handoff" : legacyCognitive ? "legacy-cognitive" : null,
       handoffView: query.get("view") || null,
     };
   }
@@ -123,7 +126,7 @@ function loadSceneWorkspace() {
   });
 }
 
-function InstallLanding({ install, onContinue }) {
+function InstallLanding({ install, onContinue, onRetry }) {
   const browser = useMemo(() => detectExtensionBrowser(navigator.userAgent), []);
   const storeUrl = validChromeStoreUrl(import.meta.env.VITE_CHROME_WEB_STORE_URL);
   const release = typeof __LENS_EXTENSION_RELEASE__ === "undefined" ? null : __LENS_EXTENSION_RELEASE__;
@@ -131,15 +134,16 @@ function InstallLanding({ install, onContinue }) {
   return <main className="orb-install">
     <section>
       <div className="orb-kicker">Pearl Everywhere</div>
-      <h1>Your cognition, available on every page.</h1>
-      <p>Select material anywhere, tell the orb your goal, review candidates, and preserve the thinking you want to reuse.</p>
+      <h1>The world is your oyster. Make pearls.</h1>
+      <p>Notice something on any page, make it a source-linked pearl, then reopen that compact agent shell whenever you want to shape or use it. Make your first pearl today.</p>
       <div className="orb-actions">
         {install.status === "installed"
           ? <button className="orb-primary" type="button" onClick={onContinue}>Open cognitive library</button>
           : <a className="orb-primary" href={installUrl} onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}>
               {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
             </a>}
-        <button className="orb-secondary" type="button" onClick={onContinue}>Continue to Pearl</button>
+        <button className="orb-secondary" type="button" onClick={onContinue}>Open saved Scenes</button>
+        {install.status === "unknown" && <button className="orb-secondary" type="button" onClick={onRetry}>Check extension again</button>}
       </div>
       <p className="orb-status" role="status">
         {install.status === "checking" ? "Checking trusted extension status…"
@@ -147,9 +151,7 @@ function InstallLanding({ install, onContinue }) {
             : "Installation status is unknown. You can check again after installing."}
       </p>
     </section>
-    <div className="orb-install-card" aria-label="Pearl">
-      <CompanionOrb key="install-orb" compact featured state={createOrbState()} />
-    </div>
+    <div className="orb-install-card" aria-label="Pearl"><span className="orb-install-pearl" aria-hidden="true" /></div>
   </main>;
 }
 
@@ -266,6 +268,8 @@ function LibraryHome({
   onCreateScene,
   onContinueHandoff,
   extensionHandoff,
+  handoffStatus,
+  onRetryHandoff,
   activeView,
   onView,
   install,
@@ -280,10 +284,13 @@ function LibraryHome({
 }) {
   const [query, setQuery] = useState("");
   const continuationCount = continuationMaterialCount(extensionHandoff);
+  const pearlCount = extensionHandoff?.semanticOrbs?.length || 0;
+  const activePearl = extensionHandoff?.semanticOrbs?.find((entry) => entry.id === extensionHandoff?.activeSemanticOrbId)
+    || extensionHandoff?.semanticOrbs?.[0];
   const isRoot = route.path === "/";
   const title = route.section && route.section !== "library"
     ? route.section[0].toUpperCase() + route.section.slice(1)
-    : isRoot ? "Continue beyond the tab." : "Your cognitive universe";
+    : isRoot ? "The world is your oyster. Make pearls." : "Your cognitive universe";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
@@ -297,22 +304,28 @@ function LibraryHome({
       <div className="orb-kicker">{isRoot ? "Pearl continuation space" : "Library and saved work"}</div>
       <h1>{title}</h1>
       <p>{isRoot
-        ? "Pearl begins on the page you are already using. This space opens only when the work needs more room: spatial arrangement, deep comparison, editing, history, or a durable Scene."
+        ? "A pearl is noticed material preserved with its source, context, and optional shaping. Make your first pearl on a real page; come here when it needs a Scene, an Output Frame, or deeper work."
         : "Review reusable cognition and resume saved work without leaving the extension-first flow."}</p>
     </section>
     {isRoot && <section className="orb-continuation" aria-label="Continue extension work">
       <span className="orb-continuation-pearl" aria-hidden="true" />
       <div>
-        <small>{extensionHandoff?.connected ? "Pearl extension connected" : "Waiting for the page Pearl"}</small>
+        <small>{extensionHandoff?.connected ? "Pearl extension connected" : handoffStatus === "loading" ? "Checking the page Pearl" : "Waiting for the page Pearl"}</small>
         <h2>{continuationCount
-          ? `${continuationCount} ${continuationCount === 1 ? "piece" : "pieces"} ready to continue`
-          : route.handoff ? "The handoff is ready for more room" : "Open this space from the Pearl on any page"}</h2>
+          ? pearlCount
+            ? `${activePearl?.name || "Your pearl"} is ready to continue`
+            : `${continuationCount} ${continuationCount === 1 ? "piece" : "pieces"} ready to become a pearl`
+          : route.handoff ? "No working set arrived" : "Open this space from the Pearl on any page"}</h2>
         <p>{continuationCount
-          ? "The explicit capture, active context, candidates, and saved orbs remain source-linked. Continue them in one Scene without turning this site into a second starting point."
-          : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
+          ? `${pearlCount ? `${pearlCount} ${pearlCount === 1 ? "pearl remains" : "pearls remain"}` : "This captured material remains"} source-linked. Continue the capsule into one Scene to refine, use, insert, or arrange it without losing provenance.`
+          : route.handoff
+            ? "The link opened, but no capture, queued action, Lens, candidate, or saved orb was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it."
+            : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
       </div>
       {continuationCount
         ? <button className="orb-primary" type="button" onClick={onContinueHandoff}>Continue this work</button>
+        : route.handoff
+          ? <button className="orb-secondary" type="button" disabled={handoffStatus === "loading"} onClick={onRetryHandoff}>{handoffStatus === "loading" ? "Checking…" : "Retry handoff"}</button>
         : extensionHandoff?.connected
           ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
@@ -329,7 +342,7 @@ function LibraryHome({
       {!isRoot && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
     </section>
     <p className="orb-home-prompt">{isRoot
-      ? "The website is a continuation surface, not the starting point."
+      ? "Make your first pearl today — on the page where you noticed it."
       : "Hold Pearl to speak · click for command · drag material into its orbit"}</p>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
       <div>
@@ -450,7 +463,7 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semantic
               <small>{material.materialKind}</small>
               <p>{String(material.label).slice(0, 420)}</p>
               {view === "Timeline" && <time>{material.createdAt || material.updatedAt || `Step ${index + 1}`}</time>}
-              <button type="button" className="orb-material-context-action" onClick={() => onContextAdd(material)}>Add to orb context</button>
+              <button type="button" className="orb-material-context-action" onClick={() => onContextAdd(material)}>Add to Pearl context</button>
               <button type="button" className="orb-material-context-action" onClick={() => semanticOrbActions?.create?.({
                 material,
                 placement: { x: Number(material.x) || index * 64, y: Number(material.y) || index * 48 },
@@ -495,6 +508,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const approvalResolverRef = useRef(null);
   const [install, setInstall] = useState({ status: "checking", trusted: false });
   const [extensionHandoff, setExtensionHandoff] = useState({ connected: false, handoff: null, session: null, semanticOrbs: [] });
+  const [handoffStatus, setHandoffStatus] = useState("idle");
   const [orb, setOrb] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("lens.orb.surface.v1") || "null");
@@ -524,7 +538,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const [externalCursorMode, setExternalCursorMode] = useState(false);
   const [outputFrameOpen, setOutputFrameOpen] = useState(() => {
     const query = new URLSearchParams(location.search);
-    return query.get("frame") === "legacy" || [...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key));
+    return ["legacy", "workspace"].includes(query.get("frame")) || [...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key));
   });
   orbRef.current = orb;
 
@@ -545,6 +559,11 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
   }, [route.path]);
 
+  const refreshInstall = useCallback(() => {
+    setInstall({ status: "checking", trusted: false });
+    return checkTrustedExtensionInstallation().then(setInstall);
+  }, []);
+
   useEffect(() => {
     let active = true;
     checkTrustedExtensionInstallation().then((value) => {
@@ -553,14 +572,18 @@ export default function OrbUniverseShell({ StageComponent }) {
     return () => { active = false; };
   }, []);
 
+  const refreshHandoff = useCallback(async () => {
+    setHandoffStatus("loading");
+    const value = await requestTrustedExtensionHandoff();
+    setExtensionHandoff(value);
+    setHandoffStatus(continuationMaterialCount(value) > 0 ? "ready" : "blocked");
+    return value;
+  }, []);
+
   useEffect(() => {
-    if (route.kind !== "home") return undefined;
-    let active = true;
-    requestTrustedExtensionHandoff().then((value) => {
-      if (active) setExtensionHandoff(value);
-    });
-    return () => { active = false; };
-  }, [route.kind, route.handoff]);
+    if (route.kind !== "home") return;
+    refreshHandoff();
+  }, [route.kind, route.handoff, refreshHandoff]);
 
   useEffect(() => {
     localStorage.setItem("lens.orb.surface.v1", JSON.stringify(orb));
@@ -1491,10 +1514,24 @@ export default function OrbUniverseShell({ StageComponent }) {
   }
 
   async function continueExtensionWork() {
-    const id = `scene-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+    if (!continuationMaterialCount(extensionHandoff)) {
+      setHandoffStatus("blocked");
+      return;
+    }
+    const handoffIdentity = String(
+      extensionHandoff?.handoff?.id
+      || extensionHandoff?.handoff?.createdAt
+      || [
+        ...(extensionHandoff?.session?.fragments || []).map((entry) => entry.id),
+        ...(extensionHandoff?.session?.queue || []).map((entry) => entry.id),
+        ...(extensionHandoff?.session?.results || []).flatMap((run) => (run.outputs || []).map((entry) => entry.id)),
+      ].filter(Boolean).join("-")
+      || "current"
+    ).replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
+    const id = `scene-extension-${handoffIdentity}`;
     const carriedItems = continuationItems(extensionHandoff);
     const material = continuationMaterial(extensionHandoff, {
-      id: `extension-working-set-${globalThis.crypto?.randomUUID?.() || Date.now()}`,
+      id: `extension-working-set-${handoffIdentity}`,
       surface: route.handoff,
     });
     const carriedOrbs = normalizeSemanticOrbs(extensionHandoff?.semanticOrbs || []).map((semanticOrb, index) => ({
@@ -1517,7 +1554,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       orb: createOrbState(),
       command: "createSemanticOrb",
       state: { semanticOrbs: carriedOrbs, activeSemanticOrbId: carriedActiveId },
-      args: { sceneId: id, material, placement: { x: 0, y: 0 }, activate: !carriedActiveId },
+      args: { sceneId: id, material, orb: { id: material.id }, placement: { x: 0, y: 0 }, activate: !carriedActiveId },
       taskId: `extension-handoff:${id}`,
       observe: async ({ result }) => ({ effects: result.effects }),
     });
@@ -1550,7 +1587,8 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
     localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
     setSceneWorkspace(JSON.parse(serialized));
-    navigate(`/scene/${encodeURIComponent(id)}`);
+    setOutputFrameOpen(true);
+    navigate(`/scene/${encodeURIComponent(id)}?frame=workspace`);
   }
 
   const routedScene = (sceneWorkspace.scenes || []).find((scene) => scene.id === route.sceneId)
@@ -1596,13 +1634,15 @@ export default function OrbUniverseShell({ StageComponent }) {
   const showInstall = route.kind === "install";
   return <div className="orb-universe">
     {showInstall
-      ? <InstallLanding install={install} onContinue={continueToLibrary} />
+      ? <InstallLanding install={install} onContinue={continueToLibrary} onRetry={refreshInstall} />
       : <LibraryHome
           route={route}
           scenes={sceneWorkspace.scenes || []}
           onCreateScene={createBlankScene}
           onContinueHandoff={continueExtensionWork}
           extensionHandoff={extensionHandoff}
+          handoffStatus={handoffStatus}
+          onRetryHandoff={refreshHandoff}
           activeView={emittedView}
           onView={setEmittedView}
           install={install}
@@ -1615,11 +1655,5 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
         />}
-    {!showInstall && !cursorMode && <CompanionOrb key="home-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={hasOrbUndo ? undoOrbEffect : undefined} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
-      onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
-      cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
-      approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
-    {!showInstall && cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
-    {!showInstall && <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>}
   </div>;
 }

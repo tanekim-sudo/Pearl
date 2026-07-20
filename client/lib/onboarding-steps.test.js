@@ -66,7 +66,7 @@ describe("onboarding-steps", () => {
 
   it("getPhaseIndex returns valid indices", () => {
     assert.equal(getPhaseIndex("Welcome"), 0);
-    assert.equal(getPhaseIndex("Extras"), TOUR_PHASES.length - 1);
+    assert.equal(getPhaseIndex("Reference"), TOUR_PHASES.length - 1);
   });
 
   it("highlight-select completes when highlightSelection is non-empty", () => {
@@ -115,8 +115,14 @@ describe("onboarding-steps", () => {
     assert.ok(step?.title?.includes("Select"));
   });
 
-  it("gestures-ref step documents highlight drag", () => {
+  it("reference step makes gestures optional", () => {
     const step = TOUR_STEPS.find((s) => s.id === "gestures-ref");
-    assert.ok(step?.instruction?.includes("Highlight drag"));
+    assert.ok(step?.title?.includes("Optional"));
+    assert.ok(step?.instruction?.includes("visible control"));
+  });
+
+  it("every spotlight target is a current reachable selector", () => {
+    const stale = TOUR_STEPS.filter((step) => step.target === '[data-tour="capture-chip"]');
+    assert.deepEqual(stale, []);
   });
 });

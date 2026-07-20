@@ -211,7 +211,11 @@ export const FEATURE_CONTRACTS = Object.freeze([
       "mergeSemanticOrbs", "composeSemanticOrbs", "splitSemanticOrb", "duplicateSemanticOrb",
       "archiveSemanticOrb", "deleteSemanticOrb",
     ],
-    ui: ["client/components/SemanticOrbLayer.jsx", "client/components/OrbUniverseShell.jsx"],
+    ui: [
+      "client/components/SemanticOrbLayer.jsx", "client/components/OrbUniverseShell.jsx",
+      "extension/src/content/bridge.js:data-action=\"pearl\"",
+      "extension/src/sidepanel/main.jsx:first-pearl",
+    ],
     companion: [
       "createSemanticOrb", "activateSemanticOrb", "moveSemanticOrb", "renameSemanticOrb",
       "bindSemanticOrb", "addSemanticOrbContext", "removeSemanticOrbContext", "applySemanticOrbLens",

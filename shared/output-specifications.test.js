@@ -17,9 +17,9 @@ import { TRANSFORM_PRIMITIVES } from "./transform-primitives.js";
 const mapOf = (...ops) => Object.fromEntries(ops.map((op) => [op.id, op]));
 
 test("built-in primitives have curated deterministic semantic defaults", () => {
-  const specs = Object.fromEntries(TRANSFORM_PRIMITIVES.map((op) => [op.name, suggestedOutputSpec(op)]));
+  const specs = Object.fromEntries(TRANSFORM_PRIMITIVES.map((op) => [op.name.toLowerCase(), suggestedOutputSpec(op)]));
   assert.equal(specs.research.semanticType, "annotated source brief");
-  assert.equal(specs.explore.machineKind, "list");
+  assert.equal(specs.branch.machineKind, "list");
   assert.equal(specs.merge.semanticType, "structured synthesis");
 });
 

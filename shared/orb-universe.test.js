@@ -108,6 +108,13 @@ test("semantic orb capsules stay compact, collision-free, and cluster under dens
     placement: { x: 0, y: 0 },
     now: 100,
   });
+  const pagePearl = semanticOrbFromMaterial({ id: "capture", type: "selection", quote: "Noticed in the world" }, {
+    id: "page-pearl",
+    sceneId: "extension-captures",
+    now: 1,
+  });
+  assert.equal(pagePearl.name, "Noticed in the world");
+  assert.equal(pagePearl.workingSet.context[0].quote, "Noticed in the world");
   const placement = placeSemanticOrb([source], { x: 0, y: 0 });
   const second = createSemanticOrb({ id: "orb-b", placement });
   assert.ok(Math.hypot(second.placement.x, second.placement.y) >= 60);

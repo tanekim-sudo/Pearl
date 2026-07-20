@@ -12,6 +12,28 @@ import { normalizeOutputSpec, suggestedOutputSpec } from "../../shared/output-sp
 import { createTripleSpaceRecognizer, orbCursorPresentation } from "../../shared/orb-cursor.js";
 import { ORB_CURSOR_HIDE_CSS, orbCursorTabState } from "../src/core/orb-cursor-contract.js";
 
+test("concurrent extension session mutations merge without losing pearl context", async () => {
+  const store = {};
+  globalThis.chrome = {
+    runtime: { lastError: null },
+    storage: {
+      session: {
+        get(_keys, done) { setTimeout(() => done({ ...store }), 2); },
+        set(value, done) { setTimeout(() => { Object.assign(store, value); done(); }, 2); },
+        remove(_keys, done) { done(); },
+      },
+    },
+  };
+  const { writeSession } = await import("../src/background/session-store.js");
+  await Promise.all([
+    writeSession({ fragments: [{ id: "source", quote: "Noticed material" }] }),
+    writeSession({ queue: [{ id: "shape", kind: "move" }] }),
+  ]);
+  assert.equal(store.lensEverywhereSession.fragments.length, 1);
+  assert.equal(store.lensEverywhereSession.queue.length, 1);
+  delete globalThis.chrome;
+});
+
 test("strict messages reject spoofed fields and oversized payloads", () => {
   assert.equal(validateMessage(createMessage("go", {})).ok, true);
   assert.equal(validateMessage(createMessage("toggle-orb-cursor", { enabled: true })).ok, true);
@@ -139,6 +161,7 @@ test("extension companion manifest and real handlers have exact parity", async (
   });
   assert.equal(orbCursorEnabled, true);
   assert.equal(parseExtensionIntent("make this a new orb called Research").name, "createExternalSemanticOrb");
+  assert.deepEqual(parseExtensionIntent("make a pearl from this"), { name: "createExternalSemanticOrb", args: { name: "Untitled pearl" } });
   let semanticAction = null;
   const createdOrb = await executeExtensionVerb("createExternalSemanticOrb", { id: "orb-1", name: "Research" }, {
     animate: async () => {},
