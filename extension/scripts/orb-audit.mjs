@@ -40,13 +40,19 @@ const profile = path.join(extensionRoot, ".audit-orb-profile");
 fs.rmSync(profile, { recursive: true, force: true });
 const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const bundledChrome = chromium.executablePath();
+const localTestingChrome = path.join(
+  extensionRoot,
+  ".playwright-browsers/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+);
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
   executablePath: process.env.PW_CHROMIUM
-    || (fs.existsSync(bundledChrome) ? bundledChrome : fs.existsSync(systemChrome) ? systemChrome : undefined),
+    || (fs.existsSync(localTestingChrome) ? localTestingChrome : fs.existsSync(bundledChrome) ? bundledChrome : fs.existsSync(systemChrome) ? systemChrome : undefined),
   args: [
     "--disable-gpu",
     "--disable-dev-shm-usage",
+    "--disable-crash-reporter",
+    "--disable-crashpad",
     `--disable-extensions-except=${auditDist}`,
     `--load-extension=${auditDist}`,
   ],
@@ -264,6 +270,13 @@ try {
   if (decodeURIComponent(resultTab.url()).includes("Reviewed:") || resultTab.url().includes(resultId)) {
     throw new Error("result text or stable result identity leaked into the new-tab URL");
   }
+  const resultUrlPrivacy = await resultTab.evaluate(() => ({
+    currentTokenLeak: /handoff=|token=|Reviewed:/.test(location.href),
+    serverVisibleTokenLeak: performance.getEntriesByType("navigation").some((entry) => /[?&](?:handoff|token)=/.test(entry.name)),
+  }));
+  if (resultUrlPrivacy.currentTokenLeak || resultUrlPrivacy.serverVisibleTokenLeak) throw new Error("result handoff token leaked to URL history or navigation");
+  await resultTab.reload();
+  await resultTab.getByText("This Pearl result could not be opened. Return to the source page and try again.").waitFor();
   await resultTab.close();
   await marginPearl.press("Escape");
   await resultPlane.waitFor({ state: "detached" });
@@ -306,7 +319,8 @@ try {
   }, { targetTabId });
   await fixture.waitForFunction(() => document.querySelector("#field").value.startsWith("Reviewed:"));
   await fixture.screenshot({ path: path.join(evidence, "06d-extension-verified-insertion.png"), fullPage: true });
-  const continuedUrl = await panel.evaluate(async () => {
+  const continuation = await panel.evaluate(async () => {
+    const beforeTabs = await chrome.tabs.query({});
     const response = await chrome.runtime.sendMessage({
       version: 1,
       type: "open-web-handoff",
@@ -314,9 +328,19 @@ try {
       payload: { surface: "semantic-orb-scene", preservePayload: true },
     });
     if (!response?.ok) throw new Error(response?.error || "web continuation failed");
-    return response.value?.url || "";
+    const tabs = await chrome.tabs.query({});
+    const opened = tabs.find((tab) => tab.url?.startsWith("https://representation-eta.vercel.app/"));
+    return {
+      opened: tabs.length > beforeTabs.length && response.value?.preserved === true,
+      routePreserved: response.value?.route?.surface === "semantic-orb-scene" && response.value?.route?.view === "integrate",
+      fragmentScrubbed: !opened?.url?.includes("token="),
+      queryTokenLeak: Boolean(opened?.url?.match(/[?&]token=/)),
+      responseTokenLeak: JSON.stringify(response).includes("token"),
+    };
   });
-  if (!continuedUrl.includes("view=integrate")) throw new Error(`continuation route mismatch: ${continuedUrl}`);
+  if (!continuation.opened || !continuation.routePreserved || !continuation.fragmentScrubbed || continuation.queryTokenLeak || continuation.responseTokenLeak) {
+    throw new Error(`trusted continuation did not use a scrub-safe fragment handoff: ${JSON.stringify(continuation)}`);
+  }
   await fixture.screenshot({ path: path.join(evidence, "06e-extension-page-orb-lens-candidates.png"), fullPage: true });
   await pageOrb.dragTo(fixture.locator("h1"));
   const afterDrag = await pageOrb.boundingBox();
@@ -377,6 +401,62 @@ try {
   }
   await fixture.screenshot({ path: path.join(evidence, "10-extension-page-orb-reduced.png"), fullPage: true });
   await panel.screenshot({ path: path.join(evidence, "10a-extension-sidepanel-reduced-360.png"), fullPage: true });
+  const logoutIsolation = await panel.evaluate(async () => {
+    await chrome.runtime.sendMessage({
+      version: 1,
+      type: "fragments-changed",
+      requestId: crypto.randomUUID(),
+      payload: { fragments: [{ id: "account-a-session-only", quote: "Account A private session marker" }] },
+    });
+    const before = await chrome.runtime.sendMessage({ version: 1, type: "get-session", requestId: crypto.randomUUID(), payload: {} });
+    const logout = await chrome.runtime.sendMessage({ version: 1, type: "auth-logout", requestId: crypto.randomUUID(), payload: {} });
+    const after = await chrome.runtime.sendMessage({ version: 1, type: "get-session", requestId: crypto.randomUUID(), payload: {} });
+    return {
+      hadPriorMaterial: Boolean(before?.value?.fragments?.length || before?.value?.queue?.length || before?.value?.results?.length),
+      logoutOk: logout?.ok === true,
+      cleared: !after?.value?.fragments?.length && !after?.value?.queue?.length && !after?.value?.results?.length && !after?.value?.activeRunId,
+      priorResultVisible: JSON.stringify(after?.value || {}).includes("Reviewed: Pearl extension audit material."),
+      priorAccountMarkerVisible: JSON.stringify(after?.value || {}).includes("account-a-session-only"),
+    };
+  });
+  await panel.reload();
+  const reloadSession = await panel.evaluate(async () => {
+    const response = await chrome.runtime.sendMessage({ version: 1, type: "get-session", requestId: crypto.randomUUID(), payload: {} });
+    return response?.value;
+  });
+  const reloadHasPriorAccountMarker = JSON.stringify(reloadSession || {}).includes("account-a-session-only");
+  if (!logoutIsolation.hadPriorMaterial || !logoutIsolation.logoutOk || !logoutIsolation.cleared || logoutIsolation.priorResultVisible
+    || logoutIsolation.priorAccountMarkerVisible || reloadHasPriorAccountMarker
+    || reloadSession?.queue?.length || reloadSession?.results?.length || reloadSession?.activeRunId) {
+    throw new Error(`logout/account transition exposed prior profile session material: ${JSON.stringify({
+      ...logoutIsolation,
+      reloadCleared: !reloadHasPriorAccountMarker && !reloadSession?.queue?.length && !reloadSession?.results?.length && !reloadSession?.activeRunId,
+      reloadCounts: {
+        fragments: reloadSession?.fragments?.length || 0,
+        queue: reloadSession?.queue?.length || 0,
+        results: reloadSession?.results?.length || 0,
+        active: Boolean(reloadSession?.activeRunId),
+      },
+    })}`);
+  }
+  const deletionIsolation = await panel.evaluate(async () => {
+    const deleted = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "privacy-delete-local",
+      requestId: crypto.randomUUID(),
+      payload: { confirmed: true },
+    });
+    const session = await chrome.runtime.sendMessage({ version: 1, type: "get-session", requestId: crypto.randomUUID(), payload: {} });
+    const state = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });
+    return {
+      completed: deleted?.value?.completed === true && deleted?.value?.deleted === true,
+      sessionEmpty: !session?.value?.fragments?.length && !session?.value?.queue?.length && !session?.value?.results?.length,
+      profileEmpty: !state?.value?.semanticOrbs?.length && !Object.keys(state?.value?.pageCanvases || {}).length && !Object.keys(state?.value?.resultPearls || {}).length,
+    };
+  });
+  if (!deletionIsolation.completed || !deletionIsolation.sessionEmpty || !deletionIsolation.profileEmpty) {
+    throw new Error("confirmed local deletion reported completion before profile cleanup");
+  }
 
   fs.writeFileSync(path.join(evidence, "extension-results.json"), `${JSON.stringify({
     version: 1,
@@ -403,12 +483,14 @@ try {
       "extension semantic orb tray creates and persists captured capsules",
       "library and settings remain reachable",
       "page and side-panel Pearls are static under reduced motion",
+      "logout clears prior profile session material before reload",
+      "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
       "MV3 service worker loaded",
     ],
-    passed: 19,
+    passed: 21,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 19 checks, 16 screenshots.");
+  console.log("Orb extension audit passed: 21 checks, 16 screenshots.");
 } finally {
   await context.close();
   server.close();

@@ -12118,11 +12118,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { effectId: `privacy-sync:${enabled}`, enabled };
     },
     lockLocalPearls: async () => {
-      await window.__pearlPrivacy?.lock?.();
+      const secret = window.prompt("Enter this profile’s passphrase, or create one (12+ characters) the first time. Losing it makes protected local data unrecoverable.");
+      if (!secret) throw new Error("locking was cancelled");
+      await window.__pearlPrivacy?.lock?.(secret);
       return { effectId: `privacy-locked:${Date.now()}`, locked: true };
     },
     unlockLocalPearls: async () => {
-      await window.__pearlPrivacy?.unlock?.();
+      const secret = window.prompt("Enter this profile’s local passphrase.");
+      if (!secret) throw new Error("unlocking was cancelled");
+      await window.__pearlPrivacy?.unlock?.(secret);
       return { effectId: `privacy-unlocked:${Date.now()}`, locked: false };
     },
     deleteLocalData: async () => {

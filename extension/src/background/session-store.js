@@ -2,6 +2,7 @@ import { BrowserPlatform } from "../platform/browser-platform.js";
 
 const KEY = "lensEverywhereSession";
 let writeChain = Promise.resolve();
+let sessionGeneration = 0;
 const empty = () => ({
   fragments: [],
   queue: [],
@@ -17,8 +18,11 @@ export async function readSession() {
 }
 
 export function writeSession(patch) {
+  const generation = sessionGeneration;
   const write = writeChain.then(async () => {
+    if (generation !== sessionGeneration) return empty();
     const current = await readSession();
+    if (generation !== sessionGeneration) return empty();
     const next = { ...current, ...patch, updatedAt: Date.now() };
     await BrowserPlatform.storage.set("session", { [KEY]: next });
     return next;
@@ -32,6 +36,8 @@ export async function clearPageMaterial() {
 }
 
 export async function clearAllSession() {
+  sessionGeneration += 1;
+  await writeChain.catch(() => {});
   await BrowserPlatform.storage.remove("session", [KEY]);
   return empty();
 }

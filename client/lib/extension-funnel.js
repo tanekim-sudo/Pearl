@@ -43,13 +43,12 @@ export async function checkTrustedExtensionInstallation(extensionId = import.met
   });
 }
 
-export async function requestTrustedExtensionHandoff(extensionId = import.meta.env.VITE_LENS_EXTENSION_ID) {
-  if (!extensionId || !globalThis.chrome?.runtime?.sendMessage || !globalThis.crypto?.randomUUID) {
+export async function requestTrustedExtensionHandoff(token, extensionId = import.meta.env?.VITE_LENS_EXTENSION_ID) {
+  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !extensionId || !globalThis.chrome?.runtime?.sendMessage) {
     return { connected: false, handoff: null };
   }
-  const nonce = crypto.randomUUID().replaceAll("-", "");
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(extensionId, { type: "pearl-workspace-handoff", version: 1, nonce }, (value) => {
+    chrome.runtime.sendMessage(extensionId, { type: "pearl-workspace-handoff", version: 1, nonce: token }, (value) => {
       if (chrome.runtime.lastError || !value?.ok) {
         resolve({ connected: false, handoff: null });
         return;
@@ -59,7 +58,7 @@ export async function requestTrustedExtensionHandoff(extensionId = import.meta.e
   });
 }
 
-export async function requestTrustedResultHandoff(token, extensionId = import.meta.env.VITE_LENS_EXTENSION_ID) {
+export async function requestTrustedResultHandoff(token, extensionId = import.meta.env?.VITE_LENS_EXTENSION_ID) {
   if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !extensionId || !globalThis.chrome?.runtime?.sendMessage) {
     return { connected: false, resultPearl: null };
   }

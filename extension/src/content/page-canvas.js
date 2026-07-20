@@ -93,6 +93,7 @@ export function createPearlPageCanvas({ send }) {
   let state = null;
   let gesture = null;
   let draft = null;
+  const imageSources = new Map();
 
   function ensure() {
     if (host?.isConnected) return;
@@ -181,7 +182,7 @@ export function createPearlPageCanvas({ send }) {
         const image = document.createElement("img");
         image.className = "image";
         image.alt = "";
-        image.src = artifact.source;
+        image.src = imageSources.get(artifact.source) || "";
         image.style.cssText = `left:${point.x}px;top:${point.y}px;width:${artifact.box.width}px;height:${artifact.box.height}px`;
         objects.append(image);
       } else {
@@ -285,22 +286,28 @@ export function createPearlPageCanvas({ send }) {
     if (state?.mode !== "image") return;
     event.preventDefault();
     const file = [...(event.dataTransfer?.files || [])].find((entry) => entry.type.startsWith("image/"));
-    if (!file || file.size > 8_000_000) return;
+    if (!file || file.size > 5_000_000) return;
     const source = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    await command("createPearlCanvasArtifact", {
-      artifact: {
-        type: "image",
-        source,
-        mime: file.type,
-        box: { x: event.clientX + scrollX, y: event.clientY + scrollY, width: 320, height: 220 },
-        provenance: { kind: "explicit-local-drop", name: file.name, size: file.size },
-      },
-    });
+    const stored = await send("page-canvas-blob-store", { dataUrl: source, mime: file.type });
+    try {
+      await command("createPearlCanvasArtifact", {
+        artifact: {
+          type: "image",
+          source: stored.blobRef,
+          mime: file.type,
+          box: { x: event.clientX + scrollX, y: event.clientY + scrollY, width: 320, height: 220 },
+          provenance: { kind: "explicit-local-drop", name: file.name, size: file.size },
+        },
+      });
+    } catch (error) {
+      if (!stored.duplicate) await send("page-canvas-blob-delete", { blobRef: stored.blobRef }).catch(() => {});
+      throw error;
+    }
   }
 
   async function pasteImage(event) {
@@ -316,8 +323,18 @@ export function createPearlPageCanvas({ send }) {
     });
   }
 
-  function hydrate(next) {
+  async function hydrate(next) {
     state = next || null;
+    if (!state) imageSources.clear();
+    for (const artifact of state?.artifacts || []) {
+      if (artifact.type !== "image" || imageSources.has(artifact.source)) continue;
+      try {
+        const image = await send("page-canvas-blob-read", { blobRef: artifact.source });
+        if (image?.dataUrl) imageSources.set(artifact.source, image.dataUrl);
+      } catch {
+        imageSources.set(artifact.source, "");
+      }
+    }
     render();
   }
 

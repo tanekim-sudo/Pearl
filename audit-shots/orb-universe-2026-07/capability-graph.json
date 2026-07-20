@@ -20429,7 +20429,7 @@
       "version": 1,
       "kind": "capability",
       "name": "lockLocalPearls",
-      "purpose": "Lock this profile's local Pearl metadata on this device",
+      "purpose": "Passphrase-wrap and lock this profile's local Pearl metadata with an unrecoverable-secret warning",
       "examples": [
         "lock my Pearls"
       ],
@@ -20515,7 +20515,7 @@
       "version": 1,
       "kind": "capability",
       "name": "unlockLocalPearls",
-      "purpose": "Unlock this profile's local Pearl metadata on this device",
+      "purpose": "Unlock this profile's local Pearl metadata with its device-local passphrase",
       "examples": [
         "unlock my Pearls"
       ],
@@ -20601,7 +20601,7 @@
       "version": 1,
       "kind": "capability",
       "name": "deleteLocalData",
-      "purpose": "Delete only this profile's local Pearl metadata after confirmation",
+      "purpose": "Delete this profile's envelope, key, receipts, handoffs, session, canvases, and blobs after confirmation",
       "examples": [
         "delete my local Pearl data"
       ],
@@ -26938,7 +26938,7 @@
       "version": 1,
       "kind": "capability",
       "name": "deleteExternalLocalData",
-      "purpose": "Delete only the current profile's local Pearl metadata and return a local receipt",
+      "purpose": "Delete the current profile envelope, key, session, handoffs, canvases, receipts, and blobs before returning a receipt",
       "examples": [
         "delete this profile's local Pearl data"
       ],
@@ -27024,7 +27024,7 @@
       "version": 1,
       "kind": "capability",
       "name": "lockExternalPearls",
-      "purpose": "Lock this profile's local Pearl metadata until explicitly unlocked",
+      "purpose": "Passphrase-wrap and lock this profile until explicit unlock, logout, or timeout",
       "examples": [
         "lock my Pearls"
       ],
@@ -27112,7 +27112,7 @@
       "version": 1,
       "kind": "capability",
       "name": "unlockExternalPearls",
-      "purpose": "Unlock this profile's local Pearl metadata on this device",
+      "purpose": "Unlock this profile's local Pearl metadata with its local passphrase",
       "examples": [
         "unlock my Pearls"
       ],

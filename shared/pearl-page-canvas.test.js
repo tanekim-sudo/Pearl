@@ -8,6 +8,8 @@ import {
   deactivatePearlCanvas,
   deletePearlCanvasArtifacts,
   emptyPearlPageCanvas,
+  normalizePearlPageCanvas,
+  PEARL_CANVAS_QUOTAS,
   pearlCanvasKey,
   selectPearlCanvasArtifacts,
   setPearlCanvasDestination,
@@ -59,4 +61,33 @@ test("artifact edits, selection, context, destinations, deletion, and undo check
   assert.deepEqual(state.artifacts, beforeDelete.artifacts);
   assert.equal(state.destination.targetId, "box");
   assert.equal(state.context[0].provenance.local, true);
+});
+
+test("canvas quotas reject oversized point, artifact, byte, and inline-image payloads recoverably", () => {
+  const base = emptyPearlPageCanvas({ pearlId: "quota", pageIdentity: "https://example.test/" });
+  const points = Array.from({ length: 20_000 }, (_, index) => ({ x: index, y: index }));
+  assert.throws(() => normalizePearlPageCanvas({
+    ...base,
+    artifacts: Array.from({ length: 6 }, (_, index) => ({ id: `ink-${index}`, type: "ink", points })),
+  }), (error) => error.code === "PEARL_CANVAS_QUOTA" && error.recoverable);
+  assert.throws(() => normalizePearlPageCanvas({
+    ...base,
+    artifacts: Array.from({ length: PEARL_CANVAS_QUOTAS.artifacts + 1 }, (_, index) => ({ id: `text-${index}`, type: "text" })),
+  }), /artifact quota/);
+  assert.throws(() => createPearlCanvasArtifact(base, {
+    id: "inline-image",
+    type: "image",
+    source: `data:image/png;base64,${"A".repeat(1_000)}`,
+  }), /content-addressed/);
+});
+
+test("checkpoints use deduplicated artifact references and stay within budget", () => {
+  let state = emptyPearlPageCanvas({ pearlId: "history", pageIdentity: "https://example.test/" });
+  state = createPearlCanvasArtifact(state, { id: "note", type: "text", text: "a" });
+  for (let index = 0; index < 30; index += 1) {
+    state = updatePearlCanvasArtifact(state, "note", { text: `revision ${index}` });
+  }
+  assert.equal(state.checkpoints.length, PEARL_CANVAS_QUOTAS.checkpoints);
+  assert.ok(state.checkpoints.every((entry) => Array.isArray(entry.artifactRefs) && !("artifacts" in entry)));
+  assert.ok(Object.keys(state.artifactSnapshots).length <= PEARL_CANVAS_QUOTAS.checkpoints);
 });

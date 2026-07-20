@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T07:21:57.471Z",
+  "generatedAt": "2026-07-20T17:26:07.834Z",
   "counts": {
     "features": 37,
     "companion": 286,
@@ -676,7 +676,8 @@
         "unlockExternalPearls"
       ],
       "tests": [
-        "shared/local-privacy-vault.test.js"
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js"
       ]
     },
     {
@@ -706,6 +707,7 @@
       ],
       "tests": [
         "shared/pearl-page-canvas.test.js",
+        "shared/profile-blob-security.test.js",
         "extension/scripts/orb-audit.mjs"
       ]
     },
@@ -780,6 +782,7 @@
       ],
       "tests": [
         "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs"
       ]
     }

@@ -8,6 +8,7 @@ import {
 const DB_NAME = "pearl-local-private-v1";
 const ACTIVE_PROFILE_KEY = "lens.privacy.active-profile.v1";
 const LOCKED_KEY = "lens.privacy.locked.v1";
+const AUTO_LOCK_MS = 15 * 60_000;
 const UNENCRYPTED_BOOTSTRAP_KEYS = new Set([
   ACTIVE_PROFILE_KEY,
   LOCKED_KEY,
@@ -85,11 +86,23 @@ export async function installSecureLocalStorage() {
   let vault = createLocalPrivacyVault({ profileId, keyStore, envelopeStore });
   let values = {};
   let locked = original.getItem.call(storage, LOCKED_KEY) === "1";
+  let autoLockTimer;
+  function scheduleAutoLock() {
+    clearTimeout(autoLockTimer);
+    if (locked) return;
+    autoLockTimer = setTimeout(() => {
+      values = {};
+      vault.lock();
+      locked = true;
+      original.setItem.call(storage, LOCKED_KEY, "1");
+    }, AUTO_LOCK_MS);
+  }
   if (!locked) {
     try {
       values = await vault.read();
     } catch (error) {
       locked = true;
+      original.setItem.call(storage, LOCKED_KEY, "1");
       window.dispatchEvent(new CustomEvent("pearl-privacy-error", { detail: redactPrivacyDiagnostic(error) }));
     }
   }
@@ -159,7 +172,6 @@ export async function installSecureLocalStorage() {
       };
     },
     async switchProfile(nextProfileId, options = {}) {
-      if (locked) throw new Error("local Pearl data is locked");
       const normalized = String(nextProfileId || ANONYMOUS_PROFILE_ID);
       const nextHash = await privacyProfileHash(normalized);
       if (nextHash === profileId) return false;
@@ -170,32 +182,51 @@ export async function installSecureLocalStorage() {
           delete values[key];
         }
       }
-      await flush();
+      if (!locked) await flush();
+      values = {};
+      vault.lock();
+      clearTimeout(autoLockTimer);
       const nextVault = createLocalPrivacyVault({ profileId: nextHash, keyStore, envelopeStore });
-      const nextValues = await nextVault.read();
       profileId = nextHash;
       vault = nextVault;
-      values = { ...nextValues, ...carried };
-      locked = false;
       original.setItem.call(storage, ACTIVE_PROFILE_KEY, profileId);
-      await flush();
+      try {
+        values = { ...(await nextVault.read()), ...carried };
+        locked = false;
+        original.removeItem.call(storage, LOCKED_KEY);
+        await flush();
+      } catch {
+        values = {};
+        locked = true;
+        original.setItem.call(storage, LOCKED_KEY, "1");
+      }
       return true;
     },
-    async lock() {
+    async lock(secret) {
+      const protection = await vault.protection();
+      if (!protection.protected) await vault.protect(secret);
+      else await vault.unlock(secret);
       await flush();
       values = {};
+      vault.lock();
       locked = true;
+      clearTimeout(autoLockTimer);
       original.setItem.call(storage, LOCKED_KEY, "1");
     },
-    async unlock() {
+    async unlock(secret) {
+      await vault.unlock(secret);
       values = await vault.read();
       locked = false;
       original.removeItem.call(storage, LOCKED_KEY);
+      scheduleAutoLock();
       return true;
     },
     async deleteLocal() {
       values = {};
       const receipt = await vault.clear();
+      locked = true;
+      clearTimeout(autoLockTimer);
+      original.setItem.call(storage, LOCKED_KEY, "1");
       return receipt;
     },
   };

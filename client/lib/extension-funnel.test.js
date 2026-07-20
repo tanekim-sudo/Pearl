@@ -18,3 +18,22 @@ test("extension browser messaging distinguishes supported desktop browsers", () 
 test("workspace handoff degrades safely without a trusted extension", async () => {
   assert.deepEqual(await requestTrustedExtensionHandoff(""), { connected: false, handoff: null });
 });
+
+test("workspace handoff requires the extension-issued nonce and never requests general private state", async () => {
+  const sent = [];
+  globalThis.chrome = {
+    runtime: {
+      lastError: null,
+      sendMessage(extensionId, message, done) {
+        sent.push({ extensionId, message });
+        done({ ok: true, value: { type: "pearl-workspace-handoff", session: { fragments: [] } } });
+      },
+    },
+  };
+  const token = "0123456789abcdef0123456789abcdef";
+  const value = await requestTrustedExtensionHandoff(token, "trusted-extension");
+  assert.equal(value.connected, true);
+  assert.deepEqual(sent[0].message, { type: "pearl-workspace-handoff", version: 1, nonce: token });
+  assert.equal(await requestTrustedExtensionHandoff("spoof", "trusted-extension").then((entry) => entry.connected), false);
+  delete globalThis.chrome;
+});

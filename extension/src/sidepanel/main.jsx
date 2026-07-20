@@ -966,12 +966,18 @@ function App() {
           return { enabled };
         },
         deleteLocalData: async () => {
-          const receipt = await BrowserPlatform.storage.deleteLocal();
+          const receipt = await call("privacy-delete-local", { confirmed: true });
+          setSession(emptySession());
+          setLibrary([]);
+          setGenerators([]);
+          setSemanticOrbs([]);
           setReadyMessage(`Local profile data deleted at ${receipt.at}.`);
           return receipt;
         },
         lockPearls: async () => {
-          const value = await BrowserPlatform.storage.lock();
+          const secret = window.prompt("Enter this profile’s passphrase, or create one (12+ characters) the first time. Losing it makes protected local data unrecoverable.");
+          if (!secret) throw new Error("locking was cancelled");
+          const value = await call("privacy-lock", { secret });
           setSession(emptySession());
           setLibrary([]);
           setGenerators([]);
@@ -980,7 +986,9 @@ function App() {
           return value;
         },
         unlockPearls: async () => {
-          const value = await BrowserPlatform.storage.unlock();
+          const secret = window.prompt("Enter this profile’s local passphrase.");
+          if (!secret) throw new Error("unlocking was cancelled");
+          const value = await call("privacy-unlock", { secret });
           const [restoredSession, restoredLocal] = await Promise.all([
             call("get-session"),
             BrowserPlatform.storage.get("local", ["operators", "generators", "rack", "semanticOrbs", "activeSemanticOrbId"]),

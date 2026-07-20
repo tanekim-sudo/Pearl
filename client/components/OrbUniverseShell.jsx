@@ -38,10 +38,23 @@ import {
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
 const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+let initialHandoffFragment = null;
+if (typeof location !== "undefined" && location.hash) {
+  const candidate = new URLSearchParams(location.hash.replace(/^#/, ""));
+  if (candidate.get("token")) {
+    initialHandoffFragment = candidate;
+    history.replaceState(history.state, "", `${location.pathname}${location.search}`);
+  }
+}
 
 export function parseOrbRoute(locationLike = globalThis.location) {
   const path = String(locationLike?.pathname || "/").replace(/\/+$/, "") || "/";
   const query = new URLSearchParams(locationLike?.search || "");
+  const fragment = String(locationLike?.hash || "")
+    ? new URLSearchParams(String(locationLike.hash).replace(/^#/, ""))
+    : locationLike === globalThis.location && initialHandoffFragment
+      ? initialHandoffFragment
+      : new URLSearchParams();
   if ([...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key))) {
     return { kind: "stage", path, sceneId: "release-audit", legacyAudit: true };
   }
@@ -53,15 +66,15 @@ export function parseOrbRoute(locationLike = globalThis.location) {
   }
   if (path === "/install") return { kind: "install", path };
   if (path === "/" || path === "/library" || path === "/toolbox") {
-    const handoff = query.get("handoff");
+    const handoff = fragment.get("handoff") || query.get("handoff");
     const legacyCognitive = query.get("cognitive");
     return {
       kind: "home",
       path,
       handoff: handoff || legacyCognitive || null,
       handoffSource: handoff ? "handoff" : legacyCognitive ? "legacy-cognitive" : null,
-      handoffView: query.get("view") || null,
-      handoffToken: query.get("token") || null,
+      handoffView: fragment.get("view") || query.get("view") || null,
+      handoffToken: fragment.get("token") || null,
     };
   }
   if (/^\/(?:packages|settings|tasks)(?:\/|$)/.test(path)) return { kind: "library", section: path.split("/")[1], id: path.split("/")[2] || null, path };
@@ -91,12 +104,14 @@ function waitForOrbRuntime(timeoutMs = 12_000) {
 }
 
 function useRoute() {
-  const [route, setRoute] = useState(() => parseOrbRoute());
+  const captureRoute = useCallback(() => parseOrbRoute(), []);
+  const [route, setRoute] = useState(captureRoute);
   useEffect(() => {
-    const update = () => setRoute(parseOrbRoute());
+    initialHandoffFragment = null;
+    const update = () => setRoute(captureRoute());
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
-  }, []);
+  }, [captureRoute]);
   return route;
 }
 
@@ -562,7 +577,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     setHandoffStatus("loading");
     const value = route.handoff === "result-pearl"
       ? await requestTrustedResultHandoff(route.handoffToken)
-      : await requestTrustedExtensionHandoff();
+      : await requestTrustedExtensionHandoff(route.handoffToken);
     setExtensionHandoff(value);
     setHandoffStatus(continuationMaterialCount(value) > 0 ? "ready" : "blocked");
     return value;
@@ -781,7 +796,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
     if (/^(?:lock|unlock) (?:my |these )?pearls$/i.test(privacyIntent)) {
       const unlock = /^unlock/i.test(privacyIntent);
-      await window.__pearlPrivacy?.[unlock ? "unlock" : "lock"]?.();
+      const secret = window.prompt(unlock
+        ? "Enter this profile’s local passphrase."
+        : "Enter this profile’s passphrase, or create one (12+ characters) the first time. Losing it makes protected local data unrecoverable.");
+      if (!secret) {
+        setOrb(transitionOrb(next, "blocked", { taskId: recorded.entry.id, evidence: { boundary: `${unlock ? "Unlocking" : "Locking"} was cancelled.` } }));
+        return;
+      }
+      await window.__pearlPrivacy?.[unlock ? "unlock" : "lock"]?.(secret);
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: unlock ? "unlockLocalPearls" : "lockLocalPearls" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: unlock ? "unlockLocalPearls" : "lockLocalPearls", effectId: `privacy:${unlock ? "unlocked" : "locked"}` }));
       location.reload();

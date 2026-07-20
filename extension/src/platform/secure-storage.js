@@ -7,6 +7,7 @@ import {
 const DATABASE = "pearl-extension-private-v1";
 const ACTIVE_PROFILE_KEY = "pearlActiveProfile";
 const LOCKED_KEY = "pearlPrivacyLocked";
+const AUTO_LOCK_MS = 15 * 60_000;
 const BOOTSTRAP_KEYS = new Set([
   ACTIVE_PROFILE_KEY,
   LOCKED_KEY,
@@ -69,10 +70,20 @@ export function createSecureExtensionStorage(raw) {
       async deleteLocal() {
         const entries = await raw.get("local", null);
         await raw.remove("local", Object.keys(entries || {}).filter((key) => !BOOTSTRAP_KEYS.has(key)));
+        const session = await raw.get("session", null);
+        await raw.remove("session", Object.keys(session || {}));
         return { type: "local-privacy-deletion", profileHash: entries[ACTIVE_PROFILE_KEY] || "test", at: new Date().toISOString(), deleted: true };
       },
       async lock() { await raw.set("local", { [LOCKED_KEY]: true }); return { locked: true }; },
       async unlock() { await raw.remove("local", [LOCKED_KEY]); return { locked: false }; },
+      async clearSession() {
+        const session = await raw.get("session", null);
+        await raw.remove("session", Object.keys(session || {}));
+      },
+      async profileHash() {
+        const entries = await raw.get("local", [ACTIVE_PROFILE_KEY]);
+        return entries[ACTIVE_PROFILE_KEY] || "test";
+      },
     };
   }
   let database;
@@ -83,6 +94,18 @@ export function createSecureExtensionStorage(raw) {
   let chain = Promise.resolve();
   let locked = false;
   let initializePromise;
+  let autoLockTimer;
+
+  async function scheduleAutoLock() {
+    clearTimeout(autoLockTimer);
+    if (locked || !(await vault?.protection?.())?.protected) return;
+    autoLockTimer = setTimeout(() => {
+      values = {};
+      vault?.lock();
+      locked = true;
+      raw.set("local", { [LOCKED_KEY]: true }).catch(() => {});
+    }, AUTO_LOCK_MS);
+  }
 
   async function initialize(force = false) {
     if (!force && initializePromise) return initializePromise;
@@ -99,7 +122,18 @@ export function createSecureExtensionStorage(raw) {
         envelopeStore: store(database, "envelopes"),
       });
       locked = bootstrap[LOCKED_KEY] === true;
-      values = locked ? {} : await vault.read();
+      if (locked) {
+        values = {};
+      } else {
+        try {
+          values = await vault.read();
+        } catch (error) {
+          if (!/locked/i.test(String(error?.message || ""))) throw error;
+          values = {};
+          locked = true;
+          await raw.set("local", { [LOCKED_KEY]: true });
+        }
+      }
       const all = await raw.get("local", null);
       const plaintext = Object.fromEntries(Object.entries(all || {}).filter(([key]) => !BOOTSTRAP_KEYS.has(key)));
       if (locked && Object.keys(plaintext).length) throw new Error("private storage is locked");
@@ -133,6 +167,7 @@ export function createSecureExtensionStorage(raw) {
       for (const key of requestedKeys(keys, values)) {
         if (!BOOTSTRAP_KEYS.has(key) && Object.prototype.hasOwnProperty.call(values, key)) result[key] = values[key];
       }
+      await scheduleAutoLock();
       return result;
     },
     async set(area, input) {
@@ -146,6 +181,7 @@ export function createSecureExtensionStorage(raw) {
       }
       if (Object.keys(bootstrap).length) await raw.set("local", bootstrap);
       if (Object.keys(input || {}).some((key) => !BOOTSTRAP_KEYS.has(key))) await flush();
+      await scheduleAutoLock();
     },
     async remove(area, keys) {
       if (area !== "local") return raw.remove(area, keys);
@@ -155,15 +191,29 @@ export function createSecureExtensionStorage(raw) {
       for (const key of list) if (!BOOTSTRAP_KEYS.has(key)) delete values[key];
       if (bootstrap.length) await raw.remove("local", bootstrap);
       if (list.some((key) => !BOOTSTRAP_KEYS.has(key))) await flush();
+      await scheduleAutoLock();
     },
     async switchProfile(nextProfileId) {
       await initialize();
-      if (locked) throw new Error("private storage is locked");
       const nextHash = await privacyProfileHash(nextProfileId || ANONYMOUS_PROFILE_ID);
       if (nextHash === profileId) return false;
-      await flush();
+      if (!locked) await flush();
+      const session = await raw.get("session", null);
+      await raw.remove("session", Object.keys(session || {}));
+      values = {};
+      vault?.lock();
+      clearTimeout(autoLockTimer);
       await raw.set("local", { [ACTIVE_PROFILE_KEY]: nextHash });
-      await initialize(true);
+      await raw.remove("local", [LOCKED_KEY]);
+      locked = false;
+      try {
+        await initialize(true);
+      } catch (error) {
+        if (!/locked/i.test(String(error?.message || ""))) throw error;
+        values = {};
+        locked = true;
+        await raw.set("local", { [LOCKED_KEY]: true });
+      }
       return true;
     },
     async exportLocal() {
@@ -172,23 +222,46 @@ export function createSecureExtensionStorage(raw) {
     },
     async deleteLocal() {
       await initialize();
-      if (locked) throw new Error("private storage is locked");
       values = {};
-      return vault.clear();
-    },
-    async lock() {
-      await initialize();
-      values = {};
+      const profileHash = profileId;
+      const session = await raw.get("session", null);
+      await raw.remove("session", Object.keys(session || {}));
+      const receipt = await vault.clear();
       locked = true;
+      clearTimeout(autoLockTimer);
+      await raw.set("local", { [LOCKED_KEY]: true });
+      return { ...receipt, profileHash };
+    },
+    async lock(secret) {
+      await initialize();
+      const protection = await vault.protection();
+      if (!protection.protected) await vault.protect(secret);
+      else await vault.unlock(secret);
+      await flush();
+      values = {};
+      vault.lock();
+      locked = true;
+      clearTimeout(autoLockTimer);
       await raw.set("local", { [LOCKED_KEY]: true });
       return { locked: true };
     },
-    async unlock() {
+    async unlock(secret) {
       await initialize();
+      await vault.unlock(secret);
       values = await vault.read();
       locked = false;
       await raw.remove("local", [LOCKED_KEY]);
+      await scheduleAutoLock();
       return { locked: false };
+    },
+    async clearSession() {
+      const session = await raw.get("session", null);
+      await raw.remove("session", Object.keys(session || {}));
+      values = locked ? {} : values;
+    },
+    async profileHash() {
+      await initialize();
+      return profileId;
     },
   };
 }

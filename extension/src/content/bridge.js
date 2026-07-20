@@ -91,7 +91,7 @@ function mountPageOrb() {
   let pendingPearlCapture = null;
   const hydrate = (session) => {
     if (!session) return;
-    contextCount = Math.min(5, session.fragments?.length || contextCount);
+    contextCount = Math.min(5, Array.isArray(session.fragments) ? session.fragments.length : contextCount);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
     shell.querySelector("[data-context-count]").textContent = contextCount ? `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}` : "No material yet";
     shell.querySelector('[data-action="contextual"]').textContent = contextCount ? "Keep this" : "Notice selection";
@@ -501,6 +501,7 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     if (type === "clear-fragments") {
       captured.clear();
       highlighter.clear();
+      hydrate({ fragments: [], generator: null, results: [] });
       return { ok: true };
     }
     if (type === "result-action") {

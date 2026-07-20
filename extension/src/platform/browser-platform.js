@@ -40,6 +40,8 @@ export const BrowserPlatform = Object.freeze({
     deleteLocal: secureStorage.deleteLocal,
     lock: secureStorage.lock,
     unlock: secureStorage.unlock,
+    clearSession: secureStorage.clearSession,
+    profileHash: secureStorage.profileHash,
   },
   tabs: {
     async active() {
@@ -50,6 +52,7 @@ export const BrowserPlatform = Object.freeze({
       return callbackPromise(api()?.tabs?.sendMessage.bind(api().tabs), tabId, message, options || {});
     },
     create(url) { return callbackPromise(api()?.tabs?.create.bind(api().tabs), { url }); },
+    update(tabId, value) { return callbackPromise(api()?.tabs?.update.bind(api().tabs), tabId, value); },
   },
   permissions: {
     contains(value) { return callbackPromise(api()?.permissions?.contains.bind(api().permissions), value); },

@@ -1,6 +1,6 @@
 import { createExecutionRequest, createExecutionResult, createProvenance } from "../../../shared/lens-runtime.js";
 import { apiRequest, authStatus, login, logout, openArtifact } from "./api-client.js";
-import { clearPageMaterial, readSession, writeSession } from "./session-store.js";
+import { clearAllSession, clearPageMaterial, readSession, writeSession } from "./session-store.js";
 import { assertTrustedSender, createMessage, validateMessage } from "../core/messages.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
 import {
@@ -27,19 +27,22 @@ import { canonicalPrimitiveName, TRANSFORM_PRIMITIVES } from "../../../shared/tr
 import { createCritiqueSession } from "../../../shared/critique-session.js";
 import { createPersonalCommandDefinition } from "../../../shared/personal-command-vocabulary.js";
 import { executeDomainCommand } from "../../../shared/domain-commands.js";
-import { canonicalPageIdentity, pearlCanvasKey } from "../../../shared/pearl-page-canvas.js";
+import { canonicalPageIdentity, pearlCanvasKey, pearlCanvasUsage } from "../../../shared/pearl-page-canvas.js";
 import { normalizePearlTrack, pearlTrackAllowsOffline } from "../../../shared/pearl-soundscape.js";
 import {
   createInternetArchiveAudioProvider,
   createJamendoAudioProvider,
   createProceduralAudioProvider,
 } from "../../../shared/pearl-audio-providers.js";
-import { deletePearlAudio, readPearlAudio, storePearlAudio } from "./audio-store.js";
+import { deletePearlAudio, deleteProfileAudio, readPearlAudio, storePearlAudio } from "./audio-store.js";
+import { deleteProfileImage, deleteProfileImages, readProfileImage, storeProfileImage } from "./profile-blob-store.js";
 import { createDisclosureReceipt } from "../../../shared/local-privacy-vault.js";
 import { normalizeResultPearl, spawnResultPearl } from "../../../shared/result-pearls.js";
+import { consumeSecureHandoff, createSecureHandoff, pruneSecureHandoffs } from "../../../shared/secure-handoff.js";
 
 const runs = new Map();
 const handledRequests = new Map();
+let handoffChain = Promise.resolve();
 const canvasCommands = new Set([
   "activatePearlPageCanvas",
   "deactivatePearlPageCanvas",
@@ -73,6 +76,51 @@ const audioProviders = new Map([
   ["jamendo", createJamendoAudioProvider({ clientId: import.meta.env.VITE_JAMENDO_CLIENT_ID || "" })],
 ]);
 
+function mutateHandoffs(storageKey, mutation) {
+  const pending = handoffChain.then(async () => {
+    const stored = await BrowserPlatform.storage.get("local", [storageKey]);
+    const records = pruneSecureHandoffs(stored[storageKey] || {});
+    const outcome = await mutation(records);
+    await BrowserPlatform.storage.set("local", { [storageKey]: outcome.records });
+    return outcome.value;
+  });
+  handoffChain = pending.catch(() => {});
+  return pending;
+}
+
+async function createBoundHandoff(storageKey, input) {
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const profileHash = await BrowserPlatform.storage.profileHash();
+  const tab = await BrowserPlatform.tabs.create("about:blank");
+  const record = createSecureHandoff({ ...input, nonce, profileHash, tabId: tab.id });
+  await mutateHandoffs(storageKey, (records) => ({
+    records: { ...records, [nonce]: record },
+    value: record,
+  }));
+  return { nonce, tab };
+}
+
+async function consumeBoundHandoff(storageKey, nonce, claims) {
+  return mutateHandoffs(storageKey, (records) => {
+    const consumed = consumeSecureHandoff(records, nonce, claims);
+    return { records: consumed.records, value: consumed.payload };
+  });
+}
+
+async function clearDecryptedPageSurfaces() {
+  const tabs = await globalThis.chrome?.tabs?.query?.({}) || [];
+  await Promise.all(tabs.filter((tab) => /^https?:/.test(tab.url || "")).flatMap((tab) => [
+    BrowserPlatform.tabs.sendMessage(tab.id, createMessage("clear-fragments", {})).catch(() => {}),
+    BrowserPlatform.tabs.sendMessage(tab.id, createMessage("page-canvas-state", { canvas: null })).catch(() => {}),
+    BrowserPlatform.tabs.sendMessage(tab.id, createMessage("result-pearl-state", { results: [] })).catch(() => {}),
+  ]));
+  try {
+    await globalThis.chrome?.offscreen?.closeDocument?.();
+  } catch {
+    // No offscreen audio document is active.
+  }
+}
+
 async function canvasStore() {
   const stored = await BrowserPlatform.storage.get("local", ["pearlPageCanvases", "activeSemanticOrbId"]);
   return {
@@ -98,10 +146,24 @@ async function executeCanvasCommand(command, args, sender) {
     ? senderIsPage ? assertPageIdentity(args.pageIdentity, sender) : String(args.pageIdentity)
     : senderIsPage ? canonicalPageIdentity(sender.tab.url) : canonicalPageIdentity((await activeTab()).url);
   const execution = await executeDomainCommand(command, state, { ...args, pearlId, pageIdentity }, {
-    persist: (next) => BrowserPlatform.storage.set("local", {
-      pearlPageCanvases: next.pageCanvases,
-      activeSemanticOrbId: pearlId,
-    }),
+    persist: (next) => {
+      const canvases = Object.values(next.pageCanvases || {});
+      const usage = canvases.map(pearlCanvasUsage).reduce((total, entry) => ({
+        artifacts: total.artifacts + entry.artifacts,
+        points: total.points + entry.points,
+        bytes: total.bytes + entry.bytes,
+      }), { artifacts: 0, points: 0, bytes: 0 });
+      if (canvases.length > 100 || usage.artifacts > 5_000 || usage.points > 500_000 || usage.bytes > 25_000_000) {
+        const error = new Error("Pearl canvas profile quota reached");
+        error.code = "PEARL_CANVAS_QUOTA";
+        error.recoverable = true;
+        throw error;
+      }
+      return BrowserPlatform.storage.set("local", {
+        pearlPageCanvases: next.pageCanvases,
+        activeSemanticOrbId: pearlId,
+      });
+    },
   });
   const key = pearlCanvasKey(pearlId, pageIdentity);
   const canvas = execution.state.pageCanvases[key];
@@ -449,6 +511,23 @@ async function handle(message, sender = {}) {
   if (type === "page-canvas-command") {
     return executeCanvasCommand(payload.command, payload.args || {}, sender);
   }
+  if (type === "page-canvas-blob-store") {
+    if (!/^data:image\/[a-z0-9.+-]+;base64,/i.test(String(payload.dataUrl || ""))) throw new Error("invalid local canvas image");
+    const bytes = await fetch(payload.dataUrl).then((response) => response.arrayBuffer());
+    return storeProfileImage({ bytes, mime: payload.mime });
+  }
+  if (type === "page-canvas-blob-read") {
+    const image = await readProfileImage(payload.blobRef);
+    const bytes = new Uint8Array(image.bytes);
+    let binary = "";
+    for (let offset = 0; offset < bytes.length; offset += 32_768) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 32_768));
+    }
+    return { mime: image.mime, byteLength: image.byteLength, dataUrl: `data:${image.mime};base64,${btoa(binary)}` };
+  }
+  if (type === "page-canvas-blob-delete") {
+    return deleteProfileImage(payload.blobRef);
+  }
   if (type === "page-canvas-export-pdf") return sendPage("page-canvas-export-pdf", payload);
   if (type === "result-pearl-command") return executeResultCommand(payload.command, {
     resultId: payload.resultId,
@@ -463,17 +542,15 @@ async function handle(message, sender = {}) {
     const redirected = await executeDomainCommand("openResultPearlInTab", state, {
       resultId: object.id,
     }, { persist: persistResultState });
-    const nonce = crypto.randomUUID().replace(/-/g, "");
-    const handoffs = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs"]);
-    await BrowserPlatform.storage.set("local", {
-      resultPearlHandoffs: {
-        ...(handoffs.resultPearlHandoffs || {}),
-        [nonce]: { resultId: object.id, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60_000, tabId: null },
-      },
-    });
     let tab;
     try {
-      tab = await BrowserPlatform.tabs.create(chrome.runtime.getURL(`result.html?handoff=${nonce}`));
+      const handoff = await createBoundHandoff("resultPearlHandoffs", {
+        origin: new URL(chrome.runtime.getURL("result.html")).origin,
+        scope: "result-tab",
+        payload: { result: object },
+      });
+      tab = handoff.tab;
+      await BrowserPlatform.tabs.update(tab.id, { url: chrome.runtime.getURL(`result.html#handoff=${handoff.nonce}`) });
     } catch {
       await executeDomainCommand("redirectResultPearl", redirected.state, {
         resultId: object.id,
@@ -481,13 +558,6 @@ async function handle(message, sender = {}) {
       }, { persist: persistResultState });
       throw new Error("the browser blocked the result tab; the margin Pearl is preserved");
     }
-    const current = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs"]);
-    await BrowserPlatform.storage.set("local", {
-      resultPearlHandoffs: {
-        ...(current.resultPearlHandoffs || {}),
-        [nonce]: { ...(current.resultPearlHandoffs?.[nonce] || {}), tabId: tab.id },
-      },
-    });
     return { ...redirected.result, opened: true };
   }
   if (type === "result-pearl-open-web") {
@@ -496,21 +566,13 @@ async function handle(message, sender = {}) {
       ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
       : state.resultPearls[payload.resultId];
     if (!object) throw new Error("result Pearl not found");
-    const nonce = crypto.randomUUID().replace(/-/g, "");
-    const stored = await BrowserPlatform.storage.get("local", ["webResultHandoffs"]);
-    await BrowserPlatform.storage.set("local", {
-      webResultHandoffs: {
-        ...(stored.webResultHandoffs || {}),
-        [nonce]: { resultId: object.id, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60_000 },
-      },
+    const handoff = await createBoundHandoff("webResultHandoffs", {
+      origin: "https://representation-eta.vercel.app",
+      scope: "result-web",
+      payload: { type: "pearl-result-handoff", resultPearl: object },
     });
-    const tab = await BrowserPlatform.tabs.create(`https://representation-eta.vercel.app/?handoff=result-pearl&token=${nonce}`);
-    const current = await BrowserPlatform.storage.get("local", ["webResultHandoffs"]);
-    await BrowserPlatform.storage.set("local", {
-      webResultHandoffs: {
-        ...(current.webResultHandoffs || {}),
-        [nonce]: { ...(current.webResultHandoffs?.[nonce] || {}), tabId: tab.id },
-      },
+    await BrowserPlatform.tabs.update(handoff.tab.id, {
+      url: `https://representation-eta.vercel.app/#handoff=result-pearl&token=${handoff.nonce}`,
     });
     return { type: "result-pearl-web-handoff", resultId: object.id };
   }
@@ -555,12 +617,13 @@ async function handle(message, sender = {}) {
   if (type === "result-pearl-redeem") {
     const nonce = String(payload.nonce || "");
     if (!/^[a-f0-9]{32}$/i.test(nonce)) throw new Error("invalid result handoff");
-    const stored = await BrowserPlatform.storage.get("local", ["resultPearlHandoffs", "resultPearls"]);
-    const handoff = stored.resultPearlHandoffs?.[nonce];
-    if (!handoff || handoff.expiresAt < Date.now() || (handoff.tabId && handoff.tabId !== sender.tab?.id)) throw new Error("result handoff expired or belongs to another tab");
-    const object = stored.resultPearls?.[handoff.resultId];
-    if (!object) throw new Error("result Pearl no longer exists");
-    return { result: object };
+    const profileHash = await BrowserPlatform.storage.profileHash();
+    return consumeBoundHandoff("resultPearlHandoffs", nonce, {
+      profileHash,
+      tabId: sender.tab?.id,
+      origin: new URL(sender.url || chrome.runtime.getURL("result.html")).origin,
+      scope: "result-tab",
+    });
   }
   if (type === "result-pearl-cancel") {
     const state = await resultStore();
@@ -786,18 +849,62 @@ async function handle(message, sender = {}) {
     return { type: "personal-command-definition", id: definition.id, version: definition.version };
   }
   if (type === "open-web-handoff") {
-    await BrowserPlatform.storage.set("local", { cognitiveWorkflowHandoff: { ...payload, createdAt: Date.now() } });
-    const url = `https://representation-eta.vercel.app/?handoff=${encodeURIComponent(payload.surface || "workspace")}&view=${encodeURIComponent(payload.tab || "integrate")}`;
-    await globalThis.chrome.tabs.create({
-      url,
+    const local = await BrowserPlatform.storage.get("local", [
+      "cognitiveWorkflowHandoff",
+      "cognitivePullRequestHandoff",
+      "semanticOrbs",
+      "activeSemanticOrbId",
+    ]);
+    const approvedPayload = {
+      type: "pearl-workspace-handoff",
+      handoff: {
+        surface: String(payload.surface || "workspace").slice(0, 80),
+        view: String(payload.tab || "integrate").slice(0, 80),
+        createdAt: Date.now(),
+        approvedBy: "explicit-extension-command",
+      },
+      semanticOrbs: (local.semanticOrbs || []).filter((orb) => !orb.archived).slice(0, 80),
+      activeSemanticOrbId: local.activeSemanticOrbId || null,
+      session: {
+        fragments: (session.fragments || []).slice(0, 80),
+        queue: (session.queue || []).slice(0, 40),
+        generator: session.generator || null,
+        results: (session.results || []).slice(-20),
+      },
+      proposal: local.cognitivePullRequestHandoff || local.cognitiveWorkflowHandoff || null,
+    };
+    const handoff = await createBoundHandoff("webWorkspaceHandoffs", {
+      origin: "https://representation-eta.vercel.app",
+      scope: "workspace-web",
+      payload: approvedPayload,
     });
-    return { type: "cognitive-workflow-handoff", preserved: true, url };
+    await BrowserPlatform.tabs.update(handoff.tab.id, {
+      url: `https://representation-eta.vercel.app/#handoff=${encodeURIComponent(approvedPayload.handoff.surface)}&view=${encodeURIComponent(approvedPayload.handoff.view)}&token=${handoff.nonce}`,
+    });
+    return {
+      type: "cognitive-workflow-handoff",
+      preserved: true,
+      route: { surface: approvedPayload.handoff.surface, view: approvedPayload.handoff.view },
+    };
   }
   if (type === "open-cognitive-pull-request") {
     if (!session.fragments.length) throw new Error("select explicit page material before opening an extraction proposal");
-    const handoff = { kinds: payload.kinds, fragments: session.fragments, captureScope: "explicit-selection", createdAt: Date.now() };
-    await BrowserPlatform.storage.set("local", { cognitivePullRequestHandoff: handoff });
-    await globalThis.chrome.tabs.create({ url: "https://representation-eta.vercel.app/?handoff=cognitive-pull-request&view=pull-request" });
+    const proposal = { kinds: payload.kinds, fragments: session.fragments.slice(0, 80), captureScope: "explicit-selection", createdAt: Date.now() };
+    const handoff = await createBoundHandoff("webWorkspaceHandoffs", {
+      origin: "https://representation-eta.vercel.app",
+      scope: "workspace-web",
+      payload: {
+        type: "pearl-workspace-handoff",
+        handoff: { surface: "cognitive-pull-request", view: "pull-request", createdAt: Date.now(), approvedBy: "explicit-extension-command" },
+        semanticOrbs: [],
+        activeSemanticOrbId: null,
+        session: { fragments: proposal.fragments, queue: [], generator: null, results: [] },
+        proposal,
+      },
+    });
+    await BrowserPlatform.tabs.update(handoff.tab.id, {
+      url: `https://representation-eta.vercel.app/#handoff=cognitive-pull-request&view=pull-request&token=${handoff.nonce}`,
+    });
     return { type: "cognitive-pull-request-handoff", preserved: true, fragmentCount: session.fragments.length };
   }
   if (type === "invoke-primitive") {
@@ -949,6 +1056,10 @@ async function handle(message, sender = {}) {
   if (type === "result-action") return sendPage(type, payload);
   if (type === "auth-status") return authStatus();
   if (type === "auth-login") {
+    for (const run of runs.values()) run.abort();
+    runs.clear();
+    await clearAllSession();
+    await clearDecryptedPageSurfaces();
     await login();
     const library = await readLocalLibrary();
     return {
@@ -957,7 +1068,42 @@ async function handle(message, sender = {}) {
       counts: { lenses: library.operators.length, generators: library.generators.length },
     };
   }
-  if (type === "auth-logout") return logout();
+  if (type === "auth-logout") {
+    for (const run of runs.values()) run.abort();
+    runs.clear();
+    await clearAllSession();
+    await clearDecryptedPageSurfaces();
+    return logout();
+  }
+  if (type === "privacy-lock") {
+    for (const run of runs.values()) run.abort();
+    runs.clear();
+    await clearAllSession();
+    await clearDecryptedPageSurfaces();
+    return BrowserPlatform.storage.lock(payload.secret);
+  }
+  if (type === "privacy-unlock") {
+    return BrowserPlatform.storage.unlock(payload.secret);
+  }
+  if (type === "privacy-delete-local") {
+    if (payload.confirmed !== true) throw new Error("confirmed local deletion is required");
+    for (const run of runs.values()) run.abort();
+    runs.clear();
+    const profileHash = await BrowserPlatform.storage.profileHash();
+    await clearAllSession();
+    await clearDecryptedPageSurfaces();
+    const [audioDeleted, imagesDeleted] = await Promise.all([
+      deleteProfileAudio(profileHash),
+      deleteProfileImages(profileHash),
+    ]);
+    const receipt = await BrowserPlatform.storage.deleteLocal();
+    return {
+      ...receipt,
+      audioDeleted,
+      imagesDeleted,
+      completed: true,
+    };
+  }
   if (type === "library-refresh") {
     const local = await readLocalLibrary();
     const consent = await BrowserPlatform.storage.get("local", ["pearlSyncConsent"]);
@@ -1101,35 +1247,24 @@ globalThis.chrome?.runtime?.onMessageExternal.addListener((raw, sender, respond)
       };
     }
     if (raw?.type === "pearl-workspace-handoff") {
-      validateExternalAction(raw, sender);
-      const local = await BrowserPlatform.storage.get("local", [
-        "cognitiveWorkflowHandoff",
-        "cognitivePullRequestHandoff",
-        "semanticOrbs",
-        "activeSemanticOrbId",
-      ]);
-      const activeSession = await readSession();
-      return {
-        type: "pearl-workspace-handoff",
-        handoff: local.cognitiveWorkflowHandoff || local.cognitivePullRequestHandoff || null,
-        semanticOrbs: (local.semanticOrbs || []).filter((orb) => !orb.archived).slice(0, 80),
-        activeSemanticOrbId: local.activeSemanticOrbId || null,
-        session: {
-          fragments: (activeSession.fragments || []).slice(0, 80),
-          queue: (activeSession.queue || []).slice(0, 40),
-          generator: activeSession.generator || null,
-          results: (activeSession.results || []).slice(-20),
-        },
-      };
+      const action = validateExternalAction(raw, sender);
+      const profileHash = await BrowserPlatform.storage.profileHash();
+      return consumeBoundHandoff("webWorkspaceHandoffs", action.nonce, {
+        profileHash,
+        tabId: sender.tab?.id,
+        origin: action.origin,
+        scope: "workspace-web",
+      });
     }
     if (raw?.type === "pearl-result-handoff") {
-      validateExternalAction(raw, sender);
-      const local = await BrowserPlatform.storage.get("local", ["webResultHandoffs", "resultPearls"]);
-      const handoff = local.webResultHandoffs?.[raw.nonce];
-      if (!handoff || handoff.expiresAt < Date.now() || (handoff.tabId && handoff.tabId !== sender.tab?.id)) throw new Error("result handoff expired or belongs to another tab");
-      const resultPearl = local.resultPearls?.[handoff.resultId];
-      if (!resultPearl) throw new Error("result Pearl no longer exists");
-      return { type: "pearl-result-handoff", resultPearl };
+      const action = validateExternalAction(raw, sender);
+      const profileHash = await BrowserPlatform.storage.profileHash();
+      return consumeBoundHandoff("webResultHandoffs", action.nonce, {
+        profileHash,
+        tabId: sender.tab?.id,
+        origin: action.origin,
+        scope: "result-web",
+      });
     }
     const handoff = validateExternalHandoff(raw, sender);
     const preview = await previewLibraryFile(handoff.bundle);

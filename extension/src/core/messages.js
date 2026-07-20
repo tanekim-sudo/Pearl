@@ -40,6 +40,9 @@ export const MESSAGE_TYPES = Object.freeze([
   "auth-login",
   "auth-logout",
   "auth-status",
+  "privacy-lock",
+  "privacy-unlock",
+  "privacy-delete-local",
   "library-refresh",
   "library-import-preview",
   "library-import",
@@ -50,6 +53,9 @@ export const MESSAGE_TYPES = Object.freeze([
   "page-canvas-create-textbox",
   "page-canvas-state",
   "page-canvas-export-pdf",
+  "page-canvas-blob-store",
+  "page-canvas-blob-read",
+  "page-canvas-blob-delete",
   "pearl-audio-search",
   "pearl-audio-upload",
   "pearl-audio-add",
@@ -84,7 +90,9 @@ export function validateMessage(value) {
   if (value.payload != null && (typeof value.payload !== "object" || Array.isArray(value.payload))) {
     return { ok: false, error: "payload must be an object" };
   }
-  const limit = value.type.startsWith("library-import") ? 10 * 1024 * 1024 : 512_000;
+  const limit = value.type === "page-canvas-blob-store" || value.type.startsWith("library-import")
+    ? 10 * 1024 * 1024
+    : 512_000;
   if (JSON.stringify(value).length > limit) return { ok: false, error: "message too large" };
   return { ok: true, value };
 }

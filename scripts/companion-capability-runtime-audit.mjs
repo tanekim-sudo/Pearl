@@ -74,6 +74,7 @@ const generators = [
 function seedScript(payload) {
   const { items, nodes, operators, repos, generators } = payload;
   window.__LENS_TEST_CAPTURE_IMAGE__ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  window.prompt = () => "runtime audit passphrase";
   if (localStorage.getItem("lens.runtime-audit.seeded") === "1") return;
   localStorage.clear();
   localStorage.setItem("lens.runtime-audit.seeded", "1");

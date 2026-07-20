@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createMessage, validateMessage, assertTrustedSender } from "../src/core/messages.js";
 import { isOriginDenied, safeExternalUrl, sanitizeHtml, treatPageAsMaterial } from "../src/core/security.js";
 import { privacySafeGeneratorExport } from "../src/core/portable.js";
@@ -61,7 +62,7 @@ test("external library handoff requires trusted exact origin and nonce", () => {
   assert.throws(() => validateExternalHandoff({ ...message, token: "secret" }, { url: "http://localhost:5173/" }), /invalid/);
 });
 
-test("external handshake permits trusted status, open, and workspace continuation actions", () => {
+test("external handshake permits only schema-valid trusted actions; handoff redemption is separately nonce-bound", () => {
   const sender = { url: "https://representation-eta.vercel.app/" };
   const base = { version: 1, nonce: "1234567890abcdef" };
   assert.equal(validateExternalAction({ ...base, type: "lens-install-check" }, sender).type, "lens-install-check");
@@ -69,6 +70,18 @@ test("external handshake permits trusted status, open, and workspace continuatio
   assert.equal(validateExternalAction({ ...base, type: "pearl-workspace-handoff" }, sender).type, "pearl-workspace-handoff");
   assert.throws(() => validateExternalAction({ ...base, type: "install-extension" }, sender), /invalid/);
   assert.throws(() => validateExternalAction({ ...base, type: "lens-install-check" }, { url: "https://attacker.test" }), /untrusted/);
+});
+
+test("result and workspace handoffs use scrubbed URL fragments and expose no general extension-state query", () => {
+  const worker = fs.readFileSync(new URL("../src/background/service-worker.js", import.meta.url), "utf8");
+  const resultPage = fs.readFileSync(new URL("../src/result/main.js", import.meta.url), "utf8");
+  assert.doesNotMatch(worker, /representation-eta\.vercel\.app\/\?[^`\n]*(?:handoff|token)=/);
+  assert.match(worker, /#handoff=result-pearl&token=\$\{handoff\.nonce\}/);
+  assert.match(resultPage, /location\.hash/);
+  assert.match(resultPage, /history\.replaceState/);
+  const externalWorkspace = worker.slice(worker.indexOf('raw?.type === "pearl-workspace-handoff"'), worker.indexOf('raw?.type === "pearl-result-handoff"'));
+  assert.doesNotMatch(externalWorkspace, /readSession|semanticOrbs|cognitiveWorkflowHandoff|BrowserPlatform\.storage\.get/);
+  assert.match(externalWorkspace, /consumeBoundHandoff/);
 });
 
 test("library import validates, remaps keep-both, and repeats idempotently", async () => {

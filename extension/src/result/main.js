@@ -1,7 +1,9 @@
 import { createMessage } from "../core/messages.js";
 
 const root = document.getElementById("result");
-const nonce = new URL(location.href).searchParams.get("handoff") || "";
+const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+const nonce = fragment.get("handoff") || "";
+history.replaceState(null, "", `${location.pathname}${location.search}`);
 
 const style = document.createElement("style");
 style.textContent = `

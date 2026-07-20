@@ -318,8 +318,8 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ui: ["client/lib/secure-local-storage.js", "extension/src/platform/secure-storage.js"],
     companion: ["inspectLocalPrivacy", "exportLocalData", "setBoardSync", "lockLocalPearls", "unlockLocalPearls", "deleteLocalData"],
     extension: ["inspectExternalPrivacy", "exportExternalLocalData", "setExternalSync", "deleteExternalLocalData", "lockExternalPearls", "unlockExternalPearls"],
-    persistence: ["pearl-local-private-v1", "pearl-extension-private-v1"],
-    tests: ["shared/local-privacy-vault.test.js"],
+    persistence: ["pearl-local-private-v1", "pearl-extension-private-v1", "passphrase-wrapped profile keys", "profile-scoped session lifecycle"],
+    tests: ["shared/local-privacy-vault.test.js", "extension/tests/session-isolation.test.js"],
     owner: "shared/local-privacy-vault.js",
   }),
   feature("extension.pearl-page-canvas", {
@@ -337,8 +337,8 @@ export const FEATURE_CONTRACTS = Object.freeze([
       "bindExternalCanvasContext", "setExternalOutputDestination", "undoExternalPearlCanvas",
       "exportExternalPearlCanvasPdf",
     ],
-    persistence: ["pearlPageCanvases"],
-    tests: ["shared/pearl-page-canvas.test.js", "extension/scripts/orb-audit.mjs"],
+    persistence: ["pearlPageCanvases", "pearl-local-blobs-v1"],
+    tests: ["shared/pearl-page-canvas.test.js", "shared/profile-blob-security.test.js", "extension/scripts/orb-audit.mjs"],
     owner: "shared/pearl-page-canvas.js",
   }),
   feature("privacy.bounded-page-observation", {
@@ -384,8 +384,8 @@ export const FEATURE_CONTRACTS = Object.freeze([
       "archiveExternalResultPearl", "deleteExternalResultPearl",
       "undoExternalResultPearl",
     ],
-    persistence: ["resultPearls", "resultPearlHandoffs", "webResultHandoffs", "resultChats"],
-    tests: ["shared/result-pearls.test.js", "extension/scripts/orb-audit.mjs"],
+    persistence: ["resultPearls", "one-time profile/tab/origin-bound handoffs", "resultChats"],
+    tests: ["shared/result-pearls.test.js", "shared/secure-handoff.test.js", "extension/scripts/orb-audit.mjs"],
     owner: "shared/result-pearls.js",
   }),
 ]);

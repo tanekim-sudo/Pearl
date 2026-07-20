@@ -2,11 +2,20 @@ import { PEARL_AUDIO_MAX_BYTES, validatePearlAudioSignature } from "../../../sha
 import { BrowserPlatform } from "../platform/browser-platform.js";
 
 const DATABASE = "pearl-local-audio-v1";
+const PEARL_PROFILE_AUDIO_MAX_BYTES = 250_000_000;
 
 function requestValue(request) {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error("local audio storage failed"));
+  });
+}
+
+function transactionDone(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error || new Error("local audio transaction failed"));
+    transaction.onabort = () => reject(transaction.error || new Error("local audio transaction aborted"));
   });
 }
 
@@ -47,6 +56,9 @@ export async function storePearlAudio(input) {
   const database = await openDatabase();
   const existing = await requestValue(database.transaction("audio").objectStore("audio").get(key));
   if (!existing) {
+    const records = await requestValue(database.transaction("audio").objectStore("audio").getAll());
+    const profileUsage = records.filter((entry) => entry.profile === profile).reduce((sum, entry) => sum + (entry.byteLength || 0), 0);
+    if (profileUsage + bytes.byteLength > PEARL_PROFILE_AUDIO_MAX_BYTES) throw new Error("local profile audio quota is full");
     await requestValue(database.transaction("audio", "readwrite").objectStore("audio").put({
       version: 1,
       profile,
@@ -85,4 +97,14 @@ export async function deletePearlAudio(localBlobRef) {
   const database = await openDatabase();
   await requestValue(database.transaction("audio", "readwrite").objectStore("audio").delete(localBlobRef));
   return { deleted: true, localBlobRef, at: new Date().toISOString() };
+}
+
+export async function deleteProfileAudio(profile) {
+  const database = await openDatabase();
+  const keys = await requestValue(database.transaction("audio").objectStore("audio").getAllKeys());
+  const matching = keys.filter((key) => String(key).startsWith(`${profile}:`));
+  const transaction = database.transaction("audio", "readwrite");
+  for (const key of matching) transaction.objectStore("audio").delete(key);
+  await transactionDone(transaction);
+  return matching.length;
 }

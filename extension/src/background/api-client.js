@@ -60,7 +60,7 @@ export async function login() {
 }
 
 export async function logout() {
-  await BrowserPlatform.storage.remove("session", ["accessToken"]);
+  await BrowserPlatform.storage.clearSession();
   await BrowserPlatform.storage.switchProfile(null);
   return { authenticated: false };
 }

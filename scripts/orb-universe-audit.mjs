@@ -97,7 +97,7 @@ try {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
   });
-  await shot("03a-trusted-handoff-output-frame", { width: 1280, height: 800 }, "/?handoff=semantic-orb-scene&view=integrate", {
+  await shot("03a-trusted-handoff-output-frame", { width: 1280, height: 800 }, "/#handoff=semantic-orb-scene&view=integrate&token=0123456789abcdef0123456789abcdef", {
     before: () => {
       const handoff = {
         type: "pearl-workspace-handoff",

@@ -18,6 +18,7 @@ function stores() {
     keyStore: {
       get: async (id) => keys.get(id),
       set: async (id, value) => keys.set(id, value),
+      remove: async (id) => keys.delete(id),
     },
     envelopeStore: {
       get: async (id) => envelopes.get(id),
@@ -93,6 +94,70 @@ test("wrong keys, cross-profile envelopes, and corruption fail closed", async ()
     openLocalPrivacyEnvelope(corrupt, { profileHash, key: (await vault.ready()).key, crypto: webcrypto }),
     /locked or corrupted/,
   );
+});
+
+test("passphrase wrapping survives restart, rejects wrong secrets, locks, and deletes key plus envelope", async () => {
+  const backing = stores();
+  const secret = "correct horse battery staple";
+  const vault = createLocalPrivacyVault({ profileId: "protected-user", ...backing, crypto: webcrypto });
+  await vault.write({ result: "private" });
+  const protectedState = await vault.protect(secret);
+  assert.equal(protectedState.protected, true);
+  vault.lock();
+  await assert.rejects(vault.read(), /locked/);
+  await assert.rejects(vault.unlock("definitely wrong secret"), /incorrect/);
+  await vault.unlock(secret);
+  assert.equal((await vault.read()).result, "private");
+
+  const restarted = createLocalPrivacyVault({ profileId: "protected-user", ...backing, crypto: webcrypto });
+  await assert.rejects(restarted.read(), /locked/);
+  await restarted.unlock(secret);
+  assert.equal((await restarted.read()).result, "private");
+  const receipt = await restarted.clear();
+  assert.equal(receipt.deleted, true);
+  assert.equal(backing.keys.size, 0);
+  assert.equal(backing.envelopes.size, 0);
+});
+
+test("corrupt wrapped keys and interrupted wrapping migration fail closed without deleting recovery material", async () => {
+  const backing = stores();
+  const vault = createLocalPrivacyVault({ profileId: "migration-user", ...backing, crypto: webcrypto });
+  await vault.write({ canvas: "preserve" });
+  await vault.protect("migration passphrase");
+  const profileHash = await privacyProfileHash("migration-user", webcrypto);
+  const wrapped = backing.keys.get(profileHash);
+  backing.keys.set(profileHash, { ...wrapped, wrappedKey: `${wrapped.wrappedKey.slice(0, -4)}AAAA` });
+  const restarted = createLocalPrivacyVault({ profileId: "migration-user", ...backing, crypto: webcrypto });
+  await assert.rejects(restarted.unlock("migration passphrase"), /incorrect/);
+  assert.ok(backing.envelopes.has(profileHash));
+});
+
+test("interrupted wrapping restores the verified legacy envelope instead of destroying data", async () => {
+  const backing = stores();
+  const profileId = "interrupted-wrap";
+  const vault = createLocalPrivacyVault({ profileId, ...backing, crypto: webcrypto });
+  await vault.write({ result: "must survive" });
+  let failNextEnvelope = true;
+  const interrupted = createLocalPrivacyVault({
+    profileId,
+    keyStore: backing.keyStore,
+    envelopeStore: {
+      ...backing.envelopeStore,
+      set: async (id, value) => {
+        if (failNextEnvelope) {
+          failNextEnvelope = false;
+          throw new Error("simulated interruption");
+        }
+        backing.envelopes.set(id, structuredClone(value));
+      },
+    },
+    crypto: webcrypto,
+  });
+  await assert.rejects(interrupted.protect("recovery passphrase"), /interruption/);
+  const restarted = createLocalPrivacyVault({ profileId, ...backing, crypto: webcrypto });
+  const unlocked = await restarted.unlock("recovery passphrase");
+  assert.equal(unlocked.migrationRecovered, true);
+  assert.equal((await restarted.read()).result, "must survive");
 });
 
 test("plaintext migration verifies before removal and remains retry-safe", async () => {

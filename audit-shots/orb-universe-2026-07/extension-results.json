@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T16:22:01.958Z",
+  "generatedAt": "2026-07-20T17:40:49.201Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -26,8 +26,10 @@
     "extension semantic orb tray creates and persists captured capsules",
     "library and settings remain reachable",
     "page and side-panel Pearls are static under reduced motion",
+    "logout clears prior profile session material before reload",
+    "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
     "MV3 service worker loaded"
   ],
-  "passed": 19,
+  "passed": 21,
   "failed": 0
 }
