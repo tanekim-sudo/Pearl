@@ -239,3 +239,49 @@ textarea { min-height:44px; }
   .extension-orb-pearl{animation:none!important}
   .extension-orb-nucleus,.extension-orb-nacre,.extension-orb-reflection{transform:none!important;transition:none!important}
 }
+
+/* Companion-first shell: Pearl is the only persistent navigation surface. */
+main[data-orb-view="idle"]{display:block;min-height:100vh;padding:0}
+main[data-orb-view="idle"] header{height:100vh}
+main[data-orb-view="idle"] .extension-orb-shell{left:50%;top:50%;width:190px!important;height:72px;transform:translate(-50%,-50%)}
+main[data-orb-view="idle"] .extension-orb{left:77px;top:0;width:36px;height:36px;min-height:36px}
+main[data-orb-view="idle"] .extension-orb svg{width:36px;height:36px}
+main[data-orb-view="idle"] .extension-orb-label{left:0;top:44px;width:190px;text-align:center;transform:none;color:var(--ex-muted)}
+main:not([data-orb-view="idle"]) header{height:66px}
+main:not([data-orb-view="idle"]) .extension-orb-shell{top:16px}
+.extension-pearl-halo{
+  position:fixed;
+  z-index:30;
+  inset:12px;
+  display:grid;
+  align-content:start;
+  gap:9px;
+  max-height:calc(100vh - 24px);
+  padding:14px;
+  overflow:auto;
+  border:1px solid var(--ex-line-strong);
+  border-radius:18px;
+  background:rgba(11,14,15,.94);
+  box-shadow:0 28px 80px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(28px) saturate(112%);
+}
+.extension-pearl-halo-head{display:flex;align-items:center;justify-content:space-between;color:var(--ex-muted);font-size:11px}
+.extension-pearl-halo-head button{min-width:36px;min-height:36px;padding:4px;border:0;background:transparent}
+.extension-pearl-halo form{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
+.extension-pearl-halo form input{min-width:0;background:rgba(255,255,255,.035)}
+.extension-pearl-halo>nav,.extension-pearl-categories{display:flex;gap:4px;overflow:auto;padding-bottom:2px}
+.extension-pearl-halo>nav button,.extension-pearl-categories button{flex:none;min-height:34px;padding:4px 8px;border-radius:999px;color:var(--ex-muted)}
+.extension-pearl-categories button[aria-pressed=true]{color:var(--ex-text);border-color:var(--ex-line-strong);background:rgba(255,255,255,.055)}
+.extension-pearl-actions{display:grid;max-height:300px;overflow:auto}
+.extension-pearl-actions>button{display:grid;gap:3px;padding:9px 2px;text-align:left;border:0;border-bottom:1px solid var(--ex-line);border-radius:0;background:transparent}
+.extension-pearl-actions b{font-size:11px;font-weight:560}
+.extension-pearl-actions small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.extension-emission-close{position:relative;z-index:12;justify-self:end;min-height:32px;padding:3px 8px;border:0;color:var(--ex-muted);background:transparent;font-size:9px}
+.orb-panel.active,.companion.active{animation:extension-emission-enter .22s var(--ex-ease) both}
+@keyframes extension-emission-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.orb-panel.active,.companion.active{animation:none!important}}
+@media(max-width:380px){
+  .extension-pearl-halo{inset:8px;max-height:calc(100vh - 16px);padding:12px}
+  .extension-pearl-halo form{grid-template-columns:minmax(0,1fr) auto}
+  .extension-pearl-halo form button:last-child{grid-column:1 / -1}
+}

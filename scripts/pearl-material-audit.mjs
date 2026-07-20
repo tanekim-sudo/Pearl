@@ -75,6 +75,15 @@ async function capture(name, viewport, reducedMotion) {
     throw new Error(`${name} reduced-motion Pearl is animated: ${JSON.stringify(sizes.animations)}`);
   }
   await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
+  if (reducedMotion === "no-preference") {
+    await page.locator(".companion-orb").click();
+    await page.getByRole("searchbox", { name: "Search every Pearl action" }).fill("before after");
+    await page.screenshot({ path: path.join(out, "web-pearl-action-search.png"), fullPage: true });
+    await page.getByRole("button", { name: "Scene", exact: true }).click();
+    await page.locator(".pearl-scene-actions").getByRole("button", { name: "Open Output Frame" }).click();
+    await page.locator(".orb-output-frame-host").waitFor({ state: "visible" });
+    await page.screenshot({ path: path.join(out, "web-output-frame-pearl-shell.png"), fullPage: true });
+  }
   results.push({ name, viewport, ...sizes });
   await context.close();
 }
@@ -88,7 +97,7 @@ try {
     browser: browser.version(),
     checks: results,
   }, null, 2)}\n`);
-  console.log(`Pearl material audit passed: ${results.length} screenshots.`);
+  console.log(`Pearl material audit passed: ${results.length + 2} screenshots.`);
 } finally {
   await browser.close();
 }

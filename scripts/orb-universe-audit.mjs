@@ -70,14 +70,17 @@ try {
     await page.getByRole("region", { name: "Continue extension work" }).waitFor();
     const orb = await page.locator(".orb-continuation-pearl").boundingBox();
     if (!orb || orb.width < 28 || orb.width > 36) throw new Error("continuation Pearl is not compact");
-    if (await page.locator(".companion-orb").count()) throw new Error("off-Scene Pearl still exposes a command affordance");
+    if (await page.locator(".companion-orb").count() !== 1) throw new Error("off-Scene Pearl is not the single persistent command affordance");
+    await page.locator(".companion-orb").click();
+    if (!await page.getByRole("searchbox", { name: "Search every Pearl action" }).isVisible()) throw new Error("off-Scene Pearl did not emit complete action search");
+    await page.getByRole("button", { name: "Minimize orb" }).click();
     if (await page.getByRole("link", { name: /Add Pearl to Chrome/ }).count()) throw new Error("extension download still dominates the web root");
   });
   await shot("02-library-laptop", { width: 1280, height: 800 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "Your cognitive universe" }).waitFor();
-    if (await page.locator(".companion-orb").count()) throw new Error("library exposes an off-Scene Pearl command affordance");
+    if (await page.locator(".companion-orb").count() !== 1) throw new Error("library lost its single Pearl command affordance");
     if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
@@ -256,10 +259,10 @@ try {
     await page.keyboard.press("Space");
     await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Gallery", exact: true }).click();
-    await page.waitForFunction(() =>
-      document.querySelector('.orb-adaptive-views button[aria-pressed="true"]')?.textContent === "Gallery"
-    );
+    await page.locator(".companion-orb").click();
+    await page.getByRole("button", { name: "Scene", exact: true }).click();
+    await page.locator(".pearl-scene-actions").getByRole("button", { name: "Gallery", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector(".orb-black-stage")?.dataset.stageView === "gallery");
     await page.getByRole("button", { name: "Add to Pearl context" }).click();
     await page.locator(".orb-context-object").waitFor();
     await page.evaluate(() => {

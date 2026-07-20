@@ -2244,7 +2244,7 @@ if (typeof window !== "undefined") {
   }
 }
 
-export default function App({ sceneId = null }) {
+export default function App({ sceneId = null, pearlShell = false }) {
   const initialUnifiedWorkspace = useMemo(() => {
     const legacyItems = load(ITEMS_KEY, null);
     const legacyNodes = load(AI_NODES_KEY, []);
@@ -11817,17 +11817,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const combined = new Set([...(pendingCompanionClear?.domains || []), ...(domains || [])]);
     const normalized = CLEARABLE_DOMAINS.filter((domain) => combined.has(domain));
     if (!normalized.length) return;
-    lastCompanionClearRef.current = { domains: normalized, at: Date.now() };
-    setPendingCompanionClear({
+    const pending = {
       domains: normalized,
       counts: companionClearCounts(normalized),
-    });
+    };
+    lastCompanionClearRef.current = { ...pending, at: Date.now() };
+    setPendingCompanionClear(pending);
   }
 
   function confirmCompanionClear() {
-    const pending = pendingCompanionClear;
+    const pending = pendingCompanionClear || lastCompanionClearRef.current;
     if (!pending) return;
     const domains = new Set(pending.domains);
+    lastCompanionClearRef.current = null;
     setPendingCompanionClear(null);
     const nextItems = domains.has("paper") ? [] : itemsRef.current;
     const nextAiNodes = domains.has("ai") ? [] : aiNodesRef.current;
@@ -16049,6 +16051,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         redo();
         return { type: "workspace-redo", persisted: true };
       },
+      pendingDestructive() {
+        const pending = lastCompanionClearRef.current;
+        return pending?.domains?.length ? { domains: [...pending.domains], counts: { ...pending.counts } } : null;
+      },
+      confirmDestructive() {
+        confirmCompanionClear();
+        return { type: "destructive-clear-confirmed", persisted: true };
+      },
+      rejectDestructive() {
+        lastCompanionClearRef.current = null;
+        setPendingCompanionClear(null);
+        return { type: "destructive-clear-rejected", persisted: false };
+      },
     };
     window.__lensOrbRuntime = bridge;
     window.dispatchEvent(new CustomEvent("lens:orb-runtime-ready"));
@@ -16084,8 +16099,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   const paperColCollapsed = colGridWidth > 0 && paperColWidth <= 0;
 
   return (
-    <div className={"idea-app theme-" + theme}>
-      <TopToolbar
+    <div className={"idea-app theme-" + theme + (pearlShell ? " pearl-embedded" : "")}>
+      {!pearlShell && <TopToolbar
         starred={docStarred}
         saved={savedIndicator}
         canUndo={canUndo}
@@ -16109,7 +16124,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
         showPlans={isSupabaseConfigured() && supaAuth.sessionResolved}
         onAccountAction={handleAccountAction}
-      />
+      />}
 
       <div
         ref={threeColumnGridRef}
@@ -17197,7 +17212,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         </div>
       )}
 
-      {pendingCompanionClear && (
+      {!pearlShell && pendingCompanionClear && (
         <div
           className="modal-scrim companion-confirmation-popover"
           data-testid="companion-clear-confirmation"
@@ -17697,7 +17712,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         />
       )}
       <GhostCursor />
-      <CompanionChat
+      {!pearlShell && <CompanionChat
         demos={COMPANION_DEMOS}
         onCommand={handleCompanionCommand}
         userId={supaAuth.session?.user?.id || null}
@@ -17712,7 +17727,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             /* private mode */
           }
         }}
-      />
+      />}
     </div>
   );
 }

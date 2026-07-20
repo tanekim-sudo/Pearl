@@ -106,6 +106,9 @@ try {
     );
   });
   await page.goto(`${BASE}/scene/brush-audit?frame=workspace`);
+  await page.locator(".companion-orb").click();
+  await page.getByRole("button", { name: "Scene", exact: true }).click();
+  await page.locator(".pearl-scene-actions").getByRole("button", { name: "Paper tools", exact: true }).click();
   await page.waitForSelector('[data-tool="highlight"]');
 
   const brushTool = page.locator('[data-tool="highlight"]');

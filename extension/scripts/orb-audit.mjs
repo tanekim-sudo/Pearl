@@ -98,7 +98,16 @@ try {
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await panel.getByRole("button", { name: /Hold to speak/ }).waitFor();
+  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
+  await panel.screenshot({ path: path.join(evidence, "05-extension-idle-pearl-360.png"), fullPage: true });
+  await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+  await panel.getByRole("searchbox", { name: "Search every Pearl action" }).fill("before after");
+  await panel.screenshot({ path: path.join(evidence, "05a-extension-action-search-360.png"), fullPage: true });
+  await panel.getByRole("button", { name: "Close Pearl actions" }).click();
+  const openPanelView = async (name) => {
+    await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+    await panel.getByRole("navigation", { name: "Immediate Pearl views" }).getByRole("button", { name, exact: true }).click();
+  };
   await panel.evaluate(async () => {
     const tabs = await chrome.tabs.query({});
     const current = await chrome.tabs.getCurrent();
@@ -156,12 +165,12 @@ try {
   });
   await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.fragments?.length >= 1);
   await fixture.screenshot({ path: path.join(evidence, "06b-extension-page-orb-context.png"), fullPage: true });
-  await panel.getByRole("button", { name: "context", exact: true }).click();
+  await openPanelView("Context");
   await panel.getByText(/\d+ fragments?/).waitFor();
-  await panel.getByRole("button", { name: "library", exact: true }).click();
+  await openPanelView("Library");
   await panel.locator(".rack button").filter({ hasText: /compress/i }).first().click();
   await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.queue?.length >= 1);
-  await panel.getByRole("button", { name: "review", exact: true }).click();
+  await openPanelView("Generate");
   await panel.getByRole("button", { name: "GO", exact: true }).waitFor({ state: "visible" });
   const goBlocked = await panel.getByRole("button", { name: "GO", exact: true }).isDisabled();
   if (goBlocked) {
@@ -181,8 +190,8 @@ try {
     throw new Error(`GO did not create a candidate: ${JSON.stringify(generationState)}`);
   }
   await panel.reload();
-  await panel.getByRole("button", { name: /Hold to speak/ }).waitFor();
-  await panel.getByRole("button", { name: "review", exact: true }).click();
+  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
+  await openPanelView("Generate");
   await panel.getByText(/Reviewed:/).waitFor();
   await panel.screenshot({ path: path.join(evidence, "06c-extension-go-candidate.png"), fullPage: true });
   const targetTabId = await panel.evaluate(async () => {
@@ -254,15 +263,16 @@ try {
   if (await fixture.evaluate(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true")) {
     throw new Error("Triple-Space toggled while typing in an editable field");
   }
+  await openPanelView("Command");
   await panel.screenshot({ path: path.join(evidence, "07-extension-command-360.png"), fullPage: true });
-  await panel.getByRole("button", { name: "pearls", exact: true }).click();
+  await openPanelView("Pearls");
   await panel.getByRole("heading", { name: "Pearls" }).waitFor();
   await panel.getByRole("button", { name: /Make a pearl|New empty pearl/ }).click();
   await panel.waitForFunction(async () => (await chrome.storage.local.get("semanticOrbs")).semanticOrbs?.length === 2);
   await panel.screenshot({ path: path.join(evidence, "07a-extension-semantic-orbs.png"), fullPage: true });
-  await panel.getByRole("button", { name: "library", exact: true }).click();
+  await openPanelView("Library");
   await panel.screenshot({ path: path.join(evidence, "08-extension-library-360.png"), fullPage: true });
-  await panel.getByRole("button", { name: "settings", exact: true }).click();
+  await openPanelView("Settings");
   await panel.getByRole("heading", { name: "Settings" }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "09-extension-settings-360.png"), fullPage: true });
   await Promise.all([
@@ -299,16 +309,17 @@ try {
       "Triple-Space restores the native cursor",
       "editable fields exclude the Triple-Space toggle",
       "same orb identity expands at 360px",
+      "idle side panel is Pearl-only and action search discovers the full capability model",
       "orb-mediated side panel views",
       "extension semantic orb tray creates and persists captured capsules",
       "library and settings remain reachable",
       "page and side-panel Pearls are static under reduced motion",
       "MV3 service worker loaded",
     ],
-    passed: 18,
+    passed: 19,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 18 checks, 14 screenshots.");
+  console.log("Orb extension audit passed: 19 checks, 16 screenshots.");
 } finally {
   await context.close();
   server.close();

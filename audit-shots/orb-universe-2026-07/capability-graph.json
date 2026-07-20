@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-e9c07d3f",
+  "fingerprint": "fnv1a-a02f305e",
   "counts": {
     "nodes": 251,
     "edges": 516
@@ -517,7 +517,13 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -555,9 +561,17 @@
         "paper-state-changed",
         "ai-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -568,13 +582,27 @@
       ],
       "expectedEffects": [
         "paper-state-changed",
-        "ai-state-changed"
+        "ai-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
-        "capability-redoWorkspace"
+        "capability-redoWorkspace",
+        "feature:shell.pearl-progressive"
       ],
-      "featureIds": [],
-      "canonicalCommands": [],
+      "featureIds": [
+        "shell.pearl-progressive"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -606,7 +634,13 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -644,9 +678,17 @@
         "paper-state-changed",
         "ai-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -657,13 +699,27 @@
       ],
       "expectedEffects": [
         "paper-state-changed",
-        "ai-state-changed"
+        "ai-state-changed",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
-        "capability-exportWorkspace"
+        "capability-exportWorkspace",
+        "feature:shell.pearl-progressive"
       ],
-      "featureIds": [],
-      "canonicalCommands": [],
+      "featureIds": [
+        "shell.pearl-progressive"
+      ],
+      "canonicalCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -2025,7 +2081,12 @@
         "text content is explicit",
         "non-text extraction requires user action",
         "at least one contributing lineage exists",
-        "material is explicit and bounded"
+        "material is explicit and bounded",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -2066,10 +2127,18 @@
         "lens-state-changed"
       ],
       "persistence": [
-        "library.objects.append"
+        "library.objects.append",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
-        "remove-created-version"
+        "remove-created-version",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -2085,19 +2154,30 @@
         "move-created",
         "library-changed",
         "function-created",
-        "lens-created"
+        "lens-created",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-openSaveAsChooser",
-        "feature:library.save-as"
+        "feature:library.save-as",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
-        "library.save-as"
+        "library.save-as",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "createMoveFromContent",
         "captureFunctionFromLineage",
-        "collectLensMaterial"
+        "collectLensMaterial",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -2241,7 +2321,12 @@
       "refArgs": {},
       "preconditions": [
         "object validates",
-        "idempotency key is stable"
+        "idempotency key is stable",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -2282,10 +2367,17 @@
         "lens-state-changed"
       ],
       "persistence": [
-        "library.objects.upsert"
+        "library.objects.upsert",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
-        "restore-library-snapshot"
+        "restore-library-snapshot",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -2298,17 +2390,28 @@
         "move-state-changed",
         "function-state-changed",
         "lens-state-changed",
-        "library-changed"
+        "library-changed",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-openTranscriptLearning",
-        "feature:learning.transcript"
+        "feature:learning.transcript",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
-        "learning.transcript"
+        "learning.transcript",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
-        "upsertCanonicalObject"
+        "upsertCanonicalObject",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -16093,7 +16196,9 @@
         "event is idempotent",
         "candidate exists and is focused or explicitly referenced",
         "completed candidate exists",
-        "new cost stays within budget"
+        "new cost stays within budget",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -16137,14 +16242,18 @@
         "library.objects.version",
         "generationBatches.append",
         "generationBatches.update",
-        "none"
+        "none",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
         "restore-library-snapshot",
         "cancel-pending-batch",
         "restore-batch-snapshot",
         "restore-previous-feedback",
-        "cancel-pending-child-batch"
+        "cancel-pending-child-batch",
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -16164,21 +16273,27 @@
         "generation-candidate-changed",
         "taste-feedback-changed",
         "candidate-focus-changed",
-        "more-like-this-prepared"
+        "more-like-this-prepared",
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-setGenerationPlan",
-        "feature:generation.taste-branching"
+        "feature:generation.taste-branching",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
-        "generation.taste-branching"
+        "generation.taste-branching",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "setGenerationPlan",
         "startGenerationBatch",
         "updateGenerationCandidate",
         "recordTasteFeedback",
-        "prepareMoreLikeThis"
+        "prepareMoreLikeThis",
+        "addOrbContext",
+        "addOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17041,7 +17156,10 @@
         "material is explicit and preserved",
         "context item exists",
         "Lens is explicit and preserved",
-        "Lens is active on the orb"
+        "Lens is active on the orb",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -17079,11 +17197,15 @@
       "sideEffects": [],
       "persistence": [
         "scene.workingSet.context",
-        "scene.workingSet.lenses"
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "restore-orb-context",
-        "restore-orb-lenses"
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17094,16 +17216,22 @@
       ],
       "expectedEffects": [
         "orb-context-changed",
-        "orb-lenses-changed"
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-observeWorkspace",
         "feature:companion.transaction-harness",
-        "feature:companion.orb-runtime"
+        "feature:companion.orb-runtime",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "companion.transaction-harness",
-        "companion.orb-runtime"
+        "companion.orb-runtime",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "addOrbContext",
@@ -17111,7 +17239,9 @@
         "removeOrbContext",
         "addOrbLens",
         "updateOrbLens",
-        "removeOrbLens"
+        "removeOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17446,7 +17576,10 @@
         "both orbs exist",
         "nesting remains acyclic",
         "at least two orbs exist",
-        "composition order is explicit"
+        "composition order is explicit",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -17496,7 +17629,9 @@
         "scene.pendingBranches.append",
         "scene.orbInstances.update",
         "scene.semanticOrbs.update",
-        "scene.semanticOrbs.append"
+        "scene.semanticOrbs.append",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "remove-created-version",
@@ -17506,7 +17641,9 @@
         "restore-orb-lenses",
         "remove-queued-branch",
         "restore-worker-context",
-        "restore-semantic-orbs"
+        "restore-semantic-orbs",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17534,20 +17671,25 @@
         "worker-context-changed",
         "semantic-orb-context-changed",
         "semantic-orb-hierarchy-changed",
-        "semantic-orb-created"
+        "semantic-orb-created",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-semanticTransfer",
         "feature:interaction.semantic-transfer",
         "feature:scene.v4",
         "feature:companion.orb-runtime",
-        "feature:interaction.orb-gesture"
+        "feature:interaction.orb-gesture",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "interaction.semantic-transfer",
         "scene.v4",
         "companion.orb-runtime",
-        "interaction.orb-gesture"
+        "interaction.orb-gesture",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "createMoveFromContent",
@@ -17568,7 +17710,9 @@
         "addSemanticOrbContext",
         "nestSemanticOrb",
         "mergeSemanticOrbs",
-        "composeSemanticOrbs"
+        "composeSemanticOrbs",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17866,7 +18010,12 @@
       "refArgs": {},
       "preconditions": [
         "Scene is explicit",
-        "source material is preserved"
+        "source material is preserved",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -17903,10 +18052,18 @@
       },
       "sideEffects": [],
       "persistence": [
-        "scene.semanticOrbs.append"
+        "scene.semanticOrbs.append",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
-        "restore-semantic-orbs"
+        "restore-semantic-orbs",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -17916,19 +18073,31 @@
         "direct-ui"
       ],
       "expectedEffects": [
-        "semantic-orb-created"
+        "semantic-orb-created",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-openPackageRegistry",
         "feature:registry.cognitive-packages",
-        "feature:shell.extension-first"
+        "feature:shell.extension-first",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "registry.cognitive-packages",
-        "shell.extension-first"
+        "shell.extension-first",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
-        "createSemanticOrb"
+        "createSemanticOrb",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -19886,7 +20055,10 @@
         "material is explicit and preserved",
         "context item exists",
         "Lens is explicit and preserved",
-        "Lens is active on the orb"
+        "Lens is active on the orb",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -19929,13 +20101,17 @@
         "none",
         "library.objects.append",
         "scene.workingSet.context",
-        "scene.workingSet.lenses"
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "none",
         "remove-created-version",
         "restore-orb-context",
-        "restore-orb-lenses"
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -19950,16 +20126,22 @@
         "lens-scoped-function-created",
         "workspace-observation-bound",
         "orb-context-changed",
-        "orb-lenses-changed"
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-capturePageSelection",
         "feature:observation.workspace",
-        "feature:companion.orb-runtime"
+        "feature:companion.orb-runtime",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "observation.workspace",
-        "companion.orb-runtime"
+        "companion.orb-runtime",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "observeWorkspace",
@@ -19969,7 +20151,9 @@
         "removeOrbContext",
         "addOrbLens",
         "updateOrbLens",
-        "removeOrbLens"
+        "removeOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -20707,7 +20891,10 @@
         "Output Frame exists",
         "explicit GO before generation",
         "worker exists",
-        "context is explicit"
+        "context is explicit",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -20756,7 +20943,9 @@
         "scene.workingSet.lenses",
         "scene.items.append",
         "scene.pendingBranches.append",
-        "scene.orbInstances.update"
+        "scene.orbInstances.update",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "none",
@@ -20766,7 +20955,9 @@
         "restore-orb-lenses",
         "restore-scene-snapshot",
         "remove-queued-branch",
-        "restore-worker-context"
+        "restore-worker-context",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -20792,16 +20983,22 @@
         "scene-material-created",
         "frame-material-created",
         "branch-material-queued",
-        "worker-context-changed"
+        "worker-context-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-createExternalSemanticOrb",
         "feature:scene.semantic-orbs",
-        "feature:interaction.orb-gesture"
+        "feature:interaction.orb-gesture",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "scene.semantic-orbs",
-        "interaction.orb-gesture"
+        "interaction.orb-gesture",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -20827,7 +21024,9 @@
         "materializeOnStage",
         "materializeInOutputFrame",
         "queueBranchMaterial",
-        "assignWorkerContext"
+        "assignWorkerContext",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -22755,7 +22954,12 @@
         "non-text extraction requires user action",
         "object validates",
         "idempotency key is stable",
-        "at least one contributing lineage exists"
+        "at least one contributing lineage exists",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -22798,11 +23002,18 @@
       ],
       "persistence": [
         "library.objects.append",
-        "library.objects.upsert"
+        "library.objects.upsert",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "remove-created-version",
-        "restore-library-snapshot"
+        "restore-library-snapshot",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -22818,24 +23029,35 @@
         "canonical-composition-created",
         "library-changed",
         "move-created",
-        "function-created"
+        "function-created",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-queueExternalAction",
         "feature:composition.universal",
         "feature:library.move",
-        "feature:library.function"
+        "feature:library.function",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "composition.universal",
         "library.move",
-        "library.function"
+        "library.function",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "composeCanonicalObjects",
         "createMoveFromContent",
         "upsertCanonicalObject",
-        "captureFunctionFromLineage"
+        "captureFunctionFromLineage",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -23191,13 +23413,15 @@
         "feature:generation.taste-branching",
         "feature:execution.lens-context",
         "feature:highlight.explicit-go",
-        "feature:companion.orb-runtime"
+        "feature:companion.orb-runtime",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "generation.taste-branching",
         "execution.lens-context",
         "highlight.explicit-go",
-        "companion.orb-runtime"
+        "companion.orb-runtime",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "setGenerationPlan",
@@ -23736,7 +23960,12 @@
         "object validates",
         "idempotency key is stable",
         "Scene is explicit",
-        "source material is preserved"
+        "source material is preserved",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -23779,11 +24008,18 @@
       ],
       "persistence": [
         "library.objects.upsert",
-        "scene.semanticOrbs.append"
+        "scene.semanticOrbs.append",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
         "restore-library-snapshot",
-        "restore-semantic-orbs"
+        "restore-semantic-orbs",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -23797,22 +24033,33 @@
         "function-state-changed",
         "lens-state-changed",
         "library-changed",
-        "semantic-orb-created"
+        "semantic-orb-created",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-showExternalLibraryImport",
         "feature:persistence.account-adoption",
         "feature:extension.distribution",
-        "feature:shell.extension-first"
+        "feature:shell.extension-first",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "persistence.account-adoption",
         "extension.distribution",
-        "shell.extension-first"
+        "shell.extension-first",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "upsertCanonicalObject",
-        "createSemanticOrb"
+        "createSemanticOrb",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -23847,7 +24094,12 @@
       "refArgs": {},
       "preconditions": [
         "Scene is explicit",
-        "source material is preserved"
+        "source material is preserved",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -23884,10 +24136,18 @@
       },
       "sideEffects": [],
       "persistence": [
-        "scene.semanticOrbs.append"
+        "scene.semanticOrbs.append",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
-        "restore-semantic-orbs"
+        "restore-semantic-orbs",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-library-snapshot",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -23896,19 +24156,31 @@
         "companion"
       ],
       "expectedEffects": [
-        "semantic-orb-created"
+        "semantic-orb-created",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "library-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-browseExternalPackages",
         "feature:registry.cognitive-packages",
-        "feature:shell.extension-first"
+        "feature:shell.extension-first",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
         "registry.cognitive-packages",
-        "shell.extension-first"
+        "shell.extension-first",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
-        "createSemanticOrb"
+        "createSemanticOrb",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -24562,7 +24834,12 @@
       "refArgs": {},
       "preconditions": [
         "object validates",
-        "idempotency key is stable"
+        "idempotency key is stable",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved",
+        "Move or Function exists",
+        "expected version matches",
+        "candidate exists and is focused or explicitly referenced"
       ],
       "requiredObservations": [
         "selection",
@@ -24603,10 +24880,17 @@
         "function-state-changed"
       ],
       "persistence": [
-        "library.objects.upsert"
+        "library.objects.upsert",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses",
+        "library.objects.version",
+        "generationBatches.update"
       ],
       "undo": [
-        "restore-library-snapshot"
+        "restore-library-snapshot",
+        "restore-orb-context",
+        "restore-orb-lenses",
+        "restore-previous-feedback"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -24618,17 +24902,28 @@
         "extension-state-changed",
         "move-state-changed",
         "function-state-changed",
-        "library-changed"
+        "library-changed",
+        "orb-context-changed",
+        "orb-lenses-changed",
+        "generation-plan-changed",
+        "taste-feedback-changed",
+        "candidate-focus-changed"
       ],
       "tests": [
         "capability-openExternalBeforeAfter",
-        "feature:learning.before-after"
+        "feature:learning.before-after",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
-        "learning.before-after"
+        "learning.before-after",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
-        "upsertCanonicalObject"
+        "upsertCanonicalObject",
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -24953,7 +25248,9 @@
         "event is idempotent",
         "candidate exists and is focused or explicitly referenced",
         "completed candidate exists",
-        "new cost stays within budget"
+        "new cost stays within budget",
+        "material is explicit and preserved",
+        "Lens is explicit and preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -24996,14 +25293,18 @@
         "library.objects.version",
         "generationBatches.append",
         "generationBatches.update",
-        "none"
+        "none",
+        "scene.workingSet.context",
+        "scene.workingSet.lenses"
       ],
       "undo": [
         "restore-library-snapshot",
         "cancel-pending-batch",
         "restore-batch-snapshot",
         "restore-previous-feedback",
-        "cancel-pending-child-batch"
+        "cancel-pending-child-batch",
+        "restore-orb-context",
+        "restore-orb-lenses"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -25021,21 +25322,27 @@
         "generation-candidate-changed",
         "taste-feedback-changed",
         "candidate-focus-changed",
-        "more-like-this-prepared"
+        "more-like-this-prepared",
+        "orb-context-changed",
+        "orb-lenses-changed"
       ],
       "tests": [
         "capability-tasteExternalCandidate",
-        "feature:generation.taste-branching"
+        "feature:generation.taste-branching",
+        "feature:shell.pearl-progressive"
       ],
       "featureIds": [
-        "generation.taste-branching"
+        "generation.taste-branching",
+        "shell.pearl-progressive"
       ],
       "canonicalCommands": [
         "setGenerationPlan",
         "startGenerationBatch",
         "updateGenerationCandidate",
         "recordTasteFeedback",
-        "prepareMoreLikeThis"
+        "prepareMoreLikeThis",
+        "addOrbContext",
+        "addOrbLens"
       ],
       "destructive": false,
       "confirmation": "none",

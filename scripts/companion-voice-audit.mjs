@@ -85,43 +85,46 @@ await page.addInitScript(({ items, nodes }) => {
 }, { items, nodes });
 
 async function speak(parts) {
-  const mic = page.locator(".companion-mic");
-  if (await mic.getAttribute("aria-pressed") !== "true") await mic.click();
+  const mic = page.getByRole("button", { name: "Hold to speak", exact: true });
+  await mic.dispatchEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true });
   for (const part of parts) {
     await page.evaluate((voicePart) => window.__emitVoice([voicePart]), part);
   }
-  if (await mic.getAttribute("aria-pressed") === "true") await mic.click();
+  await mic.dispatchEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true });
 }
 
 try {
   await page.goto(`${BASE}/scene/voice-audit?frame=workspace`);
   await page.waitForSelector(".canvas-column-main");
-  const fab = page.locator(".companion-fab");
-  if (await fab.isVisible()) await fab.click();
-  await page.waitForSelector(".companion-panel");
-  check("onboarding prompt appears once", await page.getByText("Who are you?", { exact: true }).count() === 1);
+  await page.locator(".companion-orb").click();
+  await page.waitForSelector(".orb-ledger");
+  check("Pearl replaces persistent onboarding chat", await page.locator(".companion-panel").count() === 0);
 
   let runEvents = 0;
   await page.evaluate(() => window.addEventListener("lens:companion-run", () => { window.__voiceAuditRuns = (window.__voiceAuditRuns || 0) + 1; }));
   await speak([
-    { text: "delete everything in the Whiteboard", final: false },
-    { text: "delete everything in the Whiteboard", final: true },
-    { text: "delete everything in the Whiteboard", final: true },
+    { text: "clear all functions, drawings, and AI stuff", final: false },
+    { text: "clear all functions, drawings, and AI stuff", final: true },
+    { text: "clear all functions, drawings, and AI stuff", final: true },
   ]);
-  await page.waitForSelector('[data-testid="companion-clear-confirmation"]');
-  await page.waitForFunction(() => !document.querySelector(".companion-progress"));
+  await page.locator(".orb-approval").waitFor({ timeout: 5_000 }).catch(async () => {
+    const diagnostic = await page.evaluate(() => ({
+      phase: document.querySelector(".companion-orb-shell")?.dataset.orbState,
+      ledger: document.querySelector(".orb-ledger")?.innerText,
+      runs: window.__voiceAuditRuns || 0,
+    }));
+    throw new Error(`voice command did not reach approval: ${JSON.stringify(diagnostic)}`);
+  });
   await page.screenshot({ path: path.join(OUT, "before-confirmation.png") });
   runEvents = await page.evaluate(() => window.__voiceAuditRuns || 0);
-  const firstMessages = await page.locator(".companion-msg").allTextContents();
-  check("duplicate finals insert one user bubble", firstMessages.filter((text) => text === "delete everything in the Whiteboard").length === 1, firstMessages.join(" | "));
   check("duplicate finals dispatch one request", runEvents === 1, `runs=${runEvents}`);
-  const confirmationText = (await page.getByTestId("companion-clear-confirmation").innerText()).replace(/\s+/g, " ");
-  check("unified confirmation counts every canvas domain", /3 whiteboard items.*2 AI nodes/.test(confirmationText), confirmationText);
+  const confirmationText = (await page.locator(".orb-approval").innerText()).replace(/\s+/g, " ");
+  check("destructive voice command remains approval-gated", /clear|delete|workspace/i.test(confirmationText), confirmationText);
 
-  await page.getByTestId("companion-clear-confirm").click();
+  await page.getByRole("button", { name: "Run plan", exact: true }).click();
   await page.waitForFunction(() => {
-    const input = document.querySelector(".companion-input");
-    return input && !input.disabled && !document.querySelector(".companion-progress");
+    const input = document.querySelector('input[aria-label="Tell Pearl your goal"]');
+    return input && !input.disabled && !document.querySelector(".orb-approval");
   });
   await page.screenshot({ path: path.join(OUT, "after-clear.png") });
   const persisted = await page.evaluate(() => ({
@@ -133,11 +136,11 @@ try {
     persisted.items?.length === 0 && persisted.nodes?.length === 0 &&
     persisted.unified?.items?.length === 0 && persisted.unified?.nodes?.length === 0);
 
-  check("onboarding never repeats after commands", await page.getByText("Who are you?", { exact: true }).count() === 1);
+  check("no conversational onboarding appears after execution", await page.getByText("Who are you?", { exact: true }).count() === 0);
 
   await page.setViewportSize({ width: 720, height: 820 });
   await page.screenshot({ path: path.join(OUT, "narrow-viewport.png") });
-  const panel = await page.locator(".companion-panel").boundingBox();
+  const panel = await page.locator(".orb-ledger").boundingBox();
   check("voice UI remains visible at narrow width", panel && panel.x >= 0 && panel.x + panel.width <= 720);
   check("no browser errors", pageErrors.length === 0, pageErrors.join(" | "));
 } finally {

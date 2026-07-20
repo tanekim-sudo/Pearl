@@ -295,12 +295,7 @@ function LibraryHome({
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
   return <main className="orb-library-home">
-    <header className="orb-universe-head">
-      <a href="/library" onClick={(event) => { event.preventDefault(); navigate("/library"); }}>PEARL</a>
-      <span>{install.status === "installed" ? "Extension connected" : install.status === "checking" ? "Checking extension" : "Local universe"} · {install.trusted ? "trusted handoff" : "private by default"}</span>
-      <button type="button" onClick={() => onView(activeView === "library" ? null : "library")}>Library</button>
-    </header>
-    <section className="orb-home-intro">
+    <section className={`orb-home-intro ${isRoot ? "" : "sr-only"}`}>
       <div className="orb-kicker">{isRoot ? "Pearl continuation space" : "Library and saved work"}</div>
       <h1>{title}</h1>
       <p>{isRoot
@@ -378,9 +373,7 @@ function LibraryHome({
   </main>;
 }
 
-function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semanticOrbActions }) {
-  const [view, setView] = useState("Stage");
-  useEffect(() => setView("Stage"), [scene?.id]);
+function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, semanticOrbActions }) {
   const materials = useMemo(() => [
     ...(scene?.items || []).map((item) => ({
       ...item,
@@ -393,10 +386,6 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semantic
       label: node.expandedText || node.preview || node.prompt || node.nodeKind || "AI node",
     })),
   ], [scene]);
-  const chooseView = (next) => {
-    if (next === "Frame") onOpenFrame();
-    else setView(next);
-  };
   return <main
     className="orb-black-stage"
     aria-label={`Scene ${scene?.name || scene?.id || "untitled"}`}
@@ -421,19 +410,11 @@ function SceneStage({ scene, onOpenFrame, onMaterialDrop, onContextAdd, semantic
       }
     }}
   >
-    <div className="orb-stage-context">
+    <div className="orb-stage-context sr-only">
       <span>Scene</span>
       <b>{scene?.name || scene?.id || "Untitled Scene"}</b>
       <small>{materials.length} materials · {scene?.frames?.length || 0} Output Frames</small>
     </div>
-    <nav className="orb-adaptive-views" aria-label="Adaptive Scene views">
-      {["Stage", "Gallery", "Graph", "Table", "Timeline", "Frame"].map((option) => <button
-        type="button"
-        key={option}
-        aria-pressed={option === view}
-        onClick={() => chooseView(option)}
-      >{option}</button>)}
-    </nav>
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty">
           <span className="orb-stage-locus" aria-hidden="true" />
@@ -536,6 +517,8 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
   });
   const [externalCursorMode, setExternalCursorMode] = useState(false);
+  const [sceneView, setSceneView] = useState("Stage");
+  const [outputToolsOpen, setOutputToolsOpen] = useState(false);
   const [outputFrameOpen, setOutputFrameOpen] = useState(() => {
     const query = new URLSearchParams(location.search);
     return ["legacy", "workspace"].includes(query.get("frame")) || [...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key));
@@ -543,6 +526,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   orbRef.current = orb;
 
   useEffect(() => {
+    setSceneView("Stage");
     const workspace = loadSceneWorkspace();
     setSceneWorkspace(workspace);
     const sceneId = route.sceneId || workspace.activeSceneId;
@@ -728,6 +712,9 @@ export default function OrbUniverseShell({ StageComponent }) {
       targetSnapshot: [{ route: route.path }],
     });
     const dispatched = markUtteranceDispatched(recorded.state, recorded.entry.id, `dispatch:${recorded.entry.id}`);
+    window.dispatchEvent(new CustomEvent("lens:companion-run", {
+      detail: { id: recorded.entry.id, source: "pearl", text: recorded.entry.raw },
+    }));
     let current = dispatched.phase === "idle"
       ? dispatched
       : createOrbState({
@@ -808,6 +795,30 @@ export default function OrbUniverseShell({ StageComponent }) {
           });
         },
       });
+      const stagedDestructive = runtime.pendingDestructive?.();
+      if (stagedDestructive) {
+        const steps = stagedDestructive.domains.map((domain) =>
+          `${domain}: ${stagedDestructive.counts?.[domain] || 0} item${stagedDestructive.counts?.[domain] === 1 ? "" : "s"}`
+        );
+        setOrb((value) => value.phase === "approval" ? value : transitionOrb(value, "approval", {
+          taskId: recorded.entry.id,
+          evidence: { title: "Clear selected workspace domains?", preview: true, steps },
+        }));
+        setPendingApproval({ title: "Clear selected workspace domains?", steps });
+        const approval = await new Promise((resolve) => {
+          approvalResolverRef.current = resolve;
+        });
+        if (approval?.decision !== "accept") {
+          runtime.rejectDestructive?.();
+          setOrb((value) => createOrbState({ ...value, phase: "paused", effectId: null, commandId: null }));
+          return;
+        }
+        runtime.confirmDestructive?.();
+        setOrb((value) => transitionOrb(value, "executing", {
+          taskId: recorded.entry.id,
+          commandId: "clearWorkspaceDomains",
+        }));
+      }
       if (result?.visible) {
         setOrb((value) => value.phase === "blocked" ? value : transitionOrb(value, "blocked", {
           taskId: recorded.entry.id,
@@ -1596,14 +1607,10 @@ export default function OrbUniverseShell({ StageComponent }) {
 
   if (route.kind === "stage") {
     return <div className="orb-stage-shell" data-semantic-anchor="scene-stage">
-      <div className="orb-stage-bar">
-        <a href="/library" onClick={(event) => { event.preventDefault(); navigate("/library"); }}>← Library</a>
-        <button type="button" onClick={() => setOutputFrameOpen((value) => !value)}>{outputFrameOpen ? "Close Output Frame" : "Open Output Frame"}</button>
-      </div>
-      <div className="orb-output-frame-host" data-semantic-anchor="output-frame" hidden={!outputFrameOpen}><StageComponent key={route.sceneId || "untitled"} sceneId={route.sceneId} /></div>
+      <div className={`orb-output-frame-host ${outputToolsOpen ? "tools-emitted" : ""}`} data-semantic-anchor="output-frame" hidden={!outputFrameOpen}><StageComponent key={route.sceneId || "untitled"} sceneId={route.sceneId} pearlShell /></div>
       {!outputFrameOpen && <SceneStage
         scene={routedScene}
-        onOpenFrame={() => setOutputFrameOpen(true)}
+        view={sceneView}
         onMaterialDrop={materializeOnStage}
         onContextAdd={addOrbContext}
         semanticOrbActions={semanticOrbActions}
@@ -1620,6 +1627,22 @@ export default function OrbUniverseShell({ StageComponent }) {
         <b>{emittedView === "context" ? "Working context" : emittedView === "actions" ? "Pearl actions" : emittedView === "taste" ? "Candidate taste" : "Cognitive library"}</b>
         {emittedView === "actions"
           ? <PearlActionPalette onRun={executePearlAction} />
+          : emittedView === "scene"
+          ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
+              <button type="button" onClick={() => navigate("/library")}>Library and recent work</button>
+              <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
+                {outputFrameOpen ? "Return to Scene" : "Open Output Frame"}
+              </button>
+              {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
+                {outputToolsOpen ? "Collapse paper tools" : "Paper tools"}
+              </button>}
+              {["Stage", "Gallery", "Graph", "Table", "Timeline"].map((option) => <button
+                type="button"
+                key={option}
+                aria-pressed={!outputFrameOpen && sceneView === option}
+                onClick={() => { setOutputFrameOpen(false); setSceneView(option); }}
+              >{option}</button>)}
+            </nav>
           : emittedView === "context"
           ? <ContextInspector items={orb.context || []} onChange={updateOrbContext} onRemove={removeOrbContext} />
           : emittedView === "lenses"
@@ -1655,5 +1678,26 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
         />}
+    {!showInstall && !cursorMode && <CompanionOrb
+      key="universe-orb"
+      featured
+      state={orb}
+      onStateChange={setOrb}
+      onCommand={command}
+      onStop={stopOrb}
+      onUndo={undoOrbEffect}
+      onRedo={hasOrbRedo ? redoOrbEffect : undefined}
+      onVoiceStart={beginVoice}
+      onVoiceEnd={endVoice}
+      onContextAdd={addOrbContext}
+      onLensAdd={addOrbLens}
+      onEmitView={setEmittedView}
+      onOrbCreate={createBlankScene}
+      cursorMode={cursorMode}
+      onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
+      approval={pendingApproval}
+      onApproval={decideApproval}
+      onWorkerCancel={cancelWorker}
+    />}
   </div>;
 }

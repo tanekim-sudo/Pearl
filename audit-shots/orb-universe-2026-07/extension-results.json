@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T01:33:47.054Z",
+  "generatedAt": "2026-07-20T02:32:34.330Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -21,12 +21,13 @@
     "Triple-Space restores the native cursor",
     "editable fields exclude the Triple-Space toggle",
     "same orb identity expands at 360px",
+    "idle side panel is Pearl-only and action search discovers the full capability model",
     "orb-mediated side panel views",
     "extension semantic orb tray creates and persists captured capsules",
     "library and settings remain reachable",
     "page and side-panel Pearls are static under reduced motion",
     "MV3 service worker loaded"
   ],
-  "passed": 18,
+  "passed": 19,
   "failed": 0
 }

@@ -67,6 +67,10 @@ try {
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const openPanelView = async (name) => {
+    await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+    await panel.getByRole("navigation", { name: "Immediate Pearl views" }).getByRole("button", { name, exact: true }).click();
+  };
   await panel.getByRole("heading", { name: "The world is your oyster. Make pearls." }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });
   await panel.getByRole("button", { name: "Get started" }).click();
@@ -102,7 +106,7 @@ try {
   });
   await panel.bringToFront();
   await panel.reload();
-  await panel.getByRole("button", { name: "context", exact: true }).click();
+  await openPanelView("Context");
   await panel.getByText(/1 fragment/).waitFor();
   await panel.getByRole("button", { name: "Make a pearl", exact: true }).click();
   await panel.waitForFunction(async () => {
@@ -114,11 +118,11 @@ try {
   await panel.screenshot({ path: path.join(evidence, "06-persistent-page-highlight.png"), fullPage: true });
 
   const before = await page.locator("#field").inputValue();
-  await panel.getByRole("button", { name: "library", exact: true }).click();
+  await openPanelView("Library");
   await panel.locator(".rack button").first().click();
   await panel.waitForTimeout(100);
   if (await page.locator("#field").inputValue() !== before) throw new Error("queueing mutated the page before GO");
-  await panel.getByRole("button", { name: "review", exact: true }).click();
+  await openPanelView("Generate");
   await panel.screenshot({ path: path.join(evidence, "07-queued-explicit-go.png"), fullPage: true });
 
   await panel.getByRole("button", { name: "GO", exact: true }).click();

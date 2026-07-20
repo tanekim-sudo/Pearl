@@ -23,6 +23,7 @@
     "audit:pearl-visual": "node scripts/pearl-material-audit.mjs",
     "test:orb": "node --test shared/orb-universe.test.js client/lib/unified-workspace.test.js",
     "test:pearl-visual": "node --test shared/pearl-visual-material.test.js",
+    "test:pearl-shell": "node --test client/lib/pearl-shell.test.js",
     "graph:generate": "node scripts/companion-capability-graph-gate.mjs --update",
     "graph:check": "node scripts/companion-capability-graph-gate.mjs",
     "release:check:fast": "node scripts/release-check.mjs --fast",

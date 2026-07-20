@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T01:40:04.940Z",
+  "generatedAt": "2026-07-20T02:38:29.089Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -22,18 +22,23 @@
           "scrollWidth": 1600,
           "clientWidth": 1600
         },
-        "animationCount": 0,
-        "animations": [],
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
         "reducedMotion": false,
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 146,
-        "loadMs": 147,
-        "transferBytes": 44700,
+        "domContentLoadedMs": 118,
+        "loadMs": 119,
+        "transferBytes": 45000,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - link \"PEARL\":\n    - /url: /library\n  - text: Local universe · private by default\n  - button \"Library\"\n  - text: Pearl continuation space\n  - heading \"The world is your oyster. Make pearls.\" [level=1]\n  - paragraph: A pearl is noticed material preserved with its source, context, and optional shaping. Make your first pearl on a real page; come here when it needs a Scene, an Output Frame, or deeper work.\n  - region \"Continue extension work\":\n    - text: Waiting for the page Pearl\n    - heading \"Open this space from the Pearl on any page\" [level=2]\n    - paragraph: On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here.\n    - link \"Extension setup\":\n      - /url: /install\n  - region \"Recent scenes and tasks\"\n  - paragraph: Make your first pearl today — on the page where you noticed it."
+      "snapshot": "- main:\n  - text: Pearl continuation space\n  - heading \"The world is your oyster. Make pearls.\" [level=1]\n  - paragraph: A pearl is noticed material preserved with its source, context, and optional shaping. Make your first pearl on a real page; come here when it needs a Scene, an Output Frame, or deeper work.\n  - region \"Continue extension work\":\n    - text: Waiting for the page Pearl\n    - heading \"Open this space from the Pearl on any page\" [level=2]\n    - paragraph: On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here.\n    - link \"Extension setup\":\n      - /url: /install\n  - region \"Recent scenes and tasks\"\n  - paragraph: Make your first pearl today — on the page where you noticed it.\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
     },
     {
       "name": "02-library-laptop",
@@ -54,18 +59,23 @@
           "scrollWidth": 1280,
           "clientWidth": 1280
         },
-        "animationCount": 0,
-        "animations": [],
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
         "reducedMotion": false,
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 100,
-        "loadMs": 102,
-        "transferBytes": 44700,
+        "domContentLoadedMs": 119,
+        "loadMs": 120,
+        "transferBytes": 45000,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - link \"PEARL\":\n    - /url: /library\n  - text: Local universe · private by default\n  - button \"Library\"\n  - text: Library and saved work\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Review reusable cognition and resume saved work without leaving the extension-first flow.\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n  - paragraph: Hold Pearl to speak · click for command · drag material into its orbit"
+      "snapshot": "- main:\n  - text: Library and saved work\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Review reusable cognition and resume saved work without leaving the extension-first flow.\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n  - paragraph: Hold Pearl to speak · click for command · drag material into its orbit\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
     },
     {
       "name": "03-library-narrow",
@@ -86,18 +96,23 @@
           "scrollWidth": 390,
           "clientWidth": 390
         },
-        "animationCount": 0,
-        "animations": [],
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "orb-respire",
+            "playState": "running"
+          }
+        ],
         "reducedMotion": false,
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 104,
-        "loadMs": 106,
-        "transferBytes": 44700,
+        "domContentLoadedMs": 91,
+        "loadMs": 92,
+        "transferBytes": 45000,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - link \"PEARL\":\n    - /url: /library\n  - button \"Library\"\n  - text: Library and saved work\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Review reusable cognition and resume saved work without leaving the extension-first flow.\n  - region \"Recent scenes and tasks\"\n  - paragraph: Hold Pearl to speak · click for command · drag material into its orbit"
+      "snapshot": "- main:\n  - text: Library and saved work\n  - heading \"Your cognitive universe\" [level=1]\n  - paragraph: Review reusable cognition and resume saved work without leaving the extension-first flow.\n  - region \"Recent scenes and tasks\"\n  - paragraph: Hold Pearl to speak · click for command · drag material into its orbit\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\""
     },
     {
       "name": "03a-trusted-handoff-output-frame",
@@ -118,12 +133,8 @@
           "scrollWidth": 1280,
           "clientWidth": 1280
         },
-        "animationCount": 2,
+        "animationCount": 1,
         "animations": [
-          {
-            "name": "companion-orb-breathe",
-            "playState": "running"
-          },
           {
             "name": "orb-respire",
             "playState": "running"
@@ -133,12 +144,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 157,
-        "loadMs": 159,
-        "transferBytes": 45000,
+        "domContentLoadedMs": 119,
+        "loadMs": 121,
+        "transferBytes": 45300,
         "longTasks": 0
       },
-      "snapshot": "- link \"← Library\":\n  - /url: /library\n- button \"Close Output Frame\"\n- banner:\n  - text: pearl\n  - button \"↩\" [disabled]\n  - button \"↪\" [disabled]\n  - button \"★\"\n  - button \"Sign in\"\n  - button \"···\"\n  - button \"↗\"\n- complementary:\n  - complementary:\n    - text: Move = one action. Function = a process. Lens = a way of seeing.\n    - navigation \"Library sections\":\n      - button \"↦ Moves\"\n      - button \"⛓ Functions\"\n      - button \"◉ Lenses\"\n    - button \"Save selected material as Move, Function, or Lens\": ＋ Save as… Move, Function, or Lens\n    - button \"Learn from a chat Paste a Claude, ChatGPT, or LLM transcript\"\n    - heading \"↦ Moves one action · an atomic prompt · one model call\" [level=3]\n    - textbox \"Quick Move instruction\":\n      - /placeholder: one action — e.g. treat as a garden\n    - button \"Add Move\" [disabled]: +\n    - searchbox \"Search lens rack\"\n    - button \"◇ 0\"\n    - combobox \"Filter lens type\":\n      - option \"all lenses\" [selected]\n      - option \"primitive\"\n      - option \"custom\"\n      - option \"compound\"\n      - option \"forged\"\n      - option \"forked\"\n      - option \"shared\"\n      - option \"archived\"\n    - combobox \"Sort lens rack\":\n      - option \"recent\" [selected]\n      - option \"frequent\"\n      - option \"name\"\n      - option \"version\"\n    - button \"+ pack\"\n    - button \"↗ extension\"\n    - text: 8 Primitive Moves Branch Merge Deepen Challenge Embody Moves compress\n    - button \"Add compress to Primitive Moves\": +P\n    - button \"Queue compress in brush stack\"\n    - button \"✎\"\n    - button \"↗\"\n    - text: research\n    - button \"Add research to Primitive Moves\": +P\n    - button \"Queue research in brush stack\"\n    - button \"✎\"\n    - button \"↗\"\n    - text: reframe\n    - button \"Add reframe to Primitive Moves\": +P\n    - button \"Queue reframe in brush stack\"\n    - button \"✎\"\n    - button \"↗\"\n    - text: functions processes — ordered, branched, or nested Moves and Functions 0 functions\n    - button \"Create Function\": +\n    - text: connected steps "
+      "snapshot": "- textbox \"Page title\":\n  - /placeholder: Untitled idea\n  - text: Untitled Idea\n- button \"◇\"\n- button \"Open Cognitive Package registry\": pkg\n- button \"Open Cognitive Workflow Studio\": cog\n- img\n- img\n- text: Trusted carried material Verified carried candidate Clarify 8.5 × 11\n- button \"Record voice + drawing\"\n- complementary \"Pearl, idle\":\n  - button \"Context material, priority 1\": context\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
     },
     {
       "name": "04-stage-desktop",
@@ -170,12 +181,12 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 140,
-        "loadMs": 141,
-        "transferBytes": 45000,
+        "domContentLoadedMs": 120,
+        "loadMs": 122,
+        "transferBytes": 45300,
         "longTasks": 0
       },
-      "snapshot": "- link \"← Library\":\n  - /url: /library\n- button \"Open Output Frame\"\n- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - navigation \"Adaptive Scene views\":\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\" [pressed]\n    - button \"Timeline\"\n    - button \"Frame\"\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n  - region \"Pearls\":\n    - button \"+ New pearl\"\n    - button \"Open cluster of 6 pearls\": \"6\"\n    - button \"Open cluster of 2 pearls\": \"2\"\n    - button \"Open cluster of 12 pearls\": \"12\"\n    - button \"Untitled orb, empty pearl\": Untitled orb\n- complementary \"Pearl, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off"
+      "snapshot": "- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n  - region \"Pearls\":\n    - button \"+ New pearl\"\n    - button \"Open cluster of 6 pearls\": \"6\"\n    - button \"Open cluster of 2 pearls\": \"2\"\n    - button \"Open cluster of 12 pearls\": \"12\"\n    - button \"Untitled orb, empty pearl\": Untitled orb\n- complementary \"Pearl, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Pearl. Hold to speak, click to expand, or use arrow keys to move.\"\n- status: Orb cursor off\n- complementary \"scene view emitted by orb\":\n  - button \"Close\"\n  - text: Cognitive library\n  - navigation \"Scene and Output Frame actions\":\n    - button \"Library and recent work\"\n    - button \"Open Output Frame\"\n    - button \"Stage\"\n    - button \"Gallery\"\n    - button \"Graph\"\n    - button \"Table\" [pressed]\n    - button \"Timeline\""
     },
     {
       "name": "05-install-reduced-motion",
@@ -202,9 +213,9 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 475,
-        "loadMs": 477,
-        "transferBytes": 12545724,
+        "domContentLoadedMs": 602,
+        "loadMs": 604,
+        "transferBytes": 12598435,
         "longTasks": 0
       },
       "snapshot": "- main:\n  - text: Pearl Everywhere\n  - heading \"The world is your oyster. Make pearls.\" [level=1]\n  - paragraph: Notice something on any page, make it a source-linked pearl, then reopen that compact agent shell whenever you want to shape or use it. Make your first pearl today.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Open saved Scenes\"\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing."

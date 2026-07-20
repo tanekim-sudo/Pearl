@@ -56,7 +56,7 @@ function mountPageOrb() {
   const emission = document.createElement("section");
   emission.className = "emission";
   emission.setAttribute("aria-label", "Views emitted by Pearl");
-  emission.innerHTML = `<header><b>Pearl</b><span>The world is your oyster</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="pearl">Make a pearl from this</button><button type="button" data-action="capture">Add to working context</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Expand Pearl</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="pearl">Make a pearl from current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Notice explicit material</span><span>2 · Shape the pearl</span><span>3 · Review candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Open side panel</button></div>`;
+  emission.innerHTML = `<header><b>Pearl</b><span>The world is your oyster</span></header><nav>${["command","context","lens","plan","taste","more"].map((view, i) => `<button type="button" data-view="${view}" aria-current="${i === 0}">${view}</button>`).join("")}</nav><div class="view active" data-panel="command"><input aria-label="Tell Pearl your goal" placeholder="Tell Pearl your goal…"><button type="button" data-action="pearl">Make a pearl from this</button><button type="button" data-action="capture">Add to working context</button><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="panel">Find any action…</button></div><div class="view context-list" data-panel="context"><b>Working context</b><span data-context-count>No material yet</span><button type="button" data-action="pearl">Make a pearl from current selection</button></div><div class="view" data-panel="lens"><b>Lens atmosphere</b><span data-active-lens>New chat · no active Lens</span><button type="button" data-action="panel">Choose Lens in Pearl</button></div><div class="view" data-panel="plan"><b>Bounded plan</b><span>1 · Notice explicit material</span><span>2 · Shape the pearl</span><span>3 · Review candidates</span></div><div class="view" data-panel="taste"><b>Candidate constellation</b><span data-candidate-count>No staged candidates</span><div class="taste"><button>Yes</button><button>No</button><button>More like this</button></div></div><div class="view" data-panel="more"><button type="button" data-action="cursor">Become the cursor</button><button type="button" data-action="minimize">Minimize Pearl</button><button type="button" data-action="dock">Dock right</button><button type="button" data-action="panel">Find every Pearl action</button></div>`;
   const minimize = document.createElement("button");
   minimize.className = "minimize";
   minimize.type = "button";
@@ -315,13 +315,31 @@ function mountPageOrb() {
   orb.addEventListener("dragover", (event) => event.preventDefault());
   orb.addEventListener("drop", async (event) => {
     event.preventDefault();
+    const portable = event.dataTransfer?.getData("application/x-lens-object");
     const text = event.dataTransfer?.getData("text/plain")?.trim();
-    if (!text) return;
+    let object = null;
+    try { object = portable ? JSON.parse(portable) : null; } catch { /* plain text is still explicit material */ }
+    if (object && ["lens", "generator"].includes(object.kind || object.type)) {
+      setState("absorbing");
+      await send("set-generator", { generator: object }).catch(() => null);
+      shell.classList.add("lens");
+      shell.querySelector("[data-active-lens]").textContent = `${object.name || object.label || "Lens"} · active`;
+      window.setTimeout(() => setState("idle"), 700);
+      return;
+    }
+    if (object && ["move", "function", "operator"].includes(object.kind || object.type || object.libraryKind)) {
+      setState("planning");
+      await send("queue-lens", { lens: object }).catch(() => null);
+      window.setTimeout(() => setState("idle"), 700);
+      return;
+    }
+    if (!text && !object) return;
     setState("absorbing");
     await send("fragments-changed", { fragments: [{
-      id: `orb-drop:${Date.now()}`,
-      quote: text.slice(0, 50_000),
-      provenance: { title: document.title, origin: location.origin, url: location.href, capturedAt: new Date().toISOString() },
+      ...(object || {}),
+      id: object?.id || `orb-drop:${Date.now()}`,
+      quote: String(object?.quote || object?.text || text).slice(0, 50_000),
+      provenance: object?.provenance || { title: document.title, origin: location.origin, url: location.href, capturedAt: new Date().toISOString() },
     }] }).catch(() => {});
     contextCount = Math.min(5, contextCount + 1);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });

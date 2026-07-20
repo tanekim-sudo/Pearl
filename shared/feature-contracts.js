@@ -283,11 +283,40 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ],
     owner: "client/components/OrbUniverseShell.jsx",
   }),
+  feature("shell.pearl-progressive", {
+    migrationVersion: 4,
+    domains: ["interface", "scene", "frame", "paper", "ai", "move", "function", "lens", "extension"],
+    commands: ["addOrbContext", "addOrbLens", "setGenerationPlan", "recordTasteFeedback"],
+    ui: [
+      "client/components/CompanionOrb.jsx:pearl-action-search",
+      "client/components/OrbUniverseShell.jsx:pearl-scene-actions",
+      "extension/src/sidepanel/main.jsx:extension-pearl-halo",
+      "extension/src/content/bridge.js:Find every Pearl action",
+    ],
+    companion: [
+      "observeWorkspace", "semanticTransfer", "openSaveAsChooser", "setGenerationPlan",
+      "openTranscriptLearning", "openPackageRegistry", "redoWorkspace", "exportWorkspace",
+    ],
+    extension: [
+      "capturePageSelection", "createExternalSemanticOrb", "queueExternalAction",
+      "pressExternalGo", "tasteExternalCandidate", "showExternalLibraryImport",
+      "browseExternalPackages", "openExternalBeforeAfter",
+    ],
+    persistence: [
+      "lens.orb.surface.v1", "lens.orb.placement.v1", "lens.scenes.v4",
+      "lens.companion.run-ledger.v1", "generationPlan", "semanticOrbs",
+    ],
+    tests: [
+      "client/lib/pearl-shell.test.js", "shared/orb-universe.test.js",
+      "extension/tests/core.test.js",
+    ],
+    owner: "client/lib/pearl-shell.js",
+  }),
 ]);
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 31,
+  features: 32,
   minimumCompanionCapabilities: 130,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

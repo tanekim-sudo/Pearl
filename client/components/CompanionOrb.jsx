@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
+import { PEARL_ACTION_CATEGORIES, searchPearlActions } from "../lib/pearl-shell.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -40,8 +41,11 @@ export default function CompanionOrb({
   const holdRef = useRef(null);
   const voiceStartedRef = useRef(false);
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
+  const actionSearchRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState("");
+  const [actionQuery, setActionQuery] = useState("");
+  const [actionCategory, setActionCategory] = useState(null);
   const [placement, setPlacement] = useState(() => ({ ...state.placement, ...readPlacement(storageKey) }));
 
   useEffect(() => {
@@ -72,6 +76,18 @@ export default function CompanionOrb({
     window.addEventListener("resize", keepVisible);
     return () => window.removeEventListener("resize", keepVisible);
   }, [featured]);
+
+  useEffect(() => {
+    function openActionSearch(event) {
+      const typing = event.target?.closest?.("input,textarea,select,[contenteditable='true']");
+      if (typing || !((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) return;
+      event.preventDefault();
+      setExpanded(true);
+      requestAnimationFrame(() => actionSearchRef.current?.focus());
+    }
+    window.addEventListener("keydown", openActionSearch);
+    return () => window.removeEventListener("keydown", openActionSearch);
+  }, []);
 
   function updatePlacement(next) {
     const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
@@ -180,6 +196,7 @@ export default function CompanionOrb({
   }
 
   const phase = state.phase || "idle";
+  const visibleActions = searchPearlActions(actionQuery, { category: actionCategory }).slice(0, 12);
   return (
     <aside
       ref={rootRef}
@@ -330,6 +347,43 @@ export default function CompanionOrb({
               <button type="button" onClick={() => onApproval?.("reject")}>Reject</button>
             </div>
           </section>}
+          <section className="pearl-action-search" aria-label="All Pearl actions">
+            <label>
+              <span className="sr-only">Search every Pearl action</span>
+              <input
+                ref={actionSearchRef}
+                type="search"
+                value={actionQuery}
+                onChange={(event) => setActionQuery(event.target.value)}
+                placeholder="Find any action…  ⌘K"
+                aria-keyshortcuts="Meta+K Control+K"
+              />
+            </label>
+            <nav aria-label="Pearl action categories">
+              <button type="button" aria-pressed={!actionCategory} onClick={() => setActionCategory(null)}>All</button>
+              {PEARL_ACTION_CATEGORIES.map((category) => <button
+                type="button"
+                key={category.id}
+                aria-pressed={actionCategory === category.id}
+                onClick={() => setActionCategory((value) => value === category.id ? null : category.id)}
+              >{category.label}</button>)}
+            </nav>
+            <div className="pearl-action-results" role="list">
+              {visibleActions.map((action) => <button
+                type="button"
+                role="listitem"
+                key={action.id}
+                onClick={() => {
+                  onCommand?.(action.example);
+                  if (!action.destructive) setExpanded(false);
+                }}
+              >
+                <span><b>{action.label}</b><small>{action.purpose}</small></span>
+                <i>{action.destructive ? "Confirm" : "Run"}</i>
+              </button>)}
+              {!visibleActions.length && <span role="status">No action matches “{actionQuery}”. Try saying the goal naturally.</span>}
+            </div>
+          </section>
           {(state.checkpoints || []).length > 0 && <details className="orb-checkpoints">
             <summary>{state.checkpoints.length} checkpoint{state.checkpoints.length === 1 ? "" : "s"}</summary>
             <ol>{state.checkpoints.slice(-8).map((checkpoint, index) => <li key={checkpoint.id || checkpoint.at || index}>
@@ -342,9 +396,10 @@ export default function CompanionOrb({
           </details>}
           <div className="orb-controls">
             <button type="button" onPointerDown={onVoiceStart} onPointerUp={onVoiceEnd}>Hold to speak</button>
-            <button type="button" onClick={() => onEmitView?.("context")}>Context</button>
-            <button type="button" onClick={() => onEmitView?.("library")}>Library</button>
-            <button type="button" onClick={() => onEmitView?.("actions")}>Actions</button>
+            <button type="button" onClick={() => { onEmitView?.("context"); setExpanded(false); }}>Context</button>
+            <button type="button" onClick={() => { onEmitView?.("library"); setExpanded(false); }}>Library</button>
+            <button type="button" onClick={() => { onEmitView?.("actions"); setExpanded(false); }}>Actions</button>
+            <button type="button" onClick={() => { onEmitView?.("scene"); setExpanded(false); }}>Scene</button>
             <button type="button" onClick={() => onOrbCreate?.()}>New orb</button>
             <button type="button" aria-pressed={cursorMode} onClick={() => onCursorToggle?.(!cursorMode)}>
               {cursorMode ? "Native cursor" : "Become cursor"}

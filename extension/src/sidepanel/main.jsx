@@ -11,6 +11,7 @@ import { outputContractFor, outputContractLabel } from "../../../shared/output-s
 import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
+import { PEARL_ACTION_CATEGORIES, searchPearlActions } from "../../../client/lib/pearl-shell.js";
 import "./sidepanel.css";
 
 async function call(type, payload = {}) {
@@ -35,7 +36,7 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
-function ExtensionOrb({ phase, listening, onVoice, onCommandView, contextCount = 0, lensActive = false, candidateCount = 0 }) {
+function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, contextCount = 0, lensActive = false, candidateCount = 0 }) {
   const id = useId();
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
   function moveLight(event) {
@@ -56,13 +57,20 @@ function ExtensionOrb({ phase, listening, onVoice, onCommandView, contextCount =
       timer: window.setTimeout(() => target.style.setProperty("--pearl-motion", "0"), 140),
     };
   }
-  return <div className="extension-orb-shell" data-orb-state={phase} aria-label={`Pearl, ${phase}`} onPointerMove={moveLight}>
+  return <div
+    className="extension-orb-shell"
+    data-orb-state={phase}
+    aria-label={`Pearl, ${phase}`}
+    onPointerMove={moveLight}
+    onDragOver={(event) => event.preventDefault()}
+    onDrop={onDropMaterial}
+  >
     <div className="extension-orb-emissions" aria-live="polite">
       {lensActive && <span className="extension-lens-ring" aria-label="Active Lens atmosphere" />}
       {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
       {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <i className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} />)}
     </div>
-    <button type="button" className="extension-orb" aria-label={listening ? "Stop listening" : "Hold to speak"} onClick={onVoice}>
+    <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <defs>
           <radialGradient id={`extension-pearl-core-${id}`} cx="39%" cy="58%" r="72%">
@@ -144,11 +152,29 @@ function App() {
   const [modelCatalog, setModelCatalog] = useState([]);
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [packages, setPackages] = useState([]);
-  const [activeView, setActiveView] = useState("command");
+  const [activeView, setActiveView] = useState("idle");
+  const [pearlOpen, setPearlOpen] = useState(false);
+  const [pearlQuery, setPearlQuery] = useState("");
+  const [pearlCategory, setPearlCategory] = useState(null);
   const [orbCursorEnabled, setOrbCursorEnabled] = useState(false);
   const [semanticOrbs, setSemanticOrbs] = useState([]);
   const [activeSemanticOrbId, setActiveSemanticOrbId] = useState(null);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    function pearlKeys(event) {
+      const typing = event.target?.closest?.("input,textarea,select,[contenteditable='true']");
+      if (!typing && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPearlOpen(true);
+      } else if (event.key === "Escape") {
+        setPearlOpen(false);
+        setActiveView("idle");
+      }
+    }
+    addEventListener("keydown", pearlKeys);
+    return () => removeEventListener("keydown", pearlKeys);
+  }, []);
 
   async function browsePackages() {
     setPackagesOpen(true);
@@ -616,10 +642,9 @@ function App() {
     setOnboardingStep(0);
   }
 
-  async function directCompanion(event) {
-    event.preventDefault();
+  async function runCompanionCommand(raw = companion) {
     try {
-      const command = parseExtensionIntent(companion);
+      const command = parseExtensionIntent(raw);
       const outputs = session.results.flatMap((run) => run.outputs);
       const approvalRequired = ["insertExternalResult", "replaceExternalSelection", "annotateExternalResult", "installExternalPackage", "teachExternalPersonalCommand"].includes(command.name);
       const confirmed = !approvalRequired || window.confirm(
@@ -685,9 +710,55 @@ function App() {
         },
       });
       setCompanion("");
+      setPearlOpen(false);
     } catch (e) {
       setError(e.message);
     }
+  }
+
+  async function directCompanion(event) {
+    event.preventDefault();
+    await runCompanionCommand();
+  }
+
+  async function runPearlAction(pearlAction) {
+    if (pearlAction.platform === "app") {
+      await action("open-web-handoff", {
+        surface: "pearl-capability",
+        capability: pearlAction.capability,
+        preservePayload: true,
+      });
+      setPearlOpen(false);
+      return;
+    }
+    setCompanion(pearlAction.example);
+    await runCompanionCommand(pearlAction.example);
+  }
+
+  async function dropOnPearl(event) {
+    event.preventDefault();
+    const portable = event.dataTransfer?.getData("application/x-lens-object");
+    const text = event.dataTransfer?.getData("text/plain")?.trim();
+    let object = null;
+    try { object = portable ? JSON.parse(portable) : null; } catch { /* plain text remains valid material */ }
+    if (object && ["lens", "generator"].includes(object.kind || object.type)) {
+      await action("set-generator", { generator: object });
+      setReadyMessage(`${object.name || object.label || "Lens"} is active context.`);
+    } else if (object && ["move", "function", "operator"].includes(object.kind || object.type || object.libraryKind)) {
+      await action("queue-lens", { lens: object });
+      setReadyMessage(`${object.name || object.label || "Action"} is queued. Review, then press GO.`);
+    } else if (text || object) {
+      const fragment = {
+        ...(object || {}),
+        id: object?.id || `pearl-drop:${crypto.randomUUID()}`,
+        quote: object?.quote || object?.text || text,
+        provenance: object?.provenance || { title: "Dropped into Pearl", origin: "sidepanel", capturedAt: new Date().toISOString() },
+      };
+      await action("fragments-changed", { fragments: [...session.fragments.filter((entry) => entry.id !== fragment.id), fragment] });
+      setReadyMessage("Material added to Pearl context.");
+    }
+    setActiveView("context");
+    setPearlOpen(false);
   }
 
   function toggleCompanionVoice() {
@@ -740,7 +811,7 @@ function App() {
     {onboardingStep > 0 && <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-top"><span>Step {onboardingStep} of 3</span><button type="button" onClick={skipOnboarding}>Skip</button></div>
       {onboardingStep === 1 && <>
-        <ExtensionOrb phase="idle" listening={false} onVoice={() => {}} onCommandView={() => {}} />
+        <ExtensionOrb phase="idle" listening={false} onCommandView={() => {}} />
         <h1 id="onboarding-title">The world is your oyster. Make pearls.</h1>
         <p>A pearl is something you notice in the world and choose to keep: source-linked material inside a compact agent shell. Make your first pearl from a real page selection; shape it later with Moves, Functions, or Lenses.</p>
         <button className="gold onboarding-primary" onClick={() => setOnboardingStep(2)}>Get started</button>
@@ -776,16 +847,38 @@ function App() {
       {error && <p role="alert">{error}</p>}
     </div>}
     <header>
-      <ExtensionOrb phase={orbPhase} listening={voiceListening} onVoice={toggleCompanionVoice} onCommandView={() => setActiveView("command")}
+      <ExtensionOrb phase={orbPhase} listening={voiceListening} onCommandView={() => setPearlOpen((value) => !value)}
+        onDropMaterial={dropOnPearl}
         contextCount={session.fragments.length} lensActive={Boolean(session.generator)} candidateCount={session.results.flatMap((run) => run.outputs).length} />
-      <div>
-        <button type="button" onClick={browsePackages}>Packages</button>
-        {auth ? <span className="signed-in">Synced</span> : <button onClick={signIn}>Sign in</button>}
-      </div>
     </header>
-    <nav className="orb-view-tabs" aria-label="Orb views">
-      {["command", "context", "orbs", "library", "review", "taste", "settings"].map((view) => <button key={view} type="button" aria-current={activeView === view ? "page" : undefined} onClick={() => setActiveView(view)}>{view === "orbs" ? "pearls" : view}</button>)}
-    </nav>
+    {pearlOpen && <aside className="extension-pearl-halo" aria-label="Pearl actions">
+      <div className="extension-pearl-halo-head">
+        <span>{orbPhase === "idle" ? "What would you like to do?" : orbPhase}</span>
+        <button type="button" aria-label="Close Pearl actions" onClick={() => setPearlOpen(false)}>×</button>
+      </div>
+      <form onSubmit={directCompanion}>
+        <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Say anything…" />
+        <button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "Voice"}</button>
+        <button type="submit">Run</button>
+      </form>
+      <nav aria-label="Immediate Pearl views">
+        {[
+          ["command", "Command"], ["context", "Context"], ["orbs", "Pearls"], ["library", "Library"],
+          ["review", "Generate"], ["taste", "Taste"], ["settings", "Settings"],
+        ].map(([view, label]) => <button type="button" key={view} onClick={() => { setActiveView(view); setPearlOpen(false); }}>{label}</button>)}
+      </nav>
+      <input type="search" aria-label="Search every Pearl action" value={pearlQuery} onChange={(event) => setPearlQuery(event.target.value)} placeholder="Find any action…" />
+      <div className="extension-pearl-categories">
+        <button type="button" aria-pressed={!pearlCategory} onClick={() => setPearlCategory(null)}>All</button>
+        {PEARL_ACTION_CATEGORIES.map((category) => <button type="button" key={category.id} aria-pressed={pearlCategory === category.id} onClick={() => setPearlCategory((value) => value === category.id ? null : category.id)}>{category.label}</button>)}
+      </div>
+      <div className="extension-pearl-actions">
+        {searchPearlActions(pearlQuery, { platform: "extension", category: pearlCategory }).slice(0, 10).map((pearlAction) => <button type="button" key={pearlAction.id} onClick={() => runPearlAction(pearlAction)}>
+          <b>{pearlAction.label}</b><small>{pearlAction.purpose}</small>
+        </button>)}
+      </div>
+    </aside>}
+    {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
     <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved pearls">
       <div className="extension-semantic-orb-head">
         <div><h2>Pearls</h2><small>Source-linked semantic capsules you can reopen and keep shaping.</small></div>

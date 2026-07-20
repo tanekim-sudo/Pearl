@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T00:04:49.031Z",
+  "generatedAt": "2026-07-20T01:47:31.338Z",
   "counts": {
-    "features": 31,
+    "features": 32,
     "companion": 251,
     "extension": 51,
     "commands": 47
@@ -618,6 +618,40 @@
       "tests": [
         "client/lib/extension-funnel.test.js",
         "client/lib/extension-continuation.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js"
+      ]
+    },
+    {
+      "id": "shell.pearl-progressive",
+      "commands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
+      ],
+      "companion": [
+        "observeWorkspace",
+        "semanticTransfer",
+        "openSaveAsChooser",
+        "setGenerationPlan",
+        "openTranscriptLearning",
+        "openPackageRegistry",
+        "redoWorkspace",
+        "exportWorkspace"
+      ],
+      "extension": [
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter"
+      ],
+      "tests": [
+        "client/lib/pearl-shell.test.js",
         "shared/orb-universe.test.js",
         "extension/tests/core.test.js"
       ]
