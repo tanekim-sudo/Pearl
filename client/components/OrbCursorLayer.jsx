@@ -94,23 +94,39 @@ export default function OrbCursorLayer({ state, onDisable }) {
     <svg className="orb-cursor-visual" viewBox="0 0 100 100">
       <defs>
         <radialGradient id={`cursor-body-${id}`} cx="39%" cy="58%" r="72%">
-          <stop offset="0" stopColor="#fff7e8" />
-          <stop offset=".3" stopColor="#f6efe3" />
-          <stop offset=".7" stopColor="#e4e4da" />
-          <stop offset="1" stopColor="#b4b7af" />
+          <stop offset="0" stopColor="#fffaf0" />
+          <stop offset=".3" stopColor="#f5f0e7" />
+          <stop offset=".68" stopColor="#e7e6de" />
+          <stop offset=".88" stopColor="#d1d4ce" />
+          <stop offset="1" stopColor="#aeb3af" />
+        </radialGradient>
+        <radialGradient id={`cursor-nucleus-${id}`} cx="38%" cy="62%" r="58%">
+          <stop offset="0" stopColor="#f2d9ce" stopOpacity=".52" />
+          <stop offset=".36" stopColor="#d2e2da" stopOpacity=".34" />
+          <stop offset=".72" stopColor="#eadcb9" stopOpacity=".15" />
+          <stop offset="1" stopColor="#c6ced0" stopOpacity="0" />
         </radialGradient>
         <linearGradient id={`cursor-nacre-${id}`} x1="8%" y1="14%" x2="92%" y2="84%">
-          <stop offset="0" stopColor="#e8c9c3" stopOpacity=".18" />
-          <stop offset=".35" stopColor="#c6dcd3" stopOpacity=".34" />
-          <stop offset=".64" stopColor="#f0deb8" stopOpacity=".26" />
-          <stop offset="1" stopColor="#e4c7c0" stopOpacity=".16" />
+          <stop offset="0" stopColor="#dfbfb9" stopOpacity=".11" />
+          <stop offset=".31" stopColor="#bfd8ce" stopOpacity=".28" />
+          <stop offset=".53" stopColor="#f2e4c2" stopOpacity=".18" />
+          <stop offset=".72" stopColor="#d9bdba" stopOpacity=".21" />
+          <stop offset="1" stopColor="#bdd3cc" stopOpacity=".1" />
+        </linearGradient>
+        <linearGradient id={`cursor-rim-${id}`} x1="18%" y1="8%" x2="82%" y2="92%">
+          <stop offset="0" stopColor="#fff" stopOpacity=".78" />
+          <stop offset=".5" stopColor="#edf2ee" stopOpacity=".18" />
+          <stop offset=".82" stopColor="#78817e" stopOpacity=".35" />
+          <stop offset="1" stopColor="#f4ecdf" stopOpacity=".48" />
         </linearGradient>
       </defs>
       <ellipse className="orb-cursor-shadow" cx="51" cy="96" rx="25" ry="2" />
       <g className="orb-cursor-pearl">
         <circle className="orb-cursor-core" cx="50" cy="50" r="43" fill={`url(#cursor-body-${id})`} />
+        <ellipse className="orb-cursor-nucleus" cx="43" cy="57" rx="25" ry="29" fill={`url(#cursor-nucleus-${id})`} />
         <circle className="orb-cursor-nacre" cx="50" cy="50" r="41.5" fill={`url(#cursor-nacre-${id})`} />
         <ellipse className="orb-cursor-reflection" cx="58" cy="61" rx="28" ry="17" />
+        <circle className="orb-cursor-rim" cx="50" cy="50" r="42.2" fill="none" stroke={`url(#cursor-rim-${id})`} />
         <ellipse className="orb-cursor-glint" cx="33" cy="28" rx="8" ry="4.5" transform="rotate(-38 33 28)" />
         <circle className="orb-cursor-pinlight" cx="27.5" cy="22.5" r="2" />
       </g>

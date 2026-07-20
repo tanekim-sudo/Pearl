@@ -265,6 +265,19 @@ try {
   await panel.getByRole("button", { name: "settings", exact: true }).click();
   await panel.getByRole("heading", { name: "Settings" }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "09-extension-settings-360.png"), fullPage: true });
+  await Promise.all([
+    fixture.emulateMedia({ reducedMotion: "reduce" }),
+    panel.emulateMedia({ reducedMotion: "reduce" }),
+  ]);
+  const reducedMotion = {
+    page: await fixture.locator("#lens-orb-overlay-host").evaluate((host) => getComputedStyle(host.shadowRoot.querySelector(".pearl")).animationName),
+    panel: await panel.locator(".extension-orb-pearl").evaluate((node) => getComputedStyle(node).animationName),
+  };
+  if (reducedMotion.page !== "none" || reducedMotion.panel !== "none") {
+    throw new Error(`reduced-motion Pearls still animate: ${JSON.stringify(reducedMotion)}`);
+  }
+  await fixture.screenshot({ path: path.join(evidence, "10-extension-page-orb-reduced.png"), fullPage: true });
+  await panel.screenshot({ path: path.join(evidence, "10a-extension-sidepanel-reduced-360.png"), fullPage: true });
 
   fs.writeFileSync(path.join(evidence, "extension-results.json"), `${JSON.stringify({
     version: 1,
@@ -289,12 +302,13 @@ try {
       "orb-mediated side panel views",
       "extension semantic orb tray creates and persists captured capsules",
       "library and settings remain reachable",
+      "page and side-panel Pearls are static under reduced motion",
       "MV3 service worker loaded",
     ],
-    passed: 17,
+    passed: 18,
     failed: 0,
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 17 checks, 12 screenshots.");
+  console.log("Orb extension audit passed: 18 checks, 14 screenshots.");
 } finally {
   await context.close();
   server.close();

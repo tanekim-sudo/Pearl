@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T01:01:57.615Z",
+  "generatedAt": "2026-07-20T01:40:04.940Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -28,8 +28,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 102,
-        "loadMs": 103,
+        "domContentLoadedMs": 146,
+        "loadMs": 147,
         "transferBytes": 44700,
         "longTasks": 0
       },
@@ -60,7 +60,7 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 101,
+        "domContentLoadedMs": 100,
         "loadMs": 102,
         "transferBytes": 44700,
         "longTasks": 0
@@ -92,8 +92,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 112,
-        "loadMs": 114,
+        "domContentLoadedMs": 104,
+        "loadMs": 106,
         "transferBytes": 44700,
         "longTasks": 0
       },
@@ -133,8 +133,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 154,
-        "loadMs": 156,
+        "domContentLoadedMs": 157,
+        "loadMs": 159,
         "transferBytes": 45000,
         "longTasks": 0
       },
@@ -170,8 +170,8 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 200,
-        "loadMs": 202,
+        "domContentLoadedMs": 140,
+        "loadMs": 141,
         "transferBytes": 45000,
         "longTasks": 0
       },
@@ -202,9 +202,9 @@
         "highContrast": false
       },
       "metrics": {
-        "domContentLoadedMs": 317,
-        "loadMs": 319,
-        "transferBytes": 12522120,
+        "domContentLoadedMs": 475,
+        "loadMs": 477,
+        "transferBytes": 12545724,
         "longTasks": 0
       },
       "snapshot": "- main:\n  - text: Pearl Everywhere\n  - heading \"The world is your oyster. Make pearls.\" [level=1]\n  - paragraph: Notice something on any page, make it a source-linked pearl, then reopen that compact agent shell whenever you want to shape or use it. Make your first pearl today.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Open saved Scenes\"\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing."

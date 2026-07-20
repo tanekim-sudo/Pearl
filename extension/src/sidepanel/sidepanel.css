@@ -207,3 +207,35 @@ textarea { min-height:44px; }
   button,input,select,textarea,.orb-panel.active,.recovery-alert { border:1px solid ButtonText; }
   .gold,.go { forced-color-adjust:auto; }
 }
+
+/* Shared Pearl optical material: quiet nacre, inner depth, fixed-light glass edge. */
+.extension-orb-shadow{fill:rgba(0,0,0,.16);filter:blur(1.1px)}
+.extension-orb-core{stroke:rgba(255,255,255,.46);stroke-width:.62}
+.extension-orb-nucleus{mix-blend-mode:soft-light;opacity:.58;transform:translate(calc(var(--pearl-light-x) * -1px),calc(var(--pearl-light-y) * -.8px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .22s ease-out}
+.extension-orb-nacre{opacity:calc(.34 + var(--pearl-motion) * .3);transform:translate(calc(var(--pearl-light-x) * 2px),calc(var(--pearl-light-y) * 1.7px))}
+.extension-orb-reflection{fill:rgba(58,69,69,.1);filter:blur(2.2px);transform:translate(calc(var(--pearl-light-x) * -1.2px),calc(var(--pearl-light-y) * -1px))}
+.extension-orb-rim{stroke-width:.8}
+.extension-orb-glint{fill:rgba(255,255,255,.26);filter:blur(.45px)}
+.extension-orb-pinlight{fill:#fff;opacity:.96}
+.extension-orb-shell[data-orb-state=listening] .extension-orb-nucleus,
+.extension-orb-shell[data-orb-state=executing] .extension-orb-nucleus{opacity:.82;filter:sepia(.1) saturate(1.06)}
+.extension-orb-shell[data-orb-state=executing] .extension-orb-reflection{transform:translate(-.8px,-.5px)}
+.extension-orb-shell[data-orb-state=blocked] .extension-orb-pearl{filter:saturate(.42) brightness(.88)}
+.extension-orb-shell[data-orb-state=blocked] .extension-orb-nucleus{opacity:.3}
+.extension-semantic-orb-tray>button i{
+  border-color:rgba(255,255,255,.22);
+  background:
+    radial-gradient(circle at 28% 22%,#fff 0 3%,rgba(255,255,255,.3) 4%,transparent 11%),
+    radial-gradient(ellipse at 40% 58%,rgba(242,217,206,.42),rgba(210,226,218,.25) 37%,rgba(234,220,185,.12) 64%,transparent 75%),
+    linear-gradient(138deg,rgba(223,191,185,.1),rgba(191,216,206,.25) 34%,rgba(242,228,194,.16) 55%,rgba(217,189,186,.18) 73%,rgba(189,211,204,.08)),
+    radial-gradient(circle at 39% 58%,#fffaf0 0 16%,#f5f0e7 35%,#e7e6de 68%,#aeb3af 100%);
+  box-shadow:0 2px 3px rgba(0,0,0,.16),inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.extension-semantic-orb-tray>button[aria-pressed=true] i{
+  border-color:rgba(255,255,255,.42);
+  box-shadow:0 2px 3px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.3);
+}
+@media(prefers-reduced-motion:reduce){
+  .extension-orb-pearl{animation:none!important}
+  .extension-orb-nucleus,.extension-orb-nacre,.extension-orb-reflection{transform:none!important;transition:none!important}
+}

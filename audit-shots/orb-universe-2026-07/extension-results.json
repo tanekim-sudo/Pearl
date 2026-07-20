@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T00:54:50.108Z",
+  "generatedAt": "2026-07-20T01:33:47.054Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -24,8 +24,9 @@
     "orb-mediated side panel views",
     "extension semantic orb tray creates and persists captured capsules",
     "library and settings remain reachable",
+    "page and side-panel Pearls are static under reduced motion",
     "MV3 service worker loaded"
   ],
-  "passed": 17,
+  "passed": 18,
   "failed": 0
 }

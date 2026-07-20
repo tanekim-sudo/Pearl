@@ -24,6 +24,14 @@
   --orb-radius-sm: 10px;
   --orb-radius: 18px;
   --orb-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+  --pearl-body-warm: #f5f0e7;
+  --pearl-body-edge: #aeb3af;
+  --pearl-nacre-rose: rgba(223, 191, 185, .18);
+  --pearl-nacre-celadon: rgba(191, 216, 206, .28);
+  --pearl-nacre-gold: rgba(242, 228, 194, .18);
+  --pearl-reflection: rgba(58, 69, 69, .1);
+  --pearl-contact-shadow: rgba(0, 0, 0, .16);
+  --pearl-breath-scale: .02;
 }
 
 @media (prefers-contrast: more) {

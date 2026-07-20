@@ -253,27 +253,39 @@ export default function CompanionOrb({
         <svg viewBox="0 0 100 100" aria-hidden="true">
           <defs>
             <radialGradient id={`orb-core-${titleId}`} cx="39%" cy="58%" r="72%">
-              <stop offset="0" stopColor="#fff7e8" />
-              <stop offset=".24" stopColor="#f8f1e5" />
-              <stop offset=".62" stopColor="#ebe9df" />
-              <stop offset=".86" stopColor="#d8d8ce" />
-              <stop offset="1" stopColor="#b9bbb3" />
+              <stop offset="0" stopColor="#fffaf0" />
+              <stop offset=".3" stopColor="#f5f0e7" />
+              <stop offset=".68" stopColor="#e7e6de" />
+              <stop offset=".88" stopColor="#d1d4ce" />
+              <stop offset="1" stopColor="#aeb3af" />
+            </radialGradient>
+            <radialGradient id={`orb-nucleus-${titleId}`} cx="38%" cy="62%" r="58%">
+              <stop offset="0" stopColor="#f2d9ce" stopOpacity=".52" />
+              <stop offset=".34" stopColor="#d2e2da" stopOpacity=".34" />
+              <stop offset=".7" stopColor="#eadcb9" stopOpacity=".16" />
+              <stop offset="1" stopColor="#c6ced0" stopOpacity="0" />
             </radialGradient>
             <linearGradient id={`orb-nacre-${titleId}`} x1="8%" y1="16%" x2="92%" y2="82%">
-              <stop offset="0" stopColor="#edcfc8" stopOpacity=".18" />
-              <stop offset=".34" stopColor="#c9ddd4" stopOpacity=".3" />
-              <stop offset=".57" stopColor="#f0dfba" stopOpacity=".22" />
-              <stop offset=".76" stopColor="#e7c9c4" stopOpacity=".2" />
-              <stop offset="1" stopColor="#c4d9d1" stopOpacity=".14" />
+              <stop offset="0" stopColor="#dfbfb9" stopOpacity=".12" />
+              <stop offset=".31" stopColor="#bfd8ce" stopOpacity=".28" />
+              <stop offset=".5" stopColor="#f2e4c2" stopOpacity=".18" />
+              <stop offset=".69" stopColor="#d9bdba" stopOpacity=".22" />
+              <stop offset="1" stopColor="#bdd3cc" stopOpacity=".1" />
             </linearGradient>
             <linearGradient id={`orb-reflection-${titleId}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#ffffff" stopOpacity=".32" />
-              <stop offset=".42" stopColor="#77807f" stopOpacity=".08" />
-              <stop offset=".72" stopColor="#ffffff" stopOpacity=".13" />
-              <stop offset="1" stopColor="#383d3e" stopOpacity=".06" />
+              <stop offset="0" stopColor="#ffffff" stopOpacity=".34" />
+              <stop offset=".38" stopColor="#7d8987" stopOpacity=".06" />
+              <stop offset=".66" stopColor="#f7f2e8" stopOpacity=".16" />
+              <stop offset="1" stopColor="#303638" stopOpacity=".12" />
+            </linearGradient>
+            <linearGradient id={`orb-rim-${titleId}`} x1="18%" y1="8%" x2="82%" y2="92%">
+              <stop offset="0" stopColor="#ffffff" stopOpacity=".78" />
+              <stop offset=".48" stopColor="#eef3ef" stopOpacity=".2" />
+              <stop offset=".8" stopColor="#7d8582" stopOpacity=".34" />
+              <stop offset="1" stopColor="#f5eee1" stopOpacity=".5" />
             </linearGradient>
             <filter id={`orb-soft-${titleId}`} x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="3" />
+              <feGaussianBlur stdDeviation="2.2" />
             </filter>
           </defs>
           <path className="orb-causal-trace" d="M50 14 C66 20 76 34 78 50" />
@@ -286,9 +298,11 @@ export default function CompanionOrb({
           <circle className="orb-approval-ring" cx="50" cy="50" r="37" />
           <g className="orb-pearl">
             <circle className="orb-core" cx="50" cy="50" r="43" fill={`url(#orb-core-${titleId})`} />
+            <ellipse className="orb-nucleus" cx="43" cy="57" rx="25" ry="29" fill={`url(#orb-nucleus-${titleId})`} />
             <circle className="orb-nacre" cx="50" cy="50" r="41.6" fill={`url(#orb-nacre-${titleId})`} />
             <path className="orb-nacre-fold" d="M12 55 C23 24 58 13 84 35 C65 31 48 39 40 54 C31 69 20 70 12 55Z" fill={`url(#orb-nacre-${titleId})`} filter={`url(#orb-soft-${titleId})`} />
             <circle className="orb-reflection" cx="50" cy="50" r="40.5" fill={`url(#orb-reflection-${titleId})`} />
+            <circle className="orb-rim" cx="50" cy="50" r="42.2" fill="none" stroke={`url(#orb-rim-${titleId})`} />
             <ellipse className="orb-glint" cx="33" cy="28" rx="9" ry="5" transform="rotate(-38 33 28)" />
             <circle className="orb-pinlight" cx="27.5" cy="22.5" r="2.1" />
           </g>

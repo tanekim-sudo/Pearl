@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-20T01:32:29.214Z",
+  "browser": "149.0.7827.55",
+  "checks": [
+    {
+      "name": "web-dark-text-default",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "primary": 36,
+      "semantic": 36,
+      "reduced": false,
+      "animations": [
+        "semantic-orb-breathe",
+        "orb-respire"
+      ]
+    },
+    {
+      "name": "web-dark-text-reduced-narrow",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "primary": 34,
+      "semantic": 36,
+      "reduced": true,
+      "animations": []
+    }
+  ]
+}
