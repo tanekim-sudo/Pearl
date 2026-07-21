@@ -15,3 +15,4 @@ supabase/.branches
 audit-shots/
 extension/release/*.zip
 client/public/downloads/
+extension/.diag-profile/

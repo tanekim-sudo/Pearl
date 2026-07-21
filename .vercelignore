@@ -1,0 +1,11 @@
+.git
+.vercel
+.env*
+node_modules
+dist
+audit-shots
+extension/.diag-profile
+extension/.audit-*
+extension/.audit-profile
+extension/.audit-orb-profile
+extension/.audit-orb-extension
