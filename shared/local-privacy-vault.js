@@ -346,6 +346,8 @@ export async function createDisclosureReceipt(input, cryptoApi = globalThis.cryp
       fragmentIds,
       disclosedCharacters: Math.max(0, Number(input.disclosedCharacters) || 0),
       destination: String(input.destination || "configured-model"),
+      policyId: String(input.policyId || ""),
+      policyVersion: Math.max(0, Number(input.policyVersion) || 0),
       at: String(input.at || ""),
     })),
   );
@@ -357,6 +359,8 @@ export async function createDisclosureReceipt(input, cryptoApi = globalThis.cryp
     fragmentCount: fragmentIds.length,
     disclosedCharacters: Math.max(0, Number(input.disclosedCharacters) || 0),
     destination: String(input.destination || "configured-model"),
+    policyId: input.policyId ? String(input.policyId) : null,
+    policyVersion: input.policyVersion ? Math.max(1, Number(input.policyVersion)) : null,
     digest: bytesToBase64(new Uint8Array(digest)),
     at: input.at || new Date().toISOString(),
   };

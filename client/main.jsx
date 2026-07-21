@@ -63,6 +63,20 @@ class RootErrorBoundary extends React.Component {
 
 async function boot() {
   await installSecureLocalStorage();
+  const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const incomingStudioRef = fragment.get("pearl-studio");
+  if (incomingStudioRef) {
+    sessionStorage.setItem("pearlStudioActiveRef", incomingStudioRef);
+    history.replaceState(null, "", `${location.pathname}${location.search}#pearl-studio`);
+  }
+  const studioRef = incomingStudioRef || (location.hash === "#pearl-studio" ? sessionStorage.getItem("pearlStudioActiveRef") : null);
+  if (studioRef) {
+    const { default: PearlStudioView } = await import("./components/PearlStudioView.jsx");
+    createRoot(document.getElementById("root")).render(
+      <React.StrictMode><RootErrorBoundary><PearlStudioView localRef={studioRef} /></RootErrorBoundary></React.StrictMode>,
+    );
+    return;
+  }
   const [{ default: App }, { default: OrbUniverseShell }] = await Promise.all([
     import("./App.jsx"),
     import("./components/OrbUniverseShell.jsx"),

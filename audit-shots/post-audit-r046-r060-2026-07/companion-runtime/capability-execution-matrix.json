@@ -1,204 +1,772 @@
 {
-  "generatedAt": "2026-07-20T07:32:18.058Z",
+  "generatedAt": "2026-07-20T23:52:02.257Z",
   "harness": "controlled real director/extension handler execution",
   "inputPath": "director",
   "counts": {
-    "total": 12,
-    "passed": 12,
+    "total": 1,
+    "passed": 1,
     "failed": 0,
     "skipped": 0,
-    "app": 0,
-    "extension": 12
+    "app": 1,
+    "extension": 0
   },
   "rows": [
     {
-      "name": "inspectExternalPrivacy",
-      "platform": "extension",
-      "utterance": "what is stored on this device",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-summary",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "exportExternalLocalData",
-      "platform": "extension",
-      "utterance": "export my local Pearl data",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-export",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "setExternalSync",
-      "platform": "extension",
-      "utterance": "keep sync off",
+      "name": "installSharedPearl",
+      "platform": "app",
+      "utterance": "please install a verified shared Pearl atomically into local inventory",
       "args": {
-        "enabled": true
+        "package": {
+          "format": "pearl-cognitive-package",
+          "version": 1,
+          "manifest": {
+            "artifacts": [
+              {
+                "contracts": {},
+                "hash": "sha256-_BNcrBgYVFtQD17Y-oQeYnBTAO5sr0-ZEj217KhgUBk",
+                "id": "runtime-pearl:identity",
+                "kind": "function",
+                "lineage": {},
+                "version": 1
+              },
+              {
+                "contracts": {},
+                "hash": "sha256-k1jx8cADVOpLu4GPdoIpBeOjzVT3zp-186aT93OAUz8",
+                "id": "runtime-pearl:cognition",
+                "kind": "function",
+                "lineage": {},
+                "version": 1
+              }
+            ],
+            "author": {},
+            "changelog": [],
+            "connectors": [],
+            "contracts": {
+              "pearlId": "runtime-pearl",
+              "reviewHash": "sha256-Wa8IfcbzROxMjZ5Vb4PdkY1S2_5ZXtjHaP4TYX0dnKY",
+              "shareMode": "download",
+              "sourceVersion": 1,
+              "updateChannel": null
+            },
+            "createdAt": "2026-07-20T23:51:55.521Z",
+            "dependencies": [],
+            "deprecation": null,
+            "kinds": [
+              "function"
+            ],
+            "lensContext": null,
+            "license": "UNLICENSED",
+            "migrationNotes": "",
+            "name": "runtime-pearl",
+            "namespace": "runtime.audit",
+            "permissions": [],
+            "provenance": {
+              "lineage": [],
+              "sharedAt": "2026-07-20T23:51:55.520Z"
+            },
+            "publishedAt": null,
+            "requirements": {
+              "contextLimit": null,
+              "modalities": [
+                "text"
+              ],
+              "models": []
+            },
+            "scans": {
+              "privacy": {
+                "findings": 0,
+                "passed": true
+              },
+              "quality": null,
+              "security": null
+            },
+            "schemaVersion": 1,
+            "tests": [],
+            "version": "1.0.0",
+            "visibility": "private",
+            "contentHash": "sha256-XCkxr-zDXo8aOp1w0IUON_UNjbTcfND49ftIG-ylba4",
+            "signature": {
+              "algorithm": "Ed25519",
+              "keyId": "runtime:key:1",
+              "value": "vbCrWqbB5uScBR0KI33ENxFRfcIhLVmhP5HLJ-qxATTl4PQp777KDlh189f9VI33KFlHBOZVNoy9ewRDeyjcCg",
+              "signedAt": "2026-07-20T23:51:55.522Z"
+            }
+          },
+          "artifacts": [
+            {
+              "id": "runtime-pearl:identity",
+              "version": 1,
+              "kind": "function",
+              "component": "identity",
+              "snapshot": {
+                "id": "runtime-pearl",
+                "stableId": "runtime-pearl",
+                "name": "Runtime Pearl",
+                "description": "",
+                "purpose": "",
+                "ownerProfileId": "local-profile"
+              },
+              "hash": "sha256-_BNcrBgYVFtQD17Y-oQeYnBTAO5sr0-ZEj217KhgUBk"
+            },
+            {
+              "id": "runtime-pearl:cognition",
+              "version": 1,
+              "kind": "function",
+              "component": "cognition",
+              "snapshot": {
+                "version": 1,
+                "layers": [
+                  {
+                    "version": 1,
+                    "id": "layer-primitive",
+                    "stableId": "layer-primitive",
+                    "revision": 0,
+                    "kind": "primitive",
+                    "identity": {
+                      "name": "Runtime source",
+                      "description": ""
+                    },
+                    "definition": {
+                      "primitiveType": "material",
+                      "value": "Runtime evidence",
+                      "inputSpec": null,
+                      "outputSpec": null
+                    },
+                    "semantic": {
+                      "order": 0,
+                      "parentId": null,
+                      "links": [],
+                      "tags": []
+                    },
+                    "layout": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 180,
+                      "height": 80,
+                      "collapsed": false,
+                      "groupId": null
+                    },
+                    "uncertainty": {
+                      "evidenceRefs": [],
+                      "confidence": 1,
+                      "rationale": "",
+                      "unresolvedQuestions": [],
+                      "conflicts": [],
+                      "authorship": "user-authored",
+                      "status": "resolved",
+                      "executable": false,
+                      "shareableFact": true
+                    },
+                    "sourceMapping": {
+                      "evidenceRefs": [],
+                      "sourceSpans": [],
+                      "verbatimRefs": []
+                    },
+                    "provenance": {
+                      "source": "user-authored"
+                    },
+                    "privacyPolicy": {
+                      "schemaVersion": 1,
+                      "id": "privacy-policy:64f7d5a1-8d75-4292-b896-410fe46b5902",
+                      "pearlId": "runtime-pearl",
+                      "version": 1,
+                      "audience": "selected-people",
+                      "audienceScope": {
+                        "people": [],
+                        "organizationId": null,
+                        "groups": [],
+                        "roles": []
+                      },
+                      "sensitivity": "personal",
+                      "customLabels": [],
+                      "storage": {
+                        "mode": "device-only",
+                        "residency": [],
+                        "allowedStores": [
+                          "indexeddb"
+                        ],
+                        "queuedEncryptedSync": false
+                      },
+                      "disclosure": {
+                        "model": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "research": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "music-search": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "export": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "link": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "recipient": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "derived-result": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [
+                            "local-staging"
+                          ],
+                          "requiresApproval": false
+                        },
+                        "sync": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "handoff": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        }
+                      },
+                      "acl": {
+                        "ownerId": "local-profile",
+                        "organizationId": null,
+                        "grants": [],
+                        "defaultRecipientRights": [
+                          "inspect",
+                          "run"
+                        ]
+                      },
+                      "retention": {
+                        "expiresAt": null,
+                        "localDays": null,
+                        "serverDays": 0,
+                        "revokeRecipientsOnExpiry": true,
+                        "tombstone": true,
+                        "propagateDeletion": true
+                      },
+                      "provenance": {
+                        "source": "effective-most-restrictive",
+                        "inheritedPolicyIds": [
+                          "privacy-policy:74e56129-4ceb-43bb-9137-681c9c389d90"
+                        ],
+                        "overrides": [],
+                        "signer": null,
+                        "createdAt": 1784591515507,
+                        "updatedAt": 1784591515507
+                      },
+                      "encryption": {
+                        "status": "unlocked",
+                        "localKeyId": null,
+                        "accountEnvelopeId": null,
+                        "organizationEnvelopeId": null,
+                        "organizationKeyVersion": null,
+                        "recipientGrantIds": [],
+                        "rotationState": "current",
+                        "revokedDeviceIds": [],
+                        "recovery": "local-warning-required"
+                      },
+                      "audit": {
+                        "lastDisclosureAt": null,
+                        "lastShareAt": null,
+                        "lastEditAt": null,
+                        "conflicts": [],
+                        "pendingApprovals": [],
+                        "integrity": "review-required",
+                        "receiptHead": null
+                      },
+                      "effective": true
+                    },
+                    "createdAt": 1784591515507,
+                    "updatedAt": 1784591515507
+                  },
+                  {
+                    "version": 1,
+                    "id": "layer-move",
+                    "stableId": "layer-move",
+                    "revision": 0,
+                    "kind": "move",
+                    "identity": {
+                      "name": "Runtime move",
+                      "description": ""
+                    },
+                    "definition": {
+                      "transformation": "Summarize faithfully.",
+                      "inputSpec": {
+                        "type": "material"
+                      },
+                      "outputSpec": {
+                        "type": "material"
+                      },
+                      "atomic": true,
+                      "adapter": false
+                    },
+                    "semantic": {
+                      "order": 1,
+                      "parentId": null,
+                      "links": [],
+                      "tags": []
+                    },
+                    "layout": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 180,
+                      "height": 80,
+                      "collapsed": false,
+                      "groupId": null
+                    },
+                    "uncertainty": {
+                      "evidenceRefs": [],
+                      "confidence": 1,
+                      "rationale": "",
+                      "unresolvedQuestions": [],
+                      "conflicts": [],
+                      "authorship": "user-authored",
+                      "status": "resolved",
+                      "executable": true,
+                      "shareableFact": true
+                    },
+                    "sourceMapping": {
+                      "evidenceRefs": [],
+                      "sourceSpans": [],
+                      "verbatimRefs": []
+                    },
+                    "provenance": {
+                      "source": "user-authored"
+                    },
+                    "privacyPolicy": {
+                      "schemaVersion": 1,
+                      "id": "privacy-policy:64f7d5a1-8d75-4292-b896-410fe46b5902",
+                      "pearlId": "runtime-pearl",
+                      "version": 1,
+                      "audience": "selected-people",
+                      "audienceScope": {
+                        "people": [],
+                        "organizationId": null,
+                        "groups": [],
+                        "roles": []
+                      },
+                      "sensitivity": "personal",
+                      "customLabels": [],
+                      "storage": {
+                        "mode": "device-only",
+                        "residency": [],
+                        "allowedStores": [
+                          "indexeddb"
+                        ],
+                        "queuedEncryptedSync": false
+                      },
+                      "disclosure": {
+                        "model": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "research": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "music-search": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "export": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "link": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "recipient": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "derived-result": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [
+                            "local-staging"
+                          ],
+                          "requiresApproval": false
+                        },
+                        "sync": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "handoff": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        }
+                      },
+                      "acl": {
+                        "ownerId": "local-profile",
+                        "organizationId": null,
+                        "grants": [],
+                        "defaultRecipientRights": [
+                          "inspect",
+                          "run"
+                        ]
+                      },
+                      "retention": {
+                        "expiresAt": null,
+                        "localDays": null,
+                        "serverDays": 0,
+                        "revokeRecipientsOnExpiry": true,
+                        "tombstone": true,
+                        "propagateDeletion": true
+                      },
+                      "provenance": {
+                        "source": "effective-most-restrictive",
+                        "inheritedPolicyIds": [
+                          "privacy-policy:74e56129-4ceb-43bb-9137-681c9c389d90"
+                        ],
+                        "overrides": [],
+                        "signer": null,
+                        "createdAt": 1784591515507,
+                        "updatedAt": 1784591515507
+                      },
+                      "encryption": {
+                        "status": "unlocked",
+                        "localKeyId": null,
+                        "accountEnvelopeId": null,
+                        "organizationEnvelopeId": null,
+                        "organizationKeyVersion": null,
+                        "recipientGrantIds": [],
+                        "rotationState": "current",
+                        "revokedDeviceIds": [],
+                        "recovery": "local-warning-required"
+                      },
+                      "audit": {
+                        "lastDisclosureAt": null,
+                        "lastShareAt": null,
+                        "lastEditAt": null,
+                        "conflicts": [],
+                        "pendingApprovals": [],
+                        "integrity": "review-required",
+                        "receiptHead": null
+                      },
+                      "effective": true
+                    },
+                    "createdAt": 1784591515508,
+                    "updatedAt": 1784591515508
+                  },
+                  {
+                    "version": 1,
+                    "id": "layer-function",
+                    "stableId": "layer-function",
+                    "revision": 0,
+                    "kind": "function",
+                    "identity": {
+                      "name": "Runtime function",
+                      "description": ""
+                    },
+                    "definition": {
+                      "graph": {
+                        "nodes": [
+                          {
+                            "id": "step:1",
+                            "layerId": "layer-move"
+                          }
+                        ],
+                        "edges": []
+                      },
+                      "branches": [],
+                      "inputSpec": {
+                        "type": "material"
+                      },
+                      "outputSpecs": [],
+                      "generationPlan": null
+                    },
+                    "semantic": {
+                      "order": 2,
+                      "parentId": null,
+                      "links": [],
+                      "tags": []
+                    },
+                    "layout": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 180,
+                      "height": 80,
+                      "collapsed": false,
+                      "groupId": null
+                    },
+                    "uncertainty": {
+                      "evidenceRefs": [],
+                      "confidence": 1,
+                      "rationale": "",
+                      "unresolvedQuestions": [],
+                      "conflicts": [],
+                      "authorship": "user-authored",
+                      "status": "resolved",
+                      "executable": true,
+                      "shareableFact": true
+                    },
+                    "sourceMapping": {
+                      "evidenceRefs": [],
+                      "sourceSpans": [],
+                      "verbatimRefs": []
+                    },
+                    "provenance": {
+                      "source": "user-authored"
+                    },
+                    "privacyPolicy": {
+                      "schemaVersion": 1,
+                      "id": "privacy-policy:64f7d5a1-8d75-4292-b896-410fe46b5902",
+                      "pearlId": "runtime-pearl",
+                      "version": 1,
+                      "audience": "selected-people",
+                      "audienceScope": {
+                        "people": [],
+                        "organizationId": null,
+                        "groups": [],
+                        "roles": []
+                      },
+                      "sensitivity": "personal",
+                      "customLabels": [],
+                      "storage": {
+                        "mode": "device-only",
+                        "residency": [],
+                        "allowedStores": [
+                          "indexeddb"
+                        ],
+                        "queuedEncryptedSync": false
+                      },
+                      "disclosure": {
+                        "model": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "research": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "music-search": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "export": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "link": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "recipient": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "derived-result": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [
+                            "local-staging"
+                          ],
+                          "requiresApproval": false
+                        },
+                        "sync": {
+                          "allowed": false,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        },
+                        "handoff": {
+                          "allowed": true,
+                          "fields": [],
+                          "providers": [],
+                          "purposes": [],
+                          "requiresApproval": true
+                        }
+                      },
+                      "acl": {
+                        "ownerId": "local-profile",
+                        "organizationId": null,
+                        "grants": [],
+                        "defaultRecipientRights": [
+                          "inspect",
+                          "run"
+                        ]
+                      },
+                      "retention": {
+                        "expiresAt": null,
+                        "localDays": null,
+                        "serverDays": 0,
+                        "revokeRecipientsOnExpiry": true,
+                        "tombstone": true,
+                        "propagateDeletion": true
+                      },
+                      "provenance": {
+                        "source": "effective-most-restrictive",
+                        "inheritedPolicyIds": [
+                          "privacy-policy:74e56129-4ceb-43bb-9137-681c9c389d90"
+                        ],
+                        "overrides": [],
+                        "signer": null,
+                        "createdAt": 1784591515507,
+                        "updatedAt": 1784591515507
+                      },
+                      "encryption": {
+                        "status": "unlocked",
+                        "localKeyId": null,
+                        "accountEnvelopeId": null,
+                        "organizationEnvelopeId": null,
+                        "organizationKeyVersion": null,
+                        "recipientGrantIds": [],
+                        "rotationState": "current",
+                        "revokedDeviceIds": [],
+                        "recovery": "local-warning-required"
+                      },
+                      "audit": {
+                        "lastDisclosureAt": null,
+                        "lastShareAt": null,
+                        "lastEditAt": null,
+                        "conflicts": [],
+                        "pendingApprovals": [],
+                        "integrity": "review-required",
+                        "receiptHead": null
+                      },
+                      "effective": true
+                    },
+                    "createdAt": 1784591515508,
+                    "updatedAt": 1784591515508
+                  }
+                ],
+                "semanticOrder": [
+                  "layer-primitive",
+                  "layer-move",
+                  "layer-function"
+                ],
+                "rawEvidence": [
+                  {
+                    "id": "runtime-evidence",
+                    "kind": "material",
+                    "verbatim": "true",
+                    "contentHash": null,
+                    "provenance": {
+                      "source": "user-provided"
+                    }
+                  }
+                ],
+                "sourceMapping": {},
+                "organizationDiffs": [],
+                "activeExecution": null
+              },
+              "hash": "sha256-k1jx8cADVOpLu4GPdoIpBeOjzVT3zp-186aT93OAUz8"
+            }
+          ],
+          "publicMetadata": {
+            "id": "runtime-pearl",
+            "stableId": "runtime-pearl",
+            "name": "Runtime Pearl",
+            "description": "",
+            "purpose": "",
+            "ownerProfileId": "local-profile"
+          },
+          "share": {
+            "mode": "download",
+            "ownership": "author",
+            "editRights": "none",
+            "expiresAt": null,
+            "revocable": false,
+            "recipientBinding": null
+          }
+        },
+        "validationReceipt": {
+          "valid": true
+        },
+        "localPearlId": "runtime-installed-pearl"
       },
-      "planner": "canonical extension plan",
+      "planner": "canonical adaptive plan parsed and validated",
       "schema": "pass",
       "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-sync",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "deleteExternalLocalData",
-      "platform": "extension",
-      "utterance": "delete this profile's local Pearl data",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-deletion",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "lockExternalPearls",
-      "platform": "extension",
-      "utterance": "lock my Pearls",
-      "args": {},
-      "planner": "deterministic extension intent",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-lock",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "unlockExternalPearls",
-      "platform": "extension",
-      "utterance": "unlock my Pearls",
-      "args": {},
-      "planner": "deterministic extension intent",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "local-privacy-lock",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "bindExternalCanvasContext",
-      "platform": "extension",
-      "utterance": "draw this context into the Pearl",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-canvas-context",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "searchExternalPearlSoundscape",
-      "platform": "extension",
-      "utterance": "give this Pearl rain ambience",
-      "args": {
-        "query": "fixture"
+      "typedResult": "action-result",
+      "observableEffect": "state-or-visible-artifact-changed",
+      "persistence": "local store or visible runtime state observed",
+      "animation": {
+        "version": 1,
+        "traceId": "6541d7fa-eccd-4443-be34-098fdd22f4bc",
+        "status": "completed",
+        "events": 4,
+        "reducedMotion": false
       },
-      "planner": "deterministic extension intent",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-audio-search",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
+      "directExecution": null,
+      "dispatchCount": null,
+      "ledgerStatus": null,
+      "rawErrorLeak": false,
       "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "uploadExternalPearlAudio",
-      "platform": "extension",
-      "utterance": "upload my track for this Pearl",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-audio-upload",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "useExternalPearlAudioTrack",
-      "platform": "extension",
-      "utterance": "use this licensed track",
-      "args": {
-        "track": {
-          "columns": 2
-        }
-      },
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-soundscape",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "controlExternalPearlSoundscape",
-      "platform": "extension",
-      "utterance": "pause this Pearl's sound",
-      "args": {
-        "action": "play"
-      },
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-audio-status",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
-      "errors": []
-    },
-    {
-      "name": "updateExternalPearlSoundscape",
-      "platform": "extension",
-      "utterance": "turn this Pearl's sound down",
-      "args": {},
-      "planner": "canonical extension plan",
-      "schema": "pass",
-      "runtimeHandler": "invoked",
-      "typedResult": "pearl-soundscape",
-      "observableEffect": "controlled extension state changed",
-      "persistence": "extension action boundary observed",
-      "animation": "verified orb effect trace completed",
-      "status": "passed",
+      "durationMs": 2171,
       "errors": []
     }
   ]

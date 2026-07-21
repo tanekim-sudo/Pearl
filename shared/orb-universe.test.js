@@ -34,6 +34,7 @@ import {
   semanticOrbFromMaterial,
 } from "./semantic-orbs.js";
 import { resolveDropIntent } from "./drop-intent-resolver.js";
+import { createPearlGestureArbiter } from "./pearl-gesture-arbiter.js";
 
 test("orb state machine carries task and effect IDs through verified canonical execution", async () => {
   const orb = transitionOrb(createOrbState(), "interpreting", { taskId: "task-1" });
@@ -176,4 +177,25 @@ test("orb cursor contracts for text and preserves target affordances", () => {
   assert.equal(orbCursorPresentation(target({ matches: ["a[href]"] })), "action");
   assert.equal(orbCursorPresentation(target(), () => ({ cursor: "nwse-resize" })), "resize");
   assert.equal(normalizeOrbCursorPreference({ enabled: true, source: "triple-space", updatedAt: 4 }).enabled, true);
+});
+
+test("Pearl gesture arbitration keeps click, hold, triple-click, and keyboard exits deterministic", () => {
+  const calls = [];
+  const gesture = createPearlGestureArbiter({
+    onSingle: () => calls.push("companion"),
+    onTriple: () => calls.push("studio"),
+    onHold: () => calls.push("voice"),
+  });
+
+  assert.equal(gesture.release({ at: 100, x: 4, y: 4 }).type, "single");
+  assert.equal(gesture.release({ at: 180, x: 4, y: 4 }).type, "pending-triple");
+  assert.equal(gesture.release({ at: 250, x: 4, y: 4 }).type, "triple");
+  assert.deepEqual(calls, ["companion", "studio"]);
+
+  assert.equal(gesture.hold({ at: 900 }).type, "hold");
+  assert.equal(gesture.release({ at: 950, x: 4, y: 4, held: true }).type, "hold");
+  assert.deepEqual(calls, ["companion", "studio", "voice"]);
+
+  assert.equal(gesture.keyboard({ key: "Enter", shiftKey: true }).type, "accessible-open");
+  assert.deepEqual(calls, ["companion", "studio", "voice", "studio"]);
 });

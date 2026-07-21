@@ -46,6 +46,7 @@ export async function verifyRequestUser(req) {
   if (error || !data?.user) return null;
 
   let plan = { kind: "free" };
+  let organizations = [];
   try {
     const { data: subs } = await client
       .from("subscriptions")
@@ -62,7 +63,17 @@ export async function verifyRequestUser(req) {
     /* plan lookup is best-effort */
   }
 
-  return { user: data.user, plan };
+  try {
+    const { data: memberships, error } = await client
+      .from("cognitive_package_team_members")
+      .select("team_id, role")
+      .eq("user_id", data.user.id);
+    if (!error) organizations = (memberships || []).map((entry) => ({ id: String(entry.team_id), role: String(entry.role) }));
+  } catch {
+    organizations = [];
+  }
+
+  return { user: data.user, plan, organizations, teamIds: organizations.map((entry) => entry.id) };
 }
 
 /**

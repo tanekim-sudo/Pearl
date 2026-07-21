@@ -9,6 +9,7 @@ const empty = () => ({
   generator: null,
   results: [],
   activeRunId: null,
+  pendingOutputRouting: null,
   updatedAt: Date.now(),
 });
 
@@ -32,7 +33,7 @@ export function writeSession(patch) {
 }
 
 export async function clearPageMaterial() {
-  return writeSession({ fragments: [], results: [], activeRunId: null });
+  return writeSession({ fragments: [], results: [], activeRunId: null, pendingOutputRouting: null });
 }
 
 export async function clearAllSession() {

@@ -238,6 +238,9 @@ import {
   LensRackToolbar,
 } from "./components/LensGrammarPanels.jsx";
 import { executeCapabilityScriptDirect, registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
+import { executePearlActionEvent } from "../shared/pearl-action-protocol.js";
+import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entity.js";
+import { PEARL_STORE_KEY } from "../shared/pearl-store.js";
 import {
   buildAdaptiveCompanionPrompt,
   buildCompanionSystemPrompt,
@@ -12079,7 +12082,211 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
   }
 
+  function ensureCanonicalPearlStore(requestedPearlId = null) {
+    let store = load(PEARL_STORE_KEY, { version: 1, entities: {}, activePearlId: null });
+    const pearlId = requestedPearlId || store.activePearlId || `primary:${sceneId || "workspace"}`;
+    let entity = store.entities?.[pearlId];
+    if (!entity && !requestedPearlId) {
+      const semanticScene = currentSemanticScene();
+      const activeSemanticPearl = semanticScene?.semanticOrbs?.find((entry) => entry.id === semanticScene.activeSemanticOrbId)
+        || semanticScene?.semanticOrbs?.[0]
+        || null;
+      entity = createPearlEntity({
+        id: pearlId,
+        kind: "primary",
+        name: "Pearl",
+        workingSet: activeSemanticPearl?.workingSet || { context: [], lenses: [] },
+        candidates: activeSemanticPearl?.candidates || [],
+        workers: activeSemanticPearl?.workers || [],
+      });
+      store = { ...store, entities: { ...store.entities, [pearlId]: entity }, activePearlId: pearlId };
+      localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({ ...store, updatedAt: Date.now() }));
+    }
+    return { store, pearlId, entity };
+  }
+
+  async function runCanonicalPearlAction(command, args = {}, requestedPearlId = null, options = {}) {
+    let { store, pearlId, entity } = ensureCanonicalPearlStore(requestedPearlId);
+    if (!entity) throw new Error("No canonical Pearl is active.");
+    const executed = await executePearlActionEvent({
+      entity: createPearlEntity(entity),
+      state: {
+        ...(store.runtimeState || {}),
+        pearlEntities: store.entities,
+        resultPearls: Object.fromEntries(Object.values(store.entities || {}).filter((entry) => entry.kind === "result").map((entry) => [entry.id, {
+          ...(entry.results?.[0] || {}),
+          id: entry.id,
+          pearlId: entry.relationships?.parentPearlId || entry.id,
+          pageIdentity: entry.workingSet?.pageIdentity || "web-local",
+          placement: entry.representation?.placement,
+          routing: entry.outputRouting,
+          privacyPolicy: entry.privacy?.policy,
+          revision: entry.revision,
+          updatedAt: entry.updatedAt,
+          createdAt: entry.createdAt,
+        }])),
+      },
+      event: {
+        pearlId,
+        command,
+        args: { pearlId, ...args },
+        surface: "director",
+        expectedRevision: entity.revision,
+        idempotencyKey: crypto.randomUUID(),
+        disclosureApproved: options.disclosureApproved === true,
+        destructiveApproved: options.destructiveApproved === true,
+      },
+    });
+    if (executed.conflict) throw new Error("The Pearl changed; observe it again before retrying.");
+    const { pearlEntities: nextPearlEntities, resultPearls: nextResultPearls, ...runtimeState } = executed.state || {};
+    const persistedEntities = { ...(nextPearlEntities || store.entities) };
+    if (executed.entity?.kind !== "result") persistedEntities[pearlId] = executed.entity;
+    for (const resultPearl of Object.values(nextResultPearls || {})) {
+      const current = persistedEntities[resultPearl.id] || store.entities?.[resultPearl.id];
+      persistedEntities[resultPearl.id] = createPearlEntity({
+        ...current,
+        id: resultPearl.id,
+        kind: "result",
+        revision: resultPearl.revision,
+        status: resultPearl.status,
+        text: resultPearl.text,
+        outputSpec: resultPearl.outputSpec,
+        results: [{ ...(current?.results?.[0] || {}), ...resultPearl }],
+        outputRouting: resultPearl.routing,
+        representation: { ...(current?.representation || {}), placement: resultPearl.placement },
+        privacyPolicy: resultPearl.privacyPolicy || current?.privacy?.policy,
+        updatedAt: resultPearl.updatedAt,
+      });
+    }
+    localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+      ...store,
+      entities: persistedEntities,
+      runtimeState,
+      activePearlId: pearlId,
+      updatedAt: Date.now(),
+    }));
+    return {
+      type: "canonical-pearl-effect",
+      id: executed.effectReceipt.id,
+      object: executed.domainResult?.object,
+      effectReceipt: executed.effectReceipt,
+      animation: executed.animation,
+      observation: executed.observation,
+      effects: executed.effectReceipt.effects,
+    };
+  }
+
   registerDirectorVerbs({
+    observeUnifiedPearl: async (a) => {
+      const { entity } = ensureCanonicalPearlStore(a.pearlId);
+      if (!entity) throw new Error("No canonical Pearl is active.");
+      return {
+        ...pearlEntityObservation(entity),
+        effects: ["pearl-observation-updated"],
+      };
+    },
+    executeUnifiedPearlAction: async (a) => runCanonicalPearlAction(a.command, a.args || {}, a.pearlId),
+    inspectPearlCognition: async (a) => {
+      const ensured = ensureCanonicalPearlStore(a.pearlId);
+      if (!ensured.entity) throw new Error("No canonical Pearl is active.");
+      const entity = createPearlEntity(ensured.entity);
+      return { type: "pearl-cognition", id: entity.id, object: entity.cognition, effects: ["pearl-cognition-observed"] };
+    },
+    proposePearlCognitiveEdit: async (a) => runCanonicalPearlAction("proposePearlCognitivePatch", { layerId: a.layerId, patch: a.patch, rationale: a.rationale }, a.pearlId),
+    applyPearlCognitiveEdit: async (a) => {
+      const { store } = ensureCanonicalPearlStore(a.pearlId);
+      const proposals = Object.values(store.runtimeState?.pearlCognitivePatches || {});
+      const proposalId = a.proposalId === "last" ? proposals.sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0))[0]?.id : a.proposalId;
+      if (!proposalId) throw new Error("No reviewed cognitive patch is available.");
+      return runCanonicalPearlAction("applyPearlCognitivePatch", { proposalId, confirmed: true }, a.pearlId);
+    },
+    composePearlCognitiveLayers: async (a) => runCanonicalPearlAction("composePearlCognitiveLayers", { leftId: a.leftId, rightId: a.rightId, options: { intent: a.intent }, confirmed: false }, a.pearlId),
+    applyPearlCognitiveComposition: async (a) => runCanonicalPearlAction("composePearlCognitiveLayers", { leftId: a.leftId, rightId: a.rightId, options: { intent: a.intent }, confirmed: true }, a.pearlId),
+    mutatePearlCognitiveLayer: async (a) => runCanonicalPearlAction("mutatePearlCognitiveLayer", { layerId: a.layerId, operation: a.operation, value: a.value, to: a.to, confirmed: a.confirmed === true }, a.pearlId),
+    resolvePearlCognitiveUncertainty: async (a) => runCanonicalPearlAction("resolvePearlCognitiveUncertainty", { layerId: a.layerId, resolution: a.resolution || {}, confirmed: true }, a.pearlId),
+    playPearlFunction: async (a) => runCanonicalPearlAction("startPearlCognitivePlayback", { functionLayerId: a.functionLayerId, inputs: a.inputs, lensIds: a.lensIds, roleId: a.roleId, branchId: a.branchId }, a.pearlId),
+    stepPearlFunction: async (a) => runCanonicalPearlAction("advancePearlCognitivePlayback", { effect: a.effect }, a.pearlId),
+    cancelPearlFunction: async (a) => runCanonicalPearlAction("cancelPearlCognitivePlayback", {}, a.pearlId),
+    inspectPearlPrivacyPolicy: async (a) => runCanonicalPearlAction("inspectPearlPrivacy", { actor: {} }, a.pearlId),
+    proposePearlPrivacyChange: async (a) => {
+      const { pearlId, entity } = ensureCanonicalPearlStore(a.pearlId);
+      const policy = entity?.privacy?.policy;
+      if (!policy) throw new Error("No canonical Pearl privacy policy is active.");
+      return runCanonicalPearlAction("proposePearlPrivacyPatch", { patch: a.patch, expectedVersion: policy.version }, pearlId);
+    },
+    applyPearlPrivacyChange: async (a) => {
+      const { store } = ensureCanonicalPearlStore(a.pearlId);
+      const proposals = Object.values(store.runtimeState?.pearlPrivacyPatches || {});
+      const proposalId = a.proposalId === "last" ? proposals.sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0))[0]?.id : a.proposalId;
+      if (!proposalId) throw new Error("No reviewed privacy patch is available.");
+      return runCanonicalPearlAction("applyPearlPrivacyPatch", { proposalId, confirmed: true }, a.pearlId);
+    },
+    preparePearlShare: async (a) => {
+      const { pearlId, entity: pearl } = ensureCanonicalPearlStore(a.pearlId);
+      if (!pearl) throw new Error("No canonical Pearl is active.");
+      return runCanonicalPearlAction("preparePearlShare", { pearl, selection: a.selection || {} }, pearlId);
+    },
+    sharePearl: async (a) => runCanonicalPearlAction("createPearlShareGrant", { package: a.package, options: a.options }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
+    revokePearlShare: async (a) => {
+      const { store } = ensureCanonicalPearlStore(a.pearlId);
+      const grants = Object.values(store.runtimeState?.pearlShareGrants || {});
+      const grantId = a.grantId === "last" ? grants.sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0))[0]?.id : a.grantId;
+      if (!grantId) throw new Error("No active Pearl share grant is available.");
+      return runCanonicalPearlAction("revokePearlShareGrant", { grantId, actorId: a.actorId }, a.pearlId, { destructiveApproved: true });
+    },
+    installSharedPearl: async (a) => runCanonicalPearlAction("installValidatedPearlPackage", { package: a.package, validationReceipt: a.validationReceipt, localPearlId: a.localPearlId, confirmed: true }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
+    compileAutomationPearl: async (a) => runCanonicalPearlAction("compileAutomationPearl", { evidence: a.evidence, inference: a.inference, id: a.id }, a.pearlId),
+    reviseAutomationPearl: async (a) => runCanonicalPearlAction("reviseAutomationPearl", { patch: a.patch, expectedVersion: a.expectedVersion }, a.pearlId),
+    researchAutomationPearl: async (a) => runCanonicalPearlAction("planAutomationResearch", { plan: a.plan }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
+    approveAutomationContextPatch: async (a) => runCanonicalPearlAction("approveAutomationContextPatch", { patchId: a.patchId, approved: true }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
+    chooseResultDestination: async (a) => {
+      const { entity } = ensureCanonicalPearlStore(a.pearlId);
+      if (!entity?.outputRouting || !["choosing", "clarifying", "confirming"].includes(entity.outputRouting.stage)) {
+        await runCanonicalPearlAction("requestOutputPlacement", { resultId: a.pearlId }, a.pearlId);
+      }
+      return runCanonicalPearlAction("interpretOutputPlacement", { resultId: a.pearlId, answer: a.answer, observation: a.observation || {} }, a.pearlId);
+    },
+    confirmResultPlacement: async (a) => {
+      await runCanonicalPearlAction("confirmOutputPlacement", { resultId: a.pearlId, targetRevision: a.targetRevision }, a.pearlId, { destructiveApproved: true });
+      const begun = await runCanonicalPearlAction("beginOutputPlacement", { resultId: a.pearlId }, a.pearlId, { disclosureApproved: true });
+      const store = load(PEARL_STORE_KEY, { entities: {} });
+      const resultPearl = createPearlEntity(store.entities?.[a.pearlId]);
+      const plan = resultPearl.outputRouting?.plan;
+      if (begun.object?.duplicate || resultPearl.outputRouting?.stage === "placed") return begun;
+      const text = resultPearl.results?.[0]?.text || "";
+      let effect;
+      try {
+        if (plan.destination.type === "clipboard") {
+          await navigator.clipboard.writeText(text);
+          effect = { type: "clipboard", characters: text.length };
+        } else if (plan.destination.type === "download") {
+          const url = URL.createObjectURL(new Blob([text], { type: plan.destination.file?.type || "text/plain" }));
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = plan.destination.file?.name || "pearl-output.txt";
+          anchor.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1_000);
+          effect = { type: "download", fileName: anchor.download };
+        } else if (plan.destination.type === "pearl-studio") {
+          window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId } }));
+          effect = { type: "pearl-studio", opened: true };
+        } else if (["margin-pearl", "chat", "web-scene", "output-frame"].includes(plan.destination.type)) {
+          window.dispatchEvent(new CustomEvent("lens:output-placement", { detail: { pearlId: a.pearlId, plan } }));
+          effect = { type: plan.destination.type, local: true };
+        } else {
+          throw new Error(`Destination ${plan.destination.type} requires the supported page or extension adapter.`);
+        }
+        return runCanonicalPearlAction("completeOutputPlacement", { resultId: a.pearlId, effect }, a.pearlId);
+      } catch (error) {
+        await runCanonicalPearlAction("failOutputPlacement", { resultId: a.pearlId, error: { code: "WEB_PLACEMENT_FAILED", message: error.message, recoverable: true } }, a.pearlId);
+        throw error;
+      }
+    },
+    cancelResultPlacement: async (a) => runCanonicalPearlAction("cancelOutputPlacement", { resultId: a.pearlId }, a.pearlId),
+    openPearlStudio: async (a) => {
+      window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId || null } }));
+      return { type: "pearl-studio-open", id: a.pearlId || null, effects: ["pearl-studio-opening"] };
+    },
     caption: async (a, tk) => {
       tk.caption(a.text || "");
       await tk.wait(a.ms ?? 1600);

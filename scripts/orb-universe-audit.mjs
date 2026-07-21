@@ -18,6 +18,9 @@ async function shot(name, viewport, url, setup) {
   const context = await browser.newContext({
     viewport,
     reducedMotion: name.includes("reduced") ? "reduce" : "no-preference",
+    forcedColors: name.includes("high-contrast") ? "active" : "none",
+    colorScheme: name.includes("light") ? "light" : "dark",
+    deviceScaleFactor: name.includes("200-zoom") ? 2 : 1,
   });
   const page = await context.newPage();
   const errors = [];
@@ -34,6 +37,46 @@ async function shot(name, viewport, url, setup) {
       name: animation.animationName || animation.effect?.target?.className || "transition",
       playState: animation.playState,
     }));
+    const visible = (node) => {
+      if (node.classList?.contains("sr-only") || node.closest?.(".sr-only")) return false;
+      const box = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    };
+    const textDefects = [...document.querySelectorAll("button,input,label,p,li,b,small")]
+      .filter(visible)
+      .filter((node) => !node.classList.contains("companion-orb"))
+      .filter((node) => !node.classList.contains("semantic-orb-cluster"))
+      .filter((node) => {
+        const style = getComputedStyle(node);
+        const clipped = node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1;
+        return clipped && !["auto", "scroll"].includes(style.overflow) && style.textOverflow !== "ellipsis";
+      })
+      .slice(0, 20)
+      .map((node) => {
+        const style = getComputedStyle(node);
+        return { tag: node.tagName, className: node.className, text: node.textContent?.trim().slice(0, 80), fontSize: style.fontSize, lineHeight: style.lineHeight };
+      });
+    const weakLeading = [...document.querySelectorAll("p,li,button,label")]
+      .filter(visible)
+      .filter((node) => {
+        const style = getComputedStyle(node);
+        const font = Number.parseFloat(style.fontSize);
+        const line = Number.parseFloat(style.lineHeight);
+        return Number.isFinite(font) && Number.isFinite(line) && line < font * 1.15;
+      })
+      .slice(0, 20)
+      .map((node) => {
+        const style = getComputedStyle(node);
+        return { tag: node.tagName, className: node.className, text: node.textContent?.trim().slice(0, 80), fontSize: style.fontSize, lineHeight: style.lineHeight };
+      });
+    const pearlVersions = [...document.querySelectorAll(".physical-pearl")].map((node) => node.getAttribute("data-pearl-renderer"));
+    const activeSurfaces = [...document.querySelectorAll(".orb-ledger,.semantic-orb-inspector,.orb-emitted-library,.orb-stage-emission")].filter(visible);
+    const competingGradients = activeSurfaces.filter((node) => getComputedStyle(node).backgroundImage !== "none").map((node) => node.className);
+    const smallTargets = [...document.querySelectorAll("button")].filter(visible).filter((node) => {
+      const box = node.getBoundingClientRect();
+      return !node.classList.contains("companion-orb") && (box.width < 28 || box.height < 28);
+    }).slice(0, 20).map((node) => ({ className: node.className, text: node.textContent?.trim().slice(0, 60) }));
     return {
       colors: { foreground: body.color, background: body.backgroundColor },
       overflow: {
@@ -45,6 +88,14 @@ async function shot(name, viewport, url, setup) {
       animations: animations.slice(0, 20),
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
       highContrast: matchMedia("(prefers-contrast: more)").matches,
+      forcedColors: matchMedia("(forced-colors: active)").matches,
+      pearlVersions,
+      textDefects,
+      weakLeading,
+      competingGradients,
+      smallTargets,
+      genericSpinnerCount: document.querySelectorAll(".spinner,.loading-spinner,[class*=spinner]").length,
+      legacyPearlNodeCount: document.querySelectorAll(".orb-pearl,.orb-core,.orb-nucleus,.extension-orb-core,.extension-orb-halo").length,
     };
   });
   const metrics = await page.evaluate(() => {
@@ -59,6 +110,14 @@ async function shot(name, viewport, url, setup) {
   });
   results.push({ name, viewport, url: page.url(), title: await page.title(), errors, diagnostics, metrics, snapshot: snapshot.slice(0, 2000) });
   if (errors.length) throw new Error(`${name}: ${errors.join("; ")}`);
+  if (!url.startsWith("/scene/") && diagnostics.overflow.horizontal) throw new Error(`${name}: unexpected horizontal overflow`);
+  if (diagnostics.pearlVersions.some((version) => version !== "2")) throw new Error(`${name}: physical Pearl renderer drift`);
+  if (diagnostics.textDefects.length) throw new Error(`${name}: clipped visible text ${JSON.stringify(diagnostics.textDefects)}`);
+  if (diagnostics.weakLeading.length) throw new Error(`${name}: weak line-height ${JSON.stringify(diagnostics.weakLeading)}`);
+  if (diagnostics.competingGradients.length) throw new Error(`${name}: competing emitted-surface gradients ${diagnostics.competingGradients.join(",")}`);
+  if (diagnostics.smallTargets.length) throw new Error(`${name}: controls smaller than 28px ${JSON.stringify(diagnostics.smallTargets)}`);
+  if (diagnostics.genericSpinnerCount || diagnostics.legacyPearlNodeCount) throw new Error(`${name}: generic or legacy Pearl visuals remain`);
+  if (name.includes("reduced") && diagnostics.animations.some((entry) => /pearl|orb/i.test(entry.name) && entry.playState === "running")) throw new Error(`${name}: Pearl animation runs under reduced motion`);
   await context.close();
 }
 
@@ -69,13 +128,13 @@ try {
     if (await page.getByRole("region", { name: "Continue extension work" }).count()) {
       throw new Error("zero-state root exposes a continuation panel without material");
     }
-    if (await page.getByRole("heading", { name: /The world is your oyster/ }).isVisible()) {
-      throw new Error("idle root still exposes competing marketing chrome");
+    if (!await page.getByRole("heading", { name: "Begin with something you noticed." }).isVisible()) {
+      throw new Error("cold root does not explain the first action");
     }
     if (await page.locator(".orb-continuation-pearl").isVisible()) throw new Error("idle root duplicates the primary Pearl");
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("off-Scene Pearl is not the single persistent command affordance");
     await page.locator(".companion-orb").click();
-    if (!await page.getByRole("textbox", { name: "Tell Pearl your goal" }).isVisible()) throw new Error("off-Scene Pearl did not emit one focused command");
+    await page.getByRole("textbox", { name: "Tell Pearl your goal" }).waitFor();
     if (await page.getByRole("navigation").count()) throw new Error("Pearl click exposed persistent navigation");
     await page.keyboard.press("Escape");
     if (await page.getByRole("textbox", { name: "Tell Pearl your goal" }).isVisible()) throw new Error("Escape did not collapse Pearl completely");
@@ -89,13 +148,12 @@ try {
     await page.reload({ waitUntil: "networkidle" });
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("library lost its single Pearl command affordance");
     if (await page.locator(".orb-home-nav,.orb-library-grid").count()) throw new Error("legacy navigation/grid remains visible");
-    if (await page.getByRole("heading", { name: "Your cognitive universe" }).isVisible()) {
-      throw new Error("library still exposes a redundant persistent heading");
-    }
+    if (!await page.getByRole("heading", { name: "No saved work yet." }).isVisible()) throw new Error("empty library is an unexplained blank field");
   });
   await shot("03-library-narrow", { width: 390, height: 844 }, "/library", async (page) => {
     await page.evaluate(() => localStorage.setItem("lens.orb-universe.continued.v1", "true"));
     await page.reload({ waitUntil: "networkidle" });
+    if (!await page.getByRole("heading", { name: "No saved work yet." }).isVisible()) throw new Error("narrow empty library loses its recovery action");
   });
   await shot("03a-trusted-handoff-output-frame", { width: 1280, height: 800 }, "/#handoff=semantic-orb-scene&view=integrate&token=0123456789abcdef0123456789abcdef", {
     before: () => {
@@ -243,7 +301,7 @@ try {
     await page.keyboard.press("Space");
     await page.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true");
     await page.mouse.move(620, 420);
-    const cursor = await page.locator(".orb-cursor-visual").boundingBox();
+    const cursor = await page.locator(".physical-pearl-host.orb-cursor-visual").boundingBox();
     if (!cursor || Math.abs(cursor.x + cursor.width / 2 - 620) > 8 || Math.abs(cursor.y + cursor.height / 2 - 420) > 8) {
       throw new Error("web orb cursor does not track the pointer hotspot");
     }
@@ -292,6 +350,40 @@ try {
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
     const animations = await page.evaluate(() => document.getAnimations().filter((entry) => entry.playState === "running").length);
     if (animations) throw new Error(`reduced-motion setup still animates: ${animations}`);
+  });
+  await shot("06-command-360-high-contrast", { width: 360, height: 800 }, "/", async (page) => {
+    await page.locator(".companion-orb").click();
+    const input = page.getByRole("textbox", { name: "Tell Pearl your goal" });
+    await input.waitFor();
+    await input.focus();
+    const focus = await input.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { outline: style.outlineStyle, width: style.outlineWidth, offset: style.outlineOffset };
+    });
+    if (focus.outline === "none" || Number.parseFloat(focus.width) < 1) throw new Error(`high-contrast command focus is not visible: ${JSON.stringify(focus)}`);
+    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps the open Companion");
+  });
+  await shot("07-command-200-zoom-light", { width: 720, height: 450 }, "/", async (page) => {
+    await page.locator(".companion-orb").click();
+    const ledger = page.locator(".orb-ledger");
+    await ledger.waitFor();
+    const box = await ledger.boundingBox();
+    const viewport = page.viewportSize();
+    if (!box || box.x < 0 || box.y < 0 || box.x + box.width > viewport.width || box.y + box.height > viewport.height) {
+      throw new Error(`command surface is clipped at 200% zoom: ${JSON.stringify({ box, viewport })}`);
+    }
+    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps the zoomed Companion");
+  });
+  await shot("08-destructive-approval-390", { width: 390, height: 844 }, "/", async (page) => {
+    await page.locator(".companion-orb").click();
+    const input = page.getByRole("textbox", { name: "Tell Pearl your goal" });
+    await input.fill("delete my local pearl data");
+    await input.press("Enter");
+    await page.getByRole("region", { name: "Plan approval required" }).waitFor({ timeout: 8_000 });
+    if (!await page.getByRole("button", { name: "Confirm" }).isVisible() || !await page.getByRole("button", { name: "Cancel" }).isVisible()) {
+      throw new Error("destructive approval does not expose both clear choices");
+    }
+    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps destructive confirmation");
   });
   fs.writeFileSync(path.join(evidence, "web-results.json"), `${JSON.stringify({
     version: 1,

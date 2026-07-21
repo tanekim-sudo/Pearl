@@ -39,6 +39,11 @@ import { deleteProfileImage, deleteProfileImages, readProfileImage, storeProfile
 import { createDisclosureReceipt } from "../../../shared/local-privacy-vault.js";
 import { normalizeResultPearl, spawnResultPearl } from "../../../shared/result-pearls.js";
 import { consumeSecureHandoff, createSecureHandoff, pruneSecureHandoffs } from "../../../shared/secure-handoff.js";
+import { createPearlPrivacyPolicy, guardPearlPrivacyAction, inheritPrivacyForDerivedPearl } from "../../../shared/pearl-privacy-policy.js";
+import { createPearlEntity } from "../../../shared/pearl-entity.js";
+import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
+import { executePearlActionEvent } from "../../../shared/pearl-action-protocol.js";
+import { assertPrivilegedExtensionSurface, assertServerVerifiedPearlCommand } from "../core/security.js";
 
 const runs = new Map();
 const handledRequests = new Map();
@@ -66,9 +71,17 @@ const resultCommands = new Set([
   "redirectResultPearl",
   "presentResultPearlAsChat",
   "createResultPlacementRegion",
+  "selectResultPlacementRegion",
   "acceptResultPearl",
   "archiveResultPearl",
   "deleteResultPearl",
+  "requestOutputPlacement",
+  "interpretOutputPlacement",
+  "confirmOutputPlacement",
+  "beginOutputPlacement",
+  "completeOutputPlacement",
+  "failOutputPlacement",
+  "cancelOutputPlacement",
 ]);
 const audioProviders = new Map([
   ["procedural", createProceduralAudioProvider()],
@@ -212,7 +225,7 @@ async function executeSoundscapeCommand(command, pearlId, args = {}) {
 }
 
 async function resultStore() {
-  const stored = await BrowserPlatform.storage.get("local", ["resultPearls", "resultChats", "activeSemanticOrbId", "pearlPageCanvases"]);
+  const stored = await BrowserPlatform.storage.get("local", ["resultPearls", "resultChats", "activeSemanticOrbId", "pearlPageCanvases", "pearlPrivacyPolicies", PEARL_STORE_KEY]);
   const resultPearls = {};
   for (const [id, entry] of Object.entries(stored.resultPearls || {})) {
     try {
@@ -233,19 +246,75 @@ async function resultStore() {
       });
     }
   }
+  for (const entity of Object.values(stored[PEARL_STORE_KEY]?.entities || {})) {
+    if (entity.kind !== "result" || resultPearls[entity.id]) continue;
+    const snapshot = entity.results?.[0] || {};
+    try {
+      resultPearls[entity.id] = normalizeResultPearl({
+        ...snapshot,
+        id: entity.id,
+        pearlId: entity.relationships?.parentPearlId || entity.id,
+        pageIdentity: entity.workingSet?.pageIdentity,
+        placement: entity.representation?.placement,
+        expanded: entity.representation?.expanded,
+        routing: entity.outputRouting,
+        privacyPolicy: entity.privacy?.policy,
+        lineage: entity.lineage,
+        provenance: entity.provenance,
+        updatedAt: entity.updatedAt,
+        createdAt: entity.createdAt,
+      });
+    } catch {
+      // Corrupt canonical entities remain quarantined for Studio recovery.
+    }
+  }
   return {
     resultPearls,
     resultChats: stored.resultChats || [],
     activeSemanticOrbId: stored.activeSemanticOrbId || null,
     pageCanvases: stored.pearlPageCanvases || {},
+    pearlPrivacyPolicies: stored.pearlPrivacyPolicies || {},
   };
 }
 
+async function privacyPolicyStore() {
+  const stored = await BrowserPlatform.storage.get("local", ["pearlPrivacyPolicies", "pearlPrivacyPatches", "pearlPrivacyCheckpoints", "activeSemanticOrbId"]);
+  return {
+    pearlPrivacyPolicies: stored.pearlPrivacyPolicies || {},
+    pearlPrivacyPatches: stored.pearlPrivacyPatches || {},
+    pearlPrivacyCheckpoints: stored.pearlPrivacyCheckpoints || {},
+    activeSemanticOrbId: stored.activeSemanticOrbId || null,
+  };
+}
+
+async function persistPrivacyPolicyState(state) {
+  const stored = await BrowserPlatform.storage.get("local", [PEARL_STORE_KEY]);
+  const pearlStore = stored[PEARL_STORE_KEY] || migrateLegacyPearlState({});
+  const entities = { ...(pearlStore.entities || {}) };
+  for (const [pearlId, policy] of Object.entries(state.pearlPrivacyPolicies || {})) {
+    if (!entities[pearlId]) continue;
+    entities[pearlId] = createPearlEntity({ ...entities[pearlId], privacyPolicy: policy, revision: entities[pearlId].revision + 1 });
+  }
+  await BrowserPlatform.storage.set("local", {
+    pearlPrivacyPolicies: state.pearlPrivacyPolicies || {},
+    pearlPrivacyPatches: state.pearlPrivacyPatches || {},
+    pearlPrivacyCheckpoints: state.pearlPrivacyCheckpoints || {},
+    [PEARL_STORE_KEY]: { ...pearlStore, entities, updatedAt: Date.now() },
+  });
+}
+
 async function persistResultState(next) {
+  const stored = await BrowserPlatform.storage.get("local", [PEARL_STORE_KEY]);
+  const pearlStore = stored[PEARL_STORE_KEY] || migrateLegacyPearlState({});
+  const entities = { ...(pearlStore.entities || {}) };
+  for (const resultPearl of Object.values(next.resultPearls || {})) {
+    entities[resultPearl.id] = createPearlEntity({ ...resultPearl, kind: "result" });
+  }
   await BrowserPlatform.storage.set("local", {
     resultPearls: next.resultPearls || {},
     resultChats: next.resultChats || [],
     ...(next.pageCanvases ? { pearlPageCanvases: next.pageCanvases } : {}),
+    [PEARL_STORE_KEY]: { ...pearlStore, entities, activePearlId: pearlStore.activePearlId || Object.keys(entities)[0] || null, updatedAt: Date.now() },
   });
 }
 
@@ -276,9 +345,11 @@ async function executeResultCommand(command, args, sender = {}) {
   }
   const execution = await executeDomainCommand(command, state, resolvedArgs, { persist: persistResultState });
   const object = execution.result.object;
-  if (object?.pageIdentity) {
+  const updatedResult = execution.state.resultPearls?.[resolvedArgs.resultId];
+  const publishObject = object?.pageIdentity ? object : updatedResult;
+  if (publishObject?.pageIdentity) {
     const pageTab = /^https?:/.test(sender.tab?.url || "") ? sender.tab : await activeTab().catch(() => null);
-    if (pageTab) await publishResultPearls(pageTab, object.pageIdentity, object.pearlId);
+    if (pageTab) await publishResultPearls(pageTab, publishObject.pageIdentity, publishObject.pearlId);
   }
   if (command === "createResultPlacementRegion" && object?.pageIdentity) {
     const tab = sender.tab?.id ? sender.tab : await activeTab();
@@ -286,6 +357,110 @@ async function executeResultCommand(command, args, sender = {}) {
     await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("page-canvas-state", { canvas })).catch(() => {});
   }
   return execution.result;
+}
+
+async function executeConfirmedOutputPlacement(resultId, sender = {}) {
+  let state = await resultStore();
+  const object = state.resultPearls[resultId];
+  if (!object) throw new Error("result Pearl not found");
+  const begun = await executeDomainCommand("beginOutputPlacement", state, { resultId }, {
+    persist: persistResultState,
+    disclosureApproved: true,
+  });
+  if (begun.result.object?.duplicate) return begun.result;
+  state = begun.state;
+  const current = state.resultPearls[resultId];
+  const plan = current.routing.plan;
+  const destination = plan.destination;
+  let effect = { type: destination.type };
+  try {
+    if (destination.type === "margin-pearl") {
+      effect = { type: "margin-pearl", placement: current.placement, retained: true };
+    } else if (destination.type === "chat") {
+      const placed = await executeDomainCommand("presentResultPearlAsChat", state, { resultId }, { persist: persistResultState });
+      state = placed.state;
+      effect = { type: "chat", id: placed.result.object.id };
+    } else if (["new-textbox", "companion-region", "user-region"].includes(destination.type)) {
+      const anchor = destination.anchor?.geometry || current.placement || { x: 24, y: 80, width: 1, height: 1 };
+      const box = destination.type === "user-region" && destination.anchor?.geometry
+        ? destination.anchor.geometry
+        : { x: anchor.x, y: anchor.y + anchor.height + 16, width: 320, height: 190 };
+      const placed = await executeDomainCommand("createResultPlacementRegion", state, {
+        resultId,
+        pearlId: current.pearlId,
+        pageIdentity: current.pageIdentity,
+        box,
+        coordinateSpace: box.coordinateSpace || "document",
+        kind: destination.type === "new-textbox" ? "canvas-textbox" : destination.type === "user-region" ? "canvas-region" : "companion-region",
+      }, { persist: persistResultState });
+      state = placed.state;
+      effect = { type: destination.type, targetId: placed.result.object.destination?.targetId };
+    } else if (destination.type === "existing-textbox") {
+      const placed = await executeDomainCommand("selectResultPlacementRegion", state, {
+        resultId,
+        pearlId: current.pearlId,
+        pageIdentity: current.pageIdentity,
+        artifactId: destination.targetId,
+        kind: "canvas-textbox",
+      }, { persist: persistResultState });
+      state = placed.state;
+      effect = { type: destination.type, targetId: destination.targetId };
+    } else if (["native-insert", "native-replace"].includes(destination.type)) {
+      effect = await sendPage("result-action", {
+        targetTabId: destination.tabId,
+        resultId,
+        text: current.text,
+        outputSpec: current.outputSpec,
+        plan: {
+          operation: destination.type === "native-replace" ? "replace" : "insert",
+          anchor: destination.anchor,
+          targetRevision: plan.targetRevision,
+          confirmed: true,
+          idempotencyKey: plan.idempotencyKey,
+        },
+      });
+    } else if (destination.type === "pearl-studio") {
+      const handoff = await createBoundHandoff("resultPearlHandoffs", {
+        origin: new URL(chrome.runtime.getURL("result.html")).origin,
+        scope: "result-tab",
+        payload: { result: current, studio: true, placementPlanId: plan.id },
+      });
+      await BrowserPlatform.tabs.update(handoff.tab.id, { url: chrome.runtime.getURL(`result.html#handoff=${handoff.nonce}`) });
+      effect = { type: destination.type, opened: true };
+    } else if (["web-scene", "output-frame"].includes(destination.type)) {
+      const handoff = await createBoundHandoff("webResultHandoffs", {
+        origin: "https://representation-eta.vercel.app",
+        scope: "result-web",
+        payload: { type: "pearl-result-handoff", resultPearl: current, destination: destination.type },
+      });
+      await BrowserPlatform.tabs.update(handoff.tab.id, {
+        url: `https://representation-eta.vercel.app/#handoff=result-pearl&token=${handoff.nonce}`,
+      });
+      effect = { type: destination.type, opened: true };
+    } else {
+      effect = await sendPage("output-placement-effect", {
+        resultId,
+        destination,
+        text: current.text,
+        outputSpec: current.outputSpec,
+        idempotencyKey: plan.idempotencyKey,
+      });
+    }
+    const completed = await executeDomainCommand("completeOutputPlacement", state, { resultId, effect }, { persist: persistResultState });
+    const pending = await readSession();
+    if (pending.pendingOutputRouting?.activeResultId === resultId) await writeSession({ pendingOutputRouting: null });
+    if (current.pageIdentity) {
+      const tab = sender.tab?.id ? sender.tab : await activeTab().catch(() => null);
+      if (tab) await publishResultPearls(tab, current.pageIdentity, current.pearlId);
+    }
+    return completed.result;
+  } catch (error) {
+    await executeDomainCommand("failOutputPlacement", state, {
+      resultId,
+      error: { code: error?.code || "PLACEMENT_FAILED" },
+    }, { persist: persistResultState });
+    throw error;
+  }
 }
 
 async function materializeResultPearls(session, run, disclosureReceipt, options = {}) {
@@ -297,6 +472,7 @@ async function materializeResultPearls(session, run, disclosureReceipt, options 
   if (!existing.length) await ensureBridge(tab);
   const pageIdentity = existing[0]?.pageIdentity || canonicalPageIdentity(tab.url);
   const pearlId = existing[0]?.pearlId || stored.activeSemanticOrbId || "pearl:extension-default";
+  const sourcePolicy = stored.pearlPrivacyPolicies?.[pearlId] || createPearlPrivacyPolicy({ pearlId });
   const sourceRefs = (session.fragments || []).map((entry) => ({
     id: entry.id,
     anchor: entry.anchor || null,
@@ -342,6 +518,7 @@ async function materializeResultPearls(session, run, disclosureReceipt, options 
         destination: { type: "margin-pearl", placement: placements[index] || null },
         placement: placements[index] || null,
         provenance: output.provenance || run.provenance || {},
+        privacyPolicy: inheritPrivacyForDerivedPearl({ id: resultId }, [sourcePolicy]).privacyPolicy,
       },
     });
     state = spawned.state;
@@ -365,6 +542,18 @@ async function materializeResultPearls(session, run, disclosureReceipt, options 
       ...(run.failed ? { failure: run.failure || { code: "GENERATION_FAILED", recoverable: true } } : {}),
     });
     state = ready.state;
+    if (!run.failed) {
+      const routing = await executeDomainCommand("requestOutputPlacement", state, {
+        resultId,
+        branches: spawnedResults.map((entry, branchIndex) => ({
+          id: entry.output.branchId || entry.resultId,
+          resultId: entry.resultId,
+          index: branchIndex,
+          label: entry.output.branchSpec?.name || entry.output.branchSpec?.label || `Branch ${branchIndex + 1}`,
+        })),
+      });
+      state = routing.state;
+    }
   }
   for (const stale of existing.slice(spawnedResults.length)) {
     const failed = await executeDomainCommand("setResultPearlStatus", state, {
@@ -376,6 +565,18 @@ async function materializeResultPearls(session, run, disclosureReceipt, options 
     state = failed.state;
   }
   await persistResultState(state);
+  if (!run.failed && spawnedResults.length) {
+    const primary = state.resultPearls[spawnedResults[0].resultId];
+    await writeSession({
+      pendingOutputRouting: {
+        resultIds: spawnedResults.map((entry) => entry.resultId),
+        activeResultId: primary.id,
+        stage: primary.routing?.stage || "choosing",
+        question: primary.routing?.question || "Where should this output go?",
+        updatedAt: Date.now(),
+      },
+    });
+  }
   return publishResultPearls(tab, pageIdentity, pearlId);
 }
 
@@ -412,6 +613,29 @@ async function executeGo(payload) {
   const session = await readSession();
   if (!session.fragments.length) throw new Error("highlight material before GO");
   if (!session.queue.length && !session.generator) throw new Error("queue a Move/Function action or Lens context before GO");
+  const privacyState = await BrowserPlatform.storage.get("local", ["activeSemanticOrbId", "pearlPrivacyPolicies"]);
+  const privacyPearlId = privacyState.activeSemanticOrbId || "pearl:extension-default";
+  const privacyPolicy = privacyState.pearlPrivacyPolicies?.[privacyPearlId] || createPearlPrivacyPolicy({ pearlId: privacyPearlId });
+  if (!privacyState.pearlPrivacyPolicies?.[privacyPearlId]) {
+    await BrowserPlatform.storage.set("local", {
+      pearlPrivacyPolicies: { ...(privacyState.pearlPrivacyPolicies || {}), [privacyPearlId]: privacyPolicy },
+    });
+  }
+  const privacyDecision = guardPearlPrivacyAction(privacyPolicy, "model-call", {
+    fields: ["explicit-page-selection"],
+    provider: payload.provider || null,
+  });
+  if (!privacyDecision.allowed) {
+    const error = new Error(privacyDecision.reason);
+    error.code = privacyDecision.code;
+    error.minimumPrivacyPatch = privacyDecision.minimumPatch;
+    throw error;
+  }
+  if (privacyDecision.approvalRequired && payload.privacyDisclosureApproved !== true) {
+    const error = new Error("Approve the bounded model disclosure for this run.");
+    error.code = "PRIVACY_APPROVAL_REQUIRED";
+    throw error;
+  }
   const runId = payload.runId || crypto.randomUUID();
   const controller = new AbortController();
   runs.set(runId, controller);
@@ -431,6 +655,8 @@ async function executeGo(payload) {
     fragmentIds: session.fragments.map((entry) => entry.id),
     disclosedCharacters: request.disclosedCharacters || session.fragments.reduce((sum, entry) => sum + String(entry.quote || "").length, 0),
     destination: "configured-model",
+    policyId: privacyPolicy.id,
+    policyVersion: privacyPolicy.version,
   });
   const receipts = await BrowserPlatform.storage.get("local", ["disclosureReceipts"]);
   await BrowserPlatform.storage.set("local", {
@@ -458,9 +684,9 @@ async function executeGo(payload) {
       outputs: response.outputs || response.results || [],
       provenance: response.provenance || createProvenance(session.fragments, { runId }),
     });
-    const next = await writeSession({ results: [result], activeRunId: null });
+    await writeSession({ results: [result], activeRunId: null });
     await materializeResultPearls(session, result, disclosureReceipt, { tab: executionTab }).catch(() => {});
-    return next;
+    return readSession();
   } catch (error) {
     await writeSession({ activeRunId: null });
     await materializeResultPearls(session, {
@@ -529,11 +755,70 @@ async function handle(message, sender = {}) {
     return deleteProfileImage(payload.blobRef);
   }
   if (type === "page-canvas-export-pdf") return sendPage("page-canvas-export-pdf", payload);
+  if (type === "output-routing-answer") {
+    const state = await resultStore();
+    const object = payload.resultId === "latest"
+      ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
+      : state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    const answer = String(payload.answer || "").trim();
+    if (/^(?:cancel|never ?mind|stop)$/i.test(answer)) {
+      return executeResultCommand("cancelOutputPlacement", { resultId: object.id }, sender);
+    }
+    if (/^(?:no|not that|somewhere else)$/i.test(answer)) {
+      const reset = await executeResultCommand("requestOutputPlacement", { resultId: object.id, branches: object.routing?.branches }, sender);
+      await writeSession({ pendingOutputRouting: { resultIds: [object.id], activeResultId: object.id, stage: "choosing", question: reset.object.question, updatedAt: Date.now() } });
+      return reset;
+    }
+    const observed = payload.observation && Object.keys(payload.observation).length
+      ? payload.observation
+      : (await sendPage("output-routing-observe", { targetTabId: payload.targetTabId }).catch(() => null))?.observation || {};
+    const live = {
+      ...observed,
+      tabId: Number.isInteger(payload.targetTabId) ? payload.targetTabId : observed.tabId,
+      frameId: Number.isInteger(payload.frameId) ? payload.frameId : observed.frameId,
+    };
+    const interpreted = await executeResultCommand("interpretOutputPlacement", {
+      resultId: object.id,
+      answer,
+      observation: live,
+      branchIds: payload.branchIds || [],
+    }, sender);
+    const routing = interpreted.object;
+    await writeSession({
+      pendingOutputRouting: {
+        resultIds: [object.id],
+        activeResultId: object.id,
+        stage: routing.stage,
+        question: routing.stage === "confirming" ? routing.plan.summary : routing.clarification,
+        updatedAt: Date.now(),
+      },
+    });
+    return interpreted;
+  }
+  if (type === "output-routing-confirm") {
+    const state = await resultStore();
+    const target = state.resultPearls[payload.resultId]?.routing?.plan?.destination;
+    const live = await sendPage("output-routing-observe", { targetTabId: target?.tabId }).catch(() => null);
+    const confirmed = await executeResultCommand("confirmOutputPlacement", {
+      resultId: payload.resultId,
+      targetRevision: payload.targetRevision ?? live?.observation?.targetRevision,
+    }, sender);
+    if (confirmed.object.stage !== "confirmed") return confirmed;
+    return executeConfirmedOutputPlacement(payload.resultId, sender);
+  }
+  if (type === "output-routing-revise") {
+    const state = await resultStore();
+    const object = state.resultPearls[payload.resultId];
+    if (!object) throw new Error("result Pearl not found");
+    return executeResultCommand("requestOutputPlacement", { resultId: object.id, branches: object.routing?.branches }, sender);
+  }
+  if (type === "output-routing-cancel") return executeResultCommand("cancelOutputPlacement", { resultId: payload.resultId }, sender);
   if (type === "result-pearl-command") return executeResultCommand(payload.command, {
     resultId: payload.resultId,
     ...(payload.destination ? { destination: payload.destination } : {}),
   }, sender);
-  if (type === "result-pearl-open-tab") {
+  if (type === "result-pearl-open-tab" || type === "result-pearl-open-studio") {
     const state = await resultStore();
     const object = payload.resultId === "latest"
       ? Object.values(state.resultPearls).filter((entry) => !entry.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0]
@@ -547,18 +832,30 @@ async function handle(message, sender = {}) {
       const handoff = await createBoundHandoff("resultPearlHandoffs", {
         origin: new URL(chrome.runtime.getURL("result.html")).origin,
         scope: "result-tab",
-        payload: { result: object },
+        payload: { result: object, studio: type === "result-pearl-open-studio" },
       });
       tab = handoff.tab;
       await BrowserPlatform.tabs.update(tab.id, { url: chrome.runtime.getURL(`result.html#handoff=${handoff.nonce}`) });
     } catch {
-      await executeDomainCommand("redirectResultPearl", redirected.state, {
-        resultId: object.id,
-        destination: { type: "margin-pearl", placement: object.placement },
-      }, { persist: persistResultState });
+      await executeDomainCommand("undoResultPearl", redirected.state, { resultId: object.id }, { persist: persistResultState }).catch(() => {});
       throw new Error("the browser blocked the result tab; the margin Pearl is preserved");
     }
     return { ...redirected.result, opened: true };
+  }
+  if (type === "pearl-open-studio") {
+    const stored = await BrowserPlatform.storage.get("local", null);
+    const pearlStore = stored[PEARL_STORE_KEY] || migrateLegacyPearlState(stored);
+    const pearlId = payload.pearlId || pearlStore.activePearlId || stored.activeSemanticOrbId;
+    const entity = pearlStore.entities?.[pearlId];
+    if (!entity) throw new Error("make or activate a Pearl before opening Studio");
+    if (entity.permissions?.lockState === "locked") throw new Error("unlock this Pearl before opening Studio");
+    const handoff = await createBoundHandoff("resultPearlHandoffs", {
+      origin: new URL(chrome.runtime.getURL("result.html")).origin,
+      scope: "result-tab",
+      payload: { result: entity, studio: true },
+    });
+    await BrowserPlatform.tabs.update(handoff.tab.id, { url: chrome.runtime.getURL(`result.html#handoff=${handoff.nonce}`) });
+    return { type: "pearl-studio-open", pearlId: entity.id, opened: true };
   }
   if (type === "result-pearl-open-web") {
     const state = await resultStore();
@@ -1035,6 +1332,50 @@ async function handle(message, sender = {}) {
   }
   if (type === "set-generator") return writeSession({ generator: payload.generator || null });
   if (type === "go") return executeGo(payload);
+  if (type === "pearl-entity-get") {
+    const stored = await BrowserPlatform.storage.get("local", [PEARL_STORE_KEY]);
+    const entity = stored[PEARL_STORE_KEY]?.entities?.[payload.pearlId];
+    if (!entity) throw new Error("canonical Pearl not found");
+    return { entity };
+  }
+  if (type === "pearl-action") {
+    assertServerVerifiedPearlCommand(payload.event?.command, payload.event?.args);
+    const stored = await BrowserPlatform.storage.get("local", null);
+    const pearlStore = stored[PEARL_STORE_KEY] || migrateLegacyPearlState(stored);
+    const entity = pearlStore.entities?.[payload.event?.pearlId];
+    if (!entity) throw new Error("canonical Pearl not found");
+    const executed = await executePearlActionEvent({
+      entity,
+      state: { ...stored, pearlEntities: pearlStore.entities },
+      event: payload.event,
+    });
+    const executedEntities = executed.state?.pearlEntities || pearlStore.entities;
+    const migratedEffects = migrateLegacyPearlState(executed.state || {});
+    const { pearlEntities: _entities, [PEARL_STORE_KEY]: _nestedStore, ...profileState } = executed.state || {};
+    await BrowserPlatform.storage.set("local", {
+      ...profileState,
+      [PEARL_STORE_KEY]: {
+        ...pearlStore,
+        entities: { ...pearlStore.entities, ...migratedEffects.entities, ...executedEntities, [entity.id]: executed.entity },
+        updatedAt: Date.now(),
+      },
+    });
+    await sendPage("pearl-effect-animation", {
+      pearlId: entity.id,
+      animation: executed.animation,
+      effectReceiptId: executed.effectReceipt?.id,
+    }).catch(() => {});
+    return {
+      pearlId: entity.id,
+      revision: executed.entity.revision,
+      effectReceipt: executed.effectReceipt,
+      animation: executed.animation,
+      observation: executed.observation,
+      domainResult: executed.domainResult,
+      replay: executed.replay,
+      conflict: executed.conflict,
+    };
+  }
   if (type === "cancel-run") {
     runs.get(payload.runId || session.activeRunId)?.abort();
     return writeSession({ activeRunId: null });
@@ -1053,7 +1394,7 @@ async function handle(message, sender = {}) {
     if (!found) throw new Error("staged candidate not found");
     return writeSession({ results });
   }
-  if (type === "result-action") return sendPage(type, payload);
+  if (type === "result-action") throw new Error("direct result mutation is blocked; confirm a typed PlacementPlan");
   if (type === "auth-status") return authStatus();
   if (type === "auth-login") {
     for (const run of runs.values()) run.abort();
@@ -1074,6 +1415,37 @@ async function handle(message, sender = {}) {
     await clearAllSession();
     await clearDecryptedPageSurfaces();
     return logout();
+  }
+  if (type === "privacy-policy-get") {
+    let state = await privacyPolicyStore();
+    const pearlId = payload.pearlId || state.activeSemanticOrbId || "pearl:extension-default";
+    if (!state.pearlPrivacyPolicies[pearlId]) {
+      const ensured = await executeDomainCommand("ensurePearlPrivacyPolicy", state, { pearlId }, { persist: persistPrivacyPolicyState });
+      state = ensured.state;
+    }
+    const inspected = await executeDomainCommand("inspectPearlPrivacy", state, {
+      pearlId,
+      actor: payload.actor || {},
+    });
+    return { policy: state.pearlPrivacyPolicies[pearlId], observation: inspected.result.object };
+  }
+  if (type === "privacy-policy-propose") {
+    const state = await privacyPolicyStore();
+    const pearlId = payload.pearlId || state.activeSemanticOrbId || "pearl:extension-default";
+    return (await executeDomainCommand("proposePearlPrivacyPatch", state, {
+      pearlId,
+      patch: payload.patch,
+      expectedVersion: payload.expectedVersion,
+    }, { persist: persistPrivacyPolicyState })).result;
+  }
+  if (type === "privacy-policy-apply") {
+    const state = await privacyPolicyStore();
+    const pearlId = payload.pearlId || state.activeSemanticOrbId || "pearl:extension-default";
+    return (await executeDomainCommand("applyPearlPrivacyPatch", state, {
+      pearlId,
+      proposalId: payload.proposalId,
+      confirmed: payload.confirmed === true,
+    }, { persist: persistPrivacyPolicyState })).result;
   }
   if (type === "privacy-lock") {
     for (const run of runs.values()) run.abort();
@@ -1202,12 +1574,23 @@ globalThis.chrome?.commands?.onCommand.addListener(async (command) => {
   if (command === "toggle-highlighter") await sendPage("toggle-highlighter");
 });
 
+const PRIVILEGED_EXTENSION_MESSAGE_TYPES = new Set([
+  "pearl-action",
+  "privacy-policy-propose",
+  "privacy-policy-apply",
+  "privacy-lock",
+  "privacy-unlock",
+  "privacy-delete-local",
+  "auth-logout",
+]);
+
 globalThis.chrome?.runtime?.onMessage.addListener((raw, sender, respond) => {
   try {
     assertTrustedSender(sender, globalThis.chrome.runtime.id);
     const validated = validateMessage(raw);
     if (!validated.ok) throw new Error(validated.error);
     if (!validated.value.requestId) throw new Error("request ID required");
+    if (PRIVILEGED_EXTENSION_MESSAGE_TYPES.has(validated.value.type)) assertPrivilegedExtensionSurface(sender, globalThis.chrome.runtime.id);
     const replayKey = `${sender.id || "extension"}:${sender.tab?.id || "view"}:${validated.value.requestId}`;
     let pending = handledRequests.get(replayKey);
     if (!pending) {

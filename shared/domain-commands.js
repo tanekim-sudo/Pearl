@@ -57,6 +57,50 @@ import {
   undoResultPearl,
   updateResultPearl,
 } from "./result-pearls.js";
+import {
+  beginPlacementExecution,
+  cancelPlacementRequest,
+  completePlacementExecution,
+  confirmPlacementRequest,
+  createOutputRoutingRequest,
+  failPlacementExecution,
+  interpretPlacementAnswer,
+} from "./output-routing.js";
+import { compileAutomationPearl, reviseAutomationPearl } from "./automation-pearl.js";
+import {
+  approveAutomationContextPatch,
+  createAutomationResearchPlan,
+  proposeAutomationContextPatch,
+  undoAutomationContextPatch,
+} from "./automation-research.js";
+import {
+  consumePearlShareGrant,
+  createPearlShareGrant,
+  createPearlShareReview,
+  revokePearlShareGrant,
+  validatePearlPackage,
+} from "./pearl-sharing.js";
+import { applyPearlEntityPatch, createPearlEntity } from "./pearl-entity.js";
+import { createPearlStudioOpenRequest, createPearlStudioViewModel } from "./pearl-studio.js";
+import {
+  advanceCognitivePlayback,
+  applyCognitiveLayerPatch,
+  cancelCognitivePlayback,
+  composeCognitiveLayers,
+  createCognitiveLayer,
+  createPearlCognition,
+  proposeCognitiveLayerPatch,
+  resolveCognitiveUncertainty,
+  startCognitivePlayback,
+} from "./pearl-cognitive-layers.js";
+import {
+  applyPearlPrivacyPatch,
+  createPearlPrivacyPolicy,
+  guardPearlPrivacyAction,
+  inheritPrivacyForDerivedPearl,
+  pearlPrivacyObservation,
+  proposePearlPrivacyPatch,
+} from "./pearl-privacy-policy.js";
 
 export const DOMAIN_COMMAND_VERSION = 1;
 
@@ -119,6 +163,109 @@ function updateResult(state, resultId, update) {
   };
 }
 
+function updatePearlCognition(state, pearlId, update) {
+  const current = state.pearlEntities?.[pearlId];
+  if (!current) throw new Error("canonical Pearl not found");
+  const entity = createPearlEntity(current);
+  if (entity.permissions.lockState === "locked") throw new Error("unlock this Pearl before editing cognitive layers");
+  const cognition = createPearlCognition(update(entity.cognition, entity));
+  const changed = applyPearlEntityPatch(entity, { cognition }, {
+    expectedRevision: entity.revision,
+    idempotencyKey: `cognition:${Date.now()}`,
+    reason: "cognitive-layer-edit",
+  });
+  if (changed.conflict) throw new Error("Pearl changed while editing cognitive layers");
+  return {
+    object: changed.entity,
+    state: { ...state, pearlEntities: { ...state.pearlEntities, [pearlId]: changed.entity } },
+  };
+}
+
+function automationPearlFromEntity(value) {
+  const entity = createPearlEntity(value);
+  if (entity.kind !== "automation") return null;
+  return {
+    id: entity.id,
+    stableId: entity.identity.stableId,
+    version: Math.max(1, Number(entity.automation?.version) || entity.revision + 1),
+    kind: "automation-pearl",
+    identity: clone(entity.identity),
+    material: { type: "automation-evidence", evidence: clone(entity.cognition.rawEvidence), verbatimPreserved: true },
+    cognition: clone(entity.cognition),
+    contextSchema: clone(entity.automation?.contextSchema),
+    lenses: clone(entity.lenses),
+    moves: clone(entity.moves),
+    functions: clone(entity.functions),
+    generationPlan: clone(entity.automation?.generationPlan || entity.generation.plan),
+    outputSpecs: clone(entity.generation.outputSpecs),
+    researchPlan: clone(entity.automation?.researchPlan),
+    evaluation: clone(entity.automation?.evaluation),
+    semanticDiff: clone(entity.automation?.semanticDiff),
+    contextPatches: clone(entity.automation?.contextPatches || []),
+    permissions: clone(entity.automation?.permissions || []),
+    privacyPolicy: clone(entity.privacy.policy),
+    provenance: clone(entity.provenance),
+  };
+}
+
+function assertConfirmedResultPlacement(object, allowedTypes) {
+  const routing = object?.routing;
+  if (routing?.stage !== "executing" || routing.plan?.confirmed !== true) {
+    throw new Error("confirmed PlacementPlan execution is required");
+  }
+  if (allowedTypes && !allowedTypes.includes(routing.plan.destination?.type)) {
+    throw new Error("confirmed PlacementPlan destination mismatch");
+  }
+  return routing.plan;
+}
+
+const DOMAIN_PRIVACY_ACTIONS = Object.freeze({
+  planAutomationResearch: "research",
+  createPearlShareGrant: "share",
+  consumePearlShareGrant: "handoff",
+  installValidatedPearlPackage: "handoff",
+});
+
+function privacyPolicyForCommand(state, args, options = {}) {
+  return options.privacyPolicy || args.privacyPolicy ||
+    state.resultPearls?.[args.resultId]?.privacyPolicy ||
+    state.automationPearls?.[args.pearlId]?.privacyPolicy ||
+    state.pearlPrivacyPolicies?.[args.pearlId] ||
+    args.pearl?.privacyPolicy ||
+    args.package?.privacyPolicy ||
+    null;
+}
+
+function privacyActionForCommand(name, state, args) {
+  if (name === "beginOutputPlacement") {
+    const type = state.resultPearls?.[args.resultId]?.routing?.plan?.destination?.type;
+    if (["clipboard", "download", "pdf", "native-insert", "native-replace"].includes(type)) return "export";
+    if (["web-scene", "output-frame"].includes(type)) return "handoff";
+    return "local-placement";
+  }
+  return DOMAIN_PRIVACY_ACTIONS[name] || null;
+}
+
+function assertDomainPrivacy(name, state, args, options = {}) {
+  const action = privacyActionForCommand(name, state, args);
+  if (!action) return null;
+  const policy = privacyPolicyForCommand(state, args, options);
+  if (!policy) throw new Error(`PrivacyPolicy is required before ${action}`);
+  const decision = guardPearlPrivacyAction(policy, action, options.privacyContext || {});
+  if (!decision.allowed) {
+    const error = new Error(decision.reason);
+    error.code = decision.code;
+    error.minimumPrivacyPatch = decision.minimumPatch;
+    throw error;
+  }
+  if (decision.approvalRequired && options.disclosureApproved !== true && args.disclosureApproved !== true) {
+    const error = new Error(`explicit ${action} disclosure approval is required`);
+    error.code = "PRIVACY_APPROVAL_REQUIRED";
+    throw error;
+  }
+  return decision;
+}
+
 export const DOMAIN_COMMANDS = Object.freeze({
   openOrbCreationPreview: {
     schema: { sceneId: "string", source: "object?", placement: "object?" },
@@ -127,7 +274,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     surfaces: ["web", "companion"],
     persistenceEffect: "none",
     observableEffects: ["semantic-orb-preview-opened"],
-    execute(state, args) {
+    execute(state, args, context) {
       const placement = placeSemanticOrb(state.semanticOrbs, args.placement || {});
       return {
         state,
@@ -1333,6 +1480,112 @@ export const DOMAIN_COMMANDS = Object.freeze({
       };
     },
   },
+  requestOutputPlacement: {
+    schema: { resultId: "string", branches: "array?" },
+    preconditions: ["generation completed into a persisted staged Result Pearl"],
+    risk: "low", confirmation: "none", undo: "cancel-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.replace",
+    observableEffects: ["output-destination-requested"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, {
+        routing: createOutputRoutingRequest(object, { branches: args.branches }),
+        destination: { ...object.destination, confirmed: false },
+      }));
+      return { state: next.state, result: result("output-routing-request", next.object.routing, ["output-destination-requested"]) };
+    },
+  },
+  interpretOutputPlacement: {
+    schema: { resultId: "string", answer: "string", observation: "object?", branchIds: "array?" },
+    preconditions: ["a routing request is pending", "live observation is bounded and local"],
+    risk: "low", confirmation: "none", undo: "revise-placement-plan",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.plan.replace",
+    observableEffects: ["output-placement-interpreted"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => {
+        if (!object.routing) throw new Error("output destination has not been requested");
+        const interpreted = interpretPlacementAnswer(args.answer, object.routing, args.observation || {}, { branchIds: args.branchIds });
+        return updateResultPearl(object, { routing: interpreted.request });
+      });
+      return { state: next.state, result: result("placement-plan", next.object.routing, ["output-placement-interpreted"]) };
+    },
+  },
+  confirmOutputPlacement: {
+    schema: { resultId: "string", targetRevision: "number?" },
+    preconditions: ["PlacementPlan is explicit and shown to the user"],
+    risk: "medium", confirmation: "preview", undo: "undo-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.confirm",
+    observableEffects: ["output-placement-confirmed"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, {
+        routing: confirmPlacementRequest(object.routing, args.targetRevision),
+      }));
+      return { state: next.state, result: result("placement-plan", next.object.routing, ["output-placement-confirmed"]) };
+    },
+  },
+  beginOutputPlacement: {
+    schema: { resultId: "string" },
+    preconditions: ["PlacementPlan is confirmed and idempotency key has not executed"],
+    risk: "medium", confirmation: "none", undo: "undo-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.execute",
+    observableEffects: ["output-placement-started"],
+    execute(state, args) {
+      let duplicate = false;
+      const next = updateResult(state, args.resultId, (object) => {
+        const begun = beginPlacementExecution(object.routing);
+        duplicate = begun.duplicate;
+        return updateResultPearl(object, { routing: begun.request });
+      });
+      return { state: next.state, result: result("placement-execution", { routing: next.object.routing, duplicate }, duplicate ? [] : ["output-placement-started"]) };
+    },
+  },
+  completeOutputPlacement: {
+    schema: { resultId: "string", effect: "object?" },
+    preconditions: ["surface adapter completed the exact confirmed PlacementPlan"],
+    risk: "low", confirmation: "none", undo: "undo-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.complete",
+    observableEffects: ["output-placement-completed"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, {
+        routing: completePlacementExecution(object.routing, args.effect),
+        destination: { ...object.routing.plan.destination, confirmed: true },
+      }));
+      return { state: next.state, result: result("placement-execution", next.object.routing, ["output-placement-completed"]) };
+    },
+  },
+  failOutputPlacement: {
+    schema: { resultId: "string", error: "object?" },
+    preconditions: ["surface adapter failed without mutating or retained an exact undo checkpoint"],
+    risk: "low", confirmation: "none", undo: "retry-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.fail",
+    observableEffects: ["output-placement-failed"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, {
+        routing: failPlacementExecution(object.routing, args.error),
+      }));
+      return { state: next.state, result: result("placement-execution", next.object.routing, ["output-placement-failed"]) };
+    },
+  },
+  cancelOutputPlacement: {
+    schema: { resultId: "string" },
+    preconditions: ["staged Result Pearl remains persisted"],
+    risk: "low", confirmation: "none", undo: "request-output-placement",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "resultPearls.routing.cancel",
+    observableEffects: ["output-placement-cancelled"],
+    execute(state, args) {
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, {
+        routing: cancelPlacementRequest(object.routing),
+        destination: { ...object.destination, confirmed: false },
+      }));
+      return { state: next.state, result: result("output-routing-request", next.object.routing, ["output-placement-cancelled"]) };
+    },
+  },
   placeResultPearl: {
     schema: { resultId: "string", placement: "object" },
     preconditions: ["placement was computed against the current viewport and obstacles"],
@@ -1413,12 +1666,12 @@ export const DOMAIN_COMMANDS = Object.freeze({
   openResultPearlInTab: {
     schema: { resultId: "string" },
     preconditions: ["result Pearl exists; the surface adapter creates a nonce-bound tab handoff"],
-    risk: "low", confirmation: "none", undo: "restore-result-destination",
+    risk: "low", confirmation: "none", undo: "close-inspection-tab",
     surfaces: ["web", "companion", "extension"],
-    persistenceEffect: "resultPearls.destination.replace",
+    persistenceEffect: "resultPearls.openedAt.update",
     observableEffects: ["result-pearl-tab-requested"],
     execute(state, args) {
-      const next = updateResult(state, args.resultId, (object) => redirectResultPearl(object, { type: "new-tab" }));
+      const next = updateResult(state, args.resultId, (object) => updateResultPearl(object, { openedAt: Date.now(), status: object.status === "ready" ? "opened" : object.status }));
       return { state: next.state, result: result("result-pearl", next.object, ["result-pearl-tab-requested"]) };
     },
   },
@@ -1430,7 +1683,10 @@ export const DOMAIN_COMMANDS = Object.freeze({
     persistenceEffect: "resultPearls.destination.replace",
     observableEffects: ["result-pearl-redirected"],
     execute(state, args) {
-      const next = updateResult(state, args.resultId, (object) => redirectResultPearl(object, args.destination));
+      const next = updateResult(state, args.resultId, (object) => {
+        assertConfirmedResultPlacement(object, [args.destination?.type]);
+        return redirectResultPearl(object, args.destination);
+      });
       return { state: next.state, result: result("result-pearl", next.object, ["result-pearl-redirected"]) };
     },
   },
@@ -1444,6 +1700,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args) {
       const current = state.resultPearls?.[args.resultId];
       if (!current) throw new Error("result Pearl not found");
+      assertConfirmedResultPlacement(current, ["chat"]);
       const message = resultPearlChatMessage(current);
       const messages = [...(state.resultChats || []).filter((entry) => entry.id !== message.id), message];
       const redirected = updateResult(state, args.resultId, (object) => redirectResultPearl(object, { type: "chat", targetId: message.id }));
@@ -1460,6 +1717,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args) {
       const current = state.resultPearls?.[args.resultId];
       if (!current) throw new Error("result Pearl not found");
+      assertConfirmedResultPlacement(current, ["new-textbox", "companion-region", "user-region"]);
       const artifactId = `result-region:${args.resultId}`;
       const canvas = updatePageCanvas(state, args, (value) => createPearlCanvasArtifact(value, {
         id: artifactId,
@@ -1485,6 +1743,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
       const canvas = state.pageCanvases?.[key];
       const artifact = canvas?.artifacts?.find((entry) => entry.id === args.artifactId);
       if (!artifact || !["text", "output"].includes(artifact.type)) throw new Error("result placement region not found");
+      assertConfirmedResultPlacement(state.resultPearls?.[args.resultId], ["existing-textbox"]);
       const next = updateResult(state, args.resultId, (object) => redirectResultPearl(object, {
         type: args.kind,
         targetId: artifact.id,
@@ -1531,6 +1790,688 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return { state: { ...state, resultPearls }, result: result("result-pearl", removed, ["result-pearl-deleted"]) };
     },
   },
+  ensurePearlPrivacyPolicy: {
+    schema: { pearlId: "string", policy: "object?" },
+    preconditions: ["Pearl identity exists in the current profile namespace"],
+    risk: "low", confirmation: "none", undo: "restore-privacy-policy",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPolicies.upsert",
+    observableEffects: ["pearl-privacy-policy-ready"],
+    execute(state, args) {
+      const existing = state.pearlPrivacyPolicies?.[args.pearlId];
+      const object = existing || createPearlPrivacyPolicy({ ...(args.policy || {}), pearlId: args.pearlId });
+      return { state: { ...state, pearlPrivacyPolicies: { ...(state.pearlPrivacyPolicies || {}), [args.pearlId]: object } }, result: result("pearl-privacy-policy", object, ["pearl-privacy-policy-ready"]) };
+    },
+  },
+  inspectPearlPrivacy: {
+    schema: { pearlId: "string", actor: "object?" },
+    preconditions: ["actor may inspect policy metadata"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "none",
+    observableEffects: ["pearl-privacy-inspected"],
+    execute(state, args) {
+      const policy = state.pearlPrivacyPolicies?.[args.pearlId]
+        || state.pearlEntities?.[args.pearlId]?.privacy?.policy
+        || state.automationPearls?.[args.pearlId]?.privacyPolicy;
+      if (!policy) throw new Error("Pearl PrivacyPolicy not found");
+      const observation = pearlPrivacyObservation(policy, args.actor || {});
+      return { state, result: result("pearl-privacy-observation", observation, ["pearl-privacy-inspected"]) };
+    },
+  },
+  proposePearlPrivacyPatch: {
+    schema: { pearlId: "string", patch: "object", expectedVersion: "number" },
+    preconditions: ["policy patch is explicit and does not silently relax inherited constraints"],
+    risk: "medium", confirmation: "preview", undo: "discard-privacy-patch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPatches.upsert",
+    observableEffects: ["pearl-privacy-patch-proposed"],
+    execute(state, args, context) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const policy = state.pearlPrivacyPolicies?.[args.pearlId] || entity?.privacy?.policy;
+      if (!policy) throw new Error("Pearl PrivacyPolicy not found");
+      if (policy.encryption.status !== "unlocked") throw new Error("unlock the encrypted profile before changing this PrivacyPolicy");
+      if (args.patch?.encryption?.status && args.patch.encryption.status !== policy.encryption.status) {
+        throw new Error("encryption lock state can only change at the verified vault boundary");
+      }
+      const proposal = proposePearlPrivacyPatch(policy, args.patch, { expectedVersion: args.expectedVersion });
+      const pearlEntities = entity ? {
+        ...state.pearlEntities,
+        [args.pearlId]: createPearlEntity({
+          ...entity,
+          revision: entity.revision + 1,
+          runtime: { ...entity.runtime, pendingApproval: { type: "privacy-patch", proposal } },
+        }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, pearlPrivacyPatches: { ...(state.pearlPrivacyPatches || {}), [proposal.id]: proposal } }, result: result("pearl-privacy-patch", proposal, ["pearl-privacy-patch-proposed"]) };
+    },
+  },
+  applyPearlPrivacyPatch: {
+    schema: { pearlId: "string", proposalId: "string", confirmed: "boolean" },
+    preconditions: ["exact policy diff is visible", "organization relaxations require verified admin"],
+    risk: "high", confirmation: "preview", undo: "undo-pearl-privacy-patch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPolicies.update,pearlPrivacyCheckpoints.append",
+    observableEffects: ["pearl-privacy-policy-updated"],
+    execute(state, args, context) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const policy = state.pearlPrivacyPolicies?.[args.pearlId] || entity?.privacy?.policy;
+      const proposal = state.pearlPrivacyPatches?.[args.proposalId]
+        || (entity?.runtime?.pendingApproval?.proposal?.id === args.proposalId ? entity.runtime.pendingApproval.proposal : null);
+      if (!policy || !proposal) throw new Error("Pearl PrivacyPolicy patch not found");
+      if (policy.encryption.status !== "unlocked") throw new Error("unlock the encrypted profile before applying this PrivacyPolicy");
+      const applied = applyPearlPrivacyPatch(policy, proposal, { confirmed: args.confirmed === true, adminVerified: context.serverAdminVerified === true });
+      return {
+        state: {
+          ...state,
+          pearlPrivacyPolicies: { ...(state.pearlPrivacyPolicies || {}), [args.pearlId]: applied.policy },
+          pearlPrivacyPatches: { ...(state.pearlPrivacyPatches || {}), [proposal.id]: applied.proposal },
+          pearlPrivacyCheckpoints: { ...(state.pearlPrivacyCheckpoints || {}), [args.pearlId]: [...(state.pearlPrivacyCheckpoints?.[args.pearlId] || []), applied.checkpoint].slice(-100) },
+          pearlEntities: entity ? {
+            ...state.pearlEntities,
+            [args.pearlId]: createPearlEntity({
+              ...entity,
+              privacyPolicy: applied.policy,
+              revision: entity.revision + 1,
+              runtime: { ...entity.runtime, pendingApproval: null },
+            }),
+          } : state.pearlEntities,
+        },
+        result: result("pearl-privacy-policy", applied.policy, ["pearl-privacy-policy-updated"]),
+      };
+    },
+  },
+  lockPearlPrivacy: {
+    schema: { pearlId: "string", locked: "boolean" },
+    preconditions: ["secure vault completed the corresponding key lock or unlock"],
+    risk: "medium", confirmation: "none", undo: "restore-key-state",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPolicies.encryption.status",
+    observableEffects: ["pearl-privacy-lock-changed"],
+    execute(state, args, context) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const policy = state.pearlPrivacyPolicies?.[args.pearlId] || entity?.privacy?.policy;
+      if (!policy) throw new Error("Pearl PrivacyPolicy not found");
+      if (args.locked === false && context.vaultUnlockVerified !== true) throw new Error("verified vault unlock is required");
+      const object = createPearlPrivacyPolicy({ ...policy, version: policy.version + 1, encryption: { ...policy.encryption, status: args.locked === false ? "unlocked" : "locked" } });
+      const pearlEntities = entity ? {
+        ...state.pearlEntities,
+        [args.pearlId]: createPearlEntity({ ...entity, revision: entity.revision + 1, privacyPolicy: object }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, pearlPrivacyPolicies: { ...(state.pearlPrivacyPolicies || {}), [args.pearlId]: object } }, result: result("pearl-privacy-policy", object, ["pearl-privacy-lock-changed"]) };
+    },
+  },
+  rotatePearlOrganizationKey: {
+    schema: { pearlId: "string", organizationEnvelopeId: "string", organizationKeyVersion: "number" },
+    preconditions: ["verified organization admin", "new envelope is integrity-checked before old grant revocation"],
+    risk: "high", confirmation: "preview", undo: "restore-previous-envelope-until-revocation",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPolicies.encryption.rotate",
+    observableEffects: ["pearl-organization-key-rotated"],
+    execute(state, args, context) {
+      if (context.serverAdminVerified !== true) throw new Error("verified organization admin is required");
+      const policy = state.pearlPrivacyPolicies?.[args.pearlId];
+      if (!policy?.acl.organizationId) throw new Error("organization PrivacyPolicy not found");
+      const object = createPearlPrivacyPolicy({
+        ...policy,
+        version: policy.version + 1,
+        encryption: { ...policy.encryption, organizationEnvelopeId: args.organizationEnvelopeId, organizationKeyVersion: args.organizationKeyVersion, rotationState: "current" },
+      });
+      return { state: { ...state, pearlPrivacyPolicies: { ...state.pearlPrivacyPolicies, [args.pearlId]: object } }, result: result("pearl-privacy-policy", object, ["pearl-organization-key-rotated"]) };
+    },
+  },
+  inheritDerivedPearlPrivacy: {
+    schema: { derived: "object", sourcePolicies: "array", organizationPolicy: "object?" },
+    preconditions: ["derived policy uses the most restrictive source, context, Lens, and organization constraints"],
+    risk: "low", confirmation: "none", undo: "delete-derived-pearl",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "pearlPrivacyPolicies.upsert",
+    observableEffects: ["derived-pearl-privacy-inherited"],
+    execute(state, args) {
+      const derived = inheritPrivacyForDerivedPearl(args.derived, args.sourcePolicies, args.organizationPolicy);
+      return { state: { ...state, pearlPrivacyPolicies: { ...(state.pearlPrivacyPolicies || {}), [derived.id]: derived.privacyPolicy } }, result: result("pearl-privacy-policy", derived.privacyPolicy, ["derived-pearl-privacy-inherited"]) };
+    },
+  },
+  compileAutomationPearl: {
+    schema: { evidence: "array|string", inference: "object?", id: "string?" },
+    preconditions: ["prompt evidence is bounded and treated as untrusted", "verbatim evidence is preserved"],
+    risk: "low", confirmation: "review", undo: "delete-automation-pearl-draft",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "automationPearls.upsert",
+    observableEffects: ["automation-pearl-compiled", "automation-semantic-diff-required"],
+    execute(state, args) {
+      const object = compileAutomationPearl(args.evidence, args.inference, { id: args.id });
+      return {
+        state: { ...state, automationPearls: { ...(state.automationPearls || {}), [object.id]: object } },
+        result: result("automation-pearl", object, ["automation-pearl-compiled", "automation-semantic-diff-required"]),
+      };
+    },
+  },
+  reviseAutomationPearl: {
+    schema: { pearlId: "string", patch: "object", expectedVersion: "number" },
+    preconditions: ["semantic diff was reviewed", "evidence lineage remains immutable"],
+    risk: "low", confirmation: "none", undo: "restore-automation-pearl-checkpoint",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "automationPearls.update",
+    observableEffects: ["automation-pearl-revised"],
+    execute(state, args) {
+      const current = state.automationPearls?.[args.pearlId] || automationPearlFromEntity(state.pearlEntities?.[args.pearlId]);
+      if (!current) throw new Error("automation Pearl not found");
+      const object = reviseAutomationPearl(current, args.patch, { expectedVersion: args.expectedVersion });
+      return { state: { ...state, automationPearls: { ...(state.automationPearls || {}), [object.id]: object }, pearlEntities: { ...(state.pearlEntities || {}), [object.id]: createPearlEntity(object) } }, result: result("automation-pearl", object, ["automation-pearl-revised"]) };
+    },
+  },
+  planAutomationResearch: {
+    schema: { pearlId: "string", plan: "object" },
+    preconditions: ["public query context is separated", "private disclosure is explicitly approved when present"],
+    risk: "medium", confirmation: "disclosure", undo: "cancel-research-plan",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "automationResearchPlans.upsert",
+    observableEffects: ["automation-research-planned"],
+    execute(state, args) {
+      if (!state.automationPearls?.[args.pearlId] && !automationPearlFromEntity(state.pearlEntities?.[args.pearlId])) throw new Error("automation Pearl not found");
+      const object = createAutomationResearchPlan({ ...args.plan, pearlId: args.pearlId });
+      return { state: { ...state, automationResearchPlans: { ...(state.automationResearchPlans || {}), [object.id]: object } }, result: result("automation-research-plan", object, ["automation-research-planned"]) };
+    },
+  },
+  proposeAutomationContextPatch: {
+    schema: { pearlId: "string", research: "object", claims: "array" },
+    preconditions: ["research result contains verified citable sources", "proposal is read-only"],
+    risk: "low", confirmation: "review", undo: "discard-context-patch",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "automationContextPatches.upsert",
+    observableEffects: ["automation-context-patch-proposed"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const pearl = state.automationPearls?.[args.pearlId] || automationPearlFromEntity(entity);
+      if (!pearl) throw new Error("automation Pearl not found");
+      const patch = proposeAutomationContextPatch(pearl, args.research, args.claims);
+      const pearlEntities = entity ? {
+        ...state.pearlEntities,
+        [args.pearlId]: createPearlEntity({ ...entity, revision: entity.revision + 1, runtime: { ...entity.runtime, pendingApproval: { type: "automation-context-patch", proposal: patch } } }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, automationContextPatches: { ...(state.automationContextPatches || {}), [patch.id]: patch } }, result: result("automation-context-patch", patch, ["automation-context-patch-proposed"]) };
+    },
+  },
+  approveAutomationContextPatch: {
+    schema: { pearlId: "string", patchId: "string", approved: "boolean" },
+    preconditions: ["exact context diff and source evidence are visible"],
+    risk: "medium", confirmation: "preview", undo: "undo-automation-context-patch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "automationPearls.context.update,automationContextPatches.status.update",
+    observableEffects: ["automation-context-patch-applied"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const pearl = state.automationPearls?.[args.pearlId] || automationPearlFromEntity(entity);
+      const patch = state.automationContextPatches?.[args.patchId]
+        || (entity?.runtime?.pendingApproval?.proposal?.id === args.patchId ? entity.runtime.pendingApproval.proposal : null);
+      if (!pearl || !patch) throw new Error("automation context patch not found");
+      const applied = approveAutomationContextPatch(pearl, patch, { approved: args.approved === true });
+      return {
+        state: {
+          ...state,
+          automationPearls: { ...(state.automationPearls || {}), [pearl.id]: applied.pearl },
+          automationContextPatches: { ...(state.automationContextPatches || {}), [patch.id]: applied.patch },
+          pearlEntities: {
+            ...(state.pearlEntities || {}),
+            [pearl.id]: createPearlEntity({ ...applied.pearl, revision: (entity?.revision || 0) + 1, runtime: { ...(entity?.runtime || {}), pendingApproval: null } }),
+          },
+        },
+        result: result("automation-pearl", applied.pearl, ["automation-context-patch-applied"]),
+      };
+    },
+  },
+  undoAutomationContextPatch: {
+    schema: { pearlId: "string", patchId: "string" },
+    preconditions: ["context patch checkpoint exists"],
+    risk: "low", confirmation: "none", undo: "reapply-context-patch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "automationPearls.context.restore",
+    observableEffects: ["automation-context-patch-undone"],
+    execute(state, args) {
+      const pearl = state.automationPearls?.[args.pearlId] || automationPearlFromEntity(state.pearlEntities?.[args.pearlId]);
+      if (!pearl) throw new Error("automation Pearl not found");
+      const object = undoAutomationContextPatch(pearl, args.patchId);
+      return { state: { ...state, automationPearls: { ...(state.automationPearls || {}), [pearl.id]: object }, pearlEntities: { ...(state.pearlEntities || {}), [pearl.id]: createPearlEntity(object) } }, result: result("automation-pearl", object, ["automation-context-patch-undone"]) };
+    },
+  },
+  preparePearlShare: {
+    schema: { pearl: "object", selection: "object?" },
+    preconditions: ["share scope is exact", "sensitive-data classification runs locally"],
+    risk: "medium", confirmation: "preview", undo: "discard-share-review",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlShareReviews.upsert",
+    observableEffects: ["pearl-share-review-prepared"],
+    execute(state, args) {
+      const review = createPearlShareReview(args.pearl, args.selection);
+      const entity = state.pearlEntities?.[review.pearlId];
+      const pearlEntities = entity ? {
+        ...state.pearlEntities,
+        [review.pearlId]: createPearlEntity({ ...entity, revision: entity.revision + 1, sharing: { ...entity.sharing, pendingReview: review } }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, pearlShareReviews: { ...(state.pearlShareReviews || {}), [review.pearlId]: review } }, result: result("pearl-share-review", review, ["pearl-share-review-prepared"]) };
+    },
+  },
+  createPearlShareGrant: {
+    schema: { package: "object", options: "object" },
+    preconditions: ["package signature, scope, and privacy review are valid", "opaque link identifier is server-generated"],
+    risk: "medium", confirmation: "preview", undo: "revoke-pearl-share",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "pearlShareGrants.upsert",
+    observableEffects: ["pearl-share-grant-created"],
+    execute(state, args) {
+      const grant = createPearlShareGrant(args.package, args.options);
+      const pearlId = args.package?.manifest?.contracts?.pearlId;
+      const entity = state.pearlEntities?.[pearlId];
+      const pearlEntities = entity ? {
+        ...state.pearlEntities,
+        [pearlId]: createPearlEntity({ ...entity, revision: entity.revision + 1, sharing: { ...entity.sharing, grants: [...entity.sharing.grants, grant], pendingReview: null } }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, pearlShareGrants: { ...(state.pearlShareGrants || {}), [grant.id]: grant } }, result: result("pearl-share-grant", grant, ["pearl-share-grant-created"]) };
+    },
+  },
+  consumePearlShareGrant: {
+    schema: { grantId: "string", claims: "object", now: "number?" },
+    preconditions: ["server authorization, rate limit, expiry, and recipient binding passed atomically"],
+    risk: "medium", confirmation: "none", undo: "decline-received-pearl",
+    surfaces: ["web", "server", "extension"],
+    persistenceEffect: "pearlShareGrants.consume,receivedPearls.stage",
+    observableEffects: ["pearl-share-received"],
+    execute(state, args) {
+      const grant = state.pearlShareGrants?.[args.grantId];
+      const consumed = consumePearlShareGrant(grant, args.claims, args.now);
+      return {
+        state: {
+          ...state,
+          pearlShareGrants: { ...state.pearlShareGrants, [grant.id]: consumed.grant },
+          pearlShareReceipts: [...(state.pearlShareReceipts || []), consumed.receipt],
+        },
+        result: result("pearl-share-receipt", consumed.receipt, ["pearl-share-received"]),
+      };
+    },
+  },
+  revokePearlShareGrant: {
+    schema: { grantId: "string", actorId: "string" },
+    preconditions: ["actor owns the share grant"],
+    risk: "medium", confirmation: "preview", undo: "create-new-share-grant",
+    surfaces: ["web", "server", "companion", "extension"],
+    persistenceEffect: "pearlShareGrants.revoke",
+    observableEffects: ["pearl-share-revoked"],
+    execute(state, args) {
+      const ownerEntity = Object.values(state.pearlEntities || {}).find((entry) => entry.sharing?.grants?.some((grant) => grant.id === args.grantId));
+      const grant = state.pearlShareGrants?.[args.grantId] || ownerEntity?.sharing?.grants?.find((entry) => entry.id === args.grantId);
+      const object = revokePearlShareGrant(grant, args.actorId);
+      const pearlEntities = ownerEntity ? {
+        ...state.pearlEntities,
+        [ownerEntity.id]: createPearlEntity({ ...ownerEntity, revision: ownerEntity.revision + 1, sharing: { ...ownerEntity.sharing, grants: ownerEntity.sharing.grants.map((entry) => entry.id === object.id ? object : entry) } }),
+      } : state.pearlEntities;
+      return { state: { ...state, pearlEntities, pearlShareGrants: { ...(state.pearlShareGrants || {}), [grant.id]: object } }, result: result("pearl-share-grant", object, ["pearl-share-revoked"]) };
+    },
+  },
+  installValidatedPearlPackage: {
+    schema: { package: "object", validationReceipt: "object", localPearlId: "string", confirmed: "boolean" },
+    preconditions: ["signature, schema, dependencies, tests, and declarative-data checks passed", "recipient explicitly accepted"],
+    risk: "medium", confirmation: "preview", undo: "uninstall-pearl-package",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "installedPearlPackages.upsert",
+    observableEffects: ["pearl-package-installed"],
+    async execute(state, args) {
+      if (args.confirmed !== true) throw new Error("validated Pearl package acceptance is required");
+      const receipt = args.validationReceipt || {};
+      if (!receipt.signerPublicKeyJwk || receipt.keyId !== args.package?.manifest?.signature?.keyId) {
+        throw new Error("trusted Pearl package signer receipt is required");
+      }
+      const publicKey = await globalThis.crypto.subtle.importKey(
+        "jwk",
+        receipt.signerPublicKeyJwk,
+        { name: "Ed25519" },
+        false,
+        ["verify"],
+      );
+      const validation = await validatePearlPackage(args.package, { publicKey });
+      if (receipt.contentHash && receipt.contentHash !== validation.contentHash) {
+        throw new Error("Pearl package validation receipt does not match package content");
+      }
+      const validatedReceipt = {
+        valid: true,
+        contentHash: validation.contentHash,
+        keyId: args.package.manifest.signature.keyId,
+        artifacts: validation.artifacts,
+        verifiedAt: Date.now(),
+      };
+      const key = `${args.package.manifest.namespace}/${args.package.manifest.name}`;
+      const existing = state.installedPearlPackages?.[key];
+      if (existing?.package?.manifest?.contentHash === args.package.manifest.contentHash) return { state, result: result("pearl-package-install", existing, []) };
+      const object = {
+        package: clone(args.package),
+        validationReceipt: validatedReceipt,
+        localPearlId: args.localPearlId,
+        previousVersion: existing?.package?.manifest?.version || null,
+        installedAt: Date.now(),
+      };
+      const component = (name) => args.package.artifacts?.find((entry) => entry.component === name)?.snapshot;
+      const installedEntity = createPearlEntity({
+        id: args.localPearlId,
+        kind: "shared",
+        identity: component("identity"),
+        cognition: component("cognition"),
+        privacyPolicy: component("privacyPolicy"),
+        sharing: { package: args.package, installation: object, receipts: [validatedReceipt] },
+        provenance: args.package.manifest.provenance,
+      });
+      return {
+        state: {
+          ...state,
+          pearlEntities: { ...(state.pearlEntities || {}), [installedEntity.id]: installedEntity },
+          installedPearlPackages: { ...(state.installedPearlPackages || {}), [key]: object },
+        },
+        result: result("pearl-package-install", { ...object, entity: installedEntity }, ["pearl-package-installed"]),
+      };
+    },
+  },
+  addPearlCognitiveLayer: {
+    schema: { pearlId: "string", layer: "object", confirmed: "boolean?" },
+    preconditions: ["source evidence and uncertainty are explicit", "semantic additions are reviewed"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.layers.append",
+    observableEffects: ["pearl-cognitive-layer-added"],
+    execute(state, args) {
+      if (args.confirmed !== true) throw new Error("cognitive layer addition confirmation is required");
+      let added;
+      const next = updatePearlCognition(state, args.pearlId, (cognition, entity) => {
+        added = createCognitiveLayer(args.layer, { privacyPolicy: entity.privacy.effectivePolicy });
+        if (cognition.layers.some((entry) => entry.id === added.id)) throw new Error("cognitive layer id already exists");
+        return { ...cognition, layers: [...cognition.layers, added], semanticOrder: [...cognition.semanticOrder, added.id] };
+      });
+      return { state: next.state, result: result("cognitive-layer", added, ["pearl-cognitive-layer-added"]) };
+    },
+  },
+  mutatePearlCognitiveLayer: {
+    schema: { pearlId: "string", layerId: "string", operation: "string", value: "object?", to: "number?", confirmed: "boolean?" },
+    preconditions: ["layout and semantic order remain separate", "semantic mutations are explicit"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.mutate",
+    observableEffects: ["pearl-cognitive-layer-mutated"],
+    execute(state, args, context) {
+      const semantic = args.operation !== "layout";
+      if (semantic && args.confirmed !== true) throw new Error("semantic cognitive mutation confirmation is required");
+      let affected = [];
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => {
+        const layer = cognition.layers.find((entry) => entry.id === args.layerId);
+        if (!layer) throw new Error("cognitive layer not found");
+        let layers = [...cognition.layers];
+        let semanticOrder = [...cognition.semanticOrder];
+        if (args.operation === "layout") {
+          layers = layers.map((entry) => entry.id === layer.id ? createCognitiveLayer({ ...entry, layout: { ...entry.layout, ...clone(args.value || {}) }, revision: entry.revision + 1 }) : entry);
+          affected = [layer.id];
+        } else if (args.operation === "reorder") {
+          semanticOrder = semanticOrder.filter((id) => id !== layer.id);
+          semanticOrder.splice(Math.max(0, Math.min(semanticOrder.length, Number(args.to) || 0)), 0, layer.id);
+          layers = layers.map((entry) => createCognitiveLayer({ ...entry, semantic: { ...entry.semantic, order: semanticOrder.indexOf(entry.id) }, revision: entry.id === layer.id ? entry.revision + 1 : entry.revision }));
+          affected = [layer.id];
+        } else if (args.operation === "nest") {
+          layers = layers.map((entry) => entry.id === layer.id ? createCognitiveLayer({ ...entry, semantic: { ...entry.semantic, parentId: args.value?.parentId || null }, revision: entry.revision + 1 }) : entry);
+          affected = [layer.id];
+        } else if (args.operation === "link") {
+          layers = layers.map((entry) => entry.id === layer.id ? createCognitiveLayer({ ...entry, semantic: { ...entry.semantic, links: [...entry.semantic.links, clone(args.value)] }, revision: entry.revision + 1 }) : entry);
+          affected = [layer.id];
+        } else if (["duplicate", "fork"].includes(args.operation)) {
+          const copy = createCognitiveLayer({
+            ...layer,
+            id: args.value?.id || context.idFactory(),
+            stableId: args.operation === "fork" ? layer.stableId : undefined,
+            revision: 0,
+            identity: { ...layer.identity, name: args.value?.name || `${layer.identity.name} ${args.operation === "fork" ? "fork" : "copy"}` },
+            provenance: { source: args.operation, sourceLayerId: layer.id, sourceRevision: layer.revision },
+          });
+          layers.push(copy);
+          semanticOrder.splice(semanticOrder.indexOf(layer.id) + 1, 0, copy.id);
+          affected = [layer.id, copy.id];
+        } else if (args.operation === "split") {
+          if (layer.kind !== "function" || !(layer.definition.graph?.nodes || []).length) throw new Error("only a composed Function layer can be split");
+          const splits = layer.definition.graph.nodes.map((node, index) => createCognitiveLayer({
+            id: context.idFactory(),
+            kind: "function",
+            name: `${layer.identity.name} · ${index + 1}`,
+            graph: { nodes: [clone(node)], edges: [] },
+            evidenceRefs: layer.uncertainty.evidenceRefs,
+            confidence: layer.uncertainty.confidence,
+            rationale: "Explicit split from a composed Function.",
+            authorship: "user-authored",
+            status: layer.uncertainty.status,
+            provenance: { source: "split", sourceLayerId: layer.id, sourceRevision: layer.revision },
+            privacyPolicy: layer.privacyPolicy,
+          }));
+          layers = [...layers.filter((entry) => entry.id !== layer.id), ...splits];
+          const at = semanticOrder.indexOf(layer.id);
+          semanticOrder.splice(at, 1, ...splits.map((entry) => entry.id));
+          affected = [layer.id, ...splits.map((entry) => entry.id)];
+        } else if (args.operation === "remove") {
+          layers = layers.filter((entry) => entry.id !== layer.id).map((entry) => entry.semantic.parentId === layer.id ? createCognitiveLayer({ ...entry, semantic: { ...entry.semantic, parentId: null } }) : entry);
+          semanticOrder = semanticOrder.filter((id) => id !== layer.id);
+          affected = [layer.id];
+        } else {
+          throw new Error("unsupported cognitive layer mutation");
+        }
+        return { ...cognition, layers, semanticOrder };
+      });
+      return { state: next.state, result: result("cognitive-layer-mutation", { pearlId: args.pearlId, operation: args.operation, affected }, ["pearl-cognitive-layer-mutated"]) };
+    },
+  },
+  composePearlCognitiveLayers: {
+    schema: { pearlId: "string", leftId: "string", rightId: "string", options: "object?", confirmed: "boolean?" },
+    preconditions: ["operands are canonical typed layers", "bridge Moves remain visible"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.compose",
+    observableEffects: ["pearl-cognitive-layers-composed", "pearl-bridge-moves-visible"],
+    execute(state, args) {
+      let composition;
+      const current = createPearlEntity(state.pearlEntities?.[args.pearlId]);
+      const left = current.cognition.layers.find((entry) => entry.id === args.leftId);
+      const right = current.cognition.layers.find((entry) => entry.id === args.rightId);
+      if (!left || !right) throw new Error("choose two cognitive layers to compose");
+      composition = composeCognitiveLayers(left, right, { ...(args.options || {}), privacyPolicy: current.privacy.effectivePolicy });
+      if (composition.preview.requiresConfirmation && args.confirmed !== true) {
+        return { state, result: result("cognitive-composition-preview", composition.preview, ["pearl-cognitive-composition-proposed"]) };
+      }
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => ({
+        ...cognition,
+        layers: [...cognition.layers, ...composition.bridges, composition.object],
+        semanticOrder: [...cognition.semanticOrder, ...composition.bridges.map((entry) => entry.id), composition.object.id],
+      }));
+      return { state: next.state, result: result("cognitive-composition", composition, ["pearl-cognitive-layers-composed", ...(composition.bridges.length ? ["pearl-bridge-moves-visible"] : [])]) };
+    },
+  },
+  proposePearlCognitivePatch: {
+    schema: { pearlId: "string", layerId: "string", patch: "object", rationale: "string?" },
+    preconditions: ["AI edits are reviewable diffs with evidence"],
+    risk: "low", confirmation: "none", undo: "discard-cognitive-patch",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlCognitivePatches.upsert",
+    observableEffects: ["pearl-cognitive-patch-proposed"],
+    execute(state, args) {
+      const entity = createPearlEntity(state.pearlEntities?.[args.pearlId]);
+      const proposal = proposeCognitiveLayerPatch(entity.cognition, args.layerId, args.patch, { rationale: args.rationale });
+      return {
+        state: { ...state, pearlCognitivePatches: { ...(state.pearlCognitivePatches || {}), [proposal.id]: proposal } },
+        result: result("cognitive-patch", proposal, ["pearl-cognitive-patch-proposed"]),
+      };
+    },
+  },
+  applyPearlCognitivePatch: {
+    schema: { pearlId: "string", proposalId: "string", confirmed: "boolean" },
+    preconditions: ["proposal revision still matches", "semantic changes are confirmed"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.patch",
+    observableEffects: ["pearl-cognitive-patch-applied"],
+    execute(state, args) {
+      const proposal = state.pearlCognitivePatches?.[args.proposalId];
+      if (!proposal) throw new Error("cognitive patch proposal not found");
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => applyCognitiveLayerPatch(cognition, proposal, args.confirmed));
+      return { state: next.state, result: result("cognitive-patch", proposal, ["pearl-cognitive-patch-applied"]) };
+    },
+  },
+  resolvePearlCognitiveUncertainty: {
+    schema: { pearlId: "string", layerId: "string", resolution: "object", confirmed: "boolean" },
+    preconditions: ["resolution preserves source evidence", "user confirms executable/shareable status"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.uncertainty",
+    observableEffects: ["pearl-cognitive-uncertainty-resolved"],
+    execute(state, args) {
+      if (args.confirmed !== true) throw new Error("uncertainty resolution confirmation is required");
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => resolveCognitiveUncertainty(cognition, args.layerId, args.resolution));
+      return { state: next.state, result: result("cognitive-uncertainty", { pearlId: args.pearlId, layerId: args.layerId }, ["pearl-cognitive-uncertainty-resolved"]) };
+    },
+  },
+  startPearlCognitivePlayback: {
+    schema: { pearlId: "string", functionLayerId: "string", inputs: "object?", lensIds: "array?", roleId: "string?", branchId: "string?" },
+    preconditions: ["Function uncertainty is resolved", "inputs and policy validate"],
+    risk: "medium", confirmation: "review", undo: "cancel-cognitive-playback",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.activeExecution",
+    observableEffects: ["pearl-cognitive-playback-started"],
+    execute(state, args, context) {
+      const next = updatePearlCognition(state, args.pearlId, (cognition, entity) => startCognitivePlayback(cognition, args.functionLayerId, {
+        ...args,
+        id: context.idFactory(),
+        pearlRevision: entity.revision,
+      }));
+      return { state: next.state, result: result("cognitive-playback", next.object.cognition.activeExecution, ["pearl-cognitive-playback-started"]) };
+    },
+  },
+  advancePearlCognitivePlayback: {
+    schema: { pearlId: "string", effect: "object?" },
+    preconditions: ["current Move effect receipt is observable"],
+    risk: "low", confirmation: "none", undo: "restore-playback-checkpoint",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.activeExecution.cursor",
+    observableEffects: ["pearl-cognitive-playback-advanced"],
+    execute(state, args) {
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => advanceCognitivePlayback(cognition, args.effect));
+      return { state: next.state, result: result("cognitive-playback", next.object.cognition.activeExecution, ["pearl-cognitive-playback-advanced"]) };
+    },
+  },
+  cancelPearlCognitivePlayback: {
+    schema: { pearlId: "string" },
+    preconditions: ["active execution checkpoint is retained"],
+    risk: "low", confirmation: "none", undo: "retry-from-playback-checkpoint",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.cognition.activeExecution.cancel",
+    observableEffects: ["pearl-cognitive-playback-cancelled"],
+    execute(state, args) {
+      const next = updatePearlCognition(state, args.pearlId, (cognition) => cancelCognitivePlayback(cognition));
+      return { state: next.state, result: result("cognitive-playback", next.object.cognition.activeExecution, ["pearl-cognitive-playback-cancelled"]) };
+    },
+  },
+  openPearlStudio: {
+    schema: { pearlId: "string", representation: "string?", scrollPosition: "number?", sourceSurface: "string?" },
+    preconditions: ["Pearl exists in the canonical entity store", "profile is unlocked"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlStudioSessions.upsert",
+    observableEffects: ["pearl-studio-opening"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("canonical Pearl not found");
+      if (entity.permissions?.lockState === "locked") throw new Error("unlock this Pearl before opening Studio");
+      const request = createPearlStudioOpenRequest(entity, args);
+      const viewModel = createPearlStudioViewModel(entity, args);
+      return {
+        state: { ...state, pearlStudioSessions: { ...(state.pearlStudioSessions || {}), [request.id]: request } },
+        result: result("pearl-studio-open", { request, viewModel }, ["pearl-studio-opening"]),
+      };
+    },
+  },
+  editPearlEntity: {
+    schema: { pearlId: "string", patch: "object", expectedRevision: "number", idempotencyKey: "string" },
+    preconditions: ["edit is canonical", "expected revision matches", "profile is unlocked"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.compareAndSwap",
+    observableEffects: ["pearl-entity-edited"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("canonical Pearl not found");
+      const changed = applyPearlEntityPatch(entity, args.patch, {
+        expectedRevision: args.expectedRevision,
+        idempotencyKey: args.idempotencyKey,
+        reason: "studio-edit",
+      });
+      if (changed.conflict) return { state: { ...state, pearlConflicts: [...(state.pearlConflicts || []), changed.conflict] }, result: result("pearl-conflict", changed.conflict, ["pearl-edit-conflict"]) };
+      return {
+        state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } },
+        result: result("pearl-entity", changed.entity, ["pearl-entity-edited"]),
+      };
+    },
+  },
+  setPearlStudioRepresentation: {
+    schema: { pearlId: "string", representation: "string", expectedRevision: "number", idempotencyKey: "string" },
+    preconditions: ["representation is relevant to this Pearl"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.representation.mode",
+    observableEffects: ["pearl-studio-represented"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      const view = createPearlStudioViewModel(entity, { representation: args.representation });
+      if (!view.representations.includes(args.representation)) throw new Error("representation is not relevant to this Pearl");
+      const changed = applyPearlEntityPatch(entity, {
+        representation: { ...entity.representation, mode: args.representation },
+      }, { expectedRevision: args.expectedRevision, idempotencyKey: args.idempotencyKey, reason: "studio-representation" });
+      if (changed.conflict) return { state: { ...state, pearlConflicts: [...(state.pearlConflicts || []), changed.conflict] }, result: result("pearl-conflict", changed.conflict, ["pearl-edit-conflict"]) };
+      return { state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } }, result: result("pearl-entity", changed.entity, ["pearl-studio-represented"]) };
+    },
+  },
+  undoPearlEntityEdit: {
+    schema: { pearlId: "string" },
+    preconditions: ["a canonical checkpoint exists"],
+    risk: "low", confirmation: "none", undo: "redo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.restoreCheckpoint",
+    observableEffects: ["pearl-entity-undo"],
+    execute(state, args) {
+      const entity = createPearlEntity(state.pearlEntities?.[args.pearlId]);
+      const checkpoint = entity.history.checkpoints.at(-1);
+      if (!checkpoint) throw new Error("no Pearl checkpoint is available");
+      const restored = createPearlEntity({
+        ...entity,
+        ...checkpoint.snapshot,
+        revision: entity.revision + 1,
+        history: { ...entity.history, checkpoints: entity.history.checkpoints.slice(0, -1) },
+        updatedAt: Date.now(),
+      });
+      return {
+        state: {
+          ...state,
+          pearlEntities: { ...state.pearlEntities, [args.pearlId]: restored },
+          pearlRedo: { ...(state.pearlRedo || {}), [args.pearlId]: entity },
+        },
+        result: result("pearl-entity", restored, ["pearl-entity-undo"]),
+      };
+    },
+  },
+  redoPearlEntityEdit: {
+    schema: { pearlId: "string" },
+    preconditions: ["an undo snapshot exists"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.restoreRedo",
+    observableEffects: ["pearl-entity-redo"],
+    execute(state, args) {
+      const redo = state.pearlRedo?.[args.pearlId];
+      const current = state.pearlEntities?.[args.pearlId];
+      if (!redo || !current) throw new Error("no Pearl redo is available");
+      const restored = createPearlEntity({ ...redo, revision: current.revision + 1, updatedAt: Date.now() });
+      const pearlRedo = { ...(state.pearlRedo || {}) };
+      delete pearlRedo[args.pearlId];
+      return { state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: restored }, pearlRedo }, result: result("pearl-entity", restored, ["pearl-entity-redo"]) };
+    },
+  },
   upsertCanonicalObject: {
     schema: { object: "object", idempotencyKey: "string" },
     preconditions: ["object validates", "idempotency key is stable"],
@@ -1560,8 +2501,11 @@ export async function executeDomainCommand(name, state, args, options = {}) {
   const context = {
     idFactory: options.idFactory || (() => crypto.randomUUID()),
     now: options.now || Date.now(),
+    vaultUnlockVerified: options.vaultUnlockVerified === true,
+    serverAdminVerified: options.serverAdminVerified === true,
   };
-  const execution = command.execute(before, clone(args || {}), context);
+  assertDomainPrivacy(name, before, args || {}, options);
+  const execution = await command.execute(before, clone(args || {}), context);
   try {
     await options.persist?.(execution.state, { command: name, result: execution.result });
     return { ...execution, undo: () => before, command: name };

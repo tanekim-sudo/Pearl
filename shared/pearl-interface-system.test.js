@@ -38,8 +38,13 @@ test("emitted interfaces use sharp separators and accessible controls", async ()
 });
 
 test("idle web removes marketing chrome while preserving Pearl material", async () => {
-  const web = await source("client/orb-universe.css");
-  assert.match(web, /\.orb-home-intro,\s*\.orb-home-prompt\s*\{\s*display: none/);
-  assert.match(web, /\.orb-continuation-pearl\s*\{/);
-  assert.match(web, /\.orb-pearl \{[^}]*orb-respire 4s/s);
+  const [web, shell, physical] = await Promise.all([
+    source("client/orb-universe.css"),
+    source("client/components/OrbUniverseShell.jsx"),
+    source("shared/physical-pearl.js"),
+  ]);
+  assert.doesNotMatch(web, /\.orb-home-intro,\s*\.orb-home-prompt\s*\{\s*display:\s*none/);
+  assert.match(shell, /const firstUse = isRoot && scenes\.length === 0/);
+  assert.doesNotMatch(shell, /className="orb-continuation-pearl"/);
+  assert.match(physical, /physical-pearl-breath 6\.4s/);
 });

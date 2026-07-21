@@ -125,4 +125,12 @@ describe("onboarding-steps", () => {
     const stale = TOUR_STEPS.filter((step) => step.target === '[data-tour="capture-chip"]');
     assert.deepEqual(stale, []);
   });
+
+  it("uses one Pearl, Scene, and Output Frame vocabulary", () => {
+    const copy = TOUR_STEPS.map((step) => `${step.title} ${step.instruction} ${step.hint || ""}`).join("\n");
+    assert.doesNotMatch(copy, /world is your oyster|AI void|AI space|into AI|from AI|empty paper|onto paper|paper column/i);
+    assert.match(copy, /Pearl/);
+    assert.match(copy, /Scene/);
+    assert.match(copy, /Output Frame/);
+  });
 });

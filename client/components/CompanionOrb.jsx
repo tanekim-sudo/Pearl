@@ -1,6 +1,8 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
 import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
+import PhysicalPearl from "./PhysicalPearl.jsx";
+import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -34,6 +36,7 @@ export default function CompanionOrb({
   onApproval,
   onWorkerCancel,
   onOrbCreate,
+  onOpenStudio,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -42,6 +45,22 @@ export default function CompanionOrb({
   const voiceStartedRef = useRef(false);
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
   const actionSearchRef = useRef(null);
+  const actionRef = useRef({});
+  actionRef.current = { onOpenStudio };
+  const gestureRef = useRef(null);
+  if (!gestureRef.current) {
+    gestureRef.current = createPearlGestureArbiter({
+      onSingle: () => {
+        setPowerSearch(false);
+        setExpanded((value) => !value);
+      },
+      onTriple: () => {
+        setExpanded(false);
+        actionRef.current.onOpenStudio?.();
+      },
+      onHold: () => onVoiceStart?.(),
+    });
+  }
   const [expanded, setExpanded] = useState(false);
   const [powerSearch, setPowerSearch] = useState(false);
   const [draft, setDraft] = useState("");
@@ -130,7 +149,7 @@ export default function CompanionOrb({
     holdRef.current = window.setTimeout(() => {
       if (dragRef.current?.moved) return;
       voiceStartedRef.current = true;
-      onVoiceStart?.();
+      gestureRef.current.hold({ pointerId: event.pointerId });
     }, 420);
   }
 
@@ -164,15 +183,19 @@ export default function CompanionOrb({
     const drag = dragRef.current;
     dragRef.current = null;
     window.clearTimeout(holdRef.current);
-    if (voiceStartedRef.current) onVoiceEnd?.();
-    else if (!drag?.moved) {
-      setPowerSearch(false);
-      setExpanded((value) => !value);
-    }
+    if (voiceStartedRef.current) {
+      gestureRef.current.reset();
+      onVoiceEnd?.();
+    } else gestureRef.current.release({ at: event.timeStamp, x: event.clientX, y: event.clientY, dragged: drag?.moved, pointerType: event.pointerType });
     voiceStartedRef.current = false;
   }
 
   function keyDown(event) {
+    if (event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      gestureRef.current.keyboard(event);
+      return;
+    }
     const delta = event.shiftKey ? 32 : 8;
     if (event.key === "ArrowLeft") updatePlacement({ x: placement.x - delta });
     else if (event.key === "ArrowRight") updatePlacement({ x: placement.x + delta });
@@ -230,10 +253,11 @@ export default function CompanionOrb({
         : (state.context || []).length && onOrbCreate
           ? { label: "Keep this", run: onOrbCreate }
           : null;
+  if (cursorMode) return null;
   return (
     <aside
       ref={rootRef}
-      className={`companion-orb-shell ${compact ? "compact" : ""} ${featured ? "featured" : ""} ${expanded ? "expanded" : ""} ${placement.minimized ? "minimized" : ""}`}
+      className={`companion-orb-shell ${compact ? "compact" : ""} ${featured ? "featured" : ""} ${expanded ? "expanded" : ""} ${placement.minimized ? "minimized" : ""} ${typeof innerWidth !== "undefined" && placement.x > innerWidth - 370 ? "opens-left" : "opens-right"} ${typeof innerHeight !== "undefined" && placement.y > innerHeight / 2 ? "opens-up" : "opens-down"}`}
       style={{ "--orb-x": `${placement.x}px`, "--orb-y": `${placement.y}px` }}
       data-orb-state={phase}
       data-semantic-anchor="primary-orb"
@@ -277,12 +301,12 @@ export default function CompanionOrb({
         ))}
         {(state.workers || []).slice(0, 4).map((worker, index) => (
           <button type="button" className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}${worker.status === "working" ? ", cancel worker" : ""}`} onClick={() => worker.status === "working" && onWorkerCancel?.(worker.id)}>
-            <i />{worker.role || "worker"}
+            <PhysicalPearl variant="worker" state={worker.status === "blocked" ? "blocked" : "executing"} size={18} decorative />{worker.role || "worker"}
           </button>
         ))}
         {(state.candidates || []).slice(0, 6).map((candidate, index) => (
           <button type="button" className="orb-candidate" key={candidate.id} style={{ "--candidate-index": index }} onClick={() => onEmitView?.("taste")}>
-            <i />{candidate.distinction || candidate.title || "Candidate"}
+            <PhysicalPearl variant="candidate" state="new" size={18} decorative />{candidate.distinction || candidate.title || "Candidate"}
           </button>
         ))}
       </div>
@@ -297,71 +321,15 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        title="Pearl · hold to speak"
+        title="Pearl · click to ask · hold to speak · Shift+Enter for Studio"
       >
-        <span id={titleId} className="sr-only">{label}. Hold to speak, click for a command, drop material, or use arrow keys to move.</span>
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <defs>
-            <radialGradient id={`orb-core-${titleId}`} cx="39%" cy="58%" r="72%">
-              <stop offset="0" stopColor="#fffaf0" />
-              <stop offset=".3" stopColor="#f5f0e7" />
-              <stop offset=".68" stopColor="#e7e6de" />
-              <stop offset=".88" stopColor="#d1d4ce" />
-              <stop offset="1" stopColor="#aeb3af" />
-            </radialGradient>
-            <radialGradient id={`orb-nucleus-${titleId}`} cx="38%" cy="62%" r="58%">
-              <stop offset="0" stopColor="#f2d9ce" stopOpacity=".52" />
-              <stop offset=".34" stopColor="#d2e2da" stopOpacity=".34" />
-              <stop offset=".7" stopColor="#eadcb9" stopOpacity=".16" />
-              <stop offset="1" stopColor="#c6ced0" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient id={`orb-nacre-${titleId}`} x1="8%" y1="16%" x2="92%" y2="82%">
-              <stop offset="0" stopColor="#dfbfb9" stopOpacity=".12" />
-              <stop offset=".31" stopColor="#bfd8ce" stopOpacity=".28" />
-              <stop offset=".5" stopColor="#f2e4c2" stopOpacity=".18" />
-              <stop offset=".69" stopColor="#d9bdba" stopOpacity=".22" />
-              <stop offset="1" stopColor="#bdd3cc" stopOpacity=".1" />
-            </linearGradient>
-            <linearGradient id={`orb-reflection-${titleId}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#ffffff" stopOpacity=".34" />
-              <stop offset=".38" stopColor="#7d8987" stopOpacity=".06" />
-              <stop offset=".66" stopColor="#f7f2e8" stopOpacity=".16" />
-              <stop offset="1" stopColor="#303638" stopOpacity=".12" />
-            </linearGradient>
-            <linearGradient id={`orb-rim-${titleId}`} x1="18%" y1="8%" x2="82%" y2="92%">
-              <stop offset="0" stopColor="#ffffff" stopOpacity=".78" />
-              <stop offset=".48" stopColor="#eef3ef" stopOpacity=".2" />
-              <stop offset=".8" stopColor="#7d8582" stopOpacity=".34" />
-              <stop offset="1" stopColor="#f5eee1" stopOpacity=".5" />
-            </linearGradient>
-            <filter id={`orb-soft-${titleId}`} x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="2.2" />
-            </filter>
-          </defs>
-          <path className="orb-causal-trace" d="M50 14 C66 20 76 34 78 50" />
-          <g className="orb-satellites">
-            <circle cx="50" cy="12" r="1.5" />
-            <circle cx="82" cy="56" r="1.2" />
-            <circle cx="25" cy="72" r="1" />
-          </g>
-          <ellipse className="orb-shadow" cx="51" cy="94" rx="27" ry="2.2" />
-          <circle className="orb-approval-ring" cx="50" cy="50" r="37" />
-          <g className="orb-pearl">
-            <circle className="orb-core" cx="50" cy="50" r="43" fill={`url(#orb-core-${titleId})`} />
-            <ellipse className="orb-nucleus" cx="43" cy="57" rx="25" ry="29" fill={`url(#orb-nucleus-${titleId})`} />
-            <circle className="orb-nacre" cx="50" cy="50" r="41.6" fill={`url(#orb-nacre-${titleId})`} />
-            <path className="orb-nacre-fold" d="M12 55 C23 24 58 13 84 35 C65 31 48 39 40 54 C31 69 20 70 12 55Z" fill={`url(#orb-nacre-${titleId})`} filter={`url(#orb-soft-${titleId})`} />
-            <circle className="orb-reflection" cx="50" cy="50" r="40.5" fill={`url(#orb-reflection-${titleId})`} />
-            <circle className="orb-rim" cx="50" cy="50" r="42.2" fill="none" stroke={`url(#orb-rim-${titleId})`} />
-            <ellipse className="orb-glint" cx="33" cy="28" rx="9" ry="5" transform="rotate(-38 33 28)" />
-            <circle className="orb-pinlight" cx="27.5" cy="22.5" r="2.1" />
-          </g>
-        </svg>
+        <span id={titleId} className="sr-only">{label}. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.</span>
+        <PhysicalPearl variant="primary" state={phase} size={compact ? 30 : 34} decorative />
         <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
       </button>
       {expanded && (
         <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
-          <form onSubmit={submit}>
+          {!approval && <form onSubmit={submit}>
             <input
               autoFocus={!powerSearch}
               value={draft}
@@ -369,14 +337,14 @@ export default function CompanionOrb({
               aria-label="Tell Pearl your goal"
               placeholder="What do you want?"
             />
-            <button type="submit" aria-label="Send command">→</button>
-          </form>
+            <button type="submit" aria-label="Send command">Send</button>
+          </form>}
           {approval && <section className="orb-approval" aria-label="Plan approval required">
             <b>{approval.title || "Review plan"}</b>
-            <ol>{(approval.steps || []).slice(0, 8).map((step, index) => <li key={`${index}:${step}`}>{step}</li>)}</ol>
+            <span className="sr-only">{(approval.steps || []).join(". ")}</span>
             <div>
-              <button type="button" onClick={() => onApproval?.("accept")}>Run plan</button>
-              <button type="button" onClick={() => onApproval?.("reject")}>Reject</button>
+              <button type="button" onClick={() => onApproval?.("accept")}>Confirm</button>
+              <button type="button" onClick={() => onApproval?.("reject")}>Cancel</button>
             </div>
           </section>}
           {powerSearch && <section className="pearl-action-search" aria-label="Universal Pearl command search">
@@ -415,6 +383,7 @@ export default function CompanionOrb({
               setExpanded(false);
             }}
           >{nextAction.label}</button>}
+          {!powerSearch && !approval && !nextAction && onOpenStudio && <button type="button" className="pearl-next-action" onClick={onOpenStudio}>Open Studio</button>}
         </div>
       )}
     </aside>

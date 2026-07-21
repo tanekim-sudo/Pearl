@@ -1,7 +1,13 @@
 export const ORB_CURSOR_HIDE_CSS = `
 html[data-lens-orb-cursor-active="true"],
-html[data-lens-orb-cursor-active="true"] * {
+html[data-lens-orb-cursor-active="true"] body,
+html[data-lens-orb-cursor-active="true"] body * {
   cursor: none !important;
+}
+html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contenteditable="true"],[data-lens-native-cursor="true"]),
+html[data-lens-orb-cursor-active="true"][data-lens-orb-cursor-blocked="true"],
+html[data-lens-orb-cursor-active="true"][data-lens-orb-cursor-blocked="true"] * {
+  cursor: revert !important;
 }
 `;
 

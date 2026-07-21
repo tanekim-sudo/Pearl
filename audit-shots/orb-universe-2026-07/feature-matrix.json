@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T17:26:07.834Z",
+  "generatedAt": "2026-07-20T22:19:46.086Z",
   "counts": {
-    "features": 37,
-    "companion": 286,
-    "extension": 80,
-    "commands": 80
+    "features": 47,
+    "companion": 334,
+    "extension": 101,
+    "commands": 119
   },
   "features": [
     {
@@ -784,6 +784,236 @@
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs"
+      ]
+    },
+    {
+      "id": "runtime.unified-pearl",
+      "commands": [
+        "editPearlEntity",
+        "openPearlStudio",
+        "inspectPearlPrivacy",
+        "interpretOutputPlacement"
+      ],
+      "companion": [
+        "observeUnifiedPearl",
+        "executeUnifiedPearlAction"
+      ],
+      "extension": [
+        "executeExternalPearlAction"
+      ],
+      "tests": [
+        "shared/pearl-entity.test.js"
+      ]
+    },
+    {
+      "id": "runtime.pearl-action-animation",
+      "commands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement"
+      ],
+      "companion": [
+        "executeUnifiedPearlAction"
+      ],
+      "extension": [
+        "executeExternalPearlAction"
+      ],
+      "tests": [
+        "shared/pearl-entity.test.js"
+      ]
+    },
+    {
+      "id": "privacy.pearl-policy",
+      "commands": [
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "companion": [
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange"
+      ],
+      "extension": [
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "tests": [
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ]
+    },
+    {
+      "id": "sharing.pearl-package",
+      "commands": [
+        "preparePearlShare",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "installValidatedPearlPackage"
+      ],
+      "companion": [
+        "preparePearlShare",
+        "sharePearl",
+        "revokePearlShare",
+        "installSharedPearl"
+      ],
+      "extension": [
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "tests": [
+        "shared/pearl-sharing.test.js",
+        "server/pearl-share-registry.test.js"
+      ]
+    },
+    {
+      "id": "automation.pearl-compiler",
+      "commands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch"
+      ],
+      "companion": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "researchAutomationPearl",
+        "approveAutomationContextPatch"
+      ],
+      "extension": [
+        "compileExternalAutomationPearl"
+      ],
+      "tests": [
+        "shared/automation-pearl.test.js",
+        "shared/automation-research.test.js"
+      ]
+    },
+    {
+      "id": "output.two-stage-routing",
+      "commands": [
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement"
+      ],
+      "companion": [
+        "chooseResultDestination",
+        "confirmResultPlacement",
+        "cancelResultPlacement"
+      ],
+      "extension": [
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement"
+      ],
+      "tests": [
+        "shared/output-routing.test.js"
+      ]
+    },
+    {
+      "id": "studio.pearl",
+      "commands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit"
+      ],
+      "companion": [
+        "executeUnifiedPearlAction"
+      ],
+      "extension": [
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab"
+      ],
+      "tests": [
+        "shared/pearl-studio.test.js"
+      ]
+    },
+    {
+      "id": "sharing.organization-trust",
+      "commands": [
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "rotatePearlOrganizationKey"
+      ],
+      "companion": [
+        "executeUnifiedPearlAction"
+      ],
+      "extension": [
+        "executeExternalPearlAction"
+      ],
+      "tests": [
+        "shared/organization-envelope.test.js",
+        "server/pearl-share-registry.test.js"
+      ]
+    },
+    {
+      "id": "visual.physical-pearl",
+      "commands": [],
+      "companion": [
+        "executeUnifiedPearlAction"
+      ],
+      "extension": [
+        "executeExternalPearlAction"
+      ],
+      "tests": [
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md"
+      ]
+    },
+    {
+      "id": "cognition.typed-layers",
+      "commands": [
+        "addPearlCognitiveLayer",
+        "mutatePearlCognitiveLayer",
+        "composePearlCognitiveLayers",
+        "proposePearlCognitivePatch",
+        "applyPearlCognitivePatch",
+        "resolvePearlCognitiveUncertainty",
+        "startPearlCognitivePlayback",
+        "advancePearlCognitivePlayback",
+        "cancelPearlCognitivePlayback"
+      ],
+      "companion": [
+        "inspectPearlCognition",
+        "proposePearlCognitiveEdit",
+        "applyPearlCognitiveEdit",
+        "composePearlCognitiveLayers",
+        "applyPearlCognitiveComposition",
+        "mutatePearlCognitiveLayer",
+        "resolvePearlCognitiveUncertainty",
+        "playPearlFunction",
+        "stepPearlFunction",
+        "cancelPearlFunction"
+      ],
+      "extension": [
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction"
+      ],
+      "tests": [
+        "shared/pearl-cognitive-layers.test.js"
       ]
     }
   ],

@@ -1,6 +1,19 @@
 import { EXTENSION_COMPANION_CAPABILITIES } from "../../../client/lib/companion-capabilities.js";
 import { validateCapabilityArgs } from "../../../client/lib/companion-plan.js";
 
+function canonicalPearlAction({ action, args, confirmed }, command, commandArgs) {
+  return action("pearl-action", {
+    event: {
+      pearlId: args.pearlId,
+      command,
+      args: { pearlId: args.pearlId, ...commandArgs },
+      surface: "companion",
+      idempotencyKey: crypto.randomUUID(),
+      destructiveApproved: confirmed === true,
+    },
+  });
+}
+
 export const EXTENSION_VERBS = Object.freeze({
   capturePageSelection: ({ action }) => action("capture-selection"),
   openExternalSaveAs: ({ openSaveAs }) => openSaveAs(),
@@ -16,6 +29,47 @@ export const EXTENSION_VERBS = Object.freeze({
     };
   },
   inspectExternalPrivacy: ({ inspectPrivacy }) => inspectPrivacy(),
+  executeExternalPearlAction: ({ args, action }) => action("pearl-action", {
+    event: {
+      pearlId: args.pearlId,
+      command: args.command,
+      args: args.args || {},
+      surface: "companion",
+      idempotencyKey: crypto.randomUUID(),
+    },
+  }),
+  openExternalPearlStudio: ({ args, action }) => action("pearl-open-studio", { pearlId: args.pearlId }),
+  inspectExternalPearlCognition: ({ args, action }) => action("pearl-entity-get", { pearlId: args.pearlId }),
+  proposeExternalPearlCognitiveEdit: (context) => canonicalPearlAction(context, "proposePearlCognitivePatch", { layerId: context.args.layerId, patch: context.args.patch, rationale: context.args.rationale }),
+  applyExternalPearlCognitiveEdit: (context) => canonicalPearlAction(context, "applyPearlCognitivePatch", { proposalId: context.args.proposalId, confirmed: context.confirmed === true }),
+  composeExternalPearlCognitiveLayers: (context) => canonicalPearlAction(context, "composePearlCognitiveLayers", { leftId: context.args.leftId, rightId: context.args.rightId, options: { intent: context.args.intent }, confirmed: false }),
+  applyExternalPearlCognitiveComposition: (context) => canonicalPearlAction(context, "composePearlCognitiveLayers", { leftId: context.args.leftId, rightId: context.args.rightId, options: { intent: context.args.intent }, confirmed: context.confirmed === true }),
+  mutateExternalPearlCognitiveLayer: (context) => canonicalPearlAction(context, "mutatePearlCognitiveLayer", { layerId: context.args.layerId, operation: context.args.operation, value: context.args.value, to: context.args.to, confirmed: context.confirmed === true }),
+  resolveExternalPearlCognitiveUncertainty: (context) => canonicalPearlAction(context, "resolvePearlCognitiveUncertainty", { layerId: context.args.layerId, resolution: context.args.resolution || {}, confirmed: context.confirmed === true }),
+  playExternalPearlFunction: (context) => canonicalPearlAction(context, "startPearlCognitivePlayback", { functionLayerId: context.args.functionLayerId, inputs: context.args.inputs, lensIds: context.args.lensIds, roleId: context.args.roleId, branchId: context.args.branchId }),
+  stepExternalPearlFunction: (context) => canonicalPearlAction(context, "advancePearlCognitivePlayback", { effect: context.args.effect }),
+  cancelExternalPearlFunction: (context) => canonicalPearlAction(context, "cancelPearlCognitivePlayback", {}),
+  inspectExternalPearlPrivacy: ({ args, action }) => action("privacy-policy-get", { pearlId: args.pearlId }),
+  proposeExternalPearlPrivacyChange: ({ args, action }) => action("privacy-policy-propose", { pearlId: args.pearlId, patch: args.patch }),
+  applyExternalPearlPrivacyChange: ({ args, action }) => action("privacy-policy-apply", { pearlId: args.pearlId, proposalId: args.proposalId, confirmed: true }),
+  prepareExternalPearlShare: async (context) => {
+    const current = await context.action("pearl-entity-get", { pearlId: context.args.pearlId });
+    return canonicalPearlAction(context, "preparePearlShare", { pearl: current.entity, selection: context.args.selection || {} });
+  },
+  installExternalSharedPearl: (context) => canonicalPearlAction(context, "installValidatedPearlPackage", {
+    package: context.args.package,
+    validationReceipt: context.args.validationReceipt,
+    localPearlId: context.args.localPearlId,
+    confirmed: context.confirmed === true,
+  }),
+  compileExternalAutomationPearl: (context) => canonicalPearlAction(context, "compileAutomationPearl", {
+    evidence: context.args.evidence,
+    inference: context.args.inference,
+    id: context.args.id,
+  }),
+  chooseExternalResultDestination: ({ args, action }) => action("output-routing-answer", { resultId: args.resultId, answer: args.answer }),
+  confirmExternalResultPlacement: ({ args, action }) => action("output-routing-confirm", { resultId: args.resultId }),
+  cancelExternalResultPlacement: ({ args, action }) => action("output-routing-cancel", { resultId: args.resultId }),
   exportExternalLocalData: ({ exportLocalData }) => exportLocalData(),
   setExternalSync: ({ args, setSync }) => setSync(args.enabled),
   deleteExternalLocalData: ({ deleteLocalData }) => deleteLocalData(),
@@ -39,17 +93,7 @@ export const EXTENSION_VERBS = Object.freeze({
   collapseExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "collapseResultPearl", resultId: args.resultId }),
   openExternalResultPearlTab: ({ args, action }) => action("result-pearl-open-tab", { resultId: args.resultId }),
   presentExternalResultAsChat: ({ args, action }) => action("result-pearl-command", { command: "presentResultPearlAsChat", resultId: args.resultId }),
-  redirectExternalResult: async ({ args, action }) => {
-    const redirected = await action("result-pearl-command", { command: "redirectResultPearl", resultId: args.resultId, destination: { type: args.destination } });
-    if (args.destination === "web-scene") await action("result-pearl-open-web", { resultId: args.resultId });
-    if (args.destination === "companion-region") {
-      await action("result-pearl-create-region", { resultId: args.resultId });
-    } else if (["canvas-textbox", "canvas-region"].includes(args.destination)) {
-      await action("page-canvas-command", { command: "activatePearlPageCanvas", args: {} });
-      await action("page-canvas-command", { command: "setPearlCanvasInputMode", args: { mode: "select-type" } });
-    }
-    return redirected;
-  },
+  redirectExternalResult: ({ args, action }) => action("output-routing-answer", { resultId: args.resultId, answer: args.destination }),
   acceptExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "acceptResultPearl", resultId: args.resultId }),
   archiveExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "archiveResultPearl", resultId: args.resultId }),
   deleteExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "deleteResultPearl", resultId: args.resultId }),
@@ -76,17 +120,20 @@ export const EXTENSION_VERBS = Object.freeze({
   setExternalLensContext: ({ args, action, resolveGenerator }) => action("set-generator", { generator: resolveGenerator(args.lens) }),
   previewExternalGo: ({ readPreview }) => Promise.resolve(readPreview()),
   pressExternalGo: ({ args, pressGo }) => pressGo(args),
-  copyExternalResult: ({ args, resolveResult }) => navigator.clipboard.writeText(resolveResult(args.result).text),
-  insertExternalResult: ({ args, action, resolveResult }) => {
+  copyExternalResult: ({ args, resolveResult, action }) => {
     const result = resolveResult(args.result);
-    return action("result-action", { text: result.text, outputSpec: result.outputSpec, machineKind: result.machineKind, plan: { operation: "insert" } });
+    return action("output-routing-answer", { resultId: result.id, answer: "copy it" });
   },
-  replaceExternalSelection: ({ args, action, resolveResult }) => {
+  insertExternalResult: ({ args, resolveResult, action }) => {
     const result = resolveResult(args.result);
-    return action("result-action", { text: result.text, outputSpec: result.outputSpec, machineKind: result.machineKind, plan: { operation: "replace" } });
+    return action("output-routing-answer", { resultId: result.id, answer: "insert at the selected caret" });
   },
-  annotateExternalResult: ({ args, action, resolveResult }) => action("result-action", { text: resolveResult(args.result).text, plan: { operation: "annotate" } }),
-  openExternalArtifact: ({ args, action, resolveResult }) => action("open-artifact", { result: resolveResult(args.result) }),
+  replaceExternalSelection: ({ args, resolveResult, action }) => {
+    const result = resolveResult(args.result);
+    return action("output-routing-answer", { resultId: result.id, answer: "replace the current selection" });
+  },
+  annotateExternalResult: ({ args, resolveResult, action }) => action("output-routing-answer", { resultId: resolveResult(args.result).id, answer: "place in a companion-created region" }),
+  openExternalArtifact: ({ args, resolveResult, action }) => action("output-routing-answer", { resultId: resolveResult(args.result).id, answer: "open in the web scene" }),
   showExternalLibraryImport: ({ showImport }) => showImport(),
   browseExternalPackages: ({ browsePackages }) => browsePackages(),
   installExternalPackage: ({ args, installPackage }) => installPackage(args.manifest),

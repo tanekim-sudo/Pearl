@@ -1,0 +1,2804 @@
+{
+  "version": 1,
+  "featureBaseline": {
+    "version": 1,
+    "features": 47,
+    "minimumCompanionCapabilities": 130,
+    "minimumExtensionCapabilities": 15,
+    "requiredKinds": [
+      "move",
+      "function",
+      "lens"
+    ],
+    "requiredExports": [
+      "shared/library-objects.js:normalizeLibraryObject",
+      "shared/library-objects.js:executeLibraryObject",
+      "shared/domain-commands.js:executeDomainCommand",
+      "shared/lens-context.js:compileLensContext",
+      "shared/transcript-learning.js:parseTranscript",
+      "shared/before-after-examples.js:normalizeInferenceResult",
+      "client/lib/companion-capabilities.js:COMPANION_CAPABILITIES",
+      "client/lib/companion-capability-graph.js:CompanionCapabilityGraph",
+      "extension/src/sidepanel/companion.js:EXTENSION_VERBS",
+      "shared/pearl-entity.js:createPearlEntity",
+      "shared/pearl-action-protocol.js:executePearlActionEvent",
+      "shared/pearl-animation.js:pearlAnimationForCommand"
+    ]
+  },
+  "counts": {
+    "requirements": 29,
+    "featureContracts": 47,
+    "domainCommands": 106,
+    "companionCapabilities": 188,
+    "extensionEntries": 77
+  },
+  "requirements": [
+    {
+      "id": "preservation.pre-orb",
+      "requirement": "Preserve every pre-orb capability, stable ID, direct entry, companion path, extension path, migration, and undo behavior.",
+      "featureContracts": [
+        "observation.workspace",
+        "generation.taste-branching",
+        "lens.perceptual-encoding",
+        "composition.universal",
+        "library.move",
+        "library.function",
+        "library.lens",
+        "library.save-as",
+        "library.primitive-moves",
+        "ai.branch-chooser",
+        "execution.lens-context",
+        "learning.before-after",
+        "learning.transcript",
+        "highlight.explicit-go",
+        "ai.node-gestures",
+        "persistence.account-adoption",
+        "extension.distribution",
+        "companion.destructive-clear",
+        "companion.effect-trace",
+        "interaction.semantic-transfer",
+        "companion.transaction-harness",
+        "registry.cognitive-packages",
+        "artifacts.higher-order",
+        "companion.personal-vocabulary",
+        "extraction.cognitive-pull-request",
+        "scene.v4",
+        "companion.orb-runtime"
+      ],
+      "domainCommands": [
+        "observeWorkspace",
+        "interpretObservationThroughLens",
+        "setGenerationPlan",
+        "startGenerationBatch",
+        "updateGenerationCandidate",
+        "recordTasteFeedback",
+        "prepareMoreLikeThis",
+        "encodeMaterialAsLens",
+        "updateLensPerceptualModel",
+        "applyLensInference",
+        "applyTasteLensDiff",
+        "composeCanonicalObjects",
+        "createMoveFromContent",
+        "upsertCanonicalObject",
+        "captureFunctionFromLineage",
+        "collectLensMaterial",
+        "setPrimitiveMove",
+        "reorderPrimitiveMove",
+        "createFunctionFromContent",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens"
+      ],
+      "webEntries": [
+        "client/lib/companion-observation.js",
+        "client/components/LensTreeEditor.jsx",
+        "client/components/AiNodeCanvas.jsx",
+        "extension/src/sidepanel/main.jsx",
+        "client/components/LensSettingsDialog.jsx",
+        "client/components/LensGrammarPanels.jsx",
+        "client/App.jsx:↦ Moves",
+        "client/App.jsx:library-save-as-drop",
+        "client/App.jsx:Primitive Moves",
+        "client/components/AiNodeCanvas.jsx:ai-strand-choice-hud",
+        "client/components/HighlightToolbar.jsx",
+        "client/components/BeforeAfterLensEditor.jsx",
+        "client/components/LearnFromChat.jsx",
+        "client/components/AuthOverlay.jsx",
+        "client/components/ExtensionDownloadModal.jsx",
+        "client/components/CompanionChat.jsx",
+        "client/components/GhostCursor.jsx:ghost-cursor-effect-status",
+        "client/App.jsx:resolveLeftColumnSemanticTarget",
+        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:companion-plan-strip",
+        "client/components/CognitivePackageRegistry.jsx",
+        "client/components/CognitiveWorkflowStudio.jsx:higher-order",
+        "client/components/CognitiveWorkflowStudio.jsx:vocabulary",
+        "client/components/CognitiveWorkflowStudio.jsx:pull-request",
+        "client/components/OrbUniverseShell.jsx:data-semantic-anchor=\"scene-stage\"",
+        "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\""
+      ],
+      "companionCapabilities": [
+        "transformMaterial",
+        "selectItems",
+        "zoomToItem",
+        "setGenerationPlan",
+        "tasteCandidate",
+        "moreLikeThis",
+        "keepAllCandidates",
+        "extendSelectedCandidates",
+        "stopGenerationBatch",
+        "retryGenerationCandidate",
+        "createLens",
+        "addLensMaterial",
+        "inferFunctionFromLens",
+        "resolveTasteLens",
+        "saveTasteTeaching",
+        "attachTasteBeforeAfter",
+        "inspectTasteLens",
+        "evaluateThroughTasteLens",
+        "stackFunctions",
+        "saveCompoundFunction",
+        "createMove",
+        "editMove",
+        "applyMove",
+        "saveCurrentAsMove",
+        "createFunction",
+        "captureLineageAsFunction",
+        "applyFunction",
+        "forkFunction",
+        "mergeFunctions",
+        "armLensContext",
+        "openSaveAsChooser",
+        "chooseSaveAsKind",
+        "promotePrimitiveMove",
+        "demotePrimitiveMove",
+        "reorderPrimitiveMove",
+        "applyFunctionToAiNode",
+        "setBrushLensContext",
+        "pressBrushGo",
+        "openBeforeAfterCreation",
+        "inferBeforeAfterTransformation",
+        "saveLearnedFunction",
+        "openTranscriptLearning",
+        "generateTranscriptArtifacts",
+        "saveTranscriptArtifacts",
+        "cancelPendingBrush",
+        "moveAiNode",
+        "openExtensionDownload",
+        "clearWorkspaceDomains",
+        "clearFunctions",
+        "clearLenses",
+        "semanticTransfer",
+        "runFunctionTestBench",
+        "observeWorkspace",
+        "openPackageRegistry",
+        "createSignedPackage",
+        "publishCognitivePackage",
+        "installCognitivePackage",
+        "rollbackCognitivePackage",
+        "deprecateCognitivePackage",
+        "proposeHigherOrderPatch",
+        "applyHigherOrderPatch",
+        "teachPersonalCommand",
+        "disablePersonalCommand",
+        "forgetPersonalCommand",
+        "openCognitivePullRequest",
+        "reviewCognitiveCandidate",
+        "mergeCognitivePullRequest",
+        "orchestrateCognitiveWorkflow",
+        "createCreativeResearchProposal",
+        "toggleOrbCursor",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
+        "capturePageSelection",
+        "openExternalArtifact",
+        "pressExternalGo",
+        "setExternalGenerationBranches",
+        "tasteExternalCandidate",
+        "saveExternalCaptureAsLens",
+        "setExternalLensContext",
+        "saveExternalTasteTeaching",
+        "queueExternalAction",
+        "saveExternalCaptureAsMove",
+        "openExternalSaveAs",
+        "invokeExternalPrimitive",
+        "reorderExternalPrimitive",
+        "armExternalMerge",
+        "openExternalBeforeAfter",
+        "inferExternalBeforeAfter",
+        "showExternalLibraryImport",
+        "saveExternalCaptureAsFunction",
+        "captureExternalVisibleTab",
+        "browseExternalPackages",
+        "installExternalPackage",
+        "openExternalCognitiveStudio",
+        "teachExternalPersonalCommand",
+        "openExternalCognitivePullRequest",
+        "openExternalCreativeExtraction",
+        "toggleExternalOrbCursor"
+      ],
+      "extensionEntries": [
+        "capturePageSelection",
+        "openExternalArtifact",
+        "pressExternalGo",
+        "setExternalGenerationBranches",
+        "tasteExternalCandidate",
+        "saveExternalCaptureAsLens",
+        "setExternalLensContext",
+        "saveExternalTasteTeaching",
+        "queueExternalAction",
+        "saveExternalCaptureAsMove",
+        "openExternalSaveAs",
+        "invokeExternalPrimitive",
+        "reorderExternalPrimitive",
+        "armExternalMerge",
+        "openExternalBeforeAfter",
+        "inferExternalBeforeAfter",
+        "showExternalLibraryImport",
+        "saveExternalCaptureAsFunction",
+        "captureExternalVisibleTab",
+        "browseExternalPackages",
+        "installExternalPackage",
+        "openExternalCognitiveStudio",
+        "teachExternalPersonalCommand",
+        "openExternalCognitivePullRequest",
+        "openExternalCreativeExtraction",
+        "toggleExternalOrbCursor"
+      ],
+      "persistenceAndMigrations": [
+        "lens.unified-workspace.v2",
+        "lens.lenses.v2",
+        "lens.board.operators.v2",
+        "lens.primitive-moves.v1",
+        "lens.item.history.v1",
+        "lens.before-after.draft.v1",
+        "lens.learn-from-chat.draft.v1",
+        "lens.ai.nodes.v1",
+        "lens.board.items.v1",
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1",
+        "cognitive_packages",
+        "cognitive_package_keys",
+        "lens.cognitive-packages.installed.v1",
+        "lens.higher-order-patches.v1",
+        "lens.personal-command-vocabulary.v1",
+        "personalCommandVocabulary",
+        "lens.cognitive-pull-requests.v1",
+        "cognitivePullRequestHandoff",
+        "lens.scenes.v4",
+        "lens.orb.placement.v1",
+        "lens.orb.cursor.v1",
+        "orbCursorTabs"
+      ],
+      "automatedTests": [
+        "shared/workspace-observation.test.js",
+        "client/lib/companion-observation.test.js",
+        "shared/generation-plan.test.js",
+        "shared/lens-perceptual-model.test.js",
+        "shared/taste-lens.test.js",
+        "shared/composition-algebra.test.js",
+        "shared/material.test.js",
+        "shared/library-objects.test.js",
+        "client/lib/companion-verb-coverage.test.js",
+        "client/lib/function-tree-editor.test.js",
+        "shared/lens-context.test.js",
+        "shared/domain-commands.test.js",
+        "shared/primitive-moves.test.js",
+        "client/lib/companion-geometry.test.js",
+        "client/lib/ai-nodes.test.js",
+        "shared/before-after-examples.test.js",
+        "shared/transcript-learning.test.js",
+        "shared/lens-runtime.test.js",
+        "client/lib/ai-layout.test.js",
+        "client/lib/board-sync.test.js",
+        "shared/lens-library.test.js",
+        "extension/tests/release.test.js",
+        "client/lib/companion-intent.test.js",
+        "client/lib/companion-plan.test.js",
+        "client/lib/director.test.js",
+        "shared/drop-intent-resolver.test.js",
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
+        "shared/function-test-bench.test.js",
+        "shared/cognitive-package.test.js",
+        "server/cognitive-package-registry.test.js",
+        "shared/higher-order-artifacts.test.js",
+        "shared/personal-command-vocabulary.test.js",
+        "shared/cognitive-pull-request.test.js",
+        "shared/research-grounded-creativity.test.js",
+        "client/lib/unified-workspace.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/workspace-observation.js",
+        "shared/generation-plan.js",
+        "shared/lens-perceptual-model.js",
+        "shared/composition-algebra.js",
+        "shared/library-objects.js",
+        "shared/lens-context.js",
+        "shared/domain-commands.js",
+        "shared/primitive-moves.js",
+        "client/lib/ai-nodes.js",
+        "shared/before-after-examples.js",
+        "shared/transcript-learning.js",
+        "shared/lens-runtime.js",
+        "client/lib/board-sync.js",
+        "extension/scripts/package.mjs",
+        "client/lib/companion-plan.js",
+        "client/lib/director.js",
+        "shared/drop-intent-resolver.js",
+        "client/lib/companion-harness.js",
+        "shared/cognitive-package.js",
+        "shared/higher-order-artifacts.js",
+        "shared/personal-command-vocabulary.js",
+        "shared/cognitive-pull-request.js",
+        "client/lib/unified-workspace.js",
+        "shared/orb-runtime.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "experience.pearl-only",
+      "requirement": "Pearl remains radically minimal, ethereal, companion-first, and progressively discloses only relevant controls.",
+      "featureContracts": [
+        "shell.pearl-progressive",
+        "shell.extension-first",
+        "runtime.pearl-action-animation"
+      ],
+      "domainCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback",
+        "createSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement"
+      ],
+      "webEntries": [
+        "client/components/CompanionOrb.jsx:pearl-action-search",
+        "client/components/OrbUniverseShell.jsx:pearl-scene-actions",
+        "extension/src/sidepanel/main.jsx:extension-pearl-halo",
+        "extension/src/content/bridge.js:Tell Pearl your goal",
+        "client/components/OrbUniverseShell.jsx:orb-continuation",
+        "client/components/OrbUniverseShell.jsx:InstallLanding",
+        "client/lib/director.js",
+        "shared/physical-pearl.js"
+      ],
+      "companionCapabilities": [
+        "observeWorkspace",
+        "semanticTransfer",
+        "openSaveAsChooser",
+        "setGenerationPlan",
+        "openTranscriptLearning",
+        "openPackageRegistry",
+        "redoWorkspace",
+        "exportWorkspace",
+        "openExtensionDownload",
+        "executeUnifiedPearlAction",
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter",
+        "openExternalSemanticOrbScene",
+        "openExternalCognitiveStudio",
+        "openExternalCognitivePullRequest",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter",
+        "openExternalSemanticOrbScene",
+        "openExternalCognitiveStudio",
+        "openExternalCognitivePullRequest",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "lens.orb.surface.v1",
+        "lens.orb.placement.v1",
+        "lens.scenes.v4",
+        "lens.companion.run-ledger.v1",
+        "generationPlan",
+        "semanticOrbs",
+        "lens.orb-universe.continued.v1",
+        "cognitiveWorkflowHandoff",
+        "cognitivePullRequestHandoff",
+        "pearlEntities.v1.history.events"
+      ],
+      "automatedTests": [
+        "client/lib/pearl-shell.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js",
+        "client/lib/extension-funnel.test.js",
+        "client/lib/extension-continuation.test.js",
+        "shared/pearl-entity.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "client/lib/pearl-shell.js",
+        "client/components/OrbUniverseShell.jsx",
+        "shared/pearl-action-protocol.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "privacy.local-first",
+      "requirement": "Pearl data is encrypted, profile-isolated, offline-capable, local-first, and syncs only after scoped consent.",
+      "featureContracts": [
+        "privacy.local-profile-vault",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "client/lib/secure-local-storage.js",
+        "extension/src/platform/secure-storage.js",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearl-local-private-v1",
+        "pearl-extension-private-v1",
+        "passphrase-wrapped profile keys",
+        "profile-scoped session lifecycle",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/local-privacy-vault.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "privacy.account-isolation",
+      "requirement": "Logout, profile changes, account reloads, and organization switches clear decrypted/session state without cross-user access.",
+      "featureContracts": [
+        "privacy.local-profile-vault",
+        "sharing.organization-trust"
+      ],
+      "domainCommands": [
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "rotatePearlOrganizationKey"
+      ],
+      "webEntries": [
+        "client/lib/secure-local-storage.js",
+        "extension/src/platform/secure-storage.js",
+        "server/index.js:/api/pearl-shares"
+      ],
+      "companionCapabilities": [
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData",
+        "executeUnifiedPearlAction",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearl-local-private-v1",
+        "pearl-extension-private-v1",
+        "passphrase-wrapped profile keys",
+        "profile-scoped session lifecycle",
+        "pearl_shares",
+        "cognitive_package_team_members",
+        "pearlEntities.v1.sharing"
+      ],
+      "automatedTests": [
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js",
+        "shared/organization-envelope.test.js",
+        "server/pearl-share-registry.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/local-privacy-vault.js",
+        "shared/organization-envelope.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "privacy.boundaries",
+      "requirement": "Page observation is bounded, excludes sensitive fields, and records approved disclosure without URL or log leakage.",
+      "featureContracts": [
+        "privacy.bounded-page-observation",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "bindPearlCanvasContext",
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "extension/src/content/selection.js",
+        "extension/src/content/page-canvas.js",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "bindExternalCanvasContext",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "bindExternalCanvasContext",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearlPageCanvases",
+        "disclosureReceipts",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/page-observation.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/page-observation.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "privacy.delete-lock",
+      "requirement": "Delete, lock, unlock, timeout, key rotation, recovery warning, migration, and corrupt-envelope handling are complete.",
+      "featureContracts": [
+        "privacy.local-profile-vault",
+        "privacy.pearl-policy",
+        "sharing.organization-trust"
+      ],
+      "domainCommands": [
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant"
+      ],
+      "webEntries": [
+        "client/lib/secure-local-storage.js",
+        "extension/src/platform/secure-storage.js",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface",
+        "server/index.js:/api/pearl-shares"
+      ],
+      "companionCapabilities": [
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "executeUnifiedPearlAction",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearl-local-private-v1",
+        "pearl-extension-private-v1",
+        "passphrase-wrapped profile keys",
+        "profile-scoped session lifecycle",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies",
+        "pearl_shares",
+        "cognitive_package_team_members",
+        "pearlEntities.v1.sharing"
+      ],
+      "automatedTests": [
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js",
+        "server/pearl-share-registry.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/local-privacy-vault.js",
+        "shared/pearl-privacy-policy.js",
+        "shared/organization-envelope.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "security.handoffs",
+      "requirement": "Web, Result, Studio, and recipient handoffs are short-lived, one-time, origin/profile/tab/scope bound, replay-safe, and fragment transported.",
+      "featureContracts": [
+        "privacy.local-profile-vault",
+        "studio.pearl",
+        "output.result-pearl",
+        "sharing.pearl-package"
+      ],
+      "domainCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl",
+        "preparePearlShare",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "installValidatedPearlPackage"
+      ],
+      "webEntries": [
+        "client/lib/secure-local-storage.js",
+        "extension/src/platform/secure-storage.js",
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "extension/src/content/result-pearls.js",
+        "server/index.js:/api/pearl-shares"
+      ],
+      "companionCapabilities": [
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData",
+        "executeUnifiedPearlAction",
+        "preparePearlShare",
+        "sharePearl",
+        "revokePearlShare",
+        "installSharedPearl",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "extensionEntries": [
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "persistenceAndMigrations": [
+        "pearl-local-private-v1",
+        "pearl-extension-private-v1",
+        "passphrase-wrapped profile keys",
+        "profile-scoped session lifecycle",
+        "pearlEntities.v1",
+        "pearlStudioRefs.v1",
+        "one-time profile/tab/origin-bound handoffs",
+        "resultPearls",
+        "resultChats",
+        "pearlEntities.v1.sharing",
+        "pearl_shares"
+      ],
+      "automatedTests": [
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js",
+        "shared/pearl-studio.test.js",
+        "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/pearl-sharing.test.js",
+        "server/pearl-share-registry.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/local-privacy-vault.js",
+        "shared/pearl-studio.js",
+        "shared/result-pearls.js",
+        "shared/pearl-sharing.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "canvas.per-pearl",
+      "requirement": "Every Pearl owns a page canvas with native pass-through, typed tools, coordinate correctness, local persistence, quota defense, and unsupported-page fallback.",
+      "featureContracts": [
+        "extension.pearl-page-canvas",
+        "privacy.bounded-page-observation"
+      ],
+      "domainCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas"
+      ],
+      "webEntries": [
+        "extension/src/content/page-canvas.js",
+        "extension/src/content/selection.js"
+      ],
+      "companionCapabilities": [
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf"
+      ],
+      "extensionEntries": [
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf"
+      ],
+      "persistenceAndMigrations": [
+        "pearlPageCanvases",
+        "pearl-local-blobs-v1",
+        "disclosureReceipts"
+      ],
+      "automatedTests": [
+        "shared/pearl-page-canvas.test.js",
+        "shared/profile-blob-security.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/page-observation.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-page-canvas.js",
+        "shared/page-observation.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "result.celadon",
+      "requirement": "Lens generation stages a persisted celadon Result Pearl with provenance and never silently mutates source material.",
+      "featureContracts": [
+        "output.result-pearl",
+        "output.two-stage-routing",
+        "visual.physical-pearl"
+      ],
+      "domainCommands": [
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl",
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement"
+      ],
+      "webEntries": [
+        "extension/src/content/result-pearls.js",
+        "extension/src/result/main.js",
+        "extension/src/sidepanel/main.jsx",
+        "client/components/PhysicalPearl.jsx",
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx",
+        "client/components/OrbCursorLayer.jsx",
+        "extension/src/content/bridge.js"
+      ],
+      "companionCapabilities": [
+        "chooseResultDestination",
+        "confirmResultPlacement",
+        "cancelResultPlacement",
+        "executeUnifiedPearlAction",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "resultPearls",
+        "one-time profile/tab/origin-bound handoffs",
+        "resultChats",
+        "pearlEntities.v1.outputRouting",
+        "resultPearls.routing",
+        "physicalPearl.renderer.v2"
+      ],
+      "automatedTests": [
+        "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/output-routing.test.js",
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/result-pearls.js",
+        "shared/output-routing.js",
+        "shared/pearl-visual-contract.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "routing.two-stage",
+      "requirement": "Every output asks destination, interprets a typed PlacementPlan, confirms, then executes once without regeneration.",
+      "featureContracts": [
+        "output.two-stage-routing",
+        "output.result-pearl"
+      ],
+      "domainCommands": [
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement",
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl"
+      ],
+      "webEntries": [
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/result/main.js"
+      ],
+      "companionCapabilities": [
+        "chooseResultDestination",
+        "confirmResultPlacement",
+        "cancelResultPlacement",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl"
+      ],
+      "extensionEntries": [
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.outputRouting",
+        "resultPearls.routing",
+        "resultPearls",
+        "one-time profile/tab/origin-bound handoffs",
+        "resultChats"
+      ],
+      "automatedTests": [
+        "shared/output-routing.test.js",
+        "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
+        "extension/scripts/orb-audit.mjs"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/output-routing.js",
+        "shared/result-pearls.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "soundscape.per-pearl",
+      "requirement": "Per-Pearl lawful local/provider soundscapes support rights gates, crossfade, offscreen continuity, offline, quota, and autoplay fallback.",
+      "featureContracts": [
+        "semantic-pearl.soundscape",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "addPearlSoundscapeTrack",
+        "removePearlSoundscapeTrack",
+        "setPearlSoundscapeTrack",
+        "updatePearlSoundscape",
+        "transitionPearlSoundscape",
+        "cachePearlTrackOffline",
+        "searchPearlAudioCatalog",
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/offscreen/audio.js",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "searchExternalPearlSoundscape",
+        "uploadExternalPearlAudio",
+        "useExternalPearlAudioTrack",
+        "controlExternalPearlSoundscape",
+        "updateExternalPearlSoundscape",
+        "saveExternalPearlTrackOffline",
+        "removeExternalPearlAudioTrack",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "searchExternalPearlSoundscape",
+        "uploadExternalPearlAudio",
+        "useExternalPearlAudioTrack",
+        "controlExternalPearlSoundscape",
+        "updateExternalPearlSoundscape",
+        "saveExternalPearlTrackOffline",
+        "removeExternalPearlAudioTrack",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearlSoundscapes",
+        "pearl-local-audio-v1",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/pearl-soundscape.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-soundscape.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "studio.same-object",
+      "requirement": "Triple activation and accessible actions open the same Pearl in a secure editable full-tab Studio with CAS, checkpoints, undo, and conflict review.",
+      "featureContracts": [
+        "studio.pearl",
+        "runtime.unified-pearl",
+        "interaction.orb-gesture"
+      ],
+      "domainCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "inspectPearlPrivacy",
+        "interpretOutputPlacement",
+        "addOrbContext",
+        "addOrbLens",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext",
+        "addSemanticOrbContext",
+        "nestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs"
+      ],
+      "webEntries": [
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "client/components/PhysicalPearl.jsx",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/content/bridge.js",
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx"
+      ],
+      "companionCapabilities": [
+        "executeUnifiedPearlAction",
+        "observeUnifiedPearl",
+        "semanticTransfer",
+        "createSemanticOrb",
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "openExternalArtifact",
+        "createExternalSemanticOrb"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "openExternalArtifact",
+        "createExternalSemanticOrb"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1",
+        "pearlStudioRefs.v1",
+        "one-time profile/tab/origin-bound handoffs",
+        "lens.scenes.v4"
+      ],
+      "automatedTests": [
+        "shared/pearl-studio.test.js",
+        "shared/pearl-entity.test.js",
+        "shared/orb-universe.test.js",
+        "shared/drop-intent-resolver.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-studio.js",
+        "shared/pearl-entity.js",
+        "shared/orb-interactions.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "sharing.package",
+      "requirement": "Signed scoped Pearl packages preserve provenance, privacy review, ownership, expiry, revocation, updates, recipient onboarding, and atomic install.",
+      "featureContracts": [
+        "sharing.pearl-package",
+        "registry.cognitive-packages",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "preparePearlShare",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "installValidatedPearlPackage",
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "server/index.js:/api/pearl-shares",
+        "client/components/CognitivePackageRegistry.jsx",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "preparePearlShare",
+        "sharePearl",
+        "revokePearlShare",
+        "installSharedPearl",
+        "openPackageRegistry",
+        "createSignedPackage",
+        "publishCognitivePackage",
+        "installCognitivePackage",
+        "rollbackCognitivePackage",
+        "deprecateCognitivePackage",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl",
+        "browseExternalPackages",
+        "installExternalPackage",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl",
+        "browseExternalPackages",
+        "installExternalPackage",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.sharing",
+        "pearl_shares",
+        "cognitive_packages",
+        "cognitive_package_keys",
+        "lens.cognitive-packages.installed.v1",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/pearl-sharing.test.js",
+        "server/pearl-share-registry.test.js",
+        "shared/cognitive-package.test.js",
+        "server/cognitive-package-registry.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-sharing.js",
+        "shared/cognitive-package.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "sharing.organization",
+      "requirement": "Organization shares use tenant authorization, role checks, envelope encryption, restrictive inheritance, key rotation, and revocation.",
+      "featureContracts": [
+        "sharing.organization-trust",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "rotatePearlOrganizationKey",
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "server/index.js:/api/pearl-shares",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "executeUnifiedPearlAction",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "executeExternalPearlAction",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearl_shares",
+        "cognitive_package_team_members",
+        "pearlEntities.v1.sharing",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/organization-envelope.test.js",
+        "server/pearl-share-registry.test.js",
+        "shared/pearl-privacy-policy.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/organization-envelope.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "automation.compiler",
+      "requirement": "Arbitrary pasted prompt systems compile into editable reusable automation Pearls while preserving verbatim evidence and semantic diff.",
+      "featureContracts": [
+        "automation.pearl-compiler",
+        "learning.transcript",
+        "learning.before-after"
+      ],
+      "domainCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch",
+        "upsertCanonicalObject"
+      ],
+      "webEntries": [
+        "extension/src/sidepanel/main.jsx",
+        "client/components/LearnFromChat.jsx",
+        "client/components/BeforeAfterLensEditor.jsx"
+      ],
+      "companionCapabilities": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "researchAutomationPearl",
+        "approveAutomationContextPatch",
+        "openTranscriptLearning",
+        "generateTranscriptArtifacts",
+        "saveTranscriptArtifacts",
+        "openBeforeAfterCreation",
+        "inferBeforeAfterTransformation",
+        "saveLearnedFunction",
+        "compileExternalAutomationPearl",
+        "openExternalBeforeAfter",
+        "inferExternalBeforeAfter"
+      ],
+      "extensionEntries": [
+        "compileExternalAutomationPearl",
+        "openExternalBeforeAfter",
+        "inferExternalBeforeAfter"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.automation",
+        "lens.learn-from-chat.draft.v1",
+        "lens.before-after.draft.v1"
+      ],
+      "automatedTests": [
+        "shared/automation-pearl.test.js",
+        "shared/automation-research.test.js",
+        "shared/transcript-learning.test.js",
+        "shared/before-after-examples.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/automation-pearl.js",
+        "shared/transcript-learning.js",
+        "shared/before-after-examples.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "automation.research",
+      "requirement": "Current research is verified, bounded, injection-resistant, privacy guarded, review-patched, undoable, and refresh-budgeted.",
+      "featureContracts": [
+        "automation.pearl-compiler",
+        "privacy.bounded-page-observation",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch",
+        "bindPearlCanvasContext",
+        "ensurePearlPrivacyPolicy",
+        "inspectPearlPrivacy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/content/selection.js",
+        "extension/src/content/page-canvas.js",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "researchAutomationPearl",
+        "approveAutomationContextPatch",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "compileExternalAutomationPearl",
+        "bindExternalCanvasContext",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "compileExternalAutomationPearl",
+        "bindExternalCanvasContext",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.automation",
+        "pearlPageCanvases",
+        "disclosureReceipts",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/automation-pearl.test.js",
+        "shared/automation-research.test.js",
+        "shared/page-observation.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/automation-pearl.js",
+        "shared/page-observation.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "visual.physical",
+      "requirement": "Every Pearl instance uses one high-fidelity physical renderer without white-dot, emoji, generic-disc, glow, or fallback variants.",
+      "featureContracts": [
+        "visual.physical-pearl",
+        "shell.pearl-progressive"
+      ],
+      "domainCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback"
+      ],
+      "webEntries": [
+        "client/components/PhysicalPearl.jsx",
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx",
+        "client/components/OrbCursorLayer.jsx",
+        "extension/src/content/bridge.js",
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/result/main.js",
+        "client/components/CompanionOrb.jsx:pearl-action-search",
+        "client/components/OrbUniverseShell.jsx:pearl-scene-actions",
+        "extension/src/sidepanel/main.jsx:extension-pearl-halo",
+        "extension/src/content/bridge.js:Tell Pearl your goal"
+      ],
+      "companionCapabilities": [
+        "executeUnifiedPearlAction",
+        "observeWorkspace",
+        "semanticTransfer",
+        "openSaveAsChooser",
+        "setGenerationPlan",
+        "openTranscriptLearning",
+        "openPackageRegistry",
+        "redoWorkspace",
+        "exportWorkspace",
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter"
+      ],
+      "persistenceAndMigrations": [
+        "physicalPearl.renderer.v2",
+        "lens.orb.surface.v1",
+        "lens.orb.placement.v1",
+        "lens.scenes.v4",
+        "lens.companion.run-ledger.v1",
+        "generationPlan",
+        "semanticOrbs"
+      ],
+      "automatedTests": [
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md",
+        "client/lib/pearl-shell.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-visual-contract.js",
+        "client/lib/pearl-shell.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "interaction.cursor",
+      "requirement": "The physical Pearl transforms into one precise, non-draggable cursor with native input fallback and Triple-Space arbitration.",
+      "featureContracts": [
+        "interaction.orb-gesture",
+        "visual.physical-pearl"
+      ],
+      "domainCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "materializeOnStage",
+        "materializeInOutputFrame",
+        "queueBranchMaterial",
+        "assignWorkerContext",
+        "addSemanticOrbContext",
+        "nestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs"
+      ],
+      "webEntries": [
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx",
+        "client/components/PhysicalPearl.jsx",
+        "client/components/OrbCursorLayer.jsx",
+        "extension/src/content/bridge.js",
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/result/main.js"
+      ],
+      "companionCapabilities": [
+        "semanticTransfer",
+        "createSemanticOrb",
+        "executeUnifiedPearlAction",
+        "openExternalArtifact",
+        "createExternalSemanticOrb",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "openExternalArtifact",
+        "createExternalSemanticOrb",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "lens.scenes.v4",
+        "physicalPearl.renderer.v2"
+      ],
+      "automatedTests": [
+        "shared/orb-universe.test.js",
+        "shared/drop-intent-resolver.test.js",
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/orb-interactions.js",
+        "shared/pearl-visual-contract.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "runtime.unified",
+      "requirement": "One versioned canonical Pearl entity and one action/event protocol govern all properties, surfaces, effects, receipts, checkpoints, policy, undo, and idempotency.",
+      "featureContracts": [
+        "runtime.unified-pearl",
+        "runtime.pearl-action-animation"
+      ],
+      "domainCommands": [
+        "editPearlEntity",
+        "openPearlStudio",
+        "inspectPearlPrivacy",
+        "interpretOutputPlacement",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement"
+      ],
+      "webEntries": [
+        "client/components/PhysicalPearl.jsx",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/content/bridge.js",
+        "client/lib/director.js",
+        "shared/physical-pearl.js"
+      ],
+      "companionCapabilities": [
+        "observeUnifiedPearl",
+        "executeUnifiedPearlAction",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1",
+        "pearlEntities.v1.history.events"
+      ],
+      "automatedTests": [
+        "shared/pearl-entity.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-entity.js",
+        "shared/pearl-action-protocol.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "runtime.animation",
+      "requirement": "Every meaningful effect uses restrained effect-synchronized Pearl physics, cancellation, observation receipts, and reduced-motion static state.",
+      "featureContracts": [
+        "runtime.pearl-action-animation",
+        "visual.physical-pearl",
+        "companion.effect-trace"
+      ],
+      "domainCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement"
+      ],
+      "webEntries": [
+        "client/lib/director.js",
+        "shared/physical-pearl.js",
+        "client/components/PhysicalPearl.jsx",
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx",
+        "client/components/OrbCursorLayer.jsx",
+        "extension/src/content/bridge.js",
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/result/main.js",
+        "client/components/GhostCursor.jsx:ghost-cursor-effect-status"
+      ],
+      "companionCapabilities": [
+        "executeUnifiedPearlAction",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.history.events",
+        "physicalPearl.renderer.v2"
+      ],
+      "automatedTests": [
+        "shared/pearl-entity.test.js",
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md",
+        "client/lib/director.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-action-protocol.js",
+        "shared/pearl-visual-contract.js",
+        "client/lib/director.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "cognition.layers",
+      "requirement": "Primitive, Role, Lens, Move, Function, and Pearl are explicit differentiated versioned editable cognitive layers.",
+      "featureContracts": [
+        "cognition.typed-layers",
+        "composition.universal"
+      ],
+      "domainCommands": [
+        "addPearlCognitiveLayer",
+        "mutatePearlCognitiveLayer",
+        "composePearlCognitiveLayers",
+        "proposePearlCognitivePatch",
+        "applyPearlCognitivePatch",
+        "resolvePearlCognitiveUncertainty",
+        "startPearlCognitivePlayback",
+        "advancePearlCognitivePlayback",
+        "cancelPearlCognitivePlayback",
+        "composeCanonicalObjects"
+      ],
+      "webEntries": [
+        "client/components/CognitiveLayerStudio.jsx",
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "client/components/LensGrammarPanels.jsx"
+      ],
+      "companionCapabilities": [
+        "inspectPearlCognition",
+        "proposePearlCognitiveEdit",
+        "applyPearlCognitiveEdit",
+        "composePearlCognitiveLayers",
+        "applyPearlCognitiveComposition",
+        "mutatePearlCognitiveLayer",
+        "resolvePearlCognitiveUncertainty",
+        "playPearlFunction",
+        "stepPearlFunction",
+        "cancelPearlFunction",
+        "stackFunctions",
+        "saveCompoundFunction",
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "queueExternalAction"
+      ],
+      "extensionEntries": [
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "queueExternalAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.cognition",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "automatedTests": [
+        "shared/pearl-cognitive-layers.test.js",
+        "shared/composition-algebra.test.js",
+        "shared/material.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-cognitive-layers.js",
+        "shared/composition-algebra.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "cognition.uncertainty",
+      "requirement": "AI organization preserves verbatim evidence, confidence, rationale, questions, conflicts, authorship, mappings, and blocks unresolved executable/shareable facts.",
+      "featureContracts": [
+        "cognition.typed-layers",
+        "automation.pearl-compiler",
+        "sharing.pearl-package"
+      ],
+      "domainCommands": [
+        "addPearlCognitiveLayer",
+        "mutatePearlCognitiveLayer",
+        "composePearlCognitiveLayers",
+        "proposePearlCognitivePatch",
+        "applyPearlCognitivePatch",
+        "resolvePearlCognitiveUncertainty",
+        "startPearlCognitivePlayback",
+        "advancePearlCognitivePlayback",
+        "cancelPearlCognitivePlayback",
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch",
+        "preparePearlShare",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "installValidatedPearlPackage"
+      ],
+      "webEntries": [
+        "client/components/CognitiveLayerStudio.jsx",
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "extension/src/sidepanel/main.jsx",
+        "server/index.js:/api/pearl-shares"
+      ],
+      "companionCapabilities": [
+        "inspectPearlCognition",
+        "proposePearlCognitiveEdit",
+        "applyPearlCognitiveEdit",
+        "composePearlCognitiveLayers",
+        "applyPearlCognitiveComposition",
+        "mutatePearlCognitiveLayer",
+        "resolvePearlCognitiveUncertainty",
+        "playPearlFunction",
+        "stepPearlFunction",
+        "cancelPearlFunction",
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "researchAutomationPearl",
+        "approveAutomationContextPatch",
+        "preparePearlShare",
+        "sharePearl",
+        "revokePearlShare",
+        "installSharedPearl",
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "compileExternalAutomationPearl",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "extensionEntries": [
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "compileExternalAutomationPearl",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.cognition",
+        "pearlEntities.v1.automation",
+        "pearlEntities.v1.sharing",
+        "pearl_shares"
+      ],
+      "automatedTests": [
+        "shared/pearl-cognitive-layers.test.js",
+        "shared/automation-pearl.test.js",
+        "shared/automation-research.test.js",
+        "shared/pearl-sharing.test.js",
+        "server/pearl-share-registry.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-cognitive-layers.js",
+        "shared/automation-pearl.js",
+        "shared/pearl-sharing.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "cognition.remix",
+      "requirement": "Studio separates spatial layout from semantic order and supports drag, reorder, nest, link, duplicate, split, merge, fork, remove, export, share, and cross-Pearl composition with bridge Moves.",
+      "featureContracts": [
+        "cognition.typed-layers",
+        "studio.pearl",
+        "composition.universal"
+      ],
+      "domainCommands": [
+        "addPearlCognitiveLayer",
+        "mutatePearlCognitiveLayer",
+        "composePearlCognitiveLayers",
+        "proposePearlCognitivePatch",
+        "applyPearlCognitivePatch",
+        "resolvePearlCognitiveUncertainty",
+        "startPearlCognitivePlayback",
+        "advancePearlCognitivePlayback",
+        "cancelPearlCognitivePlayback",
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "composeCanonicalObjects"
+      ],
+      "webEntries": [
+        "client/components/CognitiveLayerStudio.jsx",
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "client/components/LensGrammarPanels.jsx"
+      ],
+      "companionCapabilities": [
+        "inspectPearlCognition",
+        "proposePearlCognitiveEdit",
+        "applyPearlCognitiveEdit",
+        "composePearlCognitiveLayers",
+        "applyPearlCognitiveComposition",
+        "mutatePearlCognitiveLayer",
+        "resolvePearlCognitiveUncertainty",
+        "playPearlFunction",
+        "stepPearlFunction",
+        "cancelPearlFunction",
+        "executeUnifiedPearlAction",
+        "stackFunctions",
+        "saveCompoundFunction",
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "queueExternalAction"
+      ],
+      "extensionEntries": [
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "executeExternalPearlAction",
+        "openExternalResultPearlTab",
+        "queueExternalAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.cognition",
+        "pearlEntities.v1",
+        "pearlStudioRefs.v1",
+        "one-time profile/tab/origin-bound handoffs",
+        "lens.board.operators.v2",
+        "lens.lenses.v2"
+      ],
+      "automatedTests": [
+        "shared/pearl-cognitive-layers.test.js",
+        "shared/pearl-studio.test.js",
+        "shared/composition-algebra.test.js",
+        "shared/material.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-cognitive-layers.js",
+        "shared/pearl-studio.js",
+        "shared/composition-algebra.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "cognition.playback",
+      "requirement": "Functions play, step, branch, pause, cancel, rerun, swap inputs/Lenses/Roles, and retain intermediate Result Pearls and exact checkpoints.",
+      "featureContracts": [
+        "cognition.typed-layers",
+        "output.result-pearl",
+        "generation.taste-branching"
+      ],
+      "domainCommands": [
+        "addPearlCognitiveLayer",
+        "mutatePearlCognitiveLayer",
+        "composePearlCognitiveLayers",
+        "proposePearlCognitivePatch",
+        "applyPearlCognitivePatch",
+        "resolvePearlCognitiveUncertainty",
+        "startPearlCognitivePlayback",
+        "advancePearlCognitivePlayback",
+        "cancelPearlCognitivePlayback",
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl",
+        "setGenerationPlan",
+        "startGenerationBatch",
+        "updateGenerationCandidate",
+        "recordTasteFeedback",
+        "prepareMoreLikeThis"
+      ],
+      "webEntries": [
+        "client/components/CognitiveLayerStudio.jsx",
+        "client/components/PearlStudioView.jsx",
+        "extension/src/result/main.js",
+        "extension/src/content/result-pearls.js",
+        "client/components/LensTreeEditor.jsx",
+        "client/components/AiNodeCanvas.jsx",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "companionCapabilities": [
+        "inspectPearlCognition",
+        "proposePearlCognitiveEdit",
+        "applyPearlCognitiveEdit",
+        "composePearlCognitiveLayers",
+        "applyPearlCognitiveComposition",
+        "mutatePearlCognitiveLayer",
+        "resolvePearlCognitiveUncertainty",
+        "playPearlFunction",
+        "stepPearlFunction",
+        "cancelPearlFunction",
+        "setGenerationPlan",
+        "tasteCandidate",
+        "moreLikeThis",
+        "keepAllCandidates",
+        "extendSelectedCandidates",
+        "stopGenerationBatch",
+        "retryGenerationCandidate",
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "pressExternalGo",
+        "setExternalGenerationBranches",
+        "tasteExternalCandidate"
+      ],
+      "extensionEntries": [
+        "inspectExternalPearlCognition",
+        "proposeExternalPearlCognitiveEdit",
+        "applyExternalPearlCognitiveEdit",
+        "composeExternalPearlCognitiveLayers",
+        "applyExternalPearlCognitiveComposition",
+        "mutateExternalPearlCognitiveLayer",
+        "resolveExternalPearlCognitiveUncertainty",
+        "playExternalPearlFunction",
+        "stepExternalPearlFunction",
+        "cancelExternalPearlFunction",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "pressExternalGo",
+        "setExternalGenerationBranches",
+        "tasteExternalCandidate"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1.cognition",
+        "resultPearls",
+        "one-time profile/tab/origin-bound handoffs",
+        "resultChats",
+        "lens.unified-workspace.v2"
+      ],
+      "automatedTests": [
+        "shared/pearl-cognitive-layers.test.js",
+        "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/generation-plan.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-cognitive-layers.js",
+        "shared/result-pearls.js",
+        "shared/generation-plan.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "companion.authorized-power",
+      "requirement": "Companion observes and changes every authorized state through the complete capability graph while stating inaccessible, hidden, cross-origin, locked, or sensitive boundaries.",
+      "featureContracts": [
+        "runtime.unified-pearl",
+        "companion.orb-runtime",
+        "companion.transaction-harness",
+        "privacy.pearl-policy"
+      ],
+      "domainCommands": [
+        "editPearlEntity",
+        "openPearlStudio",
+        "inspectPearlPrivacy",
+        "interpretOutputPlacement",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
+        "ensurePearlPrivacyPolicy",
+        "proposePearlPrivacyPatch",
+        "applyPearlPrivacyPatch",
+        "lockPearlPrivacy",
+        "rotatePearlOrganizationKey",
+        "inheritDerivedPearlPrivacy"
+      ],
+      "webEntries": [
+        "client/components/PhysicalPearl.jsx",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/content/bridge.js",
+        "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\"",
+        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:companion-plan-strip",
+        "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
+      ],
+      "companionCapabilities": [
+        "observeUnifiedPearl",
+        "executeUnifiedPearlAction",
+        "observeWorkspace",
+        "semanticTransfer",
+        "toggleOrbCursor",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
+        "runFunctionTestBench",
+        "inspectPearlPrivacyPolicy",
+        "proposePearlPrivacyChange",
+        "applyPearlPrivacyChange",
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "pressExternalGo",
+        "setExternalLensContext",
+        "toggleExternalOrbCursor",
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "pressExternalGo",
+        "setExternalLensContext",
+        "toggleExternalOrbCursor",
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "inspectExternalPearlPrivacy",
+        "proposeExternalPearlPrivacyChange",
+        "applyExternalPearlPrivacyChange"
+      ],
+      "persistenceAndMigrations": [
+        "pearlEntities.v1",
+        "lens.orb.placement.v1",
+        "lens.orb.cursor.v1",
+        "orbCursorTabs",
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1",
+        "pearlEntities.v1.privacy",
+        "pearlPrivacyPolicies"
+      ],
+      "automatedTests": [
+        "shared/pearl-entity.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js",
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
+        "shared/function-test-bench.test.js",
+        "shared/pearl-privacy-policy.test.js",
+        "shared/organization-envelope.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-entity.js",
+        "shared/orb-runtime.js",
+        "client/lib/companion-harness.js",
+        "shared/pearl-privacy-policy.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "companion.multistep",
+      "requirement": "Natural language, stream-of-consciousness critique, deixis, interruption, background work, clarification, approval, partial failure, retry, research, and routing remain real and checkpointed.",
+      "featureContracts": [
+        "companion.orb-runtime",
+        "companion.orb-swarm",
+        "companion.transaction-harness",
+        "output.two-stage-routing"
+      ],
+      "domainCommands": [
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
+        "assignWorkerContext",
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement"
+      ],
+      "webEntries": [
+        "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\"",
+        "client/components/CompanionOrb.jsx",
+        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:companion-plan-strip",
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx"
+      ],
+      "companionCapabilities": [
+        "observeWorkspace",
+        "semanticTransfer",
+        "toggleOrbCursor",
+        "addOrbContext",
+        "updateOrbContext",
+        "removeOrbContext",
+        "addOrbLens",
+        "updateOrbLens",
+        "removeOrbLens",
+        "orchestrateCognitiveWorkflow",
+        "runFunctionTestBench",
+        "chooseResultDestination",
+        "confirmResultPlacement",
+        "cancelResultPlacement",
+        "capturePageSelection",
+        "pressExternalGo",
+        "setExternalLensContext",
+        "toggleExternalOrbCursor",
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement"
+      ],
+      "extensionEntries": [
+        "capturePageSelection",
+        "pressExternalGo",
+        "setExternalLensContext",
+        "toggleExternalOrbCursor",
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement"
+      ],
+      "persistenceAndMigrations": [
+        "lens.orb.placement.v1",
+        "lens.orb.cursor.v1",
+        "orbCursorTabs",
+        "lens.scenes.v4",
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1",
+        "pearlEntities.v1.outputRouting",
+        "resultPearls.routing"
+      ],
+      "automatedTests": [
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js",
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
+        "shared/function-test-bench.test.js",
+        "shared/output-routing.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/orb-runtime.js",
+        "shared/orb-swarm.js",
+        "client/lib/companion-harness.js",
+        "shared/output-routing.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "quality.first-use-e2e",
+      "requirement": "First-use install through capture, Pearl creation, Lens result, routing, Studio edit, undo, and reload is deterministic and browser verified.",
+      "featureContracts": [
+        "extension.distribution",
+        "extension.pearl-page-canvas",
+        "output.result-pearl",
+        "output.two-stage-routing",
+        "studio.pearl"
+      ],
+      "domainCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas",
+        "spawnResultPearl",
+        "placeResultPearl",
+        "moveResultPearl",
+        "undoResultPearl",
+        "setResultPearlStatus",
+        "expandResultPearl",
+        "collapseResultPearl",
+        "openResultPearlInTab",
+        "redirectResultPearl",
+        "presentResultPearlAsChat",
+        "createResultPlacementRegion",
+        "selectResultPlacementRegion",
+        "acceptResultPearl",
+        "archiveResultPearl",
+        "deleteResultPearl",
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement",
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit"
+      ],
+      "webEntries": [
+        "client/components/ExtensionDownloadModal.jsx",
+        "extension/src/content/page-canvas.js",
+        "extension/src/content/result-pearls.js",
+        "extension/src/result/main.js",
+        "extension/src/sidepanel/main.jsx",
+        "client/components/PearlStudioView.jsx"
+      ],
+      "companionCapabilities": [
+        "openExtensionDownload",
+        "chooseResultDestination",
+        "confirmResultPlacement",
+        "cancelResultPlacement",
+        "executeUnifiedPearlAction",
+        "showExternalLibraryImport",
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "executeExternalPearlAction"
+      ],
+      "extensionEntries": [
+        "showExternalLibraryImport",
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf",
+        "expandExternalResultPearl",
+        "collapseExternalResultPearl",
+        "openExternalResultPearlTab",
+        "presentExternalResultAsChat",
+        "redirectExternalResult",
+        "acceptExternalResultPearl",
+        "archiveExternalResultPearl",
+        "deleteExternalResultPearl",
+        "undoExternalResultPearl",
+        "chooseExternalResultDestination",
+        "confirmExternalResultPlacement",
+        "cancelExternalResultPlacement",
+        "executeExternalPearlAction"
+      ],
+      "persistenceAndMigrations": [
+        "pearlPageCanvases",
+        "pearl-local-blobs-v1",
+        "resultPearls",
+        "one-time profile/tab/origin-bound handoffs",
+        "resultChats",
+        "pearlEntities.v1.outputRouting",
+        "resultPearls.routing",
+        "pearlEntities.v1",
+        "pearlStudioRefs.v1"
+      ],
+      "automatedTests": [
+        "extension/tests/release.test.js",
+        "shared/pearl-page-canvas.test.js",
+        "shared/profile-blob-security.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/result-pearls.test.js",
+        "shared/secure-handoff.test.js",
+        "shared/output-routing.test.js",
+        "shared/pearl-studio.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "extension/scripts/package.mjs",
+        "shared/pearl-page-canvas.js",
+        "shared/result-pearls.js",
+        "shared/output-routing.js",
+        "shared/pearl-studio.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "quality.adversarial-stress",
+      "requirement": "Large data, many Pearls, concurrent workers/tabs, switching, crash recovery, flapping network, quota, prompt injection, malicious packages, and stale observation are bounded and recoverable.",
+      "featureContracts": [
+        "companion.transaction-harness",
+        "extension.pearl-page-canvas",
+        "privacy.local-profile-vault",
+        "sharing.pearl-package"
+      ],
+      "domainCommands": [
+        "activatePearlPageCanvas",
+        "deactivatePearlPageCanvas",
+        "setPearlCanvasInputMode",
+        "createPearlCanvasArtifact",
+        "updatePearlCanvasArtifact",
+        "deletePearlCanvasArtifacts",
+        "selectPearlCanvasArtifacts",
+        "bindPearlCanvasContext",
+        "setPearlCanvasOutputDestination",
+        "placePearlCanvasOutput",
+        "undoPearlPageCanvas",
+        "preparePearlShare",
+        "createPearlShareGrant",
+        "consumePearlShareGrant",
+        "revokePearlShareGrant",
+        "installValidatedPearlPackage"
+      ],
+      "webEntries": [
+        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:companion-plan-strip",
+        "extension/src/content/page-canvas.js",
+        "client/lib/secure-local-storage.js",
+        "extension/src/platform/secure-storage.js",
+        "server/index.js:/api/pearl-shares"
+      ],
+      "companionCapabilities": [
+        "runFunctionTestBench",
+        "observeWorkspace",
+        "inspectLocalPrivacy",
+        "exportLocalData",
+        "setBoardSync",
+        "lockLocalPearls",
+        "unlockLocalPearls",
+        "deleteLocalData",
+        "preparePearlShare",
+        "sharePearl",
+        "revokePearlShare",
+        "installSharedPearl",
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "extensionEntries": [
+        "captureExternalVisibleTab",
+        "saveExternalCaptureAsMove",
+        "saveExternalCaptureAsFunction",
+        "saveExternalCaptureAsLens",
+        "activateExternalPearlCanvas",
+        "deactivateExternalPearlCanvas",
+        "setExternalCanvasMode",
+        "bindExternalCanvasContext",
+        "setExternalOutputDestination",
+        "undoExternalPearlCanvas",
+        "exportExternalPearlCanvasPdf",
+        "inspectExternalPrivacy",
+        "exportExternalLocalData",
+        "setExternalSync",
+        "deleteExternalLocalData",
+        "lockExternalPearls",
+        "unlockExternalPearls",
+        "prepareExternalPearlShare",
+        "installExternalSharedPearl"
+      ],
+      "persistenceAndMigrations": [
+        "lens.companion.run-ledger.v1",
+        "lens.companion.mode.v1",
+        "pearlPageCanvases",
+        "pearl-local-blobs-v1",
+        "pearl-local-private-v1",
+        "pearl-extension-private-v1",
+        "passphrase-wrapped profile keys",
+        "profile-scoped session lifecycle",
+        "pearlEntities.v1.sharing",
+        "pearl_shares"
+      ],
+      "automatedTests": [
+        "client/lib/companion-harness.test.js",
+        "client/lib/companion-executor.test.js",
+        "client/lib/companion-capability-graph.test.js",
+        "shared/function-test-bench.test.js",
+        "shared/pearl-page-canvas.test.js",
+        "shared/profile-blob-security.test.js",
+        "extension/scripts/orb-audit.mjs",
+        "shared/local-privacy-vault.test.js",
+        "extension/tests/session-isolation.test.js",
+        "shared/pearl-sharing.test.js",
+        "server/pearl-share-registry.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "client/lib/companion-harness.js",
+        "shared/pearl-page-canvas.js",
+        "shared/local-privacy-vault.js",
+        "shared/pearl-sharing.js"
+      ],
+      "reachable": true
+    },
+    {
+      "id": "quality.visual-accessibility",
+      "requirement": "All Pearl states pass desktop, 360px, 200% zoom, touch, keyboard, screen-reader, reduced-motion, high-contrast, light/dark, and text-heavy visual inspection.",
+      "featureContracts": [
+        "visual.physical-pearl",
+        "shell.pearl-progressive",
+        "studio.pearl"
+      ],
+      "domainCommands": [
+        "addOrbContext",
+        "addOrbLens",
+        "setGenerationPlan",
+        "recordTasteFeedback",
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit"
+      ],
+      "webEntries": [
+        "client/components/PhysicalPearl.jsx",
+        "client/components/CompanionOrb.jsx",
+        "client/components/SemanticOrbLayer.jsx",
+        "client/components/OrbCursorLayer.jsx",
+        "extension/src/content/bridge.js",
+        "extension/src/content/result-pearls.js",
+        "extension/src/sidepanel/main.jsx",
+        "extension/src/result/main.js",
+        "client/components/CompanionOrb.jsx:pearl-action-search",
+        "client/components/OrbUniverseShell.jsx:pearl-scene-actions",
+        "extension/src/sidepanel/main.jsx:extension-pearl-halo",
+        "extension/src/content/bridge.js:Tell Pearl your goal",
+        "client/components/PearlStudioView.jsx"
+      ],
+      "companionCapabilities": [
+        "executeUnifiedPearlAction",
+        "observeWorkspace",
+        "semanticTransfer",
+        "openSaveAsChooser",
+        "setGenerationPlan",
+        "openTranscriptLearning",
+        "openPackageRegistry",
+        "redoWorkspace",
+        "exportWorkspace",
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter",
+        "openExternalResultPearlTab"
+      ],
+      "extensionEntries": [
+        "executeExternalPearlAction",
+        "capturePageSelection",
+        "createExternalSemanticOrb",
+        "queueExternalAction",
+        "pressExternalGo",
+        "tasteExternalCandidate",
+        "showExternalLibraryImport",
+        "browseExternalPackages",
+        "openExternalBeforeAfter",
+        "openExternalResultPearlTab"
+      ],
+      "persistenceAndMigrations": [
+        "physicalPearl.renderer.v2",
+        "lens.orb.surface.v1",
+        "lens.orb.placement.v1",
+        "lens.scenes.v4",
+        "lens.companion.run-ledger.v1",
+        "generationPlan",
+        "semanticOrbs",
+        "pearlEntities.v1",
+        "pearlStudioRefs.v1",
+        "one-time profile/tab/origin-bound handoffs"
+      ],
+      "automatedTests": [
+        "shared/physical-pearl.test.js",
+        "scripts/pearl-visual-contract-audit.mjs",
+        "docs/pearl-visual-contract.md",
+        "client/lib/pearl-shell.test.js",
+        "shared/orb-universe.test.js",
+        "extension/tests/core.test.js",
+        "shared/pearl-studio.test.js"
+      ],
+      "browserEvidence": [
+        "audit-shots/unified-pearl-e2e/results.json"
+      ],
+      "owners": [
+        "shared/pearl-visual-contract.js",
+        "client/lib/pearl-shell.js",
+        "shared/pearl-studio.js"
+      ],
+      "reachable": true
+    }
+  ],
+  "generatedAt": "2026-07-20T22:19:46.786Z"
+}

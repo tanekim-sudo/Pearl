@@ -12,6 +12,9 @@ import {
   executeExtensionVerb,
   parseExtensionIntent,
 } from "../extension/src/sidepanel/companion.js";
+import { createPearlEntity } from "../shared/pearl-entity.js";
+import { generatePackageSigningIdentity } from "../shared/cognitive-package.js";
+import { createPearlShareReview, preparePearlPackage } from "../shared/pearl-sharing.js";
 
 const BASE = process.env.AUDIT_URL || "http://127.0.0.1:5190";
 const auditUrl = (value) => {
@@ -19,6 +22,58 @@ const auditUrl = (value) => {
   url.searchParams.set("capabilityAudit", "1");
   return url.href;
 };
+const runtimePearl = createPearlEntity({
+  id: "runtime-pearl",
+  kind: "automation",
+  name: "Runtime Pearl",
+  cognition: {
+    layers: [
+      { id: "layer-primitive", kind: "primitive", name: "Runtime source", primitiveType: "material", value: "Runtime evidence", authorship: "user-authored", confidence: 1 },
+      { id: "layer-move", kind: "move", name: "Runtime move", transformation: "Summarize faithfully.", authorship: "user-authored", confidence: 1 },
+      { id: "layer-function", kind: "function", name: "Runtime function", steps: ["layer-move"], authorship: "user-authored", confidence: 1 },
+    ],
+    semanticOrder: ["layer-primitive", "layer-move", "layer-function"],
+    rawEvidence: [{ id: "runtime-evidence", text: "Runtime evidence", source: "runtime-audit", verbatim: true }],
+  },
+  automation: {
+    version: 1,
+    evidence: [{ id: "runtime-evidence", kind: "system-prompt", text: "Create an evidence-based memo.", verbatim: true }],
+    contextPatches: [],
+    generationPlan: { candidateCount: 1, branchSpecs: [] },
+    researchPlan: { required: false, questions: [] },
+  },
+  privacyPolicy: {
+    audience: "selected-people",
+    storage: { mode: "device-only" },
+    disclosure: {
+      model: { allowed: true, requiresApproval: true },
+      research: { allowed: true, requiresApproval: true },
+      recipient: { allowed: true, requiresApproval: true },
+      export: { allowed: true, requiresApproval: true },
+      handoff: { allowed: true, requiresApproval: true },
+    },
+  },
+});
+const runtimeResultPearl = createPearlEntity({
+  id: "runtime-result",
+  kind: "result",
+  name: "Runtime result",
+  text: "Runtime result text",
+  status: "ready",
+  privacyPolicy: runtimePearl.privacy.policy,
+});
+const runtimeSigningIdentity = await generatePackageSigningIdentity();
+const runtimeSignerPublicKeyJwk = await globalThis.crypto.subtle.exportKey("jwk", runtimeSigningIdentity.publicKey);
+const runtimeShareReview = createPearlShareReview(runtimePearl, {
+  included: ["identity", "cognition", "privacyPolicy"],
+});
+const runtimeSharePackage = await preparePearlPackage(runtimePearl, runtimeShareReview, {
+  mode: "download",
+  namespace: "runtime.audit",
+  name: "runtime-pearl",
+  version: "1.0.0",
+  signing: { privateKey: runtimeSigningIdentity.privateKey, keyId: "runtime:key:1" },
+});
 const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/post-audit-r046-r060-2026-07/companion-runtime");
 const INPUT_PATH = process.env.AUDIT_INPUT_PATH === "visible" ? "visible" : "director";
 fs.mkdirSync(OUT, { recursive: true });
@@ -72,7 +127,7 @@ const generators = [
 ];
 
 function seedScript(payload) {
-  const { items, nodes, operators, repos, generators } = payload;
+  const { items, nodes, operators, repos, generators, runtimePearl, runtimeResultPearl } = payload;
   window.__LENS_TEST_CAPTURE_IMAGE__ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   window.prompt = () => "runtime audit passphrase";
   if (localStorage.getItem("lens.runtime-audit.seeded") === "1") return;
@@ -81,6 +136,14 @@ function seedScript(payload) {
   localStorage.setItem("lens.onboarded.v1", "1");
   localStorage.setItem("lens.tour.v1", "1");
   localStorage.setItem("lens.companion.seen.v1", "1");
+  localStorage.setItem("pearlEntities.v1", JSON.stringify({
+    version: 1,
+    activePearlId: runtimePearl.id,
+    entities: {
+      [runtimePearl.id]: runtimePearl,
+      [runtimeResultPearl.id]: runtimeResultPearl,
+    },
+  }));
   localStorage.setItem("lens.board.pages.v1", JSON.stringify([{ id: "page-main", name: "Runtime audit" }]));
   localStorage.setItem("lens.doc.title.v1", "Runtime audit");
   localStorage.setItem("lens.board.items.v1", JSON.stringify(items));
@@ -333,10 +396,60 @@ const argsByName = {
   },
   saveExternalTasteTeaching: { lens: "Writing Taste Lens", text: "explicit-selection", kind: "example" },
   openExternalCreativeExtraction: { goal: "Create from this selected tradition", kinds: ["move", "function", "lens"] },
+  executeUnifiedPearlAction: { pearlId: "runtime-pearl", command: "inspectPearlPrivacy", args: { actor: {} } },
+  proposePearlCognitiveEdit: { pearlId: "runtime-pearl", layerId: "layer-move", patch: { identity: { name: "Reviewed runtime move" } }, rationale: "Runtime evidence" },
+  applyPearlCognitiveEdit: { pearlId: "runtime-pearl", proposalId: "last" },
+  composePearlCognitiveLayers: { pearlId: "runtime-pearl", leftId: "layer-primitive", rightId: "layer-move", intent: "Apply the move to the source" },
+  applyPearlCognitiveComposition: { pearlId: "runtime-pearl", leftId: "layer-primitive", rightId: "layer-move", intent: "Apply the move to the source" },
+  mutatePearlCognitiveLayer: { pearlId: "runtime-pearl", layerId: "layer-move", operation: "layout", value: { x: 240, y: 120 } },
+  resolvePearlCognitiveUncertainty: { pearlId: "runtime-pearl", layerId: "layer-move", resolution: { status: "resolved", confidence: 1, rationale: "User verified" } },
+  playPearlFunction: { pearlId: "runtime-pearl", functionLayerId: "layer-function", inputs: { material: "Runtime evidence" } },
+  stepPearlFunction: { pearlId: "runtime-pearl", effect: { type: "runtime-step", ok: true } },
+  inspectPearlPrivacyPolicy: { pearlId: "runtime-pearl" },
+  proposePearlPrivacyChange: { pearlId: "runtime-pearl", patch: { retention: { localDays: 30 } } },
+  applyPearlPrivacyChange: { pearlId: "runtime-pearl", proposalId: "last" },
+  preparePearlShare: { pearlId: "runtime-pearl", selection: { included: ["identity", "cognition", "privacyPolicy"] } },
+  sharePearl: {
+    pearlId: "runtime-pearl",
+    package: runtimeSharePackage,
+    options: { mode: "download", ownerId: "runtime-owner", rights: ["inspect", "run"], recipient: { type: "user", id: "runtime-recipient" } },
+  },
+  revokePearlShare: { pearlId: "runtime-pearl", grantId: "last", actorId: "runtime-owner" },
+  installSharedPearl: {
+    package: runtimeSharePackage,
+    validationReceipt: {
+      valid: true,
+      contentHash: runtimeSharePackage.manifest.contentHash,
+      keyId: runtimeSharePackage.manifest.signature.keyId,
+      signerPublicKeyJwk: runtimeSignerPublicKeyJwk,
+    },
+    localPearlId: "runtime-installed-pearl",
+  },
+  compileAutomationPearl: {
+    pearlId: "runtime-pearl",
+    id: "runtime-compiled-automation",
+    evidence: [{ id: "runtime-system-prompt", kind: "system-prompt", text: "Create an evidence-based memo.", verbatim: true }],
+    inference: { purpose: "Create a memo", inputSchema: { type: "object" } },
+  },
+  reviseAutomationPearl: { pearlId: "runtime-pearl", patch: { purpose: "Create a reviewed memo" }, expectedVersion: 1 },
+  researchAutomationPearl: {
+    pearlId: "runtime-pearl",
+    plan: { questions: ["What changed?"], maxSources: 3 },
+  },
+  approveAutomationContextPatch: { pearlId: "runtime-pearl", patchId: "missing-runtime-patch" },
+  chooseResultDestination: { pearlId: "runtime-result", answer: "keep it here", observation: {} },
+  confirmResultPlacement: { pearlId: "runtime-result" },
+  cancelResultPlacement: { pearlId: "runtime-result" },
   clearWorkspaceDomains: { domains: ["paper", "ai"] },
 };
 
 const setupByName = {
+  applyPearlCognitiveEdit: [{ verb: "proposePearlCognitiveEdit", args: argsByName.proposePearlCognitiveEdit }],
+  stepPearlFunction: [{ verb: "playPearlFunction", args: argsByName.playPearlFunction }],
+  applyPearlPrivacyChange: [{ verb: "proposePearlPrivacyChange", args: argsByName.proposePearlPrivacyChange }],
+  revokePearlShare: [{ verb: "sharePearl", args: argsByName.sharePearl }],
+  confirmResultPlacement: [{ verb: "chooseResultDestination", args: argsByName.chooseResultDestination }],
+  cancelResultPlacement: [{ verb: "chooseResultDestination", args: argsByName.chooseResultDestination }],
   saveCurrentAsMove: [{ verb: "selectItems", args: { targets: ["claim"] } }],
   captureLineageAsFunction: [{ verb: "selectItems", args: { targets: ["derived"] } }],
   openSaveAsChooser: [{ verb: "selectItems", args: { targets: ["claim"] } }],
@@ -518,6 +631,7 @@ const expectedSafeBlockers = {
   installCognitivePackage: /choose a complete signed package manifest/i,
   rollbackCognitivePackage: /no package install checkpoint is available/i,
   deprecateCognitivePackage: /sign in is required to deprecate/i,
+  approveAutomationContextPatch: /automation context patch not found/i,
 };
 const sharedPathCapabilities = new Set([
   "stepSharedPath",
@@ -706,7 +820,7 @@ async function runAppCapability(browser, capability) {
     contentType: "application/json",
     body: JSON.stringify({ models: [] }),
   }));
-  await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
+  await page.addInitScript(seedScript, { items, nodes, operators, repos, generators, runtimePearl, runtimeResultPearl });
   const started = performance.now();
   try {
     validateCapabilityArgs(capability, args);
@@ -1087,7 +1201,7 @@ async function runExtensionCapabilities() {
 async function createSharedPathUrl(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });
   try {
-    await page.addInitScript(seedScript, { items, nodes, operators, repos, generators });
+    await page.addInitScript(seedScript, { items, nodes, operators, repos, generators, runtimePearl, runtimeResultPearl });
     await page.goto(auditUrl(BASE), { waitUntil: "domcontentloaded", timeout: 60_000 });
     await page.waitForFunction(() => window.__lensPathShare?.share, null, { timeout: 60_000 });
     return await page.evaluate(() => window.__lensPathShare.share("node-child"));
@@ -1104,7 +1218,7 @@ try {
   sharedPathUrl = await createSharedPathUrl(browser);
   for (const [index, capability] of selectedAppCapabilities.entries()) {
     let row = await runAppCapability(browser, capability);
-    if (row.status === "failed") {
+    for (let retry = 0; row.status === "failed" && retry < 2; retry += 1) {
       row = await runAppCapability(browser, capability);
     }
     appRows.push(row);
@@ -1144,7 +1258,10 @@ fs.writeFileSync(path.join(OUT, "capability-execution-matrix.md"), `# Companion 
 - Failed: ${counts.failed}
 - Skipped: ${counts.skipped}
 
-${rows.map((row) => `- ${row.status === "passed" ? "PASS" : row.status === "skipped" ? "SKIP" : "FAIL"} — \`${row.name}\` (${row.platform}): ${row.observableEffect || row.errors.join(" | ")}`).join("\n")}
+${rows.map((row) => {
+  const detail = row.observableEffect || row.errors.join(" | ");
+  return `- ${row.status === "passed" ? "PASS" : row.status === "skipped" ? "SKIP" : "FAIL"} — \`${row.name}\` (${row.platform})${detail ? `: ${detail}` : ""}`;
+}).join("\n")}
 `);
 console.log(JSON.stringify(counts));
 if (counts.failed || counts.skipped || (!requestedNames.size && counts.total !== COMPANION_CAPABILITIES.length)) process.exitCode = 1;

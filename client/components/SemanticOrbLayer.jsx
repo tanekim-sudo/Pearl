@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { clusterSemanticOrbs } from "../../shared/semantic-orbs.js";
+import PhysicalPearl from "./PhysicalPearl.jsx";
+import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
 
 const PAYLOAD = "application/x-lens-object";
 
@@ -8,46 +10,7 @@ function labelFor(orb) {
 }
 
 function OrbGlyph({ active = false }) {
-  const id = React.useId();
-  return <svg viewBox="0 0 64 64" aria-hidden="true">
-    <defs>
-      <radialGradient id={`semantic-pearl-${id}`} cx="39%" cy="58%" r="72%">
-        <stop offset="0" stopColor="#fffaf0" />
-        <stop offset=".3" stopColor="#f5f0e7" />
-        <stop offset=".68" stopColor="#e7e6de" />
-        <stop offset=".88" stopColor="#d1d4ce" />
-        <stop offset="1" stopColor="#aeb3af" />
-      </radialGradient>
-      <radialGradient id={`semantic-nucleus-${id}`} cx="38%" cy="62%" r="58%">
-        <stop offset="0" stopColor="#f2d9ce" stopOpacity=".52" />
-        <stop offset=".36" stopColor="#d2e2da" stopOpacity=".34" />
-        <stop offset=".72" stopColor="#eadcb9" stopOpacity=".15" />
-        <stop offset="1" stopColor="#c6ced0" stopOpacity="0" />
-      </radialGradient>
-      <linearGradient id={`semantic-nacre-${id}`} x1="10%" y1="12%" x2="90%" y2="84%">
-        <stop offset="0" stopColor="#dfbfb9" stopOpacity=".11" />
-        <stop offset=".31" stopColor="#bfd8ce" stopOpacity=".28" />
-        <stop offset=".53" stopColor="#f2e4c2" stopOpacity=".18" />
-        <stop offset=".72" stopColor="#d9bdba" stopOpacity=".21" />
-        <stop offset="1" stopColor="#bdd3cc" stopOpacity=".1" />
-      </linearGradient>
-      <linearGradient id={`semantic-rim-${id}`} x1="18%" y1="8%" x2="82%" y2="92%">
-        <stop offset="0" stopColor="#fff" stopOpacity=".78" />
-        <stop offset=".5" stopColor="#edf2ee" stopOpacity=".18" />
-        <stop offset=".82" stopColor="#78817e" stopOpacity=".35" />
-        <stop offset="1" stopColor="#f4ecdf" stopOpacity=".48" />
-      </linearGradient>
-    </defs>
-    <ellipse className="semantic-orb-shadow" cx="32" cy="61" rx="17" ry="1.5" />
-    <circle className="semantic-orb-core" cx="32" cy="31" r="27" fill={`url(#semantic-pearl-${id})`} />
-    <ellipse className="semantic-orb-nucleus" cx="28" cy="35" rx="15" ry="17" fill={`url(#semantic-nucleus-${id})`} />
-    <circle className="semantic-orb-nacre" cx="32" cy="31" r="25.8" fill={`url(#semantic-nacre-${id})`} />
-    <ellipse className="semantic-orb-reflection" cx="37" cy="38" rx="17" ry="10" />
-    <circle className="semantic-orb-rim" cx="32" cy="31" r="26.4" fill="none" stroke={`url(#semantic-rim-${id})`} />
-    <ellipse className="semantic-orb-glint" cx="22" cy="18.5" rx="5.5" ry="2.8" transform="rotate(-38 22 18.5)" />
-    <circle className="semantic-orb-pinlight" cx="18.5" cy="15.5" r="1.25" />
-    <path className="semantic-orb-trace" d="M9 31 C18 9 46 8 55 31 C48 53 18 55 9 31Z" />
-  </svg>;
+  return <PhysicalPearl variant="semantic" state={active ? "listening" : "idle"} size={56} decorative />;
 }
 
 export default function SemanticOrbLayer({
@@ -71,9 +34,13 @@ export default function SemanticOrbLayer({
   onSplit,
   onDuplicate,
   onDelete,
+  onOpenStudio,
 }) {
   const rootRef = useRef(null);
   const dragRef = useRef(null);
+  const gesturesRef = useRef(new Map());
+  const callbacksRef = useRef({});
+  callbacksRef.current = { activeId, onActivate, onOpenStudio };
   const [expandedCluster, setExpandedCluster] = useState(null);
   const [composition, setComposition] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -92,7 +59,10 @@ export default function SemanticOrbLayer({
         return;
       }
       if (!active) return;
-      if (event.key === "Escape") {
+      if (event.key === "Enter" && event.shiftKey) {
+        event.preventDefault();
+        onOpenStudio?.(active);
+      } else if (event.key === "Escape") {
         event.preventDefault();
         onActivate?.(null);
       } else if (event.key === "Delete" || event.key === "Backspace") {
@@ -109,7 +79,7 @@ export default function SemanticOrbLayer({
     }
     window.addEventListener("keydown", keyDown);
     return () => window.removeEventListener("keydown", keyDown);
-  }, [active, onActivate, onArchive, onCreate, onMove]);
+  }, [active, onActivate, onArchive, onCreate, onMove, onOpenStudio]);
 
   function stagePoint(event) {
     const box = rootRef.current?.getBoundingClientRect();
@@ -144,7 +114,15 @@ export default function SemanticOrbLayer({
   function pointerUp(event, orb) {
     const drag = dragRef.current;
     dragRef.current = null;
-    if (!drag?.moved) onActivate?.(activeId === orb.id ? null : orb.id);
+    let gesture = gesturesRef.current.get(orb.id);
+    if (!gesture) {
+      gesture = createPearlGestureArbiter({
+        onSingle: () => callbacksRef.current.onActivate?.(callbacksRef.current.activeId === orb.id ? null : orb.id),
+        onTriple: () => callbacksRef.current.onOpenStudio?.(orb),
+      });
+      gesturesRef.current.set(orb.id, gesture);
+    }
+    gesture.release({ at: event.timeStamp, x: event.clientX, y: event.clientY, dragged: drag?.moved, pointerType: event.pointerType });
   }
 
   function drop(event, targetOrb) {

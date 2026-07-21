@@ -204,22 +204,16 @@ test("extension companion manifest and real handlers have exact parity", async (
     }),
     /scoped preview approval/
   );
-  await assert.rejects(
-    () => executeExtensionVerb("insertExternalResult", { result: "1" }, {
-      resolveResult: () => ({ text: "draft" }),
-      action: async () => ({ ok: true }),
-    }),
-    /scoped preview approval/
-  );
-  const written = await executeExtensionVerb("insertExternalResult", { result: "1" }, {
-    confirmed: true,
-    approvalScope: "current editor",
-    idempotencyKey: "write-1",
-    resolveResult: () => ({ text: "draft", outputSpec: {}, machineKind: "text" }),
-    action: async () => ({ ok: true }),
+  let proposed = null;
+  const routing = await executeExtensionVerb("insertExternalResult", { result: "1" }, {
+    resolveResult: () => ({ id: "result-1", text: "draft", outputSpec: {}, machineKind: "text" }),
+    action: async (type, payload) => {
+      proposed = { type, ...payload };
+      return { type: "output-routing-request", ...payload };
+    },
   });
-  assert.equal(written.receipt.id, "write-1");
-  assert.equal(written.receipt.scope, "current editor");
+  assert.deepEqual(proposed, { type: "output-routing-answer", resultId: "result-1", answer: "insert at the selected caret" });
+  assert.equal(routing.type, "output-routing-request");
 });
 
 test("extension cognitive workflows preserve payloads and enforce package and vocabulary approval", async () => {

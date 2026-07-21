@@ -17,7 +17,13 @@ const defects = [
   ["FU-009", "medium", "release", "Existing first-use and semantic tests were omitted from the main runner", "Run npm test and inspect the explicit test list.", "Run continuation, streaming generation, Lens grammar/grinding/rack, and output-specification tests.", "package.json", "orb-universe-2026-07/03a-trusted-handoff-output-frame.png"],
   ["FU-010", "medium", "release", "First-use browser journeys were not one release-gated suite", "Run npm run release:check.", "Gate extension onboarding/capture/GO/insert, web continuation, brush, voice, adoption, and persistence.", "scripts/release-check.mjs", "orb-universe-2026-07/06c-extension-go-candidate.png"],
   ["FU-011", "critical", "cross-surface", "First use explained capture and generation without creating a durable pearl", "Select real page material and choose Make a pearl from this.", "Persist one provenance-preserving semantic capsule, reopen its working context, expose the same canonical companion action, and carry it into a Scene.", "extension/scripts/orb-audit.mjs", "orb-universe-2026-07/07a-extension-semantic-orbs.png"],
-].map(([id, severity, surface, summary, reproduction, expected, regressionTest, screenshot]) => ({
+  ["FU-012", "critical", "web", "Cold production root hid all first-use explanation and showed an unexplained Pearl on a blank field", "Build for production and open / in a storage-empty browser context.", "Show one physical Pearl and one concise, visible first action.", "client/lib/pearl-shell.test.js; scripts/orb-universe-audit.mjs", "orb-universe-2026-07/01-continuation-desktop.png", "A late CSS override hid the otherwise rendered introduction and prompt."],
+  ["FU-013", "high", "extension-page", "The page overlay instantiated hidden candidate Pearls without result state", "Load the content script on a fresh ordinary page and inspect its Shadow DOM.", "Create candidate Pearls only from persisted outputs.", "client/lib/pearl-shell.test.js; extension/scripts/orb-audit.mjs", "orb-universe-2026-07/06-extension-page-orb.png", "bridge.js mounted a fixed three-item demo candidate array."],
+  ["FU-014", "high", "extension-page", "The extension overlay host could intercept native-page input outside active controls", "Inspect hit testing on an ordinary editable page with the overlay at rest.", "Only the Pearl and an explicitly open command surface receive pointer input.", "client/lib/pearl-shell.test.js; extension/scripts/orb-audit.mjs", "orb-universe-2026-07/06-extension-page-orb.png", "The fixed maximum-z-index host lacked a pointer-events:none boundary."],
+  ["FU-015", "high", "web", "An empty Library rendered as a black field with only an unexplained Pearl", "Open /library in a storage-empty desktop or narrow browser context.", "Explain the empty state and expose the same direct Companion action.", "client/lib/pearl-shell.test.js; scripts/orb-universe-audit.mjs", "orb-universe-2026-07/03-library-narrow.png", "First-use guidance was root-only while library headings were suppressed."],
+  ["FU-016", "critical", "extension-page", "Successful capture and Pearl creation displayed a false blocked error", "Select page material, choose Keep selection, and inspect the page Pearl after persistence succeeds.", "Settle to idle or truthful success while retaining the persisted Pearl.", "extension/scripts/orb-audit.mjs", "orb-universe-2026-07/06b-extension-page-orb-context.png", "The content bridge unwrapped runtime responses in send(), then incorrectly checked response.ok and response.value again."],
+  ["FU-017", "high", "accessibility", "First-use guidance overlapped Companion and destructive confirmation at narrow widths and 200% zoom", "Open Companion on 360px, 390px, or 200% zoom first-use layouts.", "Show one focused surface with no text behind it.", "scripts/orb-universe-audit.mjs", "orb-universe-2026-07/08-destructive-approval-390.png", "The fixed first-use prompt remained visible underneath the expanded Companion."],
+].map(([id, severity, surface, summary, reproduction, expected, regressionTest, screenshot, rootCause]) => ({
   id,
   severity,
   surface,
@@ -28,6 +34,7 @@ const defects = [
   status: "resolved",
   regressionTest,
   screenshot,
+  ...(rootCause ? { rootCause } : {}),
 }));
 
 const missingEvidence = defects
@@ -60,9 +67,9 @@ const ledger = {
   version: 1,
   generatedAt: new Date().toISOString(),
   baseline: {
-    command: "npm run release:check",
-    result: "local unit/build/parity gates passed; browser gate initially blocked by a missing bundled Playwright executable",
-    remediation: "audits now use the configured browser or installed system Chrome deterministically",
+    command: "production build plus scripts/orb-universe-audit.mjs and extension/scripts/orb-audit.mjs",
+    result: "real browser inspection reproduced invisible and blank first-use states, placeholder Pearls, false blocked success, overlay hit-testing risk, and responsive overlap",
+    remediation: "release audits now exercise production output with an extension-capable Chromium and block each reproduced defect",
   },
   totals: {
     defects: defects.length,

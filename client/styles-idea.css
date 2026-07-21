@@ -170,7 +170,7 @@
   background: #ffffff;
 }
 
-/* Three columns + golden seams: functions | paper | AI void */
+/* Three columns + quiet seams: Functions | Scene | Output Frame */
 .three-column-grid {
   flex: 1;
   display: grid;
@@ -6006,22 +6006,30 @@ body:has(.fn-editor-fullscreen) .companion-fab {
 }
 
 .page-title-packages {
+  min-width: 28px;
+  min-height: 28px;
   border: 0;
-  border-radius: 999px;
-  padding: 4px 7px;
-  background: rgba(58, 48, 24, 0.08);
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  padding: 4px 2px;
+  background: transparent;
   color: inherit;
-  font: 700 9px/1 Inter, sans-serif;
+  font: 600 10px/1.4 Inter, sans-serif;
+  line-height: 1.4 !important;
   cursor: pointer;
 }
 
 .page-title-cognitive-studio {
-  border: 1px solid rgba(32, 38, 32, 0.22);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  min-width: 28px;
+  min-height: 28px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
-  font: 700 10px/1 var(--font-mono);
-  padding: 5px 7px;
+  font: 600 10px/1.4 var(--font-mono);
+  line-height: 1.4 !important;
+  padding: 4px 2px;
 }
 
 .cognitive-studio-scrim {

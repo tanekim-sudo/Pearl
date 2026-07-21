@@ -13,6 +13,10 @@ import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
 import { pearlActionPrompt, searchPearlActions } from "../../../client/lib/pearl-shell.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
+import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
+import { createPearlPrivacyPolicy } from "../../../shared/pearl-privacy-policy.js";
+import { createPearlEntity } from "../../../shared/pearl-entity.js";
+import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -70,52 +74,11 @@ function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, context
     <div className="extension-orb-emissions" aria-live="polite">
       {lensActive && <span className="extension-lens-ring" aria-label="Active Lens atmosphere" />}
       {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
-      {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <i className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} />)}
+      {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <span className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-candidate-${index}`, variant: "candidate", state: "new", size: 16, decorative: true }) }} />)}
     </div>
     <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <defs>
-          <radialGradient id={`extension-pearl-core-${id}`} cx="39%" cy="58%" r="72%">
-            <stop offset="0" stopColor="#fffaf0" />
-            <stop offset=".3" stopColor="#f5f0e7" />
-            <stop offset=".68" stopColor="#e7e6de" />
-            <stop offset=".88" stopColor="#d1d4ce" />
-            <stop offset="1" stopColor="#aeb3af" />
-          </radialGradient>
-          <radialGradient id={`extension-pearl-nucleus-${id}`} cx="38%" cy="62%" r="58%">
-            <stop offset="0" stopColor="#f2d9ce" stopOpacity=".52" />
-            <stop offset=".36" stopColor="#d2e2da" stopOpacity=".34" />
-            <stop offset=".72" stopColor="#eadcb9" stopOpacity=".15" />
-            <stop offset="1" stopColor="#c6ced0" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id={`extension-pearl-nacre-${id}`} x1="8%" y1="14%" x2="92%" y2="84%">
-            <stop offset="0" stopColor="#dfbfb9" stopOpacity=".11" />
-            <stop offset=".31" stopColor="#bfd8ce" stopOpacity=".28" />
-            <stop offset=".53" stopColor="#f2e4c2" stopOpacity=".18" />
-            <stop offset=".72" stopColor="#d9bdba" stopOpacity=".21" />
-            <stop offset="1" stopColor="#bdd3cc" stopOpacity=".1" />
-          </linearGradient>
-          <linearGradient id={`extension-pearl-rim-${id}`} x1="18%" y1="8%" x2="82%" y2="92%">
-            <stop offset="0" stopColor="#fff" stopOpacity=".78" />
-            <stop offset=".5" stopColor="#edf2ee" stopOpacity=".18" />
-            <stop offset=".82" stopColor="#78817e" stopOpacity=".35" />
-            <stop offset="1" stopColor="#f4ecdf" stopOpacity=".48" />
-          </linearGradient>
-        </defs>
-        <path className="extension-orb-trace" d="M50 14 C66 20 76 34 78 50" />
-        <ellipse cx="51" cy="95" rx="25" ry="2" className="extension-orb-shadow" />
-        <circle cx="50" cy="50" r="36" className="extension-orb-state-ring" />
-        <g className="extension-orb-pearl">
-          <circle cx="50" cy="50" r="43" className="extension-orb-core" fill={`url(#extension-pearl-core-${id})`} />
-          <ellipse cx="43" cy="57" rx="25" ry="29" className="extension-orb-nucleus" fill={`url(#extension-pearl-nucleus-${id})`} />
-          <circle cx="50" cy="50" r="41.5" className="extension-orb-nacre" fill={`url(#extension-pearl-nacre-${id})`} />
-          <path className="extension-orb-nacre-fold" d="M14 57 C25 28 57 17 82 36 C63 33 48 40 40 55 C32 68 22 70 14 57Z" fill={`url(#extension-pearl-nacre-${id})`} />
-          <ellipse cx="59" cy="64" rx="26" ry="13" className="extension-orb-reflection" />
-          <circle cx="50" cy="50" r="42.2" className="extension-orb-rim" fill="none" stroke={`url(#extension-pearl-rim-${id})`} />
-          <ellipse cx="33" cy="28" rx="8" ry="4.5" className="extension-orb-glint" transform="rotate(-38 33 28)" />
-          <circle cx="27.5" cy="22.5" r="2" className="extension-orb-pinlight" />
-        </g>
-      </svg>
+      <style>{PHYSICAL_PEARL_CSS}</style>
+      <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `extension-pearl-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "primary", state: phase, size: 36, decorative: true }) }} />
     </button>
     <span className="extension-orb-label sr-only">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : "Pearl command"}</span>
   </div>;
@@ -164,6 +127,8 @@ function App() {
   const [activeSemanticOrbId, setActiveSemanticOrbId] = useState(null);
   const [pendingPearlIntent, setPendingPearlIntent] = useState(null);
   const [pearlSoundscapes, setPearlSoundscapes] = useState({});
+  const [privacySurface, setPrivacySurface] = useState(null);
+  const [privacyProposal, setPrivacyProposal] = useState(null);
   const [audioSearchResults, setAudioSearchResults] = useState([]);
   const fileRef = useRef(null);
   const audioFileRef = useRef(null);
@@ -373,7 +338,18 @@ function App() {
 
   async function persistSemanticOrbs(next, activeId = activeSemanticOrbId) {
     const normalized = next.map((orb) => createSemanticOrb(orb));
-    await BrowserPlatform.storage.set("local", { semanticOrbs: normalized, activeSemanticOrbId: activeId || null });
+    const stored = await BrowserPlatform.storage.get("local", ["pearlPrivacyPolicies", PEARL_STORE_KEY]);
+    const pearlPrivacyPolicies = { ...(stored.pearlPrivacyPolicies || {}) };
+    for (const orb of normalized) pearlPrivacyPolicies[orb.id] ||= createPearlPrivacyPolicy({ pearlId: orb.id });
+    const pearlStore = stored[PEARL_STORE_KEY] || migrateLegacyPearlState({});
+    const entities = { ...(pearlStore.entities || {}) };
+    for (const orb of normalized) entities[orb.id] = createPearlEntity({ ...orb, privacyPolicy: pearlPrivacyPolicies[orb.id] });
+    await BrowserPlatform.storage.set("local", {
+      semanticOrbs: normalized,
+      activeSemanticOrbId: activeId || null,
+      pearlPrivacyPolicies,
+      [PEARL_STORE_KEY]: { ...pearlStore, entities, activePearlId: activeId || null, updatedAt: Date.now() },
+    });
     setSemanticOrbs(normalized);
     setActiveSemanticOrbId(activeId || null);
     return { type: "external-semantic-orbs", orbs: normalized, activeId: activeId || null };
@@ -544,12 +520,17 @@ function App() {
       setActiveView("library");
       return;
     }
-    if ((preview?.requiresConfirmation || characters > 50_000) && !confirm(`Send ${characters.toLocaleString()} selected characters and produce up to ${preview?.predictedOutputCount || 1} outputs?`)) return;
+    const privacyDisclosureApproved = confirm(`Send exactly ${characters.toLocaleString()} selected characters to the configured model provider and stage up to ${preview?.predictedOutputCount || 1} local Result Pearls?`);
+    if (!privacyDisclosureApproved) return;
     setRunning(true);
     try {
-      const result = await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID() });
+      const result = await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID(), privacyDisclosureApproved });
       if (result) {
         setActiveView("review");
+        if (result.pendingOutputRouting) {
+          setCompanion(result.pendingOutputRouting.question || "Where should this output go?");
+          setPearlOpen(true);
+        }
         BrowserPlatform.storage.get("local", ["firstGoTracked"]).then((value) => {
           if (!value.firstGoTracked) {
             trackFunnel("first_go");
@@ -562,25 +543,30 @@ function App() {
     }
   }
 
-  async function copyResult(output) {
-    setError("");
-    try {
-      await navigator.clipboard.writeText(output.text);
-      setReadyMessage("Candidate copied. The page was not changed.");
-    } catch (reason) {
-      setError(recoveryMessage(reason, "copy-result"));
-      setRetryAction(() => () => copyResult(output));
+  async function proposeResultPlacement(resultId, answer) {
+    const routing = await action("output-routing-answer", { resultId: resultId || session.pendingOutputRouting?.activeResultId || "latest", answer });
+    const request = routing?.object;
+    if (request?.stage === "confirming") {
+      setCompanion(request.plan.summary);
+      setPearlOpen(true);
+    } else if (request?.clarification) {
+      setCompanion(request.clarification);
+      setPearlOpen(true);
     }
+    return routing;
   }
 
-  async function applyResult(output, operation) {
-    const result = await action("result-action", {
-      text: output.text,
-      outputSpec: output.outputSpec,
-      machineKind: output.machineKind,
-      plan: { operation },
+  async function proposePrivacyPatch(patch) {
+    const privacy = privacySurface || await call("privacy-policy-get", { pearlId: activeSemanticOrbId || "pearl:extension-default" });
+    setPrivacySurface(privacy);
+    const proposal = await call("privacy-policy-propose", {
+      pearlId: privacy.policy.pearlId,
+      expectedVersion: privacy.policy.version,
+      patch,
     });
-    if (result?.ok) setReadyMessage(operation === "replace" ? "Candidate replaced the verified page selection." : "Candidate was inserted into the verified page target.");
+    setPrivacyProposal(proposal.object);
+    setCompanion("Apply this privacy change?");
+    setPearlOpen(true);
   }
 
   function applySoundscapeResult(value) {
@@ -746,6 +732,43 @@ function App() {
   async function runCompanionCommand(raw = companion) {
     try {
       const request = String(raw || "").trim();
+      if (privacyProposal && /^(?:yes|confirm|apply it)$/i.test(request)) {
+        const applied = await call("privacy-policy-apply", {
+          pearlId: privacySurface?.policy?.pearlId,
+          proposalId: privacyProposal.id,
+          confirmed: true,
+        });
+        setPrivacySurface((current) => ({ ...(current || {}), policy: applied.object }));
+        setPrivacyProposal(null);
+        setCompanion("");
+        return;
+      }
+      if (/\bwhat is private here\b|\bshow (?:this )?pearl privacy\b|\bprivacy (?:policy|settings)\b/i.test(request)) {
+        const privacy = await call("privacy-policy-get", { pearlId: activeSemanticOrbId || "pearl:extension-default" });
+        setPrivacySurface(privacy);
+        setPrivacyProposal(null);
+        setCompanion("");
+        setPearlOpen(false);
+        return;
+      }
+      if (/\bkeep (?:this|it) local\b|\blocal only\b/i.test(request)) {
+        const privacy = privacySurface || await call("privacy-policy-get", { pearlId: activeSemanticOrbId || "pearl:extension-default" });
+        setPrivacySurface(privacy);
+        const proposed = await call("privacy-policy-propose", {
+          pearlId: privacy.policy.pearlId,
+          expectedVersion: privacy.policy.version,
+          patch: { audience: "local-only", storage: { mode: "device-only", queuedEncryptedSync: false } },
+        });
+        setPrivacyProposal(proposed.object);
+        setCompanion("Keep this Pearl local-only and device-only?");
+        setPearlOpen(true);
+        return;
+      }
+      if (/\bshare only inside\b|\bpartners? run but not inspect\b/i.test(request)) {
+        setCompanion("Choose a verified organization or group before changing this Pearl’s access.");
+        setPearlOpen(true);
+        return;
+      }
       const inspectView = /\b(?:show|inspect|let me see|what)\b.*\b(?:noticed|selected|source|context)\b/i.test(request)
         ? "context"
         : /\b(?:show|inspect|let me see)\b.*\b(?:kept|saved|pearls?)\b/i.test(request)
@@ -763,6 +786,24 @@ function App() {
         setActiveView(inspectView);
         setCompanion("");
         setPearlOpen(false);
+        return;
+      }
+      if (session.pendingOutputRouting?.activeResultId && request) {
+        const resultId = session.pendingOutputRouting.activeResultId;
+        const response = /^(?:yes|confirm|place it|do it)$/i.test(request)
+          ? await call("output-routing-confirm", { resultId })
+          : /^(?:cancel|never ?mind|stop)$/i.test(request)
+            ? await call("output-routing-cancel", { resultId })
+            : await call("output-routing-answer", { resultId, answer: request });
+        const fresh = await call("get-session");
+        setSession(fresh || { fragments: [], queue: [], generator: null, results: [] });
+        const routing = response?.object?.routing || response?.object;
+        setCompanion(routing?.stage === "confirming"
+          ? routing.plan?.summary || "Confirm this placement?"
+          : routing?.stage === "clarifying" || routing?.stage === "choosing"
+            ? routing.clarification || routing.question || "Where should this output go?"
+            : "");
+        if (!["confirming", "clarifying", "choosing"].includes(routing?.stage)) setPearlOpen(false);
         return;
       }
       if (/\b(?:use|activate|open)\b.*\b(?:this )?pearl\b.*\bhere\b/i.test(request)) {
@@ -858,7 +899,6 @@ function App() {
       const command = parseExtensionIntent(raw);
       const outputs = session.results.flatMap((run) => run.outputs);
       const approvalRequired = [
-        "insertExternalResult", "replaceExternalSelection", "annotateExternalResult",
         "installExternalPackage", "teachExternalPersonalCommand", "deleteExternalLocalData",
         "removeExternalPearlAudioTrack", "saveExternalPearlTrackOffline", "deleteExternalResultPearl",
       ].includes(command.name);
@@ -900,6 +940,7 @@ function App() {
           if (!result) throw new Error("result not found");
           return result;
         },
+        proposeResultPlacement,
         showImport: async () => {
           const pending = await call("library-pending");
           if (!pending?.bundle) throw new Error("no pending library import");
@@ -1131,7 +1172,11 @@ function App() {
   }
 
   const orbPhase = voiceListening ? "listening" : running || chatRunning || learning ? "executing" : error ? "blocked" : "idle";
+  const latestRun = session.results.at(-1) || null;
   const latestResult = session.results.at(-1)?.outputs?.at(-1) || null;
+  const latestResultId = latestRun && latestResult
+    ? `result-pearl:${latestRun.runId}:${latestResult.branchIndex ?? Math.max(0, latestRun.outputs.length - 1)}`
+    : null;
   const latestFragment = session.fragments.at(-1) || null;
   const contextualAction = latestFragment && (session.queue.length || session.generator)
     ? { label: "Make it", run: go }
@@ -1157,10 +1202,25 @@ function App() {
       onChange={(event) => uploadPearlAudio(event.target.files?.[0]).catch((reason) => setError(reason.message))}
       aria-label="Upload local audio for this Pearl"
     />
+    {privacySurface && <section className="pearl-privacy-surface" aria-label="Pearl privacy policy">
+      <header><span>Privacy · v{privacySurface.policy.version}</span><button type="button" onClick={() => { setPrivacySurface(null); setPrivacyProposal(null); }}>Close</button></header>
+      <p><b>{privacySurface.policy.audience}</b> · {privacySurface.policy.sensitivity} · {privacySurface.policy.storage.mode}</p>
+      <p>{privacySurface.observation.lockState} · {privacySurface.observation.integrity}{privacySurface.observation.conflicts.length ? ` · ${privacySurface.observation.conflicts.length} conflict` : ""}</p>
+      <div>
+        <button type="button" onClick={() => proposePrivacyPatch({ audience: "local-only", storage: { mode: "device-only", queuedEncryptedSync: false } })}>Keep local</button>
+        <button type="button" aria-pressed={privacySurface.policy.disclosure.model.allowed} onClick={() => proposePrivacyPatch({ disclosure: { model: { ...privacySurface.policy.disclosure.model, allowed: !privacySurface.policy.disclosure.model.allowed, requiresApproval: true } } })}>Model access</button>
+        <button type="button" aria-pressed={privacySurface.policy.disclosure.research.allowed} onClick={() => proposePrivacyPatch({ disclosure: { research: { ...privacySurface.policy.disclosure.research, allowed: !privacySurface.policy.disclosure.research.allowed, requiresApproval: true } } })}>Research access</button>
+      </div>
+      {privacyProposal && <div className="pearl-privacy-diff" role="alert">
+        <span>{privacyProposal.relaxation ? "This expands access." : "This keeps or tightens access."}</span>
+        <button type="button" onClick={() => runCompanionCommand("confirm")}>Confirm</button>
+        <button type="button" onClick={() => { setPrivacyProposal(null); setCompanion(""); }}>Cancel</button>
+      </div>}
+    </section>}
     {activeView === "idle" && !pearlOpen && (latestResult || latestFragment) && <section className="pearl-transient-material" aria-label={latestResult ? "Latest result" : "Current material"}>
       <p>{String(latestResult?.text || latestFragment?.quote || latestFragment?.text || "").slice(0, 600)}</p>
       {latestResult && <div>
-        <button type="button" onClick={() => applyResult(latestResult, "insert")}>Use</button>
+        <button type="button" onClick={() => proposeResultPlacement(latestResultId, "insert at the caret")}>Use</button>
         <button type="button" onClick={() => semanticOrbAction("create", { material: latestResult })}>Keep</button>
       </div>}
     </section>}
@@ -1210,7 +1270,7 @@ function App() {
           aria-pressed={activeSemanticOrbId === orb.id}
           onClick={() => semanticOrbAction("open", { id: orb.id })}
         >
-          <i />
+          <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-semantic-${String(orb.id).replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "semantic", state: activeSemanticOrbId === orb.id ? "listening" : "idle", size: 30, decorative: true }) }} />
           <b>{orb.name}</b>
           <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context</small>
         </button>)}
@@ -1396,8 +1456,8 @@ function App() {
     <section className={`orb-panel ${activeView === "taste" || activeView === "review" ? "active" : ""}`}>
       <h2>Preview results</h2>
       {!session.results.length && <p className="muted">Results stage here. The page never changes automatically.</p>}
-      {session.results.flatMap((run) => run.outputs.map((output) =>
-        <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => copyResult(output)}>Copy</button><button onClick={() => applyResult(output, "insert")}>Insert</button><button onClick={() => applyResult(output, "replace")}>Replace</button><button onClick={() => action("open-artifact", { result: output, provenance: run.provenance })}>Open in Pearl</button></div></article>
+      {session.results.flatMap((run) => run.outputs.map((output, outputIndex) =>
+        <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "copy it")}>Copy</button><button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "insert at the caret")}>Insert</button><button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "replace this selection")}>Replace</button><button onClick={() => action("result-pearl-open-tab", { resultId: `result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}` })}>Open Pearl</button></div></article>
       ))}</section>
     <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Orb settings">
       <h2>Settings</h2>

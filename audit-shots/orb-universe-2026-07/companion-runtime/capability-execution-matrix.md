@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 286
-- Passed: 286
+- Total: 334
+- Passed: 334
 - Failed: 0
 - Skipped: 0
 
@@ -188,7 +188,7 @@
 - PASS — `publishCognitivePackage` (app): precise setup or authentication boundary before mutation
 - PASS — `installCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `rollbackCognitivePackage` (app): state-or-visible-artifact-changed
-- PASS — `deprecateCognitivePackage` (app): state-or-visible-artifact-changed
+- PASS — `deprecateCognitivePackage` (app): precise setup or authentication boundary before mutation
 - PASS — `openCognitiveWorkflowStudio` (app): state-or-visible-artifact-changed
 - PASS — `proposeHigherOrderPatch` (app): state-or-visible-artifact-changed
 - PASS — `applyHigherOrderPatch` (app): state-or-visible-artifact-changed
@@ -205,12 +205,39 @@
 - PASS — `clearFunctions` (app): state-or-visible-artifact-changed
 - PASS — `clearLenses` (app): state-or-visible-artifact-changed
 - PASS — `clearWorkspaceDomains` (app): state-or-visible-artifact-changed
+- PASS — `observeUnifiedPearl` (app): state-or-visible-artifact-changed
+- PASS — `executeUnifiedPearlAction` (app): state-or-visible-artifact-changed
+- PASS — `openPearlStudio` (app): state-or-visible-artifact-changed
+- PASS — `inspectPearlCognition` (app): state-or-visible-artifact-changed
+- PASS — `proposePearlCognitiveEdit` (app): state-or-visible-artifact-changed
+- PASS — `applyPearlCognitiveEdit` (app): state-or-visible-artifact-changed
+- PASS — `composePearlCognitiveLayers` (app): state-or-visible-artifact-changed
+- PASS — `applyPearlCognitiveComposition` (app): state-or-visible-artifact-changed
+- PASS — `mutatePearlCognitiveLayer` (app): state-or-visible-artifact-changed
+- PASS — `resolvePearlCognitiveUncertainty` (app): state-or-visible-artifact-changed
+- PASS — `playPearlFunction` (app): state-or-visible-artifact-changed
+- PASS — `stepPearlFunction` (app): state-or-visible-artifact-changed
+- PASS — `cancelPearlFunction` (app): state-or-visible-artifact-changed
 - PASS — `inspectLocalPrivacy` (app): state-or-visible-artifact-changed
 - PASS — `exportLocalData` (app): state-or-visible-artifact-changed
 - PASS — `setBoardSync` (app): state-or-visible-artifact-changed
 - PASS — `lockLocalPearls` (app): state-or-visible-artifact-changed
 - PASS — `unlockLocalPearls` (app): state-or-visible-artifact-changed
 - PASS — `deleteLocalData` (app): state-or-visible-artifact-changed
+- PASS — `inspectPearlPrivacyPolicy` (app): state-or-visible-artifact-changed
+- PASS — `proposePearlPrivacyChange` (app): state-or-visible-artifact-changed
+- PASS — `applyPearlPrivacyChange` (app): state-or-visible-artifact-changed
+- PASS — `preparePearlShare` (app): state-or-visible-artifact-changed
+- PASS — `sharePearl` (app): state-or-visible-artifact-changed
+- PASS — `revokePearlShare` (app): state-or-visible-artifact-changed
+- PASS — `installSharedPearl` (app): state-or-visible-artifact-changed
+- PASS — `compileAutomationPearl` (app): state-or-visible-artifact-changed
+- PASS — `reviseAutomationPearl` (app): state-or-visible-artifact-changed
+- PASS — `researchAutomationPearl` (app): state-or-visible-artifact-changed
+- PASS — `approveAutomationContextPatch` (app): state-or-visible-artifact-changed
+- PASS — `chooseResultDestination` (app): state-or-visible-artifact-changed
+- PASS — `confirmResultPlacement` (app): state-or-visible-artifact-changed
+- PASS — `cancelResultPlacement` (app): state-or-visible-artifact-changed
 - PASS — `capturePageSelection` (extension): controlled extension state changed
 - PASS — `openExternalSaveAs` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsMove` (extension): controlled extension state changed
@@ -291,3 +318,24 @@
 - PASS — `archiveExternalResultPearl` (extension): controlled extension state changed
 - PASS — `deleteExternalResultPearl` (extension): controlled extension state changed
 - PASS — `undoExternalResultPearl` (extension): controlled extension state changed
+- PASS — `executeExternalPearlAction` (extension): controlled extension state changed
+- PASS — `openExternalPearlStudio` (extension): controlled extension state changed
+- PASS — `inspectExternalPearlCognition` (extension): controlled extension state changed
+- PASS — `proposeExternalPearlCognitiveEdit` (extension): controlled extension state changed
+- PASS — `applyExternalPearlCognitiveEdit` (extension): controlled extension state changed
+- PASS — `composeExternalPearlCognitiveLayers` (extension): controlled extension state changed
+- PASS — `applyExternalPearlCognitiveComposition` (extension): controlled extension state changed
+- PASS — `mutateExternalPearlCognitiveLayer` (extension): controlled extension state changed
+- PASS — `resolveExternalPearlCognitiveUncertainty` (extension): controlled extension state changed
+- PASS — `playExternalPearlFunction` (extension): controlled extension state changed
+- PASS — `stepExternalPearlFunction` (extension): controlled extension state changed
+- PASS — `cancelExternalPearlFunction` (extension): controlled extension state changed
+- PASS — `inspectExternalPearlPrivacy` (extension): controlled extension state changed
+- PASS — `proposeExternalPearlPrivacyChange` (extension): controlled extension state changed
+- PASS — `applyExternalPearlPrivacyChange` (extension): controlled extension state changed
+- PASS — `prepareExternalPearlShare` (extension): controlled extension state changed
+- PASS — `installExternalSharedPearl` (extension): controlled extension state changed
+- PASS — `compileExternalAutomationPearl` (extension): controlled extension state changed
+- PASS — `chooseExternalResultDestination` (extension): controlled extension state changed
+- PASS — `confirmExternalResultPlacement` (extension): controlled extension state changed
+- PASS — `cancelExternalResultPlacement` (extension): controlled extension state changed

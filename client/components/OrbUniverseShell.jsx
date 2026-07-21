@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompanionOrb from "./CompanionOrb.jsx";
+import PhysicalPearl from "./PhysicalPearl.jsx";
 import OrbCursorLayer from "./OrbCursorLayer.jsx";
 import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
+import { createWebPearlStudioReference } from "./PearlStudioView.jsx";
+import { createPearlEntity } from "../../shared/pearl-entity.js";
+import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 import { createOrbState, executeOrbCommand, markUtteranceDispatched, recordOrbUtterance, transitionOrb } from "../../shared/orb-runtime.js";
 import { normalizeSemanticOrbs } from "../../shared/semantic-orbs.js";
 import {
@@ -304,22 +308,23 @@ function LibraryHome({
   const activePearl = extensionHandoff?.semanticOrbs?.find((entry) => entry.id === extensionHandoff?.activeSemanticOrbId)
     || extensionHandoff?.semanticOrbs?.[0];
   const isRoot = route.path === "/";
+  const firstUse = isRoot && scenes.length === 0 && continuationCount === 0 && !route.handoff;
+  const emptyLibrary = !isRoot && scenes.length === 0;
   const title = route.section && route.section !== "library"
     ? route.section[0].toUpperCase() + route.section.slice(1)
-    : isRoot ? "The world is your oyster. Make pearls." : "Your cognitive universe";
+    : firstUse ? "Begin with something you noticed." : emptyLibrary ? "No saved work yet." : "Your cognitive universe";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
   return <main className="orb-library-home">
-    <section className={`orb-home-intro ${isRoot ? "" : "sr-only"}`}>
-      <div className="orb-kicker">{isRoot ? "Pearl continuation space" : "Library and saved work"}</div>
+    {(firstUse || emptyLibrary) && <section className="orb-home-intro">
+      <div className="orb-kicker">{firstUse ? "Pearl continuation space" : "Saved work"}</div>
       <h1>{title}</h1>
-      <p>{isRoot
-        ? "A pearl is noticed material preserved with its source, context, and optional shaping. Make your first pearl on a real page; come here when it needs a Scene, an Output Frame, or deeper work."
-        : "Review reusable cognition and resume saved work without leaving the extension-first flow."}</p>
-    </section>
+      <p>{firstUse
+        ? "Select or drop material, click Pearl, and tell it what you want. Your source stays unchanged until you confirm where the result goes."
+        : "Click Pearl to begin here, or select material on a page to create your first saved Pearl."}</p>
+    </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
-      <span className="orb-continuation-pearl" aria-hidden="true" />
       <div>
         <small>{extensionHandoff?.connected ? "Pearl extension connected" : handoffStatus === "loading" ? "Checking the page Pearl" : "Waiting for the page Pearl"}</small>
         <h2>{continuationCount
@@ -352,9 +357,7 @@ function LibraryHome({
       </button>)}
       {!isRoot && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
     </section>
-    <p className="orb-home-prompt">{isRoot
-      ? "Make your first pearl today — on the page where you noticed it."
-      : "Hold Pearl to speak · click for command · drag material into its orbit"}</p>
+    {(firstUse || emptyLibrary) && <p className="orb-home-prompt">Click Pearl to begin · hold to speak · triple-click for Studio</p>}
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
       <div>
         <span>{activeView === "library" ? "Cognitive library" : activeView}</span>
@@ -389,7 +392,7 @@ function LibraryHome({
   </main>;
 }
 
-function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, semanticOrbActions }) {
+function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, semanticOrbActions, onOpenStudio }) {
   const materials = useMemo(() => [
     ...(scene?.items || []).map((item) => ({
       ...item,
@@ -433,7 +436,6 @@ function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, seman
     </div>
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty">
-          <span className="orb-stage-locus" aria-hidden="true" />
           <h1>Bring material into this Scene.</h1>
           <p>Drag onto the orb, speak a goal, or open a saved working set. Nothing is created until you choose it.</p>
         </section>
@@ -488,6 +490,7 @@ function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, seman
       onSplit={semanticOrbActions?.split}
       onDuplicate={semanticOrbActions?.duplicate}
       onDelete={semanticOrbActions?.delete}
+      onOpenStudio={onOpenStudio}
     />
   </main>;
 }
@@ -1718,6 +1721,46 @@ export default function OrbUniverseShell({ StageComponent }) {
     continueExtensionWork();
   }, [route.handoff, handoffStatus, extensionHandoff?.resultPearl?.id]);
 
+  function openActivePearlStudio(selectedPearl = null) {
+    const scene = (sceneWorkspace.scenes || []).find((entry) => entry.id === (route.sceneId || sceneWorkspace.activeSceneId));
+    const active = selectedPearl || scene?.semanticOrbs?.find((entry) => entry.id === scene.activeSemanticOrbId)
+      || scene?.semanticOrbs?.[0]
+      || {
+        id: `primary:${scene?.id || "workspace"}`,
+        kind: "primary",
+        name: scene?.name || "Pearl",
+        workingSet: { context: orb.context || [], lenses: orb.lenses || [] },
+        candidates: orb.candidates || [],
+        workers: orb.workers || [],
+      };
+    const entity = createPearlEntity(active);
+    let store;
+    try { store = JSON.parse(localStorage.getItem(PEARL_STORE_KEY) || "null"); } catch { store = null; }
+    store ||= { version: 1, entities: {} };
+    localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+      ...store,
+      entities: { ...(store.entities || {}), [entity.id]: entity },
+      activePearlId: entity.id,
+      updatedAt: Date.now(),
+    }));
+    const ref = createWebPearlStudioReference(entity.id);
+    const href = `${location.pathname}${location.search}#pearl-studio=${encodeURIComponent(ref)}`;
+    const opened = window.open(href, "_blank", "noopener");
+    if (!opened) location.assign(href);
+  }
+
+  useEffect(() => {
+    const open = (event) => {
+      const pearlId = event.detail?.pearlId;
+      const selected = pearlId
+        ? (sceneWorkspace.scenes || []).flatMap((scene) => scene.semanticOrbs || []).find((entry) => entry.id === pearlId)
+        : null;
+      openActivePearlStudio(selected);
+    };
+    window.addEventListener("lens:open-pearl-studio", open);
+    return () => window.removeEventListener("lens:open-pearl-studio", open);
+  });
+
   const routedScene = (sceneWorkspace.scenes || []).find((scene) => scene.id === route.sceneId)
     || createScene({ id: route.sceneId || "untitled", name: route.sceneId || "Untitled Scene" });
 
@@ -1730,11 +1773,13 @@ export default function OrbUniverseShell({ StageComponent }) {
         onMaterialDrop={materializeOnStage}
         onContextAdd={addOrbContext}
         semanticOrbActions={semanticOrbActions}
+        onOpenStudio={openActivePearlStudio}
       />}
       {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
         onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
         onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
+        onOpenStudio={openActivePearlStudio}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
@@ -1816,6 +1861,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       approval={pendingApproval}
       onApproval={decideApproval}
       onWorkerCancel={cancelWorker}
+      onOpenStudio={openActivePearlStudio}
     />}
     {emittedView === "privacy" && privacyNotice && <aside className="orb-stage-emission" aria-label="Privacy view emitted by Pearl">
       <button type="button" onClick={() => setEmittedView(null)}>Close</button>

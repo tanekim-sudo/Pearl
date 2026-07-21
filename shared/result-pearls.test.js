@@ -65,7 +65,7 @@ test("persisted result Pearl retains exact provenance across expansion and redir
   assert.equal(redirected.expanded, true);
 });
 
-test("canonical commands open the same object and select an existing canvas region", async () => {
+test("open request preserves staged destination and selecting an existing canvas region is explicit", async () => {
   const original = result();
   const initial = {
     resultPearls: { [original.id]: original },
@@ -77,9 +77,18 @@ test("canonical commands open the same object and select an existing canvas regi
   };
   const opened = await executeDomainCommand("openResultPearlInTab", initial, { resultId: original.id });
   assert.equal(opened.state.resultPearls[original.id].id, original.id);
-  assert.equal(opened.state.resultPearls[original.id].destination.type, "new-tab");
+  assert.equal(opened.state.resultPearls[original.id].destination.type, "margin-pearl");
+  assert.ok(opened.result.effects.includes("result-pearl-tab-requested"));
 
-  const selected = await executeDomainCommand("selectResultPlacementRegion", opened.state, {
+  const requested = await executeDomainCommand("requestOutputPlacement", opened.state, { resultId: original.id });
+  const interpreted = await executeDomainCommand("interpretOutputPlacement", requested.state, {
+    resultId: original.id,
+    answer: "put it in the box I made",
+    observation: { selectedCanvasArtifact: initial.pageCanvases["pearl:a::https://example.test/article"].artifacts[0] },
+  });
+  const confirmed = await executeDomainCommand("confirmOutputPlacement", interpreted.state, { resultId: original.id });
+  const begun = await executeDomainCommand("beginOutputPlacement", confirmed.state, { resultId: original.id });
+  const selected = await executeDomainCommand("selectResultPlacementRegion", begun.state, {
     resultId: original.id,
     pearlId: original.pearlId,
     pageIdentity: original.pageIdentity,

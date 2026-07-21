@@ -62,3 +62,25 @@ export function safeExternalUrl(value) {
 export function treatPageAsMaterial(text) {
   return String(text || "").replace(/\b(ignore|override|disregard)\b[\s\S]{0,80}\b(instruction|system|developer)\b/gi, "[untrusted page instruction removed]");
 }
+
+export function assertPrivilegedExtensionSurface(sender, extensionId) {
+  if (!sender || sender.id !== extensionId) throw new Error("untrusted extension sender");
+  let url;
+  try {
+    url = new URL(sender.url || "");
+  } catch {
+    throw new Error("privileged extension document required");
+  }
+  if (!["chrome-extension:", "moz-extension:", "safari-web-extension:"].includes(url.protocol)) {
+    throw new Error("content scripts cannot execute privileged Pearl actions");
+  }
+  if (url.protocol === "chrome-extension:" && url.hostname !== extensionId) throw new Error("extension origin mismatch");
+  return true;
+}
+
+export function assertServerVerifiedPearlCommand(command, args = {}) {
+  if (command === "rotatePearlOrganizationKey" || args.adminVerified === true) {
+    throw new Error("organization-admin claims require the authenticated server boundary");
+  }
+  return true;
+}

@@ -15,7 +15,7 @@ import {
   buildShareUrl,
   SHARE_BUNDLE_VERSION,
 } from "../shared/share-bundle.js";
-import { attachLensUser, exchangeExtensionAuthorizationCode, extensionAuthorizationUrl } from "./supabase-auth.js";
+import { attachLensUser, exchangeExtensionAuthorizationCode, extensionAuthorizationUrl, getAdminClient } from "./supabase-auth.js";
 import { guardAiRequest } from "./api-guard.js";
 import { corsOptions, rateLimit, securityHeaders } from "./http-security.js";
 import {
@@ -32,6 +32,7 @@ import { encodeLens } from "./lens-encoder.js";
 import { startGenerationBatch } from "./generation-runner.js";
 import { researchConfiguration, verifiedResearch } from "./research-provider.js";
 import { cognitivePackageRegistry } from "./cognitive-package-registry.js";
+import { createPearlShareRegistry } from "./pearl-share-registry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
@@ -76,6 +77,7 @@ app.post("/api/research", rateLimit({ windowMs: 60_000, limit: 12 }), async (req
 });
 
 const packageLimiter = rateLimit({ windowMs: 60_000, limit: 30 });
+const pearlShareRegistry = createPearlShareRegistry({ database: getAdminClient() });
 app.get("/api/cognitive-packages", packageLimiter, async (req, res) => {
   try {
     res.json(await cognitivePackageRegistry.list({
@@ -111,6 +113,63 @@ app.post("/api/cognitive-packages/deprecate", packageLimiter, async (req, res) =
     }));
   } catch (err) {
     res.status(err?.status || 500).json({ error: err?.message || "Package deprecation failed.", code: err?.code || "PACKAGE_DEPRECATE_FAILED" });
+  }
+});
+
+app.post("/api/pearl-shares", packageLimiter, async (req, res) => {
+  try {
+    const requestedTeamId = req.body?.teamId ? String(req.body.teamId) : null;
+    const verifiedOrganization = requestedTeamId
+      ? req.lensUser?.organizations?.find((entry) => entry.id === requestedTeamId) || null
+      : null;
+    const share = await pearlShareRegistry.create(req.body?.package, {
+      ownerId: req.lensUser?.user?.id || null,
+      approved: req.body?.approved === true,
+      idempotencyKey: req.body?.idempotencyKey,
+      mode: req.body?.mode,
+      recipientId: req.body?.recipientId || null,
+      teamId: verifiedOrganization?.id || null,
+      organizationRole: verifiedOrganization?.role || null,
+      permissions: req.body?.permissions,
+      expiresAt: req.body?.expiresAt,
+      maxUses: req.body?.maxUses,
+    });
+    const origin = `${req.protocol}://${req.get("host")}`;
+    res.status(201).json({ ...share, url: `${origin}/receive/${share.id}` });
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Pearl share creation failed.", code: err?.code || "PEARL_SHARE_CREATE_FAILED" });
+  }
+});
+
+app.get("/api/pearl-shares/:id", packageLimiter, async (req, res) => {
+  try {
+    res.setHeader("cache-control", "no-store");
+    res.json(await pearlShareRegistry.inspect(String(req.params.id), {
+      userId: req.lensUser?.user?.id || null,
+      teamIds: req.lensUser?.teamIds || [],
+    }));
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Pearl share lookup failed.", code: err?.code || "PEARL_SHARE_LOOKUP_FAILED" });
+  }
+});
+
+app.post("/api/pearl-shares/:id/consume", packageLimiter, async (req, res) => {
+  try {
+    res.setHeader("cache-control", "no-store");
+    res.json(await pearlShareRegistry.consume(String(req.params.id), {
+      userId: req.lensUser?.user?.id || null,
+      teamIds: req.lensUser?.teamIds || [],
+    }));
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Pearl share receipt failed.", code: err?.code || "PEARL_SHARE_CONSUME_FAILED" });
+  }
+});
+
+app.delete("/api/pearl-shares/:id", packageLimiter, async (req, res) => {
+  try {
+    res.json(await pearlShareRegistry.revoke(String(req.params.id), req.lensUser?.user?.id || null));
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.message || "Pearl share revocation failed.", code: err?.code || "PEARL_SHARE_REVOKE_FAILED" });
   }
 });
 

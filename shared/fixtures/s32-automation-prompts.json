@@ -1,0 +1,20 @@
+{
+  "name": "S32 investment memo fixture",
+  "evidence": [
+    {
+      "kind": "system-prompt",
+      "name": "Investment analysis instructions",
+      "content": "# Investment analysis automation\nProduce an investment memo and a one-pager for the current company. Use the approved firm context Lens and current company source material. Research current market, competitor, team, and traction facts from verified sources with citations. Never invent a fact or citation. Explicitly mark missing information. Compare opportunities and risks against the editable evaluation rubric."
+    },
+    {
+      "kind": "template",
+      "name": "Memo template",
+      "content": "Investment memo format must include: thesis, company, market, product, team, traction, competition, risks, open questions, and recommendation. The one-pager must preserve the same evidence in a concise format."
+    },
+    {
+      "kind": "example",
+      "name": "Completion standard",
+      "content": "A complete output cites every current web claim and separates source facts from firm-private assumptions. Do not distribute private firm context."
+    }
+  ]
+}

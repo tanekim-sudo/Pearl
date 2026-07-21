@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const extensionRoot = path.resolve(import.meta.dirname, "..");
 const dist = path.join(extensionRoot, "dist/chrome");
@@ -74,6 +75,14 @@ try {
     });
   });
   let worker = context.serviceWorkers()[0];
+  if (!worker) {
+    const extensionIdFromPath = crypto.createHash("sha256").update(auditDist).digest("hex").slice(0, 32)
+      .replace(/[0-9a-f]/g, (value) => String.fromCharCode(97 + Number.parseInt(value, 16)));
+    const bootstrap = await context.newPage();
+    await bootstrap.goto(`chrome-extension://${extensionIdFromPath}/sidepanel.html`).catch(() => {});
+    await bootstrap.close().catch(() => {});
+    worker = context.serviceWorkers()[0];
+  }
   if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
   await worker.evaluate(async ({ apiOrigin }) => {
@@ -119,6 +128,7 @@ try {
       Context: "show me what you noticed",
       Library: "show me the things I can reuse",
       Generate: "show me what you are about to do",
+      Review: "show me what you are about to do",
       Command: null,
       Pearls: "show me what I kept",
       Settings: "open my preferences",
@@ -143,6 +153,14 @@ try {
     if (!response?.ok) throw new Error(response?.error || "content injection failed");
   });
   await fixture.locator("#lens-orb-overlay-host").waitFor();
+  const restingOverlay = await fixture.locator("#lens-orb-overlay-host").evaluate((host) => ({
+    hostPointerEvents: getComputedStyle(host).pointerEvents,
+    orbPointerEvents: getComputedStyle(host.shadowRoot.querySelector(".orb")).pointerEvents,
+    candidateCount: host.shadowRoot.querySelectorAll(".candidate").length,
+  }));
+  if (JSON.stringify(restingOverlay) !== JSON.stringify({ hostPointerEvents: "none", orbPointerEvents: "auto", candidateCount: 0 })) {
+    throw new Error(`resting page overlay intercepts or spawns placeholders: ${JSON.stringify(restingOverlay)}`);
+  }
   await fixture.screenshot({ path: path.join(evidence, "06-extension-page-orb.png"), fullPage: true });
   const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Pearl\./ });
   const beforeDrag = await pageOrb.boundingBox();
@@ -229,13 +247,21 @@ try {
     });
   });
   await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.fragments?.length >= 1);
+  const phasePlacement = await fixture.locator("#lens-orb-overlay-host").locator(".phase").evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    return { visible: Number(getComputedStyle(node).opacity) > 0, state: node.closest(".shell")?.dataset.state, text: node.textContent, left: box.left, right: box.right, viewport: innerWidth };
+  });
+  if (phasePlacement.visible && phasePlacement.state === "blocked") throw new Error(`page Pearl retained a stale blocked status after context recovery: ${JSON.stringify(phasePlacement)}`);
+  if (phasePlacement.visible && (phasePlacement.left < 0 || phasePlacement.right > phasePlacement.viewport)) {
+    throw new Error(`page Pearl status clips outside the viewport: ${JSON.stringify(phasePlacement)}`);
+  }
   await fixture.screenshot({ path: path.join(evidence, "06b-extension-page-orb-context.png"), fullPage: true });
   await openPanelView("Context");
   await panel.getByText(/\d+ fragments?/).waitFor();
   await openPanelView("Library");
   await panel.locator(".rack button").filter({ hasText: /compress/i }).first().click();
   await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.queue?.length >= 1);
-  await openPanelView("Generate");
+  await openPanelView("Review");
   await panel.getByRole("button", { name: "GO", exact: true }).waitFor({ state: "visible" });
   const goBlocked = await panel.getByRole("button", { name: "GO", exact: true }).isDisabled();
   if (goBlocked) {
@@ -245,10 +271,13 @@ try {
     }));
     throw new Error(`GO remained blocked after capture and queue: ${JSON.stringify(diagnostics)}`);
   }
+  panel.once("dialog", (dialog) => dialog.accept());
   await panel.getByRole("button", { name: "GO", exact: true }).click();
   await panel.waitForTimeout(800);
   const generationState = await panel.evaluate(async () => ({
     session: (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession,
+    privacy: await chrome.storage.local.get(["activeSemanticOrbId", "pearlPrivacyPolicies", "apiOrigin"]),
+    alerts: [...document.querySelectorAll('[role="alert"]')].map((node) => node.textContent?.trim()).filter(Boolean),
     text: document.body.innerText,
   }));
   if (!generationState.session?.results?.flatMap((run) => run.outputs || []).length) {
@@ -285,8 +314,10 @@ try {
     document.body.style.zoom = "1.25";
     scrollTo(0, 120);
   });
-  const narrowBox = await marginPearl.boundingBox();
-  if (!narrowBox || narrowBox.x < 0 || narrowBox.x + narrowBox.width > 390) throw new Error("result Pearl did not dock safely after narrow zoomed reflow");
+  const narrowPearl = fixture.locator("#pearl-result-pearls-host").locator("button.result").first();
+  await narrowPearl.waitFor({ state: "visible" });
+  const narrowBox = await narrowPearl.boundingBox();
+  if (!narrowBox || narrowBox.x < 0 || narrowBox.x + narrowBox.width > 390) throw new Error(`result Pearl did not dock safely after narrow zoomed reflow: ${JSON.stringify(narrowBox)}`);
   await fixture.screenshot({ path: path.join(evidence, "06c2-celadon-result-narrow-zoom.png"), fullPage: true });
   await fixture.evaluate(() => {
     document.body.style.zoom = "";
@@ -296,27 +327,41 @@ try {
   await panel.reload();
   await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
   await openPanelView("Generate");
-  await panel.getByText(/Reviewed:/).waitFor();
+  await panel.waitForTimeout(300);
+  const postGenerationView = await panel.locator("main").getAttribute("data-orb-view");
+  if (postGenerationView !== "review") {
+    throw new Error(`result review intent resolved to ${postGenerationView}: ${await panel.locator("main").innerText()}`);
+  }
+  await panel.locator(".orb-panel.active").getByText(/Reviewed:/).waitFor();
   await panel.screenshot({ path: path.join(evidence, "06c-extension-go-candidate.png"), fullPage: true });
+  await fixture.locator("#field").focus();
+  await fixture.locator("#field").evaluate((field) => field.setSelectionRange(0, 0));
   const targetTabId = await panel.evaluate(async () => {
     const tabs = await chrome.tabs.query({});
     const current = await chrome.tabs.getCurrent();
     return tabs.find((tab) => tab.id !== current?.id && tab.url?.startsWith("http://127.0.0.1:"))?.id;
   });
-  await panel.evaluate(async ({ targetTabId }) => {
-    const response = await chrome.runtime.sendMessage({
+  await panel.evaluate(async ({ targetTabId, resultId }) => {
+    const interpreted = await chrome.runtime.sendMessage({
       version: 1,
-      type: "result-action",
-      requestId: "orb-audit-insert",
+      type: "output-routing-answer",
+      requestId: "orb-audit-route-insert",
       payload: {
+        resultId,
         targetTabId,
-        text: "Reviewed: Pearl extension audit material.",
-        outputSpec: { machineKind: "text" },
-        plan: { operation: "insert", anchor: { selector: "#field", start: 0, end: 0 } },
+        answer: "insert at the selected caret",
       },
     });
-    if (!response?.ok || !response.value?.ok) throw new Error(response?.error || response?.value?.error || "verified insertion failed");
-  }, { targetTabId });
+    const routing = interpreted?.value?.object;
+    if (!interpreted?.ok || routing?.stage !== "confirming") throw new Error(interpreted?.error || `placement interpretation failed: ${JSON.stringify(interpreted)}`);
+    const confirmed = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "output-routing-confirm",
+      requestId: "orb-audit-confirm-insert",
+      payload: { resultId, targetRevision: routing.plan.targetRevision },
+    });
+    if (!confirmed?.ok) throw new Error(confirmed?.error || "verified insertion failed");
+  }, { targetTabId, resultId });
   await fixture.waitForFunction(() => document.querySelector("#field").value.startsWith("Reviewed:"));
   await fixture.screenshot({ path: path.join(evidence, "06d-extension-verified-insertion.png"), fullPage: true });
   const continuation = await panel.evaluate(async () => {
@@ -393,8 +438,8 @@ try {
     panel.emulateMedia({ reducedMotion: "reduce" }),
   ]);
   const reducedMotion = {
-    page: await fixture.locator("#lens-orb-overlay-host").evaluate((host) => getComputedStyle(host.shadowRoot.querySelector(".pearl")).animationName),
-    panel: await panel.locator(".extension-orb-pearl").evaluate((node) => getComputedStyle(node).animationName),
+    page: await fixture.locator("#lens-orb-overlay-host").evaluate((host) => getComputedStyle(host.shadowRoot.querySelector(".physical-pearl__mass")).animationName),
+    panel: await panel.locator(".extension-orb .physical-pearl__mass").evaluate((node) => getComputedStyle(node).animationName),
   };
   if (reducedMotion.page !== "none" || reducedMotion.panel !== "none") {
     throw new Error(`reduced-motion Pearls still animate: ${JSON.stringify(reducedMotion)}`);
@@ -455,7 +500,7 @@ try {
     };
   });
   if (!deletionIsolation.completed || !deletionIsolation.sessionEmpty || !deletionIsolation.profileEmpty) {
-    throw new Error("confirmed local deletion reported completion before profile cleanup");
+    throw new Error(`confirmed local deletion reported completion before profile cleanup: ${JSON.stringify(deletionIsolation)}`);
   }
 
   fs.writeFileSync(path.join(evidence, "extension-results.json"), `${JSON.stringify({

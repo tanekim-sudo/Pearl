@@ -10,9 +10,12 @@ import { sanitizeHtml } from "../core/security.js";
 import { applySpecialistPlan, detectAdapter } from "./adapters/specialists.js";
 import { createHighlighter } from "./highlighter.js";
 import { captureNativeSelection, selectionRects } from "./selection.js";
-import { createPearlPageCanvas } from "./page-canvas.js";
+import { createPearlPageCanvas, pearlCanvasPdfBytes } from "./page-canvas.js";
 import { createResultPearlLayer } from "./result-pearls.js";
 import { canonicalPageIdentity } from "../../../shared/pearl-page-canvas.js";
+import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
+import { createPearlGestureArbiter } from "../../../shared/pearl-gesture-arbiter.js";
+import { pearlSurroundingFromColor } from "../../../shared/pearl-visual-contract.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
@@ -21,7 +24,7 @@ function mountPageOrb() {
   if (document.getElementById("lens-orb-overlay-host") || !document.documentElement) return;
   const host = document.createElement("div");
   host.id = "lens-orb-overlay-host";
-  host.style.cssText = "all:initial;position:fixed;right:18px;top:42%;z-index:2147483646";
+  host.style.cssText = "all:initial;position:fixed;right:18px;top:42%;z-index:2147483646;pointer-events:none";
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
   style.textContent = `
@@ -29,14 +32,14 @@ function mountPageOrb() {
     *{box-sizing:border-box}
     .shell{--focus:#d8ddd9;--pearl-light-x:0;--pearl-light-y:0;--pearl-motion:0;position:relative;width:36px;height:36px;font:11px/1.3 Inter,ui-sans-serif,system-ui,sans-serif;color:#eeede8;touch-action:none;user-select:none}
     button{font:inherit;color:inherit;cursor:pointer}
-    .orb{position:absolute;inset:0;width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;filter:none;touch-action:none}
+    .orb{position:absolute;inset:0;width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;filter:none;touch-action:none;pointer-events:auto}
     svg{width:36px;height:36px;overflow:visible}.pearl{transform-origin:50px 50px;animation:respire 4s ease-in-out infinite}.shadow{fill:rgba(0,0,0,.16);filter:blur(1.1px)}.state{fill:none;stroke:rgba(232,239,235,.4);stroke-width:.8;opacity:0;stroke-dasharray:2 4}.core{stroke:rgba(255,255,255,.46);stroke-width:.62}.nucleus{mix-blend-mode:soft-light;opacity:.58;transform:translate(calc(var(--pearl-light-x) * -1px),calc(var(--pearl-light-y) * -.8px));transition:opacity .24s ease-out,transform .22s ease-out}.nacre{mix-blend-mode:screen;opacity:calc(.34 + var(--pearl-motion) * .3);transform:translate(calc(var(--pearl-light-x) * 2px),calc(var(--pearl-light-y) * 1.7px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .18s ease-out}.reflection{fill:rgba(58,69,69,.1);filter:blur(2.2px);transform:translate(calc(var(--pearl-light-x) * -1.2px),calc(var(--pearl-light-y) * -1px));transition:transform .22s ease-out}.rim{stroke-width:.8}.glint{fill:rgba(255,255,255,.26);filter:blur(.45px)}.pinlight{fill:#fff;opacity:.96}
     .shell[data-state=listening] .nucleus,.shell[data-state=absorbing] .nucleus,.shell[data-state=planning] .nucleus{opacity:.82;filter:sepia(.1) saturate(1.06)}.shell[data-state=absorbing] .state,.shell[data-state=planning] .state{opacity:.55}.shell[data-state=branching] .nacre{opacity:.68}.shell[data-state=blocked] .pearl{filter:saturate(.45) brightness(.88)}.shell[data-state=blocked] .nucleus{opacity:.3}
-    .phase{position:absolute;top:40px;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--field-text);background:transparent;padding:2px 0;opacity:0}.shell:not([data-state=idle]) .phase{opacity:.62}
-    .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:6px;height:6px;border:1px solid rgba(238,244,240,.34);border-radius:50%;background:#eef0eb;transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:5px;height:5px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate i{display:block;width:5px;height:5px;margin:0;border-radius:50%;background:#d9dfdc;box-shadow:0 0 7px rgba(186,213,205,.42)}.shell.candidates .candidate{opacity:.72}.shell.open .orbit{opacity:.18}
-    .emission{position:absolute;right:48px;top:-100px;width:300px;display:none;padding:14px 0 14px 16px;color:#efeee8;background:rgba(9,11,12,.98);border:0;border-left:1px solid rgba(235,240,237,.24);border-radius:0;box-shadow:none}.shell.open .emission{display:grid;gap:8px}.emission header{display:flex;align-items:center;justify-content:space-between;padding-right:12px;color:#8e9390;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.emission header b{color:#efeee8;font-weight:600}.emission button,.emission input{min-height:40px;border:0;border-bottom:1px solid rgba(255,255,255,.11);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.1)}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:0}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:0}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:auto;left:-44px;top:0;width:36px;height:36px;display:none;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#0e1112}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
+    .phase{position:absolute;top:40px;right:0;white-space:nowrap;text-align:right;color:var(--field-text);background:transparent;padding:2px 0;opacity:0}.shell.dock-left .phase{right:auto;left:0;text-align:left}.shell:not([data-state=idle]) .phase{opacity:.62}
+    .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:1px;height:10px;border:0;background:linear-gradient(rgba(238,244,240,.06),rgba(238,244,240,.46),rgba(238,244,240,.06));transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:16px;height:16px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate>span:last-child{display:none}.shell.candidates .candidate{opacity:.72}.shell.open .orbit{opacity:.18}
+    .emission{position:absolute;right:48px;top:-100px;width:300px;display:none;padding:14px 0 14px 16px;color:#efeee8;background:rgba(9,11,12,.98);border:0;border-left:1px solid rgba(235,240,237,.24);border-radius:0;box-shadow:none;pointer-events:auto}.shell.open .emission{display:grid;gap:8px}.emission header{display:flex;align-items:center;justify-content:space-between;padding-right:12px;color:#8e9390;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.emission header b{color:#efeee8;font-weight:600}.emission button,.emission input{min-height:40px;border:0;border-bottom:1px solid rgba(255,255,255,.11);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.1)}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:0}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:0}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:auto;left:-44px;top:0;width:36px;height:36px;display:none;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#0e1112}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
     .shell.dock-left .emission{left:48px;right:auto}
-    .shell.cursor-mode{width:28px;height:28px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:28px;height:28px;pointer-events:none;filter:none}.shell.cursor-mode svg{width:28px;height:28px}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{width:28px;height:28px;opacity:.72}.shell.cursor-mode[data-cursor-presentation=action]{width:32px;height:32px}.shell.cursor-mode[data-cursor-presentation=grab]{width:34px;height:34px}.shell.cursor-mode[data-cursor-presentation=resize]{width:28px;height:28px;opacity:.78}.shell.cursor-mode.pressed .orb{transform:scale(.82)}
+    .shell.cursor-mode{width:18px;height:18px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:18px;height:18px;pointer-events:none;filter:none}.shell.cursor-mode svg{width:18px;height:18px}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{opacity:.72}.shell.cursor-mode[data-cursor-presentation=action] .physical-pearl__hotspot{stroke-width:3}.shell.cursor-mode[data-cursor-presentation=grab] .physical-pearl__nucleus{transform:translate(-1px,1px)}.shell.cursor-mode[data-cursor-presentation=resize]{opacity:.78}.shell.cursor-mode.pressed .orb{transform:scale(.94)}
     .shell .emission{right:48px}.shell.dock-left .emission{left:48px;right:auto}
     .emission form{display:grid;grid-template-columns:minmax(0,1fr) 40px}.emission form input{min-width:0}.emission form button{padding:0;text-align:center}.emission>[data-action=contextual]{width:100%;color:#aeb3b0}
     .emission{color:var(--field-text);background:linear-gradient(90deg,var(--field-edge),transparent 18px),var(--field-bg);border-color:var(--field-line);box-shadow:inset 1px 0 rgba(255,255,255,.08)}
@@ -51,6 +54,7 @@ function mountPageOrb() {
     @media(max-width:620px){.emission{right:48px;width:min(300px,calc(100vw - 76px))}}
     @media(prefers-reduced-motion:reduce){.pearl,.state,.nucleus,.nacre,.nacre-fold{animation:none!important}.nucleus,.nacre,.nacre-fold,.reflection{transform:none!important;transition:none!important}.shell.cursor-mode.pressed .orb{transform:none}}
     @media(prefers-contrast:more){.core{stroke:#fff}.emission{border:1px solid #fff}}
+    ${PHYSICAL_PEARL_CSS}
   `;
   const shell = document.createElement("div");
   shell.className = "shell";
@@ -60,10 +64,10 @@ function mountPageOrb() {
   orb.type = "button";
   orb.setAttribute("aria-label", "Pearl. Hold to speak, click to expand, drag to move, or drop material here");
   orb.setAttribute("aria-expanded", "false");
-  orb.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pearl-core" cx="39%" cy="58%" r="72%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".3" stop-color="#f5f0e7"/><stop offset=".68" stop-color="#e7e6de"/><stop offset=".88" stop-color="#d1d4ce"/><stop offset="1" stop-color="#aeb3af"/></radialGradient><radialGradient id="pearl-nucleus" cx="38%" cy="62%" r="58%"><stop offset="0" stop-color="#f2d9ce" stop-opacity=".52"/><stop offset=".36" stop-color="#d2e2da" stop-opacity=".34"/><stop offset=".72" stop-color="#eadcb9" stop-opacity=".15"/><stop offset="1" stop-color="#c6ced0" stop-opacity="0"/></radialGradient><linearGradient id="pearl-nacre" x1="8%" y1="14%" x2="92%" y2="84%"><stop offset="0" stop-color="#dfbfb9" stop-opacity=".11"/><stop offset=".31" stop-color="#bfd8ce" stop-opacity=".28"/><stop offset=".53" stop-color="#f2e4c2" stop-opacity=".18"/><stop offset=".72" stop-color="#d9bdba" stop-opacity=".21"/><stop offset="1" stop-color="#bdd3cc" stop-opacity=".1"/></linearGradient><linearGradient id="pearl-rim" x1="18%" y1="8%" x2="82%" y2="92%"><stop offset="0" stop-color="#fff" stop-opacity=".78"/><stop offset=".5" stop-color="#edf2ee" stop-opacity=".18"/><stop offset=".82" stop-color="#78817e" stop-opacity=".35"/><stop offset="1" stop-color="#f4ecdf" stop-opacity=".48"/></linearGradient></defs><circle class="state" cx="50" cy="50" r="47"/><ellipse class="shadow" cx="51" cy="95" rx="25" ry="2"/><g class="pearl"><circle class="core" cx="50" cy="50" r="43" fill="url(#pearl-core)"/><ellipse class="nucleus" cx="43" cy="57" rx="25" ry="29" fill="url(#pearl-nucleus)"/><circle class="nacre" cx="50" cy="50" r="41.5" fill="url(#pearl-nacre)"/><path class="nacre-fold" d="M14 57 C25 28 57 17 82 36 C63 33 48 40 40 55 C32 68 22 70 14 57Z" fill="url(#pearl-nacre)"/><ellipse class="reflection" cx="59" cy="64" rx="26" ry="13"/><circle class="rim" cx="50" cy="50" r="42.2" fill="none" stroke="url(#pearl-rim)"/><ellipse class="glint" cx="33" cy="28" rx="8" ry="4.5" transform="rotate(-38 33 28)"/><circle class="pinlight" cx="27.5" cy="22.5" r="2"/></g></svg><span class="phase">Listening</span>`;
+  orb.innerHTML = `${physicalPearlMarkup({ id: "page-primary-pearl", variant: "primary", state: "idle", size: 36, decorative: true })}<span class="phase">Listening</span>`;
   const orbit = document.createElement("div");
   orbit.className = "orbit";
-  orbit.innerHTML = `<span class="lens-ring"></span>${[0,1,2,3,4].map((i) => `<span class="context-dot" style="--i:${i}" hidden></span>`).join("")}${["Question assumptions","Find strongest signal","Offer contrary path"].map((text, i) => `<span class="candidate" style="--i:${i}"><i></i>${text}</span>`).join("")}`;
+  orbit.innerHTML = `<span class="lens-ring"></span>${[0,1,2,3,4].map((i) => `<span class="context-dot" style="--i:${i}" hidden></span>`).join("")}`;
   const emission = document.createElement("section");
   emission.className = "emission";
   emission.setAttribute("aria-label", "Pearl command");
@@ -89,6 +93,19 @@ function mountPageOrb() {
   let moved = false;
   let contextCount = 0;
   let pendingPearlCapture = null;
+  const renderCandidates = (outputs = []) => {
+    orbit.querySelectorAll(".candidate").forEach((candidate) => candidate.remove());
+    outputs.slice(0, 3).forEach((output, index) => {
+      const candidate = document.createElement("span");
+      candidate.className = "candidate";
+      candidate.style.setProperty("--i", index);
+      candidate.innerHTML = physicalPearlMarkup({ id: `page-candidate-${index}`, variant: "candidate", state: "new", size: 16, decorative: true });
+      const label = document.createElement("span");
+      label.textContent = String(output.distinction || output.text || `Candidate ${index + 1}`).trim().split(/\s+/).slice(0, 6).join(" ");
+      candidate.appendChild(label);
+      orbit.appendChild(candidate);
+    });
+  };
   const hydrate = (session) => {
     if (!session) return;
     contextCount = Math.min(5, Array.isArray(session.fragments) ? session.fragments.length : contextCount);
@@ -100,11 +117,14 @@ function mountPageOrb() {
     const outputs = session.results?.flatMap((run) => run.outputs || []) || [];
     shell.classList.toggle("candidates", outputs.length > 0);
     shell.querySelector("[data-candidate-count]").textContent = outputs.length ? `${outputs.length} staged candidate${outputs.length === 1 ? "" : "s"}` : "No staged candidates";
-    shell.querySelectorAll(".candidate").forEach((candidate, index) => {
-      candidate.style.display = index < outputs.length ? "" : "none";
-      if (outputs[index]) candidate.lastChild.textContent = String(outputs[index].distinction || outputs[index].text || `Candidate ${index + 1}`).trim().split(/\s+/).slice(0, 6).join(" ");
-    });
+    renderCandidates(outputs);
+    if ((contextCount > 0 || session.generator || outputs.length > 0) && shell.dataset.state === "blocked") setState("idle");
   };
+  const syncSession = (changes, area) => {
+    if (area === "session" && changes.lensEverywhereSession?.newValue) hydrate(changes.lensEverywhereSession.newValue);
+  };
+  globalThis.chrome?.storage?.onChanged?.addListener(syncSession);
+  window.addEventListener("pagehide", () => globalThis.chrome?.storage?.onChanged?.removeListener(syncSession), { once: true });
   let cursorEnabled = false;
   let cursorFrame = 0;
   let cursorPoint = { x: innerWidth / 2, y: innerHeight / 2 };
@@ -160,14 +180,20 @@ function mountPageOrb() {
     shell.classList.toggle("cursor-mode", value);
     shell.classList.remove("open", "minimized");
     shell.dataset.cursorPresentation = "precision";
+    const visual = shell.querySelector(".physical-pearl");
+    if (visual) {
+      visual.dataset.pearlVariant = value ? "cursor" : "primary";
+      visual.setAttribute("width", value ? "18" : "36");
+      visual.setAttribute("height", value ? "18" : "36");
+    }
     host.style.pointerEvents = value ? "none" : "";
     orb.setAttribute("aria-expanded", "false");
     if (value) {
       cursorMotion.x = cursorPoint.x;
       cursorMotion.y = cursorPoint.y;
-      host.style.left = `${cursorMotion.x - 14}px`;
+      host.style.left = `${cursorMotion.x - 9}px`;
       host.style.right = "auto";
-      host.style.top = `${cursorMotion.y - 14}px`;
+      host.style.top = `${cursorMotion.y - 9}px`;
       renderCursor();
     }
     else {
@@ -211,9 +237,9 @@ function mountPageOrb() {
     cursorMotion.x = cursorPoint.x;
     cursorMotion.y = cursorPoint.y;
     cursorMotion.at = now;
-    host.style.left = `${cursorMotion.x - 14}px`;
+    host.style.left = `${cursorMotion.x - 9}px`;
     host.style.right = "auto";
-    host.style.top = `${cursorMotion.y - 14}px`;
+    host.style.top = `${cursorMotion.y - 9}px`;
     shell.dataset.cursorPresentation = orbCursorPresentation(event.target, (target) => getComputedStyle(target));
     if (!cursorFrame) cursorFrame = requestAnimationFrame(renderCursor);
   };
@@ -254,6 +280,8 @@ function mountPageOrb() {
   };
   const setState = (state) => {
     shell.dataset.state = state;
+    const visual = shell.querySelector(".physical-pearl");
+    if (visual) visual.dataset.pearlState = state === "blocked" ? "blocked" : state === "listening" ? "listening" : ["absorbing", "planning", "branching"].includes(state) ? "executing" : "idle";
     shell.querySelector(".phase").textContent = state === "listening" ? "Listening" : state === "absorbing" ? "Adding context" : state;
   };
   const toggle = () => {
@@ -262,6 +290,13 @@ function mountPageOrb() {
     orb.setAttribute("aria-expanded", String(open));
     if (open) requestAnimationFrame(() => emission.querySelector("input")?.focus());
   };
+  const gesture = createPearlGestureArbiter({
+    onSingle: toggle,
+    onTriple: () => send("pearl-open-studio", {}).catch(() => {
+      shell.querySelector(".phase").textContent = "Studio could not open";
+      setState("blocked");
+    }),
+  });
   const minimizeOrb = () => {
     shell.classList.toggle("minimized");
     shell.classList.remove("open");
@@ -271,17 +306,17 @@ function mountPageOrb() {
     setState("absorbing");
     await send("toggle-highlighter", { enabled: true }).catch(() => {});
     const response = await send("capture-selection").catch(() => null);
-    if (!response?.ok) {
+    if (!response) {
       setState("blocked");
       shell.querySelector(".phase").textContent = "Select page material, then retry";
       return null;
     }
-    const added = response?.value?.fragments?.length || response?.fragments?.length || 1;
+    const added = response.fragments?.length || 1;
     contextCount = Math.min(5, contextCount + added);
     shell.querySelectorAll(".context-dot").forEach((dot, index) => { dot.hidden = index >= contextCount; });
     shell.querySelector("[data-context-count]").textContent = `${contextCount} captured context ${contextCount === 1 ? "object" : "objects"}`;
     shell.querySelector('[data-action="contextual"]').textContent = "Keep this";
-    send("get-session").then((response) => hydrate(response?.value)).catch(() => {});
+    send("get-session").then(hydrate).catch(() => {});
     if (settle) window.setTimeout(() => setState("idle"), 700);
     return response;
   };
@@ -299,13 +334,13 @@ function mountPageOrb() {
       shell.querySelector('[data-action="contextual"]').textContent = "Keep this";
     }
     const response = await send("make-pearl", { idempotencyKey: `page-pearl:${Date.now()}` }).catch(() => null);
-    if (!response?.ok || !response?.value?.pearl) {
+    if (!response?.pearl) {
       setState("blocked");
       shell.querySelector(".phase").textContent = "Select page material, then retry";
       return;
     }
     setState("settling");
-    shell.querySelector(".phase").textContent = `Pearl made · ${response.value.pearl.name}`;
+    shell.querySelector(".phase").textContent = `Pearl made · ${response.pearl.name}`;
     window.setTimeout(() => setState("idle"), 1600);
   };
   orb.addEventListener("pointerdown", (event) => {
@@ -314,7 +349,12 @@ function mountPageOrb() {
     const rect = host.getBoundingClientRect();
     press = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
     moved = false;
-    holdTimer = window.setTimeout(() => { if (!moved) setState("listening"); }, 420);
+    holdTimer = window.setTimeout(() => {
+      if (!moved) {
+        gesture.hold({ pointerId: event.pointerId });
+        setState("listening");
+      }
+    }, 420);
   });
   orb.addEventListener("pointermove", (event) => {
     if (!press || press.id !== event.pointerId) return;
@@ -327,16 +367,25 @@ function mountPageOrb() {
     host.style.left = `${Math.max(8, Math.min(innerWidth - shell.offsetWidth - 8, press.left + dx))}px`;
     host.style.top = `${Math.max(8, Math.min(innerHeight - shell.offsetHeight - 8, press.top + dy))}px`;
   });
-  orb.addEventListener("pointerup", () => {
+  orb.addEventListener("pointerup", (event) => {
     window.clearTimeout(holdTimer);
-    if (shell.dataset.state === "listening") setState("idle");
-    else if (!moved) toggle();
+    if (shell.dataset.state === "listening") {
+      gesture.reset();
+      setState("idle");
+    }
+    else gesture.release({ at: event.timeStamp, x: event.clientX, y: event.clientY, dragged: moved, pointerType: event.pointerType });
     if (moved) {
       const rect = host.getBoundingClientRect();
       if (rect.left > innerWidth / 2) { host.style.left = "auto"; host.style.right = "18px"; shell.classList.remove("dock-left"); }
       else { host.style.left = "18px"; host.style.right = "auto"; shell.classList.add("dock-left"); }
     }
     press = null;
+  });
+  orb.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      gesture.keyboard(event);
+    }
   });
   orb.addEventListener("dragover", (event) => event.preventDefault());
   orb.addEventListener("drop", async (event) => {
@@ -411,10 +460,25 @@ function mountPageOrb() {
   send("orb-cursor-get").then((value) => {
     if (value?.enabled) setCursorEnabled(true, { source: "restore", persist: true });
   }).catch(() => {});
-  send("get-session").then((response) => hydrate(response?.value)).catch(() => {});
+  const surroundingColor = getComputedStyle(document.body || document.documentElement).backgroundColor.match(/[\d.]+/g)?.map(Number) || [];
+  const surrounding = (document.body?.innerText?.length || 0) > 4_000
+    ? "text-heavy"
+    : pearlSurroundingFromColor({ r: surroundingColor[0], g: surroundingColor[1], b: surroundingColor[2], a: surroundingColor[3] });
+  shell.querySelector(".physical-pearl")?.setAttribute("data-pearl-surrounding", surrounding);
+  send("get-session").then(hydrate).catch(() => {});
   return {
+    hydrate,
     setEnabled: setCursorEnabled,
     toggle: toggleCursor,
+    animate(animation) {
+      const visual = shell.querySelector(".physical-pearl");
+      if (!visual || !animation?.semantic) return false;
+      visual.dataset.pearlAnimation = animation.semantic;
+      window.setTimeout(() => {
+        if (visual.dataset.pearlAnimation === animation.semantic) delete visual.dataset.pearlAnimation;
+      }, Math.max(0, Number(animation.durationMs) || 0) + 40);
+      return true;
+    },
     get enabled() { return cursorEnabled; },
     destroy() {
       clearSpaceSequence();
@@ -489,6 +553,30 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     }
     if (type === "page-canvas-export-pdf") return { ok: true, ...pageCanvas.downloadPdf() };
     if (type === "result-pearl-layout-request") return { ok: true, ...resultPearls.layout(payload) };
+    if (type === "output-routing-observe") return { ok: true, observation: resultPearls.observe() };
+    if (type === "pearl-effect-animation") return { ok: true, animated: pageOrb?.animate(payload.animation) === true, receiptId: payload.effectReceiptId || null };
+    if (type === "output-placement-effect") {
+      const destination = payload.destination || {};
+      if (destination.type === "clipboard") {
+        await navigator.clipboard.writeText(String(payload.text || ""));
+        return { ok: true, effect: { type: "clipboard", characters: String(payload.text || "").length } };
+      }
+      if (destination.type === "download" || destination.type === "pdf") {
+        const pdf = destination.type === "pdf";
+        const bytes = pdf
+          ? pearlCanvasPdfBytes({ pearlId: payload.resultId, artifacts: [{ type: "output", text: String(payload.text || "") }] })
+          : String(payload.text || "");
+        const blob = new Blob([bytes], { type: pdf ? "application/pdf" : destination.file?.type || "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = String(destination.file?.name || (pdf ? "pearl-output.pdf" : "pearl-output.txt")).replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 180);
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1_000);
+        return { ok: true, effect: { type: destination.type, bytes: blob.size, fileName: anchor.download } };
+      }
+      throw new Error("the confirmed output destination is unsupported on this page");
+    }
     if (type === "result-pearl-state") {
       resultPearls.hydrate(payload.results || []);
       return { ok: true };
@@ -501,7 +589,7 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     if (type === "clear-fragments") {
       captured.clear();
       highlighter.clear();
-      hydrate({ fragments: [], generator: null, results: [] });
+      pageOrb?.hydrate({ fragments: [], generator: null, results: [] });
       return { ok: true };
     }
     if (type === "result-action") {

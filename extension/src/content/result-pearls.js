@@ -1,6 +1,15 @@
 import { placeResultPearls } from "../../../shared/result-pearls.js";
+import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
+import { createPearlGestureArbiter } from "../../../shared/pearl-gesture-arbiter.js";
 
 const HOST_ID = "pearl-result-pearls-host";
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+}[character]));
 
 function sourceAnchor(sourceRefs = []) {
   const selection = getSelection?.();
@@ -39,6 +48,7 @@ export function createResultPearlLayer({ send }) {
   let host;
   let shadow;
   let results = [];
+  const gestures = new Map();
 
   function ensure() {
     if (host?.isConnected) return;
@@ -86,10 +96,20 @@ export function createResultPearlLayer({ send }) {
         .actions{position:sticky;bottom:0;display:flex;background:rgba(248,250,246,.92);border-top:1px solid rgba(39,58,49,.12)}
         .actions button{flex:1;min-height:42px;border:0;border-right:1px solid rgba(39,58,49,.1);border-radius:0;background:transparent;color:#39413d;font:10px Inter,system-ui,sans-serif}
         .status{display:block;padding:8px 10px 0 0;color:#69736e;font:9px Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+        .routing{padding:2px 12px 14px 0;border-top:1px solid rgba(39,58,49,.1)}
+        .routing label{display:block;padding:12px 0 7px;color:inherit;font:12px/1.4 Inter,system-ui,sans-serif}
+        .routing-row{display:flex;border-bottom:1px solid rgba(39,58,49,.24)}
+        .routing input{min-width:0;flex:1;border:0;background:transparent;padding:9px 0;color:inherit;font:12px Inter,system-ui,sans-serif;outline:0}
+        .routing button{border:0;background:transparent;padding:9px 5px;color:inherit;font:10px Inter,system-ui,sans-serif}
+        .routing-confirm{margin:0;white-space:pre-wrap}
+        .routing-choices{display:flex;gap:12px;padding-top:8px}
+        .routing-choices button{padding:5px 0}
+        .sr-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
         button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
         @keyframes ember{0%,100%{opacity:.58}50%{opacity:.7}}
         @media(prefers-color-scheme:dark){.plane{color:#ecefe9;background:linear-gradient(90deg,rgba(10,13,12,.96),rgba(10,13,12,.78) 70%,rgba(10,13,12,.38));border-left-color:rgba(192,218,204,.22)}.actions{background:rgba(10,13,12,.92)}.actions button{color:#cbd4ce}}
         @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+        ${PHYSICAL_PEARL_CSS}
       </style>
     `;
     for (const result of results.filter((entry) => !entry.archived && entry.placement)) {
@@ -101,22 +121,13 @@ export function createResultPearlLayer({ send }) {
       button.dataset.status = result.status;
       button.setAttribute("aria-label", `${result.status === "ready" ? "New result" : result.status} Pearl. ${result.expanded ? "Collapse result" : "Open result"}`);
       button.style.cssText = `left:clamp(8px,${placement.x}px,calc(100vw - 40px));top:clamp(8px,${placement.y}px,calc(100vh - 40px))`;
-      button.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">
-        <defs>
-          <radialGradient id="body-${gradientId}" cx="38%" cy="58%" r="72%"><stop offset="0" stop-color="#fffdf6"/><stop offset=".38" stop-color="#eef3ea"/><stop offset=".72" stop-color="#dbe7dd"/><stop offset="1" stop-color="#aebdb3"/></radialGradient>
-          <radialGradient id="nucleus-${gradientId}" cx="38%" cy="63%" r="58%"><stop offset="0" stop-color="#cfe6d7" stop-opacity=".68"/><stop offset=".48" stop-color="#e7e0b9" stop-opacity=".22"/><stop offset="1" stop-color="#b8d5c4" stop-opacity="0"/></radialGradient>
-          <linearGradient id="nacre-${gradientId}" x1="8%" y1="12%" x2="90%" y2="86%"><stop offset="0" stop-color="#c2ddcf" stop-opacity=".18"/><stop offset=".38" stop-color="#eef0c9" stop-opacity=".22"/><stop offset=".72" stop-color="#bdd8ca" stop-opacity=".28"/><stop offset="1" stop-color="#e8d7bf" stop-opacity=".12"/></linearGradient>
-          <linearGradient id="rim-${gradientId}" x1="10%" y1="6%" x2="86%" y2="94%"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".55" stop-color="#dce9e1" stop-opacity=".18"/><stop offset=".86" stop-color="#74857c" stop-opacity=".32"/></linearGradient>
-        </defs>
-        <ellipse class="contact" cx="51" cy="94" rx="24" ry="2"/>
-        <circle class="body" cx="50" cy="50" r="43" fill="url(#body-${gradientId})"/>
-        <ellipse class="nucleus" cx="42" cy="58" rx="25" ry="29" fill="url(#nucleus-${gradientId})"/>
-        <circle class="nacre" cx="50" cy="50" r="41" fill="url(#nacre-${gradientId})"/>
-        <ellipse class="reflection" cx="60" cy="65" rx="25" ry="12"/>
-        <circle class="rim" cx="50" cy="50" r="42" stroke="url(#rim-${gradientId})"/>
-        <ellipse class="glint" cx="33" cy="28" rx="7" ry="4" transform="rotate(-38 33 28)"/>
-        <circle class="pin" cx="27.5" cy="22.5" r="2"/>
-      </svg>`;
+      button.innerHTML = physicalPearlMarkup({
+        id: `result-${gradientId}`,
+        variant: "result",
+        state: result.status === "ready" ? "new" : result.status === "streaming" ? "executing" : result.status === "failed" ? "failed" : "idle",
+        size: 32,
+        decorative: true,
+      });
       shadow.append(button);
       if (result.expanded) {
         const plane = document.createElement("section");
@@ -126,12 +137,22 @@ export function createResultPearlLayer({ send }) {
         const left = placement.x > innerWidth / 2 ? Math.max(12, placement.x - Math.min(380, innerWidth - 24) - 12) : Math.min(innerWidth - Math.min(380, innerWidth - 24) - 12, placement.x + 44);
         const top = Math.max(12, Math.min(innerHeight - 220, placement.y - 20));
         plane.style.cssText = `left:${left}px;top:${top}px`;
-        plane.innerHTML = `<span class="status">${result.status}</span><p></p><div class="actions">
+        const routing = result.routing;
+        const routingMarkup = routing && ["choosing", "clarifying"].includes(routing.stage)
+          ? `<form class="routing" data-routing-form>
+              <label for="route-${gradientId}">${escapeHtml(routing.clarification || routing.question || "Where should this output go?")}</label>
+              <div class="routing-row"><input id="route-${gradientId}" name="answer" autocomplete="off" placeholder="Keep it here, a text box, Studio…"><button type="submit">Interpret</button></div>
+            </form>`
+          : routing?.stage === "confirming"
+            ? `<div class="routing"><p class="routing-confirm">${escapeHtml(routing.plan?.summary || "Confirm this placement?")}</p><div class="routing-choices"><button data-action="confirm-route">Confirm</button><button data-action="revise-route">Revise</button><button data-action="cancel-route">Cancel</button></div></div>`
+            : "";
+        plane.innerHTML = `<span class="status">${escapeHtml(result.status)}</span><p></p>${routingMarkup}<div class="actions">
           ${result.status === "streaming" ? `<button data-action="cancel">Stop</button>` : ""}
           ${result.status === "failed" ? `<button data-action="retry">Retry</button>` : ""}
           <button data-action="open">Open in new tab</button>
+          <button data-action="studio">Open Pearl in Studio</button>
           <button data-action="collapse">Collapse</button>
-        </div>`;
+        </div><span class="sr-status" role="status" aria-live="polite">${escapeHtml(routing?.clarification || routing?.plan?.summary || routing?.question || "")}</span>`;
         plane.querySelector("p").textContent = result.text || (result.status === "failed" ? "This result stopped before completion. The source checkpoint is preserved." : "Working…");
         shadow.append(plane);
       }
@@ -143,21 +164,93 @@ export function createResultPearlLayer({ send }) {
     const action = event.target.closest("[data-action]");
     if (resultButton) {
       const result = results.find((entry) => entry.id === resultButton.dataset.id);
-      await send("result-pearl-command", { command: result?.expanded ? "collapseResultPearl" : "expandResultPearl", resultId: result.id });
+      if (!result) return;
+      let gesture = gestures.get(result.id);
+      if (!gesture) {
+        gesture = createPearlGestureArbiter({
+          onSingle: () => send("result-pearl-command", { command: result.expanded ? "collapseResultPearl" : "expandResultPearl", resultId: result.id }),
+          onTriple: () => send("result-pearl-open-studio", { resultId: result.id }),
+        });
+        gestures.set(result.id, gesture);
+      }
+      gesture.release({ at: event.timeStamp, x: event.clientX, y: event.clientY, pointerType: event.pointerType || "mouse" });
       return;
     }
     if (!action) return;
     const resultId = action.closest(".plane").dataset.resultId;
     if (action.dataset.action === "collapse") await send("result-pearl-command", { command: "collapseResultPearl", resultId });
     if (action.dataset.action === "open") await send("result-pearl-open-tab", { resultId });
+    if (action.dataset.action === "studio") await send("result-pearl-open-studio", { resultId });
     if (action.dataset.action === "cancel") await send("result-pearl-cancel", { resultId });
     if (action.dataset.action === "retry") await send("result-pearl-retry", { resultId });
+    if (action.dataset.action === "confirm-route") await send("output-routing-confirm", { resultId, targetRevision: placementObservation().targetRevision });
+    if (action.dataset.action === "revise-route") await send("output-routing-revise", { resultId });
+    if (action.dataset.action === "cancel-route") await send("output-routing-cancel", { resultId });
   }
 
-  function keydown(event) {
+  async function keydown(event) {
+    const resultButton = event.target.closest(".result");
+    if (resultButton && event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      await send("result-pearl-open-studio", { resultId: resultButton.dataset.id });
+      return;
+    }
     if (event.key !== "Escape") return;
     const expanded = results.find((entry) => entry.expanded);
     if (expanded) send("result-pearl-command", { command: "collapseResultPearl", resultId: expanded.id });
+  }
+
+  function placementObservation() {
+    const selection = getSelection?.();
+    let selected = null;
+    if (selection && !selection.isCollapsed && selection.rangeCount) {
+      const range = selection.getRangeAt(0);
+      const element = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+        ? range.commonAncestorContainer
+        : range.commonAncestorContainer.parentElement;
+      const box = range.getBoundingClientRect();
+      selected = {
+        targetId: element?.id || null,
+        selector: element?.id ? `#${CSS.escape(element.id)}` : null,
+        quote: selection.toString().slice(0, 240),
+        editable: Boolean(element?.closest?.("textarea,input,[contenteditable=true]")),
+        offset: range.startOffset,
+        geometry: { x: box.x + scrollX, y: box.y + scrollY, width: box.width, height: box.height, coordinateSpace: "document" },
+      };
+    }
+    const activeEditable = document.activeElement?.matches?.("textarea,input:not([type=button]):not([type=submit]),[contenteditable=true]")
+      ? document.activeElement
+      : null;
+    if (!selected && activeEditable) {
+      const box = activeEditable.getBoundingClientRect();
+      const textControl = activeEditable instanceof HTMLInputElement || activeEditable instanceof HTMLTextAreaElement;
+      const offset = textControl ? activeEditable.selectionStart ?? 0 : selection?.anchorOffset ?? 0;
+      const end = textControl ? activeEditable.selectionEnd ?? offset : offset;
+      selected = {
+        targetId: activeEditable.id || null,
+        selector: activeEditable.id ? `#${CSS.escape(activeEditable.id)}` : null,
+        quote: textControl ? activeEditable.value.slice(offset, end).slice(0, 240) : selection?.toString().slice(0, 240) || "",
+        editable: true,
+        offset,
+        geometry: { x: box.x + scrollX, y: box.y + scrollY, width: box.width, height: box.height, coordinateSpace: "document" },
+      };
+    }
+    const anchor = selection?.anchorNode?.nodeType === Node.ELEMENT_NODE
+      ? selection.anchorNode
+      : selection?.anchorNode?.parentElement;
+    const nearest = anchor?.closest?.("p,li,blockquote,h1,h2,h3,h4,h5,h6,[data-pearl-canvas-artifact]");
+    const nearestBox = nearest?.getBoundingClientRect?.();
+    return {
+      selection: selected,
+      nearestBlock: nearest ? {
+        id: nearest.id || null,
+        selector: nearest.id ? `#${CSS.escape(nearest.id)}` : null,
+        quote: nearest.textContent?.trim().slice(0, 240),
+        geometry: { x: nearestBox.x + scrollX, y: nearestBox.y + scrollY, width: nearestBox.width, height: nearestBox.height, coordinateSpace: "document" },
+      } : null,
+      targetRevision: document.body?.textContent?.length || 0,
+      viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY, devicePixelRatio },
+    };
   }
 
   function hydrate(next) {
@@ -186,5 +279,13 @@ export function createResultPearlLayer({ send }) {
   addEventListener("scroll", render, { passive: true });
   addEventListener("resize", render, { passive: true });
   ensure();
-  return { hydrate, layout, render };
+  shadow.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-routing-form]");
+    if (!form) return;
+    event.preventDefault();
+    const resultId = form.closest(".plane").dataset.resultId;
+    const answer = new FormData(form).get("answer");
+    await send("output-routing-answer", { resultId, answer, observation: placementObservation() });
+  });
+  return { hydrate, layout, render, observe: placementObservation };
 }

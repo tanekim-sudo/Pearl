@@ -136,8 +136,9 @@ try {
   await openPanelView("Generate");
   await panel.screenshot({ path: path.join(evidence, "07-queued-explicit-go.png"), fullPage: true });
 
+  panel.once("dialog", (dialog) => dialog.accept());
   await panel.getByRole("button", { name: "GO", exact: true }).click();
-  await panel.getByText(/Preview:/).waitFor();
+  await panel.locator(".orb-panel.active").getByText(/Preview:/).waitFor();
   if (await page.locator("#field").inputValue() !== before) throw new Error("execution mutated page before a result action");
   await panel.screenshot({ path: path.join(evidence, "08-preview-before-insert.png"), fullPage: true });
 
@@ -148,17 +149,33 @@ try {
     const tabs = await chrome.tabs.query({});
     const current = await chrome.tabs.getCurrent();
     const targetTabId = tabs.find((tab) => tab.id !== current?.id && !tab.url?.startsWith("chrome://"))?.id;
-    const response = await chrome.runtime.sendMessage({
+    const state = await chrome.runtime.sendMessage({
       version: 1,
-      type: "result-action",
-      requestId: "audit-insert",
+      type: "pearl-state-get",
+      requestId: "audit-result-state",
+      payload: {},
+    });
+    const result = Object.values(state?.value?.resultPearls || {}).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+    if (!result) throw new Error("staged Result Pearl was not persisted");
+    const interpreted = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "output-routing-answer",
+      requestId: "audit-route-insert",
       payload: {
+        resultId: result.id,
         targetTabId,
-        text: "Preview: selected material",
-        plan: { operation: "insert", anchor: { selector: "#field", start: 23, end: 23 } },
+        answer: "insert at the selected caret",
       },
     });
-    if (!response?.ok || !response.value?.ok) throw new Error(response?.error || response?.value?.error || "insert failed");
+    const routing = interpreted?.value?.object;
+    if (!interpreted?.ok || routing?.stage !== "confirming") throw new Error(interpreted?.error || "placement interpretation failed");
+    const confirmed = await chrome.runtime.sendMessage({
+      version: 1,
+      type: "output-routing-confirm",
+      requestId: "audit-confirm-insert",
+      payload: { resultId: result.id, targetRevision: routing.plan.targetRevision },
+    });
+    if (!confirmed?.ok) throw new Error(confirmed?.error || "confirmed insertion failed");
   });
   await page.bringToFront();
   await page.waitForTimeout(150);

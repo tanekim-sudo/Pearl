@@ -122,7 +122,7 @@ try {
   const confirmationText = (await page.locator(".orb-approval").innerText()).replace(/\s+/g, " ");
   check("destructive voice command remains approval-gated", /clear|delete|workspace/i.test(confirmationText), confirmationText);
 
-  await page.getByRole("button", { name: "Run plan", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await page.waitForFunction(() => {
     const input = document.querySelector('input[aria-label="Tell Pearl your goal"]');
     return input && !input.disabled && !document.querySelector(".orb-approval");

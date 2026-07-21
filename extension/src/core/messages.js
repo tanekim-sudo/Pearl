@@ -1,6 +1,11 @@
 export const MESSAGE_VERSION = 1;
 
 export const MESSAGE_TYPES = Object.freeze([
+  "pearl-action",
+  "pearl-entity-get",
+  "pearl-open-studio",
+  "result-pearl-open-studio",
+  "pearl-effect-animation",
   "capture-selection",
   "make-pearl",
   "fragments-changed",
@@ -43,6 +48,9 @@ export const MESSAGE_TYPES = Object.freeze([
   "privacy-lock",
   "privacy-unlock",
   "privacy-delete-local",
+  "privacy-policy-get",
+  "privacy-policy-propose",
+  "privacy-policy-apply",
   "library-refresh",
   "library-import-preview",
   "library-import",
@@ -73,6 +81,12 @@ export const MESSAGE_TYPES = Object.freeze([
   "result-pearl-redeem",
   "result-pearl-cancel",
   "result-pearl-retry",
+  "output-routing-answer",
+  "output-routing-confirm",
+  "output-routing-revise",
+  "output-routing-cancel",
+  "output-routing-observe",
+  "output-placement-effect",
 ]);
 
 const allowedKeys = new Set(["version", "type", "requestId", "payload"]);

@@ -1,3 +1,5 @@
+import { createPearlPrivacyPolicy } from "./pearl-privacy-policy.js";
+
 export const RESULT_PEARL_VERSION = 1;
 export const RESULT_PEARL_STATUSES = Object.freeze(["streaming", "ready", "failed", "opened", "accepted", "archived"]);
 export const RESULT_DESTINATION_TYPES = Object.freeze([
@@ -139,6 +141,8 @@ export function normalizeResultPearl(value = {}) {
     openedAt: value.openedAt ? finite(value.openedAt) : null,
     acceptedAt: value.acceptedAt ? finite(value.acceptedAt) : null,
     provenance: clone(value.provenance || {}),
+    routing: clone(value.routing || null),
+    privacyPolicy: createPearlPrivacyPolicy(value.privacyPolicy || { pearlId: value.id, provenance: { source: "result-pearl-local-default" } }),
   };
 }
 

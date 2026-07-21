@@ -203,6 +203,19 @@ const RAW_CAPABILITIES = [
   ["clearFunctions", {}, true, ["function"], "Clear user Functions after confirmation"],
   ["clearLenses", {}, true, ["lens"], "Clear contextual Lenses after confirmation"],
   ["clearWorkspaceDomains", { domains: "array" }, true, ["paper", "ai", "move", "function", "lens"], "Clear chosen domains after confirmation"],
+  ["observeUnifiedPearl", { pearlId: "string?" }, false, ["scene", "privacy", "interface"], "Observe every authorized section of the active canonical Pearl and state precise inaccessible boundaries", "app"],
+  ["executeUnifiedPearlAction", { pearlId: "string?", command: "string", args: "object?" }, false, ["scene", "privacy", "interface"], "Execute one validated canonical Pearl action with policy, checkpoint, receipt, animation, undo, and idempotency", "app"],
+  ["openPearlStudio", { pearlId: "string?" }, false, ["scene", "interface"], "Open the same canonical Pearl in its secure editable full-tab Studio", "app"],
+  ["inspectPearlCognition", { pearlId: "string?" }, false, ["scene", "move", "function", "lens"], "Observe typed Primitive, Role, Lens, Move, Function and Pearl layers with uncertainty and source mapping", "app"],
+  ["proposePearlCognitiveEdit", { pearlId: "string?", layerId: "string", patch: "object", rationale: "string?" }, false, ["scene", "move", "function", "lens"], "Propose an evidence-linked semantic patch for one cognitive layer", "app"],
+  ["applyPearlCognitiveEdit", { pearlId: "string?", proposalId: "string" }, true, ["scene", "move", "function", "lens"], "Apply a reviewed cognitive semantic patch with checkpoint and undo", "app"],
+  ["composePearlCognitiveLayers", { pearlId: "string?", leftId: "string", rightId: "string", intent: "string?" }, false, ["scene", "move", "function", "lens"], "Preview typed layer composition with visible bridge Moves", "app"],
+  ["applyPearlCognitiveComposition", { pearlId: "string?", leftId: "string", rightId: "string", intent: "string?" }, true, ["scene", "move", "function", "lens"], "Apply a reviewed typed layer composition with visible bridge Moves", "app"],
+  ["mutatePearlCognitiveLayer", { pearlId: "string?", layerId: "string", operation: "layout|reorder|nest|link|duplicate|fork|split|remove", value: "object?", to: "number?" }, true, ["scene", "move", "function", "lens"], "Move, reorder, nest, link, duplicate, fork, split, or remove one typed cognitive layer", "app"],
+  ["resolvePearlCognitiveUncertainty", { pearlId: "string?", layerId: "string", resolution: "object?" }, true, ["scene", "move", "function", "lens"], "Resolve, defer, or preserve a layer's evidence-linked uncertainty", "app"],
+  ["playPearlFunction", { pearlId: "string?", functionLayerId: "string", inputs: "object?", lensIds: "array?", roleId: "string?", branchId: "string?" }, false, ["scene", "function"], "Run a resolved Function layer from an exact checkpoint", "app"],
+  ["stepPearlFunction", { pearlId: "string?", effect: "object?" }, false, ["scene", "function"], "Advance one Move and retain its intermediate Result Pearl", "app"],
+  ["cancelPearlFunction", { pearlId: "string?" }, false, ["scene", "function"], "Cancel playback while retaining the exact checkpoint", "app"],
   ["capturePageSelection", {}, false, ["extension", "highlight"], "Capture the current external page selection", "extension"],
   ["inspectLocalPrivacy", {}, false, ["privacy"], "Inspect this profile's local storage and explicit sync state", "app"],
   ["exportLocalData", {}, false, ["privacy"], "Export this profile's local Pearl metadata after an explicit request", "app"],
@@ -210,6 +223,20 @@ const RAW_CAPABILITIES = [
   ["lockLocalPearls", {}, false, ["privacy"], "Passphrase-wrap and lock this profile's local Pearl metadata with an unrecoverable-secret warning", "app"],
   ["unlockLocalPearls", {}, false, ["privacy"], "Unlock this profile's local Pearl metadata with its device-local passphrase", "app"],
   ["deleteLocalData", {}, true, ["privacy"], "Delete this profile's envelope, key, receipts, handoffs, session, canvases, and blobs after confirmation", "app"],
+  ["inspectPearlPrivacyPolicy", { pearlId: "string?" }, false, ["privacy", "scene"], "Inspect one Pearl's effective versioned policy and authorized boundaries", "app"],
+  ["proposePearlPrivacyChange", { pearlId: "string?", patch: "object" }, false, ["privacy", "scene"], "Propose an exact reviewable Pearl privacy-policy diff", "app"],
+  ["applyPearlPrivacyChange", { pearlId: "string?", proposalId: "string" }, true, ["privacy", "scene"], "Apply a reviewed Pearl privacy-policy diff with restrictive inheritance", "app"],
+  ["preparePearlShare", { pearlId: "string?", selection: "object?" }, false, ["scene", "privacy", "interface"], "Prepare a redaction, uncertainty, provenance, and privacy review for one Pearl", "app"],
+  ["sharePearl", { pearlId: "string?", package: "object", options: "object" }, true, ["scene", "privacy", "interface"], "Create a reviewed scoped Pearl share grant", "app"],
+  ["revokePearlShare", { pearlId: "string?", grantId: "string", actorId: "string" }, true, ["scene", "privacy", "interface"], "Revoke one Pearl share grant and retain its audit state", "app"],
+  ["installSharedPearl", { package: "object", validationReceipt: "object", localPearlId: "string" }, true, ["scene", "privacy", "interface"], "Install a verified shared Pearl atomically into local inventory", "app"],
+  ["compileAutomationPearl", { pearlId: "string?", evidence: "array", inference: "object?", id: "string?" }, false, ["scene", "function", "lens"], "Compile untrusted prompt evidence into a reviewable Automation Pearl with verbatim source mapping", "app"],
+  ["reviseAutomationPearl", { pearlId: "string", patch: "object", expectedVersion: "number" }, false, ["scene", "function", "lens"], "Revise an Automation Pearl through optimistic concurrency while retaining evidence lineage", "app"],
+  ["researchAutomationPearl", { pearlId: "string", plan: "object" }, true, ["scene", "function", "lens"], "Create a bounded privacy-guarded verified research plan after disclosure approval", "app"],
+  ["approveAutomationContextPatch", { pearlId: "string", patchId: "string" }, true, ["scene", "function", "lens"], "Approve an exact verified-source context patch into an Automation Pearl", "app"],
+  ["chooseResultDestination", { pearlId: "string", answer: "string", observation: "object?" }, false, ["scene", "ai", "interface"], "Interpret a destination answer into a typed PlacementPlan without placing output", "app"],
+  ["confirmResultPlacement", { pearlId: "string", targetRevision: "number?" }, true, ["scene", "ai", "interface"], "Confirm and execute the reviewed Result Pearl placement exactly once", "app"],
+  ["cancelResultPlacement", { pearlId: "string" }, false, ["scene", "ai", "interface"], "Cancel routing while preserving the staged Result Pearl", "app"],
   ["openExternalSaveAs", {}, false, ["extension", "move", "function", "lens", "interface"], "Open the external Move, Function, or Lens chooser", "extension"],
   ["saveExternalCaptureAsMove", {}, false, ["extension", "move", "highlight"], "Save captured page text verbatim as a Move", "extension"],
   ["saveExternalCaptureAsFunction", {}, false, ["extension", "function", "highlight"], "Wrap captured page text verbatim as a one-step Function", "extension"],
@@ -289,6 +316,27 @@ const RAW_CAPABILITIES = [
   ["archiveExternalResultPearl", { resultId: "string" }, false, ["extension", "ai"], "Archive one result Pearl without deleting provenance", "extension"],
   ["deleteExternalResultPearl", { resultId: "string" }, true, ["extension", "ai"], "Delete one result Pearl after precise confirmation", "extension"],
   ["undoExternalResultPearl", { resultId: "string" }, false, ["extension", "ai"], "Undo the latest placement, destination, expansion, or status change for a result Pearl", "extension"],
+  ["executeExternalPearlAction", { pearlId: "string", command: "string", args: "object?" }, false, ["extension", "scene", "privacy"], "Execute one validated canonical Pearl action and return its effect receipt", "extension"],
+  ["openExternalPearlStudio", { pearlId: "string?" }, false, ["extension", "scene", "interface"], "Open the same local Pearl in its secure editable full-tab Studio", "extension"],
+  ["inspectExternalPearlCognition", { pearlId: "string" }, false, ["extension", "scene", "move", "function", "lens"], "Observe typed cognitive layers, uncertainty, and source mapping", "extension"],
+  ["proposeExternalPearlCognitiveEdit", { pearlId: "string", layerId: "string", patch: "object", rationale: "string?" }, false, ["extension", "scene", "move", "function", "lens"], "Propose an evidence-linked cognitive layer patch", "extension"],
+  ["applyExternalPearlCognitiveEdit", { pearlId: "string", proposalId: "string" }, true, ["extension", "scene", "move", "function", "lens"], "Apply a reviewed cognitive layer patch", "extension"],
+  ["composeExternalPearlCognitiveLayers", { pearlId: "string", leftId: "string", rightId: "string", intent: "string?" }, false, ["extension", "scene", "move", "function", "lens"], "Preview typed composition with bridge Moves", "extension"],
+  ["applyExternalPearlCognitiveComposition", { pearlId: "string", leftId: "string", rightId: "string", intent: "string?" }, true, ["extension", "scene", "move", "function", "lens"], "Apply reviewed typed composition with bridge Moves", "extension"],
+  ["mutateExternalPearlCognitiveLayer", { pearlId: "string", layerId: "string", operation: "layout|reorder|nest|link|duplicate|fork|split|remove", value: "object?", to: "number?" }, true, ["extension", "scene", "move", "function", "lens"], "Remix one typed cognitive layer through canonical mutation", "extension"],
+  ["resolveExternalPearlCognitiveUncertainty", { pearlId: "string", layerId: "string", resolution: "object?" }, true, ["extension", "scene", "move", "function", "lens"], "Resolve or defer visible cognitive uncertainty", "extension"],
+  ["playExternalPearlFunction", { pearlId: "string", functionLayerId: "string", inputs: "object?", lensIds: "array?", roleId: "string?", branchId: "string?" }, false, ["extension", "scene", "function"], "Run a resolved Function from an exact checkpoint", "extension"],
+  ["stepExternalPearlFunction", { pearlId: "string", effect: "object?" }, false, ["extension", "scene", "function"], "Advance one Function Move and retain its Result Pearl", "extension"],
+  ["cancelExternalPearlFunction", { pearlId: "string" }, false, ["extension", "scene", "function"], "Cancel Function playback and retain its checkpoint", "extension"],
+  ["inspectExternalPearlPrivacy", { pearlId: "string?" }, false, ["extension", "privacy"], "Observe the effective policy governing one Pearl", "extension"],
+  ["proposeExternalPearlPrivacyChange", { pearlId: "string?", patch: "object" }, false, ["extension", "privacy"], "Propose an exact reviewable privacy-policy patch", "extension"],
+  ["applyExternalPearlPrivacyChange", { pearlId: "string", proposalId: "string" }, false, ["extension", "privacy"], "Apply a previously reviewed Pearl privacy-policy patch", "extension"],
+  ["prepareExternalPearlShare", { pearlId: "string", selection: "object?" }, false, ["extension", "scene", "privacy"], "Prepare a local scoped Pearl sharing review", "extension"],
+  ["installExternalSharedPearl", { pearlId: "string", package: "object", validationReceipt: "object", localPearlId: "string" }, true, ["extension", "scene", "privacy"], "Install a verified shared Pearl atomically", "extension"],
+  ["compileExternalAutomationPearl", { pearlId: "string", evidence: "array", inference: "object?", id: "string?" }, false, ["extension", "scene", "function", "lens"], "Compile prompt evidence into a reviewable local Automation Pearl", "extension"],
+  ["chooseExternalResultDestination", { resultId: "string", answer: "string" }, false, ["extension", "ai"], "Interpret a destination answer for a staged Result Pearl without placing it", "extension"],
+  ["confirmExternalResultPlacement", { resultId: "string" }, false, ["extension", "ai"], "Confirm and execute the reviewed destination exactly once", "extension"],
+  ["cancelExternalResultPlacement", { resultId: "string" }, false, ["extension", "ai"], "Cancel routing while preserving the staged Result Pearl", "extension"],
 ];
 
 const HANDLER_CONFIRMED_CAPABILITIES = new Set([
@@ -602,6 +650,11 @@ const PACKAGE_APPROVAL_CAPABILITIES = new Set([
   "teachExternalPersonalCommand",
   "saveExternalTasteTeaching",
 ]);
+const ROUTING_PROPOSAL_CAPABILITIES = new Set([
+  "insertExternalResult",
+  "replaceExternalSelection",
+  "annotateExternalResult",
+]);
 
 export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
   ([name, args, destructive, domains, purpose, platform = "app"]) => ({
@@ -639,14 +692,14 @@ export const COMPANION_CAPABILITIES = RAW_CAPABILITIES.map(
         ? "framework"
         : "none",
     approval: {
-      required: destructive || PACKAGE_APPROVAL_CAPABILITIES.has(name) || platform === "extension" && /publish|insert|replace|annotate|externalwrite/i.test(name),
+      required: destructive || PACKAGE_APPROVAL_CAPABILITIES.has(name) || platform === "extension" && !ROUTING_PROPOSAL_CAPABILITIES.has(name) && /publish|insert|replace|annotate|externalwrite/i.test(name),
       scope: destructive
         ? "object-or-domain"
         : /publish|deprecate/i.test(name)
           ? "publish"
           : PACKAGE_APPROVAL_CAPABILITIES.has(name)
             ? "package-version"
-        : platform === "extension" && /publish|insert|replace|annotate|externalwrite/i.test(name)
+        : platform === "extension" && !ROUTING_PROPOSAL_CAPABILITIES.has(name) && /publish|insert|replace|annotate|externalwrite/i.test(name)
           ? "external-write"
           : "none",
     },

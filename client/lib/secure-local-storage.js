@@ -4,6 +4,7 @@ import {
   privacyProfileHash,
   redactPrivacyDiagnostic,
 } from "../../shared/local-privacy-vault.js";
+import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 
 const DB_NAME = "pearl-local-private-v1";
 const ACTIVE_PROFILE_KEY = "lens.privacy.active-profile.v1";
@@ -112,6 +113,10 @@ export async function installSecureLocalStorage() {
       for (const key of keys) original.removeItem.call(storage, key);
     });
     values = await vault.read();
+  }
+  if (!locked && !values[PEARL_STORE_KEY] && (values.semanticOrbs || values.resultPearls || values.pearlPageCanvases || values.automationPearls)) {
+    values[PEARL_STORE_KEY] = migrateLegacyPearlState(values);
+    await vault.write(values);
   }
 
   let flushChain = Promise.resolve();

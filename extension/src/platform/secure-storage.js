@@ -3,6 +3,7 @@ import {
   createLocalPrivacyVault,
   privacyProfileHash,
 } from "../../../shared/local-privacy-vault.js";
+import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
 
 const DATABASE = "pearl-extension-private-v1";
 const ACTIVE_PROFILE_KEY = "pearlActiveProfile";
@@ -127,6 +128,10 @@ export function createSecureExtensionStorage(raw) {
       } else {
         try {
           values = await vault.read();
+          if (!values[PEARL_STORE_KEY] && (values.semanticOrbs || values.resultPearls || values.pearlPageCanvases || values.automationPearls)) {
+            values[PEARL_STORE_KEY] = migrateLegacyPearlState(values);
+            await vault.write(values);
+          }
         } catch (error) {
           if (!/locked/i.test(String(error?.message || ""))) throw error;
           values = {};

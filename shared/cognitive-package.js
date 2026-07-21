@@ -206,7 +206,12 @@ export async function installCognitivePackageAtomic(pkg, {
     await writeInstalled(next);
     return { type: "package-install-receipt", id: `${key}@${pkg.version}`, previousVersion: before[key]?.version || null };
   } catch (error) {
-    await writeInstalled(before);
-    throw new Error(`package install rolled back: ${error.message}`);
+    try {
+      await writeInstalled(before);
+      throw new Error(`package install rolled back: ${error.message}`);
+    } catch (rollbackError) {
+      if (/^package install rolled back:/.test(rollbackError.message)) throw rollbackError;
+      throw new Error(`package install failed and rollback could not be verified: ${error.message}; ${rollbackError.message}`);
+    }
   }
 }
