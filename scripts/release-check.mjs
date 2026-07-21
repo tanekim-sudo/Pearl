@@ -26,6 +26,7 @@ run("node", ["scripts/companion-capability-graph-gate.mjs"]);
 run("npm", ["run", "orb:matrix:check"]);
 run("npm", ["run", "requirements:check"]);
 run("npm", ["run", "test:orb"]);
+run("npm", ["run", "test:audit-truth"]);
 run("npm", ["test"]);
 run("npm", ["run", "build:extension"]);
 run("npm", ["run", "build"], { env: { VITE_LENS_EXTENSION_ID: process.env.VITE_LENS_EXTENSION_ID || "audit-extension-id" } });

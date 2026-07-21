@@ -6,7 +6,7 @@ import { lensRackRecord, selectRack } from "../../../shared/lens-rack.js";
 import { createMessage } from "../core/messages.js";
 import { trackFunnel } from "../core/funnel-analytics.js";
 import { portableLensPayload, writeDragPayload } from "../core/portable.js";
-import { executeExtensionVerb, parseExtensionIntent } from "./companion.js";
+import { executeExtensionVerb, extensionCommandNeedsApproval, planExtensionIntent } from "./companion.js";
 import { outputContractFor, outputContractLabel } from "../../../shared/output-specifications.js";
 import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
@@ -896,9 +896,12 @@ function App() {
         setPearlOpen(false);
         return;
       }
-      const command = parseExtensionIntent(raw);
+      const planned = await planExtensionIntent(raw, {
+        requestPlan: (request) => call("adaptive-companion-plan", { request }),
+      });
+      const command = planned.commands[0];
       const outputs = session.results.flatMap((run) => run.outputs);
-      const approvalRequired = [
+      const approvalRequired = extensionCommandNeedsApproval(command.name) || [
         "installExternalPackage", "teachExternalPersonalCommand", "deleteExternalLocalData",
         "removeExternalPearlAudioTrack", "saveExternalPearlTrackOffline", "deleteExternalResultPearl",
       ].includes(command.name);
@@ -915,7 +918,9 @@ function App() {
                   ? "Delete this persisted result Pearl? Its source material will not be changed."
           : command.name === "installExternalPackage"
             ? `Verify and install ${command.args.manifest?.namespace}/${command.args.manifest?.name}@${command.args.manifest?.version}?`
-            : `${command.name === "insertExternalResult" ? "Insert into" : command.name === "replaceExternalSelection" ? "Replace selection in" : "Annotate"} the current verified page target?\n\nOnly the staged result and current target are in scope.`
+            : extensionCommandNeedsApproval(command.name)
+              ? `Allow Pearl to run ${command.name} with the shown arguments?\n\n${JSON.stringify(command.args || {}, null, 2).slice(0, 1200)}`
+              : `${command.name === "insertExternalResult" ? "Insert into" : command.name === "replaceExternalSelection" ? "Replace selection in" : "Annotate"} the current verified page target?\n\nOnly the staged result and current target are in scope.`
       );
       if (!confirmed) return;
       await executeExtensionVerb(command.name, command.args, {

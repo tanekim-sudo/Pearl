@@ -24,6 +24,8 @@
     "audit:pearl-visual-contract": "node scripts/pearl-visual-contract-audit.mjs",
     "requirements:generate": "node scripts/generate-requirements-ledger.mjs",
     "requirements:check": "node scripts/generate-requirements-ledger.mjs --check",
+    "test:live-provider": "node scripts/live-provider-smoke.mjs",
+    "test:audit-truth": "node --test client/lib/companion-safety.test.js server/research-provider.test.js server/run-request.test.js extension/tests/api-client.test.js extension/tests/core.test.js",
     "test:orb": "node --test shared/orb-universe.test.js client/lib/unified-workspace.test.js",
     "test:pearl-visual": "node --test shared/pearl-visual-material.test.js",
     "test:pearl-shell": "node --test client/lib/pearl-shell.test.js",

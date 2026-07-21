@@ -12,7 +12,14 @@ supabase/.branches
 .env*
 .pw-browsers/
 .cache/ms-playwright/
-audit-shots/
+audit-shots/*
+!audit-shots/audit-truth-remediation-2026-07/
+audit-shots/audit-truth-remediation-2026-07/*
+!audit-shots/audit-truth-remediation-2026-07/web/
+!audit-shots/audit-truth-remediation-2026-07/web/**
+!audit-shots/audit-truth-remediation-2026-07/extension/
+!audit-shots/audit-truth-remediation-2026-07/extension/**
+!audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json
 extension/release/*.zip
 client/public/downloads/
 extension/.diag-profile/

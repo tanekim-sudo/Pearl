@@ -44,6 +44,7 @@ export async function runPrompt({
   model = "auto",
   jsonSchema = null,
   tools = null,
+  toolChoice = null,
   reasoningEffort = null,
   requiredCapabilities = [],
 }) {
@@ -66,6 +67,7 @@ export async function runPrompt({
     signal,
     jsonSchema,
     tools,
+    toolChoice,
     reasoningEffort,
     requiredCapabilities,
   })));

@@ -128,8 +128,8 @@ try {
     if (await page.getByRole("region", { name: "Continue extension work" }).count()) {
       throw new Error("zero-state root exposes a continuation panel without material");
     }
-    if (!await page.getByRole("heading", { name: "Begin with something you noticed." }).isVisible()) {
-      throw new Error("cold root does not explain the first action");
+    if (!await page.locator(".pearl-start-hint").isVisible()) {
+      throw new Error("cold root does not attach the first action to Pearl");
     }
     if (await page.locator(".orb-continuation-pearl").isVisible()) throw new Error("idle root duplicates the primary Pearl");
     if (await page.locator(".companion-orb").count() !== 1) throw new Error("off-Scene Pearl is not the single persistent command affordance");
@@ -347,6 +347,44 @@ try {
     await page.getByRole("button", { name: "Details", exact: true }).click();
     await page.locator(".orb-stage-table").waitFor();
   });
+  await shot("04b-stage-mobile-placement", { width: 390, height: 844 }, "/scene/mobile-audit", async (page) => {
+    await page.evaluate(() => {
+      localStorage.setItem("lens.orb.placement.v1", JSON.stringify({ x: 900, y: 700, manual: true }));
+      localStorage.setItem("lens.scenes.v4", JSON.stringify({
+        version: 4,
+        activeSceneId: "mobile-audit",
+        scenes: [{
+          id: "mobile-audit",
+          kind: "scene",
+          version: 4,
+          name: "Mobile Audit",
+          items: [{ id: "mobile-material", type: "text", text: "Visible mobile material", x: 900, y: 600 }],
+          nodes: [],
+          frames: [],
+          orbInstances: [],
+          semanticOrbs: [],
+          activeSemanticOrbId: null,
+          workingSet: { context: [], lenses: [], selections: [], branches: [], checkpoints: [] },
+          camera: { x: 0, y: 0, scale: 1 },
+        }],
+      }));
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    const pearl = await page.locator(".companion-orb").boundingBox();
+    if (!pearl || pearl.x < 0 || pearl.x + pearl.width > 390 || pearl.y < 0 || pearl.y + pearl.height > 844) {
+      throw new Error(`persisted Pearl remained off-screen: ${JSON.stringify(pearl)}`);
+    }
+    const material = await page.locator('[data-material-id="mobile-material"]').boundingBox();
+    if (!material || material.x < 0 || material.x + material.width > 390) {
+      throw new Error(`mobile Stage material remained off-screen: ${JSON.stringify(material)}`);
+    }
+    await page.keyboard.press("Tab");
+    const focused = await page.evaluate(() => ({
+      tag: document.activeElement?.tagName,
+      visible: Boolean(document.activeElement?.matches(":focus-visible")),
+    }));
+    if (focused.tag === "BODY" || !focused.visible) throw new Error(`mobile primary focus is not visible: ${JSON.stringify(focused)}`);
+  });
   await shot("05-install-reduced-motion", { width: 1280, height: 800 }, "/install", async (page) => {
     const animations = await page.evaluate(() => document.getAnimations().filter((entry) => entry.playState === "running").length);
     if (animations) throw new Error(`reduced-motion setup still animates: ${animations}`);
@@ -361,7 +399,7 @@ try {
       return { outline: style.outlineStyle, width: style.outlineWidth, offset: style.outlineOffset };
     });
     if (focus.outline === "none" || Number.parseFloat(focus.width) < 1) throw new Error(`high-contrast command focus is not visible: ${JSON.stringify(focus)}`);
-    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps the open Companion");
+    if (await page.locator(".pearl-start-hint").count()) throw new Error("first-use prompt overlaps the open Companion");
   });
   await shot("07-command-200-zoom-light", { width: 720, height: 450 }, "/", async (page) => {
     await page.locator(".companion-orb").click();
@@ -372,7 +410,7 @@ try {
     if (!box || box.x < 0 || box.y < 0 || box.x + box.width > viewport.width || box.y + box.height > viewport.height) {
       throw new Error(`command surface is clipped at 200% zoom: ${JSON.stringify({ box, viewport })}`);
     }
-    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps the zoomed Companion");
+    if (await page.locator(".pearl-start-hint").count()) throw new Error("first-use prompt overlaps the zoomed Companion");
   });
   await shot("08-destructive-approval-390", { width: 390, height: 844 }, "/", async (page) => {
     await page.locator(".companion-orb").click();
@@ -383,7 +421,7 @@ try {
     if (!await page.getByRole("button", { name: "Confirm" }).isVisible() || !await page.getByRole("button", { name: "Cancel" }).isVisible()) {
       throw new Error("destructive approval does not expose both clear choices");
     }
-    if (Number(await page.locator(".orb-home-prompt").evaluate((node) => getComputedStyle(node).opacity)) > 0) throw new Error("first-use prompt overlaps destructive confirmation");
+    if (await page.locator(".pearl-start-hint").count()) throw new Error("first-use prompt overlaps destructive confirmation");
   });
   fs.writeFileSync(path.join(evidence, "web-results.json"), `${JSON.stringify({
     version: 1,

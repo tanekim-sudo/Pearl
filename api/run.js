@@ -1,8 +1,8 @@
-import { runPrompt } from "../server/llm.js";
 import { guardAiRequest } from "../server/api-guard.js";
 import { getModelCatalog } from "../server/model-catalog.js";
 import { encodeLens } from "../server/lens-encoder.js";
 import { startGenerationBatch } from "../server/generation-runner.js";
+import { executeRunRequest } from "../server/run-request.js";
 
 export default async function handler(req, res) {
   const route = String(req.query?.route || "");
@@ -38,21 +38,7 @@ export default async function handler(req, res) {
       send({ type: "batch-completed", batch: await handle.done });
       return res.end();
     }
-    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact, profile, modelPreference } = body;
-    const data = await runPrompt({
-      prompt,
-      text,
-      count,
-      image,
-      system,
-      maxTokens,
-      research,
-      timeoutMs,
-      compact,
-      profile,
-      model: modelPreference,
-    });
-    res.status(200).json(data);
+    res.status(200).json(await executeRunRequest(body));
   } catch (err) {
     console.error("[lens] /api/run failed:", err?.message || err);
     if (res.headersSent) {

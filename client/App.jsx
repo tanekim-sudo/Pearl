@@ -273,8 +273,8 @@ import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion
 import {
   buildWorkspaceSnapshot,
   queryWorkspace,
-  workspacePromptContext,
 } from "./lib/companion-observation.js";
+import { createCompanionDisclosureBundle, modelRequestBody } from "./lib/companion-safety.js";
 import { layoutObjects, avoidOverlaps } from "./lib/companion-geometry.js";
 import { executeCompanionPlan } from "./lib/companion-executor.js";
 import { planNeedsPreview, summarizePlan } from "./lib/companion-plan.js";
@@ -2134,6 +2134,8 @@ async function runClaude(prompt, text, opts = {}) {
     profile = null,
     modelPreference = "auto",
     returnEnvelope = false,
+    jsonSchema = null,
+    tools = null,
   } = opts;
   const controller = new AbortController();
   const serverTimeoutMs = timeoutMs || PHASE_TIMEOUT.synthesizeComposite;
@@ -2148,7 +2150,7 @@ async function runClaude(prompt, text, opts = {}) {
     const res = await fetch("/api/run", {
       method: "POST",
       headers: apiAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
+      body: JSON.stringify(modelRequestBody({
         prompt,
         text,
         count: 1,
@@ -2160,7 +2162,10 @@ async function runClaude(prompt, text, opts = {}) {
         compact,
         profile,
         modelPreference,
-      }),
+        jsonSchema,
+        tools,
+        purpose: profile === "companion_planning" ? "companion-planning" : undefined,
+      })),
       signal: controller.signal,
     });
     const raw = await res.text();
@@ -15937,10 +15942,46 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     });
     const workspace = captureLiveWorkspace();
     const autonomy = memory.preferences?.autonomy || "preview-complex";
+    const canonicalPrivacyPolicy = ensureCanonicalPearlStore().entity?.privacy?.policy;
+    let disclosure = createCompanionDisclosureBundle({
+      snapshot: workspace,
+      policy: canonicalPrivacyPolicy,
+      approved: false,
+    });
+    if (disclosure.code === "DISCLOSURE_APPROVAL_REQUIRED") {
+      const privacyApproval = await onPlan?.({
+        title: "Share bounded context with the model",
+        steps: ["Selection, visible objects, bounded history, and authorized planning memory", "No credentials or hidden workspace data"],
+        expectedEffects: ["One model-planning disclosure receipt"],
+        preview: true,
+        privacyDisclosure: true,
+      });
+      onPlan?.(null);
+      if (privacyApproval?.decision === "accept") {
+        disclosure = createCompanionDisclosureBundle({
+          snapshot: workspace,
+          policy: canonicalPrivacyPolicy,
+          approved: true,
+        });
+      }
+    }
+    if (!disclosure.allowed) {
+      updateCommand(commandEntry.id, {
+        status: "blocked",
+        failure: disclosure.reason,
+        effects: [],
+        privacyPatch: disclosure.minimumPatch,
+      });
+      return {
+        visible: true,
+        text: `${disclosure.reason} Review the proposed PrivacyPolicy change before sharing workspace context.`,
+      };
+    }
+    updateCommand(commandEntry.id, { disclosureReceipt: disclosure.receipt });
     onPhase?.("planning");
     const raw = await runClaude("Create the validated action plan for this request.", text, {
       system: buildAdaptiveCompanionPrompt({
-        workspaceContext: workspacePromptContext(workspace),
+        workspaceContext: JSON.stringify(disclosure.bundle),
         autonomy,
         mode,
         goal: goalEnvelope,
@@ -15949,6 +15990,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       timeoutMs: PHASE_TIMEOUT.synthesizeComposite,
       clientAbortMs: null,
       signal,
+      profile: "companion_planning",
+      jsonSchema: {
+        name: "companion_plan",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["version", "title", "root"],
+          properties: {
+            version: { type: "integer", const: 1 },
+            title: { type: "string", maxLength: 160 },
+            root: { type: "object" },
+          },
+        },
+      },
     });
     let plan = parseCompanionPlan(raw);
     updateCommand(commandEntry.id, { status: "planned", plan });

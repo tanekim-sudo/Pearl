@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-21T19:17:30.829Z",
+  "kind": "live-provider-smoke",
+  "configured": false,
+  "status": "skipped-external-only",
+  "boundaries": [
+    "No LIVE_PROVIDER_BASE_URL plus live model credential was configured.",
+    "Runtime model fixtures prove request/schema/planner wiring only, not live provider quality or availability.",
+    "No claim of live AI success is made by this artifact."
+  ],
+  "checks": []
+}

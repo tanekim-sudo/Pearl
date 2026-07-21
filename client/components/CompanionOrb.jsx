@@ -3,6 +3,7 @@ import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
 import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
+import { clampCompanionPlacement } from "../lib/companion-safety.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -37,6 +38,7 @@ export default function CompanionOrb({
   onWorkerCancel,
   onOrbCreate,
   onOpenStudio,
+  hint = null,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -45,6 +47,8 @@ export default function CompanionOrb({
   const voiceStartedRef = useRef(false);
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
   const actionSearchRef = useRef(null);
+  const commandInputRef = useRef(null);
+  const triggerRef = useRef(null);
   const actionRef = useRef({});
   actionRef.current = { onOpenStudio };
   const gestureRef = useRef(null);
@@ -65,7 +69,11 @@ export default function CompanionOrb({
   const [powerSearch, setPowerSearch] = useState(false);
   const [draft, setDraft] = useState("");
   const [actionQuery, setActionQuery] = useState("");
-  const [placement, setPlacement] = useState(() => ({ ...state.placement, ...readPlacement(storageKey) }));
+  const [placement, setPlacement] = useState(() => clampCompanionPlacement(
+    { ...state.placement, ...readPlacement(storageKey) },
+    { width: globalThis.innerWidth, height: globalThis.innerHeight },
+    { width: featured ? 36 : 34, height: featured ? 36 : 34 },
+  ));
 
   useEffect(() => {
     try {
@@ -85,11 +93,11 @@ export default function CompanionOrb({
     function keepVisible() {
       const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
       const height = rootRef.current?.offsetHeight || width;
-      setPlacement((current) => {
-        const x = Math.max(8, Math.min(window.innerWidth - width - 8, Number(current.x) || 8));
-        const y = Math.max(8, Math.min(window.innerHeight - height - 8, Number(current.y) || 8));
-        return x === current.x && y === current.y ? current : { ...current, x, y };
-      });
+      setPlacement((current) => clampCompanionPlacement(
+        current,
+        { width: window.innerWidth, height: window.innerHeight },
+        { width, height },
+      ));
     }
     keepVisible();
     window.addEventListener("resize", keepVisible);
@@ -111,12 +119,14 @@ export default function CompanionOrb({
 
   useEffect(() => {
     if (!expanded) return;
+    requestAnimationFrame(() => (powerSearch ? actionSearchRef.current : commandInputRef.current)?.focus());
     function collapse(event) {
       if (event.type === "keydown" && event.key !== "Escape") return;
       if (event.type === "pointerdown" && rootRef.current?.contains(event.target)) return;
       setExpanded(false);
       setPowerSearch(false);
       setActionQuery("");
+      requestAnimationFrame(() => triggerRef.current?.focus());
     }
     document.addEventListener("pointerdown", collapse, true);
     window.addEventListener("keydown", collapse, true);
@@ -124,18 +134,16 @@ export default function CompanionOrb({
       document.removeEventListener("pointerdown", collapse, true);
       window.removeEventListener("keydown", collapse, true);
     };
-  }, [expanded]);
+  }, [expanded, powerSearch]);
 
   function updatePlacement(next) {
     const width = rootRef.current?.offsetWidth || (featured ? 176 : 72);
     const height = rootRef.current?.offsetHeight || width;
-    const bounded = {
-      ...placement,
-      ...next,
-      x: Math.max(8, Math.min(window.innerWidth - width - 8, Number(next.x ?? placement.x))),
-      y: Math.max(8, Math.min(window.innerHeight - height - 8, Number(next.y ?? placement.y))),
-      manual: true,
-    };
+    const bounded = clampCompanionPlacement(
+      { ...placement, ...next, manual: true },
+      { width: window.innerWidth, height: window.innerHeight },
+      { width, height },
+    );
     setPlacement(bounded);
     onStateChange?.(setOrbPlacement(state, bounded));
   }
@@ -311,6 +319,7 @@ export default function CompanionOrb({
         ))}
       </div>
       <button
+        ref={triggerRef}
         type="button"
         className="companion-orb"
         aria-labelledby={titleId}
@@ -327,11 +336,12 @@ export default function CompanionOrb({
         <PhysicalPearl variant="primary" state={phase} size={compact ? 30 : 34} decorative />
         <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
       </button>
+      {!expanded && hint && <span className="pearl-start-hint">{hint}</span>}
       {expanded && (
         <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
           {!approval && <form onSubmit={submit}>
             <input
-              autoFocus={!powerSearch}
+              ref={commandInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               aria-label="Tell Pearl your goal"

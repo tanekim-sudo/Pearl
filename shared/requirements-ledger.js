@@ -2,7 +2,11 @@ import { FEATURE_BASELINE, FEATURE_CONTRACTS } from "./feature-contracts.js";
 
 export const REQUIREMENTS_LEDGER_VERSION = 1;
 
-const define = (id, requirement, featureIds, evidence = ["audit-shots/unified-pearl-e2e/results.json"]) => Object.freeze({
+const define = (id, requirement, featureIds, evidence = [
+  "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+  "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+  "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json",
+]) => Object.freeze({
   id,
   requirement,
   featureIds,

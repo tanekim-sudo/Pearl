@@ -1,0 +1,23 @@
+---
+description: Enforce adversarial, evidence-based product audits and honest completion claims
+alwaysApply: true
+---
+
+# Product Audit Truth Standard
+
+Whenever the user says audit, inspect, test, stress test, review the app, or verify completion:
+
+1. Test the real production build and the current working build. Do not infer usability from code, selectors, contracts, or unit tests.
+2. Exercise complete human-paced journeys with fresh, returning, migrated, empty, populated, error, offline, and recovery states.
+3. Cover web, Companion, loaded extension, injected page Pearl, side panel, Scene, Output Frame, and Pearl Studio where relevant.
+4. Test desktop, 390px web, 360px side panel, 200% zoom, keyboard, touch, reduced motion, increased contrast, and screen-reader semantics.
+5. Capture screenshots at every meaningful state and manually inspect alignment, typography, spacing, overflow, hierarchy, Pearl rendering, animation, discoverability, and visual clutter.
+6. Verify behavior through actual persisted effects, reloads, undo, idempotency, console errors, timings, URLs/logs, and cross-surface state—not screenshots alone.
+7. Trace every capability claim to its real runtime handler. Mocked model responses prove wiring only; never present them as live AI evidence.
+8. Independently audit adaptive AI prompts, context boundaries, privacy guards, research verification, model/tool routing, failure behavior, and credential-dependent paths.
+9. Maintain a severity-ranked defect ledger with reproduction, root cause, expected behavior, fix, regression test, and evidence.
+10. Treat any reproduced navigation trap, inaccessible primary action, hidden capability, white-dot fallback, mobile failure, privacy bypass, false success, or broken AI path as release-blocking.
+11. State precisely what was not verified because of credentials, permissions, browser restrictions, provider access, or unavailable devices.
+12. Never say perfect, complete, production-ready, state of the art, omniscient, or fully working unless direct evidence supports that exact claim.
+
+Release only after all local P0/P1/P2 defects are fixed, screenshots are reviewed, cross-surface parity is proven, the security review is clean, and the full release gate passes.

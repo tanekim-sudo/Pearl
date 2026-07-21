@@ -1,0 +1,504 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-21T19:18:08.831Z",
+  "browser": "149.0.7827.55",
+  "checks": [
+    {
+      "name": "01-continuation-desktop",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:41737/",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1600,
+          "clientWidth": 1600
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 68,
+        "loadMs": 69,
+        "transferBytes": 2400,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - region \"Recent scenes and tasks\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio"
+    },
+    {
+      "name": "02-library-laptop",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41737/library",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1280,
+          "clientWidth": 1280
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 47,
+        "loadMs": 48,
+        "transferBytes": 2400,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio"
+    },
+    {
+      "name": "03-library-narrow",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:41737/library",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 390,
+          "clientWidth": 390
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 54,
+        "loadMs": 54,
+        "transferBytes": 2400,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio"
+    },
+    {
+      "name": "03a-trusted-handoff-output-frame",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41737/scene/scene-extension-audit-handoff?frame=workspace",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1280,
+          "clientWidth": 1280
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 58,
+        "loadMs": 59,
+        "transferBytes": 2700,
+        "longTasks": 0
+      },
+      "snapshot": "- textbox \"Page title\":\n  - /placeholder: Untitled idea\n  - text: Untitled Idea\n- button \"◇\"\n- button \"Open Cognitive Package registry\": pkg\n- button \"Open Cognitive Workflow Studio\": cog\n- img\n- img\n- text: Trusted carried material Verified carried candidate Clarify 8.5 × 11\n- button \"Record voice + drawing\"\n- complementary \"Pearl, idle\":\n  - button \"Context material, priority 1\": context\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n- status: Orb cursor off"
+    },
+    {
+      "name": "04-stage-desktop",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:41737/scene/audit-scene",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1600,
+          "clientWidth": 1600
+        },
+        "animationCount": 5,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2",
+          "2",
+          "2",
+          "2",
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 52,
+        "loadMs": 54,
+        "transferBytes": 2700,
+        "longTasks": 0
+      },
+      "snapshot": "- main \"Scene Audit Scene\":\n  - text: Scene Audit Scene 2 materials · 0 Output Frames\n  - table:\n    - rowgroup:\n      - row \"Material Kind Lineage\":\n        - columnheader \"Material\"\n        - columnheader \"Kind\"\n        - columnheader \"Lineage\"\n    - rowgroup:\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n      - row \"A grounded Stage material text root\":\n        - cell \"A grounded Stage material\"\n        - cell \"text\"\n        - cell \"root\"\n  - region \"Pearls\":\n    - button \"Open cluster of 6 pearls\": \"6\"\n    - button \"Open cluster of 2 pearls\": \"2\"\n    - button \"Open cluster of 12 pearls\": \"12\"\n    - button \"Untitled orb, empty pearl\": Untitled orb\n- complementary \"Pearl, completed\":\n  - button \"Evidence Lens atmosphere, strength 75 percent\"\n  - button \"A grounded Stage material, priority 1\": context\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n- status: Orb cursor off\n- complementary \"scene view emitted by orb\":\n  - button \"Close\"\n  - text: View\n  - navigation \"Scene and Output Frame actions\":\n    - button \"Past work\"\n    - button \"Focus on the result\"\n    - button \"Space\"\n    - button \"Grid\"\n    - button \"Connections\"\n    - button \"Details\" [pressed]\n    - button \"Sequence\""
+    },
+    {
+      "name": "04b-stage-mobile-placement",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:41737/scene/mobile-audit",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 390,
+          "clientWidth": 390
+        },
+        "animationCount": 1,
+        "animations": [
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 63,
+        "loadMs": 64,
+        "transferBytes": 2700,
+        "longTasks": 0
+      },
+      "snapshot": "- main \"Scene Mobile Audit\":\n  - text: Scene Mobile Audit 1 materials · 0 Output Frames\n  - region \"Stage materials\":\n    - article:\n      - text: text\n      - paragraph: Visible mobile material\n      - button \"Add to Pearl context\"\n      - button \"Make orb\"\n  - region \"Pearls\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n- status: Orb cursor off"
+    },
+    {
+      "name": "05-install-reduced-motion",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41737/install",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 1280,
+          "clientWidth": 1280
+        },
+        "animationCount": 0,
+        "animations": [],
+        "reducedMotion": true,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 428,
+        "loadMs": 428,
+        "transferBytes": 582974,
+        "longTasks": 0
+      },
+      "snapshot": "- main:\n  - text: Pearl\n  - heading \"Add Pearl to Chrome\" [level=1]\n  - paragraph: Use the same companion on any page.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing."
+    },
+    {
+      "name": "06-command-360-high-contrast",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "url": "http://127.0.0.1:41737/",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(0, 0, 0)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "animationCount": 2,
+        "animations": [
+          {
+            "name": "companion-orb",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": true,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 401,
+        "loadMs": 401,
+        "transferBytes": 582974,
+        "longTasks": 0
+      },
+      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\""
+    },
+    {
+      "name": "07-command-200-zoom-light",
+      "viewport": {
+        "width": 720,
+        "height": 450
+      },
+      "url": "http://127.0.0.1:41737/",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 720,
+          "clientWidth": 720
+        },
+        "animationCount": 2,
+        "animations": [
+          {
+            "name": "companion-orb",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 309,
+        "loadMs": 309,
+        "transferBytes": 582974,
+        "longTasks": 0
+      },
+      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\""
+    },
+    {
+      "name": "08-destructive-approval-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:41737/",
+      "title": "Untitled Idea — Pearl",
+      "errors": [],
+      "diagnostics": {
+        "colors": {
+          "foreground": "rgb(23, 26, 27)",
+          "background": "rgb(233, 235, 231)"
+        },
+        "overflow": {
+          "horizontal": false,
+          "scrollWidth": 390,
+          "clientWidth": 390
+        },
+        "animationCount": 2,
+        "animations": [
+          {
+            "name": "companion-orb",
+            "playState": "running"
+          },
+          {
+            "name": "physical-pearl-breath",
+            "playState": "running"
+          }
+        ],
+        "reducedMotion": false,
+        "highContrast": false,
+        "forcedColors": false,
+        "pearlVersions": [
+          "2"
+        ],
+        "textDefects": [],
+        "weakLeading": [],
+        "competingGradients": [],
+        "smallTargets": [],
+        "genericSpinnerCount": 0,
+        "legacyPearlNodeCount": 0
+      },
+      "metrics": {
+        "domContentLoadedMs": 286,
+        "loadMs": 288,
+        "transferBytes": 582974,
+        "longTasks": 0
+      },
+      "snapshot": "- main\n- complementary \"Pearl, approval\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - region \"Plan approval required\":\n      - text: Delete this profile’s local Pearl metadata? Account data is untouched. A local deletion receipt is created\n      - button \"Confirm\"\n      - button \"Cancel\""
+    }
+  ],
+  "passed": 10,
+  "failed": 0
+}

@@ -31,6 +31,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "critique-ingest",
   "critique-stop",
   "model-catalog",
+  "adaptive-companion-plan",
   "compose-library-objects",
   "invoke-primitive",
   "reorder-primitive",

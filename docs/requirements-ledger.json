@@ -321,7 +321,9 @@
         "extension/tests/core.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/workspace-observation.js",
@@ -438,7 +440,9 @@
         "shared/pearl-entity.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "client/lib/pearl-shell.js",
@@ -514,7 +518,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/local-privacy-vault.js",
@@ -581,7 +587,9 @@
         "server/pearl-share-registry.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/local-privacy-vault.js",
@@ -638,7 +646,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/page-observation.js",
@@ -725,7 +735,9 @@
         "server/pearl-share-registry.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/local-privacy-vault.js",
@@ -853,7 +865,9 @@
         "server/pearl-share-registry.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/local-privacy-vault.js",
@@ -917,7 +931,9 @@
         "shared/page-observation.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-page-canvas.js",
@@ -1019,7 +1035,9 @@
         "docs/pearl-visual-contract.md"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/result-pearls.js",
@@ -1109,7 +1127,9 @@
         "extension/scripts/orb-audit.mjs"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/output-routing.js",
@@ -1184,7 +1204,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-soundscape.js",
@@ -1257,7 +1279,9 @@
         "shared/drop-intent-resolver.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-studio.js",
@@ -1342,7 +1366,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-sharing.js",
@@ -1403,7 +1429,9 @@
         "shared/pearl-privacy-policy.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/organization-envelope.js",
@@ -1465,7 +1493,9 @@
         "shared/before-after-examples.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/automation-pearl.js",
@@ -1540,7 +1570,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/automation-pearl.js",
@@ -1625,7 +1657,9 @@
         "extension/tests/core.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-visual-contract.js",
@@ -1687,7 +1721,9 @@
         "docs/pearl-visual-contract.md"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/orb-interactions.js",
@@ -1733,7 +1769,9 @@
         "shared/pearl-entity.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-entity.js",
@@ -1786,7 +1824,9 @@
         "client/lib/director.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-action-protocol.js",
@@ -1869,7 +1909,9 @@
         "shared/material.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-cognitive-layers.js",
@@ -1976,7 +2018,9 @@
         "server/pearl-share-registry.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-cognitive-layers.js",
@@ -2074,7 +2118,9 @@
         "shared/material.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-cognitive-layers.js",
@@ -2211,7 +2257,9 @@
         "shared/generation-plan.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-cognitive-layers.js",
@@ -2321,7 +2369,9 @@
         "shared/organization-envelope.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-entity.js",
@@ -2424,7 +2474,9 @@
         "shared/output-routing.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/orb-runtime.js",
@@ -2565,7 +2617,9 @@
         "shared/pearl-studio.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "extension/scripts/package.mjs",
@@ -2691,7 +2745,9 @@
         "server/pearl-share-registry.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "client/lib/companion-harness.js",
@@ -2790,7 +2846,9 @@
         "shared/pearl-studio.test.js"
       ],
       "browserEvidence": [
-        "audit-shots/unified-pearl-e2e/results.json"
+        "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+        "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
       ],
       "owners": [
         "shared/pearl-visual-contract.js",
@@ -2800,5 +2858,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-20T22:19:46.786Z"
+  "generatedAt": "2026-07-21T19:17:31.044Z"
 }

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-21T19:15:20.804Z",
+  "browser": "149.0.7827.55",
+  "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
+  "viewport": {
+    "width": 360,
+    "height": 720
+  },
+  "checks": [
+    "literal animated Shadow DOM page-edge orb visible",
+    "page orb emits one command and one contextual action",
+    "selection absorption creates visible context orbit",
+    "capture queues an action and remains inert until explicit GO",
+    "GO creates a reviewable candidate",
+    "candidate insertion is verified in the page target",
+    "web continuation uses the trusted handoff route",
+    "Lens atmosphere and candidate constellation visible",
+    "page orb drag and dock are functional",
+    "Triple-Space makes the orb the precise page cursor",
+    "Triple-Space restores the native cursor",
+    "editable fields exclude the Triple-Space toggle",
+    "same orb identity opens one focused field at 360px",
+    "idle side panel is Pearl-only and action search discovers the full capability model",
+    "explicit natural-language inspection reveals focused side panel views",
+    "extension semantic orb tray creates and persists captured capsules",
+    "library and settings remain reachable",
+    "page and side-panel Pearls are static under reduced motion",
+    "logout clears prior profile session material before reload",
+    "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
+    "MV3 service worker loaded"
+  ],
+  "passed": 21,
+  "failed": 0
+}

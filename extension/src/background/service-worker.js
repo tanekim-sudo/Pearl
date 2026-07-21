@@ -1131,6 +1131,15 @@ async function handle(message, sender = {}) {
     return { opened: true, tabId: tab.id };
   }
   if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
+  if (type === "adaptive-companion-plan") {
+    if (!payload.request || typeof payload.request !== "object" || Array.isArray(payload.request)) {
+      throw new Error("adaptive planning request is invalid");
+    }
+    if ("authorization" in payload.request || "accessToken" in payload.request || "token" in payload.request) {
+      throw new Error("adaptive planning credentials must stay in the authenticated API client");
+    }
+    return apiRequest("/api/run", { method: "POST", body: payload.request });
+  }
   if (type === "compose-library-objects") return composeLocalLibraryObjects(payload.a, payload.b, { name: payload.name });
   if (type === "personal-command-save") {
     const storage = await BrowserPlatform.storage.get("local", ["personalCommandVocabulary"]);
@@ -1576,6 +1585,7 @@ globalThis.chrome?.commands?.onCommand.addListener(async (command) => {
 
 const PRIVILEGED_EXTENSION_MESSAGE_TYPES = new Set([
   "pearl-action",
+  "adaptive-companion-plan",
   "privacy-policy-propose",
   "privacy-policy-apply",
   "privacy-lock",

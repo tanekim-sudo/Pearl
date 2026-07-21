@@ -5,7 +5,8 @@ import path from "node:path";
 const out = path.join(process.cwd(), "audit-shots/chat-requirements-integration-audit-2026-07");
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:5173";
 await fs.mkdir(out, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const executablePath = process.env.PW_CHROMIUM || chromium.executablePath();
+const browser = await chromium.launch({ headless: true, executablePath });
 const page = await browser.newPage({ viewport: { width: 1360, height: 920 } });
 await page.addInitScript(() => {
   localStorage.setItem("lens.onboarded.v1", "1");

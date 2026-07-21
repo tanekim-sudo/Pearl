@@ -23,19 +23,26 @@ test("verified research preserves complete source metadata within approved origi
     { question: "What changed?", maxSources: 3 },
     {
       env,
-      fetch: async () => ({
-        ok: true,
-        json: async () => ({
-          sources: [{
-            title: "Annual report",
-            url: "https://www.sec.gov/filing",
-            publisher: "SEC",
-            date: "2026-04-01",
-            snippet: "Revenue increased.",
-            claimRefs: ["revenue"],
-          }],
-        }),
-      }),
+      fetch: async (url, init) => init?.method === "POST"
+        ? ({
+            ok: true,
+            json: async () => ({
+              sources: [{
+                title: "Annual report",
+                url: "https://www.sec.gov/filing",
+                publisher: "SEC",
+                date: "2026-04-01",
+                snippet: "Revenue increased.",
+                claimRefs: ["revenue"],
+              }],
+            }),
+          })
+        : ({
+            ok: true,
+            url: String(url),
+            headers: { get: () => "text/html" },
+            text: async () => "<title>Annual report</title><p>Revenue increased.</p>",
+          }),
     }
   );
   assert.equal(result.readOnly, true);
@@ -61,4 +68,52 @@ test("verified research rejects unapproved source origins", async () => {
     }),
     /not approved/
   );
+});
+
+test("research fails closed without an explicit source allowlist", async () => {
+  await assert.rejects(
+    () => verifiedResearch({ question: "company" }, {
+      env: { RESEARCH_PROVIDER_URL: "https://research.example/search" },
+      fetch: async () => ({ ok: true, json: async () => ({ sources: [] }) }),
+    }),
+    (error) => error.code === "RESEARCH_SOURCE_POLICY_REQUIRED",
+  );
+});
+
+test("research fetches cited pages and rejects provider metadata mismatches", async () => {
+  const env = {
+    RESEARCH_PROVIDER_URL: "https://research.example/search",
+    RESEARCH_APPROVED_PROVIDER_ORIGINS: "research.example",
+    RESEARCH_ALLOWED_SOURCE_ORIGINS: "evidence.example",
+  };
+  let calls = 0;
+  await assert.rejects(
+    () => verifiedResearch({ question: "revenue" }, {
+      env,
+      fetch: async (url) => {
+        calls += 1;
+        if (String(url).includes("research.example")) {
+          return {
+            ok: true,
+            json: async () => ({
+              sources: [{
+                title: "Annual report",
+                url: "https://evidence.example/report",
+                snippet: "Revenue increased by 40 percent.",
+                claimRefs: ["revenue"],
+              }],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          url: "https://evidence.example/report",
+          headers: { get: () => "text/html; charset=utf-8" },
+          text: async () => "<html><title>Annual report</title><body>Revenue declined.</body></html>",
+        };
+      },
+    }),
+    (error) => error.code === "RESEARCH_CONTENT_MISMATCH",
+  );
+  assert.equal(calls, 2);
 });

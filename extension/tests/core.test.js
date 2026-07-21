@@ -5,7 +5,7 @@ import { createMessage, validateMessage, assertTrustedSender } from "../src/core
 import { isOriginDenied, safeExternalUrl, sanitizeHtml, treatPageAsMaterial } from "../src/core/security.js";
 import { privacySafeGeneratorExport } from "../src/core/portable.js";
 import { createExecutionResult, createInsertionPlan, createLensRuntime, createMaterialFragment } from "../../shared/lens-runtime.js";
-import { executeExtensionVerb, parseExtensionIntent, validateExtensionVerbParity } from "../src/sidepanel/companion.js";
+import { executeExtensionVerb, extensionCommandNeedsApproval, parseExtensionIntent, planExtensionIntent, validateExtensionVerbParity } from "../src/sidepanel/companion.js";
 import { adapterForUrl } from "../src/content/adapters/specialists.js";
 import { validateExternalAction, validateExternalHandoff } from "../src/core/external-handoff.js";
 import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle } from "../../shared/lens-library.js";
@@ -101,6 +101,54 @@ test("denylist and SSRF policy block sensitive targets", () => {
   assert.equal(isOriginDenied("https://example.com"), false);
   assert.throws(() => safeExternalUrl("http://127.0.0.1/private"));
   assert.throws(() => safeExternalUrl("file:///etc/passwd"));
+});
+
+test("unmatched valid extension requests reach typed model planning", async () => {
+  let request;
+  const planned = await planExtensionIntent("gather these ideas and make the strongest reusable workflow", {
+    requestPlan: async (body) => {
+      request = body;
+      return {
+        output: JSON.stringify({
+          version: 1,
+          title: "Open workflow studio",
+          commands: [{ name: "openExternalCognitiveStudio", args: { tab: "higher-order" } }],
+        }),
+      };
+    },
+  });
+  assert.equal(planned.source, "adaptive-model");
+  assert.equal(planned.commands[0].name, "openExternalCognitiveStudio");
+  assert.equal(request.profile, "companion_planning");
+  assert.ok(request.jsonSchema);
+  assert.equal("authorization" in request, false);
+  assert.equal("accessToken" in request, false);
+});
+
+test("signed-out extension planning keeps deterministic fallback and blocks unmatched requests honestly", async () => {
+  let requested = false;
+  const fast = await planExtensionIntent("capture selection", {
+    requestPlan: async () => {
+      requested = true;
+      throw new Error("Sign in required.");
+    },
+  });
+  assert.equal(fast.source, "deterministic-fast-path");
+  assert.equal(requested, false);
+  await assert.rejects(
+    () => planExtensionIntent("gather these ideas into a reusable workflow", {
+      requestPlan: async () => {
+        throw Object.assign(new Error("Sign in required."), { code: "AUTH_REQUIRED" });
+      },
+    }),
+    /Sign in required/,
+  );
+});
+
+test("adaptive extension commands derive approval from capability metadata", () => {
+  assert.equal(extensionCommandNeedsApproval("deleteExternalSemanticOrb"), true);
+  assert.equal(extensionCommandNeedsApproval("applyExternalPearlCognitiveEdit"), true);
+  assert.equal(extensionCommandNeedsApproval("capturePageSelection"), false);
 });
 
 test("HTML and prompt injection are handled as untrusted material", () => {

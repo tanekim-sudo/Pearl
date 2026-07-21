@@ -317,12 +317,10 @@ function LibraryHome({
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
   return <main className="orb-library-home">
-    {(firstUse || emptyLibrary) && <section className="orb-home-intro">
-      <div className="orb-kicker">{firstUse ? "Pearl continuation space" : "Saved work"}</div>
+    {emptyLibrary && <section className="orb-home-intro">
+      <div className="orb-kicker">Saved work</div>
       <h1>{title}</h1>
-      <p>{firstUse
-        ? "Select or drop material, click Pearl, and tell it what you want. Your source stays unchanged until you confirm where the result goes."
-        : "Click Pearl to begin here, or select material on a page to create your first saved Pearl."}</p>
+      <p>Click Pearl to begin here, or select material on a page to create your first saved Pearl.</p>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
       <div>
@@ -357,7 +355,6 @@ function LibraryHome({
       </button>)}
       {!isRoot && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
     </section>
-    {(firstUse || emptyLibrary) && <p className="orb-home-prompt">Click Pearl to begin · hold to speak · triple-click for Studio</p>}
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
       <div>
         <span>{activeView === "library" ? "Cognitive library" : activeView}</span>
@@ -1862,6 +1859,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       onApproval={decideApproval}
       onWorkerCancel={cancelWorker}
       onOpenStudio={openActivePearlStudio}
+      hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0 ? "Click to begin · hold to speak · triple-click for Studio" : null}
     />}
     {emittedView === "privacy" && privacyNotice && <aside className="orb-stage-emission" aria-label="Privacy view emitted by Pearl">
       <button type="button" onClick={() => setEmittedView(null)}>Close</button>

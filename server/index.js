@@ -30,6 +30,7 @@ import { getModelCatalog } from "./model-catalog.js";
 import { modelGateway } from "./model-gateway.js";
 import { encodeLens } from "./lens-encoder.js";
 import { startGenerationBatch } from "./generation-runner.js";
+import { executeRunRequest } from "./run-request.js";
 import { researchConfiguration, verifiedResearch } from "./research-provider.js";
 import { cognitivePackageRegistry } from "./cognitive-package-registry.js";
 import { createPearlShareRegistry } from "./pearl-share-registry.js";
@@ -206,22 +207,7 @@ app.post("/api/extension/generators", extensionLimiter, express.json({ limit: "2
 app.post("/api/run", async (req, res) => {
   if (!(await guardAiRequest(req, res))) return;
   try {
-    const { prompt, text, count, image, system, maxTokens, research, timeoutMs, compact, profile, modelPreference } =
-      req.body ?? {};
-    const data = await runPrompt({
-      prompt,
-      text,
-      count,
-      image,
-      system,
-      maxTokens,
-      research,
-      timeoutMs,
-      compact,
-      profile,
-      model: modelPreference,
-    });
-    res.json(data);
+    res.json(await executeRunRequest(req.body ?? {}));
   } catch (err) {
     console.error("[lens] /api/run failed:", err?.message || err);
     res.status(err?.status || 500).json({

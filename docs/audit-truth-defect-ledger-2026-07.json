@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "auditDate": "2026-07-21",
+  "baseline": "Two independent production audits: live UX/browser and AI architecture/security",
+  "evidence": {
+    "web": "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
+    "extension": "audit-shots/audit-truth-remediation-2026-07/extension/extension-results.json",
+    "liveProvider": "audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json"
+  },
+  "defects": [
+    {
+      "id": "AT-001",
+      "severity": "critical",
+      "summary": "Persisted desktop Pearl placement remained off-screen at 390px",
+      "rootCause": "Placement coordinates were merged from storage before viewport migration and the Stage material layout retained absolute desktop coordinates.",
+      "fix": "Versioned placement clamping now runs during restore, resize, and drag; mobile Stage materials stack in-flow.",
+      "regression": "client/lib/companion-safety.test.js; scripts/orb-universe-audit.mjs:04b-stage-mobile-placement",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-002",
+      "severity": "critical",
+      "summary": "Primary keyboard navigation could leave focus on body",
+      "rootCause": "Focus entry/restoration and a consistent visible-focus contract were absent around the transient Companion.",
+      "fix": "Primary controls have deterministic focus, visible focus rings, Escape restoration, and mobile browser assertions.",
+      "regression": "scripts/orb-universe-audit.mjs:01,04b,06,07",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-003",
+      "severity": "critical",
+      "summary": "Expanded Companion accessibility state could precede visible controls",
+      "rootCause": "The transient ledger had no explicit synchronous visibility contract or focus handoff.",
+      "fix": "Ledger visibility/opacity/animation state is immediate and focus moves in the next paint.",
+      "regression": "scripts/orb-universe-audit.mjs:01,06,07,08",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-004",
+      "severity": "high",
+      "summary": "Saved work and capabilities lacked a clear minimal entry",
+      "rootCause": "Capability reachability existed in hidden structures without a consistent Pearl-native path.",
+      "fix": "Expanded Pearl exposes Studio and universal action search; Scene exposes Past work transiently without permanent chrome.",
+      "regression": "client/lib/pearl-shell.test.js; scripts/orb-universe-audit.mjs:01,04",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-005",
+      "severity": "high",
+      "summary": "Cold first use appeared as an unexplained void",
+      "rootCause": "Guidance was either absent or presented as detached dashboard copy.",
+      "fix": "One concise contextual hint is attached to Pearl and disappears when Pearl opens or work exists.",
+      "regression": "scripts/orb-universe-audit.mjs:01,06,07,08",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-006",
+      "severity": "high",
+      "summary": "Legacy World 1 remnant was visually broken",
+      "rootCause": "A stale production route exposed a zero-bound legacy scene control.",
+      "fix": "Current shell uses reachable recent Scene controls and preserves navigation through Pearl and Studio without the remnant.",
+      "regression": "client/lib/pearl-shell.test.js; scripts/orb-universe-audit.mjs:01,02,04",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-007",
+      "severity": "critical",
+      "summary": "Pearl collapsed visually into a white dot",
+      "rootCause": "Production surfaces could diverge from the shared physical renderer or lose static optical layers.",
+      "fix": "All audited surfaces use renderer v2 with nucleus, nacre, depth, edge, glint, refraction, and reduced-motion fallback.",
+      "regression": "shared/physical-pearl.test.js; web and extension browser diagnostics",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-008",
+      "severity": "critical",
+      "summary": "Gesture, overlay, zoom, narrow-panel, and duplicate-spawn behavior lacked complete evidence",
+      "rootCause": "Prior claims relied on selectors and fixture wiring rather than persisted browser effects.",
+      "fix": "Production browser suites now assert Escape, click/hold/triple-space paths, pass-through, 360/390/200%, reduced motion, persistence, reload, and single-Pearl identity.",
+      "regression": "audit-shots/audit-truth-remediation-2026-07",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-009",
+      "severity": "critical",
+      "summary": "Ordinary web Companion sent profile null",
+      "rootCause": "Client defaults serialized null, overriding the server task-profile default.",
+      "fix": "Null values are omitted and Companion planning explicitly uses companion_planning through /api/run.",
+      "regression": "client/lib/companion-safety.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-010",
+      "severity": "high",
+      "summary": "Workspace text was not consistently isolated as hostile data",
+      "rootCause": "Serialized workspace context was interpolated into a system message without an explicit non-instruction boundary.",
+      "fix": "Planner prompts now use provenance-tagged untrusted-data delimiters and injection instructions; disclosure sanitization excludes credential-shaped fields.",
+      "regression": "client/lib/companion-intent.test.js; client/lib/companion-safety.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-011",
+      "severity": "high",
+      "summary": "Web planning did not enforce effective Pearl disclosure policy",
+      "rootCause": "The planner sent a workspace snapshot without a policy guard or receipt.",
+      "fix": "A bounded effective-policy disclosure bundle fails closed, proposes a minimum policy patch, and records a receipt before /api/run.",
+      "regression": "client/lib/companion-safety.test.js; shared/pearl-privacy-policy.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-012",
+      "severity": "high",
+      "summary": "Extension Companion stopped at regex-only intent parsing",
+      "rootCause": "Unmatched valid utterances threw before model planning.",
+      "fix": "Deterministic parsing is a fast/offline path; unmatched requests use constrained typed companion_planning and validate capability args before execution.",
+      "regression": "extension/tests/core.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-013",
+      "severity": "high",
+      "summary": "Research trusted provider metadata without fetching citations",
+      "rootCause": "Empty source allowlists allowed all HTTPS and source pages were never validated.",
+      "fix": "Research default-denies absent allowlists, blocks private addresses and cross-origin redirects, fetches pages, matches snippets, and reports corroborated and uncorroborated claims.",
+      "regression": "server/research-provider.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-014",
+      "severity": "high",
+      "summary": "Companion planning did not activate gateway structured output",
+      "rootCause": "/api/run omitted schema/tool fields and planning primarily repaired free-form JSON.",
+      "fix": "/api/run forwards schema, tools, tool choice, and required capabilities; web and extension planning request strict schemas with validated fallback.",
+      "regression": "server/model-gateway.test.js; extension/tests/core.test.js",
+      "status": "resolved"
+    },
+    {
+      "id": "AT-015",
+      "severity": "high",
+      "summary": "Mock wiring evidence was presented too broadly",
+      "rootCause": "Requirements referenced a missing generic browser artifact and did not separate live-provider boundaries.",
+      "fix": "Requirements reference real web/extension artifacts; optional live smoke records a precise skip or provider provenance.",
+      "regression": "scripts/live-provider-smoke.mjs; docs/requirements-ledger.json",
+      "status": "resolved-local"
+    },
+    {
+      "id": "AT-016",
+      "severity": "medium",
+      "summary": "Ontology wording and authorized planning memory were stale or incomplete",
+      "rootCause": "One prompt called Functions lenses and snapshots omitted explicit bounded memory/reference/action fields.",
+      "fix": "Terminology is canonical and only bounded, scoped, non-expired planning memory is included in the authorized bundle.",
+      "regression": "client/lib/companion-intent.test.js; client/lib/companion-observation.test.js",
+      "status": "resolved"
+    }
+  ],
+  "externalLimitations": [
+    "Live AI provider quality was not verified unless live-provider-boundary.json says passed-live-provider.",
+    "Chrome Web Store signed installation, real user accounts, microphone hardware, and production deployment require external credentials or access.",
+    "No Vercel deployment was performed."
+  ]
+}

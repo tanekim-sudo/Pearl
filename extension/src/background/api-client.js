@@ -14,6 +14,10 @@ async function authToken() {
   return stored.accessToken || "";
 }
 
+function authError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
 export async function authStatus() {
   return { authenticated: !!(await authToken()) };
 }
@@ -68,7 +72,7 @@ export async function logout() {
 export async function apiRequest(path, options = {}) {
   const { origin } = await settings();
   const token = await authToken();
-  if (!token) throw new Error("sign in required");
+  if (!token) throw authError("AUTH_REQUIRED", "Sign in required.");
   const controller = options.controller || new AbortController();
   const response = await fetch(`${origin}${path}`, {
     method: options.method || "GET",
@@ -83,7 +87,11 @@ export async function apiRequest(path, options = {}) {
     credentials: "omit",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`request failed (${response.status})`);
+  if (response.status === 401) {
+    await BrowserPlatform.storage.remove("session", ["accessToken"]).catch(() => {});
+    throw authError("AUTH_EXPIRED", "Session expired. Sign in again.");
+  }
+  if (!response.ok) throw Object.assign(new Error(`Request failed (${response.status}).`), { code: "API_REQUEST_FAILED", status: response.status });
   return data;
 }
 

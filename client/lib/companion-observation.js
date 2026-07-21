@@ -162,9 +162,34 @@ export function buildWorkspaceSnapshot({
     })),
     user: user
       ? {
+          identity: String(user.identity || "").slice(0, 120),
           role: String(user.role || "").slice(0, 120),
           goals: (user.goals || []).slice(-5).map((goal) => String(goal).slice(0, 160)),
           preferences: user.preferences || {},
+          references: Object.fromEntries(Object.entries(user.references || {}).map(([kind, entries]) => [
+            kind,
+            (entries || []).slice(-12).map((entry) => ({
+              id: entry.id || null,
+              name: String(entry.name || "").slice(0, 120),
+              scope: entry.scope || null,
+              confidence: Number(entry.confidence) || 0,
+            })),
+          ])),
+          actions: (user.actions || []).slice(-10).map((entry) => ({
+            summary: String(entry.summary || "").slice(0, 240),
+            at: entry.at || null,
+          })),
+          memories: (user.memories || [])
+            .filter((entry) => ["workspace", "account", "anonymous"].includes(entry.scope))
+            .slice(-20)
+            .map((entry) => ({
+              id: entry.id,
+              value: String(entry.value || "").slice(0, 500),
+              scope: entry.scope,
+              provenance: entry.provenance,
+              confidence: entry.confidence,
+              expiresAt: entry.expiresAt || null,
+            })),
         }
       : null,
   };

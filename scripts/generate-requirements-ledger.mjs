@@ -23,6 +23,22 @@ for (const feature of FEATURE_CONTRACTS) {
 const ledger = generateRequirementsLedger();
 const validation = validateRequirementsLedger(ledger);
 missing.push(...validation.missing);
+for (const requirement of ledger.requirements) {
+  for (const reference of requirement.browserEvidence || []) {
+    const evidencePath = path.join(root, reference);
+    if (!fs.existsSync(evidencePath) || fs.statSync(evidencePath).size < 100) {
+      missing.push(`${requirement.id}:browserEvidence:${reference}`);
+      continue;
+    }
+    if (evidencePath.endsWith(".json")) {
+      try {
+        JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+      } catch {
+        missing.push(`${requirement.id}:invalidEvidence:${reference}`);
+      }
+    }
+  }
+}
 const reachability = {
   version: 1,
   generatedAt: new Date().toISOString(),
