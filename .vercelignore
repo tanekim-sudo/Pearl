@@ -1,3 +1,4 @@
+# Keep local diagnostics and generated evidence out of production uploads.
 .git
 .vercel
 .env*
