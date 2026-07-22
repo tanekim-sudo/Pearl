@@ -23,6 +23,7 @@ import {
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
+  parsePearlAestheticCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
@@ -388,6 +389,28 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
   ]) {
     assert.ok(COMPANION_VERBS[verb], `${verb} is documented for the companion`);
   }
+});
+
+test("pearl aesthetic commands parse presets, reset, and sample", () => {
+  assert.deepEqual(parsePearlAestheticCommand("use the celadon pearl look"), {
+    verb: "applyPearlAestheticPreset",
+    args: { preset: "celadon" },
+  });
+  assert.deepEqual(parsePearlAestheticCommand("reset the pearl colors"), {
+    verb: "resetPearlAesthetic",
+    args: {},
+  });
+  assert.deepEqual(parsePearlAestheticCommand("sample #78b89f for the pearl"), {
+    verb: "samplePearlAestheticFromScreen",
+    args: { color: "#78b89f" },
+  });
+  assert.deepEqual(parsePearlAestheticCommand("make the pearl more gloss"), {
+    verb: "setPearlAesthetic",
+    args: { material: { gloss: 0.72 } },
+  });
+  assert.ok(COMPANION_VERBS.setPearlAesthetic);
+  assert.ok(COMPANION_VERBS.applyPearlAestheticPreset);
+  assert.ok(COMPANION_VERBS.samplePearlAestheticFromScreen);
 });
 
 test("wear / remove / encode conversation parse as companion pearl verbs", () => {

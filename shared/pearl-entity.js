@@ -1,5 +1,6 @@
 import { createPearlPrivacyPolicy, effectivePearlPrivacyPolicy } from "./pearl-privacy-policy.js";
 import { createPearlCognition } from "./pearl-cognitive-layers.js";
+import { normalizePearlAesthetic } from "./pearl-aesthetic.js";
 
 export const PEARL_ENTITY_VERSION = 1;
 export const PEARL_ENTITY_KINDS = Object.freeze(["primary", "semantic", "result", "automation", "page-canvas", "shared", "studio"]);
@@ -133,6 +134,7 @@ export function createPearlEntity(value = {}) {
     }] : []), 200),
     canvas: clone(value.canvas || (kind === "page-canvas" ? value : value.pageCanvas) || null),
     soundscape: clone(value.soundscape || value.pearlSoundscape || null),
+    aesthetic: value.aesthetic && typeof value.aesthetic === "object" ? normalizePearlAesthetic(value.aesthetic) : null,
     privacy: {
       policy: createPearlPrivacyPolicy({ ...directPolicy, pearlId }),
       inheritedPolicyIds: inheritedPolicies.map((entry) => entry.id),
@@ -272,7 +274,7 @@ export function pearlEntityObservation(entityInput, options = {}) {
   const entity = createPearlEntity(entityInput);
   const authorized = options.authorizedSections || [
     "identity", "representation", "workingSet", "lenses", "moves", "functions", "cognition", "automation", "generation",
-    "results", "canvas", "soundscape", "privacy", "sharing", "lineage", "relationships", "permissions", "tasks", "outputRouting", "runtime",
+    "results", "canvas", "soundscape", "aesthetic", "privacy", "sharing", "lineage", "relationships", "permissions", "tasks", "outputRouting", "runtime",
   ];
   return {
     schemaVersion: PEARL_ENTITY_VERSION,

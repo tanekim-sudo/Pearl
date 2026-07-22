@@ -32,6 +32,7 @@ export function normalizePhysicalPearl(options = {}) {
     label: String(options.label || "Pearl").replace(/[<>&"]/g, ""),
     decorative: options.decorative === true,
     surrounding: PHYSICAL_PEARL_SURROUNDINGS.includes(options.surrounding) ? options.surrounding : "auto",
+    aesthetic: options.aesthetic && typeof options.aesthetic === "object" ? options.aesthetic : null,
   };
 }
 
@@ -42,11 +43,11 @@ export function physicalPearlMarkup(options = {}) {
   return `<svg class="physical-pearl ${pearl.className}" data-pearl-renderer="${PHYSICAL_PEARL_VERSION}" data-pearl-variant="${pearl.variant}" data-pearl-state="${pearl.state}" data-pearl-surrounding="${pearl.surrounding}"${animationAttr} width="${pearl.size}" height="${pearl.size}" viewBox="0 0 100 100" ${pearl.decorative ? 'aria-hidden="true"' : `role="img" aria-label="${pearl.label}"`}>
     <defs>
       <clipPath id="${prefix}-sphere"><circle cx="50" cy="50" r="43"/></clipPath>
-      <radialGradient id="${prefix}-body" cx="37%" cy="31%" r="75%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".25" stop-color="#f4eee5"/><stop offset=".58" stop-color="#deded7"/><stop offset=".82" stop-color="#b8bfba"/><stop offset=".96" stop-color="#7e8985"/><stop offset="1" stop-color="#65716e"/></radialGradient>
-      <radialGradient id="${prefix}-depth" cx="40%" cy="42%" r="62%"><stop offset="0" stop-color="#fff7ea" stop-opacity=".34"/><stop offset=".45" stop-color="#d9d5ca" stop-opacity=".08"/><stop offset=".78" stop-color="#273733" stop-opacity=".16"/><stop offset="1" stop-color="#101917" stop-opacity=".3"/></radialGradient>
-      <radialGradient id="${prefix}-nucleus" cx="35%" cy="64%" r="61%"><stop offset="0" stop-color="var(--pearl-nucleus-a,#e8c7bd)" stop-opacity=".66"/><stop offset=".31" stop-color="var(--pearl-nucleus-b,#b8d1c8)" stop-opacity=".44"/><stop offset=".58" stop-color="#e6d19f" stop-opacity=".22"/><stop offset=".86" stop-color="#748d88" stop-opacity=".08"/><stop offset="1" stop-color="#52645f" stop-opacity="0"/></radialGradient>
-      <linearGradient id="${prefix}-nacre" x1="6%" y1="16%" x2="94%" y2="82%"><stop offset="0" stop-color="#d7a9a4" stop-opacity=".12"/><stop offset=".27" stop-color="var(--pearl-nacre,#aaccc0)" stop-opacity=".34"/><stop offset=".49" stop-color="#e8d69f" stop-opacity=".2"/><stop offset=".68" stop-color="#cfa7a9" stop-opacity=".24"/><stop offset=".86" stop-color="#a9cabe" stop-opacity=".18"/><stop offset="1" stop-color="#dfc9a8" stop-opacity=".06"/></linearGradient>
-      <linearGradient id="${prefix}-rim" x1="16%" y1="7%" x2="84%" y2="93%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".31" stop-color="#e9efea" stop-opacity=".28"/><stop offset=".68" stop-color="var(--pearl-edge-dark,#54615d)" stop-opacity=".52"/><stop offset=".88" stop-color="#202d29" stop-opacity=".62"/><stop offset="1" stop-color="#f0e3d2" stop-opacity=".56"/></linearGradient>
+      <radialGradient id="${prefix}-body" cx="37%" cy="31%" r="75%"><stop offset="0" stop-color="var(--pearl-body-highlight,#fffaf0)"/><stop offset=".25" stop-color="var(--pearl-body-highlight,#f4eee5)"/><stop offset=".58" stop-color="var(--pearl-body-mid,#deded7)"/><stop offset=".82" stop-color="var(--pearl-body-mid,#b8bfba)"/><stop offset=".96" stop-color="var(--pearl-body-shadow,#7e8985)"/><stop offset="1" stop-color="var(--pearl-body-shadow,#65716e)"/></radialGradient>
+      <radialGradient id="${prefix}-depth" cx="40%" cy="42%" r="62%"><stop offset="0" stop-color="var(--pearl-body-highlight,#fff7ea)" stop-opacity=".34"/><stop offset=".45" stop-color="var(--pearl-body-mid,#d9d5ca)" stop-opacity=".08"/><stop offset=".78" stop-color="var(--pearl-body-shadow,#273733)" stop-opacity=".16"/><stop offset="1" stop-color="var(--pearl-reflection-dark,#101917)" stop-opacity=".3"/></radialGradient>
+      <radialGradient id="${prefix}-nucleus" cx="35%" cy="64%" r="61%"><stop offset="0" stop-color="var(--pearl-nucleus-a,#e8c7bd)" stop-opacity=".66"/><stop offset=".31" stop-color="var(--pearl-nucleus-b,#b8d1c8)" stop-opacity=".44"/><stop offset=".58" stop-color="var(--pearl-caustic,#e6d19f)" stop-opacity=".22"/><stop offset=".86" stop-color="var(--pearl-edge-dark,#748d88)" stop-opacity=".08"/><stop offset="1" stop-color="var(--pearl-body-shadow,#52645f)" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${prefix}-nacre" x1="6%" y1="16%" x2="94%" y2="82%"><stop offset="0" stop-color="var(--pearl-nucleus-a,#d7a9a4)" stop-opacity=".12"/><stop offset=".27" stop-color="var(--pearl-nacre,#aaccc0)" stop-opacity=".34"/><stop offset=".49" stop-color="var(--pearl-caustic,#e8d69f)" stop-opacity=".2"/><stop offset=".68" stop-color="var(--pearl-nucleus-a,#cfa7a9)" stop-opacity=".24"/><stop offset=".86" stop-color="var(--pearl-nacre,#a9cabe)" stop-opacity=".18"/><stop offset="1" stop-color="var(--pearl-caustic,#dfc9a8)" stop-opacity=".06"/></linearGradient>
+      <linearGradient id="${prefix}-rim" x1="16%" y1="7%" x2="84%" y2="93%"><stop offset="0" stop-color="var(--pearl-specular,#fff)" stop-opacity=".9"/><stop offset=".31" stop-color="var(--pearl-reflection-light,#e9efea)" stop-opacity=".28"/><stop offset=".68" stop-color="var(--pearl-edge-dark,#54615d)" stop-opacity=".52"/><stop offset=".88" stop-color="var(--pearl-reflection-dark,#202d29)" stop-opacity=".62"/><stop offset="1" stop-color="var(--pearl-caustic,#f0e3d2)" stop-opacity=".56"/></linearGradient>
       <linearGradient id="${prefix}-environment" x1="20%" y1="0" x2="78%" y2="100%"><stop offset="0" stop-color="var(--pearl-reflection-light,#fff)" stop-opacity=".15"/><stop offset=".55" stop-color="var(--pearl-reflection-mid,#85938e)" stop-opacity=".05"/><stop offset="1" stop-color="var(--pearl-reflection-dark,#1b2925)" stop-opacity=".2"/></linearGradient>
       <filter id="${prefix}-soft-internal" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.4"/></filter>
     </defs>
@@ -72,22 +73,23 @@ export function physicalPearlMarkup(options = {}) {
 }
 
 export const PHYSICAL_PEARL_CSS = `
-.physical-pearl{display:block;overflow:visible;--pearl-light-x:0;--pearl-light-y:0;--pearl-motion:0;--pearl-nacre:#aaccc0;--pearl-nucleus-a:#e8c7bd;--pearl-nucleus-b:#b8d1c8;--pearl-edge-dark:#53615c;--pearl-reflection-light:#fff;--pearl-reflection-mid:#84938d;--pearl-reflection-dark:#192722}
+.physical-pearl{display:block;overflow:visible;--pearl-light-x:0;--pearl-light-y:0;--pearl-motion:0;--pearl-nacre:#aaccc0;--pearl-nucleus-a:#e8c7bd;--pearl-nucleus-b:#b8d1c8;--pearl-edge-dark:#53615c;--pearl-caustic:#ffebc4;--pearl-body-highlight:#fffaf0;--pearl-body-mid:#deded7;--pearl-body-shadow:#65716e;--pearl-reflection-light:#fff;--pearl-reflection-mid:#84938d;--pearl-reflection-dark:#192722;--pearl-specular:#fff;--pearl-nacre-intensity:.34;--pearl-nucleus-intensity:.7;--pearl-gloss:.46;--pearl-contrast:.5;--pearl-warmth:.45;--pearl-saturation:.42;--pearl-brightness:.55}
+.physical-pearl-host[data-pearl-aesthetic]{filter:saturate(calc(.72 + var(--pearl-saturation,.42) * .65)) brightness(calc(.84 + var(--pearl-brightness,.55) * .36)) contrast(calc(.88 + var(--pearl-contrast,.5) * .28))}
 .physical-pearl__mass{transform-origin:50px 50px;animation:physical-pearl-breath 6.4s ease-in-out infinite}
 .physical-pearl__contact{fill:rgba(0,0,0,.14);filter:blur(1px)}
-.physical-pearl__body{stroke:rgba(255,255,255,.56);stroke-width:.54}
+.physical-pearl__body{stroke:color-mix(in srgb,var(--pearl-specular,#fff) 56%,transparent);stroke-width:.54}
 .physical-pearl__subsurface{transform-origin:50px 50px;transition:transform .24s ease-out}
-.physical-pearl__subsurface--far{fill:rgba(31,58,51,.13);filter:blur(2.4px);transform:translate(calc(var(--pearl-light-x) * -.7px),calc(var(--pearl-light-y) * -.6px))}
-.physical-pearl__subsurface--near{fill:rgba(255,244,225,.13);filter:blur(1.5px);transform:translate(calc(var(--pearl-light-x) * .65px),calc(var(--pearl-light-y) * .5px))}
-.physical-pearl__nucleus{mix-blend-mode:soft-light;opacity:.7;transform:translate(calc(var(--pearl-light-x) * -1.15px),calc(var(--pearl-light-y) * -.9px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .22s ease-out}
-.physical-pearl__caustic{fill:rgba(255,235,196,.13);mix-blend-mode:screen;transform:translate(calc(var(--pearl-light-x) * .45px),calc(var(--pearl-light-y) * .35px));transition:transform .2s ease-out}
+.physical-pearl__subsurface--far{fill:color-mix(in srgb,var(--pearl-body-shadow,#1f3a33) 13%,transparent);filter:blur(2.4px);transform:translate(calc(var(--pearl-light-x) * -.7px),calc(var(--pearl-light-y) * -.6px))}
+.physical-pearl__subsurface--near{fill:color-mix(in srgb,var(--pearl-body-highlight,#fff4e1) 13%,transparent);filter:blur(1.5px);transform:translate(calc(var(--pearl-light-x) * .65px),calc(var(--pearl-light-y) * .5px))}
+.physical-pearl__nucleus{mix-blend-mode:soft-light;opacity:var(--pearl-nucleus-intensity,.7);transform:translate(calc(var(--pearl-light-x) * -1.15px),calc(var(--pearl-light-y) * -.9px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .22s ease-out}
+.physical-pearl__caustic{fill:color-mix(in srgb,var(--pearl-caustic,#ffebc4) 55%,transparent);mix-blend-mode:screen;transform:translate(calc(var(--pearl-light-x) * .45px),calc(var(--pearl-light-y) * .35px));transition:transform .2s ease-out}
 .physical-pearl__depth{mix-blend-mode:multiply;opacity:.62}
-.physical-pearl__nacre{mix-blend-mode:screen;opacity:calc(.3 + var(--pearl-motion) * .28);transform:translate(calc(var(--pearl-light-x) * 1.65px),calc(var(--pearl-light-y) * 1.35px));transform-origin:50px 50px;transition:opacity .2s ease-out,transform .18s ease-out}
+.physical-pearl__nacre{mix-blend-mode:screen;opacity:calc(var(--pearl-nacre-intensity,.3) + var(--pearl-motion) * .28);transform:translate(calc(var(--pearl-light-x) * 1.65px),calc(var(--pearl-light-y) * 1.35px));transform-origin:50px 50px;transition:opacity .2s ease-out,transform .18s ease-out}
 .physical-pearl__environment{opacity:.76;transform:translate(calc(var(--pearl-light-x) * -.3px),calc(var(--pearl-light-y) * -.22px));transition:transform .24s ease-out}
-.physical-pearl__reflection{fill:rgba(39,57,51,.07);filter:blur(1.7px);transform:translate(calc(var(--pearl-light-x) * -.8px),calc(var(--pearl-light-y) * -.65px));transition:transform .22s ease-out}
+.physical-pearl__reflection{fill:color-mix(in srgb,var(--pearl-edge-dark,#273933) 12%,transparent);filter:blur(1.7px);transform:translate(calc(var(--pearl-light-x) * -.8px),calc(var(--pearl-light-y) * -.65px));transition:transform .22s ease-out}
 .physical-pearl__rim{stroke-width:.84}
-.physical-pearl__specular{fill:rgba(255,255,255,.46)}
-.physical-pearl__pinlight{fill:#fff;opacity:.96}
+.physical-pearl__specular{fill:color-mix(in srgb,var(--pearl-specular,#fff) calc(var(--pearl-gloss,.46) * 100%),transparent)}
+.physical-pearl__pinlight{fill:var(--pearl-specular,#fff);opacity:calc(.7 + var(--pearl-gloss,.46) * .3)}
 .physical-pearl__hotspot{display:none;stroke:rgba(20,24,22,.72);stroke-width:2;stroke-linecap:round}
 .physical-pearl[data-pearl-variant=result]{--pearl-nacre:#78b89f;--pearl-nucleus-a:#cee2d2;--pearl-nucleus-b:#78ad97}.physical-pearl[data-pearl-variant=result] .physical-pearl__nacre{opacity:calc(.39 + var(--pearl-motion) * .22)}
 .physical-pearl[data-pearl-variant=recipient]{--pearl-nacre:#c9bea0;--pearl-nucleus-a:#e2c8bd;--pearl-nucleus-b:#c6d3c8}

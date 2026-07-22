@@ -1271,7 +1271,7 @@ async function handle(message, sender = {}) {
     return clearPageMaterial();
   }
   if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
-  if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation") {
+  if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation" || type === "pearl-aesthetic-apply") {
     return sendPage(type, payload);
   }
   if (type === "capture-visible-tab") {
@@ -1383,6 +1383,12 @@ async function handle(message, sender = {}) {
         ...(executed.powerFx || {}),
         kind: executed.powerFx?.kind || executed.animation?.power || executed.animation?.semantic,
         count: executed.powerFx?.count || executed.domainResult?.workers?.length || executed.domainResult?.objects?.length,
+      }).catch(() => {});
+    }
+    if (payload.event?.command === "setPearlAesthetic" || executed.entity?.aesthetic) {
+      await sendPage("pearl-aesthetic-apply", {
+        pearlId: entity.id,
+        aesthetic: executed.entity?.aesthetic || executed.domainResult?.object?.aesthetic || executed.state?.companionAesthetic,
       }).catch(() => {});
     }
     return {

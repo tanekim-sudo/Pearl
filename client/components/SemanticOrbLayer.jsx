@@ -9,12 +9,13 @@ function labelFor(orb) {
   return orb.name || orb.representation?.label || "Untitled pearl";
 }
 
-function OrbGlyph({ active = false, animation = null, variant = "semantic" }) {
+function OrbGlyph({ active = false, animation = null, variant = "semantic", aesthetic = null }) {
   return <PhysicalPearl
     variant={variant}
     state={active ? "listening" : animation ? "executing" : "idle"}
     size={56}
     animation={animation}
+    aesthetic={aesthetic}
     decorative
   />;
 }
@@ -241,6 +242,7 @@ export default function SemanticOrbLayer({
               active={activeId === orb.id}
               animation={animations[orb.id] || null}
               variant={orb.representation?.kind === "worker" ? "worker" : "semantic"}
+              aesthetic={orb.aesthetic || null}
             />
             <span>{labelFor(orb)}</span>
             {(orb.workingSet?.context?.length || 0) > 0 && <i>{orb.workingSet.context.length}</i>}

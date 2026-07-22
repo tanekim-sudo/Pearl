@@ -9,6 +9,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "pearl-power-fx",
   "pearl-seek-to",
   "pearl-find-matching",
+  "pearl-aesthetic-apply",
   "capture-selection",
   "make-pearl",
   "fragments-changed",

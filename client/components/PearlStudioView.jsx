@@ -6,6 +6,8 @@ import { createPearlStudioViewModel } from "../../shared/pearl-studio.js";
 import { listPearlVersions } from "../../shared/pearl-version-history.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import CognitiveLayerStudio from "./CognitiveLayerStudio.jsx";
+import PearlAestheticPanel from "./PearlAestheticPanel.jsx";
+import { normalizePearlAesthetic } from "../../shared/pearl-aesthetic.js";
 
 const REF_KEY = "pearlStudioRefs.v1";
 const read = (key, fallback) => {
@@ -149,6 +151,7 @@ export default function PearlStudioView({ localRef }) {
         state="idle"
         size={34}
         decorative
+        aesthetic={entity.aesthetic}
         animation={status === "Restored" ? "recover" : status === "Saving…" ? "stream" : null}
       />
       <button type="button" className="web-pearl-studio__trigger" aria-expanded={structureOpen} aria-keyshortcuts="Meta+K Control+K" onClick={() => setStructureOpen((value) => !value)}>Inspect structure</button>
@@ -157,6 +160,28 @@ export default function PearlStudioView({ localRef }) {
     </div>
     <input aria-label="Pearl name" value={name} onChange={(event) => { setName(event.target.value); scheduleSave(event.target.value, text); }} />
     <textarea aria-label="Pearl content" value={text} onChange={(event) => { setText(event.target.value); scheduleSave(name, event.target.value); }} />
+    <PearlAestheticPanel
+      aesthetic={entity.aesthetic}
+      title="Appearance"
+      onChange={async (next) => {
+        const aesthetic = normalizePearlAesthetic(next);
+        await run("setPearlAesthetic", {
+          pearlId: entity.id,
+          colors: aesthetic.colors,
+          material: aesthetic.material,
+          light: aesthetic.light,
+          surrounding: aesthetic.surrounding,
+          label: aesthetic.label,
+          preset: aesthetic.preset,
+          expectedRevision: entity.revision,
+          idempotencyKey: crypto.randomUUID(),
+        });
+        setStatus("Appearance saved");
+        document.dispatchEvent(new CustomEvent("lens:pearl-aesthetic-changed", {
+          detail: { aesthetic, pearlId: entity.id },
+        }));
+      }}
+    />
     {historyOpen && <section className="web-pearl-studio__history" aria-label="Pearl version history">
       <h2>Version history</h2>
       <div className="web-pearl-studio__name-row">

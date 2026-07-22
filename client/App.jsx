@@ -261,6 +261,16 @@ import {
   saveWornPearlId,
   suggestPearlForConversation,
 } from "../shared/companion-pearl-wear.js";
+import {
+  aestheticFromSampleColor,
+  aestheticSummary,
+  applyPearlAestheticPreset,
+  defaultPearlAesthetic,
+  hexToRgb,
+  loadCompanionAesthetic,
+  normalizePearlAesthetic,
+  saveCompanionAesthetic,
+} from "../shared/pearl-aesthetic.js";
 import { parseTranscript } from "../shared/transcript-learning.js";
 import { compileAutomationPearl } from "../shared/automation-pearl.js";
 import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
@@ -285,6 +295,7 @@ import {
   parseSemanticTransferCommand,
   parseTasteNavigationCommand,
   parseTranscriptLearningCommand,
+  parsePearlAestheticCommand,
   parseSaveChainCommand,
   parseCompanionPlan,
   parseCompanionReply,
@@ -12235,6 +12246,63 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     };
   }
 
+  async function applyPearlAestheticChange(a = {}, tk) {
+    const host = document.querySelector(".companion-orb .physical-pearl-host")
+      || document.querySelector("[data-semantic-orb-id] .physical-pearl-host")
+      || document.querySelector(".companion-orb");
+    if (host && tk?.moveTo) await tk.moveTo(host);
+    document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+      detail: { pearlId: a.pearlId || loadWornPearlId() || "companion", semantic: "refract", durationMs: 420 },
+    }));
+    let aesthetic;
+    if (a.companionOnly) {
+      aesthetic = a.reset
+        ? defaultPearlAesthetic()
+        : a.preset && !a.colors && !a.material
+          ? applyPearlAestheticPreset(loadCompanionAesthetic(), a.preset)
+          : normalizePearlAesthetic({
+            ...loadCompanionAesthetic(),
+            preset: a.preset || "custom",
+            label: a.label,
+            colors: a.colors,
+            material: a.material,
+            light: a.light,
+            surrounding: a.surrounding,
+          });
+    } else {
+      const result = await runCanonicalPearlAction("setPearlAesthetic", {
+        pearlId: a.pearlId,
+        preset: a.preset,
+        colors: a.colors,
+        material: a.material,
+        light: a.light,
+        surrounding: a.surrounding,
+        label: a.label,
+        reset: a.reset === true,
+        companionOnly: a.companionOnly === true,
+      }, a.pearlId || undefined);
+      aesthetic = result?.object?.aesthetic || result?.object || loadCompanionAesthetic();
+    }
+    aesthetic = normalizePearlAesthetic(aesthetic);
+    saveCompanionAesthetic(aesthetic);
+    document.dispatchEvent(new CustomEvent("lens:pearl-aesthetic-changed", {
+      detail: { aesthetic, pearlId: a.pearlId || null },
+    }));
+    const syncId = a.pearlId || loadWornPearlId();
+    if (syncId) {
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "patchSemanticOrbAesthetic",
+        args: { id: syncId, aesthetic },
+      }).catch(() => {});
+    }
+    if (tk?.wait) await tk.wait(420);
+    return {
+      type: "pearl-aesthetic",
+      object: { pearlId: a.pearlId || null, aesthetic },
+      effects: ["pearl-aesthetic-changed"],
+    };
+  }
+
   registerDirectorVerbs({
     observeUnifiedPearl: async (a) => {
       const { entity } = ensureCanonicalPearlStore(a.pearlId);
@@ -12762,6 +12830,55 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         object: pack,
         effects: ["worn-pearl-inspected"],
         visibleText: companionWearPrompt(pack),
+      };
+    },
+    setPearlAesthetic: async (a, tk) => applyPearlAestheticChange(a, tk),
+    applyPearlAestheticPreset: async (a, tk) => applyPearlAestheticChange({
+      pearlId: a.pearlId,
+      preset: a.preset,
+      companionOnly: a.companionOnly,
+    }, tk),
+    resetPearlAesthetic: async (a, tk) => applyPearlAestheticChange({
+      pearlId: a.pearlId,
+      reset: true,
+      companionOnly: a.companionOnly,
+    }, tk),
+    samplePearlAestheticFromScreen: async (a, tk) => {
+      let rgb = a.rgb;
+      if (!rgb && a.color) rgb = hexToRgb(a.color);
+      if (!rgb && typeof EyeDropper !== "undefined") {
+        try {
+          const sample = await new EyeDropper().open();
+          rgb = hexToRgb(sample?.sRGBHex);
+        } catch {
+          rgb = null;
+        }
+      }
+      if (!rgb) throw new Error("Provide a color, or use the eyedropper when the browser supports it.");
+      const aesthetic = aestheticFromSampleColor(rgb, { label: "Sampled" });
+      return applyPearlAestheticChange({
+        pearlId: a.pearlId,
+        companionOnly: a.companionOnly,
+        colors: aesthetic.colors,
+        material: aesthetic.material,
+        label: aesthetic.label,
+      }, tk);
+    },
+    inspectPearlAesthetic: async (a, tk) => {
+      let aesthetic = loadCompanionAesthetic();
+      if (a.pearlId) {
+        try {
+          const store = JSON.parse(localStorage.getItem(PEARL_STORE_KEY) || "{}");
+          const entity = store.entities?.[a.pearlId];
+          if (entity?.aesthetic) aesthetic = normalizePearlAesthetic(entity.aesthetic);
+        } catch { /* keep companion aesthetic */ }
+      }
+      await tk.wait(80);
+      return {
+        type: "pearl-aesthetic",
+        object: aestheticSummary(aesthetic),
+        effects: ["pearl-aesthetic-inspected"],
+        visibleText: `${aesthetic.label} · ${aesthetic.preset} · nacre ${aesthetic.colors.nacre}`,
       };
     },
     suggestPearlForConversation: async (a, tk) => {
@@ -16876,6 +16993,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (outputCommand) {
       executeCompanionScript([{ verb: outputCommand.verb, args: outputCommand.args }], {
         title: "edit function output",
+      });
+      return null;
+    }
+    const aestheticCommand = parsePearlAestheticCommand(text);
+    if (aestheticCommand) {
+      executeCompanionScript([{ verb: aestheticCommand.verb, args: aestheticCommand.args || {} }], {
+        title: "customize pearl appearance",
       });
       return null;
     }

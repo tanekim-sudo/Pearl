@@ -4,6 +4,7 @@ import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
 import { clampCompanionPlacement } from "../lib/companion-safety.js";
+import { loadCompanionAesthetic } from "../../shared/pearl-aesthetic.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -41,6 +42,7 @@ export default function CompanionOrb({
   hint = null,
   quickActions = null,
   onExpandedChange,
+  aesthetic: aestheticProp = null,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -71,6 +73,7 @@ export default function CompanionOrb({
   const [powerSearch, setPowerSearch] = useState(false);
   const [draft, setDraft] = useState("");
   const [actionQuery, setActionQuery] = useState("");
+  const [aesthetic, setAesthetic] = useState(() => aestheticProp || loadCompanionAesthetic());
   const [placement, setPlacement] = useState(() => clampCompanionPlacement(
     { ...state.placement, ...readPlacement(storageKey) },
     { width: globalThis.innerWidth, height: globalThis.innerHeight },
@@ -109,6 +112,19 @@ export default function CompanionOrb({
   useEffect(() => {
     onExpandedChange?.(expanded);
   }, [expanded, onExpandedChange]);
+
+  useEffect(() => {
+    if (aestheticProp) setAesthetic(aestheticProp);
+  }, [aestheticProp]);
+
+  useEffect(() => {
+    function onAesthetic(event) {
+      if (event.detail?.aesthetic) setAesthetic(event.detail.aesthetic);
+      else setAesthetic(loadCompanionAesthetic());
+    }
+    document.addEventListener("lens:pearl-aesthetic-changed", onAesthetic);
+    return () => document.removeEventListener("lens:pearl-aesthetic-changed", onAesthetic);
+  }, []);
 
   useEffect(() => {
     function expandFromOutside() {
@@ -354,6 +370,7 @@ export default function CompanionOrb({
           state={["listening", "executing", "blocked", "failed", "loading"].includes(phase) ? phase : "idle"}
           animation={phase === "executing" ? "charge" : (state.workers || []).length > 1 ? "fission" : null}
           size={compact ? 30 : 34}
+          aesthetic={aesthetic}
           decorative
         />
         <span className="orb-phase" aria-hidden="true">{

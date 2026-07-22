@@ -345,6 +345,57 @@ export function parseTasteNavigationCommand(text) {
   return null;
 }
 
+const PEARL_AESTHETIC_PRESET_ALIASES = Object.freeze({
+  classic: "classic",
+  celadon: "celadon",
+  rose: "rose",
+  gold: "gold",
+  "pale gold": "gold",
+  ink: "ink",
+  moonlight: "moonlight",
+  coral: "coral",
+  jade: "jade",
+});
+
+export function parsePearlAestheticCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\b(?:what|inspect|show)\b/i.test(value) && /\b(?:pearl\s+)?(?:look|colors?|aesthetic|appearance)\b/i.test(value)) {
+    return { verb: "inspectPearlAesthetic", args: {} };
+  }
+  if (/\b(?:reset|restore|default)\b/i.test(value) && /\b(?:pearl\s+)?(?:colors?|look|aesthetic|appearance)\b/i.test(value)) {
+    return { verb: "resetPearlAesthetic", args: {} };
+  }
+  if (/\b(?:sample|eyedrop|eye\s*drop|pick)\b/i.test(value) && /\b(?:colors?|this|from\s+(?:the\s+)?screen|#[0-9a-f]{3,8})\b/i.test(value)) {
+    const hex = value.match(/#(?:[0-9a-f]{3}|[0-9a-f]{6})\b/i)?.[0];
+    return { verb: "samplePearlAestheticFromScreen", args: hex ? { color: hex } : {} };
+  }
+  const presetMatch = value.match(/\b(?:use|apply|make|set|switch(?:\s+to)?)\b.*?\b(classic|celadon|rose|pale\s+gold|gold|ink|moonlight|coral|jade)\b/i)
+    || value.match(/\b(?:pearl\s+)?(?:look|colors?|aesthetic|appearance)\b.*?\b(classic|celadon|rose|pale\s+gold|gold|ink|moonlight|coral|jade)\b/i);
+  if (presetMatch) {
+    const key = String(presetMatch[1] || "").toLowerCase().replace(/\s+/g, " ");
+    const preset = PEARL_AESTHETIC_PRESET_ALIASES[key];
+    if (preset) return { verb: "applyPearlAestheticPreset", args: { preset } };
+  }
+  const hex = value.match(/#(?:[0-9a-f]{3}|[0-9a-f]{6})\b/i)?.[0];
+  if (hex && /\b(?:pearl|nacre|colors?|look|aesthetic)\b/i.test(value)) {
+    return { verb: "samplePearlAestheticFromScreen", args: { color: hex } };
+  }
+  const gloss = value.match(/\b(?:more|higher|increase)\s+gloss\b/i);
+  const matte = value.match(/\b(?:more\s+matte|less\s+gloss|lower\s+gloss)\b/i);
+  const warmer = value.match(/\b(?:warmer|more\s+warm)\b/i);
+  const cooler = value.match(/\b(?:cooler|more\s+cool)\b/i);
+  if ((gloss || matte || warmer || cooler) && /\b(?:pearl|look|colors?|aesthetic|appearance)\b/i.test(value)) {
+    const material = {};
+    if (gloss) material.gloss = 0.72;
+    if (matte) material.gloss = 0.28;
+    if (warmer) material.warmth = 0.78;
+    if (cooler) material.warmth = 0.22;
+    return { verb: "setPearlAesthetic", args: { material } };
+  }
+  return null;
+}
+
 export function parseTranscriptLearningCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
@@ -607,6 +658,7 @@ Rules:
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
 - Companion vs pearls: you are always on. wearPearl / removeWornPearl control the optional pearl pack. When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
+- Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
 - Listening: when capturing AI chats from screen or pasted transcript, prefer encodeConversationAsPearl over opening Learn-from-chat UI unless the user asks to review candidates manually.
 - Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.

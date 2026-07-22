@@ -1,5 +1,15 @@
 import { EXTENSION_COMPANION_CAPABILITIES } from "../../../client/lib/companion-capabilities.js";
 import { validateCapabilityArgs } from "../../../client/lib/companion-plan.js";
+import {
+  aestheticFromSampleColor,
+  aestheticSummary,
+  applyPearlAestheticPreset,
+  defaultPearlAesthetic,
+  hexToRgb,
+  loadCompanionAesthetic,
+  normalizePearlAesthetic,
+  saveCompanionAesthetic,
+} from "../../../shared/pearl-aesthetic.js";
 
 function canonicalPearlAction({ action, args, confirmed }, command, commandArgs) {
   return action("pearl-action", {
@@ -12,6 +22,29 @@ function canonicalPearlAction({ action, args, confirmed }, command, commandArgs)
       destructiveApproved: confirmed === true,
     },
   });
+}
+
+async function applyExternalAesthetic({ args, action, confirmed }, patch) {
+  const pearlId = args.pearlId;
+  if (pearlId && !args.companionOnly) {
+    const result = await canonicalPearlAction({ action, args, confirmed }, "setPearlAesthetic", patch);
+    const aesthetic = result?.domainResult?.object?.aesthetic || normalizePearlAesthetic(patch.reset ? defaultPearlAesthetic() : {
+      ...loadCompanionAesthetic(),
+      ...patch,
+    });
+    saveCompanionAesthetic(aesthetic);
+    await action("pearl-aesthetic-apply", { aesthetic }).catch(() => {});
+    return { type: "pearl-aesthetic", object: { pearlId, aesthetic }, effects: ["pearl-aesthetic-changed"] };
+  }
+  const current = loadCompanionAesthetic();
+  const aesthetic = patch.reset
+    ? defaultPearlAesthetic()
+    : patch.preset && !patch.colors && !patch.material
+      ? applyPearlAestheticPreset(current, patch.preset)
+      : normalizePearlAesthetic({ ...current, ...patch });
+  saveCompanionAesthetic(aesthetic);
+  await action("pearl-aesthetic-apply", { aesthetic }).catch(() => {});
+  return { type: "companion-aesthetic", object: aesthetic, effects: ["pearl-aesthetic-changed", "companion-aesthetic-changed"] };
 }
 
 export const EXTENSION_VERBS = Object.freeze({
@@ -168,6 +201,50 @@ export const EXTENSION_VERBS = Object.freeze({
   captureExternalVisibleTab: ({ action }) => action("capture-visible-tab", { authorized: true }),
   wearExternalPearl: ({ args, semanticOrbAction }) => semanticOrbAction("open", { id: args.id, wear: true }),
   removeExternalWornPearl: ({ semanticOrbAction }) => semanticOrbAction("clear-wear", {}),
+  setExternalPearlAesthetic: ({ args, action, confirmed }) => applyExternalAesthetic({ args, action, confirmed }, {
+    preset: args.preset,
+    colors: args.colors,
+    material: args.material,
+    light: args.light,
+    surrounding: args.surrounding,
+    reset: args.reset === true,
+    companionOnly: args.companionOnly === true,
+  }),
+  applyExternalPearlAestheticPreset: ({ args, action, confirmed }) => applyExternalAesthetic({ args, action, confirmed }, {
+    preset: args.preset,
+    companionOnly: args.companionOnly === true,
+  }),
+  sampleExternalPearlAesthetic: async ({ args, action, confirmed }) => {
+    let rgb = args.rgb;
+    if (!rgb && args.color) rgb = hexToRgb(args.color);
+    if (!rgb) throw new Error("Provide a color hex or rgb sample for the pearl aesthetic.");
+    const aesthetic = aestheticFromSampleColor(rgb, { label: "Sampled" });
+    return applyExternalAesthetic({ args, action, confirmed }, {
+      colors: aesthetic.colors,
+      material: aesthetic.material,
+      label: aesthetic.label,
+      companionOnly: args.companionOnly === true,
+    });
+  },
+  resetExternalPearlAesthetic: ({ args, action, confirmed }) => applyExternalAesthetic({ args, action, confirmed }, {
+    reset: true,
+    companionOnly: args.companionOnly === true,
+  }),
+  inspectExternalPearlAesthetic: async ({ args, action }) => {
+    let aesthetic = loadCompanionAesthetic();
+    if (args.pearlId) {
+      try {
+        const result = await action("pearl-entity-get", { pearlId: args.pearlId });
+        if (result?.entity?.aesthetic) aesthetic = normalizePearlAesthetic(result.entity.aesthetic);
+      } catch { /* companion aesthetic fallback */ }
+    }
+    return {
+      type: "pearl-aesthetic",
+      object: aestheticSummary(aesthetic),
+      effects: ["pearl-aesthetic-inspected"],
+      visibleText: `${aesthetic.label} · ${aesthetic.preset}`,
+    };
+  },
   encodeExternalConversationAsPearl: ({ args, semanticOrbAction }) => semanticOrbAction("encode-conversation", {
     text: args.text,
     name: args.name,

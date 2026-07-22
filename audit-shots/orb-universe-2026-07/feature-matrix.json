@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T04:17:07.899Z",
+  "generatedAt": "2026-07-22T05:20:16.335Z",
   "counts": {
-    "features": 54,
-    "companion": 366,
-    "extension": 105,
-    "commands": 125
+    "features": 56,
+    "companion": 384,
+    "extension": 113,
+    "commands": 127
   },
   "features": [
     {
@@ -255,11 +255,39 @@
       "companion": [
         "openTranscriptLearning",
         "generateTranscriptArtifacts",
-        "saveTranscriptArtifacts"
+        "saveTranscriptArtifacts",
+        "encodeConversationAsPearl",
+        "suggestPearlForConversation"
       ],
       "extension": [],
       "tests": [
-        "shared/transcript-learning.test.js"
+        "shared/transcript-learning.test.js",
+        "shared/companion-pearl-wear.test.js"
+      ]
+    },
+    {
+      "id": "companion.pearl-wear",
+      "commands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "companion": [
+        "wearPearl",
+        "removeWornPearl",
+        "inspectWornPearl",
+        "encodeConversationAsPearl",
+        "suggestPearlForConversation"
+      ],
+      "extension": [
+        "wearExternalPearl",
+        "removeExternalWornPearl",
+        "encodeExternalConversationAsPearl"
+      ],
+      "tests": [
+        "shared/companion-pearl-wear.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {
@@ -1103,6 +1131,31 @@
         "shared/physical-pearl.test.js",
         "scripts/pearl-visual-contract-audit.mjs",
         "docs/pearl-visual-contract.md"
+      ]
+    },
+    {
+      "id": "visual.pearl-aesthetic",
+      "commands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "companion": [
+        "setPearlAesthetic",
+        "applyPearlAestheticPreset",
+        "samplePearlAestheticFromScreen",
+        "resetPearlAesthetic",
+        "inspectPearlAesthetic"
+      ],
+      "extension": [
+        "setExternalPearlAesthetic",
+        "applyExternalPearlAestheticPreset",
+        "sampleExternalPearlAesthetic",
+        "resetExternalPearlAesthetic",
+        "inspectExternalPearlAesthetic"
+      ],
+      "tests": [
+        "shared/pearl-aesthetic.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {

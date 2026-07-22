@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-e7258813",
+  "fingerprint": "fnv1a-3f8e81fd",
   "counts": {
-    "nodes": 366,
+    "nodes": 384,
     "edges": 516
   },
   "nodes": [
@@ -10795,6 +10795,1102 @@
       "idempotency": "idempotency-key",
       "domains": [
         "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.wearPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "wearPearl",
+      "purpose": "Put on a pearl so the companion gains its full context, lenses, and bound functions (companion works without any pearl)",
+      "examples": [
+        "put on the LP briefings pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-wearPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeWornPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeWornPearl",
+      "purpose": "Take off the worn pearl; companion stays available with no pearl pack",
+      "examples": [
+        "take off the pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-removeWornPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.inspectWornPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectWornPearl",
+      "purpose": "Inspect the currently worn pearl capability pack, or confirm companion is bare",
+      "examples": [
+        "what pearl am I wearing"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-inspectWornPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "read-only",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.setPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "setPearlAesthetic",
+      "purpose": "Fully customize pearl color layers, material sliders, light, and surrounding adaptation",
+      "examples": [
+        "make the pearl rose with higher gloss"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "preset": "string?",
+          "colors": "object?",
+          "material": "object?",
+          "light": "object?",
+          "surrounding": "string?",
+          "label": "string?",
+          "reset": "boolean?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-setPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.applyPearlAestheticPreset",
+      "version": 1,
+      "kind": "capability",
+      "name": "applyPearlAestheticPreset",
+      "purpose": "Apply a named appearance preset (classic, celadon, rose, gold, ink, moonlight, coral, jade)",
+      "examples": [
+        "use the celadon pearl look"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "preset": "string",
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "model",
+        "maxCalls": 1
+      },
+      "timeoutMs": 120000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": true,
+        "boundary": "configured-provider-or-app-gateway"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-applyPearlAestheticPreset",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.samplePearlAestheticFromScreen",
+      "version": 1,
+      "kind": "capability",
+      "name": "samplePearlAestheticFromScreen",
+      "purpose": "Eyedropper/sample a color into a full pearl aesthetic (nacre, nucleus, edge, materials)",
+      "examples": [
+        "sample this color for the pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "color": "string?",
+          "rgb": "object?",
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-samplePearlAestheticFromScreen",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.resetPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "resetPearlAesthetic",
+      "purpose": "Reset pearl appearance to the classic default",
+      "examples": [
+        "reset the pearl colors"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-resetPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.inspectPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectPearlAesthetic",
+      "purpose": "Inspect the active pearl or companion appearance preset, colors, and materials",
+      "examples": [
+        "what does the pearl look like right now"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-inspectPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "read-only",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.encodeConversationAsPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "encodeConversationAsPearl",
+      "purpose": "Compress an AI conversation into a replayable Function inside a new or suggested existing pearl",
+      "examples": [
+        "make this whole conversation a function I can replay"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string?",
+          "transcript": "object?",
+          "name": "string?",
+          "targetPearlId": "string?",
+          "targetPearlName": "string?",
+          "forceNew": "boolean?",
+          "preferExisting": "boolean?",
+          "captureScreen": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "object validates",
+        "idempotency key is stable",
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "persistence": [
+        "library.objects.upsert",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-library-snapshot",
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "library-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-encodeConversationAsPearl",
+        "feature:learning.transcript",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "learning.transcript",
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "upsertCanonicalObject",
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.suggestPearlForConversation",
+      "version": 1,
+      "kind": "capability",
+      "name": "suggestPearlForConversation",
+      "purpose": "Suggest whether a conversation-derived function belongs in an existing pearl or a new one",
+      "examples": [
+        "does this chat belong in an existing pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string?",
+          "transcript": "object?",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "object validates",
+        "idempotency key is stable",
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "persistence": [
+        "library.objects.upsert",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-library-snapshot",
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "library-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-suggestPearlForConversation",
+        "feature:learning.transcript",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "learning.transcript",
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "upsertCanonicalObject",
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "interface"
       ],
       "platform": "app"
     },
@@ -32897,6 +33993,874 @@
         "extension",
         "paper",
         "ai"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.wearExternalPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "wearExternalPearl",
+      "purpose": "Wear a saved pearl so the extension companion gains its context and functions",
+      "examples": [
+        "put on the research pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-wearExternalPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.removeExternalWornPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeExternalWornPearl",
+      "purpose": "Clear the worn pearl; companion stays available",
+      "examples": [
+        "take the pearl off"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-removeExternalWornPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.setExternalPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "setExternalPearlAesthetic",
+      "purpose": "Customize pearl appearance on the extension companion or active pearl",
+      "examples": [
+        "make the page pearl ink with softer nacre"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "preset": "string?",
+          "colors": "object?",
+          "material": "object?",
+          "light": "object?",
+          "surrounding": "string?",
+          "reset": "boolean?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-setExternalPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.applyExternalPearlAestheticPreset",
+      "version": 1,
+      "kind": "capability",
+      "name": "applyExternalPearlAestheticPreset",
+      "purpose": "Apply a named pearl appearance preset in the extension",
+      "examples": [
+        "use the gold pearl look here"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "preset": "string",
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "model",
+        "maxCalls": 1
+      },
+      "timeoutMs": 120000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": true,
+        "boundary": "configured-provider-or-app-gateway"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-applyExternalPearlAestheticPreset",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.sampleExternalPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "sampleExternalPearlAesthetic",
+      "purpose": "Sample a color into a full pearl aesthetic in the extension",
+      "examples": [
+        "sample this page color onto the pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "color": "string?",
+          "rgb": "object?",
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-sampleExternalPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.resetExternalPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "resetExternalPearlAesthetic",
+      "purpose": "Reset extension pearl appearance to classic",
+      "examples": [
+        "reset the page pearl colors"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "companionOnly": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-resetExternalPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.inspectExternalPearlAesthetic",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectExternalPearlAesthetic",
+      "purpose": "Inspect the extension pearl or companion appearance",
+      "examples": [
+        "what does the page pearl look like"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "aesthetic patch is bounded",
+        "orb exists",
+        "aesthetic is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [
+        "pearlEntities.v1.aesthetic",
+        "scene.semanticOrbs.aesthetic"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "pearl-aesthetic-changed",
+        "semantic-orb-updated"
+      ],
+      "tests": [
+        "capability-inspectExternalPearlAesthetic",
+        "feature:visual.pearl-aesthetic"
+      ],
+      "featureIds": [
+        "visual.pearl-aesthetic"
+      ],
+      "canonicalCommands": [
+        "setPearlAesthetic",
+        "patchSemanticOrbAesthetic"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "read-only",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.encodeExternalConversationAsPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "encodeExternalConversationAsPearl",
+      "purpose": "Compress a page/chat conversation into a replayable Function on a new or existing pearl",
+      "examples": [
+        "make this chat a function I can replay"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string?",
+          "name": "string?",
+          "targetPearlId": "string?",
+          "forceNew": "boolean?",
+          "captureScreen": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-encodeExternalConversationAsPearl",
+        "feature:companion.pearl-wear"
+      ],
+      "featureIds": [
+        "companion.pearl-wear"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "function"
       ],
       "platform": "extension"
     },

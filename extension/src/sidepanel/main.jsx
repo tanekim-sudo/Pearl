@@ -18,6 +18,7 @@ import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physica
 import { createPearlPrivacyPolicy } from "../../../shared/pearl-privacy-policy.js";
 import { createPearlEntity } from "../../../shared/pearl-entity.js";
 import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
+import { loadCompanionAesthetic, pearlAestheticStyle } from "../../../shared/pearl-aesthetic.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -43,9 +44,10 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
-function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, contextCount = 0, lensActive = false, candidateCount = 0 }) {
+function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, contextCount = 0, lensActive = false, candidateCount = 0, aesthetic = null }) {
   const id = useId();
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
+  const aestheticVars = aesthetic ? pearlAestheticStyle(aesthetic) : null;
   function moveLight(event) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
@@ -79,7 +81,11 @@ function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, context
     </div>
     <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
       <style>{PHYSICAL_PEARL_CSS}</style>
-      <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `extension-pearl-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "primary", state: phase, size: 36, decorative: true }) }} />
+      <span
+        data-pearl-aesthetic={aesthetic?.preset || undefined}
+        style={aestheticVars || undefined}
+        dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `extension-pearl-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "primary", state: phase, size: 36, decorative: true, aesthetic }) }}
+      />
     </button>
     <span className="extension-orb-label sr-only">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : "Pearl command"}</span>
   </div>;
@@ -130,6 +136,7 @@ function App() {
   const [pearlSoundscapes, setPearlSoundscapes] = useState({});
   const [privacySurface, setPrivacySurface] = useState(null);
   const [privacyProposal, setPrivacyProposal] = useState(null);
+  const [pearlAesthetic, setPearlAesthetic] = useState(() => loadCompanionAesthetic());
   const [guideOpen, setGuideOpen] = useState(false);
   const [audioSearchResults, setAudioSearchResults] = useState([]);
   const fileRef = useRef(null);
@@ -1173,6 +1180,9 @@ function App() {
           setGhost(false);
         },
       });
+      if (/PearlAesthetic|pearl-aesthetic|companion-aesthetic/i.test(command.name)) {
+        setPearlAesthetic(loadCompanionAesthetic());
+      }
       setCompanion("");
       setPearlOpen(false);
     } catch (e) {
@@ -1293,7 +1303,7 @@ function App() {
   const activeTrack = activeSoundscape?.tracks?.find((entry) => entry.id === activeSoundscape.activeTrackId) || null;
   return <main data-orb-view={activeView}>
     <header>
-      <ExtensionOrb phase={orbPhase} listening={voiceListening} onCommandView={() => {
+      <ExtensionOrb phase={orbPhase} listening={voiceListening} aesthetic={pearlAesthetic} onCommandView={() => {
         setPowerSearch(false);
         setPearlOpen((value) => !value);
       }}

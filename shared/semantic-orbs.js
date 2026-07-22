@@ -58,6 +58,7 @@ export function createSemanticOrb(value = {}, options = {}) {
     childOrbIds: [...new Set((value.childOrbIds || []).filter(Boolean).map(String))],
     lineage: clone(value.lineage || []),
     provenance: clone(value.provenance || null),
+    aesthetic: value.aesthetic && typeof value.aesthetic === "object" ? clone(value.aesthetic) : null,
     archived: value.archived === true,
     createdAt: value.createdAt || new Date(timeValue(options.now)).toISOString(),
     updatedAt: value.updatedAt || new Date(timeValue(options.now)).toISOString(),

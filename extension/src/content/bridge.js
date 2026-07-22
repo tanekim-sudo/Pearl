@@ -23,6 +23,7 @@ import {
   radialFissionPoints,
 } from "../../../shared/pearl-power-fx.js";
 import { findOnScreenMatching, matchRectsForPowerFx } from "../../../shared/pearl-screen-match.js";
+import { normalizePearlAesthetic, pearlAestheticStyle } from "../../../shared/pearl-aesthetic.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
@@ -493,6 +494,18 @@ function mountPageOrb() {
     powerFx(effect) {
       return playExtensionPowerFx(effect, host);
     },
+    applyAesthetic(aestheticInput) {
+      if (!aestheticInput) return false;
+      const aesthetic = normalizePearlAesthetic(aestheticInput);
+      const vars = pearlAestheticStyle(aesthetic);
+      const visual = shell.querySelector(".physical-pearl") || shell.querySelector(".orb");
+      const host = visual?.closest?.(".physical-pearl") ? visual : shell.querySelector(".orb");
+      const target = host || shell;
+      target.dataset.pearlAesthetic = aesthetic.preset;
+      target.dataset.pearlSurrounding = aesthetic.surrounding;
+      for (const [key, value] of Object.entries(vars)) target.style.setProperty(key, value);
+      return true;
+    },
     seekTo(point, durationMs = 700) {
       if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
       const box = host.getBoundingClientRect();
@@ -687,6 +700,9 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     if (type === "pearl-find-matching") {
       const result = pageOrb?.findMatching(payload.condition, { limit: payload.limit }) || findOnScreenMatching(document.body, payload.condition, { limit: payload.limit });
       return { ok: true, result };
+    }
+    if (type === "pearl-aesthetic-apply") {
+      return { ok: true, applied: pageOrb?.applyAesthetic(payload.aesthetic) === true };
     }
     if (type === "output-placement-effect") {
       const destination = payload.destination || {};

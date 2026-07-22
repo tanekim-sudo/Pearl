@@ -528,6 +528,16 @@ export const FEATURE_CONTRACTS = Object.freeze([
     tests: ["shared/physical-pearl.test.js", "scripts/pearl-visual-contract-audit.mjs", "docs/pearl-visual-contract.md"],
     owner: "shared/pearl-visual-contract.js",
   }),
+  feature("visual.pearl-aesthetic", {
+    domains: ["interface", "semantic-orb", "extension", "scene"],
+    commands: ["setPearlAesthetic", "patchSemanticOrbAesthetic"],
+    ui: ["client/components/PearlAestheticPanel.jsx", "client/components/PearlStudioView.jsx", "client/components/PhysicalPearl.jsx", "client/components/CompanionOrb.jsx", "extension/src/content/bridge.js", "extension/src/sidepanel/main.jsx"],
+    companion: ["setPearlAesthetic", "applyPearlAestheticPreset", "samplePearlAestheticFromScreen", "resetPearlAesthetic", "inspectPearlAesthetic"],
+    extension: ["setExternalPearlAesthetic", "applyExternalPearlAestheticPreset", "sampleExternalPearlAesthetic", "resetExternalPearlAesthetic", "inspectExternalPearlAesthetic"],
+    persistence: ["lens.companion.aesthetic.v1", "pearlEntities.v1.aesthetic", "scene.semanticOrbs.aesthetic"],
+    tests: ["shared/pearl-aesthetic.test.js", "client/lib/companion-intent.test.js"],
+    owner: "shared/pearl-aesthetic.js",
+  }),
   feature("cognition.typed-layers", {
     domains: ["primitive", "role", "lens", "move", "function", "semantic-orb", "interface"],
     commands: ["addPearlCognitiveLayer", "mutatePearlCognitiveLayer", "composePearlCognitiveLayers", "proposePearlCognitivePatch", "applyPearlCognitivePatch", "resolvePearlCognitiveUncertainty", "startPearlCognitivePlayback", "advancePearlCognitivePlayback", "cancelPearlCognitivePlayback"],
@@ -578,7 +588,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 55,
+  features: 56,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

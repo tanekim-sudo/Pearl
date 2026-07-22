@@ -97,6 +97,7 @@ const COMMAND_ANIMATION = Object.freeze({
   advancePearlCognitivePlayback: "absorb",
   cancelPearlCognitivePlayback: "settle",
   composeObjects: "compose",
+  setPearlAesthetic: "refract",
 });
 
 function inferAnimationSemantic(command) {

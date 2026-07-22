@@ -82,6 +82,12 @@ import {
   validatePearlPackage,
 } from "./pearl-sharing.js";
 import { applyPearlEntityPatch, createPearlEntity } from "./pearl-entity.js";
+import {
+  applyPearlAestheticPreset,
+  defaultPearlAesthetic,
+  normalizePearlAesthetic,
+  patchPearlAesthetic,
+} from "./pearl-aesthetic.js";
 import { createPearlStudioOpenRequest, createPearlStudioViewModel } from "./pearl-studio.js";
 import {
   labelPearlVersion as labelPearlVersionState,
@@ -375,6 +381,31 @@ export const DOMAIN_COMMANDS = Object.freeze({
         updatedAt: new Date(context.now).toISOString(),
       }));
       return { state: next, result: { type: "semantic-orb-updated", id: args.id, effects: ["semantic-orb-updated"] } };
+    },
+  },
+  patchSemanticOrbAesthetic: {
+    schema: { id: "string", aesthetic: "object" },
+    preconditions: ["orb exists", "aesthetic is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.aesthetic",
+    observableEffects: ["pearl-aesthetic-changed", "semantic-orb-updated"],
+    execute(state, args, context) {
+      const aesthetic = normalizePearlAesthetic(args.aesthetic);
+      const next = updateSemanticOrb(state, args.id, (orb) => ({
+        ...orb,
+        aesthetic,
+        updatedAt: new Date(context.now).toISOString(),
+      }));
+      return {
+        state: { ...next, companionAesthetic: aesthetic },
+        result: {
+          type: "pearl-aesthetic",
+          id: args.id,
+          object: { pearlId: args.id, aesthetic },
+          effects: ["pearl-aesthetic-changed", "semantic-orb-updated"],
+        },
+      };
     },
   },
   bindSemanticOrb: {
@@ -2554,6 +2585,89 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return {
         state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } },
         result: result("pearl-entity", changed.entity, ["pearl-entity-edited"]),
+      };
+    },
+  },
+  setPearlAesthetic: {
+    schema: {
+      pearlId: "string?",
+      preset: "string?",
+      colors: "object?",
+      material: "object?",
+      light: "object?",
+      surrounding: "string?",
+      label: "string?",
+      reset: "boolean?",
+      companionOnly: "boolean?",
+      expectedRevision: "number?",
+      idempotencyKey: "string?",
+    },
+    preconditions: ["aesthetic patch is bounded"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "pearlEntities.v1.aesthetic",
+    observableEffects: ["pearl-aesthetic-changed"],
+    execute(state, args, context) {
+      const resolveAesthetic = (base) => {
+        if (args.reset) return defaultPearlAesthetic();
+        if (args.preset && !args.colors && !args.material && !args.light && !args.surrounding) {
+          return applyPearlAestheticPreset(base, args.preset);
+        }
+        return patchPearlAesthetic(base || defaultPearlAesthetic(), {
+          preset: args.preset,
+          label: args.label,
+          colors: args.colors,
+          material: args.material,
+          light: args.light,
+          surrounding: args.surrounding,
+        });
+      };
+      const pearlId = args.companionOnly ? null : (args.pearlId || state.activePearlId);
+      if (!pearlId || !state.pearlEntities?.[pearlId]) {
+        const aesthetic = normalizePearlAesthetic(resolveAesthetic(state.companionAesthetic));
+        return {
+          state: { ...state, companionAesthetic: aesthetic },
+          result: {
+            type: "companion-aesthetic",
+            id: "companion",
+            object: aesthetic,
+            effects: ["pearl-aesthetic-changed", "companion-aesthetic-changed"],
+          },
+        };
+      }
+      const entity = createPearlEntity(state.pearlEntities[pearlId]);
+      const nextAesthetic = normalizePearlAesthetic(resolveAesthetic(entity.aesthetic));
+      const changed = applyPearlEntityPatch(entity, { aesthetic: nextAesthetic }, {
+        expectedRevision: args.expectedRevision ?? entity.revision,
+        idempotencyKey: args.idempotencyKey || `aesthetic:${pearlId}:${Date.now()}`,
+        reason: "aesthetic-edit",
+      });
+      if (changed.conflict) {
+        return {
+          state: { ...state, pearlConflicts: [...(state.pearlConflicts || []), changed.conflict] },
+          result: result("pearl-conflict", changed.conflict, ["pearl-edit-conflict"]),
+        };
+      }
+      let nextState = {
+        ...state,
+        companionAesthetic: nextAesthetic,
+        pearlEntities: { ...state.pearlEntities, [pearlId]: changed.entity },
+      };
+      if ((state.semanticOrbs || []).some((orb) => orb.id === pearlId)) {
+        nextState = updateSemanticOrb(nextState, pearlId, (orb) => ({
+          ...orb,
+          aesthetic: nextAesthetic,
+          updatedAt: new Date(context.now).toISOString(),
+        }));
+      }
+      return {
+        state: nextState,
+        result: {
+          type: "pearl-aesthetic",
+          id: pearlId,
+          object: { pearlId, aesthetic: changed.entity.aesthetic },
+          effects: ["pearl-aesthetic-changed", "companion-aesthetic-changed"],
+        },
       };
     },
   },
