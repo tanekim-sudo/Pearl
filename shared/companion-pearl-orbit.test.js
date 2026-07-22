@@ -58,10 +58,10 @@ test("merged packs keep distinct context and mark multiWear", () => {
   assert.equal(merged.lenses.length, 1);
 });
 
-test("orbit helpers refuse more than eight pearls", () => {
+test("orbit helpers refuse more than five pearls (gauntlet capacity)", () => {
   let state = normalizeWornOrbitState();
-  for (let i = 0; i < 8; i += 1) state = addPearlToOrbit(state, `p${i}`);
-  assert.throws(() => addPearlToOrbit(state, "p9"));
+  for (let i = 0; i < 5; i += 1) state = addPearlToOrbit(state, `p${i}`);
+  assert.throws(() => addPearlToOrbit(state, "p5"));
   state = removePearlFromOrbit(state, "p0");
-  assert.equal(state.pearlIds.length, 7);
+  assert.equal(state.pearlIds.length, 4);
 });

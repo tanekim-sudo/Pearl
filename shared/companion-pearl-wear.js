@@ -93,27 +93,27 @@ export function buildWornPearlPack(pearl, options = {}) {
 export function companionWearPrompt(pack) {
   if (!pack) {
     return [
-      "Companion (mother pearl) is always available without a worn pearl.",
-      "Selected pearls become orbiting add-ons around the mother — they do not replace it.",
-      "Use wearPearl to put pearls on; removeWornPearl to take one or all off.",
-      "When no pearl is worn, still help with screen context, capture, learning, and creating new pearls.",
+      "Companion is the gauntlet (mother pearl) with five empty working-memory sockets.",
+      "Selected pearls load into those sockets — they do not replace the mother.",
+      "Use wearPearl to load a socket; removeWornPearl to clear one or all. Full gauntlet (5) requires removing a pearl first.",
+      "When no pearl is loaded, still help with screen context, capture, learning, and creating new pearls.",
     ].join(" ");
   }
   const orbitCount = pack.orbit?.count || pack.packs?.length || 1;
   if (orbitCount > 1) {
     const names = (pack.packs || []).map((entry) => entry.name).join(", ");
     return [
-      `Mother companion is wearing ${orbitCount} orbiting pearls: ${names}.`,
+      `Gauntlet working memory holds ${orbitCount} of 5 active pearls: ${names}.`,
       `Merged context: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
-      "Prefer bound functions and context from the orbiting packs. Mother pearl appearance stays classic white.",
-      "The user can add more pearls to the orbit, reorder them, or take any off.",
+      "Prefer bound functions and context from the loaded packs. Mother pearl appearance stays classic white.",
+      "The user can load more sockets (up to 5), activate one, or remove any.",
     ].join(" ");
   }
   return [
-    `Worn pearl “${pack.name}” (${pack.pearlId}) is orbiting the mother companion.`,
+    `Pearl “${pack.name}” (${pack.pearlId}) is loaded in the gauntlet working memory.`,
     `Context items: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
     "Interpret and execute through this pearl’s lens. Prefer its bound functions and context before inventing new ones.",
-    "The user can still add another pearl to the orbit or switch worn pearls at any time.",
+    "The user can still load another pearl into an open socket (5 max) or clear this one.",
   ].join(" ");
 }
 

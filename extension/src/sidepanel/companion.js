@@ -203,6 +203,7 @@ export const EXTENSION_VERBS = Object.freeze({
     id: args.id,
     wear: true,
     replace: args.replace === true,
+    slot: Number.isInteger(args.slot) ? args.slot : undefined,
   }),
   removeExternalWornPearl: ({ args, semanticOrbAction }) => semanticOrbAction(
     args?.id ? "remove-wear" : "clear-wear",

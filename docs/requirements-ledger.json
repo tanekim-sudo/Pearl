@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 57,
+    "features": 58,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,9 +27,9 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 57,
+    "featureContracts": 58,
     "domainCommands": 115,
-    "companionCapabilities": 214,
+    "companionCapabilities": 210,
     "extensionEntries": 80
   },
   "requirements": [
@@ -52,6 +52,7 @@
         "learning.transcript",
         "companion.pearl-wear",
         "companion.mother-orbit",
+        "companion.pearl-gauntlet",
         "highlight.explicit-go",
         "ai.node-gestures",
         "persistence.account-adoption",
@@ -62,8 +63,7 @@
         "companion.transaction-harness",
         "registry.cognitive-packages",
         "artifacts.higher-order",
-        "companion.personal-vocabulary",
-        "extraction.cognitive-pull-request"
+        "companion.personal-vocabulary"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -88,6 +88,7 @@
         "createSemanticOrb",
         "bindSemanticOrb",
         "addSemanticOrbContext",
+        "mergeSemanticOrbs",
         "createFunctionFromContent"
       ],
       "webEntries": [
@@ -109,6 +110,7 @@
         "client/orb-universe.css",
         "extension/src/content/bridge.js",
         "shared/companion-pearl-orbit.js",
+        "extension/src/sidepanel/sidepanel.css",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
         "client/components/CompanionChat.jsx",
@@ -118,8 +120,7 @@
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "client/components/CognitivePackageRegistry.jsx",
         "client/components/CognitiveWorkflowStudio.jsx:higher-order",
-        "client/components/CognitiveWorkflowStudio.jsx:vocabulary",
-        "client/components/CognitiveWorkflowStudio.jsx:pull-request"
+        "client/components/CognitiveWorkflowStudio.jsx:vocabulary"
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -172,6 +173,7 @@
         "removeWornPearl",
         "listWornPearls",
         "inspectWornPearl",
+        "mergeSemanticOrbs",
         "cancelPendingBrush",
         "moveAiNode",
         "openExtensionDownload",
@@ -192,11 +194,6 @@
         "teachPersonalCommand",
         "disablePersonalCommand",
         "forgetPersonalCommand",
-        "openCognitivePullRequest",
-        "reviewCognitiveCandidate",
-        "mergeCognitivePullRequest",
-        "orchestrateCognitiveWorkflow",
-        "createCreativeResearchProposal",
         "capturePageSelection",
         "openExternalArtifact",
         "pressExternalGo",
@@ -216,15 +213,14 @@
         "wearExternalPearl",
         "removeExternalWornPearl",
         "encodeExternalConversationAsPearl",
+        "mergeExternalSemanticOrbs",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
         "browseExternalPackages",
         "installExternalPackage",
         "openExternalCognitiveStudio",
-        "teachExternalPersonalCommand",
-        "openExternalCognitivePullRequest",
-        "openExternalCreativeExtraction"
+        "teachExternalPersonalCommand"
       ],
       "extensionEntries": [
         "capturePageSelection",
@@ -246,15 +242,14 @@
         "wearExternalPearl",
         "removeExternalWornPearl",
         "encodeExternalConversationAsPearl",
+        "mergeExternalSemanticOrbs",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
         "browseExternalPackages",
         "installExternalPackage",
         "openExternalCognitiveStudio",
-        "teachExternalPersonalCommand",
-        "openExternalCognitivePullRequest",
-        "openExternalCreativeExtraction"
+        "teachExternalPersonalCommand"
       ],
       "persistenceAndMigrations": [
         "lens.unified-workspace.v2",
@@ -265,6 +260,7 @@
         "lens.before-after.draft.v1",
         "lens.learn-from-chat.draft.v1",
         "lens.companion.worn-pearl.v1",
+        "lens.companion.gauntlet.v1",
         "lens.ai.nodes.v1",
         "lens.board.items.v1",
         "lens.companion.run-ledger.v1",
@@ -274,9 +270,7 @@
         "lens.cognitive-packages.installed.v1",
         "lens.higher-order-patches.v1",
         "lens.personal-command-vocabulary.v1",
-        "personalCommandVocabulary",
-        "lens.cognitive-pull-requests.v1",
-        "cognitivePullRequestHandoff"
+        "personalCommandVocabulary"
       ],
       "automatedTests": [
         "shared/workspace-observation.test.js",
@@ -298,6 +292,7 @@
         "shared/transcript-learning.test.js",
         "shared/companion-pearl-wear.test.js",
         "shared/companion-pearl-orbit.test.js",
+        "shared/companion-pearl-gauntlet.test.js",
         "client/lib/companion-intent.test.js",
         "shared/lens-runtime.test.js",
         "client/lib/ai-layout.test.js",
@@ -314,9 +309,7 @@
         "shared/cognitive-package.test.js",
         "server/cognitive-package-registry.test.js",
         "shared/higher-order-artifacts.test.js",
-        "shared/personal-command-vocabulary.test.js",
-        "shared/cognitive-pull-request.test.js",
-        "shared/research-grounded-creativity.test.js"
+        "shared/personal-command-vocabulary.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -337,6 +330,7 @@
         "shared/transcript-learning.js",
         "shared/companion-pearl-wear.js",
         "shared/companion-pearl-orbit.js",
+        "shared/companion-pearl-gauntlet.js",
         "shared/lens-runtime.js",
         "client/lib/board-sync.js",
         "extension/scripts/package.mjs",
@@ -346,8 +340,7 @@
         "client/lib/companion-harness.js",
         "shared/cognitive-package.js",
         "shared/higher-order-artifacts.js",
-        "shared/personal-command-vocabulary.js",
-        "shared/cognitive-pull-request.js"
+        "shared/personal-command-vocabulary.js"
       ],
       "reachable": true
     },
@@ -3017,5 +3010,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T05:52:46.795Z"
+  "generatedAt": "2026-07-22T06:06:27.620Z"
 }

@@ -440,21 +440,26 @@ export function parseTranscriptLearningCommand(text) {
     if (!forceNew && !intoExisting) args.preferExisting = true;
     return { verb: "encodeConversationAsPearl", args };
   }
-  if (/\b(?:which|list|what)\b/i.test(value) && /\b(?:orbiting|worn)\b/i.test(value) && /\bpearls?\b/i.test(value)) {
+  if (/\b(?:which|list|what|show)\b/i.test(value)
+    && (/\b(?:orbiting|worn|gauntlet|working memory|active slots?)\b/i.test(value) || /\bgauntlet\b/i.test(value))
+    && (/\bpearls?\b/i.test(value) || /\b(?:gauntlet|working memory|slots?)\b/i.test(value))) {
     return { verb: "listWornPearls", args: {} };
   }
-  if (/\b(?:wear|put on|use|activate|add)\b/i.test(value) && /\bpearl\b/i.test(value)
-    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value)) {
-    const named = value.match(/\b(?:wear|put on|use|activate|add)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+  if ((/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
+    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
+    const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
       || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
     const args = { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined };
     if (/\b(?:only|instead|replace)\b/i.test(value)) args.replace = true;
     return { verb: "wearPearl", args };
   }
-  if (/\b(?:take off|remove|clear)\b/i.test(value) && /\b(?:worn\s+)?pearl\b/i.test(value) && /\b(?:worn|off|remove|clear|orbit)\b/i.test(value)) {
-    const named = value.match(/\b(?:take off|remove)\s+(?:the\s+)?(.+?)\s+pearl\b/i);
+  if (/\b(?:take off|remove|clear)\b/i.test(value)
+    && (/\b(?:worn\s+)?pearl\b/i.test(value) || /\bgauntlet\b/i.test(value))
+    && /\b(?:worn|off|remove|clear|orbit|gauntlet|slot|working memory)\b/i.test(value)) {
+    const named = value.match(/\b(?:take off|remove|clear)\s+(?:the\s+)?(.+?)\s+pearl\b/i);
     const name = named?.[1]?.replace(/[.?!"']/g, "").trim();
-    if (!name || /^(?:worn|orbiting|active|current)$/i.test(name)) {
+    if (!name || /^(?:worn|orbiting|active|current|gauntlet)$/i.test(name)) {
       return { verb: "removeWornPearl", args: {} };
     }
     return { verb: "removeWornPearl", args: { name } };
@@ -692,7 +697,7 @@ Rules:
 - Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
-- Companion vs pearls: you are always the mother pearl (default white). wearPearl adds selected pearls as orbiting add-ons (multi-wear); removeWornPearl removes one or all; listWornPearls inspects the orbit. Pearls never replace the mother.
+- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. Pearls never replace the mother.
 - Output destinations: when the user says where output should go, call chooseResultDestination with their wording (new tab, download as md/html/json/csv/pdf/txt, drag/create text box, point with cursor / mother pearl, caret insert, copy, Studio). Then confirmResultPlacement after they confirm. Use indicateOutputWithCursor when they want to point with the mother pearl.
 - When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
 - Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
@@ -728,8 +733,8 @@ export function buildAdaptiveCompanionPrompt({
   ].filter(Boolean).join(" ");
   const retrievedCapabilities = capabilityContextPrompt(retrievalQuery, { platform: "app", limit: 24 });
   const wearLine = wornPearlPack
-    ? `Worn pearl pack: “${wornPearlPack.name}” (${wornPearlPack.pearlId}) with ${wornPearlPack.functions?.length || 0} bound functions, ${wornPearlPack.lenses?.length || 0} lenses, ${wornPearlPack.context?.length || 0} context items. Prefer its bound functions and context. Switch with wearPearl / removeWornPearl.`
-    : "No pearl is worn. Companion still plans and acts fully — pearls are optional. Use wearPearl / encodeConversationAsPearl when the user puts on or builds a pearl from a conversation.";
+    ? `Gauntlet working memory: “${wornPearlPack.name}” (${wornPearlPack.pearlId}) with ${wornPearlPack.functions?.length || 0} bound functions, ${wornPearlPack.lenses?.length || 0} lenses, ${wornPearlPack.context?.length || 0} context items (${wornPearlPack.orbit?.count || 1}/5 sockets). Prefer its bound functions and context. Switch with wearPearl / removeWornPearl; never silently drop when full.`
+    : "Gauntlet working memory is empty (0/5). Companion still plans and acts fully — pearls are optional. Use wearPearl / encodeConversationAsPearl when the user loads or builds a pearl.";
   return `You are the action planner inside lens. The companion is always on; pearls are optional capability packs. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
 
 ${wearLine}

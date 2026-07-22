@@ -89,8 +89,8 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx", "client/orb-universe.css"],
     companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "encodeConversationAsPearl", "suggestPearlForConversation"],
     extension: ["wearExternalPearl", "removeExternalWornPearl", "encodeExternalConversationAsPearl"],
-    persistence: ["lens.companion.worn-pearl.v1"],
-    tests: ["shared/companion-pearl-wear.test.js", "shared/companion-pearl-orbit.test.js", "client/lib/companion-intent.test.js"],
+    persistence: ["lens.companion.worn-pearl.v1", "lens.companion.gauntlet.v1"],
+    tests: ["shared/companion-pearl-wear.test.js", "shared/companion-pearl-orbit.test.js", "shared/companion-pearl-gauntlet.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/companion-pearl-wear.js",
   }),
   feature("companion.mother-orbit", {
@@ -99,9 +99,19 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ui: ["client/components/CompanionOrb.jsx", "extension/src/content/bridge.js", "shared/companion-pearl-orbit.js"],
     companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl"],
     extension: ["wearExternalPearl", "removeExternalWornPearl"],
-    persistence: ["lens.companion.worn-pearl.v1"],
-    tests: ["shared/companion-pearl-orbit.test.js", "shared/companion-pearl-wear.test.js"],
+    persistence: ["lens.companion.worn-pearl.v1", "lens.companion.gauntlet.v1"],
+    tests: ["shared/companion-pearl-orbit.test.js", "shared/companion-pearl-wear.test.js", "shared/companion-pearl-gauntlet.test.js"],
     owner: "shared/companion-pearl-orbit.js",
+  }),
+  feature("companion.pearl-gauntlet", {
+    domains: ["scene", "interface"],
+    commands: ["activateSemanticOrb", "mergeSemanticOrbs"],
+    ui: ["extension/src/sidepanel/main.jsx", "extension/src/sidepanel/sidepanel.css", "client/components/CompanionOrb.jsx", "extension/src/content/bridge.js"],
+    companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "mergeSemanticOrbs"],
+    extension: ["wearExternalPearl", "removeExternalWornPearl", "mergeExternalSemanticOrbs"],
+    persistence: ["lens.companion.gauntlet.v1", "lens.companion.worn-pearl.v1"],
+    tests: ["shared/companion-pearl-gauntlet.test.js", "shared/companion-pearl-orbit.test.js", "shared/domain-commands.test.js"],
+    owner: "shared/companion-pearl-gauntlet.js",
   }),
   feature("highlight.explicit-go", {
     domains: ["paper", "ai", "move", "function", "lens"], commands: [],
@@ -598,7 +608,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 57,
+  features: 58,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

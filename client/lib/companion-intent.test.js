@@ -432,6 +432,14 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
     verb: "wearPearl",
     args: { name: "LP briefings" },
   });
+  assert.deepEqual(parseTranscriptLearningCommand("load the LP briefings pearl into the gauntlet"), {
+    verb: "wearPearl",
+    args: { name: "LP briefings" },
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("which pearls are in working memory"), {
+    verb: "listWornPearls",
+    args: {},
+  });
   assert.deepEqual(parseTranscriptLearningCommand("take off the worn pearl"), {
     verb: "removeWornPearl",
     args: {},
@@ -451,7 +459,7 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
   const adaptive = buildAdaptiveCompanionPrompt({
     wornPearlPack: { name: "LP briefings", pearlId: "p1", functions: [{ name: "Memo" }], lenses: [], context: [{}] },
   });
-  assert.match(adaptive, /Worn pearl pack: “LP briefings”/);
+  assert.match(adaptive, /Gauntlet working memory: “LP briefings”/);
   assert.ok(COMPANION_VERBS.wearPearl);
   assert.ok(COMPANION_VERBS.removeWornPearl);
   assert.ok(COMPANION_VERBS.encodeConversationAsPearl);

@@ -123,7 +123,12 @@ test("semantic orb capsules preserve sources, activate singly, nest, merge, and 
     name: "Combined",
   }, options);
   assert.equal(merged.state.semanticOrbs.length, 3);
+  assert.ok(merged.state.semanticOrbs.some((orb) => orb.id === "orb-1"), "source orb-1 remains");
+  assert.ok(merged.state.semanticOrbs.some((orb) => orb.id === "orb-2"), "source orb-2 remains");
+  assert.deepEqual(merged.result.preservedSourceIds, ["orb-1", "orb-2"]);
+  assert.equal(merged.result.object.representation.preserveIndividuals, true);
   assert.deepEqual(merged.result.object.representation.refs, ["orb-1", "orb-2"]);
+  assert.ok(merged.result.effects.includes("semantic-orb-merge-preserved-sources"));
   assert.equal(merged.undo().semanticOrbs.length, 2);
 });
 

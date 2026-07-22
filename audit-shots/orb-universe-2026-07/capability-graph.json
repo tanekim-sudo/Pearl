@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-939c649f",
+  "fingerprint": "fnv1a-e3d4996b",
   "counts": {
     "nodes": 386,
     "edges": 516
@@ -10139,7 +10139,7 @@
       "version": 1,
       "kind": "capability",
       "name": "mergeSemanticOrbs",
-      "purpose": "Merge semantic orb contexts into a new preserved capsule",
+      "purpose": "Merge into a new pearl while preserving source individuals in the library and gauntlet",
       "examples": [
         "merge these three orbs into one"
       ],
@@ -10158,9 +10158,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist",
         "Scene is explicit",
         "source material is preserved",
-        "orb exists when id is supplied",
         "orb exists",
         "name is explicit",
         "representation is explicit",
@@ -10170,7 +10171,6 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -10222,9 +10222,9 @@
         "scene-state-changed"
       ],
       "persistence": [
-        "none",
-        "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "none",
         "scene.semanticOrbs.update",
         "scene.semanticOrbs.delete",
         "pearlEntities.compareAndSwap",
@@ -10233,9 +10233,9 @@
         "pearlEntities.restoreVersion"
       ],
       "undo": [
-        "none",
-        "restore-semantic-orbs",
         "restore-active-semantic-orb",
+        "restore-semantic-orbs",
+        "none",
         "undo-pearl-entity-edit",
         "undo-output-placement"
       ],
@@ -10248,9 +10248,9 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
-        "semantic-orb-preview-opened",
-        "semantic-orb-created",
         "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-preview-opened",
         "semantic-orb-moved",
         "semantic-orb-updated",
         "semantic-orb-context-changed",
@@ -10267,17 +10267,20 @@
       ],
       "tests": [
         "capability-mergeSemanticOrbs",
+        "feature:companion.pearl-gauntlet",
         "feature:scene.semantic-orbs",
         "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
+        "companion.pearl-gauntlet",
         "scene.semantic-orbs",
         "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs",
         "openOrbCreationPreview",
         "createSemanticOrb",
-        "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
         "bindSemanticOrb",
@@ -10287,7 +10290,6 @@
         "removeSemanticOrbLens",
         "nestSemanticOrb",
         "unnestSemanticOrb",
-        "mergeSemanticOrbs",
         "composeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
@@ -10803,9 +10805,9 @@
       "version": 1,
       "kind": "capability",
       "name": "wearPearl",
-      "purpose": "Add a pearl as an orbiting add-on around the mother companion (default white); replace=true swaps the whole orbit",
+      "purpose": "Load a pearl into the companion gauntlet (5 active working-memory slots); replace=true clears other slots first; full gauntlet requires remove",
       "examples": [
-        "put on the LP briefings pearl"
+        "put the LP briefings pearl in the gauntlet"
       ],
       "inputSchema": {
         "type": "object",
@@ -10813,7 +10815,8 @@
         "properties": {
           "id": "string?",
           "name": "string?",
-          "replace": "boolean?"
+          "replace": "boolean?",
+          "slot": "number?"
         }
       },
       "outputSchema": {
@@ -10827,7 +10830,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -10891,17 +10895,20 @@
       "tests": [
         "capability-wearPearl",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10917,9 +10924,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeWornPearl",
-      "purpose": "Remove one orbiting pearl by id/name, or clear the whole orbit when unspecified",
+      "purpose": "Remove one gauntlet pearl by id/name, or clear all five working-memory slots when unspecified",
       "examples": [
-        "take off the pearl"
+        "clear that pearl from the gauntlet"
       ],
       "inputSchema": {
         "type": "object",
@@ -10940,7 +10947,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -11004,17 +11012,20 @@
       "tests": [
         "capability-removeWornPearl",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -11030,9 +11041,9 @@
       "version": 1,
       "kind": "capability",
       "name": "listWornPearls",
-      "purpose": "List pearls currently orbiting the mother companion",
+      "purpose": "List the five gauntlet working-memory sockets and which pearls are loaded",
       "examples": [
-        "which pearls are orbiting"
+        "which pearls are in working memory"
       ],
       "inputSchema": {
         "type": "object",
@@ -11050,7 +11061,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -11111,17 +11123,20 @@
       "tests": [
         "capability-listWornPearls",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -11137,9 +11152,9 @@
       "version": 1,
       "kind": "capability",
       "name": "inspectWornPearl",
-      "purpose": "Inspect the merged orbiting pearl pack around the mother companion, or confirm companion is bare",
+      "purpose": "Inspect the merged gauntlet working-memory pack, or confirm the gauntlet is empty",
       "examples": [
-        "what pearl am I wearing"
+        "what is in the gauntlet"
       ],
       "inputSchema": {
         "type": "object",
@@ -11157,7 +11172,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -11218,17 +11234,20 @@
       "tests": [
         "capability-inspectWornPearl",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -28683,7 +28702,9 @@
       "name": "chooseResultDestination",
       "purpose": "Interpret where output should go: new tab, download format, text box, cursor point, caret, chat, Studio, or keep here",
       "examples": [
-        "please interpret where output should go: new tab, download format, text box, cursor point, caret, chat, Studio, or keep here"
+        "download this as markdown",
+        "open it in a new tab",
+        "drag a text box for the output"
       ],
       "inputSchema": {
         "type": "object",
@@ -28813,7 +28834,7 @@
       "name": "confirmResultPlacement",
       "purpose": "Confirm and execute the reviewed Result Pearl placement exactly once",
       "examples": [
-        "please confirm and execute the reviewed Result Pearl placement exactly once"
+        "yes put it there"
       ],
       "inputSchema": {
         "type": "object",
@@ -28942,7 +28963,7 @@
       "name": "cancelResultPlacement",
       "purpose": "Cancel routing while preserving the staged Result Pearl",
       "examples": [
-        "please cancel routing while preserving the staged Result Pearl"
+        "cancel that placement"
       ],
       "inputSchema": {
         "type": "object",
@@ -30957,9 +30978,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist",
         "Scene is explicit",
         "source material is preserved",
-        "orb exists when id is supplied",
         "orb exists",
         "name is explicit",
         "representation is explicit",
@@ -30969,7 +30991,6 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31012,16 +31033,16 @@
         "scene-state-changed"
       ],
       "persistence": [
-        "none",
-        "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "none",
         "scene.semanticOrbs.update",
         "scene.semanticOrbs.delete"
       ],
       "undo": [
-        "none",
+        "restore-active-semantic-orb",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "none"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -31032,9 +31053,9 @@
       "expectedEffects": [
         "extension-state-changed",
         "scene-state-changed",
-        "semantic-orb-preview-opened",
-        "semantic-orb-created",
         "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-preview-opened",
         "semantic-orb-moved",
         "semantic-orb-updated",
         "semantic-orb-context-changed",
@@ -31045,15 +31066,18 @@
       ],
       "tests": [
         "capability-mergeExternalSemanticOrbs",
+        "feature:companion.pearl-gauntlet",
         "feature:scene.semantic-orbs"
       ],
       "featureIds": [
+        "companion.pearl-gauntlet",
         "scene.semantic-orbs"
       ],
       "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs",
         "openOrbCreationPreview",
         "createSemanticOrb",
-        "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
         "bindSemanticOrb",
@@ -31063,7 +31087,6 @@
         "removeSemanticOrbLens",
         "nestSemanticOrb",
         "unnestSemanticOrb",
-        "mergeSemanticOrbs",
         "composeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
@@ -34282,15 +34305,17 @@
       "version": 1,
       "kind": "capability",
       "name": "wearExternalPearl",
-      "purpose": "Wear a saved pearl so the extension companion gains its context and functions",
+      "purpose": "Load a pearl into an extension gauntlet working-memory slot (5 max); full gauntlet throws until one is removed",
       "examples": [
-        "put on the research pearl"
+        "load the research pearl into the gauntlet"
       ],
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "id": "string"
+          "id": "string",
+          "replace": "boolean?",
+          "slot": "number?"
         }
       },
       "outputSchema": {
@@ -34304,7 +34329,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -34369,17 +34395,20 @@
       "tests": [
         "capability-wearExternalPearl",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -34396,14 +34425,16 @@
       "version": 1,
       "kind": "capability",
       "name": "removeExternalWornPearl",
-      "purpose": "Clear the worn pearl; companion stays available",
+      "purpose": "Remove one gauntlet pearl by id, or clear all five active slots",
       "examples": [
         "take the pearl off"
       ],
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
-        "properties": {}
+        "properties": {
+          "id": "string?"
+        }
       },
       "outputSchema": {
         "type": "action-result"
@@ -34416,7 +34447,8 @@
         "source material is preserved",
         "orb exists",
         "representation is explicit",
-        "material is explicit and preserved"
+        "material is explicit and preserved",
+        "at least two orbs exist"
       ],
       "requiredObservations": [
         "selection",
@@ -34481,17 +34513,20 @@
       "tests": [
         "capability-removeExternalWornPearl",
         "feature:companion.pearl-wear",
-        "feature:companion.mother-orbit"
+        "feature:companion.mother-orbit",
+        "feature:companion.pearl-gauntlet"
       ],
       "featureIds": [
         "companion.pearl-wear",
-        "companion.mother-orbit"
+        "companion.mother-orbit",
+        "companion.pearl-gauntlet"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
         "createSemanticOrb",
         "bindSemanticOrb",
-        "addSemanticOrbContext"
+        "addSemanticOrbContext",
+        "mergeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",

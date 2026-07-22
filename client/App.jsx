@@ -254,7 +254,6 @@ import { dispatchPearlPowerFx, powerFxForCommand, MAX_FILAMENT_TARGETS } from ".
 import { findOnScreenMatching, matchRectsForPowerFx } from "../shared/pearl-screen-match.js";
 import { pearlAnimationForCommand } from "../shared/pearl-animation.js";
 import {
-  addWornPearlId,
   buildMergedWornPearlPack,
   buildWornPearlPack,
   companionWearPrompt,
@@ -262,10 +261,14 @@ import {
   loadWornOrbitState,
   loadWornPearlId,
   loadWornPearlIds,
-  removeWornPearlId,
-  saveWornPearlId,
   suggestPearlForConversation,
 } from "../shared/companion-pearl-wear.js";
+import {
+  MAX_GAUNTLET_SLOTS,
+  loadGauntletState,
+  removePearlIdFromGauntlet,
+  wearPearlIdInGauntlet,
+} from "../shared/companion-pearl-gauntlet.js";
 import {
   aestheticFromSampleColor,
   aestheticSummary,
@@ -12154,12 +12157,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   function publishWornOrbit() {
     const pack = resolveWornPearlPack();
     const orbit = loadWornOrbitState();
+    const gauntlet = loadGauntletState();
     document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
       detail: {
         pearlIds: orbit.pearlIds,
         primaryPearlId: orbit.primaryPearlId,
         packs: (pack?.packs || (pack ? [pack] : [])),
         orbit: pack?.orbit || null,
+        gauntlet: {
+          slots: gauntlet.slots,
+          activeSlot: gauntlet.activeSlot,
+          filled: gauntlet.filled,
+          capacity: MAX_GAUNTLET_SLOTS,
+        },
       },
     }));
     return pack;
@@ -12824,7 +12834,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     activateSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: a.id } });
       if (a.id) {
-        addWornPearlId(a.id);
+        try {
+          wearPearlIdInGauntlet(a.id);
+        } catch {
+          // Keep activation even when the gauntlet is already full.
+        }
         publishWornOrbit();
       }
       return { effectId: `semantic-orb-active:${a.id || "scene"}`, id: a.id || null };
@@ -12846,8 +12860,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (host) await tk.moveTo(host);
       if (mother && host !== mother) await tk.moveTo(mother);
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: pearl.id } });
-      if (a.replace === true) saveWornPearlId(pearl.id);
-      else addWornPearlId(pearl.id);
+      try {
+        wearPearlIdInGauntlet(pearl.id, {
+          replace: a.replace === true,
+          slot: Number.isInteger(a.slot) ? a.slot : undefined,
+        });
+      } catch (error) {
+        await tk.wait(80);
+        return {
+          type: "worn-pearl",
+          status: "full",
+          effects: [],
+          visibleText: error?.message
+            || `Gauntlet is full (${MAX_GAUNTLET_SLOTS} active pearls). Remove one before wearing another.`,
+        };
+      }
       const pack = publishWornOrbit();
       document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
         detail: { pearlId: pearl.id, semantic: "absorb", durationMs: 420 },
@@ -12857,7 +12884,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         type: "worn-pearl",
         status: "worn",
         object: pack,
-        effects: ["pearl-worn", "pearl-orbit-updated"],
+        effects: ["pearl-worn", "pearl-orbit-updated", "gauntlet-updated"],
         visibleText: companionWearPrompt(pack),
       };
     },
@@ -12865,17 +12892,17 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const target = a.id || a.name
         ? resolvePearlByNameOrId(a.id, a.name)
         : null;
-      if (target?.id) removeWornPearlId(target.id);
+      if (target?.id) removePearlIdFromGauntlet(target.id);
       else if (a.id || a.name) {
         await tk.wait(80);
         return {
           type: "worn-pearl",
           status: "missing",
           effects: [],
-          visibleText: "That pearl is not orbiting the companion.",
+          visibleText: "That pearl is not loaded in the gauntlet.",
         };
       } else {
-        removeWornPearlId(null);
+        removePearlIdFromGauntlet(null);
       }
       const remaining = loadWornPearlIds();
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
@@ -12888,26 +12915,31 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         type: "worn-pearl",
         status: pack ? "worn" : "bare",
         object: pack,
-        effects: ["pearl-removed", "pearl-orbit-updated"],
+        effects: ["pearl-removed", "pearl-orbit-updated", "gauntlet-updated"],
         visibleText: companionWearPrompt(pack),
       };
     },
     listWornPearls: async (a, tk) => {
       const pack = resolveWornPearlPack();
       const orbit = loadWornOrbitState();
+      const gauntlet = loadGauntletState();
       await tk.wait(60);
       return {
         type: "worn-pearl-orbit",
         object: {
           motherId: "companion-mother",
+          kind: "gauntlet",
+          capacity: MAX_GAUNTLET_SLOTS,
+          slots: gauntlet.slots,
+          activeSlot: gauntlet.activeSlot,
           pearlIds: orbit.pearlIds,
           packs: pack?.packs || (pack ? [pack] : []),
           orbit: pack?.orbit || null,
         },
-        effects: ["worn-pearl-listed"],
+        effects: ["worn-pearl-listed", "gauntlet-listed"],
         visibleText: pack
-          ? `${orbit.pearlIds.length} pearl${orbit.pearlIds.length === 1 ? "" : "s"} orbiting the mother companion.`
-          : "No pearls are orbiting the mother companion.",
+          ? `Gauntlet working memory: ${gauntlet.filled}/${MAX_GAUNTLET_SLOTS} sockets filled.`
+          : `Gauntlet working memory is empty (0/${MAX_GAUNTLET_SLOTS} sockets).`,
       };
     },
     inspectWornPearl: async (a, tk) => {
@@ -13090,7 +13122,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             },
           }).catch(() => {});
         }
-        saveWornPearlId(pearlId);
+        wearPearlIdInGauntlet(pearlId, { replace: true });
       }
       const pack = resolveWornPearlPack(pearlId);
       document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
@@ -13149,7 +13181,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
         command: "mergeSemanticOrbs", args: { ...a, sceneId: a.sceneId || sceneId },
       });
-      return { effectId: `semantic-orb-merged:${receipt.id}`, id: receipt.id };
+      const preservedSourceIds = receipt?.result?.preservedSourceIds || a.ids || [];
+      return {
+        effectId: `semantic-orb-merged:${receipt.id}`,
+        id: receipt.id,
+        preservedSourceIds,
+        effects: ["semantic-orb-created", "semantic-orb-merge-preserved-sources"],
+        visibleText: preservedSourceIds.length
+          ? `Created a new merged pearl. Originals stay independent: ${preservedSourceIds.join(", ")}.`
+          : "Created a new merged pearl. Source pearls remain in the library.",
+      };
     },
     composeSemanticOrbs: async (a) => {
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {

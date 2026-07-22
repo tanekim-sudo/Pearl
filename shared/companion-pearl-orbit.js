@@ -4,7 +4,8 @@
  */
 
 export const COMPANION_PEARL_ORBIT_VERSION = 1;
-export const MAX_WORN_ORBIT_PEARLS = 8;
+/** Active working-memory orbit capacity (gauntlet sockets). */
+export const MAX_WORN_ORBIT_PEARLS = 5;
 export const MOTHER_COMPANION_ID = "companion-mother";
 
 /**

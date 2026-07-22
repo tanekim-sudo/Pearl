@@ -6,7 +6,7 @@ import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js
 import { clampCompanionPlacement } from "../lib/companion-safety.js";
 import { defaultPearlAesthetic } from "../../shared/pearl-aesthetic.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
-import { wornPearlOrbitSlots } from "../../shared/companion-pearl-orbit.js";
+import { gauntletSocketLayout, loadGauntletState, MAX_GAUNTLET_SLOTS } from "../../shared/companion-pearl-gauntlet.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -77,6 +77,8 @@ export default function CompanionOrb({
   const [actionQuery, setActionQuery] = useState("");
   const [aesthetic, setAesthetic] = useState(() => aestheticProp || defaultPearlAesthetic({ preset: "classic" }));
   const [wornPacks, setWornPacks] = useState(() => []);
+  const [gauntletSlots, setGauntletSlots] = useState(() => loadGauntletState().slots);
+  const [gauntletActiveSlot, setGauntletActiveSlotState] = useState(() => loadGauntletState().activeSlot);
   const [placement, setPlacement] = useState(() => clampCompanionPlacement(
     { ...state.placement, ...readPlacement(storageKey) },
     { width: globalThis.innerWidth, height: globalThis.innerHeight },
@@ -134,12 +136,14 @@ export default function CompanionOrb({
   useEffect(() => {
     function syncWorn(event) {
       const packs = event?.detail?.packs;
-      if (Array.isArray(packs)) {
-        setWornPacks(packs);
-        return;
+      if (Array.isArray(packs)) setWornPacks(packs);
+      else {
+        const orbit = loadWornOrbitState();
+        setWornPacks(orbit.pearlIds.map((id) => ({ pearlId: id, name: id, aesthetic: null })));
       }
-      const orbit = loadWornOrbitState();
-      setWornPacks(orbit.pearlIds.map((id) => ({ pearlId: id, name: id, aesthetic: null })));
+      const gauntlet = event?.detail?.gauntlet || loadGauntletState();
+      setGauntletSlots(Array.isArray(gauntlet.slots) ? gauntlet.slots : loadGauntletState().slots);
+      setGauntletActiveSlotState(Number.isInteger(gauntlet.activeSlot) ? gauntlet.activeSlot : null);
     }
     syncWorn();
     document.addEventListener("lens:worn-pearls-changed", syncWorn);
@@ -359,25 +363,33 @@ export default function CompanionOrb({
             }}
           ><span>{item.kind === "image" ? "image" : item.kind === "scene" ? "scene" : "context"}</span></button>
         ))}
-        {wornPacks.slice(0, 8).map((pack, index) => {
-          const slot = wornPearlOrbitSlots(wornPacks.length)[index];
+        {gauntletSocketLayout().map((layout, index) => {
+          const pearlId = gauntletSlots[index];
+          const pack = pearlId
+            ? wornPacks.find((entry) => entry.pearlId === pearlId || entry.id === pearlId) || { pearlId, name: pearlId }
+            : null;
+          const active = gauntletActiveSlot === index;
           return <button
             type="button"
-            className="orb-worn-addon"
-            key={pack.pearlId || pack.id || index}
-            style={slot?.css}
-            title={pack.name || "Worn pearl"}
-            aria-label={`${pack.name || "Worn pearl"}, orbiting companion add-on`}
-            onClick={() => onCommand?.(`inspect worn pearl ${pack.name || ""}`.trim())}
+            className={`orb-worn-addon orb-gauntlet-socket${pack ? " filled" : " empty"}${active ? " active" : ""}`}
+            key={`gauntlet-${index}-${pearlId || "empty"}`}
+            style={layout.css}
+            title={pack ? `${pack.name || "Pearl"} · gauntlet socket ${index + 1}` : `Empty gauntlet socket ${index + 1}`}
+            aria-label={pack
+              ? `${pack.name || "Pearl"}, gauntlet working-memory socket ${index + 1}${active ? ", active" : ""}`
+              : `Empty gauntlet working-memory socket ${index + 1} of ${MAX_GAUNTLET_SLOTS}`}
+            onClick={() => pack && onCommand?.(`inspect worn pearl ${pack.name || ""}`.trim())}
           >
-            <PhysicalPearl
-              variant="semantic"
-              state="idle"
-              size={20}
-              aesthetic={pack.aesthetic || null}
-              decorative
-            />
-            <span>{pack.name || "Pearl"}</span>
+            {pack ? <>
+              <PhysicalPearl
+                variant="semantic"
+                state={active ? "listening" : "idle"}
+                size={20}
+                aesthetic={pack.aesthetic || null}
+                decorative
+              />
+              <span>{pack.name || "Pearl"}</span>
+            </> : <i className="orb-gauntlet-ring" aria-hidden="true" />}
           </button>;
         })}
         {(state.workers || []).slice(0, 4).map((worker, index) => (
@@ -417,7 +429,7 @@ export default function CompanionOrb({
         <span className="orb-phase" aria-hidden="true">{
           phase === "listening" ? "Listening"
             : phase === "executing" ? "Working"
-              : wornPacks.length ? `${wornPacks.length} on`
+              : wornPacks.length ? `${wornPacks.length}/${MAX_GAUNTLET_SLOTS}`
                 : state.activeSemanticOrbId ? "Pearl on"
                   : ""
         }</span>

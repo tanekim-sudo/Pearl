@@ -46,6 +46,13 @@ export function createSemanticOrb(value = {}, options = {}) {
       refs: [...new Set((representation.refs || []).filter(Boolean).map(String))],
       label: representation.label || value.name || null,
       snapshot: clone(representation.snapshot || null),
+      ...(representation.preserveIndividuals === true ? { preserveIndividuals: true } : {}),
+      ...(Array.isArray(representation.sourcePearlIds)
+        ? { sourcePearlIds: [...new Set(representation.sourcePearlIds.filter(Boolean).map(String))] }
+        : {}),
+      ...(representation.composition && typeof representation.composition === "object"
+        ? { composition: clone(representation.composition) }
+        : {}),
     },
     workingSet: {
       context: clone(value.workingSet?.context || []),

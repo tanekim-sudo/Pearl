@@ -156,13 +156,19 @@ button:hover{border-color:var(--ex-line-strong);background:rgba(255,255,255,.045
 @media(max-width:380px){header{height:238px}.extension-orb{left:14px;width:104px;height:104px;min-height:104px}.extension-orb svg{width:104px;height:104px}.extension-orb-label{top:110px}.orb-view-tabs{top:188px}.orb-panel.active{max-height:calc(100vh - 264px)}}
 @media(prefers-reduced-motion:reduce){.extension-orb-pearl{animation:none!important}.extension-orb-nacre,.extension-orb-reflection{transform:none!important;transition:none!important}}
 
-/* Pearl rests as a small tool; controls gather around it only when needed. */
+/* Pearl rests as a gauntlet tool; five working-memory sockets orbit the mother. */
 main{background:radial-gradient(circle at 32px 38px,rgba(216,194,141,.055),transparent 86px),var(--ex-bg)}
-header{height:82px}
-.extension-orb-shell{left:0;top:18px;width:100%!important;height:40px;transform:none}
-.extension-orb{left:0;top:0;width:36px;height:36px;min-height:36px;filter:none}
+header{height:96px}
+.extension-orb-shell{left:0;top:10px;width:100%!important;height:76px;transform:none}
+.extension-gauntlet{position:absolute;left:38px;top:38px;width:0;height:0}
+.extension-orb{left:0;top:0;width:36px;height:36px;min-height:36px;filter:none;position:absolute;transform:translate(-50%,-50%)}
 .extension-orb svg{width:36px;height:36px}
-.extension-orb-label{left:46px;top:1px;width:calc(100% - 118px);min-height:34px;transform:none;text-align:left;font-size:10px}
+.extension-gauntlet-socket{position:absolute;left:0;top:0;width:18px;height:18px;min-height:18px;padding:0;border:0;border-radius:50%;background:transparent;transform:translate(-50%,-50%) rotate(var(--worn-angle,0deg)) translateX(var(--worn-radius,26px)) rotate(calc(-1 * var(--worn-angle,0deg)));display:grid;place-items:center}
+.extension-gauntlet-socket.empty{border:1px solid rgba(232,221,190,.32);background:rgba(255,255,255,.03)}
+.extension-gauntlet-socket.active{outline:1px solid rgba(232,221,190,.55);outline-offset:1px}
+.extension-gauntlet-ring{display:block;width:8px;height:8px;border:1px solid rgba(232,221,190,.42);border-radius:50%}
+.extension-gauntlet-socket .physical-pearl,.extension-gauntlet-socket span{width:14px;height:14px;pointer-events:none}
+.extension-orb-label{left:92px;top:24px;width:calc(100% - 110px);min-height:28px;transform:none;text-align:left;font-size:10px}
 .extension-orb-emissions{display:none}
 .orb-view-tabs{position:sticky;top:0;left:auto;right:auto;height:auto;display:flex;gap:2px;padding:6px 0;border-bottom:1px solid var(--ex-line);background:rgba(10,12,13,.94);pointer-events:auto;overflow-x:auto}
 .orb-view-tabs button,
@@ -172,7 +178,7 @@ header{height:82px}
 .extension-semantic-orb-detail>input{flex:1 0 100%;min-width:0}
 .extension-semantic-orb-detail>span{display:flex;flex:1 0 100%;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border-left:1px solid var(--ex-line);color:var(--ex-muted);font-size:10px}
 .extension-semantic-orb-detail>span button{min-height:24px;padding:1px 6px}
-@media(max-width:380px){header{height:76px}.extension-orb{left:0;width:32px;height:32px;min-height:32px}.extension-orb svg{width:32px;height:32px}.extension-orb-label{left:41px;top:0}.orb-view-tabs{top:0}.orb-panel.active{max-height:calc(100vh - 136px)}}
+@media(max-width:380px){header{height:90px}.extension-orb{width:32px;height:32px;min-height:32px}.extension-orb svg{width:32px;height:32px}.extension-orb-label{left:86px;top:20px}.orb-view-tabs{top:0}.orb-panel.active{max-height:calc(100vh - 150px)}}
 
 /* First-use reliability: controls remain reachable by touch, keyboard, and zoom. */
 button,
@@ -247,12 +253,13 @@ textarea { min-height:44px; }
 /* Companion-first shell: Pearl is the only persistent navigation surface. */
 main[data-orb-view="idle"]{display:block;min-height:100vh;padding:0}
 main[data-orb-view="idle"] header{height:100vh}
-main[data-orb-view="idle"] .extension-orb-shell{left:50%;top:50%;width:190px!important;height:72px;transform:translate(-50%,-50%)}
-main[data-orb-view="idle"] .extension-orb{left:77px;top:0;width:36px;height:36px;min-height:36px}
+main[data-orb-view="idle"] .extension-orb-shell{left:50%;top:50%;width:190px!important;height:96px;transform:translate(-50%,-50%)}
+main[data-orb-view="idle"] .extension-gauntlet{left:95px;top:38px}
+main[data-orb-view="idle"] .extension-orb{left:0;top:0;width:36px;height:36px;min-height:36px}
 main[data-orb-view="idle"] .extension-orb svg{width:36px;height:36px}
-main[data-orb-view="idle"] .extension-orb-label{left:0;top:44px;width:190px;text-align:center;transform:none;color:var(--ex-muted)}
-main:not([data-orb-view="idle"]) header{height:66px}
-main:not([data-orb-view="idle"]) .extension-orb-shell{top:16px}
+main[data-orb-view="idle"] .extension-orb-label{left:0;top:72px;width:190px;text-align:center;transform:none;color:var(--ex-muted)}
+main:not([data-orb-view="idle"]) header{height:96px}
+main:not([data-orb-view="idle"]) .extension-orb-shell{top:10px;height:76px}
 .extension-pearl-halo{
   position:fixed;
   z-index:30;
@@ -663,13 +670,17 @@ main[data-orb-view="idle"] header{
 main[data-orb-view="idle"] .extension-orb-shell{
   left:50%;
   top:50%;
-  width:44px!important;
-  height:44px;
+  width:120px!important;
+  height:120px;
   transform:translate(-50%,-50%);
 }
+main[data-orb-view="idle"] .extension-gauntlet{
+  left:60px;
+  top:60px;
+}
 main[data-orb-view="idle"] .extension-orb{
-  left:4px;
-  top:4px;
+  left:0;
+  top:0;
   width:36px;
   height:36px;
 }

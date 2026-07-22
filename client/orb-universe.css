@@ -148,6 +148,27 @@
   white-space: nowrap;
   opacity: .72;
 }
+.orb-gauntlet-socket.empty {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 1px solid rgba(216, 194, 141, .28);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .03);
+  animation: none;
+}
+.orb-gauntlet-socket.active {
+  outline: 1px solid rgba(232, 221, 190, .55);
+  outline-offset: 2px;
+}
+.orb-gauntlet-ring {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(232, 221, 190, .4);
+  border-radius: 50%;
+}
 @keyframes orb-worn-orbit {
   from { filter: brightness(1); }
   50% { filter: brightness(1.06); }
@@ -432,6 +453,18 @@
 .scene-a { left: 12vw; bottom: 17vh; }
 .scene-b { right: 11vw; top: 23vh; }
 .scene-c { right: 17vw; bottom: 14vh; }
+.scene-d { left: 22vw; top: 18vh; }
+.scene-e { left: 48vw; bottom: 22vh; }
+.scene-f { right: 28vw; top: 42vh; }
+.orb-reef-home .orb-reef-kicker { pointer-events: none; max-width: 420px; }
+.orb-reef-home .orb-reef-kicker h1 { margin-bottom: 8px; }
+.orb-reef .reef-pearl b { font-weight: 550; color: var(--orb-text-1); }
+.orb-reef .reef-pearl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8e8 0 28%, #e8d7b0 40%, #9aa39a 100%);
+}
 .orb-home-prompt { position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%); color: var(--orb-text-3); font-size: 10px; letter-spacing: .08em; white-space: nowrap; }
 .orb-universe:has(.companion-orb-shell.expanded) .orb-home-prompt { opacity: 0; }
 .orb-emitted-library,

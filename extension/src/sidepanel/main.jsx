@@ -19,6 +19,14 @@ import { createPearlPrivacyPolicy } from "../../../shared/pearl-privacy-policy.j
 import { createPearlEntity } from "../../../shared/pearl-entity.js";
 import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
 import { loadCompanionAesthetic, pearlAestheticStyle } from "../../../shared/pearl-aesthetic.js";
+import {
+  MAX_GAUNTLET_SLOTS,
+  gauntletSocketLayout,
+  loadGauntletState,
+  removePearlIdFromGauntlet,
+  wearPearlIdInGauntlet,
+} from "../../../shared/companion-pearl-gauntlet.js";
+import { buildWornPearlPack } from "../../../shared/companion-pearl-wear.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -44,10 +52,28 @@ const builtIns = TRANSFORM_PRIMITIVES.map((operator) => ({
   objectKind: "move",
 }));
 
-function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, contextCount = 0, lensActive = false, candidateCount = 0, aesthetic = null }) {
+function ExtensionOrb({
+  phase,
+  listening,
+  onCommandView,
+  onDropMaterial,
+  onSocketDrop,
+  onSocketActivate,
+  onSocketRemove,
+  gauntlet = null,
+  pearlsById = {},
+  contextCount = 0,
+  lensActive = false,
+  candidateCount = 0,
+  aesthetic = null,
+}) {
   const id = useId();
   const lightRef = useRef({ x: 0, y: 0, at: 0 });
   const aestheticVars = aesthetic ? pearlAestheticStyle(aesthetic) : null;
+  const sockets = gauntletSocketLayout({ radius: 26, startDeg: -110 });
+  const slots = Array.isArray(gauntlet?.slots) ? gauntlet.slots : Array.from({ length: MAX_GAUNTLET_SLOTS }, () => null);
+  const activeSlot = Number.isInteger(gauntlet?.activeSlot) ? gauntlet.activeSlot : null;
+  const filled = slots.filter(Boolean).length;
   function moveLight(event) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
@@ -69,7 +95,8 @@ function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, context
   return <div
     className="extension-orb-shell"
     data-orb-state={phase}
-    aria-label={`Pearl, ${phase}`}
+    data-gauntlet="true"
+    aria-label={`Pearl gauntlet, ${filled} of ${MAX_GAUNTLET_SLOTS} working-memory sockets filled, ${phase}`}
     onPointerMove={moveLight}
     onDragOver={(event) => event.preventDefault()}
     onDrop={onDropMaterial}
@@ -79,15 +106,62 @@ function ExtensionOrb({ phase, listening, onCommandView, onDropMaterial, context
       {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
       {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <span className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-candidate-${index}`, variant: "candidate", state: "new", size: 16, decorative: true }) }} />)}
     </div>
-    <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
-      <style>{PHYSICAL_PEARL_CSS}</style>
-      <span
-        data-pearl-aesthetic={aesthetic?.preset || undefined}
-        style={aestheticVars || undefined}
-        dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `extension-pearl-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "primary", state: phase, size: 36, decorative: true, aesthetic }) }}
-      />
-    </button>
-    <span className="extension-orb-label sr-only">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : "Pearl command"}</span>
+    <div className="extension-gauntlet" aria-label="Gauntlet working memory">
+      {sockets.map((layout, index) => {
+        const pearlId = slots[index];
+        const pearl = pearlId ? pearlsById[pearlId] : null;
+        const empty = !pearlId;
+        const active = activeSlot === index;
+        return <button
+          type="button"
+          key={`gauntlet-socket-${index}`}
+          className={`extension-gauntlet-socket${empty ? " empty" : " filled"}${active ? " active" : ""}`}
+          style={layout.css}
+          title={empty ? `Empty socket ${index + 1}` : `${pearl?.name || pearlId}${active ? " · active" : ""} · click to ${active ? "remove" : "activate"}`}
+          aria-label={empty
+            ? `Empty gauntlet socket ${index + 1}. Drop a pearl to wear.`
+            : `${pearl?.name || pearlId}, gauntlet socket ${index + 1}${active ? ", active" : ""}. Click to ${active ? "remove" : "activate"}.`}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (empty) return;
+            if (active) onSocketRemove?.(pearlId, index);
+            else onSocketActivate?.(pearlId, index);
+          }}
+          onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onDrop={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onSocketDrop?.(event, index);
+          }}
+        >
+          {empty
+            ? <i className="extension-gauntlet-ring" aria-hidden="true" />
+            : <span
+              dangerouslySetInnerHTML={{
+                __html: physicalPearlMarkup({
+                  id: `gauntlet-slot-${index}-${String(pearlId).replace(/[^a-zA-Z0-9_-]/g, "")}`,
+                  variant: "semantic",
+                  state: active ? "listening" : "idle",
+                  size: 14,
+                  decorative: true,
+                  aesthetic: pearl?.aesthetic || null,
+                }),
+              }}
+            />}
+        </button>;
+      })}
+      <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
+        <style>{PHYSICAL_PEARL_CSS}</style>
+        <span
+          data-pearl-aesthetic={aesthetic?.preset || undefined}
+          style={aestheticVars || undefined}
+          dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `extension-pearl-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "primary", state: phase, size: 36, decorative: true, aesthetic }) }}
+        />
+      </button>
+    </div>
+    <span className="extension-orb-label sr-only">
+      {phase === "listening" ? "Listening" : phase === "executing" ? "Working" : `Gauntlet ${filled}/${MAX_GAUNTLET_SLOTS}`}
+    </span>
   </div>;
 }
 
@@ -137,10 +211,42 @@ function App() {
   const [privacySurface, setPrivacySurface] = useState(null);
   const [privacyProposal, setPrivacyProposal] = useState(null);
   const [pearlAesthetic, setPearlAesthetic] = useState(() => loadCompanionAesthetic());
+  const [gauntlet, setGauntlet] = useState(() => loadGauntletState());
   const [guideOpen, setGuideOpen] = useState(false);
   const [audioSearchResults, setAudioSearchResults] = useState([]);
   const fileRef = useRef(null);
   const audioFileRef = useRef(null);
+
+  async function publishGauntletOrbit(nextGauntlet = loadGauntletState(), extraPearls = []) {
+    const state = nextGauntlet?.slots ? nextGauntlet : loadGauntletState();
+    setGauntlet(state);
+    const extras = new Map((extraPearls || []).filter(Boolean).map((entry) => [entry.id, entry]));
+    const packs = state.pearlIds
+      .map((pearlId) => semanticOrbs.find((entry) => entry.id === pearlId) || extras.get(pearlId))
+      .filter(Boolean)
+      .map((entry) => buildWornPearlPack(entry));
+    await action("pearl-worn-orbit", {
+      packs,
+      pearlIds: state.pearlIds,
+      slots: state.slots,
+      activeSlot: state.activeSlot,
+      capacity: MAX_GAUNTLET_SLOTS,
+    }).catch(() => {});
+    return state;
+  }
+
+  function readDroppedPearlId(event) {
+    try {
+      const raw = event.dataTransfer?.getData("application/x-lens-pearl");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id) return String(parsed.id);
+      }
+    } catch { /* fall through */ }
+    const text = String(event.dataTransfer?.getData("text/plain") || "").trim();
+    if (text && semanticOrbs.some((orb) => orb.id === text)) return text;
+    return null;
+  }
 
   useEffect(() => {
     function pearlKeys(event) {
@@ -367,25 +473,18 @@ function App() {
   async function semanticOrbAction(name, args = {}) {
     const byId = new Map(semanticOrbs.map((orb) => [orb.id, orb]));
     if (name === "clear-wear" || name === "remove-wear") {
-      const { removeWornPearlId, loadWornPearlIds, buildWornPearlPack } = await import("../../../shared/companion-pearl-wear.js");
-      removeWornPearlId(name === "remove-wear" ? args.id : null);
-      const remaining = loadWornPearlIds();
-      await persistSemanticOrbs(semanticOrbs, remaining[0] || null);
-      const packs = remaining
-        .map((id) => semanticOrbs.find((entry) => entry.id === id))
-        .filter(Boolean)
-        .map((entry) => buildWornPearlPack(entry));
-      await action("pearl-worn-orbit", { packs, pearlIds: remaining }).catch(() => {});
-      setReadyMessage(remaining.length
-        ? `${remaining.length} pearl${remaining.length === 1 ? "" : "s"} still orbiting the companion.`
-        : "Companion is bare — no pearls orbiting.");
-      return { type: "external-worn-pearl", status: remaining.length ? "worn" : "bare", pearlIds: remaining };
+      const state = removePearlIdFromGauntlet(name === "remove-wear" ? args.id : null);
+      await persistSemanticOrbs(semanticOrbs, state.pearlIds[0] || null);
+      await publishGauntletOrbit(state);
+      setReadyMessage(state.filled
+        ? `Gauntlet working memory: ${state.filled}/${MAX_GAUNTLET_SLOTS} sockets filled.`
+        : "Gauntlet cleared — all five working-memory sockets are empty.");
+      return { type: "external-worn-pearl", status: state.filled ? "worn" : "bare", pearlIds: state.pearlIds, slots: state.slots };
     }
     if (name === "encode-conversation") {
       const {
         compressConversationToPearlSpec,
         suggestPearlForConversation,
-        saveWornPearlId,
       } = await import("../../../shared/companion-pearl-wear.js");
       const { parseTranscript } = await import("../../../shared/transcript-learning.js");
       let text = String(args.text || "").trim();
@@ -445,8 +544,7 @@ function App() {
         ));
         await persistSemanticOrbs(nextOrbs, targetId);
       }
-      await semanticOrbAction("open", { id: targetId, wear: true });
-      saveWornPearlId(targetId);
+      await semanticOrbAction("open", { id: targetId, wear: true, replace: true });
       call("library-refresh").then(applyLibrary).catch(() => {});
       setReadyMessage(`Conversation encoded into pearl with function “${spec.function.name}”.`);
       return {
@@ -474,19 +572,42 @@ function App() {
     if (name === "merge") {
       const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
       if (sources.length < 2) throw new Error("choose at least two orbs");
+      const sourceIds = sources.map((entry) => entry.id);
       const context = new Map(sources.flatMap((entry) => entry.workingSet.context || []).map((item) => [item.id, item]));
+      const lenses = new Map(sources.flatMap((entry) => entry.workingSet.lenses || []).map((lens) => [lens.id, lens]));
       const merged = createSemanticOrb({
         id: `external-orb:${crypto.randomUUID()}`,
         sceneId: "extension-captures",
         name: args.name || sources.map((entry) => entry.name).join(" + "),
-        representation: { kind: "grouped-context", refs: sources.map((entry) => entry.id), label: args.name || "Merged orb" },
-        workingSet: { context: [...context.values()] },
-        lineage: sources.map((entry) => ({ orbId: entry.id, operation: "merge" })),
+        representation: {
+          kind: "grouped-context",
+          refs: sourceIds,
+          label: args.name || "Merged orb",
+          preserveIndividuals: true,
+          sourcePearlIds: sourceIds,
+        },
+        workingSet: { context: [...context.values()], lenses: [...lenses.values()] },
+        lineage: sources.map((entry) => ({ orbId: entry.id, operation: "merge", preserved: true })),
+        provenance: {
+          merge: {
+            mode: "preserve-individuals",
+            sourcePearlIds: sourceIds,
+            note: "Source pearls remain independent library pearls; this orb is an additional composition.",
+          },
+        },
       });
+      // Append-only: keep every source pearl in the library and gauntlet.
       byId.set(merged.id, merged);
       await persistSemanticOrbs([...byId.values()], merged.id);
       setActiveView("orbs");
-      return { type: "external-semantic-orb", id: merged.id, orb: merged };
+      setReadyMessage(`Created “${merged.name}”. Original pearls stay in the library and gauntlet.`);
+      return {
+        type: "external-semantic-orb",
+        id: merged.id,
+        orb: merged,
+        preservedSourceIds: sourceIds,
+        effects: ["semantic-orb-created", "semantic-orb-merge-preserved-sources"],
+      };
     }
     let orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
     if (!orb && args.id) {
@@ -505,18 +626,20 @@ function App() {
       }
       await persistSemanticOrbs(semanticOrbs, orb.id);
       if (args.wear !== false) {
-        const { addWornPearlId, saveWornPearlId, loadWornPearlIds, loadWornOrbitState, buildWornPearlPack } = await import("../../../shared/companion-pearl-wear.js");
-        if (args.replace === true) saveWornPearlId(orb.id);
-        else addWornPearlId(orb.id);
-        const orbiting = loadWornPearlIds();
-        const packs = orbiting
-          .map((id) => semanticOrbs.find((entry) => entry.id === id) || (id === orb.id ? orb : null))
-          .filter(Boolean)
-          .map((entry) => buildWornPearlPack(entry));
-        await action("pearl-worn-orbit", { packs, pearlIds: loadWornOrbitState().pearlIds }).catch(() => {});
-        setReadyMessage(orbiting.length > 1
-          ? `“${orb.name}” joined the orbit (${orbiting.length} pearls around the companion).`
-          : `“${orb.name}” is orbiting the companion.`);
+        let state;
+        try {
+          state = wearPearlIdInGauntlet(orb.id, {
+            replace: args.replace === true,
+            slot: Number.isInteger(args.slot) ? args.slot : undefined,
+          });
+        } catch (error) {
+          setReadyMessage(error?.message || `Gauntlet is full (${MAX_GAUNTLET_SLOTS} active pearls). Remove one before wearing another.`);
+          throw error;
+        }
+        await publishGauntletOrbit(state, [orb]);
+        setReadyMessage(state.filled > 1
+          ? `“${orb.name}” loaded into gauntlet (${state.filled}/${MAX_GAUNTLET_SLOTS} working-memory sockets).`
+          : `“${orb.name}” is in the gauntlet working memory.`);
       } else {
         setReadyMessage(`Opened “${orb.name}”.`);
       }
@@ -1237,6 +1360,15 @@ function App() {
       setPearlOpen(false);
       return;
     }
+    const pearlId = readDroppedPearlId(event);
+    if (pearlId) {
+      try {
+        await semanticOrbAction("open", { id: pearlId, wear: true });
+      } catch (reason) {
+        setError(reason.message);
+      }
+      return;
+    }
     const portable = event.dataTransfer?.getData("application/x-lens-object");
     const text = event.dataTransfer?.getData("text/plain")?.trim();
     let object = null;
@@ -1322,12 +1454,47 @@ function App() {
   const activeTrack = activeSoundscape?.tracks?.find((entry) => entry.id === activeSoundscape.activeTrackId) || null;
   return <main data-orb-view={activeView}>
     <header>
-      <ExtensionOrb phase={orbPhase} listening={voiceListening} aesthetic={pearlAesthetic} onCommandView={() => {
-        setPowerSearch(false);
-        setPearlOpen((value) => !value);
-      }}
+      <ExtensionOrb
+        phase={orbPhase}
+        listening={voiceListening}
+        aesthetic={pearlAesthetic}
+        gauntlet={gauntlet}
+        pearlsById={Object.fromEntries(semanticOrbs.map((orb) => [orb.id, orb]))}
+        onCommandView={() => {
+          setPowerSearch(false);
+          setPearlOpen((value) => !value);
+        }}
         onDropMaterial={dropOnPearl}
-        contextCount={session.fragments.length} lensActive={Boolean(session.generator)} candidateCount={session.results.flatMap((run) => run.outputs).length} />
+        onSocketDrop={async (event, slot) => {
+          const pearlId = readDroppedPearlId(event);
+          if (!pearlId) {
+            await dropOnPearl(event);
+            return;
+          }
+          try {
+            await semanticOrbAction("open", { id: pearlId, wear: true, slot });
+          } catch (reason) {
+            setError(reason.message);
+          }
+        }}
+        onSocketActivate={async (pearlId) => {
+          try {
+            await semanticOrbAction("open", { id: pearlId, wear: true });
+          } catch (reason) {
+            setError(reason.message);
+          }
+        }}
+        onSocketRemove={async (pearlId) => {
+          try {
+            await semanticOrbAction("remove-wear", { id: pearlId });
+          } catch (reason) {
+            setError(reason.message);
+          }
+        }}
+        contextCount={session.fragments.length}
+        lensActive={Boolean(session.generator)}
+        candidateCount={session.results.flatMap((run) => run.outputs).length}
+      />
     </header>
     <input
       ref={audioFileRef}
@@ -1423,6 +1590,13 @@ function App() {
           type="button"
           key={orb.id}
           aria-pressed={activeSemanticOrbId === orb.id}
+          draggable
+          title="Click to open · drag onto a gauntlet socket to wear"
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "copyMove";
+            event.dataTransfer.setData("application/x-lens-pearl", JSON.stringify({ id: orb.id, name: orb.name }));
+            event.dataTransfer.setData("text/plain", orb.id);
+          }}
           onClick={() => semanticOrbAction("open", { id: orb.id })}
         >
           <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-semantic-${String(orb.id).replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "semantic", state: activeSemanticOrbId === orb.id ? "listening" : "idle", size: 30, decorative: true }) }} />

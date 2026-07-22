@@ -560,16 +560,40 @@ export const DOMAIN_COMMANDS = Object.freeze({
       });
       const byContext = new Map(sources.flatMap((orb) => orb.workingSet.context || []).map((item) => [item.id, item]));
       const byLens = new Map(sources.flatMap((orb) => orb.workingSet.lenses || []).map((lens) => [lens.id, lens]));
+      const sourceIds = sources.map((orb) => orb.id);
       const merged = createSemanticOrb({
         id,
         sceneId: args.sceneId,
         name: args.name || sources.map((orb) => orb.name).join(" + "),
         placement,
-        representation: { kind: "grouped-context", refs: sources.map((orb) => orb.id), label: args.name || "Merged orb" },
+        representation: {
+          kind: "grouped-context",
+          refs: sourceIds,
+          label: args.name || "Merged orb",
+          preserveIndividuals: true,
+          sourcePearlIds: sourceIds,
+        },
         workingSet: { context: [...byContext.values()], lenses: [...byLens.values()] },
-        lineage: sources.map((orb) => ({ orbId: orb.id, operation: "merge" })),
+        lineage: sources.map((orb) => ({ orbId: orb.id, operation: "merge", preserved: true })),
+        provenance: {
+          merge: {
+            mode: "preserve-individuals",
+            sourcePearlIds: sourceIds,
+            note: "Source pearls remain independent library pearls; this orb is an additional composition.",
+          },
+        },
       }, { now: context.now });
-      return { state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), merged] }, result: { type: "semantic-orb", id, object: merged, effects: ["semantic-orb-created"] } };
+      // Append-only: source pearls stay in semanticOrbs unchanged.
+      return {
+        state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), merged] },
+        result: {
+          type: "semantic-orb",
+          id,
+          object: merged,
+          preservedSourceIds: sourceIds,
+          effects: ["semantic-orb-created", "semantic-orb-merge-preserved-sources"],
+        },
+      };
     },
   },
   composeSemanticOrbs: {
