@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-d1e2ac39",
+  "fingerprint": "fnv1a-c56bec4c",
   "counts": {
-    "nodes": 388,
+    "nodes": 394,
     "edges": 516
   },
   "nodes": [
@@ -10540,9 +10540,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist",
         "Scene is explicit",
         "source material is preserved",
-        "orb exists when id is supplied",
         "orb exists",
         "name is explicit",
         "representation is explicit",
@@ -10552,7 +10553,6 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -10604,9 +10604,9 @@
         "scene-state-changed"
       ],
       "persistence": [
-        "none",
-        "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "none",
         "scene.semanticOrbs.update",
         "scene.semanticOrbs.delete",
         "pearlEntities.compareAndSwap",
@@ -10615,9 +10615,9 @@
         "pearlEntities.restoreVersion"
       ],
       "undo": [
-        "none",
-        "restore-semantic-orbs",
         "restore-active-semantic-orb",
+        "restore-semantic-orbs",
+        "none",
         "undo-pearl-entity-edit",
         "undo-output-placement"
       ],
@@ -10630,9 +10630,9 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
-        "semantic-orb-preview-opened",
-        "semantic-orb-created",
         "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-preview-opened",
         "semantic-orb-moved",
         "semantic-orb-updated",
         "semantic-orb-context-changed",
@@ -10650,17 +10650,20 @@
       ],
       "tests": [
         "capability-synthesizeSemanticOrbs",
+        "feature:companion.pearl-gauntlet",
         "feature:scene.semantic-orbs",
         "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
+        "companion.pearl-gauntlet",
         "scene.semantic-orbs",
         "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs",
         "openOrbCreationPreview",
         "createSemanticOrb",
-        "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
         "bindSemanticOrb",
@@ -10670,7 +10673,6 @@
         "removeSemanticOrbLens",
         "nestSemanticOrb",
         "unnestSemanticOrb",
-        "mergeSemanticOrbs",
         "composeSemanticOrbs",
         "synthesizeSemanticOrbs",
         "splitSemanticOrb",
@@ -12152,9 +12154,9 @@
       "preconditions": [
         "object validates",
         "idempotency key is stable",
-        "orb exists when id is supplied",
         "Scene is explicit",
         "source material is preserved",
+        "orb exists when id is supplied",
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved"
@@ -12198,14 +12200,14 @@
       ],
       "persistence": [
         "library.objects.upsert",
-        "scene.activeSemanticOrbId",
         "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
         "scene.semanticOrbs.update"
       ],
       "undo": [
         "restore-library-snapshot",
-        "restore-active-semantic-orb",
-        "restore-semantic-orbs"
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -12218,24 +12220,26 @@
         "scene-state-changed",
         "function-state-changed",
         "library-changed",
-        "semantic-orb-activation-changed",
         "semantic-orb-created",
+        "semantic-orb-activation-changed",
         "semantic-orb-updated",
         "semantic-orb-context-changed"
       ],
       "tests": [
         "capability-encodeConversationAsPearl",
         "feature:learning.transcript",
+        "feature:learning.forming-pearls",
         "feature:companion.pearl-wear"
       ],
       "featureIds": [
         "learning.transcript",
+        "learning.forming-pearls",
         "companion.pearl-wear"
       ],
       "canonicalCommands": [
         "upsertCanonicalObject",
-        "activateSemanticOrb",
         "createSemanticOrb",
+        "activateSemanticOrb",
         "bindSemanticOrb",
         "addSemanticOrbContext"
       ],
@@ -12245,6 +12249,343 @@
       "domains": [
         "scene",
         "function",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.discoverFormingPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "discoverFormingPearls",
+      "purpose": "Import chats/docs/drafts and discover ≤5 already-forming pearls (re-asked questions, redone prompts, recurring ops/frames) organized Moves→Functions→Lenses",
+      "examples": [
+        "import this chat and find the pearls that were already forming",
+        "turn these docs into at most five pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string?",
+          "transcript": "object?",
+          "maxPearls": "number?",
+          "source": "string?",
+          "materialize": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "object validates",
+        "idempotency key is stable",
+        "Scene is explicit",
+        "source material is preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "library.objects.upsert",
+        "scene.semanticOrbs.append"
+      ],
+      "undo": [
+        "restore-library-snapshot",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed",
+        "library-changed",
+        "semantic-orb-created"
+      ],
+      "tests": [
+        "capability-discoverFormingPearls",
+        "feature:learning.transcript",
+        "feature:learning.forming-pearls"
+      ],
+      "featureIds": [
+        "learning.transcript",
+        "learning.forming-pearls"
+      ],
+      "canonicalCommands": [
+        "upsertCanonicalObject",
+        "createSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "lens",
+        "move",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.inspectPearlMetadata",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectPearlMetadata",
+      "purpose": "Inspect the metadata harness beneath a pearl (identity, Moves→Functions→Lenses, working set, provenance, edit bounds)",
+      "examples": [
+        "show me the metadata under this pearl",
+        "inspect the moves functions and lenses in this pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "at least two orbs exist"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId"
+      ],
+      "undo": [
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed"
+      ],
+      "tests": [
+        "capability-inspectPearlMetadata",
+        "feature:learning.forming-pearls",
+        "feature:companion.pearl-gauntlet"
+      ],
+      "featureIds": [
+        "learning.forming-pearls",
+        "companion.pearl-gauntlet"
+      ],
+      "canonicalCommands": [
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "mergeSemanticOrbs"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "lens",
+        "move",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.rearrangeGauntlet",
+      "version": 1,
+      "kind": "capability",
+      "name": "rearrangeGauntlet",
+      "purpose": "Reorder pearls currently loaded in the five gauntlet working-memory sockets",
+      "examples": [
+        "reorder the gauntlet pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlIds": "array"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created"
+      ],
+      "tests": [
+        "capability-rearrangeGauntlet",
+        "feature:companion.pearl-gauntlet"
+      ],
+      "featureIds": [
+        "companion.pearl-gauntlet"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
         "interface"
       ],
       "platform": "app"
@@ -31403,9 +31744,10 @@
       "version": 1,
       "kind": "capability",
       "name": "synthesizeExternalSemanticOrbs",
-      "purpose": "Mutual-apply saved pearls into a new synthesis capsule; sources stay intact",
+      "purpose": "Mutual-apply or exchange insights between pearls into a new synthesis capsule; sources stay intact",
       "examples": [
-        "what do these pearls notice about each other"
+        "what do these pearls notice about each other",
+        "exchange insights between these pearls"
       ],
       "inputSchema": {
         "type": "object",
@@ -31423,9 +31765,10 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist",
         "Scene is explicit",
         "source material is preserved",
-        "orb exists when id is supplied",
         "orb exists",
         "name is explicit",
         "representation is explicit",
@@ -31435,7 +31778,6 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31478,16 +31820,16 @@
         "scene-state-changed"
       ],
       "persistence": [
-        "none",
-        "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "none",
         "scene.semanticOrbs.update",
         "scene.semanticOrbs.delete"
       ],
       "undo": [
-        "none",
+        "restore-active-semantic-orb",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "none"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -31498,9 +31840,9 @@
       "expectedEffects": [
         "extension-state-changed",
         "scene-state-changed",
-        "semantic-orb-preview-opened",
-        "semantic-orb-created",
         "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-preview-opened",
         "semantic-orb-moved",
         "semantic-orb-updated",
         "semantic-orb-context-changed",
@@ -31512,15 +31854,18 @@
       ],
       "tests": [
         "capability-synthesizeExternalSemanticOrbs",
+        "feature:companion.pearl-gauntlet",
         "feature:scene.semantic-orbs"
       ],
       "featureIds": [
+        "companion.pearl-gauntlet",
         "scene.semantic-orbs"
       ],
       "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs",
         "openOrbCreationPreview",
         "createSemanticOrb",
-        "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
         "bindSemanticOrb",
@@ -31530,7 +31875,6 @@
         "removeSemanticOrbLens",
         "nestSemanticOrb",
         "unnestSemanticOrb",
-        "mergeSemanticOrbs",
         "composeSemanticOrbs",
         "synthesizeSemanticOrbs",
         "splitSemanticOrb",
@@ -32785,9 +33129,12 @@
         "lens-state-changed"
       ],
       "tests": [
-        "capability-previewExternalGo"
+        "capability-previewExternalGo",
+        "feature:highlight.explicit-go"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "highlight.explicit-go"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -32828,6 +33175,8 @@
         "candidate exists and is focused or explicitly referenced",
         "completed candidate exists",
         "new cost stays within budget",
+        "orb exists when id is supplied",
+        "at least two orbs exist",
         "material is explicit and preserved",
         "context item exists",
         "Lens is explicit and preserved",
@@ -32876,6 +33225,8 @@
         "generationBatches.append",
         "generationBatches.update",
         "none",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
         "scene.workingSet.context",
         "scene.workingSet.lenses"
       ],
@@ -32885,6 +33236,8 @@
         "restore-batch-snapshot",
         "restore-previous-feedback",
         "cancel-pending-child-batch",
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs",
         "restore-orb-context",
         "restore-orb-lenses"
       ],
@@ -32906,6 +33259,8 @@
         "taste-feedback-changed",
         "candidate-focus-changed",
         "more-like-this-prepared",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
         "orb-context-changed",
         "orb-lenses-changed"
       ],
@@ -32913,6 +33268,7 @@
         "capability-pressExternalGo",
         "feature:generation.taste-branching",
         "feature:execution.lens-context",
+        "feature:companion.pearl-gauntlet",
         "feature:highlight.explicit-go",
         "feature:companion.orb-runtime",
         "feature:shell.pearl-progressive"
@@ -32920,6 +33276,7 @@
       "featureIds": [
         "generation.taste-branching",
         "execution.lens-context",
+        "companion.pearl-gauntlet",
         "highlight.explicit-go",
         "companion.orb-runtime",
         "shell.pearl-progressive"
@@ -32930,6 +33287,8 @@
         "updateGenerationCandidate",
         "recordTasteFeedback",
         "prepareMoreLikeThis",
+        "activateSemanticOrb",
+        "mergeSemanticOrbs",
         "addOrbContext",
         "updateOrbContext",
         "removeOrbContext",
@@ -35640,6 +35999,335 @@
         "extension",
         "scene",
         "function"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.discoverExternalFormingPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "discoverExternalFormingPearls",
+      "purpose": "Import chats/docs/drafts in the extension and materialize ≤5 forming pearls on the shelf",
+      "examples": [
+        "import this chat into at most five forming pearls"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string?",
+          "maxPearls": "number?",
+          "source": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "object validates",
+        "idempotency key is stable",
+        "Scene is explicit",
+        "source material is preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "library.objects.upsert",
+        "scene.semanticOrbs.append"
+      ],
+      "undo": [
+        "restore-library-snapshot",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed",
+        "library-changed",
+        "semantic-orb-created"
+      ],
+      "tests": [
+        "capability-discoverExternalFormingPearls",
+        "feature:learning.transcript",
+        "feature:learning.forming-pearls"
+      ],
+      "featureIds": [
+        "learning.transcript",
+        "learning.forming-pearls"
+      ],
+      "canonicalCommands": [
+        "upsertCanonicalObject",
+        "createSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "function",
+        "lens",
+        "move",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.inspectExternalPearlMetadata",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectExternalPearlMetadata",
+      "purpose": "Inspect metadata harness for an extension pearl (organization, working set, edit bounds)",
+      "examples": [
+        "inspect the metadata under this pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "move-state-changed",
+        "semantic-orb-created"
+      ],
+      "tests": [
+        "capability-inspectExternalPearlMetadata",
+        "feature:learning.forming-pearls"
+      ],
+      "featureIds": [
+        "learning.forming-pearls"
+      ],
+      "canonicalCommands": [
+        "createSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "function",
+        "lens",
+        "move",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.rearrangeExternalGauntlet",
+      "version": 1,
+      "kind": "capability",
+      "name": "rearrangeExternalGauntlet",
+      "purpose": "Reorder extension gauntlet working-memory sockets",
+      "examples": [
+        "reorder the gauntlet sockets"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlIds": "array"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "at least two orbs exist"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created"
+      ],
+      "tests": [
+        "capability-rearrangeExternalGauntlet",
+        "feature:companion.pearl-gauntlet"
+      ],
+      "featureIds": [
+        "companion.pearl-gauntlet"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "mergeSemanticOrbs"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "interface"
       ],
       "platform": "extension"
     },

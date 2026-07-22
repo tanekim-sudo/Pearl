@@ -469,6 +469,22 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
   assert.ok(COMPANION_VERBS.wearPearl);
   assert.ok(COMPANION_VERBS.removeWornPearl);
   assert.ok(COMPANION_VERBS.encodeConversationAsPearl);
+  assert.ok(COMPANION_VERBS.discoverFormingPearls);
+  assert.ok(COMPANION_VERBS.inspectPearlMetadata);
+  assert.ok(COMPANION_VERBS.rearrangeGauntlet);
+});
+
+test("pearl remix maps exchange/breed/import/metadata intents to validated verbs", () => {
+  assert.deepEqual(parsePearlRemixCommand("exchange insights between these pearls"), {
+    verb: "synthesizeSemanticOrbs",
+    args: { ids: [], sceneId: "", mode: "mutual" },
+  });
+  assert.equal(parsePearlRemixCommand("import this chat and find the pearls that were already forming")?.verb, "discoverFormingPearls");
+  assert.equal(parsePearlRemixCommand("inspect the metadata under this pearl")?.verb, "inspectPearlMetadata");
+  assert.deepEqual(parsePearlRemixCommand("reorder the gauntlet pearls"), {
+    verb: "rearrangeGauntlet",
+    args: { pearlIds: [] },
+  });
 });
 
 test("planner requires executable commands to act without chatter", () => {

@@ -233,6 +233,22 @@ export function parsePearlRemixCommand(text) {
   ) {
     return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "directed" } };
   }
+  if (/\b(?:exchange insights?|breed|birth (?:a )?third)\b.+\b(?:pearl|orb)s?\b/i.test(value)
+    || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|breed)\b/i.test(value)) {
+    return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "mutual" } };
+  }
+  if (/\b(?:import|discover|find)\b.+\b(?:forming )?pearls?\b/i.test(value)
+    || /\bpearls that were already forming\b/i.test(value)
+    || /\b(?:chat|docs?|drafts?|transcript)\b.+\b(?:into|as) (?:at most )?five pearls?\b/i.test(value)) {
+    return { verb: "discoverFormingPearls", args: { text: value, materialize: true } };
+  }
+  if (/\b(?:inspect|show)\b.+\b(?:metadata|harness|organization)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\bmetadata (?:under|beneath|for) (?:this |the )?pearl\b/i.test(value)) {
+    return { verb: "inspectPearlMetadata", args: {} };
+  }
+  if (/\breorder\b.+\bgauntlet\b/i.test(value)) {
+    return { verb: "rearrangeGauntlet", args: { pearlIds: [] } };
+  }
   if (/\bsplit\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value) || /^split (?:this|it)$/i.test(value)) {
     return { verb: "splitSemanticOrb", args: { id: "active", sceneId: "" } };
   }
@@ -808,7 +824,7 @@ Rules:
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
-- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / apply-onto intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl for create/edit. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation.
+- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.

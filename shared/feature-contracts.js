@@ -80,8 +80,18 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("learning.transcript", {
     domains: ["move", "function", "lens"], commands: ["upsertCanonicalObject"],
-    ui: ["client/components/LearnFromChat.jsx"], companion: ["openTranscriptLearning", "generateTranscriptArtifacts", "saveTranscriptArtifacts", "encodeConversationAsPearl", "suggestPearlForConversation"],
-    extension: [], persistence: ["lens.learn-from-chat.draft.v1"], tests: ["shared/transcript-learning.test.js", "shared/companion-pearl-wear.test.js"], owner: "shared/transcript-learning.js",
+    ui: ["client/components/LearnFromChat.jsx"], companion: ["openTranscriptLearning", "generateTranscriptArtifacts", "saveTranscriptArtifacts", "encodeConversationAsPearl", "suggestPearlForConversation", "discoverFormingPearls"],
+    extension: ["discoverExternalFormingPearls"], persistence: ["lens.learn-from-chat.draft.v1"], tests: ["shared/transcript-learning.test.js", "shared/companion-pearl-wear.test.js", "shared/forming-pearls.test.js"], owner: "shared/transcript-learning.js",
+  }),
+  feature("learning.forming-pearls", {
+    domains: ["scene", "move", "function", "lens"],
+    commands: ["createSemanticOrb"],
+    ui: ["extension/src/sidepanel/main.jsx", "client/components/LearnFromChat.jsx"],
+    companion: ["discoverFormingPearls", "inspectPearlMetadata", "encodeConversationAsPearl"],
+    extension: ["discoverExternalFormingPearls", "inspectExternalPearlMetadata"],
+    persistence: ["lens.unified-workspace.v2"],
+    tests: ["shared/forming-pearls.test.js", "client/lib/companion-intent.test.js"],
+    owner: "shared/forming-pearls.js",
   }),
   feature("companion.pearl-wear", {
     domains: ["scene", "interface", "function"],
@@ -107,16 +117,16 @@ export const FEATURE_CONTRACTS = Object.freeze([
     domains: ["scene", "interface"],
     commands: ["activateSemanticOrb", "mergeSemanticOrbs"],
     ui: ["extension/src/sidepanel/main.jsx", "extension/src/sidepanel/sidepanel.css", "client/components/CompanionOrb.jsx", "extension/src/content/bridge.js"],
-    companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "mergeSemanticOrbs"],
-    extension: ["wearExternalPearl", "removeExternalWornPearl", "mergeExternalSemanticOrbs"],
+    companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "rearrangeGauntlet", "mergeSemanticOrbs", "synthesizeSemanticOrbs", "inspectPearlMetadata"],
+    extension: ["wearExternalPearl", "removeExternalWornPearl", "rearrangeExternalGauntlet", "mergeExternalSemanticOrbs", "synthesizeExternalSemanticOrbs", "pressExternalGo"],
     persistence: ["lens.companion.gauntlet.v1", "lens.companion.worn-pearl.v1"],
-    tests: ["shared/companion-pearl-gauntlet.test.js", "shared/companion-pearl-orbit.test.js", "shared/domain-commands.test.js"],
+    tests: ["shared/companion-pearl-gauntlet.test.js", "shared/companion-pearl-orbit.test.js", "shared/domain-commands.test.js", "shared/lens-runtime.test.js"],
     owner: "shared/companion-pearl-gauntlet.js",
   }),
   feature("highlight.explicit-go", {
     domains: ["paper", "ai", "move", "function", "lens"], commands: [],
-    ui: ["client/components/HighlightToolbar.jsx"], companion: ["pressBrushGo", "cancelPendingBrush"],
-    extension: ["pressExternalGo"], persistence: [], tests: ["shared/lens-runtime.test.js"], owner: "shared/lens-runtime.js",
+    ui: ["client/components/HighlightToolbar.jsx", "extension/src/sidepanel/main.jsx"], companion: ["pressBrushGo", "cancelPendingBrush"],
+    extension: ["pressExternalGo", "previewExternalGo"], persistence: [], tests: ["shared/lens-runtime.test.js"], owner: "shared/lens-runtime.js",
   }),
   feature("ai.node-gestures", {
     domains: ["ai"], commands: [], ui: ["client/components/AiNodeCanvas.jsx"],
@@ -618,7 +628,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 59,
+  features: 60,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

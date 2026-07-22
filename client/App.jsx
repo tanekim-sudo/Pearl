@@ -267,8 +267,15 @@ import {
   MAX_GAUNTLET_SLOTS,
   loadGauntletState,
   removePearlIdFromGauntlet,
+  reorderGauntletSlots,
+  saveGauntletState,
   wearPearlIdInGauntlet,
 } from "../shared/companion-pearl-gauntlet.js";
+import {
+  discoverFormingPearls as discoverFormingPearlsFromImport,
+  MAX_FORMING_PEARLS,
+  pearlMetadataHarness,
+} from "../shared/forming-pearls.js";
 import {
   aestheticFromSampleColor,
   aestheticSummary,
@@ -13139,6 +13146,89 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           : suggestion.preferNew === false && suggestion.suggestions[0]
             ? `Created “${spec.pearl.name}”. Closest existing pearl was “${suggestion.suggestions[0].name}” — say if you want it moved there.`
             : `Created pearl “${spec.pearl.name}” with a replayable function. Companion is wearing it.`,
+      };
+    },
+    discoverFormingPearls: async (a, tk) => {
+      let text = a.text || "";
+      if (!text && !a.transcript) {
+        try { text = await navigator.clipboard.readText(); } catch { text = ""; }
+      }
+      if (!text && !a.transcript) throw new Error("Paste a chat, docs, or drafts to discover forming pearls.");
+      const discovery = discoverFormingPearlsFromImport(a.transcript || text, {
+        source: a.source || "companion-import",
+        maxPearls: Math.min(MAX_FORMING_PEARLS, Number(a.maxPearls) || MAX_FORMING_PEARLS),
+      });
+      if (!discovery.pearls.length) {
+        await tk.wait(80);
+        return {
+          type: "forming-pearls",
+          object: discovery,
+          effects: [],
+          visibleText: discovery.reason,
+        };
+      }
+      const scene = currentSemanticScene();
+      const createdIds = [];
+      if (a.materialize !== false) {
+        for (const entry of discovery.pearls) {
+          const created = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+            command: "createSemanticOrb",
+            args: {
+              sceneId: sceneId || scene?.id,
+              activate: false,
+              orb: {
+                name: entry.pearl.name,
+                representation: entry.pearl.representation,
+                workingSet: entry.pearl.workingSet,
+                moves: entry.organization.moves,
+                functions: entry.organization.functions,
+                lenses: entry.organization.lenses,
+                provenance: entry.pearl.provenance,
+              },
+              material: entry.pearl.workingSet.context[0] || null,
+            },
+          });
+          const id = created?.id || created?.result?.id;
+          if (id) createdIds.push(id);
+          document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+            detail: { pearlId: id || "companion", semantic: "emerge", durationMs: 420 },
+          }));
+          await tk.wait(180);
+        }
+      }
+      await tk.wait(120);
+      return {
+        type: "forming-pearls",
+        object: { ...discovery, createdIds },
+        effects: createdIds.length ? ["forming-pearls-materialized"] : ["forming-pearls-discovered"],
+        visibleText: `${discovery.reason} Pearls rest on the shelf — drag into the gauntlet to activate working memory.`,
+      };
+    },
+    inspectPearlMetadata: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
+      if (!pearl) throw new Error("No pearl selected to inspect.");
+      const harness = pearlMetadataHarness(pearl);
+      await tk.wait(80);
+      return {
+        type: "pearl-metadata",
+        object: harness,
+        effects: ["pearl-metadata-inspected"],
+        visibleText: `${harness.name}: Moves ${harness.organization.moves.length} · Functions ${harness.organization.functions.length} · Lenses ${harness.organization.lenses.length}. Deterministic ops: ${harness.bounds.deterministicOps.join(", ")}. Open rewrite needs model credentials.`,
+      };
+    },
+    rearrangeGauntlet: async (a, tk) => {
+      const next = saveGauntletState(reorderGauntletSlots(loadGauntletState(), a.pearlIds || []));
+      const pack = publishWornOrbit();
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: next.pearlIds[0] || "companion", semantic: "settle", durationMs: 280 },
+      }));
+      await tk.wait(280);
+      return {
+        type: "gauntlet",
+        object: { ...next, pack },
+        effects: ["gauntlet-reordered", "pearl-orbit-updated"],
+        visibleText: `Gauntlet reordered (${next.filled}/${MAX_GAUNTLET_SLOTS}).`,
       };
     },
     moveSemanticOrb: async (a) => {

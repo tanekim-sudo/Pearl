@@ -75,13 +75,23 @@ export const PEARL_GUIDE_SECTIONS = Object.freeze([
   }),
   Object.freeze({
     id: "go",
-    title: "Queue, then GO",
-    summary: "Choose a Move or Function, optionally add Lens context, and press GO once.",
+    title: "Stage, then GO",
+    summary: "Capture the command (seeded actions + gauntlet pearls), then fire once. Nothing high-impact runs until GO.",
     platforms: Object.freeze(["extension"]),
     items: Object.freeze([
       Object.freeze({ id: "preview", label: "Preview first", detail: "See what the pending stack will produce before it runs.", gesture: null, command: "preview the stack" }),
-      Object.freeze({ id: "press-go", label: "Press GO", detail: "Run the stack exactly once. Results stage locally for review.", gesture: null, command: "press go" }),
+      Object.freeze({ id: "press-go", label: "Press GO →", detail: "Fire with the GO button, Enter, or voice “go”. Execution uses the current gauntlet working-memory stack.", gesture: "Enter", command: "go" }),
+      Object.freeze({ id: "gauntlet", label: "Gauntlet stack", detail: "Pearls rest on the shelf. Drag up to five into sockets around the companion; drag out to unload. Full sockets refuse a sixth.", gesture: "Drag pearl ↔ socket", command: "load the research pearl into the gauntlet" }),
       Object.freeze({ id: "insert", label: "Place a result", detail: "The page never changes automatically; you choose insert, replace, or copy.", gesture: null, command: "insert the latest result" }),
+    ]),
+  }),
+  Object.freeze({
+    id: "import-pearls",
+    title: "Import anything → ≤5 pearls",
+    summary: "Paste chats, docs, or drafts. Pearl finds recurring questions, prompts, ops, and frames — at most five organized pearls.",
+    platforms: Object.freeze(["extension", "app"]),
+    items: Object.freeze([
+      Object.freeze({ id: "discover", label: "Discover forming pearls", detail: "Each pearl is organized Moves → Functions → Lenses so the encoding advantage is obvious.", gesture: null, command: "import this chat and find the pearls that were already forming" }),
     ]),
   }),
   Object.freeze({

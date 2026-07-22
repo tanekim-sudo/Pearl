@@ -46,6 +46,8 @@ test("platform filtering keeps shared sections and drops the other surface", () 
   assert.ok(!app.some((section) => section.id === "go"));
   assert.ok(app.some((section) => section.id === "begin"));
   assert.ok(extension.some((section) => section.id === "begin"));
+  assert.ok(app.some((section) => section.id === "import-pearls"));
+  assert.ok(extension.some((section) => section.id === "import-pearls"));
 });
 
 test("guide teaches Reef home and Studio Moves → Functions → Lenses order", () => {

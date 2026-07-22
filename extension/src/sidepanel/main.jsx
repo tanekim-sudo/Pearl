@@ -24,9 +24,16 @@ import {
   gauntletSocketLayout,
   loadGauntletState,
   removePearlIdFromGauntlet,
+  reorderGauntletSlots,
+  saveGauntletState,
   wearPearlIdInGauntlet,
 } from "../../../shared/companion-pearl-gauntlet.js";
-import { buildWornPearlPack } from "../../../shared/companion-pearl-wear.js";
+import { buildWornPearlPack, buildMergedWornPearlPack } from "../../../shared/companion-pearl-wear.js";
+import {
+  discoverFormingPearls,
+  MAX_FORMING_PEARLS,
+  pearlMetadataHarness,
+} from "../../../shared/forming-pearls.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -117,15 +124,26 @@ function ExtensionOrb({
           key={`gauntlet-socket-${index}`}
           className={`extension-gauntlet-socket${empty ? " empty" : " filled"}${active ? " active" : ""}`}
           style={layout.css}
-          title={empty ? `Empty socket ${index + 1}` : `${pearl?.name || pearlId}${active ? " · active" : ""} · click to ${active ? "remove" : "activate"}`}
+          draggable={!empty}
+          title={empty
+            ? `Empty socket ${index + 1}`
+            : `${pearl?.name || pearlId}${active ? " · active" : ""} · drag to shelf to unload · click to ${active ? "remove" : "activate"}`}
           aria-label={empty
             ? `Empty gauntlet socket ${index + 1}. Drop a pearl to wear.`
-            : `${pearl?.name || pearlId}, gauntlet socket ${index + 1}${active ? ", active" : ""}. Click to ${active ? "remove" : "activate"}.`}
+            : `${pearl?.name || pearlId}, gauntlet socket ${index + 1}${active ? ", active" : ""}. Drag to shelf to unload, or click to ${active ? "remove" : "activate"}.`}
           onClick={(event) => {
             event.stopPropagation();
             if (empty) return;
             if (active) onSocketRemove?.(pearlId, index);
             else onSocketActivate?.(pearlId, index);
+          }}
+          onDragStart={(event) => {
+            if (empty) return;
+            event.stopPropagation();
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("application/x-lens-pearl", JSON.stringify({ id: pearlId, name: pearl?.name || pearlId, fromGauntlet: true, slot: index }));
+            event.dataTransfer.setData("application/x-lens-gauntlet-pearl", pearlId);
+            event.dataTransfer.setData("text/plain", pearlId);
           }}
           onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
           onDrop={(event) => {
@@ -255,6 +273,13 @@ function App() {
         event.preventDefault();
         setPearlOpen(true);
         setPowerSearch(true);
+      } else if (!typing && event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        // Explicit fire: Enter runs the staged stack through current gauntlet working memory.
+        const staged = session.fragments.length && (session.queue.length || session.generator);
+        if (staged && !running) {
+          event.preventDefault();
+          go();
+        }
       } else if (event.key === "Escape") {
         setPearlOpen(false);
         setPowerSearch(false);
@@ -263,7 +288,7 @@ function App() {
     }
     addEventListener("keydown", pearlKeys);
     return () => removeEventListener("keydown", pearlKeys);
-  }, []);
+  }, [session.fragments.length, session.queue.length, session.generator, running]);
 
   useEffect(() => {
     if (!pearlOpen) return;
@@ -672,7 +697,8 @@ function App() {
         if (restored) setSession(restored);
       }
       await persistSemanticOrbs(semanticOrbs, orb.id);
-      if (args.wear !== false) {
+      // Shelf is default: opening inspects without wearing. Explicit wear (DnD / wearPearl) loads a socket.
+      if (args.wear === true) {
         let state;
         try {
           state = wearPearlIdInGauntlet(orb.id, {
@@ -688,7 +714,7 @@ function App() {
           ? `“${orb.name}” loaded into gauntlet (${state.filled}/${MAX_GAUNTLET_SLOTS} working-memory sockets).`
           : `“${orb.name}” is in the gauntlet working memory.`);
       } else {
-        setReadyMessage(`Opened “${orb.name}”.`);
+        setReadyMessage(`Opened “${orb.name}” on the shelf.`);
       }
       await action("page-canvas-command", { command: "activatePearlPageCanvas", args: { pearlId: orb.id } }).catch(() => {});
       if (previousPearlId && previousPearlId !== orb.id && pearlSoundscapes[previousPearlId]?.playback === "playing") {
@@ -698,7 +724,7 @@ function App() {
         await controlPearlAudio("play", { pearlId: orb.id }).catch(() => {});
       }
       setActiveView("orbs");
-      return { type: "external-semantic-orb-active", id: orb.id, worn: args.wear !== false };
+      return { type: "external-semantic-orb-active", id: orb.id, worn: args.wear === true };
     }
     if (name === "add-context") {
       const items = args.items?.length ? args.items : session.fragments.slice(-1);
@@ -801,6 +827,22 @@ function App() {
     return value;
   }
 
+  function currentGauntletWorkingMemory() {
+    const state = loadGauntletState();
+    const worn = state.pearlIds
+      .map((pearlId) => semanticOrbs.find((entry) => entry.id === pearlId))
+      .filter(Boolean);
+    const packs = worn.map((orb) => buildWornPearlPack(orb)).filter(Boolean);
+    return {
+      slots: state.slots,
+      activeSlot: state.activeSlot,
+      filled: state.filled,
+      capacity: MAX_GAUNTLET_SLOTS,
+      packs,
+      merged: packs.length ? buildMergedWornPearlPack(worn) : null,
+    };
+  }
+
   async function go() {
     if (!characters) {
       setError("GO is blocked until page material is captured. Select text on the page, then choose Capture selection.");
@@ -812,11 +854,21 @@ function App() {
       setActiveView("library");
       return;
     }
-    const privacyDisclosureApproved = confirm(`Send exactly ${characters.toLocaleString()} selected characters to the configured model provider and stage up to ${preview?.predictedOutputCount || 1} local Result Pearls?`);
+    const workingMemory = currentGauntletWorkingMemory();
+    const memoryNote = workingMemory.filled
+      ? `\n\nRun through gauntlet working memory (${workingMemory.filled}/${MAX_GAUNTLET_SLOTS}): ${workingMemory.packs.map((pack) => pack.name).join(", ")}.`
+      : "\n\nGauntlet working memory is empty — execution uses only the staged capture and action stack.";
+    const privacyDisclosureApproved = confirm(`Send exactly ${characters.toLocaleString()} selected characters to the configured model provider and stage up to ${preview?.predictedOutputCount || 1} local Result Pearls?${memoryNote}`);
     if (!privacyDisclosureApproved) return;
     setRunning(true);
     try {
-      const result = await action("go", { disclosedCharacters: characters, generationPlan, idempotencyKey: crypto.randomUUID(), privacyDisclosureApproved });
+      const result = await action("go", {
+        disclosedCharacters: characters,
+        generationPlan,
+        idempotencyKey: crypto.randomUUID(),
+        privacyDisclosureApproved,
+        workingMemory,
+      });
       if (result) {
         setActiveView("review");
         if (result.pendingOutputRouting) {
@@ -833,6 +885,37 @@ function App() {
     } finally {
       setRunning(false);
     }
+  }
+
+  async function materializeFormingPearls(text, options = {}) {
+    const discovery = discoverFormingPearls(text, { source: options.source || "pasted-chat", maxPearls: MAX_FORMING_PEARLS });
+    if (!discovery.pearls.length) {
+      setError(discovery.reason || "No forming pearls found.");
+      return discovery;
+    }
+    let next = [...semanticOrbs];
+    const created = [];
+    for (const entry of discovery.pearls) {
+      const id = `external-orb:${crypto.randomUUID()}`;
+      const orb = createSemanticOrb({
+        id,
+        sceneId: "extension-captures",
+        name: entry.pearl.name,
+        representation: entry.pearl.representation,
+        workingSet: entry.pearl.workingSet,
+        moves: entry.organization.moves,
+        functions: entry.organization.functions,
+        lenses: entry.organization.lenses,
+        provenance: entry.pearl.provenance,
+      });
+      next = [...next, orb];
+      created.push(orb);
+    }
+    // Rest on shelf by default — do not auto-wear imported pearls into the gauntlet.
+    await persistSemanticOrbs(next, created[0]?.id || activeSemanticOrbId);
+    setActiveView("orbs");
+    setReadyMessage(`${created.length} forming pearl${created.length === 1 ? "" : "s"} on the shelf (max ${MAX_FORMING_PEARLS}). Drag any into a gauntlet socket to activate.`);
+    return { ...discovery, created };
   }
 
   async function proposeResultPlacement(resultId, answer) {
@@ -1221,6 +1304,23 @@ function App() {
         idempotencyKey: `companion:${command.name}:${JSON.stringify(command.args)}`,
         action,
         pressGo: go,
+        discoverForming: materializeFormingPearls,
+        inspectPearlMetadata: async (id) => {
+          const orb = (!id || id === "active")
+            ? semanticOrbs.find((entry) => entry.id === activeSemanticOrbId) || semanticOrbs[0]
+            : semanticOrbs.find((entry) => entry.id === id || entry.name.toLowerCase().includes(String(id).toLowerCase()));
+          if (!orb) throw new Error("pearl not found");
+          const harness = pearlMetadataHarness(orb);
+          setReadyMessage(`${harness.name}: ${harness.organization.moves.length} moves · ${harness.organization.functions.length} functions · ${harness.organization.lenses.length} lenses`);
+          setActiveView("orbs");
+          return harness;
+        },
+        rearrangeGauntlet: async (pearlIds) => {
+          const next = saveGauntletState(reorderGauntletSlots(loadGauntletState(), pearlIds || []));
+          await publishGauntletOrbit(next);
+          setReadyMessage(`Gauntlet reordered (${next.filled}/${MAX_GAUNTLET_SLOTS}).`);
+          return next;
+        },
         readPreview: () => preview,
         resolveLens: (name) => {
           const lens = library.find((entry) => entry.id === name || entry.name.toLowerCase().includes(String(name).toLowerCase()));
@@ -1625,26 +1725,53 @@ function App() {
       </>}
     </aside>}
     {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
-    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Saved pearls">
+    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Pearl shelf">
       <div className="extension-semantic-orb-head">
-        <div><h2>Pearls</h2><small>Source-linked semantic capsules you can reopen and keep shaping.</small></div>
+        <div><h2>Shelf</h2><small>Pearls rest here by default. Drag into a gauntlet socket to load working memory; drag out to return.</small></div>
         <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
           {session.fragments.length ? "Make a pearl" : "New empty pearl"}
         </button>
       </div>
-      <div className="extension-semantic-orb-tray">
+      <div
+        className="extension-semantic-orb-tray"
+        data-pearl-shelf="true"
+        onDragOver={(event) => {
+          if (event.dataTransfer?.types?.includes("application/x-lens-gauntlet-pearl") || event.dataTransfer?.types?.includes("application/x-lens-pearl")) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+          }
+        }}
+        onDrop={async (event) => {
+          event.preventDefault();
+          const fromGauntlet = event.dataTransfer?.getData("application/x-lens-gauntlet-pearl")
+            || (() => {
+              try {
+                const raw = event.dataTransfer?.getData("application/x-lens-pearl");
+                const parsed = raw ? JSON.parse(raw) : null;
+                return parsed?.fromGauntlet ? parsed.id : null;
+              } catch { return null; }
+            })();
+          if (!fromGauntlet) return;
+          try {
+            await semanticOrbAction("remove-wear", { id: fromGauntlet });
+            setReadyMessage("Pearl returned to the shelf.");
+          } catch (reason) {
+            setError(reason.message);
+          }
+        }}
+      >
         {semanticOrbs.filter((orb) => !orb.archived).map((orb) => <button
           type="button"
           key={orb.id}
           aria-pressed={activeSemanticOrbId === orb.id}
           draggable
-          title="Click to open · drag onto a gauntlet socket to wear"
+          title="On shelf · click to open · drag onto a gauntlet socket to wear"
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "copyMove";
-            event.dataTransfer.setData("application/x-lens-pearl", JSON.stringify({ id: orb.id, name: orb.name }));
+            event.dataTransfer.setData("application/x-lens-pearl", JSON.stringify({ id: orb.id, name: orb.name, fromGauntlet: false }));
             event.dataTransfer.setData("text/plain", orb.id);
           }}
-          onClick={() => semanticOrbAction("open", { id: orb.id })}
+          onClick={() => semanticOrbAction("open", { id: orb.id, wear: false })}
         >
           <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-semantic-${String(orb.id).replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "semantic", state: activeSemanticOrbId === orb.id ? "listening" : "idle", size: 30, decorative: true }) }} />
           <b>{orb.name}</b>
@@ -1724,15 +1851,33 @@ function App() {
         <button onClick={() => setLearnAfter(latestCapturedText())} disabled={!characters}>Use current capture as After</button>
         <div><button className="gold" disabled={learning || !learnBefore.trim() || !learnAfter.trim()} onClick={inferBeforeAfter}>{learning ? "Inferring…" : "Infer Move / Function"}</button><a href="https://representation-eta.vercel.app/?learn=before-after" target="_blank" rel="noreferrer">Open full editor for images &amp; drawing</a></div>
       </div>}
-      <button className="learn-toggle" onClick={() => setChatOpen((value) => !value)}>Learn from chat</button>
-      {chatOpen && <div className="learn-panel" aria-label="Learn from chat transcript">
-        <p>Paste only the chat content you explicitly want analyzed. It stays private and is sent only when Generate is pressed.</p>
-        <textarea rows="5" value={chatDraft} onChange={(event) => { setChatDraft(event.target.value); setChatResult(null); }} placeholder="User: …&#10;Assistant: …" />
+      <button className="learn-toggle" onClick={() => setChatOpen((value) => !value)}>Import chat / docs → ≤{MAX_FORMING_PEARLS} pearls</button>
+      {chatOpen && <div className="learn-panel" aria-label="Import chat or docs into forming pearls">
+        <p>Paste AI chats, docs, or drafts. Pearl finds questions you re-ask, prompts you redo, recurring ops, and frames — then organizes them into at most {MAX_FORMING_PEARLS} shelf pearls (Moves → Functions → Lenses).</p>
+        <textarea rows="5" value={chatDraft} onChange={(event) => { setChatDraft(event.target.value); setChatResult(null); }} placeholder="User: …&#10;Assistant: …&#10;or paste docs / drafts" />
         <select aria-label="Transcript artifact type" value={chatKind} onChange={(event) => setChatKind(event.target.value)}>
           <option value="move">Move only</option><option value="function">Function only</option><option value="lens">Lens only</option><option value="all">All three</option>
         </select>
-        <button className="gold" disabled={chatRunning || !chatDraft.trim()} onClick={learnFromChat}>{chatRunning ? "Generating…" : "Generate preview"}</button>
-        {chatResult && <div><p>{Object.entries(chatResult.candidates || {}).map(([kind, candidate]) => `${kind}: ${candidate.supported ? candidate.name || "candidate" : "unsupported"}`).join(" · ")}</p><button onClick={saveChatArtifacts}>Save generated artifacts</button></div>}
+        <div className="import-pearl-actions">
+          <button className="gold" disabled={chatRunning || !chatDraft.trim()} onClick={async () => {
+            setChatRunning(true);
+            setError("");
+            try {
+              const discovery = await materializeFormingPearls(chatDraft, { source: "pasted-import" });
+              setChatResult({ forming: discovery });
+            } catch (reason) {
+              setError(reason.message);
+            } finally {
+              setChatRunning(false);
+            }
+          }}>{chatRunning ? "Discovering…" : `Discover ≤${MAX_FORMING_PEARLS} pearls`}</button>
+          <button disabled={chatRunning || !chatDraft.trim()} onClick={learnFromChat}>{chatRunning ? "Working…" : "Generate Move/Function/Lens preview"}</button>
+        </div>
+        {chatResult?.forming?.pearls?.length > 0 && <div>
+          <p>{chatResult.forming.reason}</p>
+          <ul>{chatResult.forming.pearls.map((pearl) => <li key={pearl.provisionalId}><b>{pearl.name}</b> · {pearl.discovery.signals.join(", ")}</li>)}</ul>
+        </div>}
+        {chatResult?.candidates && <div><p>{Object.entries(chatResult.candidates || {}).map(([kind, candidate]) => `${kind}: ${candidate.supported ? candidate.name || "candidate" : "unsupported"}`).join(" · ")}</p><button onClick={saveChatArtifacts}>Save generated artifacts</button></div>}
         {chatDraft.length > 40_000 && <a href="https://representation-eta.vercel.app/?learn=chat" target="_blank" rel="noreferrer">Use full editor for long chats, exclusions, and redaction</a>}
       </div>}
     </section>
@@ -1825,9 +1970,10 @@ function App() {
       {(!characters || (!session.queue.length && !session.generator)) && <p className="blocked-guidance" role="status">
         {!characters ? "1. Capture a page selection. " : "1. Capture ready. "}
         {!session.queue.length && !session.generator ? "2. Choose a Move or Function, or apply Lens context. " : "2. Action or Lens ready. "}
-        3. Press GO to create reviewable candidates.
+        3. Press GO, Enter, or say “go” — runs through the gauntlet stack ({gauntlet.filled}/{MAX_GAUNTLET_SLOTS} active).
       </p>}
-      <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go}>{running ? "Running…" : "GO"}</button>
+      <p className="muted">Staged commands never auto-run. Fire with GO / Enter / voice “go” through current gauntlet working memory.</p>
+      <button className="go" disabled={running || !characters || (!session.queue.length && !session.generator) || preview?.ok === false} onClick={go} aria-label="Go — fire staged stack through gauntlet working memory">{running ? "Running…" : "GO →"}</button>
       {running && <button onClick={() => action("cancel-run", { runId: session.activeRunId })}>Cancel</button>}
     </section>
     <section className={`orb-panel ${activeView === "taste" || activeView === "review" ? "active" : ""}`}>

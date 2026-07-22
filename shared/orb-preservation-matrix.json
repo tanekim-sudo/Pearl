@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-22T06:06:27.955Z",
+  "generatedAt": "2026-07-22T06:20:08.954Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -377,9 +377,12 @@
         "generateTranscriptArtifacts",
         "saveTranscriptArtifacts",
         "encodeConversationAsPearl",
-        "suggestPearlForConversation"
+        "suggestPearlForConversation",
+        "discoverFormingPearls"
       ],
-      "extension": [],
+      "extension": [
+        "discoverExternalFormingPearls"
+      ],
       "canonicalCommands": [
         "upsertCanonicalObject"
       ],
@@ -388,7 +391,8 @@
       ],
       "appTests": [
         "shared/transcript-learning.test.js",
-        "shared/companion-pearl-wear.test.js"
+        "shared/companion-pearl-wear.test.js",
+        "shared/forming-pearls.test.js"
       ]
     },
     {
@@ -397,14 +401,16 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/components/HighlightToolbar.jsx"
+        "client/components/HighlightToolbar.jsx",
+        "extension/src/sidepanel/main.jsx"
       ],
       "orbVoice": [
         "pressBrushGo",
         "cancelPendingBrush"
       ],
       "extension": [
-        "pressExternalGo"
+        "pressExternalGo",
+        "previewExternalGo"
       ],
       "canonicalCommands": [],
       "persistence": [],

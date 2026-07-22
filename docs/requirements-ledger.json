@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 59,
+    "features": 60,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,10 +27,10 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 59,
+    "featureContracts": 60,
     "domainCommands": 116,
-    "companionCapabilities": 213,
-    "extensionEntries": 81
+    "companionCapabilities": 217,
+    "extensionEntries": 85
   },
   "requirements": [
     {
@@ -50,6 +50,7 @@
         "execution.lens-context",
         "learning.before-after",
         "learning.transcript",
+        "learning.forming-pearls",
         "companion.pearl-wear",
         "companion.mother-orbit",
         "companion.pearl-gauntlet",
@@ -62,8 +63,7 @@
         "interaction.semantic-transfer",
         "companion.transaction-harness",
         "registry.cognitive-packages",
-        "artifacts.higher-order",
-        "companion.personal-vocabulary"
+        "artifacts.higher-order"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -84,8 +84,8 @@
         "collectLensMaterial",
         "setPrimitiveMove",
         "reorderPrimitiveMove",
-        "activateSemanticOrb",
         "createSemanticOrb",
+        "activateSemanticOrb",
         "bindSemanticOrb",
         "addSemanticOrbContext",
         "mergeSemanticOrbs",
@@ -119,8 +119,7 @@
         "client/components/CompanionChat.jsx:companion-mode-bar",
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "client/components/CognitivePackageRegistry.jsx",
-        "client/components/CognitiveWorkflowStudio.jsx:higher-order",
-        "client/components/CognitiveWorkflowStudio.jsx:vocabulary"
+        "client/components/CognitiveWorkflowStudio.jsx:higher-order"
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -169,11 +168,15 @@
         "saveTranscriptArtifacts",
         "encodeConversationAsPearl",
         "suggestPearlForConversation",
+        "discoverFormingPearls",
+        "inspectPearlMetadata",
         "wearPearl",
         "removeWornPearl",
         "listWornPearls",
         "inspectWornPearl",
+        "rearrangeGauntlet",
         "mergeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "cancelPendingBrush",
         "moveAiNode",
         "openExtensionDownload",
@@ -191,9 +194,6 @@
         "deprecateCognitivePackage",
         "proposeHigherOrderPatch",
         "applyHigherOrderPatch",
-        "teachPersonalCommand",
-        "disablePersonalCommand",
-        "forgetPersonalCommand",
         "capturePageSelection",
         "openExternalArtifact",
         "pressExternalGo",
@@ -210,17 +210,21 @@
         "armExternalMerge",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter",
+        "discoverExternalFormingPearls",
+        "inspectExternalPearlMetadata",
         "wearExternalPearl",
         "removeExternalWornPearl",
         "encodeExternalConversationAsPearl",
+        "rearrangeExternalGauntlet",
         "mergeExternalSemanticOrbs",
+        "synthesizeExternalSemanticOrbs",
+        "previewExternalGo",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
         "browseExternalPackages",
         "installExternalPackage",
-        "openExternalCognitiveStudio",
-        "teachExternalPersonalCommand"
+        "openExternalCognitiveStudio"
       ],
       "extensionEntries": [
         "capturePageSelection",
@@ -239,17 +243,21 @@
         "armExternalMerge",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter",
+        "discoverExternalFormingPearls",
+        "inspectExternalPearlMetadata",
         "wearExternalPearl",
         "removeExternalWornPearl",
         "encodeExternalConversationAsPearl",
+        "rearrangeExternalGauntlet",
         "mergeExternalSemanticOrbs",
+        "synthesizeExternalSemanticOrbs",
+        "previewExternalGo",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
         "browseExternalPackages",
         "installExternalPackage",
-        "openExternalCognitiveStudio",
-        "teachExternalPersonalCommand"
+        "openExternalCognitiveStudio"
       ],
       "persistenceAndMigrations": [
         "lens.unified-workspace.v2",
@@ -268,9 +276,7 @@
         "cognitive_packages",
         "cognitive_package_keys",
         "lens.cognitive-packages.installed.v1",
-        "lens.higher-order-patches.v1",
-        "lens.personal-command-vocabulary.v1",
-        "personalCommandVocabulary"
+        "lens.higher-order-patches.v1"
       ],
       "automatedTests": [
         "shared/workspace-observation.test.js",
@@ -291,9 +297,10 @@
         "shared/before-after-examples.test.js",
         "shared/transcript-learning.test.js",
         "shared/companion-pearl-wear.test.js",
+        "shared/forming-pearls.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/companion-pearl-orbit.test.js",
         "shared/companion-pearl-gauntlet.test.js",
-        "client/lib/companion-intent.test.js",
         "shared/lens-runtime.test.js",
         "client/lib/ai-layout.test.js",
         "client/lib/board-sync.test.js",
@@ -308,8 +315,7 @@
         "shared/function-test-bench.test.js",
         "shared/cognitive-package.test.js",
         "server/cognitive-package-registry.test.js",
-        "shared/higher-order-artifacts.test.js",
-        "shared/personal-command-vocabulary.test.js"
+        "shared/higher-order-artifacts.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -328,6 +334,7 @@
         "client/lib/ai-nodes.js",
         "shared/before-after-examples.js",
         "shared/transcript-learning.js",
+        "shared/forming-pearls.js",
         "shared/companion-pearl-wear.js",
         "shared/companion-pearl-orbit.js",
         "shared/companion-pearl-gauntlet.js",
@@ -339,8 +346,7 @@
         "shared/drop-intent-resolver.js",
         "client/lib/companion-harness.js",
         "shared/cognitive-package.js",
-        "shared/higher-order-artifacts.js",
-        "shared/personal-command-vocabulary.js"
+        "shared/higher-order-artifacts.js"
       ],
       "reachable": true
     },
@@ -1531,17 +1537,20 @@
         "saveTranscriptArtifacts",
         "encodeConversationAsPearl",
         "suggestPearlForConversation",
+        "discoverFormingPearls",
         "openBeforeAfterCreation",
         "inferBeforeAfterTransformation",
         "saveLearnedFunction",
         "compileExternalAutomationPearl",
         "captureExternalVisibleTab",
+        "discoverExternalFormingPearls",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter"
       ],
       "extensionEntries": [
         "compileExternalAutomationPearl",
         "captureExternalVisibleTab",
+        "discoverExternalFormingPearls",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter"
       ],
@@ -1557,6 +1566,7 @@
         "shared/encode-evidence.test.js",
         "shared/transcript-learning.test.js",
         "shared/companion-pearl-wear.test.js",
+        "shared/forming-pearls.test.js",
         "shared/before-after-examples.test.js"
       ],
       "browserEvidence": [
@@ -3041,5 +3051,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T06:09:24.159Z"
+  "generatedAt": "2026-07-22T06:20:00.722Z"
 }

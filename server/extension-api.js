@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { TRANSFORM_PRIMITIVES } from "../shared/transform-primitives.js";
 import { lensRackRecord } from "../shared/lens-rack.js";
-import { createProvenance } from "../shared/lens-runtime.js";
+import { createProvenance, workingMemoryPrompt } from "../shared/lens-runtime.js";
 import { runExecutionPlan } from "./executor.js";
 import { sanitizeLibraryValue } from "../shared/lens-library.js";
 import { buildBranchPlan, operatorHasFork } from "../shared/operator-branching.js";
@@ -141,16 +141,20 @@ export async function extensionExecute(req, res) {
   const opMap = Object.fromEntries(operators.map((op) => [op.id, op]));
   const queue = req.body.queue.map((entry) => opMap[entry.id]);
   if (queue.some((op) => !op)) return res.status(409).json({ error: "queued lens is unavailable or changed" });
+  const memoryBlock = workingMemoryPrompt(req.body.workingMemory);
   let values = req.body.fragments.map((fragment) => ({ text: fragment.quote, lineage: [] }));
   const runId = crypto.randomUUID();
   async function executeOne(op, input) {
     const contract = outputContractFor(op, opMap);
+    const materialBase = memoryBlock
+      ? `${memoryBlock}\n\n${input.text}\n\n${outputContractPrompt(contract)}`
+      : `${input.text}\n\n${outputContractPrompt(contract)}`;
     if (!(op.kind === "pipeline" && operatorHasFork(op, opMap))) {
       const result = await runExecutionPlan({
         op,
         opMap,
         operators,
-        material: `${input.text}\n\n${outputContractPrompt(contract)}`,
+        material: materialBase,
       });
       return [{ text: result.output, lineage: [...input.lineage, { opId: op.id }] }];
     }
@@ -177,7 +181,7 @@ export async function extensionExecute(req, res) {
         branchValues.push({ text: current, lineage: nextLineage });
       }
     }
-    await runNode(plan, `${input.text}\n\n${outputContractPrompt(contract)}`, input.lineage);
+    await runNode(plan, materialBase, input.lineage);
     return typedExecutionOutputs(branchValues, contract, {}, {
       runId,
       idFactory: (seed) => crypto.createHash("sha256").update(seed).digest("hex").slice(0, 24),

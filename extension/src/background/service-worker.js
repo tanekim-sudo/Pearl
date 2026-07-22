@@ -646,6 +646,7 @@ async function executeGo(payload) {
     idempotencyKey: payload.idempotencyKey || runId,
     disclosedCharacters: payload.disclosedCharacters,
     generationPlan: payload.generationPlan,
+    workingMemory: payload.workingMemory || null,
   });
   const executionTab = await activeTab();
   await writeSession({ activeRunId: runId });

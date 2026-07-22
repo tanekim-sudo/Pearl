@@ -6,6 +6,7 @@ import {
   createInsertionPlan,
   createLensRuntime,
   createMaterialFragment,
+  workingMemoryPrompt,
 } from "./lens-runtime.js";
 
 const fragment = () => createMaterialFragment({
@@ -49,6 +50,29 @@ test("execution disclosure is exact and insertion defaults safe", () => {
   });
   assert.equal(request.disclosure.characters, 13);
   assert.equal(createInsertionPlan({ proposedText: "result", operation: "unknown" }).operation, "copy");
+});
+
+test("execution request carries gauntlet working memory without auto-running", () => {
+  const request = createExecutionRequest({
+    fragments: [fragment()],
+    queue: [{ id: "lens", version: 1 }],
+    disclosedCharacters: 13,
+    workingMemory: {
+      slots: ["p1", null, null, null, null],
+      activeSlot: 0,
+      packs: [{
+        pearlId: "p1",
+        name: "Strategy",
+        summary: "Strategy pearl",
+        lenses: [{ id: "l1", name: "Board" }],
+        functions: [{ id: "f1", name: "Brief" }],
+        context: [{ id: "c1", label: "Memo", summary: "Q3 memo" }],
+      }],
+    },
+  });
+  assert.equal(request.workingMemory.filled, 1);
+  assert.equal(request.workingMemory.packs[0].name, "Strategy");
+  assert.match(workingMemoryPrompt(request.workingMemory), /GAUNTLET WORKING MEMORY/);
 });
 
 test("shared stack composition resolves ordered operators", () => {

@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T06:09:23.924Z",
+  "generatedAt": "2026-07-22T06:20:00.061Z",
   "counts": {
-    "features": 59,
-    "companion": 388,
-    "extension": 114,
+    "features": 60,
+    "companion": 394,
+    "extension": 117,
     "commands": 128
   },
   "features": [
@@ -257,12 +257,35 @@
         "generateTranscriptArtifacts",
         "saveTranscriptArtifacts",
         "encodeConversationAsPearl",
-        "suggestPearlForConversation"
+        "suggestPearlForConversation",
+        "discoverFormingPearls"
       ],
-      "extension": [],
+      "extension": [
+        "discoverExternalFormingPearls"
+      ],
       "tests": [
         "shared/transcript-learning.test.js",
-        "shared/companion-pearl-wear.test.js"
+        "shared/companion-pearl-wear.test.js",
+        "shared/forming-pearls.test.js"
+      ]
+    },
+    {
+      "id": "learning.forming-pearls",
+      "commands": [
+        "createSemanticOrb"
+      ],
+      "companion": [
+        "discoverFormingPearls",
+        "inspectPearlMetadata",
+        "encodeConversationAsPearl"
+      ],
+      "extension": [
+        "discoverExternalFormingPearls",
+        "inspectExternalPearlMetadata"
+      ],
+      "tests": [
+        "shared/forming-pearls.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {
@@ -323,17 +346,24 @@
         "removeWornPearl",
         "listWornPearls",
         "inspectWornPearl",
-        "mergeSemanticOrbs"
+        "rearrangeGauntlet",
+        "mergeSemanticOrbs",
+        "synthesizeSemanticOrbs",
+        "inspectPearlMetadata"
       ],
       "extension": [
         "wearExternalPearl",
         "removeExternalWornPearl",
-        "mergeExternalSemanticOrbs"
+        "rearrangeExternalGauntlet",
+        "mergeExternalSemanticOrbs",
+        "synthesizeExternalSemanticOrbs",
+        "pressExternalGo"
       ],
       "tests": [
         "shared/companion-pearl-gauntlet.test.js",
         "shared/companion-pearl-orbit.test.js",
-        "shared/domain-commands.test.js"
+        "shared/domain-commands.test.js",
+        "shared/lens-runtime.test.js"
       ]
     },
     {
@@ -344,7 +374,8 @@
         "cancelPendingBrush"
       ],
       "extension": [
-        "pressExternalGo"
+        "pressExternalGo",
+        "previewExternalGo"
       ],
       "tests": [
         "shared/lens-runtime.test.js"

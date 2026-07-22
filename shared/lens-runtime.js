@@ -138,12 +138,75 @@ export function composeBrushStack(queue, resolveOperator, opMap, options = {}) {
   };
 }
 
-export function createExecutionRequest({ fragments, queue, generator = null, idempotencyKey, disclosedCharacters, generationPlan }) {
+function normalizeWorkingMemory(workingMemory = null) {
+  if (!workingMemory || typeof workingMemory !== "object") return null;
+  const slots = Array.isArray(workingMemory.slots)
+    ? workingMemory.slots.slice(0, 5).map((slot) => (slot == null || slot === "" ? null : String(slot)))
+    : [];
+  const packs = (Array.isArray(workingMemory.packs) ? workingMemory.packs : [])
+    .filter((pack) => pack && (pack.pearlId || pack.id))
+    .slice(0, 5)
+    .map((pack) => ({
+      pearlId: String(pack.pearlId || pack.id),
+      name: String(pack.name || pack.pearlId || pack.id).slice(0, 120),
+      summary: String(pack.summary || "").slice(0, 400),
+      context: (pack.context || []).slice(0, 12).map((entry) => ({
+        id: String(entry.id || ""),
+        label: String(entry.label || "").slice(0, 120),
+        summary: String(entry.summary || entry.text || "").slice(0, 280),
+      })),
+      lenses: (pack.lenses || []).slice(0, 8).map((lens) => ({
+        id: String(lens.id || ""),
+        name: String(lens.name || "").slice(0, 80),
+      })),
+      functions: (pack.functions || []).slice(0, 8).map((fn) => ({
+        id: String(fn.id || ""),
+        name: String(fn.name || "").slice(0, 80),
+      })),
+    }));
+  if (!packs.length && !slots.some(Boolean)) return null;
+  return {
+    kind: "gauntlet-working-memory",
+    capacity: 5,
+    filled: packs.length || slots.filter(Boolean).length,
+    slots: slots.length ? slots : packs.map((pack) => pack.pearlId),
+    activeSlot: Number.isInteger(workingMemory.activeSlot) ? workingMemory.activeSlot : null,
+    packs,
+  };
+}
+
+/** Prompt block for gauntlet working-memory packs carried into an execution. */
+export function workingMemoryPrompt(workingMemory) {
+  const memory = normalizeWorkingMemory(workingMemory);
+  if (!memory?.packs?.length) return "";
+  const lines = memory.packs.map((pack, index) => {
+    const lenses = pack.lenses.map((lens) => lens.name).filter(Boolean).join(", ") || "none";
+    const functions = pack.functions.map((fn) => fn.name).filter(Boolean).join(", ") || "none";
+    const context = pack.context.map((entry) => entry.summary || entry.label).filter(Boolean).slice(0, 3).join(" · ");
+    return `${index + 1}. ${pack.name}: lenses [${lenses}]; functions [${functions}]${context ? `; context: ${context}` : ""}`;
+  });
+  return [
+    "[GAUNTLET WORKING MEMORY — active pearls the companion currently carries]",
+    "Interpret and transform the selected material through this stack. Prefer bound lenses/functions and evidenced context. Do not invent pack contents.",
+    ...lines,
+  ].join("\n");
+}
+
+export function createExecutionRequest({
+  fragments,
+  queue,
+  generator = null,
+  idempotencyKey,
+  disclosedCharacters,
+  generationPlan,
+  workingMemory = null,
+}) {
   if (!fragments?.length) throw new Error("at least one fragment is required");
   if (!queue?.length && !generator) throw new Error("at least one lens or generator is required");
   const characters = fragments.reduce((sum, entry) => sum + entry.quote.length, 0);
   if (characters > MAX_FRAGMENT_CHARACTERS) throw new Error("selection exceeds execution limit");
   if (disclosedCharacters != null && Number(disclosedCharacters) !== characters) throw new Error("disclosure character count changed");
+  const memory = normalizeWorkingMemory(workingMemory);
   return {
     kind: "lens-execution-request",
     version: EXECUTION_REQUEST_VERSION,
@@ -156,6 +219,7 @@ export function createExecutionRequest({ fragments, queue, generator = null, ide
     })),
     generator: generator ? { id: generator.id, mode: generator.mode || "source" } : null,
     generationPlan: normalizeGenerationPlan(generationPlan || queue.at(-1)?.generationPlan || {}),
+    workingMemory: memory,
     disclosure: {
       characters,
       origins: [...new Set(fragments.map((entry) => entry.provenance.origin))],

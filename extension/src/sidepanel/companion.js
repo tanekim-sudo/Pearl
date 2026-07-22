@@ -141,6 +141,12 @@ export const EXTENSION_VERBS = Object.freeze({
   renameExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("rename", args),
   mergeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("merge", args),
   synthesizeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("synthesize", args),
+  discoverExternalFormingPearls: ({ args, discoverForming }) => discoverForming(args.text, {
+    source: args.source || "companion-import",
+    maxPearls: args.maxPearls,
+  }),
+  inspectExternalPearlMetadata: ({ args, inspectPearlMetadata }) => inspectPearlMetadata(args.id),
+  rearrangeExternalGauntlet: ({ args, rearrangeGauntlet }) => rearrangeGauntlet(args.pearlIds),
   duplicateExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("duplicate", args),
   splitExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("split", args),
   unnestExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("unnest", args),
@@ -365,6 +371,22 @@ export function parseExtensionIntent(text) {
   if (addOrb) return { name: "addExternalSemanticOrbContext", args: { id: addOrb[1] } };
   if (/^(go|press go|run the stack)$/i.test(value)) return { name: "pressExternalGo", args: {} };
   if (/^preview( the)? (stack|go)$/i.test(value)) return { name: "previewExternalGo", args: {} };
+  if (/\b(?:import|discover|find)\b.+\b(?:forming )?pearls?\b/i.test(value)
+    || /\b(?:chat|docs?|drafts?|transcript)\b.+\b(?:into|as) (?:at most )?five pearls?\b/i.test(value)
+    || /\bpearls that were already forming\b/i.test(value)) {
+    return { name: "discoverExternalFormingPearls", args: { text: value } };
+  }
+  if (/\b(?:exchange insights?|breed|mutual(?:ly)? apply)\b.+\b(?:pearl|orb)s?\b/i.test(value)
+    || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|notice about each other)\b/i.test(value)) {
+    return { name: "synthesizeExternalSemanticOrbs", args: { ids: [], mode: "mutual" } };
+  }
+  if (/\b(?:inspect|show|open)\b.+\b(?:metadata|harness|moves|functions|lenses)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\bmetadata (?:under|beneath|for) (?:this |the )?pearl\b/i.test(value)) {
+    return { name: "inspectExternalPearlMetadata", args: { id: "active" } };
+  }
+  if (/\breorder\b.+\bgauntlet\b/i.test(value)) {
+    return { name: "rearrangeExternalGauntlet", args: { pearlIds: [] } };
+  }
   if (/^(show|open|review)( the)? (library )?import$/i.test(value)) return { name: "showExternalLibraryImport", args: {} };
   if (/^(show|open|browse)( the)? (cognitive )?packages$/i.test(value)) return { name: "browseExternalPackages", args: {} };
   if (/\bopen\b.*\b(?:cognitive workflow|higher-order|vocabulary)\b/i.test(value)) return { name: "openExternalCognitiveStudio", args: { tab: /\bvocabulary\b/i.test(value) ? "vocabulary" : "higher-order" } };
