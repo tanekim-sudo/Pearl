@@ -547,7 +547,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("encode.automation-anything", {
     domains: ["scene", "function", "lens", "privacy"],
     commands: ["compileAutomationPearl"],
-    ui: ["client/components/EncodeAnythingPanel.jsx", "api/infer-automation.js"],
+    ui: ["client/components/EncodeAnythingPanel.jsx", "api/infer-transformation.js"],
     companion: ["openEncodeAnything", "compileAutomationPearl"],
     extension: ["compileExternalAutomationPearl"],
     persistence: ["pearlStudioRefs.v1", "pearlEntities.v1"],

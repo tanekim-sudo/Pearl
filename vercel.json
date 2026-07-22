@@ -13,6 +13,13 @@
     { "source": "/api/models", "destination": "/api/run?route=models" },
     { "source": "/api/lens-encode", "destination": "/api/run?route=lens-encode" },
     { "source": "/api/generate-batch", "destination": "/api/run?route=generate-batch" },
+    { "source": "/api/infer-automation", "destination": "/api/infer-transformation?route=automation" },
+    { "source": "/api/infer-transcript-artifacts", "destination": "/api/infer-transformation?route=transcript-artifacts" },
+    { "source": "/api/extension/library", "destination": "/api/extension?route=library" },
+    { "source": "/api/extension/execute", "destination": "/api/extension?route=execute" },
+    { "source": "/api/extension/artifacts", "destination": "/api/extension?route=artifacts" },
+    { "source": "/api/extension/artifacts/:id", "destination": "/api/extension?route=artifacts&id=:id" },
+    { "source": "/api/extension/generators", "destination": "/api/extension?route=generators" },
     { "source": "/((?!api/|downloads/|extension/).*)", "destination": "/index.html" }
   ],
   "headers": [
