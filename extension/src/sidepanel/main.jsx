@@ -609,6 +609,53 @@ function App() {
         effects: ["semantic-orb-created", "semantic-orb-merge-preserved-sources"],
       };
     }
+    if (name === "synthesize") {
+      const { buildPearlMutualObservations } = await import("../../../shared/semantic-orbs.js");
+      const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
+      if (sources.length < 2) throw new Error("choose at least two orbs");
+      const { mode, instruction, observations, sourceIds } = buildPearlMutualObservations(sources, {
+        mode: args.mode,
+        instruction: args.instruction,
+      });
+      const synthesized = createSemanticOrb({
+        id: `external-orb:${crypto.randomUUID()}`,
+        sceneId: "extension-captures",
+        name: args.name || (mode === "directed"
+          ? `${sources[0].name} on ${sources[1].name}`
+          : `${sources.map((entry) => entry.name).join(" × ")} synthesis`),
+        representation: {
+          kind: "synthesis",
+          refs: sourceIds,
+          label: args.name || "Mutual synthesis",
+          preserveIndividuals: true,
+          sourcePearlIds: sourceIds,
+        },
+        workingSet: { context: observations, lenses: [] },
+        lineage: sourceIds.map((orbId) => ({ orbId, operation: "synthesize", mode, preserved: true })),
+        provenance: {
+          synthesis: {
+            mode,
+            instruction,
+            sourcePearlIds: sourceIds,
+            observationCount: observations.length,
+            note: "Source pearls remain independent; this pearl holds mutual/directed observations only.",
+          },
+        },
+      });
+      byId.set(synthesized.id, synthesized);
+      await persistSemanticOrbs([...byId.values()], synthesized.id);
+      setActiveView("orbs");
+      setReadyMessage(`Created “${synthesized.name}”. Original pearls stay in the library.`);
+      return {
+        type: "external-semantic-orb",
+        id: synthesized.id,
+        orb: synthesized,
+        preservedSourceIds: sourceIds,
+        observations,
+        mode,
+        effects: ["semantic-orb-created", "pearl-synthesis-created", "semantic-orb-merge-preserved-sources"],
+      };
+    }
     let orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
     if (!orb && args.id) {
       const stored = (await BrowserPlatform.storage.get("local", ["semanticOrbs"])).semanticOrbs || [];

@@ -57,7 +57,10 @@ import {
   navigateHome,
   nextEscapeAction,
 } from "../lib/shell-navigation.js";
+import { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
 import { registerDirectorVerbs } from "../lib/director.js";
+
+export { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
 
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
 const SpeechRecognitionImpl =
@@ -89,12 +92,13 @@ export function parseOrbRoute(locationLike = globalThis.location) {
     return { kind: "stage", path, sceneId: sceneId || null };
   }
   if (path === "/install") return { kind: "install", path };
-  if (path === "/" || path === "/library" || path === "/toolbox") {
+  if (isReefHomePath(path)) {
     const handoff = fragment.get("handoff") || query.get("handoff");
     const legacyCognitive = query.get("cognitive");
     return {
       kind: "home",
       path,
+      reef: true,
       handoff: handoff || legacyCognitive || null,
       handoffSource: handoff ? "handoff" : legacyCognitive ? "legacy-cognitive" : null,
       handoffView: fragment.get("view") || query.get("view") || null,
@@ -412,30 +416,37 @@ function LibraryHome({
   onLensChange,
   onLensRemove,
   onCandidateTaste,
+  onOpenStudio,
 }) {
   const [query, setQuery] = useState("");
   const continuationCount = continuationMaterialCount(extensionHandoff);
   const pearlCount = extensionHandoff?.semanticOrbs?.length || 0;
   const activePearl = extensionHandoff?.semanticOrbs?.find((entry) => entry.id === extensionHandoff?.activeSemanticOrbId)
     || extensionHandoff?.semanticOrbs?.[0];
-  const isRoot = route.path === "/";
-  const firstUse = isRoot && scenes.length === 0 && continuationCount === 0 && !route.handoff;
-  const emptyLibrary = !isRoot && scenes.length === 0;
+  const isRoot = isReefHomePath(route.path);
+  const reefPearls = useMemo(() => collectReefPearls(scenes), [scenes]);
+  const firstUse = isRoot && scenes.length === 0 && reefPearls.length === 0 && continuationCount === 0 && !route.handoff;
+  const emptyLibrary = !isRoot && scenes.length === 0 && reefPearls.length === 0;
   const title = route.section && route.section !== "library"
     ? route.section[0].toUpperCase() + route.section.slice(1)
-    : firstUse ? "Begin with something you noticed." : emptyLibrary ? "No saved work yet." : "Your cognitive universe";
+    : firstUse ? "Begin with something you noticed." : emptyLibrary ? "No pearls on the Reef yet." : "Your Reef";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
-  return <main className="orb-library-home">
+  return <main className="orb-library-home orb-reef-home" data-reef-home="true" aria-label="Reef home dashboard">
     {emptyLibrary && <section className="orb-home-intro">
-      <div className="orb-kicker">Saved work</div>
+      <div className="orb-kicker">Reef</div>
       <h1>{title}</h1>
-      <p>Click Pearl to begin here, or select material on a page to create your first saved Pearl.</p>
+      <p>The Reef is home — all your pearls live here. Click Pearl to begin, or select material on a page to create your first pearl.</p>
       <div className="orb-home-intro-actions">
         <button type="button" onClick={onCreateScene}>Start a Scene</button>
         <button type="button" onClick={onOpenGuide}>How Pearl works</button>
       </div>
+    </section>}
+    {isRoot && !firstUse && !emptyLibrary && !continuationCount && !route.handoff && <section className="orb-home-intro orb-reef-kicker">
+      <div className="orb-kicker">Reef</div>
+      <h1>{title}</h1>
+      <p>All pearls, spread out. Mix, match, or merge by touch — or ask the companion. Triple-click any pearl in a Scene for Studio (Moves → Functions → Lenses).</p>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
       <div>
@@ -459,8 +470,24 @@ function LibraryHome({
           ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
     </section>}
-    <section className="orb-recent-orbit" aria-label="Recent scenes and tasks">
-      {scenes.slice(0, 2).map((scene, index) => <button
+    <section className="orb-recent-orbit orb-reef" aria-label="Reef — all pearls">
+      {reefPearls.map((pearl, index) => <button
+        key={pearl.id}
+        type="button"
+        className={`recent-scene reef-pearl scene-${String.fromCharCode(97 + (index % 6))}`}
+        data-reef-pearl={pearl.id}
+        onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          onOpenStudio?.(pearl);
+        }}
+        title={`${pearl.name} · open Scene · double-click for Studio`}
+      >
+        <i className="reef-pearl-dot" aria-hidden="true" />
+        <b>{pearl.name}</b>
+        <small>{pearl.sceneName} · triple-click in Scene for Studio</small>
+      </button>)}
+      {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
         key={scene.id}
         className={`recent-scene scene-${String.fromCharCode(97 + (index % 3))}`}
         onClick={() => navigate(`/scene/${encodeURIComponent(scene.id)}`)}
@@ -468,7 +495,7 @@ function LibraryHome({
         <i />{scene.name || "Untitled Scene"}
         <small>{(scene.items?.length || 0) + (scene.nodes?.length || 0)} materials · {(scene.frames?.length || 0)} frames</small>
       </button>)}
-      {!isRoot && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
+      {(isRoot || !reefPearls.length) && <button className="recent-scene scene-c" onClick={onCreateScene}><i />New Scene<small>Begin with an empty working set</small></button>}
     </section>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
       <div>
@@ -1092,7 +1119,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "signOut", effectId: `signout:${Date.now()}` }));
       return;
     }
-    if (/^(?:go home|open home|back to (?:pearl|home))$/i.test(recorded.entry.normalized)) {
+    if (/^(?:go home|open home|open(?: the)? reef|show(?: the)? reef|back to (?:pearl|home|reef))$/i.test(recorded.entry.normalized)) {
       navigateHome();
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateHome" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateHome", effectId: `home:${Date.now()}` }));
@@ -1436,7 +1463,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         ? <PearlActionPalette onRun={executePearlAction} />
         : emittedView === "scene"
           ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
-              <button type="button" onClick={() => navigate("/library")}>Past work</button>
+              <button type="button" onClick={() => navigateHome()}>Reef</button>
               <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
                 {outputFrameOpen ? "Return to space" : "Focus on the result"}
               </button>
@@ -1479,7 +1506,7 @@ export default function OrbUniverseShell({ StageComponent }) {
             : emittedView === "packages" || emittedView === "tasks"
               ? <p role="status">{emittedView === "packages"
                 ? "Open Encode anything or Shared tools from Pearl after you have reviewed a package. Trusted installs stay in your local library."
-                : "Recent Scenes appear as Pearls on the home orbit. Create a Scene to begin, or continue from the extension."}</p>
+                : "Your Reef is home — all pearls spread out for mix, match, and merge. Create a Scene to begin, or continue from the extension."}</p>
             : emittedView === "privacy"
               ? <span>{privacyNotice?.detail}</span>
               : emittedView === "context"
@@ -1851,6 +1878,13 @@ export default function OrbUniverseShell({ StageComponent }) {
     unnest: (id) => applySemanticOrbCommand("unnestSemanticOrb", { id }),
     merge: (ids) => applySemanticOrbCommand("mergeSemanticOrbs", { ids, sceneId: route.sceneId }),
     compose: (ids) => applySemanticOrbCommand("composeSemanticOrbs", { ids, sceneId: route.sceneId }),
+    synthesize: (ids, options = {}) => applySemanticOrbCommand("synthesizeSemanticOrbs", {
+      ids,
+      sceneId: route.sceneId,
+      mode: options.mode,
+      instruction: options.instruction,
+      name: options.name,
+    }),
     split: (id) => applySemanticOrbCommand("splitSemanticOrb", { id, sceneId: route.sceneId }),
     duplicate: (id) => applySemanticOrbCommand("duplicateSemanticOrb", { id }),
     delete: (id) => applySemanticOrbCommand("deleteSemanticOrb", { id }),
@@ -2313,6 +2347,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensChange={updateOrbLens}
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
+          onOpenStudio={openActivePearlStudio}
         />}
     {!cursorMode && <CompanionOrb
       key="universe-orb"

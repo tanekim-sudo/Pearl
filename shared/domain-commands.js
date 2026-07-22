@@ -22,6 +22,7 @@ import {
 import { createWorkspaceObservation } from "./workspace-observation.js";
 import { applyTasteLensDiff } from "./taste-lens.js";
 import {
+  buildPearlMutualObservations,
   createSemanticOrb,
   placeSemanticOrb,
   semanticOrbFromMaterial,
@@ -621,6 +622,84 @@ export const DOMAIN_COMMANDS = Object.freeze({
           semanticOrbs: execution.state.semanticOrbs.map((orb) => orb.id === composed.id ? composed : orb),
         },
         result: { ...execution.result, object: composed },
+      };
+    },
+  },
+  synthesizeSemanticOrbs: {
+    schema: {
+      ids: "array",
+      name: "string?",
+      sceneId: "string",
+      mode: "mutual|directed?",
+      instruction: "string?",
+    },
+    preconditions: ["at least two orbs exist"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created", "pearl-synthesis-created"],
+    execute(state, args, context) {
+      const ids = [...new Set(args.ids || [])];
+      const sources = (state.semanticOrbs || []).filter((orb) => ids.includes(orb.id));
+      if (sources.length < 2) throw new Error("at least two semantic orbs are required");
+      const ordered = ids.map((id) => sources.find((orb) => orb.id === id)).filter(Boolean);
+      const { mode, instruction, observations, sourceIds } = buildPearlMutualObservations(ordered, {
+        mode: args.mode,
+        instruction: args.instruction,
+      });
+      const id = context.idFactory();
+      const placement = placeSemanticOrb(state.semanticOrbs, {
+        x: ordered.reduce((sum, orb) => sum + orb.placement.x, 0) / ordered.length,
+        y: ordered.reduce((sum, orb) => sum + orb.placement.y, 0) / ordered.length + 48,
+      });
+      const defaultName = mode === "directed"
+        ? `${ordered[0].name} on ${ordered[1].name}`
+        : `${ordered.map((orb) => orb.name).join(" × ")} synthesis`;
+      const synthesized = createSemanticOrb({
+        id,
+        sceneId: args.sceneId,
+        name: args.name || defaultName,
+        placement,
+        representation: {
+          kind: "synthesis",
+          refs: sourceIds,
+          label: args.name || "Mutual synthesis",
+          preserveIndividuals: true,
+          sourcePearlIds: sourceIds,
+        },
+        workingSet: {
+          context: observations,
+          lenses: [],
+        },
+        lineage: sourceIds.map((orbId) => ({ orbId, operation: "synthesize", mode, preserved: true })),
+        provenance: {
+          synthesis: {
+            mode,
+            instruction,
+            sourcePearlIds: sourceIds,
+            observationCount: observations.length,
+            observations: observations.map((item) => ({
+              id: item.id,
+              fromPearlId: item.fromPearlId,
+              aboutPearlId: item.aboutPearlId,
+              text: item.text,
+            })),
+            note: "Source pearls remain independent; this pearl holds mutual/directed observations only.",
+          },
+        },
+      }, { now: context.now });
+      // Append-only: source pearls stay in semanticOrbs unchanged.
+      return {
+        state: { ...state, semanticOrbs: [...(state.semanticOrbs || []), synthesized] },
+        result: {
+          type: "semantic-orb",
+          id,
+          object: synthesized,
+          preservedSourceIds: sourceIds,
+          observations,
+          mode,
+          effects: ["semantic-orb-created", "pearl-synthesis-created", "semantic-orb-merge-preserved-sources"],
+        },
       };
     },
   },

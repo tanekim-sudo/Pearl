@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T06:06:27.001Z",
+  "generatedAt": "2026-07-22T06:09:23.924Z",
   "counts": {
-    "features": 58,
-    "companion": 386,
-    "extension": 113,
-    "commands": 127
+    "features": 59,
+    "companion": 388,
+    "extension": 114,
+    "commands": 128
   },
   "features": [
     {
@@ -586,6 +586,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -605,6 +606,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -619,6 +621,7 @@
         "removeExternalSemanticOrbLens",
         "renameExternalSemanticOrb",
         "mergeExternalSemanticOrbs",
+        "synthesizeExternalSemanticOrbs",
         "duplicateExternalSemanticOrb",
         "splitExternalSemanticOrb",
         "unnestExternalSemanticOrb",
@@ -629,6 +632,7 @@
       "tests": [
         "shared/orb-universe.test.js",
         "shared/domain-commands.test.js",
+        "shared/semantic-orbs.test.js",
         "client/lib/unified-workspace.test.js",
         "extension/tests/core.test.js"
       ]
@@ -645,7 +649,8 @@
         "addSemanticOrbContext",
         "nestSemanticOrb",
         "mergeSemanticOrbs",
-        "composeSemanticOrbs"
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs"
       ],
       "companion": [
         "semanticTransfer",
@@ -888,6 +893,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -899,6 +905,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -1088,6 +1095,7 @@
         "restorePearlVersion"
       ],
       "companion": [
+        "openPearlStudio",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -1098,11 +1106,29 @@
       ],
       "extension": [
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab"
       ],
       "tests": [
         "shared/pearl-studio.test.js",
-        "shared/pearl-version-history.test.js"
+        "shared/pearl-version-history.test.js",
+        "client/lib/pearl-shell.test.js"
+      ]
+    },
+    {
+      "id": "shell.reef-home",
+      "commands": [],
+      "companion": [
+        "navigateHome",
+        "mergeSemanticOrbs",
+        "openPearlStudio",
+        "wearPearl"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/shell-navigation.test.js",
+        "client/lib/pearl-guide.test.js",
+        "client/lib/pearl-shell.test.js"
       ]
     },
     {

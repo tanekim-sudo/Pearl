@@ -45,6 +45,7 @@ const COMMAND_ANIMATION = Object.freeze({
   unnestSemanticOrb: "emerge",
   mergeSemanticOrbs: "merge",
   composeSemanticOrbs: "compose",
+  synthesizeSemanticOrbs: "remix",
   splitSemanticOrb: "split",
   bindSemanticOrb: "absorb",
   renameSemanticOrb: "settle",

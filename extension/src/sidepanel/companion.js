@@ -140,6 +140,7 @@ export const EXTENSION_VERBS = Object.freeze({
   removeExternalSemanticOrbLens: ({ args, semanticOrbAction }) => semanticOrbAction("remove-lens", args),
   renameExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("rename", args),
   mergeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("merge", args),
+  synthesizeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("synthesize", args),
   duplicateExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("duplicate", args),
   splitExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("split", args),
   unnestExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("unnest", args),

@@ -319,7 +319,7 @@ function contentIntents(sources, target, context) {
       return [
         intent("nest-semantic-orb", 130, "Nest this orb inside the target orb", "semantic-orb", {
           command: "nestSemanticOrb",
-          choices: ["nest", "merge", "compose"],
+          choices: ["nest", "merge", "compose", "synthesize"],
           metadata: { childId: sourceOrbIds[0], parentId: targetId },
         }),
         intent("merge-semantic-orbs", 120, "Merge preserved contexts into a new orb", "semantic-orb", {
@@ -329,6 +329,10 @@ function contentIntents(sources, target, context) {
         intent("compose-semantic-orbs", 110, "Compose the orbs in source-to-target order", "semantic-orb", {
           command: "composeSemanticOrbs",
           metadata: { ids },
+        }),
+        intent("synthesize-semantic-orbs", 105, "Mutual-apply pearls into a synthesis observation pearl", "semantic-orb", {
+          command: "synthesizeSemanticOrbs",
+          metadata: { ids, mode: "mutual" },
         }),
       ];
     }

@@ -13198,6 +13198,27 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       return { effectId: `semantic-orb-composed:${receipt.id}`, id: receipt.id };
     },
+    synthesizeSemanticOrbs: async (a) => {
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "synthesizeSemanticOrbs",
+        args: { ...a, sceneId: a.sceneId || sceneId },
+      });
+      const preservedSourceIds = receipt?.result?.preservedSourceIds || a.ids || [];
+      const observationCount = receipt?.result?.observations?.length
+        || receipt?.result?.object?.provenance?.synthesis?.observationCount
+        || 0;
+      return {
+        effectId: `semantic-orb-synthesized:${receipt.id}`,
+        id: receipt.id,
+        preservedSourceIds,
+        observationCount,
+        mode: receipt?.result?.mode || a.mode || "mutual",
+        effects: ["semantic-orb-created", "pearl-synthesis-created", "semantic-orb-merge-preserved-sources"],
+        visibleText: preservedSourceIds.length
+          ? `Created a synthesis pearl with ${observationCount} observation${observationCount === 1 ? "" : "s"}. Sources stay independent: ${preservedSourceIds.join(", ")}.`
+          : "Created a synthesis pearl. Source pearls remain in the library.",
+      };
+    },
     splitSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
         command: "splitSemanticOrb", args: { ...a, sceneId: a.sceneId || sceneId },
@@ -17052,7 +17073,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (step.args.sceneId === "") step.args.sceneId = sceneId;
       if (Array.isArray(step.args.ids) && step.args.ids.length === 0) {
         const selectedOrbIds = highlightSelectionRef.current.length ? highlightSelectionRef.current : [];
-        step.args.ids = selectedOrbIds.length ? selectedOrbIds : (activeOrbId ? [activeOrbId] : []);
+        const wornIds = loadGauntletState().pearlIds || [];
+        if (selectedOrbIds.length >= 2) step.args.ids = selectedOrbIds;
+        else if (wornIds.length >= 2 && step.verb === "synthesizeSemanticOrbs") step.args.ids = wornIds.slice(0, 4);
+        else if (selectedOrbIds.length) step.args.ids = selectedOrbIds;
+        else if (wornIds.length >= 2) step.args.ids = wornIds.slice(0, 4);
+        else step.args.ids = activeOrbId ? [activeOrbId] : [];
       }
       const result = await executeCompanionScript([step], { title: "Pearl remix" });
       updateCommand(commandEntry.id, result.completed
@@ -17848,9 +17874,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           >
             <section ref={functionsSectionRef} className="rail-pane rail-functions-pane cognition-git-pane" data-tour="functions-section">
               <div className="library-kind-guide" aria-label="Library object types">
-                <b>Move = one action.</b>
-                <b>Function = a process.</b>
-                <b>Lens = a way of seeing.</b>
+                <b>Moves = cognitive transformations (may compose moves).</b>
+                <b>Functions = composition and ordering of moves/functions.</b>
+                <b>Lenses = contextual awareness and understanding of the user.</b>
               </div>
               {railDropOver && railDropPreview && (
                 <div className="universal-drop-preview" role="status" aria-live="polite">

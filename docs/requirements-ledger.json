@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 58,
+    "features": 59,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,10 +27,10 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 58,
-    "domainCommands": 115,
-    "companionCapabilities": 210,
-    "extensionEntries": 80
+    "featureContracts": 59,
+    "domainCommands": 116,
+    "companionCapabilities": 213,
+    "extensionEntries": 81
   },
   "requirements": [
     {
@@ -363,6 +363,7 @@
         "completeOutputPlacement",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -394,6 +395,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -801,6 +803,7 @@
         "client/lib/secure-local-storage.js",
         "extension/src/platform/secure-storage.js",
         "client/components/PearlStudioView.jsx",
+        "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
         "extension/src/content/result-pearls.js",
         "server/index.js:/api/pearl-shares"
@@ -812,6 +815,7 @@
         "lockLocalPearls",
         "unlockLocalPearls",
         "deleteLocalData",
+        "openPearlStudio",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -830,6 +834,7 @@
         "lockExternalPearls",
         "unlockExternalPearls",
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
@@ -850,6 +855,7 @@
         "lockExternalPearls",
         "unlockExternalPearls",
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
@@ -880,6 +886,7 @@
         "extension/tests/session-isolation.test.js",
         "shared/pearl-studio.test.js",
         "shared/pearl-version-history.test.js",
+        "client/lib/pearl-shell.test.js",
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs",
@@ -1275,10 +1282,12 @@
         "addSemanticOrbContext",
         "nestSemanticOrb",
         "mergeSemanticOrbs",
-        "composeSemanticOrbs"
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs"
       ],
       "webEntries": [
         "client/components/PearlStudioView.jsx",
+        "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
         "client/components/PhysicalPearl.jsx",
         "extension/src/sidepanel/main.jsx",
@@ -1287,6 +1296,7 @@
         "client/components/SemanticOrbLayer.jsx"
       ],
       "companionCapabilities": [
+        "openPearlStudio",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -1298,12 +1308,14 @@
         "semanticTransfer",
         "createSemanticOrb",
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "openExternalArtifact",
         "createExternalSemanticOrb"
       ],
       "extensionEntries": [
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "openExternalArtifact",
         "createExternalSemanticOrb"
@@ -1317,6 +1329,7 @@
       "automatedTests": [
         "shared/pearl-studio.test.js",
         "shared/pearl-version-history.test.js",
+        "client/lib/pearl-shell.test.js",
         "shared/pearl-entity.test.js",
         "shared/orb-universe.test.js",
         "shared/drop-intent-resolver.test.js"
@@ -1746,7 +1759,8 @@
         "addSemanticOrbContext",
         "nestSemanticOrb",
         "mergeSemanticOrbs",
-        "composeSemanticOrbs"
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs"
       ],
       "webEntries": [
         "client/components/CompanionOrb.jsx",
@@ -1810,6 +1824,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -1830,6 +1845,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -1877,6 +1893,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -1902,6 +1919,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -2186,6 +2204,7 @@
         "playPearlFunction",
         "stepPearlFunction",
         "cancelPearlFunction",
+        "openPearlStudio",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -2206,6 +2225,7 @@
         "stepExternalPearlFunction",
         "cancelExternalPearlFunction",
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "queueExternalAction"
       ],
@@ -2221,6 +2241,7 @@
         "stepExternalPearlFunction",
         "cancelExternalPearlFunction",
         "executeExternalPearlAction",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab",
         "queueExternalAction"
       ],
@@ -2236,6 +2257,7 @@
         "shared/pearl-cognitive-layers.test.js",
         "shared/pearl-studio.test.js",
         "shared/pearl-version-history.test.js",
+        "client/lib/pearl-shell.test.js",
         "shared/composition-algebra.test.js",
         "shared/material.test.js"
       ],
@@ -2672,7 +2694,8 @@
         "extension/src/result/main.js",
         "extension/src/sidepanel/main.jsx",
         "client/App.jsx",
-        "client/components/PearlStudioView.jsx"
+        "client/components/PearlStudioView.jsx",
+        "client/components/CognitiveLayerStudio.jsx"
       ],
       "companionCapabilities": [
         "openExtensionDownload",
@@ -2680,6 +2703,7 @@
         "confirmResultPlacement",
         "cancelResultPlacement",
         "indicateOutputWithCursor",
+        "openPearlStudio",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -2708,7 +2732,8 @@
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
         "toggleExternalOrbCursor",
-        "executeExternalPearlAction"
+        "executeExternalPearlAction",
+        "openExternalPearlStudio"
       ],
       "extensionEntries": [
         "showExternalLibraryImport",
@@ -2732,7 +2757,8 @@
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
         "toggleExternalOrbCursor",
-        "executeExternalPearlAction"
+        "executeExternalPearlAction",
+        "openExternalPearlStudio"
       ],
       "persistenceAndMigrations": [
         "pearlPageCanvases",
@@ -2755,7 +2781,8 @@
         "shared/output-routing.test.js",
         "client/lib/companion-intent.test.js",
         "shared/pearl-studio.test.js",
-        "shared/pearl-version-history.test.js"
+        "shared/pearl-version-history.test.js",
+        "client/lib/pearl-shell.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -2934,7 +2961,8 @@
         "client/components/OrbUniverseShell.jsx:pearl-scene-actions",
         "extension/src/sidepanel/main.jsx:extension-pearl-halo",
         "extension/src/content/bridge.js:Tell Pearl your goal",
-        "client/components/PearlStudioView.jsx"
+        "client/components/PearlStudioView.jsx",
+        "client/components/CognitiveLayerStudio.jsx"
       ],
       "companionCapabilities": [
         "executeUnifiedPearlAction",
@@ -2946,6 +2974,7 @@
         "openPackageRegistry",
         "redoWorkspace",
         "exportWorkspace",
+        "openPearlStudio",
         "browsePearlHistory",
         "snapshotPearlVersion",
         "labelPearlVersion",
@@ -2961,6 +2990,7 @@
         "showExternalLibraryImport",
         "browseExternalPackages",
         "openExternalBeforeAfter",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab"
       ],
       "extensionEntries": [
@@ -2973,6 +3003,7 @@
         "showExternalLibraryImport",
         "browseExternalPackages",
         "openExternalBeforeAfter",
+        "openExternalPearlStudio",
         "openExternalResultPearlTab"
       ],
       "persistenceAndMigrations": [
@@ -3010,5 +3041,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T06:06:27.620Z"
+  "generatedAt": "2026-07-22T06:09:24.159Z"
 }

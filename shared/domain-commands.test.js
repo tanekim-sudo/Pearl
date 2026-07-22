@@ -130,6 +130,24 @@ test("semantic orb capsules preserve sources, activate singly, nest, merge, and 
   assert.deepEqual(merged.result.object.representation.refs, ["orb-1", "orb-2"]);
   assert.ok(merged.result.effects.includes("semantic-orb-merge-preserved-sources"));
   assert.equal(merged.undo().semanticOrbs.length, 2);
+  const synthesized = await executeDomainCommand("synthesizeSemanticOrbs", nested.state, {
+    ids: ["orb-1", "orb-2"],
+    sceneId: "scene-1",
+    mode: "mutual",
+  }, options);
+  assert.equal(synthesized.state.semanticOrbs.length, 3);
+  assert.ok(synthesized.state.semanticOrbs.some((orb) => orb.id === "orb-1"), "source orb-1 remains after synthesize");
+  assert.ok(synthesized.state.semanticOrbs.some((orb) => orb.id === "orb-2"), "source orb-2 remains after synthesize");
+  assert.deepEqual(synthesized.result.preservedSourceIds, ["orb-1", "orb-2"]);
+  assert.equal(synthesized.result.object.representation.kind, "synthesis");
+  assert.equal(synthesized.result.object.representation.preserveIndividuals, true);
+  assert.equal(synthesized.result.observations.length, 2);
+  assert.ok(synthesized.result.observations.every((item) => item.kind === "pearl-observation"));
+  assert.ok(synthesized.result.effects.includes("pearl-synthesis-created"));
+  const before = nested.state.semanticOrbs.find((orb) => orb.id === "orb-1");
+  const after = synthesized.state.semanticOrbs.find((orb) => orb.id === "orb-1");
+  assert.deepEqual(after, before, "source pearl content is unchanged");
+  assert.equal(synthesized.undo().semanticOrbs.length, 2);
 });
 
 test("every command declares complete release contract metadata", () => {

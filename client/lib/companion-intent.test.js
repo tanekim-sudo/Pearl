@@ -55,6 +55,12 @@ test("critique stream and version history intents are deterministic", () => {
   });
   assert.equal(parsePearlVersionCommand("restore the Review ready version").verb, "restorePearlVersion");
   assert.equal(parsePearlRemixCommand("merge these orbs").verb, "mergeSemanticOrbs");
+  assert.deepEqual(parsePearlRemixCommand("what do these pearls notice about each other"), {
+    verb: "synthesizeSemanticOrbs",
+    args: { ids: [], sceneId: "", mode: "mutual" },
+  });
+  assert.equal(parsePearlRemixCommand("synthesize these pearls").verb, "synthesizeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("apply this pearl onto that pearl").args.mode, "directed");
   assert.equal(parsePearlRemixCommand("split this orb").verb, "splitSemanticOrb");
   assert.equal(parsePearlRemixCommand("apply my skeptical Lens to this orb").verb, "applySemanticOrbLens");
   assert.equal(parseAutomationLoopCommand("capture this tab as the format").verb, "captureScreenAsEvidence");

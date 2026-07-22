@@ -63,6 +63,7 @@ const COMMAND_POWER = Object.freeze({
   duplicateSemanticOrb: { kind: "echo", count: 1 },
   mergeSemanticOrbs: { kind: "fuse" },
   composeSemanticOrbs: { kind: "fuse" },
+  synthesizeSemanticOrbs: { kind: "charge" },
   nestSemanticOrb: { kind: "fuse" },
   createSemanticOrb: { kind: "burst" },
   spawnResultPearl: { kind: "burst" },

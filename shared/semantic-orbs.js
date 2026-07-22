@@ -14,6 +14,7 @@ export const SEMANTIC_ORB_REPRESENTATION_KINDS = Object.freeze([
   "transcript",
   "external-capture",
   "grouped-context",
+  "synthesis",
   "scene",
   "worker",
 ]);
@@ -123,6 +124,89 @@ export function semanticOrbFromMaterial(material, options = {}) {
       capturedAt: new Date(timeValue(options.now)).toISOString(),
     },
   }, options);
+}
+
+/** Compact metadata a pearl can "notice" about another without model calls. */
+export function summarizeSemanticOrbForSynthesis(orb) {
+  if (!orb) return null;
+  const context = Array.isArray(orb.workingSet?.context) ? orb.workingSet.context : [];
+  const lenses = Array.isArray(orb.workingSet?.lenses) ? orb.workingSet.lenses : [];
+  const contextLabels = context
+    .slice(0, 6)
+    .map((item) => String(item?.label || item?.name || item?.quote || item?.text || item?.id || "").trim())
+    .filter(Boolean)
+    .map((label) => label.slice(0, 120));
+  const lensNames = lenses
+    .map((lens) => String(lens?.name || lens?.label || lens?.id || "").trim())
+    .filter(Boolean)
+    .map((name) => name.slice(0, 80));
+  return {
+    id: String(orb.id),
+    name: String(orb.name || orb.representation?.label || orb.id),
+    kind: orb.representation?.kind || "empty",
+    label: orb.representation?.label || null,
+    contextCount: context.length,
+    lensCount: lenses.length,
+    contextLabels,
+    lensNames,
+    childCount: Array.isArray(orb.childOrbIds) ? orb.childOrbIds.length : 0,
+  };
+}
+
+/**
+ * Deterministic mutual / directed observations between pearls.
+ * Sources are never mutated — callers append the returned synthesis pearl only.
+ */
+export function buildPearlMutualObservations(sources = [], options = {}) {
+  const orbs = (Array.isArray(sources) ? sources : []).filter(Boolean);
+  if (orbs.length < 2) throw new Error("at least two semantic orbs are required");
+  const mode = options.mode === "directed" ? "directed" : "mutual";
+  const instruction = String(options.instruction || "").trim().slice(0, 400);
+  const pairs = [];
+  if (mode === "directed") {
+    pairs.push([orbs[0], orbs[1]]);
+  } else {
+    const limit = Math.min(orbs.length, 4);
+    for (let i = 0; i < limit; i += 1) {
+      for (let j = 0; j < limit; j += 1) {
+        if (i === j) continue;
+        pairs.push([orbs[i], orbs[j]]);
+      }
+    }
+  }
+  const observations = pairs.map(([observer, subject], index) => {
+    const from = summarizeSemanticOrbForSynthesis(observer);
+    const about = summarizeSemanticOrbForSynthesis(subject);
+    const lensClause = from.lensNames.length
+      ? `Through ${from.lensNames.slice(0, 3).join(", ")}, `
+      : from.contextCount
+        ? `From its ${from.contextCount} context item${from.contextCount === 1 ? "" : "s"}, `
+        : "From its capsule shape, ";
+    const aboutBits = [];
+    aboutBits.push(`it holds a ${about.kind} representation`);
+    if (about.lensNames.length) aboutBits.push(`lenses: ${about.lensNames.slice(0, 3).join(", ")}`);
+    if (about.contextLabels.length) aboutBits.push(`salient material: ${about.contextLabels.slice(0, 3).join("; ")}`);
+    else if (about.contextCount) aboutBits.push(`${about.contextCount} context item${about.contextCount === 1 ? "" : "s"}`);
+    if (about.childCount) aboutBits.push(`${about.childCount} nested pearl${about.childCount === 1 ? "" : "s"}`);
+    if (instruction) aboutBits.push(`under instruction “${instruction}”`);
+    const text = `${from.name} notices about ${about.name}: ${lensClause}${aboutBits.join("; ")}.`;
+    return {
+      id: `observation:${from.id}->${about.id}:${index}`,
+      kind: "pearl-observation",
+      type: "text",
+      fromPearlId: from.id,
+      aboutPearlId: about.id,
+      fromName: from.name,
+      aboutName: about.name,
+      mode,
+      text,
+      label: `${from.name} → ${about.name}`,
+      priority: 1,
+      pinned: true,
+      summary: { from, about },
+    };
+  });
+  return { mode, instruction: instruction || null, observations, sourceIds: orbs.map((orb) => String(orb.id)) };
 }
 
 export function placeSemanticOrb(existing = [], desired = {}, options = {}) {

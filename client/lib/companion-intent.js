@@ -217,6 +217,22 @@ export function parsePearlRemixCommand(text) {
   if (/\bcompose\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+orbs?\b/i.test(value)) {
     return { verb: "composeSemanticOrbs", args: { ids: [], sceneId: "" } };
   }
+  if (
+    /\b(?:synthesize|mutual(?:ly)?[- ]?apply)\b.+\b(?:pearl|orb)s?\b/i.test(value)
+    || /\b(?:pearl|orb)s?\b.+\b(?:synthesize|mutual(?:ly)?[- ]?apply)\b/i.test(value)
+    || /\bwhat do (?:these|the(?:se)? selected) (?:pearls?|orbs?) notice\b/i.test(value)
+    || /\bnotice about each other\b/i.test(value)
+    || /\bapply (?:these|the(?:se)?(?: two)?) (?:pearls?|orbs?) (?:onto|to|on) each other\b/i.test(value)
+    || /^synthesize (?:them|these|the selected(?: (?:pearls?|orbs?)?)?)$/i.test(value)
+  ) {
+    return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "mutual" } };
+  }
+  if (
+    /\bapply\b.+\b(?:pearl|orb)\b.+\b(?:onto|to|on)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\bapply (?:this|that|the) (?:pearl|orb) onto\b/i.test(value)
+  ) {
+    return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "directed" } };
+  }
   if (/\bsplit\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value) || /^split (?:this|it)$/i.test(value)) {
     return { verb: "splitSemanticOrb", args: { id: "active", sceneId: "" } };
   }
@@ -675,7 +691,7 @@ export function buildCompanionSystemPrompt({ demos = [], functionNames = [], ite
   const wearLine = wornPearlPack
     ? `Worn pearl: “${wornPearlPack.name}” with ${wornPearlPack.functions?.length || 0} bound functions and ${wornPearlPack.context?.length || 0} context items. Execute through this pearl unless the user asks to switch or create another.`
     : "No pearl is worn. Companion still works fully — pearls are optional add-ons. Use wearPearl when the user puts one on.";
-  return `You are the companion — the primary interface of "lens". Pearls are optional capability packs you can wear; they are not required to talk, listen, capture screen context, or help. The canonical library order and meaning are: MOVES are one atomic action and exactly one model call; FUNCTIONS are reusable ordered or branched processes made from Moves or Functions; LENSES are bounded contextual worldviews and emerging material structures that scope how Moves and Functions interpret work. Primitive Moves appear first in branch selection; Lenses are context and never branch actions. Everything executable is demonstrated live with an animated ghost cursor so the user learns by watching.
+  return `You are the companion — the primary interface of "lens". Pearls are optional capability packs you can wear; they are not required to talk, listen, capture screen context, or help. Home is the Reef: all pearls spread out for mix, match, and merge (touch or companion). Pearl Studio (triple-click a pearl) is a focused single-pearl view whose load-bearing section order is always Moves → Functions → Lenses. MOVES are individual cognitive transformations a pearl can execute or keep in inventory (Moves may compose other Moves); FUNCTIONS are composition and ordering of Moves and other Functions; LENSES are the pearl's contextual awareness and understanding of the user. Primitive Moves appear first in branch selection; Lenses are context and never branch actions. Everything executable is demonstrated live with an animated ghost cursor so the user learns by watching.
 
 ${wearLine}
 
@@ -697,7 +713,7 @@ Rules:
 - Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
-- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. Pearls never replace the mother.
+- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. synthesizeSemanticOrbs mutual-applies selected/worn pearls into a new observation pearl (sources stay intact); use mode directed to apply A onto B. For freeform “do X with these pearls,” observe pearl metadata then map to validated verbs (create/edit/merge/compose/synthesize/wear/encode) — never invent success. Pearls never replace the mother.
 - Output destinations: when the user says where output should go, call chooseResultDestination with their wording (new tab, download as md/html/json/csv/pdf/txt, drag/create text box, point with cursor / mother pearl, caret insert, copy, Studio). Then confirmResultPlacement after they confirm. Use indicateOutputWithCursor when they want to point with the mother pearl.
 - When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
 - Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
@@ -792,6 +808,7 @@ Rules:
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
+- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / apply-onto intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl for create/edit. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.
