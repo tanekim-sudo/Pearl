@@ -329,7 +329,7 @@ try {
     await page.keyboard.press("Escape");
     await page.locator(".companion-orb").click();
     await page.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("show me the scene controls");
-    await page.getByRole("button", { name: "Send command" }).click();
+    await page.getByRole("button", { name: /GO/i }).click();
     await page.locator(".pearl-scene-actions").getByRole("button", { name: "Grid", exact: true }).click();
     await page.waitForFunction(() => document.querySelector(".orb-black-stage")?.dataset.stageView === "gallery");
     await page.getByRole("button", { name: "Add to Pearl context" }).click();

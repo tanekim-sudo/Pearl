@@ -638,10 +638,10 @@ export const FEATURE_CONTRACTS = Object.freeze([
       "client/lib/shell-navigation.js",
       "extension/src/sidepanel/main.jsx:pearl-quick-actions",
     ],
-    companion: ["openAuth", "signOut", "navigateHome", "navigateBack", "openSettings", "closeSurface"],
+    companion: ["openAuth", "signOut", "navigateHome", "navigateBack", "openLibrary", "openToolbox", "openSettings", "closeSurface"],
     extension: [],
     persistence: [],
-    tests: ["client/lib/shell-navigation.test.js"],
+    tests: ["client/lib/shell-navigation.test.js", "client/lib/pearl-studio-navigation.test.js"],
     owner: "client/lib/shell-navigation.js",
   }),
   feature("encode.automation-anything", {

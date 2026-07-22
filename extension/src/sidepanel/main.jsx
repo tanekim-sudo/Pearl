@@ -1792,7 +1792,7 @@ function App() {
     {pearlOpen && <aside className="extension-pearl-halo" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
       {!powerSearch && <form onSubmit={directCompanion}>
         <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="What do you want?" />
-        <button type="submit" aria-label="Send command">→</button>
+        <button type="submit" aria-label="GO — run staged command">→</button>
       </form>}
       {!powerSearch && <div className="pearl-quick-actions" role="group" aria-label="Pearl quick actions">
         <button type="button" onClick={() => { setGuideOpen(true); setPearlOpen(false); }}>How Pearl works</button>

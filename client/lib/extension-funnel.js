@@ -73,13 +73,30 @@ export async function requestTrustedExtensionHandoff(token, extensionId = import
 }
 
 export async function requestTrustedResultHandoff(token, extensionId = import.meta.env?.VITE_LENS_EXTENSION_ID) {
-  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !extensionId || !globalThis.chrome?.runtime?.sendMessage) {
-    return { connected: false, resultPearl: null };
+  const trustedId = configuredExtensionId(extensionId);
+  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !trustedId || !globalThis.chrome?.runtime?.sendMessage) {
+    return {
+      connected: false,
+      resultPearl: null,
+      reason: !/^[a-f0-9]{32}$/i.test(String(token || ""))
+        ? "invalid-token"
+        : !trustedId
+          ? "missing-extension-id"
+          : "extension-unavailable",
+    };
   }
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(extensionId, { type: "pearl-result-handoff", version: 1, nonce: token }, (value) => {
-      if (chrome.runtime.lastError || !value?.ok) resolve({ connected: false, resultPearl: null });
-      else resolve({ connected: true, ...(value.value || {}), resultPearl: value.value?.resultPearl || null });
+    chrome.runtime.sendMessage(trustedId, { type: "pearl-result-handoff", version: 1, nonce: token }, (value) => {
+      if (chrome.runtime.lastError || !value?.ok) {
+        resolve({ connected: false, resultPearl: null, reason: "extension-rejected" });
+        return;
+      }
+      resolve({
+        connected: true,
+        ...(value.value || {}),
+        resultPearl: value.value?.resultPearl || null,
+        reason: "ok",
+      });
     });
   });
 }

@@ -41,6 +41,8 @@ test("shell navigation intents match Reef and Scene companion phrases", () => {
   assert.equal(matchShellNavigationIntent("go home to the reef"), "navigateHome");
   assert.equal(matchShellNavigationIntent("open the reef"), "navigateHome");
   assert.equal(matchShellNavigationIntent("go back"), "navigateBack");
+  assert.equal(matchShellNavigationIntent("open the library"), "openLibrary");
+  assert.equal(matchShellNavigationIntent("go to toolbox"), "openToolbox");
   assert.equal(matchShellNavigationIntent("merge these pearls"), null);
 });
 

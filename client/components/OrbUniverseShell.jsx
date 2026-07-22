@@ -7,6 +7,7 @@ import PearlPowerFxOverlay from "./PearlPowerFxOverlay.jsx";
 import AuthOverlay from "./AuthOverlay.jsx";
 import EncodeAnythingPanel from "./EncodeAnythingPanel.jsx";
 import { createWebPearlStudioReference } from "./PearlStudioView.jsx";
+import { openPearlStudioDocument } from "../lib/pearl-studio-navigation.js";
 import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 import { createOrbState, executeOrbCommand, markUtteranceDispatched, recordOrbUtterance, transitionOrb } from "../../shared/orb-runtime.js";
@@ -788,6 +789,14 @@ export default function OrbUniverseShell({ StageComponent }) {
         navigateBackOrHome();
         return { effectId: `shell-back:${Date.now()}`, effects: ["navigated-back"] };
       },
+      openLibrary: async () => {
+        navigate("/library");
+        return { effectId: `shell-library:${Date.now()}`, effects: ["opened-library"] };
+      },
+      openToolbox: async () => {
+        navigate("/toolbox");
+        return { effectId: `shell-toolbox:${Date.now()}`, effects: ["opened-toolbox"] };
+      },
       openSettings: async (a) => {
         openEmittedView("settings", { panel: a?.panel || "account" });
         return { effectId: `shell-settings:${Date.now()}`, effects: ["settings-opened"] };
@@ -879,8 +888,10 @@ export default function OrbUniverseShell({ StageComponent }) {
         setCompanionExpanded(false);
       }
       if (action === "openLibrary") {
-        if (route.kind === "stage") navigate("/library");
-        else openEmittedView("library");
+        navigate("/library");
+      }
+      if (action === "openToolbox") {
+        navigate("/toolbox");
       }
     };
     window.addEventListener(SHELL_ACTION_EVENT, onShellAction);
@@ -1140,6 +1151,18 @@ export default function OrbUniverseShell({ StageComponent }) {
       navigateBackOrHome();
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateBack" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateBack", effectId: `back:${Date.now()}` }));
+      return;
+    }
+    if (shellNavIntent === "openLibrary") {
+      navigate("/library");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openLibrary" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openLibrary", effectId: `library:${Date.now()}` }));
+      return;
+    }
+    if (shellNavIntent === "openToolbox") {
+      navigate("/toolbox");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openToolbox" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openToolbox", effectId: `toolbox:${Date.now()}` }));
       return;
     }
     if (/^(?:open (?:account|settings|privacy|sync)|show (?:account|settings|privacy))$/i.test(recorded.entry.normalized)) {
@@ -2275,9 +2298,8 @@ export default function OrbUniverseShell({ StageComponent }) {
       updatedAt: Date.now(),
     }));
     const ref = createWebPearlStudioReference(entity.id);
-    const href = `${location.pathname}${location.search}#pearl-studio=${encodeURIComponent(ref)}`;
-    const opened = window.open(href, "_blank", "noopener");
-    if (!opened) location.assign(href);
+    // Popup preferred; blocked-popup path must full-reload so main.jsx boots Studio.
+    openPearlStudioDocument(ref);
   }
 
   useEffect(() => {

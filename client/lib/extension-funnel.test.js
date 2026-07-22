@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { configuredExtensionId, detectExtensionBrowser, requestTrustedExtensionHandoff, validChromeStoreUrl } from "./extension-funnel.js";
+import {
+  configuredExtensionId,
+  detectExtensionBrowser,
+  requestTrustedExtensionHandoff,
+  requestTrustedResultHandoff,
+  validChromeStoreUrl,
+} from "./extension-funnel.js";
 
 test("Chrome store URL must be an official secure listing", () => {
   assert.match(validChromeStoreUrl("https://chromewebstore.google.com/detail/lens/abc"), /^https:/);
@@ -20,6 +26,10 @@ test("workspace handoff degrades safely without a trusted extension", async () =
   assert.equal(configuredExtensionId(""), "");
   assert.equal(
     await requestTrustedExtensionHandoff("0123456789abcdef0123456789abcdef", "").then((entry) => entry.reason),
+    "missing-extension-id",
+  );
+  assert.equal(
+    await requestTrustedResultHandoff("0123456789abcdef0123456789abcdef", "").then((entry) => entry.reason),
     "missing-extension-id",
   );
 });

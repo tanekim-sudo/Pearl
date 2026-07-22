@@ -108,7 +108,7 @@ try {
   await page.goto(`${BASE}/scene/brush-audit?frame=workspace`);
   await page.locator(".companion-orb").click();
   await page.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("change view");
-  await page.getByRole("button", { name: "Send command" }).click();
+  await page.getByRole("button", { name: /GO/i }).click();
   const sceneActions = page.locator(".pearl-scene-actions");
   await sceneActions.waitFor({ state: "visible", timeout: 5_000 }).catch(async () => {
     const state = await page.evaluate(() => ({

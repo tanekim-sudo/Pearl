@@ -3,7 +3,7 @@ import { createOrbState, setOrbPlacement } from "../../shared/orb-runtime.js";
 import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
-import { clampCompanionPlacement } from "../lib/companion-safety.js";
+import { clampCompanionPlacement, companionViewportSize } from "../lib/companion-safety.js";
 import { defaultPearlAesthetic } from "../../shared/pearl-aesthetic.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
 import { gauntletSocketLayout, loadGauntletState, MAX_GAUNTLET_SLOTS } from "../../shared/companion-pearl-gauntlet.js";
@@ -105,13 +105,20 @@ export default function CompanionOrb({
       const height = rootRef.current?.offsetHeight || width;
       setPlacement((current) => clampCompanionPlacement(
         current,
-        { width: window.innerWidth, height: window.innerHeight },
+        companionViewportSize(),
         { width, height },
       ));
     }
     keepVisible();
     window.addEventListener("resize", keepVisible);
-    return () => window.removeEventListener("resize", keepVisible);
+    const visual = window.visualViewport;
+    visual?.addEventListener("resize", keepVisible);
+    visual?.addEventListener("scroll", keepVisible);
+    return () => {
+      window.removeEventListener("resize", keepVisible);
+      visual?.removeEventListener("resize", keepVisible);
+      visual?.removeEventListener("scroll", keepVisible);
+    };
   }, [featured]);
 
   useEffect(() => {
@@ -445,7 +452,7 @@ export default function CompanionOrb({
               aria-label="Tell Pearl your goal"
               placeholder="What do you want?"
             />
-            <button type="submit" aria-label="Send command">Send</button>
+            <button type="submit" aria-label="GO — run staged command">GO</button>
           </form>}
           {approval && <section className="orb-approval" aria-label="Plan approval required">
             <b>{approval.title || "Review plan"}</b>

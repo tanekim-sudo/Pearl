@@ -3,6 +3,8 @@
  * Escape order: approval cancel → collapse companion → close emission → exit cursor → close guide → leave install/studio.
  */
 
+import { REEF_HOME_PATHS } from "./reef-home.js";
+
 export const SHELL_ACTION_EVENT = "lens:shell-action";
 
 export function dispatchShellAction(action, detail = {}) {
@@ -10,11 +12,18 @@ export function dispatchShellAction(action, detail = {}) {
   window.dispatchEvent(new CustomEvent(SHELL_ACTION_EVENT, { detail: { action, ...detail } }));
 }
 
-export function navigateHome() {
-  if (typeof history === "undefined") return { path: "/" };
-  history.pushState({ pearlNav: true }, "", "/");
+/** Navigate to a Reef home path (`/`, `/library`, `/toolbox`). Unknown paths fall back to `/`. */
+export function navigateToReefPath(path = "/") {
+  const normalized = String(path || "/").replace(/\/+$/, "") || "/";
+  const target = REEF_HOME_PATHS.includes(normalized) ? normalized : "/";
+  if (typeof history === "undefined") return { path: target };
+  history.pushState({ pearlNav: true }, "", target);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  return { path: "/" };
+  return { path: target };
+}
+
+export function navigateHome() {
+  return navigateToReefPath("/");
 }
 
 /** Deterministic companion phrases that must work without planner/credentials. */
@@ -25,6 +34,12 @@ export function matchShellNavigationIntent(text = "") {
   }
   if (/^(?:go back|navigate back)$/i.test(normalized)) {
     return "navigateBack";
+  }
+  if (/^(?:open(?: the)? library|show(?: the)? library|go to(?: the)? library)$/i.test(normalized)) {
+    return "openLibrary";
+  }
+  if (/^(?:open(?: the)? toolbox|show(?: the)? toolbox|go to(?: the)? toolbox)$/i.test(normalized)) {
+    return "openToolbox";
   }
   return null;
 }

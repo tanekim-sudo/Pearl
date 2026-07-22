@@ -80,7 +80,7 @@ try {
     }
     await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
     await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
-    await panel.getByRole("button", { name: "Send command" }).click();
+    await panel.getByRole("button", { name: /GO/i }).click();
   };
   await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });

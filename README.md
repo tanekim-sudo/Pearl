@@ -502,6 +502,32 @@ npm run package:extension
 
 Load `extension/dist/chrome` unpacked in Chrome for local testing.
 
+## Launch ops (local → production)
+
+Copy `.env.example` → `.env` and set only what you need. The app runs anonymously without Supabase.
+
+| Variable | Required for | Notes |
+| --- | --- | --- |
+| `AI_GATEWAY_API_KEY` | Live organize / evaluate / synthesize / companion planning | Vercel AI Gateway key for self-hosted/local. Vercel deploys use OIDC — do not copy `VERCEL_OIDC_TOKEN`. Without a key, mutation paths must surface a precise blocker, not fake success. |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` | Optional accounts | Leave unset for anonymous-local. Sign-in later merges local work via the adopt path. |
+| `SUPABASE_URL` + `SUPABASE_SECRET_KEY` | Server JWT / plan lookups | Never put secrets in `VITE_*`. Optional `SUPABASE_REQUIRE_AUTH=true` gates AI endpoints. |
+| `VITE_LENS_EXTENSION_ID` | Trusted web↔extension handoff on production builds | 32-char Chrome/Firefox extension id. Required for Arrange-in-Scene continuation and install checks. Local `release:check` defaults to `audit-extension-id` when unset. |
+| `VITE_CHROME_WEB_STORE_URL` | One-click store install CTA | Until set, `/install` honestly shows Download + load-unpacked steps. See `extension/STORE_SUBMISSION.md`. |
+
+Production web build (serves `dist` + API):
+
+```bash
+cp .env.example .env   # then set AI_GATEWAY_API_KEY and VITE_LENS_EXTENSION_ID for real handoff
+npm run build          # packages extension zip + vite build
+npm start              # http://127.0.0.1:8787 (also allow localhost)
+npm run release:check:fast   # minimum gate before ship
+# npm run release:check      # full gate when time allows
+AUDIT_URL=http://127.0.0.1:8787 AUDIT_OUT=audit-shots/launch-ready-2026-07-22 \
+  node scripts/new-user-e2e-audit.mjs
+```
+
+**Honest bounds that still block “store/prod complete” claims:** Chrome Web Store signing + download listing URL; a real production extension id baked into the Vercel web build; live Gateway model quality; live Supabase multi-account adopt; mic/voice, touch hardware, full screen-reader, and load-unpacked sidepanel DnD in real Chrome (headless Playwright cannot host MV3 sidepanel).
+
 ## What's next, honestly labeled
 
 The Current surface through Privacy sections above are the shipped contract — verify against `shared/feature-contracts.js`. Parts VI–X describe platform direction. Everything below is a nearer-term roadmap, not a promise — grouped by how close it is and what it depends on.

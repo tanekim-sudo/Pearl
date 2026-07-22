@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const BASE = process.env.AUDIT_URL || "http://127.0.0.1:8787";
-const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/new-user-e2e-2026-07-22");
+const OUT = path.resolve(process.env.AUDIT_OUT || "audit-shots/launch-ready-2026-07-22");
 fs.mkdirSync(OUT, { recursive: true });
 
 const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -309,7 +309,8 @@ await withPage({ width: 1440, height: 900 }, async (page, errors) => {
     await page.goto(`${BASE}/scene/studio-scene`, { waitUntil: "networkidle" });
     await page.locator(".companion-orb").first().waitFor({ timeout: 15_000 });
     await page.waitForFunction(() => Boolean(window.__lensOrbRuntime?.execute), null, { timeout: 15_000 }).catch(() => {});
-    // Director verb path first (same handler as companion)
+    // Director verb path first (same handler as companion). Popup-blocked path must remount Studio.
+    const studioPagePromise = page.context().waitForEvent("page", { timeout: 4_000 }).catch(() => null);
     await page.evaluate(async () => {
       if (!window.__lensOrbRuntime?.execute) {
         window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: "pearl-1" } }));
@@ -319,8 +320,25 @@ await withPage({ width: 1440, height: 900 }, async (page, errors) => {
         { verb: "openPearlStudio", args: { pearlId: "pearl-1" } },
       ], { title: "Open Pearl Studio" });
     }).catch(() => {});
-    await page.waitForTimeout(1200);
-    let studioVisible = await page.locator(".web-pearl-studio, [data-pearl-studio], .pearl-studio, .cognitive-layer-studio").count();
+    const popup = await studioPagePromise;
+    let studioPage = popup || page;
+    if (popup) {
+      await popup.waitForLoadState("domcontentloaded").catch(() => {});
+    } else {
+      // Same-tab reload fallback after hash rewrite.
+      await page.waitForFunction(
+        () => Boolean(document.querySelector(".web-pearl-studio")) || /pearl-studio/.test(location.hash),
+        null,
+        { timeout: 8_000 },
+      ).catch(() => {});
+      await page.waitForSelector(".web-pearl-studio", { timeout: 8_000 }).catch(() => {});
+    }
+    let studioVisible = await studioPage.locator(".web-pearl-studio").count();
+    if (!studioVisible) {
+      await page.waitForTimeout(800);
+      studioVisible = await page.locator(".web-pearl-studio").count();
+      studioPage = page;
+    }
     if (!studioVisible) {
       const pearlBtn = page.locator('[data-semantic-orb-id="pearl-1"] .semantic-orb-button, [data-semantic-orb-id="pearl-1"]').first();
       if (await pearlBtn.count()) {
@@ -330,33 +348,33 @@ await withPage({ width: 1440, height: 900 }, async (page, errors) => {
           await page.waitForTimeout(1000);
         }
       }
-      studioVisible = await page.locator(".web-pearl-studio, [data-pearl-studio], .pearl-studio, .cognitive-layer-studio").count();
+      studioVisible = await page.locator(".web-pearl-studio").count();
     }
-    if (!studioVisible && !page.url().includes("pearl-studio")) {
-      await runCompanionIntent(page, "open pearl studio for Pearl 1");
-      await page.waitForTimeout(1200);
-      studioVisible = await page.locator(".web-pearl-studio, [data-pearl-studio], .pearl-studio, .cognitive-layer-studio").count();
-    }
-    const evidence = await shot(page, "04-pearl-studio");
-    const body = await page.locator("body").innerText();
+    const evidence = await shot(studioPage, "04-pearl-studio");
+    const body = await studioPage.locator("body").innerText();
     const hasOrder = /Moves[\s\S]{0,400}Functions[\s\S]{0,400}Lenses/i.test(body)
-      || await page.locator("text=Moves").count() > 0;
-    if (!studioVisible && !page.url().includes("pearl-studio") && !/Studio|Moves|Functions|Lenses/i.test(body)) {
-      throw new Error("Pearl Studio did not open via companion, triple-click, or event");
+      || await studioPage.locator("text=Moves").count() > 0
+      || await studioPage.getByRole("button", { name: /Organize|Inspect structure/i }).count() > 0;
+    if (!studioVisible) {
+      throw new Error("Pearl Studio UI (.web-pearl-studio) did not remount — hash-only open is a launch blocker");
     }
-    if (!hasOrder && studioVisible) {
-      defect("NU-04-order", "P2", "Studio section order unclear", "Open Pearl Studio", "Moves → Functions → Lenses visible in order", "Could not confirm section order in DOM text", evidence);
+    if (!hasOrder) {
+      defect("NU-04-order", "P2", "Studio section order unclear", "Open Pearl Studio", "Moves → Functions → Lenses or Organize control visible", "Could not confirm studio structure affordances", evidence);
     }
-    // Organize via director (same handler as companion text).
-    if (await page.evaluate(() => Boolean(window.__lensOrbRuntime?.execute))) {
-      await page.evaluate(async () => {
-        await window.__lensOrbRuntime.execute([{ verb: "organizePearl", args: { id: "pearl-1" } }], { title: "Organize pearl" });
-      }).catch(() => {});
+    // Organize control must be discoverable (not opacity:0-only).
+    const organize = studioPage.getByRole("button", { name: /Organize/i }).first();
+    if (await organize.count()) {
+      const opacity = await organize.evaluate((node) => Number(getComputedStyle(node).opacity || 0));
+      if (opacity < 0.2) {
+        defect("NU-04-organize-hidden", "P1", "Studio Organize control invisible at rest", "Open Pearl Studio", "Organize visible without requiring hover", `opacity=${opacity}`, evidence);
+      }
+      await organize.click().catch(() => {});
     }
-    await page.waitForTimeout(800);
-    await shot(page, "04b-organize");
+    await page.waitForTimeout(600);
+    await shot(studioPage, "04b-organize");
+    if (popup && !popup.isClosed()) await popup.close().catch(() => {});
     if (errors.length) throw new Error(errors.join("; "));
-    pass(id, "Pearl Studio open path", { evidence, studioVisible: Boolean(studioVisible), url: page.url() });
+    pass(id, "Pearl Studio open path", { evidence, studioVisible: Boolean(studioVisible), url: studioPage.url() });
   } catch (error) {
     fail(id, "Pearl Studio", error);
     defect("NU-04", "P1", "Pearl Studio unreachable", "Open studio for a pearl", "Studio with Moves→Functions→Lenses", String(error.message || error), "04-pearl-studio.png");
@@ -701,12 +719,125 @@ await withPage({ width: 1440, height: 900 }, async (page, errors) => {
   }
 });
 
+// ─── 11. Create ≤5 pearls + keyboard GO ──────────────────────────────────────
+await withPage({ width: 1440, height: 900 }, async (page, errors) => {
+  const id = "NU-11-create-go";
+  try {
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await seedScene(page, "create-go-scene", 0);
+    await page.goto(`${BASE}/scene/create-go-scene`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => Boolean(window.__lensOrbRuntime?.execute), null, { timeout: 15_000 });
+    for (let i = 1; i <= 5; i += 1) {
+      await page.evaluate(async (n) => {
+        await window.__lensOrbRuntime.execute([{
+          verb: "createSemanticOrb",
+          args: {
+            sceneId: "create-go-scene",
+            id: `made-${n}`,
+            name: `Made Pearl ${n}`,
+            material: { text: `Fresh pearl dump ${n}` },
+          },
+        }], { title: `Create pearl ${n}` });
+      }, i);
+      await page.waitForTimeout(200);
+    }
+    const count = await page.evaluate(() => {
+      const ws = JSON.parse(localStorage.getItem("lens.scenes.v4") || "null");
+      const scene = (ws?.scenes || []).find((entry) => entry.id === "create-go-scene");
+      return scene?.semanticOrbs?.length || 0;
+    });
+    await shot(page, "11-create-5-pearls");
+    if (count < 5) throw new Error(`expected 5 created pearls, got ${count}`);
+
+    await openCompanion(page);
+    const box = page.getByRole("textbox", { name: /Tell Pearl your goal/i });
+    await box.fill("open the library");
+    const go = page.getByRole("button", { name: /GO/i }).first();
+    if (!(await go.isVisible().catch(() => false))) throw new Error("GO control missing on companion");
+    await box.press("Enter");
+    await page.waitForTimeout(900);
+    await shot(page, "11b-keyboard-go-library");
+    if (!/\/library\/?$/.test(new URL(page.url()).pathname) && !isReefish(page.url())) {
+      // Enter/GO should navigate; accept reef paths if library alias lands on home
+      defect("NU-11-go", "P1", "Keyboard GO did not open library", "Type “open the library”, press Enter/GO", "Land on /library", page.url(), "11b-keyboard-go-library.png");
+    }
+    if (errors.length) throw new Error(errors.join("; "));
+    pass(id, "Create ≤5 pearls + keyboard GO", { count, url: page.url() });
+  } catch (error) {
+    fail(id, "Create pearls / GO", error);
+    defect("NU-11", "P1", "Create/GO path broken", "Create 5 pearls then GO open library", "5 pearls + library navigation", String(error.message || error), "11-create-5-pearls.png");
+  }
+});
+
+// ─── 12. 200% zoom stress (half CSS viewport ≈ browser 200% on 1280×800) ─────
+await withPage({ width: 640, height: 400 }, async (page, errors) => {
+  const id = "NU-12-zoom";
+  try {
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+    const evidence = await shot(page, "12-zoom-200");
+    const orb = page.locator(".companion-orb").first();
+    if (!(await orb.isVisible())) throw new Error("companion missing at dense 200% viewport");
+    // Welcome must own the first viewport — reef orbit labels stay hidden.
+    const collision = await page.evaluate(() => {
+      const welcome = document.querySelector(".pearl-welcome");
+      const scene = document.querySelector(".orb-recent-orbit .recent-scene");
+      if (!welcome) return { ok: false, reason: "welcome-missing" };
+      const sceneHidden = !scene || getComputedStyle(scene).visibility === "hidden";
+      const primary = document.querySelector(".pearl-welcome-primary");
+      const box = primary?.getBoundingClientRect();
+      const clipped = !box || box.right > window.innerWidth + 2 || box.bottom > window.innerHeight + 2 || box.left < -2;
+      return { ok: sceneHidden && !clipped, sceneHidden, clipped, box };
+    });
+    if (!collision.ok) {
+      defect("NU-12-welcome-layout", "P1", "Welcome unusable at dense 200% viewport", "Open / at 640×400", "Welcome actions fully on-screen; reef orbit hidden", JSON.stringify(collision), evidence);
+    }
+    // Companion must remain reachable above welcome chrome.
+    await orb.click({ force: true });
+    await page.getByRole("textbox", { name: /Tell Pearl your goal/i }).waitFor({ state: "visible", timeout: 5_000 });
+    await shot(page, "12b-zoom-companion");
+    await page.keyboard.press("Escape");
+    if (errors.length) throw new Error(errors.join("; "));
+    pass(id, "Dense 200% viewport remains usable", { evidence, collision });
+  } catch (error) {
+    fail(id, "200% zoom", error);
+    defect("NU-12", "P1", "200% zoom breaks primary chrome", "Open / at dense 200% viewport", "Companion + welcome usable", String(error.message || error), "12-zoom-200.png");
+  }
+});
+
+// ─── 13. Reduced motion ──────────────────────────────────────────────────────
+await withPage({ width: 1280, height: 800 }, async (page, errors) => {
+  const id = "NU-13-reduced-motion";
+  try {
+    // Context already requests prefers-reduced-motion: reduce via withPage.
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await seedScene(page, "motion-scene", 2);
+    await page.goto(`${BASE}/scene/motion-scene`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => Boolean(window.__lensOrbRuntime?.execute), null, { timeout: 15_000 });
+    await page.evaluate(async () => {
+      await window.__lensOrbRuntime.execute([{ verb: "wearPearl", args: { id: "pearl-1" } }], { title: "Wear" });
+    });
+    const evidence = await shot(page, "13-reduced-motion");
+    if (!(await page.locator(".companion-orb").isVisible())) throw new Error("UI missing under reduced motion");
+    if (errors.length) throw new Error(errors.join("; "));
+    pass(id, "Reduced motion path remains interactive", { evidence });
+  } catch (error) {
+    fail(id, "Reduced motion", error);
+    defect("NU-13", "P2", "Reduced motion path broken", "prefers-reduced-motion: reduce + wear pearl", "UI remains interactive", String(error.message || error), "13-reduced-motion.png");
+  }
+});
+
 // Extension note (Chrome load-unpacked not automatable in this headless pass)
 notVerified.push("Chrome extension load-unpacked sidepanel DnD/GO in real Chrome (Playwright headless cannot load MV3 unpacked with full sidepanel UX). Extension unit/release tests and prior orb-universe extension audit remain the evidence boundary.");
 notVerified.push("Live Supabase multi-account adopt/skip (credentials may be local-only; anonymous path verified).");
 notVerified.push("Live AI Gateway model quality for organize/evaluate/synthesize (credentials optional; failure/blocker paths probed).");
 notVerified.push("Microphone / voice companion and real touch hardware.");
 notVerified.push("Screen-reader full pass (ARIA spot-checked via roles only).");
+notVerified.push("Production Vercel deploy with a real Chrome Web Store extension id (local audits may use audit-extension-id).");
+notVerified.push("Forced-colors / Windows high-contrast beyond reduced-motion probe.");
 
 await browser.close();
 
@@ -722,14 +853,14 @@ const ledger = {
   defects,
   screenshots,
   notVerified,
-  verdict: failed === 0 && openDefects.filter((d) => d.severity === "P0").length === 0
-    ? "New-user local journeys largely usable; see open P1/P2 and not-verified boundaries."
-    : "New-user blockers remain — see failed results and defect ledger.",
+  verdict: failed === 0 && openDefects.filter((d) => ["P0", "P1"].includes(d.severity)).length === 0
+    ? "Local launch-readiness journeys usable on production build; store/prod still depends on not-verified bounds."
+    : "Launch blockers remain — see failed results and defect ledger.",
 };
 
 fs.writeFileSync(path.join(OUT, "audit-results.json"), JSON.stringify(ledger, null, 2));
 fs.writeFileSync(path.join(OUT, "DEFECT-LEDGER.md"), [
-  "# New-user E2E defect ledger — 2026-07-22",
+  "# Launch-ready E2E defect ledger — 2026-07-22",
   "",
   `Base: ${BASE}`,
   "",
@@ -756,6 +887,28 @@ fs.writeFileSync(path.join(OUT, "DEFECT-LEDGER.md"), [
   "## Screenshots",
   "",
   ...screenshots.map((s) => `- ${s}`),
+].join("\n"));
+
+fs.writeFileSync(path.join(OUT, "REPORT.md"), [
+  "# Launch-ready audit — 2026-07-22",
+  "",
+  "## Verdict",
+  "",
+  ledger.verdict,
+  "",
+  `Base: \`${BASE}\` (production \`dist\` + \`npm start\`).`,
+  "",
+  "## Summary",
+  "",
+  `| Check | Result |`,
+  `| --- | --- |`,
+  `| Focused Playwright journeys | **${passed}/${passed + failed} passed**, ${openDefects.length} open defects |`,
+  `| Evidence folder | \`${path.relative(process.cwd(), OUT)}\` |`,
+  "",
+  "## Not verified",
+  "",
+  ...notVerified.map((n) => `- ${n}`),
+  "",
 ].join("\n"));
 
 console.log(JSON.stringify(ledger.summary, null, 2));

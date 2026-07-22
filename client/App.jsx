@@ -13717,6 +13717,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait?.(240);
       return { effectId: `shell-back:${Date.now()}`, effects: ["navigated-back"] };
     },
+    openLibrary: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openLibrary" } }));
+      await tk.wait?.(240);
+      return { effectId: `shell-library:${Date.now()}`, effects: ["opened-library"] };
+    },
+    openToolbox: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openToolbox" } }));
+      await tk.wait?.(240);
+      return { effectId: `shell-toolbox:${Date.now()}`, effects: ["opened-toolbox"] };
+    },
     openSettings: async (a, tk) => {
       window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openSettings", panel: a.panel || "account" } }));
       await tk.wait?.(280);
@@ -16398,9 +16408,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     // Deterministic shell navigation — shared with OrbUniverseShell reef companion.
     // Must not depend on live planner/credentials; new users say “go home” from a Scene.
     const shellNav = matchShellNavigationIntent(text);
-    if (shellNav === "navigateHome" || shellNav === "navigateBack") {
-      await executeCompanionScript([{ verb: shellNav, args: {} }], { title: shellNav === "navigateHome" ? "Go home" : "Go back" });
-      const effect = shellNav === "navigateHome" ? "navigated-home" : "navigated-back";
+    if (shellNav) {
+      const titles = {
+        navigateHome: "Go home",
+        navigateBack: "Go back",
+        openLibrary: "Open library",
+        openToolbox: "Open toolbox",
+      };
+      const effects = {
+        navigateHome: "navigated-home",
+        navigateBack: "navigated-back",
+        openLibrary: "opened-library",
+        openToolbox: "opened-toolbox",
+      };
+      await executeCompanionScript([{ verb: shellNav, args: {} }], { title: titles[shellNav] || shellNav });
+      const effect = effects[shellNav] || shellNav;
       updateCommand(commandEntry.id, { status: "executed", effects: [effect] });
       return { completed: true, effects: [effect] };
     }

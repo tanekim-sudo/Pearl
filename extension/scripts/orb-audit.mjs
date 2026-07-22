@@ -142,7 +142,7 @@ try {
     await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
     if (!requests[name]) return;
     await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
-    await panel.getByRole("button", { name: "Send command" }).click();
+    await panel.getByRole("button", { name: /GO/i }).click();
   };
   await panel.evaluate(async () => {
     const tabs = await chrome.tabs.query({});
@@ -201,7 +201,7 @@ try {
   }
   await openPanelView("Command");
   await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("use this Pearl here");
-  await panel.getByRole("button", { name: "Send command" }).click();
+  await panel.getByRole("button", { name: /GO/i }).click();
   try {
     await fixture.locator("#pearl-page-canvas-host[data-active=true]").waitFor({ timeout: 5_000 });
   } catch {
@@ -213,7 +213,7 @@ try {
   }
   await openPanelView("Command");
   await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("let me draw on this with Pearl");
-  await panel.getByRole("button", { name: "Send command" }).click();
+  await panel.getByRole("button", { name: /GO/i }).click();
   await fixture.locator("#pearl-page-canvas-host[data-mode=pen]").waitFor();
   await fixture.mouse.move(820, 190);
   await fixture.mouse.down();
@@ -232,7 +232,7 @@ try {
   await fixture.screenshot({ path: path.join(evidence, "06b1-extension-pearl-canvas-ink.png"), fullPage: true });
   await openPanelView("Command");
   await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill("let me edit the page again");
-  await panel.getByRole("button", { name: "Send command" }).click();
+  await panel.getByRole("button", { name: /GO/i }).click();
   await fixture.locator("#pearl-page-canvas-host[data-mode=native]").waitFor();
   await panel.evaluate(async () => {
     const response = await chrome.runtime.sendMessage({ version: 1, type: "pearl-state-get", requestId: crypto.randomUUID(), payload: {} });

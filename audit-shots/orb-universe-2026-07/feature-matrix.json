@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T06:29:15.909Z",
+  "generatedAt": "2026-07-22T17:38:34.963Z",
   "counts": {
     "features": 63,
-    "companion": 400,
+    "companion": 402,
     "extension": 120,
     "commands": 131
   },
@@ -1391,12 +1391,15 @@
         "signOut",
         "navigateHome",
         "navigateBack",
+        "openLibrary",
+        "openToolbox",
         "openSettings",
         "closeSurface"
       ],
       "extension": [],
       "tests": [
-        "client/lib/shell-navigation.test.js"
+        "client/lib/shell-navigation.test.js",
+        "client/lib/pearl-studio-navigation.test.js"
       ]
     },
     {

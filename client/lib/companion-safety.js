@@ -11,9 +11,19 @@ const MAX_TEXT = 2_000;
 const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const boundedText = (value) => String(value ?? "").slice(0, MAX_TEXT);
 
+/** Prefer visualViewport so browser zoom / mobile chrome keep Pearl on-screen. */
+export function companionViewportSize(fallback = {}) {
+  const visual = globalThis.visualViewport;
+  return {
+    width: Math.max(1, finite(fallback.width, visual?.width || globalThis.innerWidth || 390)),
+    height: Math.max(1, finite(fallback.height, visual?.height || globalThis.innerHeight || 844)),
+  };
+}
+
 export function clampCompanionPlacement(placement = {}, viewport = {}, pearl = {}) {
-  const viewportWidth = Math.max(1, finite(viewport.width, globalThis.innerWidth || 390));
-  const viewportHeight = Math.max(1, finite(viewport.height, globalThis.innerHeight || 844));
+  const resolved = companionViewportSize(viewport);
+  const viewportWidth = resolved.width;
+  const viewportHeight = resolved.height;
   const width = Math.min(viewportWidth - 16, Math.max(28, finite(pearl.width, 36)));
   const height = Math.min(viewportHeight - 16, Math.max(28, finite(pearl.height, width)));
   return {

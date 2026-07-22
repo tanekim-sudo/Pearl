@@ -81,7 +81,7 @@ function mountPageOrb() {
   const emission = document.createElement("section");
   emission.className = "emission";
   emission.setAttribute("aria-label", "Pearl command");
-  emission.innerHTML = `<form><input aria-label="Tell Pearl your goal" placeholder="What do you want?"><button type="submit" aria-label="Send command">→</button></form><button type="button" data-action="contextual">Keep selection</button><span hidden data-context-count></span><span hidden data-active-lens></span><span hidden data-candidate-count></span>`;
+  emission.innerHTML = `<form><input aria-label="Tell Pearl your goal" placeholder="What do you want?"><button type="submit" aria-label="GO — run staged command">→</button></form><button type="button" data-action="contextual">Keep selection</button><span hidden data-context-count></span><span hidden data-active-lens></span><span hidden data-candidate-count></span>`;
   const minimize = document.createElement("button");
   minimize.className = "minimize";
   minimize.type = "button";
