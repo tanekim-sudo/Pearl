@@ -1271,7 +1271,7 @@ async function handle(message, sender = {}) {
     return clearPageMaterial();
   }
   if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
-  if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation" || type === "pearl-aesthetic-apply") {
+  if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation" || type === "pearl-aesthetic-apply" || type === "pearl-worn-orbit") {
     return sendPage(type, payload);
   }
   if (type === "capture-visible-tab") {

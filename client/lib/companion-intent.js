@@ -357,6 +357,33 @@ const PEARL_AESTHETIC_PRESET_ALIASES = Object.freeze({
   jade: "jade",
 });
 
+export function parseOutputDestinationCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (!/\b(?:output|result|put|place|download|export|open|insert|copy|save|point|cursor|text\s?box|new tab)\b/i.test(value)) {
+    return null;
+  }
+  if (/\b(?:cancel|never ?mind)\b/i.test(value) && /\b(?:placement|destination|routing)\b/i.test(value)) {
+    return { verb: "cancelResultPlacement", args: { pearlId: "last" } };
+  }
+  if (/\b(?:confirm|yes|do it|put it there)\b/i.test(value) && /\b(?:place|placement|destination|there)\b/i.test(value)) {
+    return { verb: "confirmResultPlacement", args: { pearlId: "last" } };
+  }
+  if (/\b(?:point|cursor|indicate|mother pearl)\b/i.test(value) && /\b(?:where|output|place|put)\b/i.test(value)) {
+    return {
+      verb: "indicateOutputWithCursor",
+      args: { enabled: true, answer: value },
+    };
+  }
+  if (/\b(?:download|export|save as|open in|new tab|text\s?box|drag|clipboard|copy|pdf|markdown|html|json|caret|insert)\b/i.test(value)) {
+    return {
+      verb: "chooseResultDestination",
+      args: { pearlId: "last", answer: value },
+    };
+  }
+  return null;
+}
+
 export function parsePearlAestheticCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
@@ -399,17 +426,6 @@ export function parsePearlAestheticCommand(text) {
 export function parseTranscriptLearningCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
-  if (/\b(?:wear|put on|use|activate)\b/i.test(value) && /\bpearl\b/i.test(value)) {
-    const named = value.match(/\b(?:wear|put on|use|activate)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
-      || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
-    return {
-      verb: "wearPearl",
-      args: { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined },
-    };
-  }
-  if (/\b(?:take off|remove|clear)\b/i.test(value) && /\b(?:worn\s+)?pearl\b/i.test(value) && /\b(?:worn|off|remove|clear)\b/i.test(value)) {
-    return { verb: "removeWornPearl", args: {} };
-  }
   if (/\b(chat|conversation|transcript)\b/i.test(value)
     && /\b(?:make|turn|encode|compress|save|capture|add)\b/i.test(value)
     && /\b(?:function|pearl|replay)\b/i.test(value)) {
@@ -423,6 +439,25 @@ export function parseTranscriptLearningCommand(text) {
     if (targetPearlName) args.targetPearlName = targetPearlName;
     if (!forceNew && !intoExisting) args.preferExisting = true;
     return { verb: "encodeConversationAsPearl", args };
+  }
+  if (/\b(?:which|list|what)\b/i.test(value) && /\b(?:orbiting|worn)\b/i.test(value) && /\bpearls?\b/i.test(value)) {
+    return { verb: "listWornPearls", args: {} };
+  }
+  if (/\b(?:wear|put on|use|activate|add)\b/i.test(value) && /\bpearl\b/i.test(value)
+    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value)) {
+    const named = value.match(/\b(?:wear|put on|use|activate|add)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+      || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
+    const args = { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined };
+    if (/\b(?:only|instead|replace)\b/i.test(value)) args.replace = true;
+    return { verb: "wearPearl", args };
+  }
+  if (/\b(?:take off|remove|clear)\b/i.test(value) && /\b(?:worn\s+)?pearl\b/i.test(value) && /\b(?:worn|off|remove|clear|orbit)\b/i.test(value)) {
+    const named = value.match(/\b(?:take off|remove)\s+(?:the\s+)?(.+?)\s+pearl\b/i);
+    const name = named?.[1]?.replace(/[.?!"']/g, "").trim();
+    if (!name || /^(?:worn|orbiting|active|current)$/i.test(name)) {
+      return { verb: "removeWornPearl", args: {} };
+    }
+    return { verb: "removeWornPearl", args: { name } };
   }
   if (!/\b(chat|conversation|transcript)\b/i.test(value)) return null;
   if (/\b(?:open|show|start)\b/i.test(value) && /\b(?:learn|extract|turn|make)\b/i.test(value)) {
@@ -657,7 +692,9 @@ Rules:
 - Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
-- Companion vs pearls: you are always on. wearPearl / removeWornPearl control the optional pearl pack. When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
+- Companion vs pearls: you are always the mother pearl (default white). wearPearl adds selected pearls as orbiting add-ons (multi-wear); removeWornPearl removes one or all; listWornPearls inspects the orbit. Pearls never replace the mother.
+- Output destinations: when the user says where output should go, call chooseResultDestination with their wording (new tab, download as md/html/json/csv/pdf/txt, drag/create text box, point with cursor / mother pearl, caret insert, copy, Studio). Then confirmResultPlacement after they confirm. Use indicateOutputWithCursor when they want to point with the mother pearl.
+- When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
 - Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
 - Listening: when capturing AI chats from screen or pasted transcript, prefer encodeConversationAsPearl over opening Learn-from-chat UI unless the user asks to review candidates manually.
 - Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.

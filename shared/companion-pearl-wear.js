@@ -1,10 +1,29 @@
 /**
  * Companion is the app. Pearls are optional capability packs the companion can wear.
- * Wearing a pearl injects its working set, lenses, and bound functions into companion context.
+ * The mother companion stays default white; worn pearls orbit it as add-ons.
+ * Wearing injects working set, lenses, and bound functions into companion context.
  */
 
-export const COMPANION_PEARL_WEAR_VERSION = 1;
+import {
+  MAX_WORN_ORBIT_PEARLS,
+  MOTHER_COMPANION_ID,
+  addPearlToOrbit,
+  mergeWornPearlPacks,
+  normalizeWornOrbitState,
+  removePearlFromOrbit,
+  reorderOrbitPearls,
+  wornPearlOrbitSlots,
+} from "./companion-pearl-orbit.js";
+
+export const COMPANION_PEARL_WEAR_VERSION = 2;
 export const WORN_PEARL_STORAGE_KEY = "lens.companion.worn-pearl.v1";
+export {
+  MAX_WORN_ORBIT_PEARLS,
+  MOTHER_COMPANION_ID,
+  wornPearlOrbitSlots,
+  mergeWornPearlPacks,
+  normalizeWornOrbitState,
+};
 
 const bounded = (value, limit = 280) => String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
 
@@ -53,6 +72,7 @@ export function buildWornPearlPack(pearl, options = {}) {
     kind: pearl.kind || representation.kind || "semantic-orb",
     representationKind: representation.kind || "empty",
     wornAt: Number(options.wornAt) || Date.now(),
+    aesthetic: pearl.aesthetic || null,
     context,
     lenses,
     functions,
@@ -73,16 +93,27 @@ export function buildWornPearlPack(pearl, options = {}) {
 export function companionWearPrompt(pack) {
   if (!pack) {
     return [
-      "Companion is always available without a worn pearl.",
-      "Pearls are optional add-ons. Use wearPearl to put one on; removeWornPearl to take it off.",
+      "Companion (mother pearl) is always available without a worn pearl.",
+      "Selected pearls become orbiting add-ons around the mother — they do not replace it.",
+      "Use wearPearl to put pearls on; removeWornPearl to take one or all off.",
       "When no pearl is worn, still help with screen context, capture, learning, and creating new pearls.",
     ].join(" ");
   }
+  const orbitCount = pack.orbit?.count || pack.packs?.length || 1;
+  if (orbitCount > 1) {
+    const names = (pack.packs || []).map((entry) => entry.name).join(", ");
+    return [
+      `Mother companion is wearing ${orbitCount} orbiting pearls: ${names}.`,
+      `Merged context: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
+      "Prefer bound functions and context from the orbiting packs. Mother pearl appearance stays classic white.",
+      "The user can add more pearls to the orbit, reorder them, or take any off.",
+    ].join(" ");
+  }
   return [
-    `Worn pearl “${pack.name}” (${pack.pearlId}).`,
+    `Worn pearl “${pack.name}” (${pack.pearlId}) is orbiting the mother companion.`,
     `Context items: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
     "Interpret and execute through this pearl’s lens. Prefer its bound functions and context before inventing new ones.",
-    "The user can still create another pearl or switch worn pearls at any time.",
+    "The user can still add another pearl to the orbit or switch worn pearls at any time.",
   ].join(" ");
 }
 
@@ -216,26 +247,75 @@ export function compressConversationToPearlSpec(transcript, options = {}) {
   };
 }
 
-export function loadWornPearlId(storage = globalThis.localStorage) {
+function readOrbitRaw(storage) {
   try {
     const raw = storage?.getItem?.(WORN_PEARL_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed?.pearlId || null;
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-export function saveWornPearlId(pearlId, storage = globalThis.localStorage) {
-  if (!storage) return pearlId;
-  if (!pearlId) {
+/** Load multi-pearl orbit state (migrates v1 single pearlId). */
+export function loadWornOrbitState(storage = globalThis.localStorage) {
+  const parsed = readOrbitRaw(storage);
+  if (!parsed) return normalizeWornOrbitState();
+  if (Array.isArray(parsed.pearlIds)) return normalizeWornOrbitState(parsed);
+  if (parsed.pearlId) return normalizeWornOrbitState({ pearlIds: [parsed.pearlId], primaryPearlId: parsed.pearlId, updatedAt: parsed.wornAt });
+  return normalizeWornOrbitState();
+}
+
+export function saveWornOrbitState(state, storage = globalThis.localStorage) {
+  const next = normalizeWornOrbitState(state);
+  if (!storage) return next;
+  if (!next.pearlIds.length) {
     storage.removeItem?.(WORN_PEARL_STORAGE_KEY);
-    return null;
+    return next;
   }
   storage.setItem?.(WORN_PEARL_STORAGE_KEY, JSON.stringify({
     version: COMPANION_PEARL_WEAR_VERSION,
-    pearlId,
-    wornAt: Date.now(),
+    pearlIds: next.pearlIds,
+    primaryPearlId: next.primaryPearlId,
+    pearlId: next.primaryPearlId,
+    wornAt: next.updatedAt,
+    updatedAt: next.updatedAt,
   }));
-  return pearlId;
+  return next;
+}
+
+/** @deprecated Prefer loadWornOrbitState; kept for single-ID call sites. */
+export function loadWornPearlId(storage = globalThis.localStorage) {
+  return loadWornOrbitState(storage).primaryPearlId;
+}
+
+/** Replace orbit with one pearl, or clear when null. Prefer addWornPearlId for multi-wear. */
+export function saveWornPearlId(pearlId, storage = globalThis.localStorage) {
+  if (!pearlId) return saveWornOrbitState({ pearlIds: [] }, storage).primaryPearlId;
+  return saveWornOrbitState({ pearlIds: [pearlId], primaryPearlId: pearlId }, storage).primaryPearlId;
+}
+
+export function loadWornPearlIds(storage = globalThis.localStorage) {
+  return loadWornOrbitState(storage).pearlIds;
+}
+
+export function addWornPearlId(pearlId, storage = globalThis.localStorage) {
+  const next = addPearlToOrbit(loadWornOrbitState(storage), pearlId);
+  return saveWornOrbitState(next, storage);
+}
+
+export function removeWornPearlId(pearlId = null, storage = globalThis.localStorage) {
+  const next = removePearlFromOrbit(loadWornOrbitState(storage), pearlId);
+  return saveWornOrbitState(next, storage);
+}
+
+export function reorderWornPearlIds(pearlIds, storage = globalThis.localStorage) {
+  const next = reorderOrbitPearls(loadWornOrbitState(storage), pearlIds);
+  return saveWornOrbitState(next, storage);
+}
+
+export function buildMergedWornPearlPack(pearls = [], options = {}) {
+  const packs = (pearls || [])
+    .map((pearl) => buildWornPearlPack(pearl, options))
+    .filter(Boolean);
+  return mergeWornPearlPacks(packs);
 }

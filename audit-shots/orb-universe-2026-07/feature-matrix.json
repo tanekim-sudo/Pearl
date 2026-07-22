@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T05:20:16.335Z",
+  "generatedAt": "2026-07-22T05:52:46.475Z",
   "counts": {
-    "features": 56,
-    "companion": 384,
+    "features": 57,
+    "companion": 386,
     "extension": 113,
     "commands": 127
   },
@@ -276,6 +276,7 @@
       "companion": [
         "wearPearl",
         "removeWornPearl",
+        "listWornPearls",
         "inspectWornPearl",
         "encodeConversationAsPearl",
         "suggestPearlForConversation"
@@ -287,7 +288,26 @@
       ],
       "tests": [
         "shared/companion-pearl-wear.test.js",
+        "shared/companion-pearl-orbit.test.js",
         "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "companion.mother-orbit",
+      "commands": [],
+      "companion": [
+        "wearPearl",
+        "removeWornPearl",
+        "listWornPearls",
+        "inspectWornPearl"
+      ],
+      "extension": [
+        "wearExternalPearl",
+        "removeExternalWornPearl"
+      ],
+      "tests": [
+        "shared/companion-pearl-orbit.test.js",
+        "shared/companion-pearl-wear.test.js"
       ]
     },
     {
@@ -1014,15 +1034,18 @@
       "companion": [
         "chooseResultDestination",
         "confirmResultPlacement",
-        "cancelResultPlacement"
+        "cancelResultPlacement",
+        "indicateOutputWithCursor"
       ],
       "extension": [
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
-        "cancelExternalResultPlacement"
+        "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor"
       ],
       "tests": [
-        "shared/output-routing.test.js"
+        "shared/output-routing.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {

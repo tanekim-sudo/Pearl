@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-3f8e81fd",
+  "fingerprint": "fnv1a-939c649f",
   "counts": {
-    "nodes": 384,
+    "nodes": 386,
     "edges": 516
   },
   "nodes": [
@@ -10803,9 +10803,123 @@
       "version": 1,
       "kind": "capability",
       "name": "wearPearl",
-      "purpose": "Put on a pearl so the companion gains its full context, lenses, and bound functions (companion works without any pearl)",
+      "purpose": "Add a pearl as an orbiting add-on around the mother companion (default white); replace=true swaps the whole orbit",
       "examples": [
         "put on the LP briefings pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": "string?",
+          "name": "string?",
+          "replace": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "orb exists when id is supplied",
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists",
+        "representation is explicit",
+        "material is explicit and preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-active-semantic-orb",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-activation-changed",
+        "semantic-orb-created",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed"
+      ],
+      "tests": [
+        "capability-wearPearl",
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
+      ],
+      "featureIds": [
+        "companion.pearl-wear",
+        "companion.mother-orbit"
+      ],
+      "canonicalCommands": [
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.removeWornPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "removeWornPearl",
+      "purpose": "Remove one orbiting pearl by id/name, or clear the whole orbit when unspecified",
+      "examples": [
+        "take off the pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -10888,11 +11002,13 @@
         "semantic-orb-context-changed"
       ],
       "tests": [
-        "capability-wearPearl",
-        "feature:companion.pearl-wear"
+        "capability-removeWornPearl",
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
       ],
       "featureIds": [
-        "companion.pearl-wear"
+        "companion.pearl-wear",
+        "companion.mother-orbit"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -10910,13 +11026,13 @@
       "platform": "app"
     },
     {
-      "id": "companion.capability.app.removeWornPearl",
+      "id": "companion.capability.app.listWornPearls",
       "version": 1,
       "kind": "capability",
-      "name": "removeWornPearl",
-      "purpose": "Take off the worn pearl; companion stays available with no pearl pack",
+      "name": "listWornPearls",
+      "purpose": "List pearls currently orbiting the mother companion",
       "examples": [
-        "take off the pearl"
+        "which pearls are orbiting"
       ],
       "inputSchema": {
         "type": "object",
@@ -10969,9 +11085,7 @@
         "required": false,
         "boundary": "none"
       },
-      "sideEffects": [
-        "scene-state-changed"
-      ],
+      "sideEffects": [],
       "persistence": [
         "scene.activeSemanticOrbId",
         "scene.semanticOrbs.append",
@@ -10989,18 +11103,19 @@
         "direct-ui"
       ],
       "expectedEffects": [
-        "scene-state-changed",
         "semantic-orb-activation-changed",
         "semantic-orb-created",
         "semantic-orb-updated",
         "semantic-orb-context-changed"
       ],
       "tests": [
-        "capability-removeWornPearl",
-        "feature:companion.pearl-wear"
+        "capability-listWornPearls",
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
       ],
       "featureIds": [
-        "companion.pearl-wear"
+        "companion.pearl-wear",
+        "companion.mother-orbit"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -11010,7 +11125,7 @@
       ],
       "destructive": false,
       "confirmation": "none",
-      "idempotency": "idempotency-key",
+      "idempotency": "read-only",
       "domains": [
         "scene",
         "interface"
@@ -11022,7 +11137,7 @@
       "version": 1,
       "kind": "capability",
       "name": "inspectWornPearl",
-      "purpose": "Inspect the currently worn pearl capability pack, or confirm companion is bare",
+      "purpose": "Inspect the merged orbiting pearl pack around the mother companion, or confirm companion is bare",
       "examples": [
         "what pearl am I wearing"
       ],
@@ -11102,10 +11217,12 @@
       ],
       "tests": [
         "capability-inspectWornPearl",
-        "feature:companion.pearl-wear"
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
       ],
       "featureIds": [
-        "companion.pearl-wear"
+        "companion.pearl-wear",
+        "companion.mother-orbit"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -11119,6 +11236,134 @@
       "domains": [
         "scene",
         "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.indicateOutputWithCursor",
+      "version": 1,
+      "kind": "capability",
+      "name": "indicateOutputWithCursor",
+      "purpose": "Arm the mother pearl as the cursor to point where output should be placed",
+      "examples": [
+        "point with the pearl where the output should go"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "enabled": "boolean?",
+          "answer": "string?",
+          "observation": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "generation completed into a persisted staged Result Pearl",
+        "a routing request is pending",
+        "live observation is bounded and local",
+        "PlacementPlan is explicit and shown to the user",
+        "PlacementPlan is confirmed and idempotency key has not executed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "surface adapter failed without mutating or retained an exact undo checkpoint",
+        "staged Result Pearl remains persisted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "resultPearls.routing.replace",
+        "resultPearls.routing.plan.replace",
+        "resultPearls.routing.confirm",
+        "resultPearls.routing.execute",
+        "resultPearls.routing.complete",
+        "resultPearls.routing.fail",
+        "resultPearls.routing.cancel"
+      ],
+      "undo": [
+        "cancel-output-placement",
+        "revise-placement-plan",
+        "undo-output-placement",
+        "retry-output-placement",
+        "request-output-placement"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "output-destination-requested",
+        "output-placement-interpreted",
+        "output-placement-confirmed",
+        "output-placement-started",
+        "output-placement-completed",
+        "output-placement-failed",
+        "output-placement-cancelled"
+      ],
+      "tests": [
+        "capability-indicateOutputWithCursor",
+        "feature:output.two-stage-routing"
+      ],
+      "featureIds": [
+        "output.two-stage-routing"
+      ],
+      "canonicalCommands": [
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
       ],
       "platform": "app"
     },
@@ -28436,9 +28681,9 @@
       "version": 1,
       "kind": "capability",
       "name": "chooseResultDestination",
-      "purpose": "Interpret a destination answer into a typed PlacementPlan without placing output",
+      "purpose": "Interpret where output should go: new tab, download format, text box, cursor point, caret, chat, Studio, or keep here",
       "examples": [
-        "please interpret a destination answer into a typed PlacementPlan without placing output"
+        "please interpret where output should go: new tab, download format, text box, cursor point, caret, chat, Studio, or keep here"
       ],
       "inputSchema": {
         "type": "object",
@@ -29506,7 +29751,15 @@
         "material is explicit and preserved",
         "context item exists",
         "Lens is explicit and preserved",
-        "Lens is active on the orb"
+        "Lens is active on the orb",
+        "generation completed into a persisted staged Result Pearl",
+        "a routing request is pending",
+        "live observation is bounded and local",
+        "PlacementPlan is explicit and shown to the user",
+        "PlacementPlan is confirmed and idempotency key has not executed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "surface adapter failed without mutating or retained an exact undo checkpoint",
+        "staged Result Pearl remains persisted"
       ],
       "requiredObservations": [
         "selection",
@@ -29546,11 +29799,23 @@
       ],
       "persistence": [
         "scene.workingSet.context",
-        "scene.workingSet.lenses"
+        "scene.workingSet.lenses",
+        "resultPearls.routing.replace",
+        "resultPearls.routing.plan.replace",
+        "resultPearls.routing.confirm",
+        "resultPearls.routing.execute",
+        "resultPearls.routing.complete",
+        "resultPearls.routing.fail",
+        "resultPearls.routing.cancel"
       ],
       "undo": [
         "restore-orb-context",
-        "restore-orb-lenses"
+        "restore-orb-lenses",
+        "cancel-output-placement",
+        "revise-placement-plan",
+        "undo-output-placement",
+        "retry-output-placement",
+        "request-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -29561,14 +29826,23 @@
       "expectedEffects": [
         "extension-state-changed",
         "orb-context-changed",
-        "orb-lenses-changed"
+        "orb-lenses-changed",
+        "output-destination-requested",
+        "output-placement-interpreted",
+        "output-placement-confirmed",
+        "output-placement-started",
+        "output-placement-completed",
+        "output-placement-failed",
+        "output-placement-cancelled"
       ],
       "tests": [
         "capability-toggleExternalOrbCursor",
-        "feature:companion.orb-runtime"
+        "feature:companion.orb-runtime",
+        "feature:output.two-stage-routing"
       ],
       "featureIds": [
-        "companion.orb-runtime"
+        "companion.orb-runtime",
+        "output.two-stage-routing"
       ],
       "canonicalCommands": [
         "addOrbContext",
@@ -29576,7 +29850,14 @@
         "removeOrbContext",
         "addOrbLens",
         "updateOrbLens",
-        "removeOrbLens"
+        "removeOrbLens",
+        "requestOutputPlacement",
+        "interpretOutputPlacement",
+        "confirmOutputPlacement",
+        "beginOutputPlacement",
+        "completeOutputPlacement",
+        "failOutputPlacement",
+        "cancelOutputPlacement"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -34087,10 +34368,12 @@
       ],
       "tests": [
         "capability-wearExternalPearl",
-        "feature:companion.pearl-wear"
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
       ],
       "featureIds": [
-        "companion.pearl-wear"
+        "companion.pearl-wear",
+        "companion.mother-orbit"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -34197,10 +34480,12 @@
       ],
       "tests": [
         "capability-removeExternalWornPearl",
-        "feature:companion.pearl-wear"
+        "feature:companion.pearl-wear",
+        "feature:companion.mother-orbit"
       ],
       "featureIds": [
-        "companion.pearl-wear"
+        "companion.pearl-wear",
+        "companion.mother-orbit"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",

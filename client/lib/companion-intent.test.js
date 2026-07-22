@@ -24,6 +24,7 @@ import {
   parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
   parsePearlAestheticCommand,
+  parseOutputDestinationCommand,
   parseCompanionReply,
   parseMixedProfileCommand,
   parseSaveChainCommand,
@@ -389,6 +390,19 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
   ]) {
     assert.ok(COMPANION_VERBS[verb], `${verb} is documented for the companion`);
   }
+});
+
+test("output destination intents cover download tab textbox and cursor", () => {
+  assert.deepEqual(parseOutputDestinationCommand("download this as markdown"), {
+    verb: "chooseResultDestination",
+    args: { pearlId: "last", answer: "download this as markdown" },
+  });
+  assert.deepEqual(parseOutputDestinationCommand("open it in a new tab"), {
+    verb: "chooseResultDestination",
+    args: { pearlId: "last", answer: "open it in a new tab" },
+  });
+  assert.equal(parseOutputDestinationCommand("point with the pearl where the output should go").verb, "indicateOutputWithCursor");
+  assert.equal(parseOutputDestinationCommand("drag a text box for the output").verb, "chooseResultDestination");
 });
 
 test("pearl aesthetic commands parse presets, reset, and sample", () => {

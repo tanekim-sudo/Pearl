@@ -366,12 +366,20 @@ function App() {
 
   async function semanticOrbAction(name, args = {}) {
     const byId = new Map(semanticOrbs.map((orb) => [orb.id, orb]));
-    if (name === "clear-wear") {
-      const { saveWornPearlId } = await import("../../../shared/companion-pearl-wear.js");
-      saveWornPearlId(null);
-      await persistSemanticOrbs(semanticOrbs, null);
-      setReadyMessage("Companion is bare — no pearl worn.");
-      return { type: "external-worn-pearl", status: "bare" };
+    if (name === "clear-wear" || name === "remove-wear") {
+      const { removeWornPearlId, loadWornPearlIds, buildWornPearlPack } = await import("../../../shared/companion-pearl-wear.js");
+      removeWornPearlId(name === "remove-wear" ? args.id : null);
+      const remaining = loadWornPearlIds();
+      await persistSemanticOrbs(semanticOrbs, remaining[0] || null);
+      const packs = remaining
+        .map((id) => semanticOrbs.find((entry) => entry.id === id))
+        .filter(Boolean)
+        .map((entry) => buildWornPearlPack(entry));
+      await action("pearl-worn-orbit", { packs, pearlIds: remaining }).catch(() => {});
+      setReadyMessage(remaining.length
+        ? `${remaining.length} pearl${remaining.length === 1 ? "" : "s"} still orbiting the companion.`
+        : "Companion is bare — no pearls orbiting.");
+      return { type: "external-worn-pearl", status: remaining.length ? "worn" : "bare", pearlIds: remaining };
     }
     if (name === "encode-conversation") {
       const {
@@ -497,8 +505,20 @@ function App() {
       }
       await persistSemanticOrbs(semanticOrbs, orb.id);
       if (args.wear !== false) {
-        const { saveWornPearlId } = await import("../../../shared/companion-pearl-wear.js");
-        saveWornPearlId(orb.id);
+        const { addWornPearlId, saveWornPearlId, loadWornPearlIds, loadWornOrbitState, buildWornPearlPack } = await import("../../../shared/companion-pearl-wear.js");
+        if (args.replace === true) saveWornPearlId(orb.id);
+        else addWornPearlId(orb.id);
+        const orbiting = loadWornPearlIds();
+        const packs = orbiting
+          .map((id) => semanticOrbs.find((entry) => entry.id === id) || (id === orb.id ? orb : null))
+          .filter(Boolean)
+          .map((entry) => buildWornPearlPack(entry));
+        await action("pearl-worn-orbit", { packs, pearlIds: loadWornOrbitState().pearlIds }).catch(() => {});
+        setReadyMessage(orbiting.length > 1
+          ? `“${orb.name}” joined the orbit (${orbiting.length} pearls around the companion).`
+          : `“${orb.name}” is orbiting the companion.`);
+      } else {
+        setReadyMessage(`Opened “${orb.name}”.`);
       }
       await action("page-canvas-command", { command: "activatePearlPageCanvas", args: { pearlId: orb.id } }).catch(() => {});
       if (previousPearlId && previousPearlId !== orb.id && pearlSoundscapes[previousPearlId]?.playback === "playing") {
@@ -508,7 +528,6 @@ function App() {
         await controlPearlAudio("play", { pearlId: orb.id }).catch(() => {});
       }
       setActiveView("orbs");
-      setReadyMessage(args.wear !== false ? `Wearing “${orb.name}” — companion has its context.` : `Opened “${orb.name}”.`);
       return { type: "external-semantic-orb-active", id: orb.id, worn: args.wear !== false };
     }
     if (name === "add-context") {

@@ -4,7 +4,9 @@ import { pearlActionPrompt, searchPearlActions } from "../lib/pearl-shell.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
 import { clampCompanionPlacement } from "../lib/companion-safety.js";
-import { loadCompanionAesthetic } from "../../shared/pearl-aesthetic.js";
+import { defaultPearlAesthetic } from "../../shared/pearl-aesthetic.js";
+import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
+import { wornPearlOrbitSlots } from "../../shared/companion-pearl-orbit.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -73,7 +75,8 @@ export default function CompanionOrb({
   const [powerSearch, setPowerSearch] = useState(false);
   const [draft, setDraft] = useState("");
   const [actionQuery, setActionQuery] = useState("");
-  const [aesthetic, setAesthetic] = useState(() => aestheticProp || loadCompanionAesthetic());
+  const [aesthetic, setAesthetic] = useState(() => aestheticProp || defaultPearlAesthetic({ preset: "classic" }));
+  const [wornPacks, setWornPacks] = useState(() => []);
   const [placement, setPlacement] = useState(() => clampCompanionPlacement(
     { ...state.placement, ...readPlacement(storageKey) },
     { width: globalThis.innerWidth, height: globalThis.innerHeight },
@@ -119,11 +122,28 @@ export default function CompanionOrb({
 
   useEffect(() => {
     function onAesthetic(event) {
+      // Mother companion stays classic white unless explicitly companionOnly.
+      if (event.detail?.pearlId && event.detail.pearlId !== "companion") return;
       if (event.detail?.aesthetic) setAesthetic(event.detail.aesthetic);
-      else setAesthetic(loadCompanionAesthetic());
+      else setAesthetic(defaultPearlAesthetic({ preset: "classic" }));
     }
     document.addEventListener("lens:pearl-aesthetic-changed", onAesthetic);
     return () => document.removeEventListener("lens:pearl-aesthetic-changed", onAesthetic);
+  }, []);
+
+  useEffect(() => {
+    function syncWorn(event) {
+      const packs = event?.detail?.packs;
+      if (Array.isArray(packs)) {
+        setWornPacks(packs);
+        return;
+      }
+      const orbit = loadWornOrbitState();
+      setWornPacks(orbit.pearlIds.map((id) => ({ pearlId: id, name: id, aesthetic: null })));
+    }
+    syncWorn();
+    document.addEventListener("lens:worn-pearls-changed", syncWorn);
+    return () => document.removeEventListener("lens:worn-pearls-changed", syncWorn);
   }, []);
 
   useEffect(() => {
@@ -339,6 +359,27 @@ export default function CompanionOrb({
             }}
           ><span>{item.kind === "image" ? "image" : item.kind === "scene" ? "scene" : "context"}</span></button>
         ))}
+        {wornPacks.slice(0, 8).map((pack, index) => {
+          const slot = wornPearlOrbitSlots(wornPacks.length)[index];
+          return <button
+            type="button"
+            className="orb-worn-addon"
+            key={pack.pearlId || pack.id || index}
+            style={slot?.css}
+            title={pack.name || "Worn pearl"}
+            aria-label={`${pack.name || "Worn pearl"}, orbiting companion add-on`}
+            onClick={() => onCommand?.(`inspect worn pearl ${pack.name || ""}`.trim())}
+          >
+            <PhysicalPearl
+              variant="semantic"
+              state="idle"
+              size={20}
+              aesthetic={pack.aesthetic || null}
+              decorative
+            />
+            <span>{pack.name || "Pearl"}</span>
+          </button>;
+        })}
         {(state.workers || []).slice(0, 4).map((worker, index) => (
           <button type="button" className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}${worker.status === "working" ? ", cancel worker" : ""}`} onClick={() => worker.status === "working" && onWorkerCancel?.(worker.id)}>
             <PhysicalPearl variant="worker" state={worker.status === "blocked" ? "blocked" : "executing"} animation="charge" size={18} decorative />{worker.role || "worker"}
@@ -368,16 +409,17 @@ export default function CompanionOrb({
         <PhysicalPearl
           variant="primary"
           state={["listening", "executing", "blocked", "failed", "loading"].includes(phase) ? phase : "idle"}
-          animation={phase === "executing" ? "charge" : (state.workers || []).length > 1 ? "fission" : null}
+          animation={phase === "executing" ? "charge" : wornPacks.length > 1 ? "absorb" : (state.workers || []).length > 1 ? "fission" : null}
           size={compact ? 30 : 34}
-          aesthetic={aesthetic}
+          aesthetic={aesthetic || defaultPearlAesthetic({ preset: "classic" })}
           decorative
         />
         <span className="orb-phase" aria-hidden="true">{
           phase === "listening" ? "Listening"
             : phase === "executing" ? "Working"
-              : state.activeSemanticOrbId ? "Pearl on"
-                : ""
+              : wornPacks.length ? `${wornPacks.length} on`
+                : state.activeSemanticOrbId ? "Pearl on"
+                  : ""
         }</span>
       </button>
       {!expanded && hint && <span className="pearl-start-hint">{hint}</span>}

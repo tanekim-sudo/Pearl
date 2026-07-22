@@ -124,6 +124,38 @@
   transform: translate(-50%,-50%) rotate(calc(-62deg + var(--candidate-index) * 25deg)) translateX(calc(var(--orb-size) * 1.25)) rotate(calc(62deg - var(--candidate-index) * 25deg));
 }
 .orb-candidate i { display: inline-block; width: 4px; height: 4px; margin-right: 6px; border-radius: 50%; background: var(--orb-paper); box-shadow: 0 0 11px rgba(216,194,141,.3); }
+.orb-worn-addon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: auto;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  color: var(--orb-text-3);
+  font-size: 9px;
+  gap: 2px;
+  transform: translate(-50%, -50%) rotate(var(--worn-angle, 0deg)) translateX(var(--worn-radius, 52px)) rotate(calc(-1 * var(--worn-angle, 0deg)));
+  animation: orb-worn-orbit 18s linear infinite;
+  animation-delay: calc(var(--worn-index, 0) * -2.2s);
+}
+.orb-worn-addon span {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .72;
+}
+@keyframes orb-worn-orbit {
+  from { filter: brightness(1); }
+  50% { filter: brightness(1.06); }
+  to { filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-worn-addon { animation: none; }
+}
 .orb-worker {
   position: absolute;
   pointer-events: auto;

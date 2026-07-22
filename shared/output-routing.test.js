@@ -36,11 +36,14 @@ test("every destination family interprets into an explicit confirmation", () => 
     ["replace this selection", "native-replace"],
     ["show it in chat", "chat"],
     ["open it in an editable Pearl Studio tab", "pearl-studio"],
+    ["open it in a new tab", "new-tab"],
     ["put it in the web Scene", "web-scene"],
     ["put it in the Output Frame", "output-frame"],
     ["copy it", "clipboard"],
     ["download a file", "download"],
+    ["download as markdown", "download"],
     ["export PDF", "pdf"],
+    ["point with the pearl cursor", "cursor-indicate"],
   ]);
   for (const [answer, type] of cases) {
     const request = createOutputRoutingRequest(result);
@@ -90,4 +93,14 @@ test("cancel preserves the exact staged checkpoint", () => {
   const cancelled = cancelPlacementRequest(request);
   assert.equal(cancelled.stage, "cancelled");
   assert.deepEqual(cancelled.checkpoint, result.checkpoint);
+});
+
+test("download format and unsupported docx clarify instead of faking success", () => {
+  const request = createOutputRoutingRequest(result);
+  const md = interpretPlacementAnswer("download as markdown", request, observation);
+  assert.equal(md.plan.destination.type, "download");
+  assert.equal(md.plan.destination.file.format, "md");
+  const docx = interpretPlacementAnswer("download as docx", request, observation);
+  assert.equal(docx.plan, null);
+  assert.match(docx.request.clarification, /Word/);
 });

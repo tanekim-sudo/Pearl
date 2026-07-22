@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 56,
+    "features": 57,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,9 +27,9 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 56,
+    "featureContracts": 57,
     "domainCommands": 115,
-    "companionCapabilities": 212,
+    "companionCapabilities": 214,
     "extensionEntries": 80
   },
   "requirements": [
@@ -51,6 +51,7 @@
         "learning.before-after",
         "learning.transcript",
         "companion.pearl-wear",
+        "companion.mother-orbit",
         "highlight.explicit-go",
         "ai.node-gestures",
         "persistence.account-adoption",
@@ -62,8 +63,7 @@
         "registry.cognitive-packages",
         "artifacts.higher-order",
         "companion.personal-vocabulary",
-        "extraction.cognitive-pull-request",
-        "scene.v4"
+        "extraction.cognitive-pull-request"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -88,9 +88,7 @@
         "createSemanticOrb",
         "bindSemanticOrb",
         "addSemanticOrbContext",
-        "createFunctionFromContent",
-        "materializeOnStage",
-        "materializeInOutputFrame"
+        "createFunctionFromContent"
       ],
       "webEntries": [
         "client/lib/companion-observation.js",
@@ -108,6 +106,9 @@
         "client/components/LearnFromChat.jsx",
         "client/components/CompanionOrb.jsx",
         "client/components/OrbUniverseShell.jsx",
+        "client/orb-universe.css",
+        "extension/src/content/bridge.js",
+        "shared/companion-pearl-orbit.js",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
         "client/components/CompanionChat.jsx",
@@ -118,8 +119,7 @@
         "client/components/CognitivePackageRegistry.jsx",
         "client/components/CognitiveWorkflowStudio.jsx:higher-order",
         "client/components/CognitiveWorkflowStudio.jsx:vocabulary",
-        "client/components/CognitiveWorkflowStudio.jsx:pull-request",
-        "client/components/OrbUniverseShell.jsx:data-semantic-anchor=\"scene-stage\""
+        "client/components/CognitiveWorkflowStudio.jsx:pull-request"
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -170,6 +170,7 @@
         "suggestPearlForConversation",
         "wearPearl",
         "removeWornPearl",
+        "listWornPearls",
         "inspectWornPearl",
         "cancelPendingBrush",
         "moveAiNode",
@@ -275,8 +276,7 @@
         "lens.personal-command-vocabulary.v1",
         "personalCommandVocabulary",
         "lens.cognitive-pull-requests.v1",
-        "cognitivePullRequestHandoff",
-        "lens.scenes.v4"
+        "cognitivePullRequestHandoff"
       ],
       "automatedTests": [
         "shared/workspace-observation.test.js",
@@ -297,6 +297,7 @@
         "shared/before-after-examples.test.js",
         "shared/transcript-learning.test.js",
         "shared/companion-pearl-wear.test.js",
+        "shared/companion-pearl-orbit.test.js",
         "client/lib/companion-intent.test.js",
         "shared/lens-runtime.test.js",
         "client/lib/ai-layout.test.js",
@@ -315,8 +316,7 @@
         "shared/higher-order-artifacts.test.js",
         "shared/personal-command-vocabulary.test.js",
         "shared/cognitive-pull-request.test.js",
-        "shared/research-grounded-creativity.test.js",
-        "client/lib/unified-workspace.test.js"
+        "shared/research-grounded-creativity.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -336,6 +336,7 @@
         "shared/before-after-examples.js",
         "shared/transcript-learning.js",
         "shared/companion-pearl-wear.js",
+        "shared/companion-pearl-orbit.js",
         "shared/lens-runtime.js",
         "client/lib/board-sync.js",
         "extension/scripts/package.mjs",
@@ -346,8 +347,7 @@
         "shared/cognitive-package.js",
         "shared/higher-order-artifacts.js",
         "shared/personal-command-vocabulary.js",
-        "shared/cognitive-pull-request.js",
-        "client/lib/unified-workspace.js"
+        "shared/cognitive-pull-request.js"
       ],
       "reachable": true
     },
@@ -1006,6 +1006,7 @@
         "extension/src/content/result-pearls.js",
         "extension/src/result/main.js",
         "extension/src/sidepanel/main.jsx",
+        "client/App.jsx",
         "client/components/PhysicalPearl.jsx",
         "client/components/CompanionOrb.jsx",
         "client/components/SemanticOrbLayer.jsx",
@@ -1016,6 +1017,7 @@
         "chooseResultDestination",
         "confirmResultPlacement",
         "cancelResultPlacement",
+        "indicateOutputWithCursor",
         "executeUnifiedPearlAction",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
@@ -1029,6 +1031,7 @@
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1044,6 +1047,7 @@
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "executeExternalPearlAction"
       ],
       "persistenceAndMigrations": [
@@ -1059,6 +1063,7 @@
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs",
         "shared/output-routing.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/physical-pearl.test.js",
         "scripts/pearl-visual-contract-audit.mjs",
         "docs/pearl-visual-contract.md"
@@ -1109,15 +1114,18 @@
       "webEntries": [
         "extension/src/content/result-pearls.js",
         "extension/src/sidepanel/main.jsx",
+        "client/App.jsx",
         "extension/src/result/main.js"
       ],
       "companionCapabilities": [
         "chooseResultDestination",
         "confirmResultPlacement",
         "cancelResultPlacement",
+        "indicateOutputWithCursor",
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
         "openExternalResultPearlTab",
@@ -1132,6 +1140,7 @@
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
         "openExternalResultPearlTab",
@@ -1151,6 +1160,7 @@
       ],
       "automatedTests": [
         "shared/output-routing.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs"
@@ -2531,7 +2541,8 @@
         "client/components/CompanionChat.jsx:companion-mode-bar",
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "extension/src/content/result-pearls.js",
-        "extension/src/sidepanel/main.jsx"
+        "extension/src/sidepanel/main.jsx",
+        "client/App.jsx"
       ],
       "companionCapabilities": [
         "observeWorkspace",
@@ -2548,6 +2559,7 @@
         "chooseResultDestination",
         "confirmResultPlacement",
         "cancelResultPlacement",
+        "indicateOutputWithCursor",
         "capturePageSelection",
         "pressExternalGo",
         "setExternalLensContext",
@@ -2590,7 +2602,8 @@
         "client/lib/companion-executor.test.js",
         "client/lib/companion-capability-graph.test.js",
         "shared/function-test-bench.test.js",
-        "shared/output-routing.test.js"
+        "shared/output-routing.test.js",
+        "client/lib/companion-intent.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -2665,6 +2678,7 @@
         "extension/src/content/result-pearls.js",
         "extension/src/result/main.js",
         "extension/src/sidepanel/main.jsx",
+        "client/App.jsx",
         "client/components/PearlStudioView.jsx"
       ],
       "companionCapabilities": [
@@ -2672,6 +2686,7 @@
         "chooseResultDestination",
         "confirmResultPlacement",
         "cancelResultPlacement",
+        "indicateOutputWithCursor",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -2699,6 +2714,7 @@
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -2722,6 +2738,7 @@
         "chooseExternalResultDestination",
         "confirmExternalResultPlacement",
         "cancelExternalResultPlacement",
+        "toggleExternalOrbCursor",
         "executeExternalPearlAction"
       ],
       "persistenceAndMigrations": [
@@ -2743,6 +2760,7 @@
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "shared/output-routing.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/pearl-studio.test.js",
         "shared/pearl-version-history.test.js"
       ],
@@ -2999,5 +3017,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T05:20:27.231Z"
+  "generatedAt": "2026-07-22T05:52:46.795Z"
 }

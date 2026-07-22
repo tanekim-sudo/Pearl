@@ -86,12 +86,22 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("companion.pearl-wear", {
     domains: ["scene", "interface", "function"],
     commands: ["activateSemanticOrb", "createSemanticOrb", "bindSemanticOrb", "addSemanticOrbContext"],
-    ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx"],
-    companion: ["wearPearl", "removeWornPearl", "inspectWornPearl", "encodeConversationAsPearl", "suggestPearlForConversation"],
+    ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx", "client/orb-universe.css"],
+    companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "encodeConversationAsPearl", "suggestPearlForConversation"],
     extension: ["wearExternalPearl", "removeExternalWornPearl", "encodeExternalConversationAsPearl"],
     persistence: ["lens.companion.worn-pearl.v1"],
-    tests: ["shared/companion-pearl-wear.test.js", "client/lib/companion-intent.test.js"],
+    tests: ["shared/companion-pearl-wear.test.js", "shared/companion-pearl-orbit.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/companion-pearl-wear.js",
+  }),
+  feature("companion.mother-orbit", {
+    domains: ["scene", "interface"],
+    commands: [],
+    ui: ["client/components/CompanionOrb.jsx", "extension/src/content/bridge.js", "shared/companion-pearl-orbit.js"],
+    companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl"],
+    extension: ["wearExternalPearl", "removeExternalWornPearl"],
+    persistence: ["lens.companion.worn-pearl.v1"],
+    tests: ["shared/companion-pearl-orbit.test.js", "shared/companion-pearl-wear.test.js"],
+    owner: "shared/companion-pearl-orbit.js",
   }),
   feature("highlight.explicit-go", {
     domains: ["paper", "ai", "move", "function", "lens"], commands: [],
@@ -471,11 +481,11 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("output.two-stage-routing", {
     domains: ["result", "extension", "ai", "interface"],
     commands: ["requestOutputPlacement", "interpretOutputPlacement", "confirmOutputPlacement", "beginOutputPlacement", "completeOutputPlacement", "failOutputPlacement", "cancelOutputPlacement"],
-    ui: ["extension/src/content/result-pearls.js", "extension/src/sidepanel/main.jsx"],
-    companion: ["chooseResultDestination", "confirmResultPlacement", "cancelResultPlacement"],
-    extension: ["chooseExternalResultDestination", "confirmExternalResultPlacement", "cancelExternalResultPlacement"],
+    ui: ["extension/src/content/result-pearls.js", "extension/src/sidepanel/main.jsx", "client/App.jsx"],
+    companion: ["chooseResultDestination", "confirmResultPlacement", "cancelResultPlacement", "indicateOutputWithCursor"],
+    extension: ["chooseExternalResultDestination", "confirmExternalResultPlacement", "cancelExternalResultPlacement", "toggleExternalOrbCursor"],
     persistence: ["pearlEntities.v1.outputRouting", "resultPearls.routing"],
-    tests: ["shared/output-routing.test.js"],
+    tests: ["shared/output-routing.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/output-routing.js",
   }),
   feature("studio.pearl", {
@@ -588,7 +598,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 56,
+  features: 57,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

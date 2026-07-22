@@ -25,8 +25,8 @@ test("worn pearl pack exposes context lenses and bound functions", () => {
   assert.equal(pack.lenses.length, 1);
   assert.equal(pack.functions[0].name, "LP memo");
   assert.equal(pack.capabilities.canExecuteBoundFunctions, true);
-  assert.match(companionWearPrompt(pack), /Worn pearl/);
-  assert.match(companionWearPrompt(null), /always available/);
+  assert.match(companionWearPrompt(pack), /orbiting the mother companion/);
+  assert.match(companionWearPrompt(null), /Mother pearl|always available/i);
 });
 
 test("conversation compresses into named pearl + replayable function", () => {

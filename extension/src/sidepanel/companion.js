@@ -199,8 +199,15 @@ export const EXTENSION_VERBS = Object.freeze({
   setExternalBeforeAfterText: ({ args, setBeforeAfterText }) => setBeforeAfterText(args.side, args.text),
   inferExternalBeforeAfter: ({ inferBeforeAfter }) => inferBeforeAfter(),
   captureExternalVisibleTab: ({ action }) => action("capture-visible-tab", { authorized: true }),
-  wearExternalPearl: ({ args, semanticOrbAction }) => semanticOrbAction("open", { id: args.id, wear: true }),
-  removeExternalWornPearl: ({ semanticOrbAction }) => semanticOrbAction("clear-wear", {}),
+  wearExternalPearl: ({ args, semanticOrbAction }) => semanticOrbAction("open", {
+    id: args.id,
+    wear: true,
+    replace: args.replace === true,
+  }),
+  removeExternalWornPearl: ({ args, semanticOrbAction }) => semanticOrbAction(
+    args?.id ? "remove-wear" : "clear-wear",
+    { id: args?.id },
+  ),
   setExternalPearlAesthetic: ({ args, action, confirmed }) => applyExternalAesthetic({ args, action, confirmed }, {
     preset: args.preset,
     colors: args.colors,

@@ -24,6 +24,7 @@ import {
 } from "../../../shared/pearl-power-fx.js";
 import { findOnScreenMatching, matchRectsForPowerFx } from "../../../shared/pearl-screen-match.js";
 import { normalizePearlAesthetic, pearlAestheticStyle } from "../../../shared/pearl-aesthetic.js";
+import { wornPearlOrbitSlots } from "../../../shared/companion-pearl-orbit.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
@@ -44,7 +45,7 @@ function mountPageOrb() {
     svg{width:36px;height:36px;overflow:visible}.pearl{transform-origin:50px 50px;animation:respire 4s ease-in-out infinite}.shadow{fill:rgba(0,0,0,.16);filter:blur(1.1px)}.state{fill:none;stroke:rgba(232,239,235,.4);stroke-width:.8;opacity:0;stroke-dasharray:2 4}.core{stroke:rgba(255,255,255,.46);stroke-width:.62}.nucleus{mix-blend-mode:soft-light;opacity:.58;transform:translate(calc(var(--pearl-light-x) * -1px),calc(var(--pearl-light-y) * -.8px));transition:opacity .24s ease-out,transform .22s ease-out}.nacre{mix-blend-mode:screen;opacity:calc(.34 + var(--pearl-motion) * .3);transform:translate(calc(var(--pearl-light-x) * 2px),calc(var(--pearl-light-y) * 1.7px));transform-origin:50px 50px;transition:opacity .24s ease-out,transform .18s ease-out}.reflection{fill:rgba(58,69,69,.1);filter:blur(2.2px);transform:translate(calc(var(--pearl-light-x) * -1.2px),calc(var(--pearl-light-y) * -1px));transition:transform .22s ease-out}.rim{stroke-width:.8}.glint{fill:rgba(255,255,255,.26);filter:blur(.45px)}.pinlight{fill:#fff;opacity:.96}
     .shell[data-state=listening] .nucleus,.shell[data-state=absorbing] .nucleus,.shell[data-state=planning] .nucleus{opacity:.82;filter:sepia(.1) saturate(1.06)}.shell[data-state=absorbing] .state,.shell[data-state=planning] .state{opacity:.55}.shell[data-state=branching] .nacre{opacity:.68}.shell[data-state=blocked] .pearl{filter:saturate(.45) brightness(.88)}.shell[data-state=blocked] .nucleus{opacity:.3}
     .phase{position:absolute;top:40px;right:0;white-space:nowrap;text-align:right;color:var(--field-text);background:transparent;padding:2px 0;opacity:0}.shell.dock-left .phase{right:auto;left:0;text-align:left}.shell:not([data-state=idle]) .phase{opacity:.62}
-    .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate{position:absolute}.context-dot{width:1px;height:10px;border:0;background:linear-gradient(rgba(238,244,240,.06),rgba(238,244,240,.46),rgba(238,244,240,.06));transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:16px;height:16px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate>span:last-child{display:none}.shell.candidates .candidate{opacity:.72}.shell.open .orbit{opacity:.18}
+    .orbit{position:absolute;left:18px;top:18px;width:0;height:0;pointer-events:none}.context-dot,.lens-ring,.candidate,.worn-addon{position:absolute}.context-dot{width:1px;height:10px;border:0;background:linear-gradient(rgba(238,244,240,.06),rgba(238,244,240,.46),rgba(238,244,240,.06));transform:translate(-50%,-50%) rotate(calc(var(--i)*72deg)) translateX(44px)}.lens-ring{width:76px;height:76px;transform:translate(-50%,-50%);border:1px solid rgba(224,235,230,.22);border-radius:50%;opacity:0}.shell.lens .lens-ring{opacity:.55}.candidate{width:16px;height:16px;color:transparent;font-size:0;transform:translate(-50%,-50%) rotate(calc(125deg + var(--i)*28deg)) translateX(56px);opacity:0}.candidate>span:last-child{display:none}.shell.candidates .candidate{opacity:.72}.worn-addon{width:18px;height:18px;transform:translate(-50%,-50%) rotate(var(--worn-angle,0deg)) translateX(var(--worn-radius,48px)) rotate(calc(-1 * var(--worn-angle,0deg)));opacity:.9}.worn-addon .physical-pearl{width:18px;height:18px}.shell.open .orbit{opacity:.18}.shell.cursor-mode .worn-addon{display:none}
     .emission{position:absolute;right:48px;top:-100px;width:300px;display:none;padding:14px 0 14px 16px;color:#efeee8;background:rgba(9,11,12,.98);border:0;border-left:1px solid rgba(235,240,237,.24);border-radius:0;box-shadow:none;pointer-events:auto}.shell.open .emission{display:grid;gap:8px}.emission header{display:flex;align-items:center;justify-content:space-between;padding-right:12px;color:#8e9390;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.emission header b{color:#efeee8;font-weight:600}.emission button,.emission input{min-height:40px;border:0;border-bottom:1px solid rgba(255,255,255,.11);border-radius:0;background:transparent;color:#efeee8;padding:7px;text-align:left}.emission input{width:100%;outline:none}.emission nav{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.1)}.emission nav button{text-align:center;font-size:10px}.emission nav button[aria-current=true]{color:var(--focus);border-color:var(--focus)}.view{display:none;gap:0}.view.active{display:grid}.context-list{color:#aaa89f}.context-list b{color:#efeee8}.taste{display:flex;gap:0}.taste button{text-align:center;flex:1}.minimize{position:absolute;right:auto;left:-44px;top:0;width:36px;height:36px;display:none;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#0e1112}.shell.open .minimize{display:grid}.shell.minimized{width:36px;height:36px}.shell.minimized .orb,.shell.minimized svg{width:36px;height:36px}.shell.minimized .emission,.shell.minimized .orbit{display:none}
     .shell.dock-left .emission{left:48px;right:auto}
     .shell.cursor-mode{width:18px;height:18px;pointer-events:none}.shell.cursor-mode .orb{inset:auto;width:18px;height:18px;pointer-events:none;filter:none}.shell.cursor-mode svg{width:18px;height:18px}.shell.cursor-mode .emission,.shell.cursor-mode .orbit,.shell.cursor-mode .minimize,.shell.cursor-mode .phase{display:none!important}.shell.cursor-mode[data-cursor-presentation=text]{opacity:.72}.shell.cursor-mode[data-cursor-presentation=action] .physical-pearl__hotspot{stroke-width:3}.shell.cursor-mode[data-cursor-presentation=grab] .physical-pearl__nucleus{transform:translate(-1px,1px)}.shell.cursor-mode[data-cursor-presentation=resize]{opacity:.78}.shell.cursor-mode.pressed .orb{transform:scale(.94)}
@@ -499,12 +500,33 @@ function mountPageOrb() {
       const aesthetic = normalizePearlAesthetic(aestheticInput);
       const vars = pearlAestheticStyle(aesthetic);
       const visual = shell.querySelector(".physical-pearl") || shell.querySelector(".orb");
-      const host = visual?.closest?.(".physical-pearl") ? visual : shell.querySelector(".orb");
-      const target = host || shell;
+      const hostNode = visual?.closest?.(".physical-pearl") ? visual : shell.querySelector(".orb");
+      const target = hostNode || shell;
       target.dataset.pearlAesthetic = aesthetic.preset;
       target.dataset.pearlSurrounding = aesthetic.surrounding;
       for (const [key, value] of Object.entries(vars)) target.style.setProperty(key, value);
       return true;
+    },
+    setWornOrbit(packs = []) {
+      orbit.querySelectorAll(".worn-addon").forEach((node) => node.remove());
+      const list = (Array.isArray(packs) ? packs : []).slice(0, 8);
+      const slots = wornPearlOrbitSlots(list.length, { radius: 48 });
+      list.forEach((pack, index) => {
+        const node = document.createElement("span");
+        node.className = "worn-addon";
+        node.title = pack.name || pack.pearlId || "Worn pearl";
+        Object.assign(node.style, slots[index]?.css || {});
+        node.innerHTML = physicalPearlMarkup({
+          id: `page-worn-${index}`,
+          variant: "semantic",
+          state: "idle",
+          size: 18,
+          decorative: true,
+          aesthetic: pack.aesthetic || null,
+        });
+        orbit.append(node);
+      });
+      return list.length;
     },
     seekTo(point, durationMs = 700) {
       if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
@@ -703,6 +725,9 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     }
     if (type === "pearl-aesthetic-apply") {
       return { ok: true, applied: pageOrb?.applyAesthetic(payload.aesthetic) === true };
+    }
+    if (type === "pearl-worn-orbit") {
+      return { ok: true, count: pageOrb?.setWornOrbit(payload.packs || payload.pearlIds || []) ?? 0 };
     }
     if (type === "output-placement-effect") {
       const destination = payload.destination || {};

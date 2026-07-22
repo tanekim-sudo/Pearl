@@ -254,10 +254,15 @@ import { dispatchPearlPowerFx, powerFxForCommand, MAX_FILAMENT_TARGETS } from ".
 import { findOnScreenMatching, matchRectsForPowerFx } from "../shared/pearl-screen-match.js";
 import { pearlAnimationForCommand } from "../shared/pearl-animation.js";
 import {
+  addWornPearlId,
+  buildMergedWornPearlPack,
   buildWornPearlPack,
   companionWearPrompt,
   compressConversationToPearlSpec,
+  loadWornOrbitState,
   loadWornPearlId,
+  loadWornPearlIds,
+  removeWornPearlId,
   saveWornPearlId,
   suggestPearlForConversation,
 } from "../shared/companion-pearl-wear.js";
@@ -271,6 +276,10 @@ import {
   normalizePearlAesthetic,
   saveCompanionAesthetic,
 } from "../shared/pearl-aesthetic.js";
+import {
+  formatOutputForDownload,
+  inferDownloadFormat,
+} from "../shared/output-routing.js";
 import { parseTranscript } from "../shared/transcript-learning.js";
 import { compileAutomationPearl } from "../shared/automation-pearl.js";
 import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
@@ -296,6 +305,7 @@ import {
   parseTasteNavigationCommand,
   parseTranscriptLearningCommand,
   parsePearlAestheticCommand,
+  parseOutputDestinationCommand,
   parseSaveChainCommand,
   parseCompanionPlan,
   parseCompanionReply,
@@ -12129,14 +12139,30 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
   function resolveWornPearlPack(preferredId = null) {
     const scene = currentSemanticScene();
-    const orbs = scene?.semanticOrbs || [];
-    const wornId = preferredId || loadWornPearlId() || scene?.activeSemanticOrbId || null;
-    const pearl = orbs.find((entry) => entry.id === wornId && !entry.archived)
-      || (preferredId ? null : orbs.find((entry) => entry.id === scene?.activeSemanticOrbId && !entry.archived))
-      || null;
-    if (!pearl) return null;
+    const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
     const functions = (operatorsRef.current || []).filter((entry) => entry.kind === "function" || entry.processGraph);
-    return buildWornPearlPack(pearl, { functions });
+    const orbit = loadWornOrbitState();
+    const ids = preferredId
+      ? [preferredId]
+      : (orbit.pearlIds.length ? orbit.pearlIds : (scene?.activeSemanticOrbId ? [scene.activeSemanticOrbId] : []));
+    const pearls = ids.map((id) => orbs.find((entry) => entry.id === id)).filter(Boolean);
+    if (!pearls.length) return null;
+    if (pearls.length === 1) return buildWornPearlPack(pearls[0], { functions });
+    return buildMergedWornPearlPack(pearls, { functions });
+  }
+
+  function publishWornOrbit() {
+    const pack = resolveWornPearlPack();
+    const orbit = loadWornOrbitState();
+    document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
+      detail: {
+        pearlIds: orbit.pearlIds,
+        primaryPearlId: orbit.primaryPearlId,
+        packs: (pack?.packs || (pack ? [pack] : [])),
+        orbit: pack?.orbit || null,
+      },
+    }));
+    return pack;
   }
 
   function resolvePearlByNameOrId(id, name) {
@@ -12646,17 +12672,37 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         if (plan.destination.type === "clipboard") {
           await navigator.clipboard.writeText(text);
           effect = { type: "clipboard", characters: text.length };
-        } else if (plan.destination.type === "download") {
-          const url = URL.createObjectURL(new Blob([text], { type: plan.destination.file?.type || "text/plain" }));
-          const anchor = document.createElement("a");
-          anchor.href = url;
-          anchor.download = plan.destination.file?.name || "pearl-output.txt";
-          anchor.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1_000);
-          effect = { type: "download", fileName: anchor.download };
-        } else if (plan.destination.type === "pearl-studio") {
-          window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId } }));
-          effect = { type: "pearl-studio", opened: true };
+        } else if (plan.destination.type === "download" || plan.destination.type === "pdf") {
+          const formatKey = plan.destination.file?.format || (plan.destination.type === "pdf" ? "pdf" : "txt");
+          if (formatKey === "pdf") {
+            window.dispatchEvent(new CustomEvent("lens:output-placement", { detail: { pearlId: a.pearlId, plan } }));
+            effect = { type: "pdf", deferred: true };
+          } else {
+            const body = formatOutputForDownload(text, formatKey);
+            const url = URL.createObjectURL(new Blob([body], { type: plan.destination.file?.type || "text/plain" }));
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = plan.destination.file?.name || `pearl-output.${inferDownloadFormat("", { format: formatKey }).ext || "txt"}`;
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1_000);
+            effect = { type: "download", fileName: anchor.download, format: formatKey };
+          }
+        } else if (plan.destination.type === "pearl-studio" || plan.destination.type === "new-tab") {
+          window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId, newTab: true } }));
+          effect = { type: plan.destination.type, opened: true };
+        } else if (plan.destination.type === "cursor-indicate") {
+          document.dispatchEvent(new CustomEvent("lens:orb-cursor-command", {
+            detail: { enabled: true, source: "output-placement" },
+          }));
+          window.dispatchEvent(new CustomEvent("lens:output-placement", {
+            detail: { pearlId: a.pearlId, plan, mode: "cursor-indicate" },
+          }));
+          effect = { type: "cursor-indicate", cursorArmed: true };
+        } else if (["new-textbox", "companion-region", "existing-textbox", "user-region"].includes(plan.destination.type)) {
+          window.dispatchEvent(new CustomEvent("lens:output-placement", {
+            detail: { pearlId: a.pearlId, plan, mode: "textbox", pretty: true },
+          }));
+          effect = { type: plan.destination.type, textbox: true };
         } else if (["margin-pearl", "chat", "web-scene", "output-frame"].includes(plan.destination.type)) {
           window.dispatchEvent(new CustomEvent("lens:output-placement", { detail: { pearlId: a.pearlId, plan } }));
           effect = { type: plan.destination.type, local: true };
@@ -12777,7 +12823,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     },
     activateSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: a.id } });
-      if (a.id) saveWornPearlId(a.id);
+      if (a.id) {
+        addWornPearlId(a.id);
+        publishWornOrbit();
+      }
       return { effectId: `semantic-orb-active:${a.id || "scene"}`, id: a.id || null };
     },
     wearPearl: async (a, tk) => {
@@ -12792,11 +12841,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           visibleText: "No matching pearl to wear. Companion still works — create one, or name the pearl to put on.",
         };
       }
-      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`) || document.querySelector(".companion-orb");
+      const mother = document.querySelector(".companion-orb");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`) || mother;
       if (host) await tk.moveTo(host);
+      if (mother && host !== mother) await tk.moveTo(mother);
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: pearl.id } });
-      saveWornPearlId(pearl.id);
-      const pack = resolveWornPearlPack(pearl.id);
+      if (a.replace === true) saveWornPearlId(pearl.id);
+      else addWornPearlId(pearl.id);
+      const pack = publishWornOrbit();
       document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
         detail: { pearlId: pearl.id, semantic: "absorb", durationMs: 420 },
       }));
@@ -12805,20 +12857,57 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         type: "worn-pearl",
         status: "worn",
         object: pack,
-        effects: ["pearl-worn"],
+        effects: ["pearl-worn", "pearl-orbit-updated"],
         visibleText: companionWearPrompt(pack),
       };
     },
     removeWornPearl: async (a, tk) => {
-      saveWornPearlId(null);
-      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: null } }).catch(() => {});
+      const target = a.id || a.name
+        ? resolvePearlByNameOrId(a.id, a.name)
+        : null;
+      if (target?.id) removeWornPearlId(target.id);
+      else if (a.id || a.name) {
+        await tk.wait(80);
+        return {
+          type: "worn-pearl",
+          status: "missing",
+          effects: [],
+          visibleText: "That pearl is not orbiting the companion.",
+        };
+      } else {
+        removeWornPearlId(null);
+      }
+      const remaining = loadWornPearlIds();
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "activateSemanticOrb",
+        args: { id: remaining[0] || null },
+      }).catch(() => {});
+      const pack = publishWornOrbit();
       await tk.wait(120);
       return {
         type: "worn-pearl",
-        status: "bare",
-        object: null,
-        effects: ["pearl-removed"],
-        visibleText: companionWearPrompt(null),
+        status: pack ? "worn" : "bare",
+        object: pack,
+        effects: ["pearl-removed", "pearl-orbit-updated"],
+        visibleText: companionWearPrompt(pack),
+      };
+    },
+    listWornPearls: async (a, tk) => {
+      const pack = resolveWornPearlPack();
+      const orbit = loadWornOrbitState();
+      await tk.wait(60);
+      return {
+        type: "worn-pearl-orbit",
+        object: {
+          motherId: "companion-mother",
+          pearlIds: orbit.pearlIds,
+          packs: pack?.packs || (pack ? [pack] : []),
+          orbit: pack?.orbit || null,
+        },
+        effects: ["worn-pearl-listed"],
+        visibleText: pack
+          ? `${orbit.pearlIds.length} pearl${orbit.pearlIds.length === 1 ? "" : "s"} orbiting the mother companion.`
+          : "No pearls are orbiting the mother companion.",
       };
     },
     inspectWornPearl: async (a, tk) => {
@@ -12830,6 +12919,25 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         object: pack,
         effects: ["worn-pearl-inspected"],
         visibleText: companionWearPrompt(pack),
+      };
+    },
+    indicateOutputWithCursor: async (a, tk) => {
+      document.dispatchEvent(new CustomEvent("lens:orb-cursor-command", {
+        detail: { enabled: a.enabled !== false, source: "companion-output" },
+      }));
+      await tk.wait(120);
+      if (a.pearlId && a.answer) {
+        return runCanonicalPearlAction("interpretOutputPlacement", {
+          resultId: a.pearlId,
+          answer: a.answer || "point with the pearl cursor",
+          observation: a.observation || {},
+        }, a.pearlId);
+      }
+      return {
+        type: "orb-cursor-state",
+        enabled: a.enabled !== false,
+        effects: ["orb-cursor-toggled", "output-cursor-indicate"],
+        visibleText: "Mother pearl is the cursor — point where the output should go, then confirm.",
       };
     },
     setPearlAesthetic: async (a, tk) => applyPearlAestheticChange(a, tk),
@@ -17000,6 +17108,22 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (aestheticCommand) {
       executeCompanionScript([{ verb: aestheticCommand.verb, args: aestheticCommand.args || {} }], {
         title: "customize pearl appearance",
+      });
+      return null;
+    }
+    const destinationCommand = parseOutputDestinationCommand(text);
+    if (destinationCommand) {
+      const args = { ...(destinationCommand.args || {}) };
+      if (args.pearlId === "last") {
+        const store = load(PEARL_STORE_KEY, { entities: {}, activePearlId: null });
+        const routing = Object.values(store.entities || {}).find((entity) => entity?.outputRouting && ["choosing", "clarifying", "confirming", "confirmed"].includes(entity.outputRouting.stage));
+        args.pearlId = routing?.id || store.activePearlId;
+      }
+      if (!args.pearlId && destinationCommand.verb !== "indicateOutputWithCursor") {
+        return { visible: true, text: "Which result should I place? Select a staged result pearl first." };
+      }
+      executeCompanionScript([{ verb: destinationCommand.verb, args }], {
+        title: "route pearl output",
       });
       return null;
     }
