@@ -48,6 +48,17 @@ test("platform filtering keeps shared sections and drops the other surface", () 
   assert.ok(extension.some((section) => section.id === "begin"));
 });
 
+test("guide teaches Reef home and Studio Moves → Functions → Lenses order", () => {
+  const studio = PEARL_GUIDE_SECTIONS.find((section) => section.id === "studio");
+  const reef = PEARL_GUIDE_SECTIONS.find((section) => section.id === "reef");
+  assert.ok(studio);
+  assert.ok(reef);
+  assert.match(studio.summary, /Moves → Functions → Lenses/);
+  assert.match(studio.items[0].gesture, /Triple-click/);
+  assert.match(reef.summary, /Reef|home/i);
+  assert.equal(reef.items.find((item) => item.id === "open-reef")?.command, "open the reef");
+});
+
 test("guide open record normalizes and increments", () => {
   assert.equal(PEARL_GUIDE_STORAGE_KEY, "lens.pearl.guide.v1");
   const fresh = normalizePearlGuideRecord(null);

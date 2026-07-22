@@ -38,20 +38,20 @@ export const PEARL_GUIDE_SECTIONS = Object.freeze([
   Object.freeze({
     id: "studio",
     title: "Pearl Studio",
-    summary: "Open a pearl to inspect and edit what it carries.",
+    summary: "Triple-click opens a focused single-pearl view ordered Moves → Functions → Lenses.",
     platforms: Object.freeze(["app"]),
     items: Object.freeze([
-      Object.freeze({ id: "open-studio", label: "Open Studio", detail: "Triple-click the pearl, or focus it and press Shift+Enter.", gesture: "Triple-click the pearl", command: null }),
+      Object.freeze({ id: "open-studio", label: "Open Studio", detail: "Triple-click the pearl, or focus it and press Shift+Enter. Studio shows Moves (transformations), then Functions (compositions), then Lenses (context and understanding).", gesture: "Triple-click the pearl", command: null }),
     ]),
   }),
   Object.freeze({
-    id: "library",
-    title: "Saved work and library",
-    summary: "Moves repeat one action, Functions carry a process, Lenses shape context.",
+    id: "reef",
+    title: "Reef — home dashboard",
+    summary: "The Reef is home: every pearl spread out so you can mix, match, and merge.",
     platforms: Object.freeze(["app"]),
     items: Object.freeze([
-      Object.freeze({ id: "open-library", label: "See saved work", detail: "Ask the pearl for your library of Scenes, Moves, Functions, and Lenses.", gesture: null, command: "show my saved library" }),
-      Object.freeze({ id: "save-as", label: "Save a selection", detail: "Keep any selection as a Move, Function, or Lens.", gesture: null, command: "save this as…" }),
+      Object.freeze({ id: "open-reef", label: "Go to the Reef", detail: "Ask Pearl to go home or open the Reef. Touch pearls to open their Scene, or ask the companion to merge and rearrange.", gesture: null, command: "open the reef" }),
+      Object.freeze({ id: "save-as", label: "Save a selection", detail: "Keep any selection as a Move, Function, or Lens — always in that order.", gesture: null, command: "save this as…" }),
     ]),
   }),
   Object.freeze({

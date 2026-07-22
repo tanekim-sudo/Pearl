@@ -101,7 +101,7 @@ test("Companion and Studio remain explicit without simultaneous management clutt
   const orb = source("client/components/CompanionOrb.jsx");
   const studio = source("client/components/PearlStudioView.jsx");
   const extensionStudio = source("extension/src/result/main.js");
-  assert.match(orb, /click to ask · hold to speak · Shift\+Enter for Studio/);
+  assert.match(orb, /click to ask · hold to speak · .*Shift\+Enter for Studio/);
   assert.match(orb, /triple-click or press Shift\+Enter for Studio/);
   assert.match(orb, />Open Studio<\/button>/);
   assert.match(orb, /!powerSearch && !approval && !nextAction/);
@@ -109,9 +109,18 @@ test("Companion and Studio remain explicit without simultaneous management clutt
   assert.match(studio, />Inspect structure<\/button>/);
   assert.match(studio, /structureOpen && <>/);
   assert.match(studio, /CognitiveLayerStudio/);
+  assert.match(studio, /Back to Reef/);
   assert.match(extensionStudio, /studio-inspect/);
   assert.match(extensionStudio, /setStructureOpen\(false\)/);
   assert.match(extensionStudio, /CognitiveLayerStudio/);
+  const layerStudio = source("client/components/CognitiveLayerStudio.jsx");
+  assert.match(layerStudio, /Moves → Functions → Lenses/);
+  assert.match(layerStudio, /PEARL_STUDIO_COGNITIVE_SECTION_ORDER/);
+  const shell = source("client/components/OrbUniverseShell.jsx");
+  assert.match(shell, /orb-reef-home/);
+  assert.match(shell, /collectReefPearls/);
+  assert.match(shell, /open\(\?: the\)\? reef/);
+  assert.match(source("client/lib/companion-capabilities.js"), /open the reef/);
 });
 
 test("every capability family remains reachable by intent and relevant Studio commands", () => {
@@ -150,7 +159,8 @@ test("cold first use is visible and renders only the actionable primary Pearl", 
   assert.match(universe, /const firstUse = isRoot && scenes\.length === 0/);
   assert.match(universe, /const emptyLibrary = !isRoot && scenes\.length === 0/);
   assert.match(universe, /Click Pearl to begin/);
-  assert.match(universe, /No saved work yet\./);
+  assert.match(universe, /No pearls on the Reef yet\./);
+  assert.match(universe, /The Reef is home/);
   assert.doesNotMatch(styles, /\.orb-home-intro,\s*\.orb-home-prompt\s*\{\s*display:\s*none/);
   assert.match(styles, /\.orb-universe:has\(\.companion-orb-shell\.expanded\) \.orb-home-prompt/);
   assert.doesNotMatch(universe, /className="orb-continuation-pearl"/);

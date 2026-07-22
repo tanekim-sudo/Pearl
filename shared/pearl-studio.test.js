@@ -3,7 +3,12 @@ import test from "node:test";
 import { executeDomainCommand } from "./domain-commands.js";
 import { createPearlEntity } from "./pearl-entity.js";
 import { createPearlGestureArbiter } from "./pearl-gesture-arbiter.js";
-import { createPearlStudioViewModel, pearlStudioRepresentations } from "./pearl-studio.js";
+import {
+  PEARL_STUDIO_COGNITIVE_SECTION_ORDER,
+  createPearlStudioViewModel,
+  pearlStudioCognitiveSectionIds,
+  pearlStudioRepresentations,
+} from "./pearl-studio.js";
 
 test("Studio dynamically exposes only relevant sections and representations", () => {
   const text = createPearlEntity({ id: "text", kind: "result", text: "Memo", provenance: { source: "lens" } });
@@ -19,6 +24,37 @@ test("Studio dynamically exposes only relevant sections and representations", ()
   assert.deepEqual(new Set(view.representations), new Set(["document", "gallery", "spatial", "branch-comparison", "process"]));
   assert.ok(view.sections.some((section) => section.id === "privacy"));
   assert.ok(!view.sections.some((section) => section.id === "soundscape"));
+});
+
+test("Studio cognitive sections keep load-bearing Moves → Functions → Lenses order", () => {
+  assert.deepEqual(PEARL_STUDIO_COGNITIVE_SECTION_ORDER, ["moves", "functions", "lenses"]);
+  const entity = createPearlEntity({
+    id: "studio-order",
+    kind: "automation",
+    lenses: [{ id: "l1", name: "Audience" }],
+    moves: [{ id: "m1", name: "Distill" }],
+    functions: [{ id: "f1", name: "Brief" }],
+    cognition: {
+      layers: [
+        { id: "cl-lens", kind: "lens", identity: { name: "Audience" } },
+        { id: "cl-move", kind: "move", identity: { name: "Distill" } },
+        { id: "cl-fn", kind: "function", identity: { name: "Brief" } },
+      ],
+      semanticOrder: ["cl-lens", "cl-move", "cl-fn"],
+    },
+  });
+  const view = createPearlStudioViewModel(entity);
+  const ids = view.sections.map((section) => section.id);
+  const movesAt = ids.indexOf("moves");
+  const functionsAt = ids.indexOf("functions");
+  const lensesAt = ids.indexOf("lenses");
+  assert.ok(movesAt >= 0 && functionsAt >= 0 && lensesAt >= 0);
+  assert.ok(movesAt < functionsAt && functionsAt < lensesAt);
+  assert.deepEqual(pearlStudioCognitiveSectionIds(view), ["moves", "functions", "lenses"]);
+  assert.match(view.sections.find((section) => section.id === "moves").value.help, /transformations/i);
+  assert.match(view.sections.find((section) => section.id === "functions").value.help, /composition/i);
+  assert.match(view.sections.find((section) => section.id === "lenses").value.help, /understanding/i);
+  assert.ok(!view.sections.some((section) => section.id === "process"), "legacy combined Process section must not replace Moves/Functions");
 });
 
 test("single activation is immediate while triple and keyboard still open Studio", async () => {

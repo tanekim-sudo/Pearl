@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-e3d4996b",
+  "fingerprint": "fnv1a-d1e2ac39",
   "counts": {
-    "nodes": 386,
+    "nodes": 388,
     "edges": 516
   },
   "nodes": [
@@ -8599,6 +8599,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "orb-context-changed",
@@ -8640,6 +8641,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -8770,6 +8772,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -8795,6 +8798,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -8914,6 +8918,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -8939,6 +8944,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9058,6 +9064,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9083,6 +9090,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9202,6 +9210,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9227,6 +9236,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9345,6 +9355,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9370,6 +9381,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9488,6 +9500,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9513,6 +9526,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9634,6 +9648,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9659,6 +9674,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9780,6 +9796,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -9805,6 +9822,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -9940,6 +9958,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "pearl-entity-edited",
@@ -9973,6 +9992,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10096,6 +10116,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -10121,6 +10142,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10256,6 +10278,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "pearl-entity-edited",
@@ -10269,12 +10292,14 @@
         "capability-mergeSemanticOrbs",
         "feature:companion.pearl-gauntlet",
         "feature:scene.semantic-orbs",
-        "feature:runtime.pearl-action-animation"
+        "feature:runtime.pearl-action-animation",
+        "feature:shell.reef-home"
       ],
       "featureIds": [
         "companion.pearl-gauntlet",
         "scene.semantic-orbs",
-        "runtime.pearl-action-animation"
+        "runtime.pearl-action-animation",
+        "shell.reef-home"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -10291,6 +10316,7 @@
         "nestSemanticOrb",
         "unnestSemanticOrb",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10432,6 +10458,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "pearl-entity-edited",
@@ -10465,6 +10492,187 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.synthesizeSemanticOrbs",
+      "version": 1,
+      "kind": "capability",
+      "name": "synthesizeSemanticOrbs",
+      "purpose": "Mutual-apply pearls: each notices something about the other into a new synthesis pearl; sources stay intact",
+      "examples": [
+        "what do these pearls notice about each other",
+        "synthesize these two pearls",
+        "apply this pearl onto that one"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ids": "array",
+          "name": "string?",
+          "sceneId": "string",
+          "mode": "mutual|directed?",
+          "instruction": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
+        "semantic-orb-archived",
+        "semantic-orb-deleted",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-synthesizeSemanticOrbs",
+        "feature:scene.semantic-orbs",
+        "feature:runtime.pearl-action-animation"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs",
+        "runtime.pearl-action-animation"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10605,6 +10813,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "pearl-entity-edited",
@@ -10638,6 +10847,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10762,6 +10972,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -10787,6 +10998,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -10896,12 +11108,14 @@
         "capability-wearPearl",
         "feature:companion.pearl-wear",
         "feature:companion.mother-orbit",
-        "feature:companion.pearl-gauntlet"
+        "feature:companion.pearl-gauntlet",
+        "feature:shell.reef-home"
       ],
       "featureIds": [
         "companion.pearl-wear",
         "companion.mother-orbit",
-        "companion.pearl-gauntlet"
+        "companion.pearl-gauntlet",
+        "shell.reef-home"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -12266,6 +12480,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -12289,6 +12504,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -12408,6 +12624,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -12429,6 +12646,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -12876,6 +13094,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -12897,6 +13116,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -13130,6 +13350,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -13155,6 +13376,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -13272,6 +13494,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -13297,6 +13520,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -20124,6 +20348,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-hierarchy-changed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "generation-plan-changed",
         "taste-feedback-changed",
         "candidate-focus-changed"
@@ -20163,6 +20388,7 @@
         "nestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "setGenerationPlan",
         "recordTasteFeedback"
       ],
@@ -21056,6 +21282,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -21086,6 +21313,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -23685,6 +23913,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -23725,6 +23954,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -23772,7 +24002,18 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -23809,9 +24050,20 @@
       "sideEffects": [
         "scene-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -23821,13 +24073,37 @@
         "direct-ui"
       ],
       "expectedEffects": [
-        "scene-state-changed"
+        "scene-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
       ],
       "tests": [
-        "capability-openPearlStudio"
+        "capability-openPearlStudio",
+        "feature:studio.pearl",
+        "feature:shell.reef-home"
       ],
-      "featureIds": [],
-      "canonicalCommands": [],
+      "featureIds": [
+        "studio.pearl",
+        "shell.reef-home"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -27026,9 +27302,11 @@
       "version": 1,
       "kind": "capability",
       "name": "navigateHome",
-      "purpose": "Return to the Pearl home / continuation hub",
+      "purpose": "Return to the Reef home dashboard where all pearls are spread out",
       "examples": [
-        "go home"
+        "go home",
+        "open the reef",
+        "show the reef"
       ],
       "inputSchema": {
         "type": "object",
@@ -27082,9 +27360,11 @@
       "expectedEffects": [],
       "tests": [
         "capability-navigateHome",
+        "feature:shell.reef-home",
         "feature:shell.pearl-navigability"
       ],
       "featureIds": [
+        "shell.reef-home",
         "shell.pearl-navigability"
       ],
       "canonicalCommands": [],
@@ -30018,6 +30298,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted",
         "orb-context-changed",
@@ -30057,6 +30338,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30184,6 +30466,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30209,6 +30492,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30329,6 +30613,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30354,6 +30639,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30474,6 +30760,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30499,6 +30786,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30622,6 +30910,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30647,6 +30936,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30770,6 +31060,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30795,6 +31086,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30916,6 +31208,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -30941,6 +31234,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -30962,7 +31256,7 @@
       "name": "mergeExternalSemanticOrbs",
       "purpose": "Merge saved orb contexts into a new capsule",
       "examples": [
-        "please merge saved orb contexts into a new capsule"
+        "merge these saved pearls"
       ],
       "inputSchema": {
         "type": "object",
@@ -31061,6 +31355,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31088,6 +31383,156 @@
         "nestSemanticOrb",
         "unnestSemanticOrb",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb",
+        "archiveSemanticOrb",
+        "deleteSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.synthesizeExternalSemanticOrbs",
+      "version": 1,
+      "kind": "capability",
+      "name": "synthesizeExternalSemanticOrbs",
+      "purpose": "Mutual-apply saved pearls into a new synthesis capsule; sources stay intact",
+      "examples": [
+        "what do these pearls notice about each other"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ids": "array",
+          "name": "string?",
+          "mode": "mutual|directed?",
+          "instruction": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "source material is preserved",
+        "orb exists when id is supplied",
+        "orb exists",
+        "name is explicit",
+        "representation is explicit",
+        "material is explicit and preserved",
+        "orb and context item exist",
+        "Lens is explicit and preserved",
+        "orb and Lens exist",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "orb has referenced context or child orbs",
+        "scoped destructive confirmation was granted"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "none",
+        "scene.semanticOrbs.append",
+        "scene.activeSemanticOrbId",
+        "scene.semanticOrbs.update",
+        "scene.semanticOrbs.delete"
+      ],
+      "undo": [
+        "none",
+        "restore-semantic-orbs",
+        "restore-active-semantic-orb"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "semantic-orb-preview-opened",
+        "semantic-orb-created",
+        "semantic-orb-activation-changed",
+        "semantic-orb-moved",
+        "semantic-orb-updated",
+        "semantic-orb-context-changed",
+        "semantic-orb-lenses-changed",
+        "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
+        "semantic-orb-archived",
+        "semantic-orb-deleted"
+      ],
+      "tests": [
+        "capability-synthesizeExternalSemanticOrbs",
+        "feature:scene.semantic-orbs"
+      ],
+      "featureIds": [
+        "scene.semantic-orbs"
+      ],
+      "canonicalCommands": [
+        "openOrbCreationPreview",
+        "createSemanticOrb",
+        "activateSemanticOrb",
+        "moveSemanticOrb",
+        "renameSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
+        "removeSemanticOrbContext",
+        "applySemanticOrbLens",
+        "removeSemanticOrbLens",
+        "nestSemanticOrb",
+        "unnestSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31208,6 +31653,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31233,6 +31679,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31352,6 +31799,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31377,6 +31825,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31496,6 +31945,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31521,6 +31971,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31641,6 +32092,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31666,6 +32118,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31785,6 +32238,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31810,6 +32264,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -31929,6 +32384,7 @@
         "semantic-orb-context-changed",
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
+        "pearl-synthesis-created",
         "semantic-orb-archived",
         "semantic-orb-deleted"
       ],
@@ -31956,6 +32412,7 @@
         "unnestSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
@@ -32947,7 +33404,8 @@
         "worker-context-changed",
         "semantic-orb-context-changed",
         "semantic-orb-hierarchy-changed",
-        "semantic-orb-created"
+        "semantic-orb-created",
+        "pearl-synthesis-created"
       ],
       "tests": [
         "capability-openExternalArtifact",
@@ -32970,7 +33428,8 @@
         "addSemanticOrbContext",
         "nestSemanticOrb",
         "mergeSemanticOrbs",
-        "composeSemanticOrbs"
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -40492,6 +40951,7 @@
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
         "semantic-orb-created",
+        "pearl-synthesis-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
         "orb-workers-created",
@@ -40534,6 +40994,7 @@
         "createSemanticOrb",
         "mergeSemanticOrbs",
         "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
@@ -40581,7 +41042,18 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -40619,9 +41091,20 @@
         "extension-state-changed",
         "scene-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -40631,13 +41114,35 @@
       ],
       "expectedEffects": [
         "extension-state-changed",
-        "scene-state-changed"
+        "scene-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
       ],
       "tests": [
-        "capability-openExternalPearlStudio"
+        "capability-openExternalPearlStudio",
+        "feature:studio.pearl"
       ],
-      "featureIds": [],
-      "canonicalCommands": [],
+      "featureIds": [
+        "studio.pearl"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",

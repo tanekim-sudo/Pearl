@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { navigateBackOrHome, nextEscapeAction } from "./shell-navigation.js";
+import { collectReefPearls, isReefHomePath } from "./reef-home.js";
+import { navigateBackOrHome, navigateHome, nextEscapeAction } from "./shell-navigation.js";
 
 test("Escape prefers approval cancel over collapsing Pearl", () => {
   assert.equal(nextEscapeAction({
@@ -25,4 +26,33 @@ test("navigateBackOrHome stays on-origin when history was not Pearl-pushed", () 
   const result = navigateBackOrHome();
   assert.equal(result.via, "home");
   assert.equal(result.path, "/");
+});
+
+test("navigateHome lands on the Reef root path", () => {
+  assert.equal(navigateHome().path, "/");
+  assert.equal(isReefHomePath("/"), true);
+  assert.equal(isReefHomePath("/library"), true);
+  assert.equal(isReefHomePath("/toolbox"), true);
+  assert.equal(isReefHomePath("/scene/x"), false);
+});
+
+test("Reef collects every non-archived pearl across scenes", () => {
+  const pearls = collectReefPearls([
+    {
+      id: "scene-a",
+      name: "Briefings",
+      semanticOrbs: [
+        { id: "p1", name: "LP", kind: "semantic" },
+        { id: "p2", name: "Archived", archived: true },
+      ],
+    },
+    {
+      id: "scene-b",
+      name: "Research",
+      semanticOrbs: [{ id: "p3", name: "Sources" }],
+    },
+  ]);
+  assert.deepEqual(pearls.map((entry) => entry.id), ["p1", "p3"]);
+  assert.equal(pearls[0].sceneName, "Briefings");
+  assert.equal(pearls[1].sceneId, "scene-b");
 });

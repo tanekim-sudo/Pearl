@@ -4,7 +4,19 @@ import { listPearlVersions } from "./pearl-version-history.js";
 export const PEARL_STUDIO_VERSION = 1;
 export const PEARL_STUDIO_REPRESENTATIONS = Object.freeze(["document", "gallery", "spatial", "lineage", "branch-comparison", "process"]);
 
+/** Load-bearing Studio / library order: Moves → Functions → Lenses. */
+export const PEARL_STUDIO_COGNITIVE_SECTION_ORDER = Object.freeze(["moves", "functions", "lenses"]);
+export const PEARL_STUDIO_COGNITIVE_SECTION_HELP = Object.freeze({
+  moves: "Individual cognitive transformations this pearl can execute or keep in inventory. Moves may compose other moves.",
+  functions: "Composition and ordering of moves (and other functions). Functions may compose functions and moves.",
+  lenses: "Contextual awareness of the pearl and its understanding of the user.",
+});
+
 const clone = (value) => value == null ? value : structuredClone(value);
+
+function cognitionLayersOfKind(entity, kind) {
+  return (entity.cognition?.layers || []).filter((entry) => entry.kind === kind);
+}
 
 function hasImages(entity) {
   return entity.canvas?.artifacts?.some((entry) => entry.type === "image")
@@ -34,25 +46,50 @@ function studioSection(id, label, value, editable = true) {
   return { id, label, value: clone(value), editable };
 }
 
+/** Return Moves → Functions → Lenses ids present in a Studio view model, in load-bearing order. */
+export function pearlStudioCognitiveSectionIds(viewModel) {
+  const present = new Set((viewModel?.sections || []).map((section) => section.id));
+  return PEARL_STUDIO_COGNITIVE_SECTION_ORDER.filter((id) => present.has(id));
+}
+
 export function createPearlStudioViewModel(entityInput, options = {}) {
   const entity = createPearlEntity(entityInput);
   const representations = pearlStudioRepresentations(entity);
   const preferred = options.representation || entity.representation.mode;
   const representation = representations.includes(preferred) ? preferred : representations[0];
+  const moveLayers = cognitionLayersOfKind(entity, "move");
+  const functionLayers = cognitionLayersOfKind(entity, "function");
+  const lensLayers = cognitionLayersOfKind(entity, "lens");
+  const otherLayers = (entity.cognition.layers || []).filter((entry) => !["move", "function", "lens"].includes(entry.kind));
   const sections = [
     studioSection("identity", "Identity", entity.identity),
     entity.representation.material && studioSection("material", "Material", entity.representation.material),
     entity.workingSet.context.length && studioSection("context", "Context", entity.workingSet.context),
-    entity.lenses.length && studioSection("lenses", "Lenses", entity.lenses),
-    (entity.moves.length || entity.functions.length || entity.automation) && studioSection("process", "Process", { moves: entity.moves, functions: entity.functions, automation: entity.automation }),
-    entity.cognition.layers.length && studioSection("cognition", "Organized layers", {
-      layers: entity.cognition.layers,
+    // Load-bearing order: Moves → Functions → Lenses
+    (entity.moves.length || moveLayers.length) && studioSection("moves", "Moves", {
+      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.moves,
+      items: entity.moves,
+      layers: moveLayers,
+    }),
+    (entity.functions.length || functionLayers.length || entity.automation) && studioSection("functions", "Functions", {
+      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.functions,
+      items: entity.functions,
+      layers: functionLayers,
+      automation: entity.automation || null,
+    }),
+    (entity.lenses.length || lensLayers.length) && studioSection("lenses", "Lenses", {
+      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.lenses,
+      items: entity.lenses,
+      layers: lensLayers,
+    }),
+    otherLayers.length && studioSection("cognition", "Other layers", {
+      layers: otherLayers,
       semanticOrder: entity.cognition.semanticOrder,
       rawEvidence: entity.cognition.rawEvidence,
       sourceMapping: entity.cognition.sourceMapping,
       organizationDiffs: entity.cognition.organizationDiffs,
       activeExecution: entity.cognition.activeExecution,
-      unresolvedLayerIds: entity.cognition.layers.filter((entry) => entry.uncertainty.status !== "resolved").map((entry) => entry.id),
+      unresolvedLayerIds: otherLayers.filter((entry) => entry.uncertainty.status !== "resolved").map((entry) => entry.id),
     }),
     (entity.generation.plan || entity.generation.outputSpecs.length) && studioSection("generation", "Generation", entity.generation),
     (entity.results.length || entity.generation.candidates.length) && studioSection("outputs", "Outputs", { results: entity.results, candidates: entity.generation.candidates }),
@@ -108,6 +145,8 @@ function sourceSections(source = {}, extras = {}) {
     },
     material: clone(source.material || source.representation?.snapshot || source.primaryMaterial || null),
     context: clone(workingSet.context || source.context || []),
+    moves: clone(source.moves || source.process?.moves || []),
+    functions: clone(source.functions || source.process?.functions || []),
     lenses: clone(workingSet.lenses || source.lenses || []),
     process: clone(source.process || {
       moves: source.moves || [],
@@ -202,7 +241,7 @@ function applyOperation(document, mutation) {
     const field = ["text", "quote", "content", "label", "name"].includes(mutation.field) ? mutation.field : "text";
     next.sections.material = { ...current, [field]: bounded(mutation.value) };
   } else if (mutation.operation === "set-section") {
-    if (!["process", "soundscape", "relationships", "privacy"].includes(section)) throw new Error("Pearl Studio section cannot be replaced");
+    if (!["moves", "functions", "lenses", "process", "soundscape", "relationships", "privacy"].includes(section)) throw new Error("Pearl Studio section cannot be replaced");
     next.sections[section] = clone(mutation.value);
   } else if (mutation.operation === "add") {
     next.sections[section] = [...arraySection(next, section), clone(mutation.value)];

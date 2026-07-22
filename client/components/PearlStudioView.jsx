@@ -125,7 +125,7 @@ export default function PearlStudioView({ localRef }) {
     return <main className="web-pearl-studio">
       <style>{`.web-pearl-studio{box-sizing:border-box;width:min(760px,calc(100vw - 40px));margin:clamp(60px,12vh,150px) auto;color:var(--orb-text,#232825)}.web-pearl-studio button{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent);background:transparent;color:inherit;padding:7px 0;margin-top:18px}`}</style>
       <p role="alert">{status}</p>
-      <button type="button" onClick={leavePearlStudio}>Back to Pearl</button>
+      <button type="button" onClick={leavePearlStudio}>Back to Reef</button>
     </main>;
   }
   return <main className="web-pearl-studio">
