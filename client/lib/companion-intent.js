@@ -325,6 +325,9 @@ export function parseParallelBranchCommand(text) {
 
 export function parseSafeDemonstrationCommand(text, empty = false) {
   const value = String(text || "").trim();
+  if (/\b(?:pearl powers?|what can the pearl|show (?:me )?pearl|fission|sub-?agents?|dragon)\b/i.test(value)) {
+    return { demoId: "pearl-powers", chooser: false, verb: "demonstratePearlPowers" };
+  }
   if (!/\b(?:show me what you can do|do anything|give me anything)\b/i.test(value)) return null;
   return empty
     ? { demoId: "safe-capability-sample", chooser: false }
@@ -569,6 +572,8 @@ Reply with ONLY a JSON object, no prose, no code fences:
 Rules:
 - Action-first: for every executable request, set "say" to "" and emit the steps immediately. Do not acknowledge, praise, summarize, or announce what you will do.
 - Cursor-style check-ins: when instructions, Automation Pearls, or IR workflows are vague, missing format/source/audience specifics, or destructive, call inspectInstructionSpecificity or requestClarification BEFORE compile/run/edit. Put the clarifying question in "say" and emit no mutating steps until answered. After the user answers, call answerClarification or continue with encodeAutomationFromInstruction / runAutomationPearl.
+- Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
+- Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
 - Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.

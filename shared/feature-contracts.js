@@ -400,13 +400,23 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("runtime.pearl-action-animation", {
     domains: ["interface", "semantic-orb", "extension"],
-    commands: ["editPearlEntity", "applyPearlCognitivePatch", "completeOutputPlacement", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion"],
-    ui: ["client/lib/director.js", "shared/physical-pearl.js"],
-    companion: ["executeUnifiedPearlAction", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion"],
+    commands: ["editPearlEntity", "applyPearlCognitivePatch", "completeOutputPlacement", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion", "createWorker", "mergeWorkers"],
+    ui: ["client/lib/director.js", "shared/physical-pearl.js", "client/components/PearlPowerFxOverlay.jsx"],
+    companion: ["executeUnifiedPearlAction", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion", "spawnSubAgentPearls", "fuseSubAgentPearls", "demonstratePearlPowers"],
     extension: ["executeExternalPearlAction"],
     persistence: ["pearlEntities.v1.history.events"],
-    tests: ["shared/pearl-entity.test.js", "shared/pearl-animation.test.js", "shared/physical-pearl.test.js"],
+    tests: ["shared/pearl-entity.test.js", "shared/pearl-animation.test.js", "shared/physical-pearl.test.js", "shared/pearl-power-fx.test.js"],
     owner: "shared/pearl-action-protocol.js",
+  }),
+  feature("runtime.pearl-power-fx", {
+    domains: ["interface", "semantic-orb", "extension", "scene"],
+    commands: ["createWorker", "mergeWorkers", "splitSemanticOrb", "duplicateSemanticOrb"],
+    ui: ["client/components/PearlPowerFxOverlay.jsx", "client/components/SemanticOrbLayer.jsx", "extension/src/content/bridge.js", "shared/physical-pearl.js"],
+    companion: ["spawnSubAgentPearls", "fuseSubAgentPearls", "findOnScreenMatching", "beamPearlToTargets", "seekPearlToTarget", "demonstratePearlPowers", "inspectPearlPowerSpecificity"],
+    extension: ["findExternalOnScreenMatching", "seekExternalPearlToTarget", "playExternalPearlPowerFx"],
+    persistence: ["scene.orbWorkers"],
+    tests: ["shared/pearl-power-fx.test.js", "shared/pearl-screen-match.test.js", "shared/companion-clarification.test.js", "shared/orb-workers.test.js"],
+    owner: "shared/pearl-power-fx.js",
   }),
   feature("privacy.pearl-policy", {
     domains: ["privacy", "semantic-orb", "sharing", "extension"],
@@ -440,9 +450,9 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("companion.clarification-checkin", {
     domains: ["interface", "function", "scene"],
-    commands: [],
+    commands: ["createWorker"],
     ui: ["client/components/CompanionChat.jsx"],
-    companion: ["inspectInstructionSpecificity", "requestClarification", "answerClarification", "encodeAutomationFromInstruction", "runAutomationPearl"],
+    companion: ["inspectInstructionSpecificity", "inspectPearlPowerSpecificity", "requestClarification", "answerClarification", "encodeAutomationFromInstruction", "runAutomationPearl", "spawnSubAgentPearls", "findOnScreenMatching"],
     extension: [],
     persistence: ["lens.companion.clarification.v1"],
     tests: ["shared/companion-clarification.test.js", "client/lib/companion-intent.test.js"],
@@ -558,7 +568,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 53,
+  features: 54,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

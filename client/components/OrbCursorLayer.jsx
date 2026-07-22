@@ -89,8 +89,25 @@ export default function OrbCursorLayer({ state, onDisable }) {
   >
     {workers.length > 0 && <svg className="orb-cursor-tether" viewBox="0 0 96 64">
       <path d="M12 32 C38 13 59 52 84 25" />
+      <path className="orb-cursor-tether-core" d="M12 32 C38 13 59 52 84 25" />
     </svg>}
-    {workers.map((worker, index) => <PhysicalPearl className="orb-cursor-worker" variant="worker" state="executing" size={16} decorative key={worker.id} style={{ "--worker-index": index }} />)}
-    <PhysicalPearl className="orb-cursor-visual" variant="cursor" state={phase === "executing" ? "executing" : presentation === "blocked" ? "blocked" : "idle"} size={18} decorative />
+    {workers.map((worker, index) => <PhysicalPearl
+      className="orb-cursor-worker"
+      variant="worker"
+      state="executing"
+      animation={phase === "executing" ? "charge" : null}
+      size={16}
+      decorative
+      key={worker.id}
+      style={{ "--worker-index": index }}
+    />)}
+    <PhysicalPearl
+      className="orb-cursor-visual"
+      variant="cursor"
+      state={phase === "executing" ? "executing" : presentation === "blocked" ? "blocked" : "idle"}
+      animation={phase === "executing" ? "charge" : null}
+      size={18}
+      decorative
+    />
   </div>;
 }

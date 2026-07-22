@@ -6,6 +6,7 @@ import {
   createClarificationSession,
   inferAutomationAmbiguities,
   inspectInstructionSpecificity,
+  inspectPearlPowerSpecificity,
 } from "./companion-clarification.js";
 
 test("vague IR automation instructions request format and source check-ins", () => {
@@ -44,4 +45,31 @@ test("compiler ambiguity inference surfaces unresolved format gaps", () => {
     { kind: "instructions", verbatim: "Make a memo for the partner meeting." },
   ]);
   assert.ok(ambiguities.length >= 1);
+});
+
+test("ambiguous sub-agent fission requests clarifying roles and count", () => {
+  const vague = inspectPearlPowerSpecificity({
+    instruction: "split into some sub-agents somehow",
+    action: "spawnSubAgentPearls",
+  });
+  assert.equal(vague.ready, false);
+  assert.ok(vague.questions.some((entry) => entry.id === "fission-count" || entry.id === "fission-roles"));
+  const ready = inspectPearlPowerSpecificity({
+    action: "spawnSubAgentPearls",
+    specs: [
+      { role: "explore", goal: "Explore" },
+      { role: "evaluate", goal: "Evaluate" },
+    ],
+    count: 2,
+  });
+  assert.equal(ready.ready, true);
+});
+
+test("vague find-on-screen conditions request a concrete match pattern", () => {
+  const inspection = inspectPearlPowerSpecificity({
+    action: "findOnScreenMatching",
+    condition: "whatever stuff",
+  });
+  assert.equal(inspection.ready, false);
+  assert.ok(inspection.questions.some((entry) => entry.id === "match-condition"));
 });

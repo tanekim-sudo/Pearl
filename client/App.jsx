@@ -246,9 +246,13 @@ import {
   clarificationPromptText,
   createClarificationSession,
   inspectInstructionSpecificity,
+  inspectPearlPowerSpecificity,
   loadClarificationSession,
   saveClarificationSession,
 } from "../shared/companion-clarification.js";
+import { dispatchPearlPowerFx, powerFxForCommand, MAX_FILAMENT_TARGETS } from "../shared/pearl-power-fx.js";
+import { findOnScreenMatching, matchRectsForPowerFx } from "../shared/pearl-screen-match.js";
+import { pearlAnimationForCommand } from "../shared/pearl-animation.js";
 import { compileAutomationPearl } from "../shared/automation-pearl.js";
 import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
 import { PEARL_STORE_KEY } from "../shared/pearl-store.js";
@@ -12730,6 +12734,185 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     duplicateSemanticOrb: async (a) => {
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "duplicateSemanticOrb", args: a });
       return { effectId: `semantic-orb-duplicated:${receipt.id}`, id: receipt.id };
+    },
+    inspectPearlPowerSpecificity: async (a, tk) => {
+      const inspection = inspectPearlPowerSpecificity(a || {});
+      await tk.wait(100);
+      return { type: "clarification-inspection", object: inspection, effects: ["pearl-power-specificity-inspected"] };
+    },
+    spawnSubAgentPearls: async (a, tk) => {
+      const activeScene = currentSemanticScene();
+      const parentId = a.parentId || a.id || activeScene?.activeSemanticOrbId;
+      if (!parentId) throw new Error("Activate a pearl before spawning sub-agents");
+      let specs = Array.isArray(a.specs) ? a.specs : [];
+      if (!specs.length && Number(a.count) > 0) {
+        specs = Array.from({ length: Math.min(8, Math.max(1, Number(a.count))) }, (_, index) => ({
+          role: `worker-${index + 1}`,
+          goal: a.instruction ? `${a.instruction} · part ${index + 1}` : `Sub-agent ${index + 1}`,
+        }));
+      }
+      if (a.skipClarification !== true) {
+        const inspection = inspectPearlPowerSpecificity({
+          instruction: a.instruction || "",
+          action: "spawnSubAgentPearls",
+          specs,
+          count: specs.length || a.count,
+        });
+        if (!inspection.ready) {
+          const session = createClarificationSession(inspection, {
+            resumeAction: "spawnSubAgentPearls",
+            resumeArgs: { ...a, specs, parentId },
+            instruction: a.instruction || "",
+            pearlId: parentId,
+          });
+          saveClarificationSession(session);
+          await tk.wait(120);
+          return {
+            type: "clarification",
+            status: "awaiting",
+            object: session,
+            effects: ["clarification-requested"],
+            visibleText: clarificationPromptText(session),
+          };
+        }
+      }
+      const host = document.querySelector(`[data-semantic-orb-id="${parentId}"]`) || document.querySelector(".companion-orb");
+      if (host) await tk.moveTo(host);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "createWorker",
+        args: { parentId, specs, sceneId: a.sceneId || sceneId },
+      });
+      await tk.wait(720);
+      return {
+        type: "orb-workers",
+        id: parentId,
+        object: receipt.result,
+        effects: ["orb-workers-created"],
+        effectId: `workers-spawned:${parentId}`,
+      };
+    },
+    fuseSubAgentPearls: async (a, tk) => {
+      const activeScene = currentSemanticScene();
+      const parentId = a.parentId || a.id || activeScene?.activeSemanticOrbId;
+      if (!parentId) throw new Error("Activate a pearl before fusing sub-agents");
+      const host = document.querySelector(`[data-semantic-orb-id="${parentId}"]`) || document.querySelector(".companion-orb");
+      if (host) await tk.moveTo(host);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "mergeWorkers",
+        args: { parentId, workerIds: a.workerIds },
+      });
+      await tk.wait(560);
+      return { type: "orb-workers-merged", id: parentId, object: receipt.result, effects: ["orb-workers-merged"] };
+    },
+    findOnScreenMatching: async (a, tk) => {
+      if (a.skipClarification !== true) {
+        const inspection = inspectPearlPowerSpecificity({
+          instruction: a.condition || "",
+          action: "findOnScreenMatching",
+          condition: a.condition,
+        });
+        if (!inspection.ready) {
+          const session = createClarificationSession(inspection, {
+            resumeAction: "findOnScreenMatching",
+            resumeArgs: a,
+            instruction: a.condition || "",
+          });
+          saveClarificationSession(session);
+          await tk.wait(120);
+          return {
+            type: "clarification",
+            status: "awaiting",
+            object: session,
+            effects: ["clarification-requested"],
+            visibleText: clarificationPromptText(session),
+          };
+        }
+      }
+      const activeScene = currentSemanticScene();
+      const root = document.querySelector(".paper-surface")
+        || document.querySelector("[data-paper-root]")
+        || document.querySelector("main")
+        || document.body;
+      const pearlHost = document.querySelector(".companion-orb")
+        || document.querySelector(`[data-semantic-orb-id="${activeScene?.activeSemanticOrbId || ""}"]`);
+      if (pearlHost) await tk.moveTo(pearlHost);
+      const result = findOnScreenMatching(root, a.condition, { limit: a.limit || MAX_FILAMENT_TARGETS });
+      const rects = matchRectsForPowerFx(result);
+      const box = pearlHost?.getBoundingClientRect?.();
+      const from = box
+        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        : { x: window.innerWidth / 2, y: window.innerHeight * 0.7 };
+      const animation = pearlAnimationForCommand("findOnScreenMatching");
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: {
+          pearlId: activeScene?.activeSemanticOrbId || "companion",
+          semantic: animation.semantic,
+          durationMs: animation.durationMs,
+        },
+      }));
+      dispatchPearlPowerFx(powerFxForCommand("findOnScreenMatching", {
+        from,
+        toRects: rects,
+        kind: "filament",
+      }));
+      if (a.seekFirst !== false && rects[0]) {
+        await tk.wait(280);
+        dispatchPearlPowerFx(powerFxForCommand("seekPearlToTarget", {
+          from,
+          to: { x: rects[0].x + rects[0].width / 2, y: rects[0].y + rects[0].height / 2 },
+          kind: "seek",
+        }));
+      }
+      await tk.wait(900);
+      return {
+        type: "screen-matches",
+        object: result,
+        effects: result.matchCount ? ["screen-matches-marked"] : ["screen-matches-empty"],
+      };
+    },
+    beamPearlToTargets: async (a, tk) => {
+      const activeScene = currentSemanticScene();
+      const pearlHost = document.querySelector(".companion-orb")
+        || document.querySelector(`[data-semantic-orb-id="${a.pearlId || activeScene?.activeSemanticOrbId || ""}"]`);
+      if (pearlHost) await tk.moveTo(pearlHost);
+      const box = pearlHost?.getBoundingClientRect?.();
+      const from = box
+        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        : { x: window.innerWidth / 2, y: window.innerHeight * 0.7 };
+      const rects = (a.rects || []).slice(0, MAX_FILAMENT_TARGETS);
+      dispatchPearlPowerFx(powerFxForCommand("beamPearlToTargets", { from, toRects: rects, kind: "filament" }));
+      await tk.wait(900);
+      return { type: "pearl-beam", count: rects.length, effects: ["pearl-filaments-drawn"] };
+    },
+    seekPearlToTarget: async (a, tk) => {
+      const activeScene = currentSemanticScene();
+      let to = Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: a.x, y: a.y } : null;
+      if (!to && a.selector) {
+        const el = document.querySelector(a.selector);
+        const box = el?.getBoundingClientRect?.();
+        if (box) to = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      }
+      if (!to) throw new Error("seek target is required");
+      const pearlHost = document.querySelector(".companion-orb")
+        || document.querySelector(`[data-semantic-orb-id="${a.pearlId || activeScene?.activeSemanticOrbId || ""}"]`);
+      const box = pearlHost?.getBoundingClientRect?.();
+      const from = box
+        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        : { x: window.innerWidth / 2, y: window.innerHeight * 0.7 };
+      dispatchPearlPowerFx(powerFxForCommand("seekPearlToTarget", { from, to, kind: "seek" }));
+      await tk.moveTo(to);
+      await tk.wait(700);
+      return { type: "pearl-seek", object: to, effects: ["pearl-seek-completed"] };
+    },
+    demonstratePearlPowers: async (a, tk, ctx) => {
+      const demo = COMPANION_DEMOS.find((entry) => entry.id === "pearl-powers");
+      if (!demo) throw new Error("pearl-powers demo missing");
+      await runDirectorScript(demo.steps, {
+        title: demo.title,
+        signal: tk.signal,
+        vars: ctx.vars,
+      });
+      return { type: "demo", id: "pearl-powers", effects: ["pearl-powers-demonstrated"] };
     },
     archiveSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "archiveSemanticOrb", args: a });

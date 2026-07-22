@@ -166,6 +166,13 @@ export const EXTENSION_VERBS = Object.freeze({
   setExternalBeforeAfterText: ({ args, setBeforeAfterText }) => setBeforeAfterText(args.side, args.text),
   inferExternalBeforeAfter: ({ inferBeforeAfter }) => inferBeforeAfter(),
   captureExternalVisibleTab: ({ action }) => action("capture-visible-tab", { authorized: true }),
+  findExternalOnScreenMatching: ({ args, action }) => action("pearl-find-matching", { condition: args.condition, limit: args.limit }),
+  seekExternalPearlToTarget: ({ args, action }) => action("pearl-seek-to", { point: { x: args.x, y: args.y }, durationMs: 700 }),
+  playExternalPearlPowerFx: ({ args, action }) => action("pearl-power-fx", {
+    kind: args.kind,
+    count: args.count,
+    toRects: args.rects,
+  }),
   tasteExternalCandidate: ({ args, action, resolveResult }) => action("taste-feedback", {
     outputId: resolveResult(args.result).id,
     decision: args.decision === "yes" ? "accepted" : args.decision === "no" ? "rejected" : "undecided",

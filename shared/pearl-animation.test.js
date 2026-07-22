@@ -12,7 +12,9 @@ test("remix primitives map birth, merge, nest, split, lens, and restore commands
   assert.equal(pearlAnimationForCommand("applySemanticOrbLens").semantic, "refract");
   assert.equal(pearlAnimationForCommand("restorePearlVersion").semantic, "recover");
   assert.equal(pearlAnimationForCommand("mutatePearlCognitiveLayer").semantic, "remix");
-  for (const semantic of ["emerge", "merge", "nest", "compose", "duplicate", "remix", "split", "recover"]) {
+  assert.equal(pearlAnimationForCommand("createWorker").semantic, "fission");
+  assert.equal(pearlAnimationForCommand("findOnScreenMatching").semantic, "filament");
+  for (const semantic of ["emerge", "merge", "nest", "compose", "duplicate", "remix", "split", "recover", "fission", "echo", "charge", "filament", "seek"]) {
     assert.ok(PEARL_ANIMATION_VOCABULARY[semantic], semantic);
   }
   const animation = pearlAnimationForCommand("composeSemanticOrbs", { effectReceiptId: "effect:1" });

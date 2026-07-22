@@ -1271,6 +1271,9 @@ async function handle(message, sender = {}) {
     return clearPageMaterial();
   }
   if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
+  if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation") {
+    return sendPage(type, payload);
+  }
   if (type === "capture-visible-tab") {
     if (payload.authorized !== true) throw new Error("visible-tab capture requires explicit user authorization");
     const tab = await activeTab(payload.targetTabId);
@@ -1374,11 +1377,20 @@ async function handle(message, sender = {}) {
       animation: executed.animation,
       effectReceiptId: executed.effectReceipt?.id,
     }).catch(() => {});
+    if (executed.powerFx || executed.animation) {
+      await sendPage("pearl-power-fx", {
+        pearlId: entity.id,
+        ...(executed.powerFx || {}),
+        kind: executed.powerFx?.kind || executed.animation?.power || executed.animation?.semantic,
+        count: executed.powerFx?.count || executed.domainResult?.workers?.length || executed.domainResult?.objects?.length,
+      }).catch(() => {});
+    }
     return {
       pearlId: entity.id,
       revision: executed.entity.revision,
       effectReceipt: executed.effectReceipt,
       animation: executed.animation,
+      powerFx: executed.powerFx || null,
       observation: executed.observation,
       domainResult: executed.domainResult,
       replay: executed.replay,

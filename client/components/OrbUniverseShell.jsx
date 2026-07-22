@@ -3,6 +3,7 @@ import CompanionOrb from "./CompanionOrb.jsx";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import OrbCursorLayer from "./OrbCursorLayer.jsx";
 import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
+import PearlPowerFxOverlay from "./PearlPowerFxOverlay.jsx";
 import AuthOverlay from "./AuthOverlay.jsx";
 import EncodeAnythingPanel from "./EncodeAnythingPanel.jsx";
 import { createWebPearlStudioReference } from "./PearlStudioView.jsx";
@@ -10,6 +11,8 @@ import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 import { createOrbState, executeOrbCommand, markUtteranceDispatched, recordOrbUtterance, transitionOrb } from "../../shared/orb-runtime.js";
 import { normalizeSemanticOrbs } from "../../shared/semantic-orbs.js";
+import { pearlAnimationForCommand } from "../../shared/pearl-animation.js";
+import { dispatchPearlPowerFx, powerFxForAnimation } from "../../shared/pearl-power-fx.js";
 import {
   ORB_CURSOR_EVENT,
   ORB_CURSOR_SEQUENCE_ATTRIBUTE,
@@ -1760,6 +1763,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       state: {
         semanticOrbs: scene.semanticOrbs || [],
         activeSemanticOrbId: scene.activeSemanticOrbId || null,
+        orbWorkers: scene.orbWorkers || {},
       },
       args,
       taskId: `semantic-orb:${name}:${Date.now()}`,
@@ -1769,16 +1773,19 @@ export default function OrbUniverseShell({ StageComponent }) {
       ...current,
       semanticOrbs: execution.state.semanticOrbs,
       activeSemanticOrbId: execution.state.activeSemanticOrbId,
+      orbWorkers: execution.state.orbWorkers || current.orbWorkers || {},
     }));
     const restore = persistWorkspace(updated);
     const nextScene = updated.scenes.find((entry) => entry.id === sceneId);
     const activeCapsule = nextScene.semanticOrbs.find((entry) => entry.id === nextScene.activeSemanticOrbId);
     const workingSet = activeCapsule?.workingSet || nextScene.workingSet || {};
+    const workers = nextScene.orbWorkers?.[nextScene.activeSemanticOrbId] || execution.result?.workers || [];
     const nextOrb = createOrbState({
       ...execution.orb,
       activeSemanticOrbId: nextScene.activeSemanticOrbId || null,
       context: workingSet.context || [],
       lenses: workingSet.lenses || [],
+      workers,
     });
     orbUndoRef.current = { orb: currentOrb, restore };
     orbRedoRef.current = null;
@@ -1786,6 +1793,41 @@ export default function OrbUniverseShell({ StageComponent }) {
     setHasOrbRedo(false);
     orbRef.current = nextOrb;
     setOrb(nextOrb);
+    const pearlId = execution.result?.id
+      || args.parentId
+      || args.id
+      || nextScene.activeSemanticOrbId
+      || null;
+    try {
+      const animation = pearlAnimationForCommand(name, {
+        effectReceiptId: execution.effectId || `orb:${name}`,
+      });
+      if (pearlId) {
+        document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+          detail: { pearlId, semantic: animation.semantic, durationMs: animation.durationMs },
+        }));
+      }
+      const host = pearlId
+        ? document.querySelector(`[data-semantic-orb-id="${pearlId}"]`)
+        : document.querySelector(".companion-orb");
+      const box = host?.getBoundingClientRect?.();
+      const from = box
+        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        : { x: window.innerWidth / 2, y: window.innerHeight * 0.72 };
+      const count = execution.result?.workers?.length
+        || execution.result?.objects?.length
+        || args.specs?.length
+        || undefined;
+      dispatchPearlPowerFx(powerFxForAnimation(animation, {
+        pearlId,
+        from,
+        count,
+        specs: args.specs,
+        kind: execution.result?.powerFx?.kind,
+      }));
+    } catch {
+      /* animation is best-effort; domain effect already committed */
+    }
     return execution;
   }
 
@@ -1812,6 +1854,10 @@ export default function OrbUniverseShell({ StageComponent }) {
     split: (id) => applySemanticOrbCommand("splitSemanticOrb", { id, sceneId: route.sceneId }),
     duplicate: (id) => applySemanticOrbCommand("duplicateSemanticOrb", { id }),
     delete: (id) => applySemanticOrbCommand("deleteSemanticOrb", { id }),
+    spawnWorkers: (parentId, specs) => applySemanticOrbCommand("createWorker", {
+      parentId, specs, sceneId: route.sceneId,
+    }),
+    fuseWorkers: (parentId, workerIds) => applySemanticOrbCommand("mergeWorkers", { parentId, workerIds }),
   };
 
   function applyOrbContextCommand(name, args) {
@@ -2310,6 +2356,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     {!cursorMode && !guideOpen && !showWelcome && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
     {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
     {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
+    <PearlPowerFxOverlay />
     {renderPearlEmission()}
     {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
       forced={supaAuth.passwordRecovery}

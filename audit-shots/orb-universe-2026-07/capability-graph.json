@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-0f807bc7",
+  "fingerprint": "fnv1a-e7258813",
   "counts": {
-    "nodes": 356,
+    "nodes": 366,
     "edges": 516
   },
   "nodes": [
@@ -8513,7 +8513,10 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
-        "checkpoint exists"
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
       ],
       "requiredObservations": [
         "selection",
@@ -8607,7 +8610,9 @@
         "pearl-entity-edited",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
-        "pearl-version-restored"
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
       ],
       "tests": [
         "capability-createSemanticOrb",
@@ -8648,7 +8653,9 @@
         "editPearlEntity",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -9857,7 +9864,10 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
-        "checkpoint exists"
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
       ],
       "requiredObservations": [
         "selection",
@@ -9935,7 +9945,9 @@
         "pearl-entity-edited",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
-        "pearl-version-restored"
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
       ],
       "tests": [
         "capability-nestSemanticOrb",
@@ -9968,7 +9980,9 @@
         "editPearlEntity",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10166,7 +10180,10 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
-        "checkpoint exists"
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
       ],
       "requiredObservations": [
         "selection",
@@ -10244,7 +10261,9 @@
         "pearl-entity-edited",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
-        "pearl-version-restored"
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
       ],
       "tests": [
         "capability-mergeSemanticOrbs",
@@ -10277,7 +10296,9 @@
         "editPearlEntity",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10333,7 +10354,10 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
-        "checkpoint exists"
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
       ],
       "requiredObservations": [
         "selection",
@@ -10411,7 +10435,9 @@
         "pearl-entity-edited",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
-        "pearl-version-restored"
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
       ],
       "tests": [
         "capability-composeSemanticOrbs",
@@ -10444,7 +10470,9 @@
         "editPearlEntity",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10499,7 +10527,10 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
-        "checkpoint exists"
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
       ],
       "requiredObservations": [
         "selection",
@@ -10577,7 +10608,9 @@
         "pearl-entity-edited",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
-        "pearl-version-restored"
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
       ],
       "tests": [
         "capability-splitSemanticOrb",
@@ -10610,7 +10643,9 @@
         "editPearlEntity",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10760,6 +10795,873 @@
       "idempotency": "idempotency-key",
       "domains": [
         "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.spawnSubAgentPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "spawnSubAgentPearls",
+      "purpose": "Fission a pearl into up to 8 role-bound sub-agent pearls with flashy satellite birth",
+      "examples": [
+        "split into three sub-agent pearls: explore, evaluate, and draft"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parentId": "string?",
+          "specs": "array?",
+          "count": "number?",
+          "instruction": "string?",
+          "skipClarification": "boolean?",
+          "sceneId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "undo-output-placement",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-spawnSubAgentPearls",
+        "feature:runtime.pearl-action-animation",
+        "feature:runtime.pearl-power-fx",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "runtime.pearl-action-animation",
+        "runtime.pearl-power-fx",
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.fuseSubAgentPearls",
+      "version": 1,
+      "kind": "capability",
+      "name": "fuseSubAgentPearls",
+      "purpose": "Fuse sub-agent pearls back into the parent with a fuse animation",
+      "examples": [
+        "fuse the sub-agent pearls back together"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parentId": "string?",
+          "workerIds": "array?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "undo-output-placement",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-fuseSubAgentPearls",
+        "feature:runtime.pearl-action-animation",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-action-animation",
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.findOnScreenMatching",
+      "version": 1,
+      "kind": "capability",
+      "name": "findOnScreenMatching",
+      "purpose": "Find everything on screen matching a condition and draw caustic filaments from the pearl",
+      "examples": [
+        "find everything on screen that says limited partner"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "condition": "string",
+          "limit": "number?",
+          "seekFirst": "boolean?",
+          "skipClarification": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "paper-state-changed",
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "paper-state-changed",
+        "scene-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-findOnScreenMatching",
+        "feature:runtime.pearl-power-fx",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx",
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "paper",
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.beamPearlToTargets",
+      "version": 1,
+      "kind": "capability",
+      "name": "beamPearlToTargets",
+      "purpose": "Draw caustic energy filaments from the pearl to grounded target rects",
+      "examples": [
+        "beam the pearl to those matches"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rects": "array?",
+          "quotes": "array?",
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-beamPearlToTargets",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.seekPearlToTarget",
+      "version": 1,
+      "kind": "capability",
+      "name": "seekPearlToTarget",
+      "purpose": "Fly the pearl autonomously to a screen target and settle",
+      "examples": [
+        "fly the pearl to the first match"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "x": "number?",
+          "y": "number?",
+          "selector": "string?",
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-seekPearlToTarget",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.demonstratePearlPowers",
+      "version": 1,
+      "kind": "capability",
+      "name": "demonstratePearlPowers",
+      "purpose": "Director demo of pearl emerge, echo, fission, charge, filament, fuse, and seek",
+      "examples": [
+        "show me what the pearl can do"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "undo-output-placement",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-demonstratePearlPowers",
+        "feature:runtime.pearl-action-animation",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-action-animation",
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.inspectPearlPowerSpecificity",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectPearlPowerSpecificity",
+      "purpose": "Check sub-agent fission or find-on-screen requests for ambiguity before executing",
+      "examples": [
+        "is this sub-agent split specific enough"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instruction": "string?",
+          "action": "string?",
+          "specs": "array?",
+          "count": "number?",
+          "condition": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-inspectPearlPowerSpecificity",
+        "feature:runtime.pearl-power-fx",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx",
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
       ],
       "platform": "app"
     },
@@ -18714,6 +19616,9 @@
         "orb exists",
         "orb has referenced context or child orbs",
         "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
         "Pearl exists in the canonical entity store",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
@@ -18793,6 +19698,8 @@
         "semantic-orb-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged",
         "pearl-studio-opening",
         "pearl-studio-represented",
         "pearl-entity-undo",
@@ -18822,6 +19729,8 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
         "openPearlStudio",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
@@ -21316,6 +22225,9 @@
         "orb exists",
         "orb has referenced context or child orbs",
         "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -21415,6 +22327,8 @@
         "semantic-orb-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -21454,6 +22368,8 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -25717,7 +26633,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -25752,9 +26671,11 @@
         "boundary": "none"
       },
       "sideEffects": [],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -25763,7 +26684,10 @@
         "companion",
         "direct-ui"
       ],
-      "expectedEffects": [],
+      "expectedEffects": [
+        "orb-workers-created",
+        "semantic-orb-created"
+      ],
       "tests": [
         "capability-inspectInstructionSpecificity",
         "feature:companion.clarification-checkin"
@@ -25771,7 +26695,9 @@
       "featureIds": [
         "companion.clarification-checkin"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createWorker"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "read-only",
@@ -25807,7 +26733,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -25845,9 +26774,11 @@
         "scene-state-changed",
         "function-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -25858,7 +26789,9 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
-        "function-state-changed"
+        "function-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-requestClarification",
@@ -25867,7 +26800,9 @@
       "featureIds": [
         "companion.clarification-checkin"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createWorker"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -25900,7 +26835,10 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -25938,9 +26876,11 @@
         "scene-state-changed",
         "function-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "scene.semanticOrbs.append"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -25951,7 +26891,9 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
-        "function-state-changed"
+        "function-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-answerClarification",
@@ -25960,7 +26902,9 @@
       "featureIds": [
         "companion.clarification-checkin"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "createWorker"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -26139,7 +27083,9 @@
         "research result contains verified citable sources",
         "proposal is read-only",
         "exact context diff and source evidence are visible",
-        "context patch checkpoint exists"
+        "context patch checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound"
       ],
       "requiredObservations": [
         "selection",
@@ -26185,7 +27131,8 @@
         "automationResearchPlans.upsert",
         "automationContextPatches.upsert",
         "automationPearls.context.update,automationContextPatches.status.update",
-        "automationPearls.context.restore"
+        "automationPearls.context.restore",
+        "scene.semanticOrbs.append"
       ],
       "undo": [
         "delete-automation-pearl-draft",
@@ -26193,7 +27140,8 @@
         "cancel-research-plan",
         "discard-context-patch",
         "undo-automation-context-patch",
-        "reapply-context-patch"
+        "reapply-context-patch",
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -26212,7 +27160,9 @@
         "automation-research-planned",
         "automation-context-patch-proposed",
         "automation-context-patch-applied",
-        "automation-context-patch-undone"
+        "automation-context-patch-undone",
+        "orb-workers-created",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-encodeAutomationFromInstruction",
@@ -26229,7 +27179,8 @@
         "planAutomationResearch",
         "proposeAutomationContextPatch",
         "approveAutomationContextPatch",
-        "undoAutomationContextPatch"
+        "undoAutomationContextPatch",
+        "createWorker"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -26275,7 +27226,9 @@
         "research result contains verified citable sources",
         "proposal is read-only",
         "exact context diff and source evidence are visible",
-        "context patch checkpoint exists"
+        "context patch checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound"
       ],
       "requiredObservations": [
         "selection",
@@ -26321,7 +27274,8 @@
         "automationResearchPlans.upsert",
         "automationContextPatches.upsert",
         "automationPearls.context.update,automationContextPatches.status.update",
-        "automationPearls.context.restore"
+        "automationPearls.context.restore",
+        "scene.semanticOrbs.append"
       ],
       "undo": [
         "delete-automation-pearl-draft",
@@ -26329,7 +27283,8 @@
         "cancel-research-plan",
         "discard-context-patch",
         "undo-automation-context-patch",
-        "reapply-context-patch"
+        "reapply-context-patch",
+        "restore-semantic-orbs"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -26348,7 +27303,9 @@
         "automation-research-planned",
         "automation-context-patch-proposed",
         "automation-context-patch-applied",
-        "automation-context-patch-undone"
+        "automation-context-patch-undone",
+        "orb-workers-created",
+        "semantic-orb-created"
       ],
       "tests": [
         "capability-runAutomationPearl",
@@ -26365,7 +27322,8 @@
         "planAutomationResearch",
         "proposeAutomationContextPatch",
         "approveAutomationContextPatch",
-        "undoAutomationContextPatch"
+        "undoAutomationContextPatch",
+        "createWorker"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -31943,6 +32901,325 @@
       "platform": "extension"
     },
     {
+      "id": "companion.capability.extension.findExternalOnScreenMatching",
+      "version": 1,
+      "kind": "capability",
+      "name": "findExternalOnScreenMatching",
+      "purpose": "Find matching text on the active page and draw pearl filaments to each hit",
+      "examples": [
+        "find everything on this page that says limited partner"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "condition": "string",
+          "limit": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-findExternalOnScreenMatching",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.seekExternalPearlToTarget",
+      "version": 1,
+      "kind": "capability",
+      "name": "seekExternalPearlToTarget",
+      "purpose": "Fly the page pearl to a screen point with seek animation",
+      "examples": [
+        "fly the pearl to that heading"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "x": "number?",
+          "y": "number?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-seekExternalPearlToTarget",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.playExternalPearlPowerFx",
+      "version": 1,
+      "kind": "capability",
+      "name": "playExternalPearlPowerFx",
+      "purpose": "Play a pearl power FX overlay on the page pearl",
+      "examples": [
+        "show the pearl charging"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": "charge|burst|echo|fission|fuse|filament|seek|mark",
+          "count": "number?",
+          "rects": "array?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
+        "orb exists",
+        "orb has referenced context or child orbs"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update"
+      ],
+      "undo": [
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "orb-workers-created",
+        "semantic-orb-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-playExternalPearlPowerFx",
+        "feature:runtime.pearl-power-fx"
+      ],
+      "featureIds": [
+        "runtime.pearl-power-fx"
+      ],
+      "canonicalCommands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
       "id": "companion.capability.extension.tasteExternalCandidate",
       "version": 1,
       "kind": "capability",
@@ -36830,6 +38107,9 @@
         "orb exists",
         "orb has referenced context or child orbs",
         "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -36930,6 +38210,8 @@
         "semantic-orb-created",
         "semantic-orb-hierarchy-changed",
         "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -36971,6 +38253,8 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",

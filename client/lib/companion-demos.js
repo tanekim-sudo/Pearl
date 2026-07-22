@@ -16,6 +16,30 @@ export const COMPANION_DEMOS = [
     ],
   },
   {
+    id: "pearl-powers",
+    title: "Pearl powers",
+    blurb: "emerge, echo, fission, charge, filament, fuse, and seek — the pearl's optical superpowers",
+    keywords: ["pearl power", "powers", "fission", "sub-agent", "beam", "filament", "what can the pearl", "dragon"],
+    steps: [
+      { verb: "createSemanticOrb", args: { name: "Power pearl", activate: true } },
+      {
+        verb: "spawnSubAgentPearls",
+        args: {
+          skipClarification: true,
+          specs: [
+            { role: "explore", goal: "Explore the field" },
+            { role: "evaluate", goal: "Evaluate the options" },
+            { role: "draft", goal: "Draft the output" },
+          ],
+        },
+      },
+      { verb: "findOnScreenMatching", args: { condition: "pearl", seekFirst: true, skipClarification: true } },
+      { verb: "fuseSubAgentPearls", args: {} },
+      { verb: "beamPearlToTargets", args: { rects: [{ x: 120, y: 160, width: 80, height: 18 }] } },
+      { verb: "seekPearlToTarget", args: { x: 160, y: 169 } },
+    ],
+  },
+  {
     id: "three-layers",
     title: "The three layers",
     blurb: "lenses rail, paper page, AI space — what each is for",

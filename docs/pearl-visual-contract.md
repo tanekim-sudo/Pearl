@@ -10,12 +10,27 @@ The idle body is 28–36 CSS pixels; the precision cursor is 16–20 CSS pixels.
 
 Only the internal nucleus, nacre, caustic, and reflected environment may parallax. Specular light remains fixed. Idle motion is a slow ±2% breath. Command effects use the shared semantic animation vocabulary and one settling overshoot. Reduced motion removes all motion while retaining the complete static optical stack.
 
+## Power FX (ephemeral, allowed)
+
+Short-lived optical power effects may accompany command receipts through the shared `pearl-power-fx` overlay host — never by forking the pearl SVG renderer:
+
+- **charge** — intensifying nucleus/caustic while operating
+- **burst** — refractive commit flash
+- **echo** — afterimage clone peel on duplicate
+- **fission** — N satellite pearls on radial paths (sub-agent spawn)
+- **fuse** — satellites snapping inward on merge
+- **filament** — thin caustic strands from pearl to grounded screen targets
+- **seek** — autonomous flight path to a target
+- **mark** — soft hit shimmer on a matched target
+
+Power FX are budgeted, cancellable with the effect, and reduced-motion safe (static residue only). They use pearl-nacre / caustic palette language. They must not become permanent chrome around idle pearls.
+
 ## Forbidden conditions
 
 - plain white circle or white-dot collapse
-- outer glow, aura, halo, bloom, rays, neon, or saturated interference color
+- permanent outer glow, aura, halo, bloom, neon, or saturated interference color
 - heavy drop shadow or blurred surrounding chrome
-- spinning, pulsing, bouncing, or ornamental activity
+- spinning, bouncing, confetti, or ornamental activity unrelated to a command receipt
 - a surface competing through gradient, rounded-card chrome, color, density, or scale
 - renderer forks or decorative Pearl approximations
 - hidden keyboard focus, status, failure, or screen-reader semantics

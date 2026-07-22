@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 53,
+    "features": 54,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,9 +27,9 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 53,
-    "domainCommands": 111,
-    "companionCapabilities": 201,
+    "featureContracts": 54,
+    "domainCommands": 113,
+    "companionCapabilities": 204,
     "extensionEntries": 77
   },
   "requirements": [
@@ -374,7 +374,9 @@
         "composeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "webEntries": [
         "client/components/CompanionOrb.jsx:pearl-action-search",
@@ -384,7 +386,8 @@
         "client/components/OrbUniverseShell.jsx:orb-continuation",
         "client/components/OrbUniverseShell.jsx:InstallLanding",
         "client/lib/director.js",
-        "shared/physical-pearl.js"
+        "shared/physical-pearl.js",
+        "client/components/PearlPowerFxOverlay.jsx"
       ],
       "companionCapabilities": [
         "observeWorkspace",
@@ -403,6 +406,9 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "spawnSubAgentPearls",
+        "fuseSubAgentPearls",
+        "demonstratePearlPowers",
         "capturePageSelection",
         "createExternalSemanticOrb",
         "queueExternalAction",
@@ -450,7 +456,8 @@
         "client/lib/extension-continuation.test.js",
         "shared/pearl-entity.test.js",
         "shared/pearl-animation.test.js",
-        "shared/physical-pearl.test.js"
+        "shared/physical-pearl.test.js",
+        "shared/pearl-power-fx.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -1801,14 +1808,17 @@
         "composeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "webEntries": [
         "client/components/PhysicalPearl.jsx",
         "extension/src/sidepanel/main.jsx",
         "extension/src/content/bridge.js",
         "client/lib/director.js",
-        "shared/physical-pearl.js"
+        "shared/physical-pearl.js",
+        "client/components/PearlPowerFxOverlay.jsx"
       ],
       "companionCapabilities": [
         "observeUnifiedPearl",
@@ -1819,6 +1829,9 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "spawnSubAgentPearls",
+        "fuseSubAgentPearls",
+        "demonstratePearlPowers",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1831,7 +1844,8 @@
       "automatedTests": [
         "shared/pearl-entity.test.js",
         "shared/pearl-animation.test.js",
-        "shared/physical-pearl.test.js"
+        "shared/physical-pearl.test.js",
+        "shared/pearl-power-fx.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -1861,11 +1875,14 @@
         "composeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "webEntries": [
         "client/lib/director.js",
         "shared/physical-pearl.js",
+        "client/components/PearlPowerFxOverlay.jsx",
         "client/components/PhysicalPearl.jsx",
         "client/components/CompanionOrb.jsx",
         "client/components/SemanticOrbLayer.jsx",
@@ -1884,6 +1901,9 @@
         "nestSemanticOrb",
         "splitSemanticOrb",
         "restorePearlVersion",
+        "spawnSubAgentPearls",
+        "fuseSubAgentPearls",
+        "demonstratePearlPowers",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1897,6 +1917,7 @@
         "shared/pearl-entity.test.js",
         "shared/pearl-animation.test.js",
         "shared/physical-pearl.test.js",
+        "shared/pearl-power-fx.test.js",
         "scripts/pearl-visual-contract-audit.mjs",
         "docs/pearl-visual-contract.md",
         "client/lib/director.test.js"
@@ -2977,5 +2998,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T03:19:18.245Z"
+  "generatedAt": "2026-07-22T04:17:19.924Z"
 }

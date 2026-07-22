@@ -1,6 +1,7 @@
 import { DOMAIN_COMMANDS, executeDomainCommand } from "./domain-commands.js";
 import { createPearlEntity, checkpointPearlEntity, pearlEntityObservation } from "./pearl-entity.js";
 import { pearlAnimationForCommand, validatePearlAnimation } from "./pearl-animation.js";
+import { powerFxForAnimation } from "./pearl-power-fx.js";
 
 export const PEARL_ACTION_PROTOCOL_VERSION = 1;
 export const PEARL_ACTION_SURFACES = Object.freeze(["web", "extension", "studio", "companion", "voice", "gesture", "director", "server"]);
@@ -139,6 +140,15 @@ export async function executePearlActionEvent(input = {}) {
   };
   const animation = pearlAnimationForCommand(event.command, { effectReceiptId: effectReceipt.id });
   validatePearlAnimation(animation, effectReceipt);
+  const powerFx = powerFxForAnimation(animation, {
+    pearlId: entity.id,
+    command: event.command,
+    count: execution.result?.workers?.length
+      || execution.result?.objects?.length
+      || execution.result?.powerFx?.count
+      || undefined,
+    kind: execution.result?.powerFx?.kind,
+  });
   const createdObject = resultObject(execution);
   if (createdObject?.id && ["automation-pearl", "semantic-orb"].includes(createdObject.kind) && createdObject.id !== entity.id) {
     execution.state = {
@@ -175,6 +185,7 @@ export async function executePearlActionEvent(input = {}) {
     event,
     effectReceipt,
     animation,
+    powerFx,
     observation: pearlEntityObservation(next),
     replay: false,
     conflict: null,

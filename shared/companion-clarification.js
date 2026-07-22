@@ -232,3 +232,61 @@ export function inferAutomationAmbiguities(evidenceInput = [], pearl = null) {
     reason: question.reason,
   }));
 }
+
+const VAGUE_SPLIT = /\b(?:somehow|whatever|stuff|things?|figure it out|as appropriate|etc\.?|and so on|split it up|make workers|sub[- ]?agents?)\b/i;
+
+/**
+ * Clarify before fission / sub-agent spawn when count, roles, or contents are ambiguous.
+ */
+export function inspectPearlPowerSpecificity(input = {}) {
+  const instruction = bounded(input.instruction || input.text || "", 8_000);
+  const action = input.action || input.command || "spawnSubAgentPearls";
+  const specs = Array.isArray(input.specs) ? input.specs : [];
+  const count = Number(input.count) || specs.length || 0;
+  const questions = [];
+
+  if (/split|fission|worker|sub[- ]?agent|duplicate|spawn/i.test(action) || /split|worker|sub[- ]?agent/i.test(instruction)) {
+    if (!count || count < 1) {
+      pushQuestion(
+        questions,
+        "fission-count",
+        "How many sub-agent pearls should I create (1–8)?",
+        "Sub-agent count is missing or zero.",
+        ["2", "3", "4", "8"],
+      );
+    } else if (count > 8) {
+      pushQuestion(
+        questions,
+        "fission-cap",
+        "I can create at most 8 sub-agent pearls at once. Which count should I use?",
+        "Requested fission exceeds the hard worker cap.",
+        ["4", "6", "8"],
+      );
+    }
+
+    const rolesReady = specs.length > 0 && specs.every((spec) => bounded(spec.role || spec.goal || "", 120));
+    if ((!rolesReady && count > 1) || (VAGUE_SPLIT.test(instruction) && !rolesReady)) {
+      pushQuestion(
+        questions,
+        "fission-roles",
+        "What should each sub-agent pearl own — name a short role or goal per pearl?",
+        "Sub-agent contents or roles are too vague to execute faithfully.",
+        ["Explore / Evaluate", "Research / Draft", "I will list roles"],
+      );
+    }
+  }
+
+  if (/findOnScreen|beamPearl|filament|find everything/i.test(action) || /\bfind (?:everything|all)\b/i.test(instruction)) {
+    const condition = bounded(input.condition || "", 500);
+    if (!condition || condition.split(/\s+/).length < 1 || VAGUE.test(condition)) {
+      pushQuestion(
+        questions,
+        "match-condition",
+        "What exact text or pattern should the pearl filament mark on screen?",
+        "Find-on-screen needs a concrete match condition.",
+      );
+    }
+  }
+
+  return summarize(questions, [], instruction, null);
+}

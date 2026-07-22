@@ -1,24 +1,32 @@
-export const PEARL_ANIMATION_VERSION = 1;
+export const PEARL_ANIMATION_VERSION = 2;
 export const PEARL_ANIMATION_VOCABULARY = Object.freeze({
-  absorb: { durationMs: 420, motion: "surface-tension-inward", layers: ["nucleus", "nacre"], cancellable: true },
-  refract: { durationMs: 360, motion: "thin-film-refract", layers: ["nacre", "reflection"], cancellable: true },
-  emerge: { durationMs: 520, motion: "mass-emerge-settle", layers: ["body", "nucleus", "contact"], cancellable: true },
-  stream: { durationMs: 680, motion: "internal-warmth-flow", layers: ["nucleus", "nacre"], cancellable: true, repeatWhileEffect: true },
-  unfold: { durationMs: 420, motion: "thin-membrane-unfold", layers: ["nacre", "surface"], cancellable: true },
-  settle: { durationMs: 360, motion: "soft-overshoot-settle", layers: ["body", "contact"], cancellable: true },
-  split: { durationMs: 480, motion: "mass-separate", layers: ["body", "satellites"], cancellable: true },
-  merge: { durationMs: 480, motion: "surface-tension-merge", layers: ["body", "nucleus"], cancellable: true },
-  nest: { durationMs: 440, motion: "child-orbit-settle", layers: ["body", "satellites", "nacre"], cancellable: true },
-  compose: { durationMs: 520, motion: "ordered-surface-braid", layers: ["body", "nucleus", "nacre"], cancellable: true },
-  duplicate: { durationMs: 480, motion: "mass-echo-emerge", layers: ["body", "nucleus", "contact"], cancellable: true },
-  remix: { durationMs: 560, motion: "interior-recombine", layers: ["nucleus", "nacre", "reflection"], cancellable: true },
-  arrive: { durationMs: 420, motion: "sparse-source-arrival", layers: ["satellites", "nacre"], cancellable: true },
-  crossfade: { durationMs: 650, motion: "interior-crossfade", layers: ["nucleus"], cancellable: true },
-  transfer: { durationMs: 760, motion: "mass-transfer-settle", layers: ["body", "contact", "nacre"], cancellable: true },
-  lock: { durationMs: 300, motion: "interior-cool-occlude", layers: ["nucleus", "body"], cancellable: false },
-  unlock: { durationMs: 360, motion: "interior-warm-reveal", layers: ["nucleus", "nacre"], cancellable: true },
-  recover: { durationMs: 420, motion: "checkpoint-return-settle", layers: ["reflection", "body"], cancellable: true },
-  fail: { durationMs: 260, motion: "cool-opacity-settle", layers: ["nucleus", "body"], cancellable: false },
+  absorb: { durationMs: 420, motion: "surface-tension-inward", layers: ["nucleus", "nacre"], cancellable: true, power: "burst" },
+  refract: { durationMs: 360, motion: "thin-film-refract", layers: ["nacre", "reflection"], cancellable: true, power: "charge" },
+  emerge: { durationMs: 520, motion: "mass-emerge-settle", layers: ["body", "nucleus", "contact"], cancellable: true, power: "burst" },
+  stream: { durationMs: 680, motion: "internal-warmth-flow", layers: ["nucleus", "nacre"], cancellable: true, repeatWhileEffect: true, power: "charge" },
+  unfold: { durationMs: 420, motion: "thin-membrane-unfold", layers: ["nacre", "surface"], cancellable: true, power: "burst" },
+  settle: { durationMs: 360, motion: "soft-overshoot-settle", layers: ["body", "contact"], cancellable: true, power: "burst" },
+  split: { durationMs: 720, motion: "mass-fission-burst", layers: ["body", "nucleus", "satellites"], cancellable: true, power: "fission" },
+  merge: { durationMs: 560, motion: "surface-tension-fuse", layers: ["body", "nucleus"], cancellable: true, power: "fuse" },
+  nest: { durationMs: 440, motion: "child-orbit-settle", layers: ["body", "satellites", "nacre"], cancellable: true, power: "fuse" },
+  compose: { durationMs: 520, motion: "ordered-surface-braid", layers: ["body", "nucleus", "nacre"], cancellable: true, power: "fuse" },
+  duplicate: { durationMs: 640, motion: "mass-echo-peel", layers: ["body", "nucleus", "contact"], cancellable: true, power: "echo" },
+  remix: { durationMs: 560, motion: "interior-recombine", layers: ["nucleus", "nacre", "reflection"], cancellable: true, power: "charge" },
+  arrive: { durationMs: 420, motion: "sparse-source-arrival", layers: ["satellites", "nacre"], cancellable: true, power: "seek" },
+  crossfade: { durationMs: 650, motion: "interior-crossfade", layers: ["nucleus"], cancellable: true, power: "charge" },
+  transfer: { durationMs: 760, motion: "mass-transfer-settle", layers: ["body", "contact", "nacre"], cancellable: true, power: "filament" },
+  lock: { durationMs: 300, motion: "interior-cool-occlude", layers: ["nucleus", "body"], cancellable: false, power: "burst" },
+  unlock: { durationMs: 360, motion: "interior-warm-reveal", layers: ["nucleus", "nacre"], cancellable: true, power: "burst" },
+  recover: { durationMs: 420, motion: "checkpoint-return-settle", layers: ["reflection", "body"], cancellable: true, power: "burst" },
+  fail: { durationMs: 260, motion: "cool-opacity-settle", layers: ["nucleus", "body"], cancellable: false, power: "burst" },
+  charge: { durationMs: 900, motion: "nucleus-charge-windup", layers: ["nucleus", "caustic", "nacre"], cancellable: true, repeatWhileEffect: true, power: "charge" },
+  burst: { durationMs: 420, motion: "refractive-commit-flash", layers: ["nacre", "specular"], cancellable: true, power: "burst" },
+  echo: { durationMs: 640, motion: "afterimage-echo-peel", layers: ["body", "nucleus", "contact"], cancellable: true, power: "echo" },
+  fission: { durationMs: 720, motion: "mass-fission-burst", layers: ["body", "nucleus", "satellites"], cancellable: true, power: "fission" },
+  fuse: { durationMs: 560, motion: "satellite-fuse-inward", layers: ["body", "nucleus"], cancellable: true, power: "fuse" },
+  filament: { durationMs: 900, motion: "caustic-filament-out", layers: ["nacre", "caustic"], cancellable: true, power: "filament" },
+  seek: { durationMs: 700, motion: "autonomous-seek-settle", layers: ["body", "contact"], cancellable: true, power: "seek" },
+  mark: { durationMs: 550, motion: "target-mark-hit", layers: ["nacre", "pinlight"], cancellable: true, power: "mark" },
 });
 
 const COMMAND_ANIMATION = Object.freeze({
@@ -60,8 +68,13 @@ const COMMAND_ANIMATION = Object.freeze({
   restorePearlVersion: "recover",
   undoPearlEntityEdit: "recover",
   redoPearlEntityEdit: "recover",
-  createWorker: "split",
-  mergeWorkers: "merge",
+  createWorker: "fission",
+  spawnSubAgentPearls: "fission",
+  mergeWorkers: "fuse",
+  fuseSubAgentPearls: "fuse",
+  findOnScreenMatching: "filament",
+  beamPearlToTargets: "filament",
+  seekPearlToTarget: "seek",
   proposeAutomationContextPatch: "arrive",
   approveAutomationContextPatch: "absorb",
   transitionPearlSoundscape: "crossfade",
@@ -80,7 +93,7 @@ const COMMAND_ANIMATION = Object.freeze({
   proposePearlCognitivePatch: "refract",
   applyPearlCognitivePatch: "absorb",
   resolvePearlCognitiveUncertainty: "unlock",
-  startPearlCognitivePlayback: "split",
+  startPearlCognitivePlayback: "fission",
   advancePearlCognitivePlayback: "absorb",
   cancelPearlCognitivePlayback: "settle",
   composeObjects: "compose",
@@ -88,9 +101,13 @@ const COMMAND_ANIMATION = Object.freeze({
 
 function inferAnimationSemantic(command) {
   if (COMMAND_ANIMATION[command]) return COMMAND_ANIMATION[command];
+  if (/createWorker|spawnSubAgent|fission/i.test(command)) return "fission";
+  if (/fuseSubAgent|mergeWorkers/i.test(command)) return "fuse";
+  if (/findOnScreen|beamPearl|filament/i.test(command)) return "filament";
+  if (/seekPearl/i.test(command)) return "seek";
   if (/createSemanticOrb|spawn|birth|duplicate/i.test(command)) return /duplicate/i.test(command) ? "duplicate" : "emerge";
   if (/compose/i.test(command)) return "compose";
-  if (/merge|combine/i.test(command)) return "merge";
+  if (/merge|combine|fuse/i.test(command)) return /fuse/i.test(command) ? "fuse" : "merge";
   if (/nest/i.test(command) && !/unnest/i.test(command)) return "nest";
   if (/split|fork/i.test(command)) return "split";
   if (/remix|recombin|mutate/i.test(command)) return "remix";
@@ -110,6 +127,7 @@ export function pearlAnimationForCommand(command, options = {}) {
     id: options.id || `animation:${command}:${Date.now()}`,
     command,
     semantic,
+    power: definition.power || null,
     ...definition,
     reducedMotion: {
       durationMs: 0,
@@ -125,6 +143,9 @@ export function pearlAnimationForCommand(command, options = {}) {
 export function validatePearlAnimation(animation, effectReceipt) {
   if (!animation?.finishesOnEffectReceipt || animation.narration !== false) throw new Error("Pearl animation contract is invalid");
   if (effectReceipt && animation.effectReceiptId && animation.effectReceiptId !== effectReceipt.id) throw new Error("Pearl animation effect receipt mismatch");
-  if (/spin|bounce|confetti|glow|ray/i.test(JSON.stringify(animation))) throw new Error("Pearl animation uses forbidden generic motion");
+  // Word-bounded: avoid false positives like "array" matching "ray".
+  if (/\b(?:spin|bounce|confetti|glow|neon|halo|aura|bloom)\b/i.test(JSON.stringify(animation))) {
+    throw new Error("Pearl animation uses forbidden generic motion");
+  }
   return true;
 }

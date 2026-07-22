@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T03:19:17.021Z",
+  "generatedAt": "2026-07-22T04:17:07.899Z",
   "counts": {
-    "features": 53,
-    "companion": 356,
-    "extension": 102,
-    "commands": 123
+    "features": 54,
+    "companion": 366,
+    "extension": 105,
+    "commands": 125
   },
   "features": [
     {
@@ -816,7 +816,9 @@
         "composeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
       ],
       "companion": [
         "executeUnifiedPearlAction",
@@ -825,7 +827,10 @@
         "composeSemanticOrbs",
         "nestSemanticOrb",
         "splitSemanticOrb",
-        "restorePearlVersion"
+        "restorePearlVersion",
+        "spawnSubAgentPearls",
+        "fuseSubAgentPearls",
+        "demonstratePearlPowers"
       ],
       "extension": [
         "executeExternalPearlAction"
@@ -833,7 +838,37 @@
       "tests": [
         "shared/pearl-entity.test.js",
         "shared/pearl-animation.test.js",
-        "shared/physical-pearl.test.js"
+        "shared/physical-pearl.test.js",
+        "shared/pearl-power-fx.test.js"
+      ]
+    },
+    {
+      "id": "runtime.pearl-power-fx",
+      "commands": [
+        "createWorker",
+        "mergeWorkers",
+        "splitSemanticOrb",
+        "duplicateSemanticOrb"
+      ],
+      "companion": [
+        "spawnSubAgentPearls",
+        "fuseSubAgentPearls",
+        "findOnScreenMatching",
+        "beamPearlToTargets",
+        "seekPearlToTarget",
+        "demonstratePearlPowers",
+        "inspectPearlPowerSpecificity"
+      ],
+      "extension": [
+        "findExternalOnScreenMatching",
+        "seekExternalPearlToTarget",
+        "playExternalPearlPowerFx"
+      ],
+      "tests": [
+        "shared/pearl-power-fx.test.js",
+        "shared/pearl-screen-match.test.js",
+        "shared/companion-clarification.test.js",
+        "shared/orb-workers.test.js"
       ]
     },
     {
@@ -918,13 +953,18 @@
     },
     {
       "id": "companion.clarification-checkin",
-      "commands": [],
+      "commands": [
+        "createWorker"
+      ],
       "companion": [
         "inspectInstructionSpecificity",
+        "inspectPearlPowerSpecificity",
         "requestClarification",
         "answerClarification",
         "encodeAutomationFromInstruction",
-        "runAutomationPearl"
+        "runAutomationPearl",
+        "spawnSubAgentPearls",
+        "findOnScreenMatching"
       ],
       "extension": [],
       "tests": [

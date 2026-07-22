@@ -7,6 +7,7 @@ export const PHYSICAL_PEARL_ANIMATIONS = Object.freeze([
   "absorb", "refract", "emerge", "stream", "unfold", "settle", "split", "merge",
   "nest", "compose", "duplicate", "remix", "arrive", "crossfade", "transfer",
   "lock", "unlock", "recover", "fail",
+  "charge", "burst", "echo", "fission", "fuse", "filament", "seek", "mark",
 ]);
 
 const safeToken = (value, fallback) => {
@@ -93,6 +94,8 @@ export const PHYSICAL_PEARL_CSS = `
 .physical-pearl[data-pearl-variant=canvas-anchor]{--pearl-nacre:#b6c8bf}
 .physical-pearl[data-pearl-state=listening]{--pearl-nucleus-a:#f0d4c3}.physical-pearl[data-pearl-state=listening] .physical-pearl__nucleus{opacity:.82}
 .physical-pearl[data-pearl-state=executing] .physical-pearl__nacre{opacity:calc(.48 + var(--pearl-motion) * .34)}
+.physical-pearl[data-pearl-state=executing] .physical-pearl__nucleus{opacity:.92}
+.physical-pearl[data-pearl-state=executing] .physical-pearl__caustic{fill:rgba(255,235,196,.22)}
 .physical-pearl[data-pearl-state=blocked],.physical-pearl[data-pearl-state=failed]{filter:saturate(.42) brightness(.88)}
 .physical-pearl[data-pearl-state=blocked] .physical-pearl__nucleus,.physical-pearl[data-pearl-state=failed] .physical-pearl__nucleus{opacity:.3}
 .physical-pearl[data-pearl-variant=cursor]{pointer-events:none;--pearl-nucleus-a:#c89f93;--pearl-nucleus-b:#6b9888;--pearl-edge-dark:#344641}.physical-pearl[data-pearl-variant=cursor] .physical-pearl__hotspot{display:block}
@@ -110,17 +113,29 @@ export const PHYSICAL_PEARL_CSS = `
 .physical-pearl[data-pearl-animation=lock] .physical-pearl__nucleus{animation:pearl-effect-lock .3s ease-out both}
 .physical-pearl[data-pearl-animation=unlock] .physical-pearl__nucleus{animation:pearl-effect-unlock .36s ease-out}
 .physical-pearl[data-pearl-animation=fail] .physical-pearl__mass{animation:pearl-effect-fail .26s ease-out}
-.physical-pearl[data-pearl-animation=split] .physical-pearl__reflection{animation:pearl-effect-split .48s ease-out}
-.physical-pearl[data-pearl-animation=merge] .physical-pearl__nacre{animation:pearl-effect-merge .48s cubic-bezier(.2,.72,.2,1)}
+.physical-pearl[data-pearl-animation=split] .physical-pearl__mass{animation:pearl-effect-fission .72s cubic-bezier(.16,.78,.22,1)}
+.physical-pearl[data-pearl-animation=split] .physical-pearl__nucleus{animation:pearl-effect-fission-core .72s ease-out}
+.physical-pearl[data-pearl-animation=merge] .physical-pearl__nacre{animation:pearl-effect-fuse .56s cubic-bezier(.2,.72,.2,1)}
 .physical-pearl[data-pearl-animation=arrive] .physical-pearl__pinlight{animation:pearl-effect-arrive .42s ease-out}
 .physical-pearl[data-pearl-animation=crossfade] .physical-pearl__nucleus{animation:pearl-effect-crossfade .65s ease-in-out}
 .physical-pearl[data-pearl-animation=transfer] .physical-pearl__mass{animation:pearl-effect-transfer .76s cubic-bezier(.18,.78,.24,1)}
 .physical-pearl[data-pearl-animation=recover] .physical-pearl__reflection{animation:pearl-effect-recover .42s ease-out}
 .physical-pearl[data-pearl-animation=nest] .physical-pearl__mass{animation:pearl-effect-nest .44s cubic-bezier(.2,.72,.2,1)}
 .physical-pearl[data-pearl-animation=compose] .physical-pearl__nacre{animation:pearl-effect-compose .52s cubic-bezier(.18,.78,.24,1)}
-.physical-pearl[data-pearl-animation=duplicate] .physical-pearl__mass{animation:pearl-effect-duplicate .48s cubic-bezier(.18,.78,.24,1)}
+.physical-pearl[data-pearl-animation=duplicate] .physical-pearl__mass{animation:pearl-effect-echo .64s cubic-bezier(.18,.78,.24,1)}
 .physical-pearl[data-pearl-animation=remix] .physical-pearl__nucleus{animation:pearl-effect-remix .56s ease-in-out}
-.physical-pearl[data-pearl-animation=stream] .physical-pearl__nucleus{animation:pearl-effect-stream .68s ease-in-out}
+.physical-pearl[data-pearl-animation=stream] .physical-pearl__nucleus{animation:pearl-effect-charge .9s ease-in-out}
+.physical-pearl[data-pearl-animation=charge] .physical-pearl__nucleus{animation:pearl-effect-charge .9s ease-in-out}
+.physical-pearl[data-pearl-animation=charge] .physical-pearl__caustic{animation:pearl-effect-charge-caustic .9s ease-in-out}
+.physical-pearl[data-pearl-animation=burst] .physical-pearl__nacre{animation:pearl-effect-burst .42s ease-out}
+.physical-pearl[data-pearl-animation=echo] .physical-pearl__mass{animation:pearl-effect-echo .64s cubic-bezier(.18,.78,.24,1)}
+.physical-pearl[data-pearl-animation=fission] .physical-pearl__mass{animation:pearl-effect-fission .72s cubic-bezier(.16,.78,.22,1)}
+.physical-pearl[data-pearl-animation=fission] .physical-pearl__nucleus{animation:pearl-effect-fission-core .72s ease-out}
+.physical-pearl[data-pearl-animation=fuse] .physical-pearl__nacre{animation:pearl-effect-fuse .56s cubic-bezier(.2,.72,.2,1)}
+.physical-pearl[data-pearl-animation=filament] .physical-pearl__caustic{animation:pearl-effect-filament .9s ease-out}
+.physical-pearl[data-pearl-animation=filament] .physical-pearl__nacre{animation:pearl-effect-filament-nacre .9s ease-out}
+.physical-pearl[data-pearl-animation=seek] .physical-pearl__mass{animation:pearl-effect-seek .7s cubic-bezier(.2,.7,.2,1)}
+.physical-pearl[data-pearl-animation=mark] .physical-pearl__pinlight{animation:pearl-effect-mark .55s ease-out}
 @keyframes pearl-effect-absorb{0%{transform:scale(1)}48%{transform:scale(.91)}72%{transform:scale(1.025)}100%{transform:scale(1)}}
 @keyframes pearl-effect-refract{0%{opacity:.68;transform:translate(-1px,1px)}62%{opacity:1;transform:translate(1px,-1px)}100%{opacity:.82;transform:none}}
 @keyframes pearl-effect-emerge{0%{opacity:0;transform:scale(.58) translateY(3px)}68%{opacity:1;transform:scale(1.035) translateY(-1px)}100%{transform:scale(1)}}
@@ -129,19 +144,26 @@ export const PHYSICAL_PEARL_CSS = `
 @keyframes pearl-effect-lock{0%{opacity:.82}100%{opacity:.28;transform:scale(.72)}}
 @keyframes pearl-effect-unlock{0%{opacity:.28;transform:scale(.72)}100%{opacity:.82;transform:none}}
 @keyframes pearl-effect-fail{0%{transform:translateX(0)}45%{transform:translateX(-1.5px)}72%{transform:translateX(1px)}100%{transform:none}}
-@keyframes pearl-effect-split{0%{opacity:.18;transform:scaleX(.5)}55%{opacity:.82;transform:scaleX(1.12)}100%{opacity:.34;transform:none}}
-@keyframes pearl-effect-merge{0%{opacity:.28;transform:scale(1.08)}58%{opacity:.82;transform:scale(.94)}100%{opacity:.48;transform:none}}
 @keyframes pearl-effect-arrive{0%{opacity:0;transform:translate(-5px,3px)}70%{opacity:1;transform:translate(1px,-1px)}100%{transform:none}}
 @keyframes pearl-effect-crossfade{0%,100%{opacity:.58}50%{opacity:.86}}
 @keyframes pearl-effect-transfer{0%{opacity:.5;transform:translateX(-4px) scale(.96)}62%{opacity:1;transform:translateX(1px) scale(1.02)}100%{transform:none}}
 @keyframes pearl-effect-recover{0%{opacity:.12;transform:translateY(2px)}100%{opacity:.34;transform:none}}
 @keyframes pearl-effect-nest{0%{transform:scale(1)}42%{transform:scale(.88) translate(2px,-1px)}78%{transform:scale(1.03)}100%{transform:none}}
 @keyframes pearl-effect-compose{0%{opacity:.3;transform:scale(1.06) translateX(-2px)}55%{opacity:.9;transform:scale(.96) translateX(1px)}100%{opacity:.48;transform:none}}
-@keyframes pearl-effect-duplicate{0%{opacity:0;transform:scale(.62) translateX(-4px)}58%{opacity:1;transform:scale(1.04) translateX(1px)}100%{transform:none}}
 @keyframes pearl-effect-remix{0%{opacity:.45;transform:scale(.9)}50%{opacity:.95;transform:scale(1.06)}100%{opacity:.72;transform:none}}
-@keyframes pearl-effect-stream{0%,100%{opacity:.5;transform:scale(.96)}50%{opacity:.92;transform:scale(1.04)}}
+@keyframes pearl-effect-charge{0%,100%{opacity:.48;transform:scale(.94)}45%{opacity:1;transform:scale(1.1)}72%{opacity:.88;transform:scale(1.04)}}
+@keyframes pearl-effect-charge-caustic{0%,100%{opacity:.55;transform:translate(0,0) scale(1)}50%{opacity:1;transform:translate(1px,-1px) scale(1.08)}}
+@keyframes pearl-effect-burst{0%{opacity:.2;transform:scale(.7)}40%{opacity:1;transform:scale(1.12)}100%{opacity:.48;transform:none}}
+@keyframes pearl-effect-echo{0%{opacity:0;transform:scale(.55) translateX(-8px)}28%{opacity:1;transform:scale(1.08) translateX(2px)}62%{transform:scale(.97) translateX(-1px)}100%{transform:none}}
+@keyframes pearl-effect-fission{0%{transform:scale(1)}18%{transform:scale(1.14)}42%{transform:scale(.82)}68%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes pearl-effect-fission-core{0%{opacity:.7;transform:scale(1)}30%{opacity:1;transform:scale(1.28)}100%{opacity:.72;transform:none}}
+@keyframes pearl-effect-fuse{0%{opacity:.2;transform:scale(1.2)}48%{opacity:.95;transform:scale(.88)}100%{opacity:.48;transform:none}}
+@keyframes pearl-effect-filament{0%{opacity:.35;transform:translate(0,0) scale(1)}40%{opacity:1;transform:translate(2px,-2px) scale(1.12)}100%{opacity:.55;transform:none}}
+@keyframes pearl-effect-filament-nacre{0%{opacity:.3}45%{opacity:.95}100%{opacity:.48}}
+@keyframes pearl-effect-seek{0%{transform:translate(0,0) scale(1)}35%{transform:translate(3px,-4px) scale(1.06)}100%{transform:none}}
+@keyframes pearl-effect-mark{0%{opacity:.3;transform:scale(.5)}45%{opacity:1;transform:scale(1.4)}100%{opacity:.96;transform:none}}
 @keyframes physical-pearl-breath{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
 @media(prefers-color-scheme:dark){.physical-pearl[data-pearl-surrounding=auto]{--pearl-edge-dark:#d6ddd8;--pearl-reflection-light:#eef4ef;--pearl-reflection-mid:#a8b7b0;--pearl-reflection-dark:#51625b}}
-@media(prefers-reduced-motion:reduce){.physical-pearl[data-pearl-animation] *,.physical-pearl__mass{animation:none!important}.physical-pearl__nucleus,.physical-pearl__nacre,.physical-pearl__reflection{transform:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){.physical-pearl[data-pearl-animation] *,.physical-pearl__mass{animation:none!important}.physical-pearl__nucleus,.physical-pearl__nacre,.physical-pearl__reflection,.physical-pearl__caustic{transform:none!important;transition:none!important}}
 @media(forced-colors:active){.physical-pearl{forced-color-adjust:none}.physical-pearl__rim{stroke-width:1.15}.physical-pearl__hotspot{stroke:#111}}
 `;

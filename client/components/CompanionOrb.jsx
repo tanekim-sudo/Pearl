@@ -325,7 +325,7 @@ export default function CompanionOrb({
         ))}
         {(state.workers || []).slice(0, 4).map((worker, index) => (
           <button type="button" className="orb-worker" key={worker.id} style={{ "--worker-index": index }} aria-label={`${worker.role || "worker"}, ${worker.status || "working"}${worker.status === "working" ? ", cancel worker" : ""}`} onClick={() => worker.status === "working" && onWorkerCancel?.(worker.id)}>
-            <PhysicalPearl variant="worker" state={worker.status === "blocked" ? "blocked" : "executing"} size={18} decorative />{worker.role || "worker"}
+            <PhysicalPearl variant="worker" state={worker.status === "blocked" ? "blocked" : "executing"} animation="charge" size={18} decorative />{worker.role || "worker"}
           </button>
         ))}
         {(state.candidates || []).slice(0, 6).map((candidate, index) => (
@@ -349,7 +349,13 @@ export default function CompanionOrb({
         title="Pearl · click to ask · hold to speak · Shift+Enter for Studio"
       >
         <span id={titleId} className="sr-only">{label}. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.</span>
-        <PhysicalPearl variant="primary" state={phase} size={compact ? 30 : 34} decorative />
+        <PhysicalPearl
+          variant="primary"
+          state={["listening", "executing", "blocked", "failed", "loading"].includes(phase) ? phase : "idle"}
+          animation={phase === "executing" ? "charge" : (state.workers || []).length > 1 ? "fission" : null}
+          size={compact ? 30 : 34}
+          decorative
+        />
         <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
       </button>
       {!expanded && hint && <span className="pearl-start-hint">{hint}</span>}

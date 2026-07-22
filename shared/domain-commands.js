@@ -26,6 +26,7 @@ import {
   placeSemanticOrb,
   semanticOrbFromMaterial,
 } from "./semantic-orbs.js";
+import { createOrbInstance, fuseWorkerProposals, MAX_ORB_WORKERS, splitOrbWorkers } from "./orb-swarm.js";
 import {
   activatePearlCanvas,
   bindPearlCanvasContext,
@@ -660,6 +661,147 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return {
         state: { ...state, semanticOrbs, activeSemanticOrbId: state.activeSemanticOrbId === args.id ? null : state.activeSemanticOrbId },
         result: { type: "semantic-orb-deleted", id: args.id, effects: ["semantic-orb-deleted"] },
+      };
+    },
+  },
+  createWorker: {
+    schema: { parentId: "string", specs: "array", sceneId: "string?", limit: "number?" },
+    preconditions: ["parent pearl exists", "worker specs are finite and role-bound"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["orb-workers-created", "semantic-orb-created"],
+    execute(state, args, context) {
+      const parentId = args.parentId || args.id;
+      const parent = (state.semanticOrbs || []).find((orb) => orb.id === parentId);
+      if (!parent) throw new Error("parent pearl not found");
+      const rawSpecs = Array.isArray(args.specs) ? args.specs : [];
+      if (!rawSpecs.length) throw new Error("worker specs are required");
+      const limit = Math.max(1, Math.min(MAX_ORB_WORKERS, Number(args.limit) || MAX_ORB_WORKERS));
+      const parentInstance = createOrbInstance({
+        id: parent.id,
+        role: "parent",
+        context: parent.workingSet?.context || [],
+        checkpoint: { pearlId: parent.id, revision: parent.revision || 0 },
+      });
+      const workers = splitOrbWorkers(parentInstance, rawSpecs.map((spec, index) => ({
+        id: spec.id,
+        role: spec.role || spec.goal || `worker-${index + 1}`,
+        goal: spec.goal || spec.role || `Sub-agent ${index + 1}`,
+        context: spec.context || parent.workingSet?.context || [],
+        tools: spec.tools || [],
+        model: spec.model || "auto",
+        mutationScope: spec.mutationScope || null,
+        budget: spec.budget,
+      })), { limit });
+      let occupied = [...(state.semanticOrbs || [])];
+      const additions = workers.map((worker, index) => {
+        const id = context.idFactory();
+        const placement = placeSemanticOrb(occupied, {
+          x: parent.placement.x + Math.cos((-Math.PI / 2) + index * ((Math.PI * 2) / workers.length)) * 88,
+          y: parent.placement.y + Math.sin((-Math.PI / 2) + index * ((Math.PI * 2) / workers.length)) * 88,
+        });
+        const orb = createSemanticOrb({
+          id,
+          sceneId: args.sceneId || parent.sceneId,
+          name: worker.goal || worker.role,
+          placement,
+          parentOrbId: parent.id,
+          representation: { kind: "worker", refs: [worker.id], label: worker.role },
+          workingSet: {
+            context: clone(worker.context || []),
+            lenses: [],
+          },
+          lineage: [...(parent.lineage || []), { orbId: parent.id, operation: "fission", workerId: worker.id }],
+          createdAt: new Date(context.now).toISOString(),
+          updatedAt: new Date(context.now).toISOString(),
+        });
+        occupied = [...occupied, orb];
+        return { orb, worker: { ...worker, pearlId: id } };
+      });
+      const childIds = additions.map((entry) => entry.orb.id);
+      const semanticOrbs = occupied.map((orb) => {
+        if (orb.id !== parent.id) return orb;
+        return createSemanticOrb({
+          ...orb,
+          childOrbIds: [...new Set([...(orb.childOrbIds || []), ...childIds])],
+          updatedAt: new Date(context.now).toISOString(),
+        });
+      });
+      const orbWorkers = {
+        ...(state.orbWorkers || {}),
+        [parent.id]: additions.map((entry) => entry.worker),
+      };
+      return {
+        state: { ...state, semanticOrbs, orbWorkers, activeSemanticOrbId: parent.id },
+        result: {
+          type: "orb-workers",
+          id: parent.id,
+          objects: additions.map((entry) => entry.orb),
+          workers: additions.map((entry) => entry.worker),
+          effects: ["orb-workers-created", "semantic-orb-created"],
+          powerFx: { kind: "fission", count: additions.length, pearlId: parent.id },
+        },
+      };
+    },
+  },
+  mergeWorkers: {
+    schema: { parentId: "string", workerIds: "array?" },
+    preconditions: ["parent pearl has workers"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["orb-workers-merged"],
+    execute(state, args, context) {
+      const parentId = args.parentId || args.id;
+      const parent = (state.semanticOrbs || []).find((orb) => orb.id === parentId);
+      if (!parent) throw new Error("parent pearl not found");
+      const workers = (state.orbWorkers?.[parentId] || []).map((worker) => ({
+        ...worker,
+        status: worker.status || "completed",
+        proposal: worker.proposal || { type: "observation", summary: worker.goal || worker.role },
+      }));
+      if (!workers.length) throw new Error("no workers to fuse");
+      const selected = Array.isArray(args.workerIds) && args.workerIds.length
+        ? workers.filter((worker) => args.workerIds.includes(worker.id) || args.workerIds.includes(worker.pearlId))
+        : workers;
+      const fusion = fuseWorkerProposals(selected);
+      const removeIds = new Set(selected.map((worker) => worker.pearlId).filter(Boolean));
+      const semanticOrbs = (state.semanticOrbs || [])
+        .filter((orb) => !removeIds.has(orb.id))
+        .map((orb) => {
+          if (orb.id !== parentId) return orb;
+          return createSemanticOrb({
+            ...orb,
+            childOrbIds: (orb.childOrbIds || []).filter((id) => !removeIds.has(id)),
+            workingSet: {
+              ...orb.workingSet,
+              context: [
+                ...(orb.workingSet?.context || []),
+                ...fusion.accepted.map((proposal, index) => ({
+                  id: `fused:${parentId}:${index}`,
+                  kind: "worker-proposal",
+                  label: proposal.type,
+                  text: proposal.summary || proposal.type,
+                })),
+              ].slice(-40),
+            },
+            updatedAt: new Date(context.now).toISOString(),
+          });
+        });
+      const remaining = workers.filter((worker) => !selected.includes(worker));
+      const orbWorkers = { ...(state.orbWorkers || {}) };
+      if (remaining.length) orbWorkers[parentId] = remaining;
+      else delete orbWorkers[parentId];
+      return {
+        state: { ...state, semanticOrbs, orbWorkers, activeSemanticOrbId: parentId },
+        result: {
+          type: "orb-workers-merged",
+          id: parentId,
+          object: fusion,
+          effects: ["orb-workers-merged"],
+          powerFx: { kind: "fuse", count: selected.length, pearlId: parentId },
+        },
       };
     },
   },

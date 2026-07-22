@@ -1,6 +1,6 @@
 import { PHYSICAL_PEARL_CSS, PHYSICAL_PEARL_SIZES, physicalPearlMarkup } from "./physical-pearl.js";
 
-export const PEARL_VISUAL_CONTRACT_VERSION = 1;
+export const PEARL_VISUAL_CONTRACT_VERSION = 2;
 export const PEARL_VISUAL_REQUIRED_LAYERS = Object.freeze([
   "contact", "body", "subsurface--far", "nucleus", "subsurface--near", "caustic", "depth",
   "nacre", "environment", "reflection", "rim", "specular", "pinlight",
@@ -38,8 +38,10 @@ export function inspectPearlVisualContract(options = {}) {
   const forbidden = [];
   const combined = `${markup}\n${PHYSICAL_PEARL_CSS}`;
   const patterns = [
-    ["external-glow-or-halo", /\b(?:glow|halo|aura|bloom|neon|ray)\b|drop-shadow|box-shadow\s*:/i],
-    ["generic-spinner-or-pulse", /\b(?:spinner|spin|pulse|confetti|bounce)\b/i],
+    // Permanent outer spectacle on the idle pearl stack is forbidden.
+    // Ephemeral power FX live in pearl-power-fx.css (separate host), not here.
+    ["external-glow-or-halo", /\b(?:glow|halo|aura|bloom|neon)\b|drop-shadow|box-shadow\s*:/i],
+    ["generic-spinner-or-pulse", /\b(?:spinner|spin|confetti|bounce)\b/i],
     ["saturated-nacre", /#(?:ff00|00ff|00ffff|ff00ff|ffff00)/i],
     ["heavy-shadow", /blur\((?:[5-9]|\d{2,})px\)/i],
     ["plain-white-dot", /<circle[^>]+fill=["']#fff(?:fff)?["'][^>]*\/>/i],

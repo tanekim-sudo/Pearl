@@ -9,8 +9,14 @@ function labelFor(orb) {
   return orb.name || orb.representation?.label || "Untitled pearl";
 }
 
-function OrbGlyph({ active = false }) {
-  return <PhysicalPearl variant="semantic" state={active ? "listening" : "idle"} size={56} decorative />;
+function OrbGlyph({ active = false, animation = null, variant = "semantic" }) {
+  return <PhysicalPearl
+    variant={variant}
+    state={active ? "listening" : animation ? "executing" : "idle"}
+    size={56}
+    animation={animation}
+    decorative
+  />;
 }
 
 export default function SemanticOrbLayer({
@@ -45,10 +51,29 @@ export default function SemanticOrbLayer({
   const [composition, setComposition] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [rename, setRename] = useState("");
+  const [animations, setAnimations] = useState({});
   const active = orbs.find((orb) => orb.id === activeId) || null;
   const clusters = useMemo(() => clusterSemanticOrbs(orbs, { zoom: 1 }), [orbs]);
 
   useEffect(() => setRename(active ? labelFor(active) : ""), [active?.id, active?.name]);
+
+  useEffect(() => {
+    function onPearlAnim(event) {
+      const { pearlId, semantic, durationMs } = event.detail || {};
+      if (!pearlId || !semantic) return;
+      setAnimations((current) => ({ ...current, [pearlId]: semantic }));
+      window.setTimeout(() => {
+        setAnimations((current) => {
+          if (current[pearlId] !== semantic) return current;
+          const next = { ...current };
+          delete next[pearlId];
+          return next;
+        });
+      }, Math.max(0, Number(durationMs) || 480) + 40);
+    }
+    document.addEventListener("lens:pearl-host-animation", onPearlAnim);
+    return () => document.removeEventListener("lens:pearl-host-animation", onPearlAnim);
+  }, []);
 
   useEffect(() => {
     function keyDown(event) {
@@ -212,7 +237,11 @@ export default function SemanticOrbLayer({
             onPointerUp={(event) => pointerUp(event, orb)}
             onPointerCancel={() => { dragRef.current = null; }}
           >
-            <OrbGlyph active={activeId === orb.id} />
+            <OrbGlyph
+              active={activeId === orb.id}
+              animation={animations[orb.id] || null}
+              variant={orb.representation?.kind === "worker" ? "worker" : "semantic"}
+            />
             <span>{labelFor(orb)}</span>
             {(orb.workingSet?.context?.length || 0) > 0 && <i>{orb.workingSet.context.length}</i>}
           </button>

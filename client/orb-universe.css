@@ -635,9 +635,15 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 }
 .orb-cursor-tether path {
   fill: none;
-  stroke: rgba(216,194,141,.28);
-  stroke-width: .7;
-  stroke-dasharray: 2 4;
+  stroke: rgba(232,209,159,.48);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-dasharray: none;
+  filter: none;
+}
+.orb-cursor-tether path.orb-cursor-tether-core {
+  stroke: rgba(255,248,230,.35);
+  stroke-width: .45;
 }
 
 @media (prefers-reduced-motion: reduce) {

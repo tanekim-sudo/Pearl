@@ -16,6 +16,13 @@ import { canonicalPageIdentity } from "../../../shared/pearl-page-canvas.js";
 import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
 import { createPearlGestureArbiter } from "../../../shared/pearl-gesture-arbiter.js";
 import { pearlSurroundingFromColor } from "../../../shared/pearl-visual-contract.js";
+import {
+  ensurePearlPowerFxStyles,
+  filamentPath,
+  normalizePowerFx,
+  radialFissionPoints,
+} from "../../../shared/pearl-power-fx.js";
+import { findOnScreenMatching, matchRectsForPowerFx } from "../../../shared/pearl-screen-match.js";
 
 const highlighter = createHighlighter();
 const captured = new Map();
@@ -474,10 +481,46 @@ function mountPageOrb() {
       const visual = shell.querySelector(".physical-pearl");
       if (!visual || !animation?.semantic) return false;
       visual.dataset.pearlAnimation = animation.semantic;
+      if (["absorbing", "planning", "branching", "executing"].includes(animation.semantic) || animation.semantic === "charge" || animation.semantic === "stream") {
+        setState("planning");
+      }
       window.setTimeout(() => {
         if (visual.dataset.pearlAnimation === animation.semantic) delete visual.dataset.pearlAnimation;
+        if (shell.dataset.state === "planning") setState("idle");
       }, Math.max(0, Number(animation.durationMs) || 0) + 40);
       return true;
+    },
+    powerFx(effect) {
+      return playExtensionPowerFx(effect, host);
+    },
+    seekTo(point, durationMs = 700) {
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
+      const box = host.getBoundingClientRect();
+      const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      playExtensionPowerFx({ kind: "seek", from, to: point, durationMs });
+      const startLeft = Number.parseFloat(host.style.left || "0") || box.left;
+      const startTop = Number.parseFloat(host.style.top || "0") || box.top;
+      host.style.right = "auto";
+      host.style.left = `${startLeft}px`;
+      host.style.top = `${startTop}px`;
+      host.style.transition = matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "none"
+        : `left ${durationMs}ms cubic-bezier(.2,.7,.2,1), top ${durationMs}ms cubic-bezier(.2,.7,.2,1)`;
+      requestAnimationFrame(() => {
+        host.style.left = `${Math.max(8, point.x - 9)}px`;
+        host.style.top = `${Math.max(8, point.y - 9)}px`;
+      });
+      window.setTimeout(() => { host.style.transition = ""; }, durationMs + 40);
+      return true;
+    },
+    findMatching(condition, options = {}) {
+      const result = findOnScreenMatching(document.body, condition, options);
+      const rects = matchRectsForPowerFx(result);
+      const box = host.getBoundingClientRect();
+      const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      playExtensionPowerFx({ kind: "filament", from, toRects: rects });
+      this.animate({ semantic: "filament", durationMs: 900 });
+      return result;
     },
     get enabled() { return cursorEnabled; },
     destroy() {
@@ -494,6 +537,84 @@ function mountPageOrb() {
       host.remove();
     },
   };
+}
+
+function playExtensionPowerFx(effect, orbHost = null) {
+  ensurePearlPowerFxStyles(document);
+  const fx = normalizePowerFx(effect);
+  let layer = document.getElementById("lens-pearl-power-fx");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.id = "lens-pearl-power-fx";
+    layer.className = "pearl-power-fx-host";
+    layer.setAttribute("aria-hidden", "true");
+    document.documentElement.appendChild(layer);
+  }
+  const stamp = document.createElement("div");
+  stamp.dataset.fxId = fx.id;
+  stamp.style.cssText = "position:absolute;inset:0;pointer-events:none";
+  if (fx.kind === "filament" || fx.toRects.length) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "pearl-power-fx__layer");
+    svg.style.cssText = "position:absolute;inset:0;width:100%;height:100%;overflow:visible";
+    for (const rect of fx.toRects) {
+      const to = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "pearl-power-fx__filament");
+      path.setAttribute("d", filamentPath(fx.from, to));
+      svg.appendChild(path);
+      const mark = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      mark.setAttribute("class", "pearl-power-fx__mark");
+      mark.setAttribute("x", String(rect.x - 2));
+      mark.setAttribute("y", String(rect.y - 2));
+      mark.setAttribute("width", String(Math.max(8, rect.width + 4)));
+      mark.setAttribute("height", String(Math.max(8, rect.height + 4)));
+      mark.setAttribute("rx", "3");
+      svg.appendChild(mark);
+    }
+    stamp.appendChild(svg);
+  }
+  if (fx.kind === "fission" || fx.kind === "echo") {
+    const satellites = fx.satellites.length ? fx.satellites : radialFissionPoints(fx.from, fx.count);
+    for (const satellite of satellites) {
+      const node = document.createElement("div");
+      node.className = "pearl-power-fx__satellite";
+      node.dataset.kind = fx.kind;
+      node.style.left = `${fx.from.x}px`;
+      node.style.top = `${fx.from.y}px`;
+      node.style.setProperty("--dx", `${satellite.x - fx.from.x}px`);
+      node.style.setProperty("--dy", `${satellite.y - fx.from.y}px`);
+      node.style.setProperty("--fx-ms", `${fx.durationMs}ms`);
+      stamp.appendChild(node);
+    }
+  }
+  if (fx.kind === "burst" || fx.kind === "charge") {
+    const ring = document.createElement("div");
+    ring.className = fx.kind === "charge" ? "pearl-power-fx__charge-ring" : "pearl-power-fx__burst";
+    ring.style.left = `${fx.from.x}px`;
+    ring.style.top = `${fx.from.y}px`;
+    stamp.appendChild(ring);
+  }
+  if (fx.kind === "seek" && fx.to) {
+    const ghost = document.createElement("div");
+    ghost.className = "pearl-power-fx__seek-ghost";
+    ghost.style.left = `${fx.from.x}px`;
+    ghost.style.top = `${fx.from.y}px`;
+    ghost.style.setProperty("--dx", `${fx.to.x - fx.from.x}px`);
+    ghost.style.setProperty("--dy", `${fx.to.y - fx.from.y}px`);
+    ghost.style.setProperty("--fx-ms", `${fx.durationMs}ms`);
+    stamp.appendChild(ghost);
+  }
+  layer.appendChild(stamp);
+  if (orbHost && (fx.kind === "charge" || fx.kind === "filament")) {
+    const visual = orbHost.shadowRoot?.querySelector?.(".physical-pearl");
+    if (visual) {
+      visual.dataset.pearlAnimation = fx.kind === "charge" ? "charge" : "filament";
+      window.setTimeout(() => { delete visual.dataset.pearlAnimation; }, fx.durationMs + 40);
+    }
+  }
+  window.setTimeout(() => stamp.remove(), Math.max(320, fx.durationMs) + 80);
+  return true;
 }
 
 async function send(type, payload = {}) {
@@ -555,6 +676,18 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     if (type === "result-pearl-layout-request") return { ok: true, ...resultPearls.layout(payload) };
     if (type === "output-routing-observe") return { ok: true, observation: resultPearls.observe() };
     if (type === "pearl-effect-animation") return { ok: true, animated: pageOrb?.animate(payload.animation) === true, receiptId: payload.effectReceiptId || null };
+    if (type === "pearl-power-fx") {
+      const box = pageOrb ? document.getElementById("lens-orb-overlay-host")?.getBoundingClientRect() : null;
+      const from = payload.from || (box ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: innerWidth - 36, y: innerHeight * 0.42 });
+      return { ok: true, played: pageOrb?.powerFx({ ...payload, from }) === true };
+    }
+    if (type === "pearl-seek-to") {
+      return { ok: true, sought: pageOrb?.seekTo(payload.point || payload, payload.durationMs) === true };
+    }
+    if (type === "pearl-find-matching") {
+      const result = pageOrb?.findMatching(payload.condition, { limit: payload.limit }) || findOnScreenMatching(document.body, payload.condition, { limit: payload.limit });
+      return { ok: true, result };
+    }
     if (type === "output-placement-effect") {
       const destination = payload.destination || {};
       if (destination.type === "clipboard") {
