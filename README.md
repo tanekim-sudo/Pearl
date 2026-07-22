@@ -20,16 +20,69 @@ Most AI products make the prompt, model response, and conversation the primary u
 
 What is shipped and wired today (verify with handlers + tests; live model critique still needs credentials):
 
-- **Reef home** — pearls spread for mix/match/merge; companion is always available without wearing a pearl.
-- **Pearl Studio** — focused single-pearl view with load-bearing section order **Moves → Functions → Lenses**; freeform multimodal dump surface plus an **Organize** control that structures richness without summarizing it away.
-- **5-slot gauntlet** — companion working memory (mother pearl + up to five worn pearls). Shelf pearls default inactive; drag into sockets to activate. Full gauntlet blocks silent drop.
-- **Explicit GO** — staged extension stacks never auto-run; GO / Enter / voice “go” fires through the current gauntlet pack as working-memory context.
-- **Forming-pearl import** — paste chats/docs/drafts → ≤5 organized shelf pearls (Moves → Functions → Lenses).
-- **Pearl remix primitives** — merge / compose / synthesize (mutual or directed notice) / **organize** / **counter (opposition breeding)** / wear / encode — freeform intents map to these validated verbs.
-- **Gauntlet evaluation** — with cultivated lens pearls in the gauntlet, capture page/deck material and prepare a grounded evaluation query through those lenses. Preparing the query is deterministic; **live model evaluation requires provider credentials** and must not be reported as proven without a real run.
-- **Companion generality** — metadata cursor for pearl harness edits plus within/between-pearl ops via adaptive planner over shared primitives. Precise blockers for locked pearls, empty gauntlet, missing capture, missing credentials, and browser-protected pages.
+**Web continuation**
 
-Known honest bounds: Hobby Vercel function limits, browser-protected pages, cross-origin frames, and credential-dependent AI paths.
+- **Reef home** (`/`, `/library`, `/toolbox`) — pearl dashboard for mix/match/merge; companion is available without wearing a pearl. Account sections remain at `/packages`, `/tasks`, `/settings`. Overflow work opens `/scene/:id`; setup stays at `/install`.
+- **Pearl Studio** — focused single-pearl view with load-bearing section order **Moves → Functions → Lenses**; freeform multimodal dump surface; **Organize** structures richness without summarizing it away; Docs-style **version history** can name and restore checkpoints.
+- **Scene + Output Frame** — unbounded Stage with optional publication Frames, semantic orbs, AI constellation, paper domains, and companion/director parity.
+- **Companion / director** — text/voice planner over shared domain commands; clarifying check-ins for vague or underspecified automation; ghost cursor only for verified demonstration.
+
+**Extension (primary surface)**
+
+- **In-page Pearl + side panel** — capture, queue, preview, library, learning, critique, semantic-orb tray.
+- **5-slot gauntlet** — companion working memory (mother pearl + up to five worn pearls). Shelf pearls default inactive; drag into sockets to activate. Full gauntlet blocks silent drop.
+- **Explicit GO** — staged stacks never auto-run; GO / Enter / voice “go” fires through the current gauntlet pack as working-memory context.
+- **Page canvas** — bounded on-page ink/select/voice artifacts with quotas; spatial multi-orb worlds still hand off to the web Scene.
+- **Result pearls + two-stage output routing** — staged results choose destination (margin pearl, native insert/replace, clipboard, Studio, Scene, Frame, etc.) before mutation; insertion adapters remain site-specific and fail closed where editors are protected.
+
+**Pearl remix and learning**
+
+- **Forming-pearl import** — paste chats/docs/drafts → ≤5 organized shelf pearls (Moves → Functions → Lenses).
+- **Remix primitives** — nest / merge / compose / synthesize (mutual or directed notice) / **organize** / **counter (opposition breeding)** / wear / split / encode — freeform intents map to these validated verbs.
+- **Encode Anything → Automation Pearl** — drop prompts, emails, Drive links, CRM paste, before/after pairs, or transcripts; compile a reviewable Automation Pearl with evidence mapping, permission types, and clarification before execution. Compilation is local/reviewable; live runs still need model/research credentials when those permissions are requested.
+- **Gauntlet evaluation** — with cultivated lens pearls in the gauntlet, capture page/deck material and prepare a grounded evaluation query through those lenses. Preparing the query is deterministic; **live model evaluation requires provider credentials** and must not be reported as proven without a real run.
+- **Soundscape (optional)** — pearls may carry local/procedural audio ambience with codec and size limits; audio is never required for cognition.
+
+**Trust and privacy**
+
+- Local AES-GCM privacy vault / disclosure receipts for sensitive envelopes; bounded page observation refuses password/payment/protected fields; organization envelopes for team-scoped sharing; Cognitive Packages remain signature-verified.
+
+Known honest bounds: Hobby Vercel function limits, browser-protected pages, cross-origin frames, closed shadow roots, credential-dependent AI/research paths, and store/signing workflows that are outside this repo.
+
+### Authoritative inventories (not the README)
+
+This README is the human contract. Exhaustive lists live in generated/source inventories—do not treat the prose above as a complete verb catalog:
+
+| Source | Role |
+| --- | --- |
+| `shared/feature-contracts.js` | **63** feature contracts: domains, commands, UI, companion verbs, extension verbs, persistence, tests, owners (`FEATURE_BASELINE`) |
+| `client/lib/companion-capabilities.js` | Live companion/director manifest (regenerate graph after edits) |
+| `client/lib/companion-capability-graph.js` | Generated typed capability graph (`npm run graph:generate` / `graph:check`) |
+| `shared/orb-preservation-matrix.json` | Pre-orb → current preservation matrix (`npm run orb:matrix` / `orb:matrix:check`) |
+| `extension/src/sidepanel/companion.js` | `EXTENSION_VERBS` runtime handlers |
+| `shared/domain-commands.js` | Canonical mutations, effects, undo |
+
+Live counts drift; regenerate rather than hard-coding. As of the inventory pass that updated this section: **400** companion capabilities (**280** app + **120** extension) in the manifest; the orb preservation matrix still tracks the pre-orb baseline subset (**206** companion rows: **170** app + **36** extension) for regression, not the full live catalog. `FEATURE_BASELINE.minimumCompanionCapabilities` / `minimumExtensionCapabilities` are release floors, not ceilings.
+
+### Feature map (contracts → surfaces)
+
+Grouped view of the **63** `FEATURE_CONTRACTS` IDs. Each ID owns commands/UI/companion/extension/tests in the contracts file.
+
+| Area | Contract IDs |
+| --- | --- |
+| Shell / navigation | `shell.extension-first`, `shell.pearl-progressive`, `shell.reef-home`, `shell.pearl-navigability`, `interface.pearl-guide` |
+| Studio / entity runtime | `studio.pearl`, `runtime.unified-pearl`, `runtime.pearl-action-animation`, `runtime.pearl-power-fx`, `pearl.version-history`, `cognition.typed-layers` |
+| Scene / orbs | `scene.v4`, `scene.semantic-orbs`, `interaction.orb-gesture`, `companion.orb-runtime`, `companion.orb-swarm`, `visual.physical-pearl`, `visual.pearl-aesthetic` |
+| Gauntlet / remix | `companion.pearl-wear`, `companion.mother-orbit`, `companion.pearl-gauntlet`, `pearl.organize`, `pearl.counter`, `pearl.gauntlet-evaluation`, `learning.forming-pearls` |
+| Encode / automation / output | `encode.automation-anything`, `automation.pearl-compiler`, `companion.clarification-checkin`, `output.result-pearl`, `output.two-stage-routing` |
+| Library / composition / learning | `library.move`, `library.function`, `library.lens`, `library.save-as`, `library.primitive-moves`, `composition.universal`, `learning.before-after`, `learning.transcript`, `lens.perceptual-encoding`, `generation.taste-branching` |
+| Paper / AI / GO | `highlight.explicit-go`, `execution.lens-context`, `ai.branch-chooser`, `ai.node-gestures`, `interaction.semantic-transfer`, `observation.workspace` |
+| Extension page | `extension.distribution`, `extension.pearl-page-canvas`, `privacy.bounded-page-observation`, `semantic-pearl.soundscape` |
+| Companion harness | `companion.transaction-harness`, `companion.effect-trace`, `companion.destructive-clear`, `companion.personal-vocabulary`, `companion.critique-edits` |
+| Packages / artifacts / sharing | `registry.cognitive-packages`, `artifacts.higher-order`, `extraction.cognitive-pull-request`, `sharing.pearl-package`, `sharing.organization-trust` |
+| Privacy / sync | `privacy.local-profile-vault`, `privacy.pearl-policy`, `persistence.account-adoption` |
+
+Every companion verb does **not** belong in this README; add or change verbs in the manifest + contracts, then regenerate the graph/matrix.
 
 ### Experience principles
 
@@ -50,9 +103,9 @@ Known honest bounds: Hobby Vercel function limits, browser-protected pages, cros
 Pearl has one product distributed across two differently constrained surfaces:
 
 1. **The browser page is the point of origin.** The injected Pearl and side panel capture explicit selections, hold bounded context, apply Moves, Functions, and Lenses, stage candidates, accept taste feedback, and insert reviewed results without forcing a context switch.
-2. **The web root is a continuation receiver.** `/` asks the trusted extension for an explicit preserved working set and shows what is ready to continue. It never makes extension download the primary display, never creates a Scene merely because someone visited, and never pretends to possess page context that was not handed off.
-3. **A Scene is overflow space.** A user opens `/scene/:id` when the original page cannot contain spatial arrangement, many artifacts, branching graphs, detailed provenance, semantic orbs, version review, or Output Frames. The handoff creates source-linked Scene material and one active semantic orb through canonical commands.
-4. **The library is durable memory.** `/library`, `/packages`, `/tasks`, and `/settings` organize reusable and account-level objects. They support the page Pearl; they are not the default place where work must begin.
+2. **The web root is a continuation receiver and Reef home.** `/`, `/library`, and `/toolbox` are Reef paths: they ask the trusted extension for an explicit preserved working set when a handoff is present, and otherwise show the pearl dashboard. They never make extension download the primary display, never create a Scene merely because someone visited, and never pretend to possess page context that was not handed off.
+3. **A Scene is overflow space.** A user opens `/scene/:id` (or `/stage/...`) when the original page cannot contain spatial arrangement, many artifacts, branching graphs, detailed provenance, semantic orbs, version review, or Output Frames. The handoff creates source-linked Scene material and one active semantic orb through canonical commands.
+4. **Account and package memory.** `/packages`, `/tasks`, and `/settings` organize reusable and account-level objects. They support the page Pearl; they are not the default place where work must begin.
 5. **Installation is secondary setup.** `/install` remains reachable for first-time setup and store/manual installation, but it is not the home page or the product’s main visual proposition.
 
 The continuation handshake is versioned, nonce-bound, and accepted only from exact trusted origins. It can carry the extension’s explicitly captured fragments, queued action references, active Lens reference, staged results, semantic orbs, and a requested continuation surface. The website materializes only what was explicitly preserved; browser-protected pages and unavailable extension messaging degrade to saved web Scenes and library access without fabricating a handoff.
@@ -628,7 +681,7 @@ The companion is a complete alternate command interface for every meaningful dir
 
 The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
 
-The pre-expansion parity checkpoint was **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. Later baselines added Taste Lens judgment, gauntlet working memory, forming-pearl import, organize, counter-pearl, and gauntlet evaluation. Treat the generated companion capability graph / orb preservation matrix as the live count — regenerate with `npm run orb:matrix` after capability changes. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract.
+Do not treat any hard-coded count in this README as authoritative. Use `COMPANION_CAPABILITIES` + `npm run graph:check` for the live catalog, and `npm run orb:matrix:check` for the pre-orb preservation subset. Historical checkpoints (for example an earlier **198** = 164 app + 34 extension parity line) are superseded whenever the manifest grows. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract.
 
 `CompanionCapabilityGraph` is the generated, versioned self-description of that surface. Its nodes join the manifest to canonical domain commands and feature contracts, adding stable IDs, typed inputs/outputs, observations, risk/approval/autonomy policy, cost/network boundaries, persistence, undo/compensation, surfaces, expected effects, and test identities. Generated dataflow edges connect compatible outputs to typed reference inputs and mark write conflicts and parallel safety. Exact and bounded semantic retrieval select only goal-relevant nodes for each planning pass; the full catalog is never inserted into every adaptive prompt. The release gate validates the graph and rejects a stale generated graph artifact.
 
@@ -977,14 +1030,19 @@ Primary ownership:
 - `shared/composition-algebra.js` — universal composition.
 - `shared/generation-plan.js` — candidates, branch specs, budgets, and taste.
 - `shared/lens-perceptual-model.js`, `shared/lens-context.js` — Lens perception and bounded context.
-- `shared/feature-contracts.js` — capability ownership and release baseline.
-- `client/components/OrbUniverseShell.jsx` — continuation receiver, library routes, Scene overflow shell, and canonical handoff materialization.
+- `shared/feature-contracts.js` — capability ownership and release baseline (**63** contracts).
+- `shared/semantic-orbs.js`, `shared/forming-pearls.js`, `shared/pearl-organize.js`, `shared/pearl-counter.js`, `shared/pearl-gauntlet-eval.js` — orb remix + gauntlet evaluation.
+- `shared/pearl-entity.js`, `shared/pearl-studio.js`, `shared/pearl-version-history.js`, `shared/encode-evidence.js`, `shared/automation-pearl.js` — Studio entity, history, Encode Anything.
+- `shared/result-pearls.js`, `shared/output-routing.js`, `shared/pearl-page-canvas.js`, `shared/pearl-soundscape.js` — staged results, page canvas, optional audio.
+- `shared/local-privacy-vault.js`, `shared/page-observation.js`, `shared/pearl-privacy-policy.js` — local vault and bounded observation.
+- `client/components/OrbUniverseShell.jsx`, `client/lib/reef-home.js` — Reef/continuation receiver, library routes, Scene overflow, handoff materialization.
+- `client/lib/companion-capabilities.js`, `client/lib/companion-capability-graph.js` — companion manifest and generated graph.
 - `client/lib/extension-funnel.js` — trusted extension status and nonce-bound continuation retrieval.
 - `client/` — direct gestures, views, companion adapters, and ghost director.
 - `server/` and `api/` — authenticated model and execution boundaries.
-- `extension/` — capture, side panel, adapters, companion, storage, and platform builds.
+- `extension/` — capture, side panel, gauntlet, adapters, companion, storage, and platform builds.
 - `supabase/` — account, plan, board, and extension data policy.
-- `scripts/` and `audit-shots/` — reproducible release evidence.
+- `scripts/` and `audit-shots/` — reproducible release evidence (`orb:matrix`, `graph:check`, `contracts:check`).
 
 Safe change sequence:
 
@@ -1005,7 +1063,7 @@ cp .env.example .env
 npm run dev
 ```
 
-The Vite client opens the continuation receiver at `http://localhost:5173`; the API server uses `http://localhost:8787`. Extension setup remains at `/install`, durable objects at `/library`, and full overflow work at `/scene/:id`.
+The Vite client opens the Reef/continuation receiver at `http://localhost:5173` (`/`, `/library`, `/toolbox`); the API server uses `http://localhost:8787`. Extension setup remains at `/install`, account sections at `/packages` / `/tasks` / `/settings`, and full overflow work at `/scene/:id`.
 
 Production-style local run:
 
