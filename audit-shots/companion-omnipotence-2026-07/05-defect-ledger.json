@@ -1,0 +1,26 @@
+{
+  "defects": [],
+  "remainingGaps": [
+    {
+      "severity": "P2",
+      "id": "live-model-gauntlet-eval",
+      "repro": "Wear startup pearl, capture deck, ask companion to evaluate — needs provider credentials for model response.",
+      "expected": "Structured evaluation grounded in pearl lenses",
+      "status": "query-prep-verified; live-model-not-run"
+    },
+    {
+      "severity": "P2",
+      "id": "browser-dnd-go-visual",
+      "repro": "Shelf DnD into gauntlet sockets + Enter/GO in extension side panel at 360px",
+      "expected": "Visual confirmation of orbit/rail + working-memory fire",
+      "status": "shipped in prior commit; this pass verified via code+unit tests, not fresh Playwright shots"
+    },
+    {
+      "severity": "P3",
+      "id": "open-ended-rearrange-birth-combine",
+      "repro": "Say 'rearrange / birth / opposition / combine these pearls' without naming a verb",
+      "expected": "Adaptive planner maps to organize/counter/synthesize/merge or precise blocker",
+      "status": "deterministic remix parser may miss slash-salad; planner prompt documents mapping"
+    }
+  ]
+}

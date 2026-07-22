@@ -15,6 +15,7 @@ export const SEMANTIC_ORB_REPRESENTATION_KINDS = Object.freeze([
   "external-capture",
   "grouped-context",
   "synthesis",
+  "counter",
   "scene",
   "worker",
 ]);

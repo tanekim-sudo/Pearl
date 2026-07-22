@@ -681,6 +681,54 @@ function App() {
         effects: ["semantic-orb-created", "pearl-synthesis-created", "semantic-orb-merge-preserved-sources"],
       };
     }
+    if (name === "organize") {
+      const { organizePearlContents, applyOrganizeToPearl } = await import("../../../shared/pearl-organize.js");
+      const target = byId.get(args.id) || byId.get(activeSemanticOrbId) || semanticOrbs.find((entry) => !entry.archived);
+      if (!target) throw new Error("choose a pearl to organize");
+      const organized = organizePearlContents(target, { extraText: args.extraText });
+      if (!organized.ok) throw new Error(organized.reason);
+      const next = createSemanticOrb(applyOrganizeToPearl(target, organized));
+      byId.set(next.id, next);
+      await persistSemanticOrbs([...byId.values()], next.id);
+      setActiveView("orbs");
+      setReadyMessage(`Organized “${next.name}”: ${organized.organization.moves.length} Moves · ${organized.organization.functions.length} Functions · ${organized.organization.lenses.length} Lenses.`);
+      return {
+        type: "pearl-organized",
+        id: next.id,
+        orb: next,
+        organization: organized.organization,
+        effects: ["pearl-organized", "semantic-orb-updated"],
+      };
+    }
+    if (name === "counter") {
+      const { buildCounterPearlSpec } = await import("../../../shared/pearl-counter.js");
+      const source = byId.get(args.id) || byId.get(activeSemanticOrbId);
+      if (!source) throw new Error("choose a source pearl");
+      const spec = buildCounterPearlSpec(source, { name: args.name, instruction: args.instruction });
+      const counter = createSemanticOrb({
+        id: `external-orb:${crypto.randomUUID()}`,
+        sceneId: "extension-captures",
+        name: spec.name,
+        representation: spec.representation,
+        workingSet: spec.workingSet,
+        lineage: spec.lineage,
+        provenance: spec.provenance,
+        moves: spec.moves,
+        functions: spec.functions,
+        lenses: spec.lenses,
+      });
+      byId.set(counter.id, counter);
+      await persistSemanticOrbs([...byId.values()], counter.id);
+      setActiveView("orbs");
+      setReadyMessage(`Bred counter-pearl “${counter.name}”. Source “${source.name}” stays intact.`);
+      return {
+        type: "pearl-counter",
+        id: counter.id,
+        orb: counter,
+        preservedSourceIds: [source.id],
+        effects: ["semantic-orb-created", "pearl-counter-created"],
+      };
+    }
     let orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
     if (!orb && args.id) {
       const stored = (await BrowserPlatform.storage.get("local", ["semanticOrbs"])).semanticOrbs || [];
@@ -1321,6 +1369,47 @@ function App() {
           setReadyMessage(`Gauntlet reordered (${next.filled}/${MAX_GAUNTLET_SLOTS}).`);
           return next;
         },
+        evaluateWithGauntlet: async (args = {}) => {
+          const { buildGauntletEvaluationQuery } = await import("../../../shared/pearl-gauntlet-eval.js");
+          const memory = currentGauntletWorkingMemory();
+          let text = args.text || "";
+          let title = args.title || null;
+          let url = args.url || null;
+          if (!text && (args.capturePage || args.captureScreen)) {
+            if (args.captureScreen) {
+              try {
+                await action("capture-visible-tab", { authorized: true });
+              } catch {
+                // Fall through to selection capture.
+              }
+            }
+            if (!text) {
+              try {
+                const captured = await action("capture-selection");
+                text = captured?.quote || captured?.text || session.fragments?.at(-1)?.quote || session.fragments?.at(-1)?.text || "";
+                title = captured?.title || title;
+                url = captured?.url || url;
+              } catch {
+                text = session.fragments?.map((fragment) => fragment.quote || fragment.text).filter(Boolean).join("\n\n") || "";
+              }
+            }
+          }
+          if (!text) {
+            text = session.fragments?.map((fragment) => fragment.quote || fragment.text).filter(Boolean).join("\n\n") || "";
+          }
+          const evaluation = buildGauntletEvaluationQuery({
+            packs: memory.packs,
+            workingMemory: memory,
+            material: { text, title, url, kind: args.captureScreen ? "visible-tab" : "page-selection" },
+            instruction: args.instruction,
+          });
+          if (!evaluation.ok) throw new Error(evaluation.reason);
+          setReadyMessage(`${evaluation.reason} Query prepared — live model run needs credentials and explicit GO if you stage a Move/Function.`);
+          setCompanion(evaluation.query.prompt.slice(0, 1_800));
+          setPearlOpen(true);
+          setActiveView("command");
+          return evaluation;
+        },
         readPreview: () => preview,
         resolveLens: (name) => {
           const lens = library.find((entry) => entry.id === name || entry.name.toLowerCase().includes(String(name).toLowerCase()));
@@ -1798,6 +1887,8 @@ function App() {
           {lens.name || lens.label || lens.id}
           <button type="button" aria-label={`Remove ${lens.name || lens.id} Lens`} onClick={() => semanticOrbAction("remove-lens", { id: activeSemanticOrbId, lensId: lens.id })}>×</button>
         </span>)}
+        <button type="button" onClick={() => semanticOrbAction("organize", { id: activeSemanticOrbId })}>Organize</button>
+        <button type="button" onClick={() => semanticOrbAction("counter", { id: activeSemanticOrbId })}>Counter pearl</button>
         <button type="button" onClick={() => semanticOrbAction("duplicate", { id: activeSemanticOrbId })}>Duplicate</button>
         <button type="button" disabled={!(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context?.length || semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).childOrbIds?.length)} onClick={() => semanticOrbAction("split", { id: activeSemanticOrbId })}>Split</button>
         {semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).parentOrbId && <button type="button" onClick={() => semanticOrbAction("unnest", { id: activeSemanticOrbId })}>Unnest</button>}

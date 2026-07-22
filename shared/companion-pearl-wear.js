@@ -46,17 +46,25 @@ export function buildWornPearlPack(pearl, options = {}) {
     label: bounded(entry.label || entry.name || entry.text || "Context", 120),
     summary: bounded(entry.text || entry.verbatim || entry.content || entry.label || "", 220),
   }));
-  const lenses = (workingSet.lenses || []).slice(0, 20).map((lens) => ({
+  const lenses = (workingSet.lenses || pearl.lenses || []).slice(0, 20).map((lens) => ({
     id: lens.id,
     name: bounded(lens.name || lens.label || "Lens", 80),
     strength: Number.isFinite(lens.strength) ? lens.strength : 0.7,
+    description: bounded(lens.description || lens.judgment || "", 220),
+    judgment: bounded(lens.judgment || lens.description || "", 220),
   }));
   const representation = pearl.representation || {};
   const boundRefs = [...new Set([
     ...(representation.refs || []),
     ...(options.libraryRefs || []),
   ].filter(Boolean))].slice(0, 40);
-  const functions = (options.functions || [])
+  const pearlFunctions = (pearl.functions || []).map((fn) => ({
+    id: fn.id || fn.stableId,
+    name: bounded(fn.name || "Function", 80),
+    description: bounded(fn.description || "", 180),
+    stepCount: Array.isArray(fn.steps) ? fn.steps.length : Number(fn.stepCount) || 0,
+  }));
+  const libraryFunctions = (options.functions || [])
     .filter((fn) => boundRefs.includes(fn.id) || boundRefs.includes(fn.stableId) || fn.pearlId === pearl.id)
     .slice(0, 24)
     .map((fn) => ({
@@ -65,6 +73,13 @@ export function buildWornPearlPack(pearl, options = {}) {
       description: bounded(fn.description || "", 180),
       stepCount: Array.isArray(fn.steps) ? fn.steps.length : Number(fn.stepCount) || 0,
     }));
+  const byFn = new Map([...pearlFunctions, ...libraryFunctions].filter((fn) => fn.id).map((fn) => [fn.id, fn]));
+  const functions = [...byFn.values()].slice(0, 24);
+  const moves = (pearl.moves || []).slice(0, 24).map((move) => ({
+    id: move.id,
+    name: bounded(move.name || "Move", 80),
+    description: bounded(move.description || move.transformation || "", 180),
+  }));
   return {
     version: COMPANION_PEARL_WEAR_VERSION,
     pearlId: pearl.id,
@@ -75,17 +90,19 @@ export function buildWornPearlPack(pearl, options = {}) {
     aesthetic: pearl.aesthetic || null,
     context,
     lenses,
+    moves,
     functions,
     boundRefs,
     summary: bounded(
       options.summary
-        || `${pearl.name || "Pearl"} · ${context.length} context · ${lenses.length} lenses · ${functions.length} functions`,
+        || `${pearl.name || "Pearl"} · ${context.length} context · ${moves.length} moves · ${lenses.length} lenses · ${functions.length} functions`,
       220,
     ),
     capabilities: {
       canExecuteBoundFunctions: functions.length > 0,
       canApplyLenses: lenses.length > 0,
       hasContext: context.length > 0,
+      canEvaluate: lenses.length > 0 || context.length > 0 || moves.length > 0,
     },
   };
 }

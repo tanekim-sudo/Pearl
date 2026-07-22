@@ -7,6 +7,9 @@ test("remix primitives map birth, merge, nest, split, lens, and restore commands
   assert.equal(pearlAnimationForCommand("mergeSemanticOrbs").semantic, "merge");
   assert.equal(pearlAnimationForCommand("composeSemanticOrbs").semantic, "compose");
   assert.equal(pearlAnimationForCommand("synthesizeSemanticOrbs").semantic, "remix");
+  assert.equal(pearlAnimationForCommand("organizePearl").semantic, "compose");
+  assert.equal(pearlAnimationForCommand("createCounterPearl").semantic, "echo");
+  assert.equal(pearlAnimationForCommand("evaluateWithGauntlet").semantic, "refract");
   assert.equal(pearlAnimationForCommand("nestSemanticOrb").semantic, "nest");
   assert.equal(pearlAnimationForCommand("splitSemanticOrb").semantic, "split");
   assert.equal(pearlAnimationForCommand("duplicateSemanticOrb").semantic, "duplicate");

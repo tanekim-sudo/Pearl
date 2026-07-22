@@ -1,0 +1,17 @@
+[GAUNTLET CULTIVATED EVALUATION]
+Evaluate this startup deck through the worn pearl lenses
+
+Active gauntlet stack (ways of seeing — apply these; do not invent pack contents):
+1. Pearl “3-year startup pearl” (audit-orb-1)
+   Lenses: Skeptical LP — Judge decks on capital efficiency, moat, and honesty about risk.
+   Moves: Underwrite
+   Context: Prefer capital-efficient B2B with real retention. Care about founder taste for underwriting.
+
+On-screen / deck material (verbatim; do not pretend to see more than disclosed):
+Title: Acme Dental Deck
+URL: https://example.com/deck
+Characters: 82
+---
+Slide 1: We are Uber for dentists. Slide 2: $40M TAM. Slide 3: No retention chart.
+---
+Respond with a structured evaluation: strengths, risks, taste/judgment conflicts, open questions, and concrete next probes — grounded in the pearl lenses above.

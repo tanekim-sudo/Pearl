@@ -1,0 +1,206 @@
+{
+  "audit": "companion-omnipotence-2026-07",
+  "generatedAt": "2026-07-22T06:28:24.248Z",
+  "verdict": "wiring-verified-no-live-model",
+  "note": "Deterministic harness only. Live AI evaluation / voice GO / DnD browser journeys require running the production build with credentials and were not claimed complete here.",
+  "evidence": [
+    {
+      "id": "intent:organizePearl",
+      "ok": true,
+      "detail": "got organizePearl",
+      "at": "2026-07-22T06:28:24.227Z"
+    },
+    {
+      "id": "intent:createCounterPearl",
+      "ok": true,
+      "detail": "got createCounterPearl",
+      "at": "2026-07-22T06:28:24.228Z"
+    },
+    {
+      "id": "intent:evaluateWithGauntlet",
+      "ok": true,
+      "detail": "got evaluateWithGauntlet",
+      "at": "2026-07-22T06:28:24.229Z"
+    },
+    {
+      "id": "intent:synthesizeSemanticOrbs",
+      "ok": true,
+      "detail": "got synthesizeSemanticOrbs",
+      "at": "2026-07-22T06:28:24.229Z"
+    },
+    {
+      "id": "intent:mergeSemanticOrbs",
+      "ok": true,
+      "detail": "got mergeSemanticOrbs",
+      "at": "2026-07-22T06:28:24.229Z"
+    },
+    {
+      "id": "intent:createCounterPearl",
+      "ok": true,
+      "detail": "got createCounterPearl",
+      "at": "2026-07-22T06:28:24.229Z"
+    },
+    {
+      "id": "intent:rearrange / birth / opposition / combine",
+      "ok": true,
+      "detail": "no high-confidence remix parse \u2014 adaptive planner must resolve or block",
+      "at": "2026-07-22T06:28:24.230Z"
+    },
+    {
+      "id": "organizePearl",
+      "ok": true,
+      "detail": {
+        "moves": 3,
+        "functions": 1,
+        "lenses": 1,
+        "preserved": 4,
+        "removed": 8
+      },
+      "at": "2026-07-22T06:28:24.233Z"
+    },
+    {
+      "id": "createCounterPearl",
+      "ok": true,
+      "detail": {
+        "id": "audit-orb-3",
+        "kind": "counter",
+        "sourceIntact": true
+      },
+      "at": "2026-07-22T06:28:24.234Z"
+    },
+    {
+      "id": "synthesizeSemanticOrbs",
+      "ok": true,
+      "detail": {
+        "observations": 2,
+        "sourcesPreserved": [
+          "audit-orb-1",
+          "audit-orb-2"
+        ]
+      },
+      "at": "2026-07-22T06:28:24.235Z"
+    },
+    {
+      "id": "evaluateWithGauntlet.query",
+      "ok": true,
+      "detail": {
+        "characters": 82,
+        "packs": [
+          {
+            "pearlId": "audit-orb-1",
+            "name": "3-year startup pearl",
+            "lensCount": 1,
+            "functionCount": 0,
+            "contextCount": 1
+          }
+        ],
+        "promptPreview": "[GAUNTLET CULTIVATED EVALUATION]\nEvaluate this startup deck through the worn pearl lenses\n\nActive gauntlet stack (ways of seeing \u2014 apply these; do not invent pack contents):\n1. Pearl \u201c3-year startup pearl\u201d (audit-orb-1)\n   Lenses: Skeptical"
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "workingMemoryPrompt.richness",
+      "ok": true,
+      "detail": "[GAUNTLET WORKING MEMORY \u2014 cultivated ways of seeing the companion currently carries]\nInterpret and transform the selected material through this stack. Prefer bound lenses (judgment/taste/philosophy), moves, functions, and evidenced context. Do not invent pack contents.\n1. 3-year",
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:organizePearl",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": true
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:createCounterPearl",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": true
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:evaluateWithGauntlet",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": true
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:organizeExternalPearl",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": false
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:createExternalCounterPearl",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": false
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    },
+    {
+      "id": "manifest:evaluateExternalWithGauntlet",
+      "ok": true,
+      "detail": {
+        "inManifest": true,
+        "inDomain": false
+      },
+      "at": "2026-07-22T06:28:24.248Z"
+    }
+  ],
+  "defects": [],
+  "remainingGaps": [
+    {
+      "severity": "P2",
+      "id": "live-model-gauntlet-eval",
+      "repro": "Wear startup pearl, capture deck, ask companion to evaluate \u2014 needs provider credentials for model response.",
+      "expected": "Structured evaluation grounded in pearl lenses",
+      "status": "query-prep-verified; live-model-not-run"
+    },
+    {
+      "severity": "P2",
+      "id": "browser-dnd-go-visual",
+      "repro": "Shelf DnD into gauntlet sockets + Enter/GO in extension side panel at 360px",
+      "expected": "Visual confirmation of orbit/rail + working-memory fire",
+      "status": "shipped in prior commit; this pass verified via code+unit tests, not fresh Playwright shots"
+    },
+    {
+      "severity": "P3",
+      "id": "open-ended-rearrange-birth-combine",
+      "repro": "Say 'rearrange / birth / opposition / combine these pearls' without naming a verb",
+      "expected": "Adaptive planner maps to organize/counter/synthesize/merge or precise blocker",
+      "status": "deterministic remix parser may miss slash-salad; planner prompt documents mapping"
+    }
+  ],
+  "screenshots": [
+    "10-reef-home-desktop.png",
+    "11-reef-home-narrow.png",
+    "06-organize-state.svg",
+    "07-counter-pearl.svg",
+    "08-gauntlet-eval.svg",
+    "09-intent-map.svg"
+  ],
+  "screenshotNote": "Real production-build preview screenshots captured for Reef home (desktop + 390px). Organize/counter/eval UI states evidenced by deterministic harness JSON + SVG panels; companion live model eval not run (no credentials in this pass).",
+  "browserEvidence": {
+    "build": "vite production build + vite preview :41741",
+    "captured": [
+      "reef home desktop 1280x800",
+      "reef home narrow 390x844"
+    ],
+    "notCapturedLive": [
+      "extension side panel 360px Go/DnD",
+      "live model gauntlet deck evaluation"
+    ]
+  }
+}

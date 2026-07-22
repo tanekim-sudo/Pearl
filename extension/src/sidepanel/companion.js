@@ -141,6 +141,9 @@ export const EXTENSION_VERBS = Object.freeze({
   renameExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("rename", args),
   mergeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("merge", args),
   synthesizeExternalSemanticOrbs: ({ args, semanticOrbAction }) => semanticOrbAction("synthesize", args),
+  organizeExternalPearl: ({ args, semanticOrbAction }) => semanticOrbAction("organize", args),
+  createExternalCounterPearl: ({ args, semanticOrbAction }) => semanticOrbAction("counter", args),
+  evaluateExternalWithGauntlet: ({ args, evaluateWithGauntlet }) => evaluateWithGauntlet(args),
   discoverExternalFormingPearls: ({ args, discoverForming }) => discoverForming(args.text, {
     source: args.source || "companion-import",
     maxPearls: args.maxPearls,
@@ -378,7 +381,41 @@ export function parseExtensionIntent(text) {
   }
   if (/\b(?:exchange insights?|breed|mutual(?:ly)? apply)\b.+\b(?:pearl|orb)s?\b/i.test(value)
     || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|notice about each other)\b/i.test(value)) {
+    // Opposition/foil breeding takes priority over mutual synthesize alias for "breed".
+    if (/\b(?:counter|opposition|foil)\b/i.test(value)) {
+      return { name: "createExternalCounterPearl", args: { id: "active", instruction: value } };
+    }
     return { name: "synthesizeExternalSemanticOrbs", args: { ids: [], mode: "mutual" } };
+  }
+  if (
+    /\borganiz(?:e|ing)\b.+\b(?:pearl|orb|dump|mess)\b/i.test(value)
+    || /\b(?:pearl|orb)\b.+\borganiz(?:e|ing)\b/i.test(value)
+    || /^organiz(?:e|ing)(?:\s+this|\s+it)?$/i.test(value)
+  ) {
+    return { name: "organizeExternalPearl", args: { id: "active" } };
+  }
+  if (
+    /\b(?:counter[- ]?pearl|opposition pearl|foil pearl)\b/i.test(value)
+    || /\b(?:develop|breed|create|make|birth)\b.+\b(?:counter|opposition|foil)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\b(?:counter|opposition|foil)\b.+\b(?:to|for|against)\b.+\b(?:pearl|orb|this|that)\b/i.test(value)
+    || /\bbreed\b.+\b(?:opposition|foil|counter)\b/i.test(value)
+  ) {
+    return { name: "createExternalCounterPearl", args: { id: "active", instruction: value } };
+  }
+  if (
+    /\bevaluat(?:e|ing)\b.+\b(?:deck|page|screen|slide|pitch|material|this|that)\b/i.test(value)
+    || /\b(?:deck|page|screen|slide)\b.+\b(?:through|with|via)\b.+\b(?:pearl|gauntlet|lens)\b/i.test(value)
+    || /\brun\b.+\bgauntlet\b.+\b(?:over|on|through)\b/i.test(value)
+    || /\bevaluat(?:e|ing)\b.+\b(?:startup|gauntlet|pearl)\b/i.test(value)
+  ) {
+    return {
+      name: "evaluateExternalWithGauntlet",
+      args: {
+        instruction: value,
+        capturePage: true,
+        captureScreen: /\b(?:screen|tab|visible)\b/i.test(value),
+      },
+    };
   }
   if (/\b(?:inspect|show|open)\b.+\b(?:metadata|harness|moves|functions|lenses)\b.+\b(?:pearl|orb)\b/i.test(value)
     || /\bmetadata (?:under|beneath|for) (?:this |the )?pearl\b/i.test(value)) {

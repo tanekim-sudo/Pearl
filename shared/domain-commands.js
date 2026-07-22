@@ -27,6 +27,9 @@ import {
   placeSemanticOrb,
   semanticOrbFromMaterial,
 } from "./semantic-orbs.js";
+import { applyOrganizeToPearl, organizePearlContents } from "./pearl-organize.js";
+import { materializeCounterPearl } from "./pearl-counter.js";
+import { buildGauntletEvaluationQuery } from "./pearl-gauntlet-eval.js";
 import { createOrbInstance, fuseWorkerProposals, MAX_ORB_WORKERS, splitOrbWorkers } from "./orb-swarm.js";
 import {
   activatePearlCanvas,
@@ -699,6 +702,106 @@ export const DOMAIN_COMMANDS = Object.freeze({
           observations,
           mode,
           effects: ["semantic-orb-created", "pearl-synthesis-created", "semantic-orb-merge-preserved-sources"],
+        },
+      };
+    },
+  },
+  organizePearl: {
+    schema: { id: "string?", extraText: "string?", sceneId: "string?" },
+    preconditions: ["pearl exists", "multimodal dump or layers present"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.update",
+    observableEffects: ["pearl-organized", "semantic-orb-updated"],
+    execute(state, args, context) {
+      const id = args.id || state.activeSemanticOrbId;
+      const source = (state.semanticOrbs || []).find((orb) => orb.id === id);
+      if (!source) throw new Error("pearl not found to organize");
+      const organized = organizePearlContents(source, { extraText: args.extraText });
+      if (!organized.ok) throw new Error(organized.reason);
+      const nextOrb = applyOrganizeToPearl(source, organized);
+      nextOrb.updatedAt = new Date(context.now || Date.now()).toISOString();
+      const semanticOrbs = (state.semanticOrbs || []).map((orb) => (orb.id === id ? createSemanticOrb(nextOrb) : orb));
+      return {
+        state: { ...state, semanticOrbs },
+        result: {
+          type: "pearl-organized",
+          id,
+          object: nextOrb,
+          organization: organized.organization,
+          preservedEvidenceCount: organized.preservedEvidence.length,
+          removedRedundantCount: organized.removedRedundantCount,
+          effects: ["pearl-organized", "semantic-orb-updated"],
+        },
+      };
+    },
+  },
+  createCounterPearl: {
+    schema: { id: "string", name: "string?", sceneId: "string", instruction: "string?" },
+    preconditions: ["source pearl exists"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["semantic-orb-created", "pearl-counter-created"],
+    execute(state, args, context) {
+      const source = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
+      if (!source) throw new Error("source pearl not found");
+      const material = materializeCounterPearl(state, source, {
+        name: args.name,
+        sceneId: args.sceneId || source.sceneId,
+        instruction: args.instruction,
+      }, context);
+      return {
+        state: material.state,
+        result: {
+          type: "semantic-orb",
+          id: material.orb.id,
+          object: material.orb,
+          preservedSourceIds: [source.id],
+          organization: material.spec.organization,
+          effects: ["semantic-orb-created", "pearl-counter-created", "semantic-orb-merge-preserved-sources"],
+        },
+      };
+    },
+  },
+  evaluateWithGauntlet: {
+    schema: {
+      material: "object?",
+      text: "string?",
+      title: "string?",
+      url: "string?",
+      instruction: "string?",
+      workingMemory: "object?",
+      packs: "array?",
+    },
+    preconditions: ["gauntlet packs present", "material disclosed"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "none",
+    observableEffects: ["gauntlet-evaluation-prepared"],
+    execute(state, args) {
+      const packs = args.packs
+        || args.workingMemory?.packs
+        || null;
+      const evaluation = buildGauntletEvaluationQuery({
+        packs,
+        workingMemory: args.workingMemory,
+        material: args.material || {
+          text: args.text,
+          title: args.title,
+          url: args.url,
+        },
+        instruction: args.instruction,
+      });
+      if (!evaluation.ok) throw new Error(evaluation.reason);
+      return {
+        state,
+        result: {
+          type: "gauntlet-evaluation",
+          id: `eval:${Date.now()}`,
+          object: evaluation,
+          effects: ["gauntlet-evaluation-prepared"],
+          requiresModel: true,
         },
       };
     },

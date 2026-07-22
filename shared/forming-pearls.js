@@ -367,7 +367,7 @@ export function pearlMetadataHarness(pearl = {}) {
     ],
     bounds: {
       modelRequiredForOpenRewrite: true,
-      deterministicOps: ["rename", "rearrange", "merge", "synthesize", "wear", "encode"],
+      deterministicOps: ["rename", "rearrange", "merge", "synthesize", "organize", "counter", "wear", "encode", "evaluate-with-gauntlet"],
       note: "Companion edits metadata through validated verbs; freeform rewrite needs credentials/model and must not fake mutation.",
     },
   };

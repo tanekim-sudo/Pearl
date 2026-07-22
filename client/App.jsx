@@ -276,6 +276,7 @@ import {
   MAX_FORMING_PEARLS,
   pearlMetadataHarness,
 } from "../shared/forming-pearls.js";
+import { buildGauntletEvaluationQuery } from "../shared/pearl-gauntlet-eval.js";
 import {
   aestheticFromSampleColor,
   aestheticSummary,
@@ -13307,6 +13308,124 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         visibleText: preservedSourceIds.length
           ? `Created a synthesis pearl with ${observationCount} observation${observationCount === 1 ? "" : "s"}. Sources stay independent: ${preservedSourceIds.join(", ")}.`
           : "Created a synthesis pearl. Source pearls remain in the library.",
+      };
+    },
+    organizePearl: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
+      if (!pearl) throw new Error("Choose a pearl to organize.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`) || document.querySelector(".companion-orb");
+      if (host) await tk.moveTo(host);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "compose", durationMs: 520 },
+      }));
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "organizePearl",
+        args: { id: pearl.id, extraText: a.extraText, sceneId: a.sceneId || sceneId },
+      });
+      await tk.wait(420);
+      const organization = receipt?.result?.organization || receipt?.organization;
+      const moves = organization?.moves?.length || 0;
+      const functions = organization?.functions?.length || 0;
+      const lenses = organization?.lenses?.length || 0;
+      return {
+        type: "pearl-organized",
+        id: pearl.id,
+        object: receipt?.result?.object || receipt?.object,
+        organization,
+        effects: ["pearl-organized", "semantic-orb-updated"],
+        visibleText: `Organized “${pearl.name}” into ${moves} Moves · ${functions} Functions · ${lenses} Lenses. Evidence preserved; redundancies collapsed.`,
+      };
+    },
+    createCounterPearl: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
+      if (!pearl) throw new Error("Choose a source pearl to breed a counter-pearl from.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`) || document.querySelector(".companion-orb");
+      if (host) await tk.moveTo(host);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "echo", durationMs: 640 },
+      }));
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "createCounterPearl",
+        args: {
+          id: pearl.id,
+          name: a.name && a.name !== pearl.name ? a.name : undefined,
+          sceneId: a.sceneId || sceneId,
+          instruction: a.instruction,
+        },
+      });
+      await tk.wait(520);
+      const counterId = receipt?.id || receipt?.result?.id;
+      if (counterId) {
+        document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+          detail: { pearlId: counterId, semantic: "emerge", durationMs: 420 },
+        }));
+      }
+      return {
+        type: "pearl-counter",
+        id: counterId,
+        preservedSourceIds: [pearl.id],
+        effects: ["semantic-orb-created", "pearl-counter-created"],
+        visibleText: `Bred counter-pearl against “${pearl.name}”. Source stays intact with opposition lineage.`,
+      };
+    },
+    evaluateWithGauntlet: async (a, tk) => {
+      const gauntlet = loadGauntletState();
+      const scene = currentSemanticScene();
+      const functions = (operatorsRef.current || []).filter((entry) => entry.kind === "function" || entry.processGraph);
+      const packs = (gauntlet.pearlIds || [])
+        .map((id) => (scene?.semanticOrbs || []).find((orb) => orb.id === id))
+        .filter(Boolean)
+        .map((pearl) => buildWornPearlPack(pearl, { functions }))
+        .filter(Boolean);
+      let text = a.text || a.material?.text || "";
+      let title = a.title || a.material?.title || null;
+      let url = a.url || a.material?.url || null;
+      if (!text && (a.capturePage || a.captureScreen)) {
+        try {
+          if (a.captureScreen && navigator.mediaDevices?.getDisplayMedia) {
+            // Screen capture authorization path exists via captureScreenAsEvidence; prefer clipboard/selection here for grounded text.
+            await tk.wait(40);
+          }
+          try { text = await navigator.clipboard.readText(); } catch { text = ""; }
+        } catch { text = ""; }
+      }
+      if (!text) {
+        const selected = window.getSelection?.()?.toString?.() || "";
+        if (selected.trim()) text = selected.trim();
+      }
+      const evaluation = buildGauntletEvaluationQuery({
+        packs,
+        material: { text, title, url, kind: a.captureScreen ? "screen" : a.capturePage ? "page" : "material" },
+        instruction: a.instruction || a.text,
+      });
+      if (!evaluation.ok) {
+        await tk.wait(80);
+        throw new Error(evaluation.reason);
+      }
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: packs[0]?.pearlId || "companion", semantic: "refract", durationMs: 360 },
+      }));
+      // Materialize the grounded evaluation prompt as paper feedback when a paper surface exists.
+      let feedbackId = null;
+      try {
+        feedbackId = spawnTextAtWorld(
+          evaluation.query.prompt.slice(0, 6_000),
+          { x: 48, y: 48 },
+          { via: { kind: "gauntlet-evaluation", packs: evaluation.packs } },
+        );
+      } catch {
+        feedbackId = null;
+      }
+      await tk.wait(280);
+      return {
+        type: "gauntlet-evaluation",
+        id: feedbackId || `eval:${Date.now()}`,
+        object: evaluation,
+        effects: ["gauntlet-evaluation-prepared", feedbackId ? "feedback-materialized" : null].filter(Boolean),
+        requiresModel: true,
+        visibleText: `${evaluation.reason} Grounded query prepared (${evaluation.material.characters.toLocaleString()} chars through ${packs.length} pearl${packs.length === 1 ? "" : "s"}). Live model critique needs credentials — this step did not invent AI output.`,
       };
     },
     splitSemanticOrb: async (a) => {

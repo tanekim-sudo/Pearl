@@ -1,0 +1,305 @@
+{
+  "type": "pearl-organized",
+  "id": "audit-orb-2",
+  "object": {
+    "name": "Messy multimodal dump",
+    "representation": {
+      "kind": "grouped-context",
+      "refs": [],
+      "label": "Messy multimodal dump",
+      "snapshot": null
+    },
+    "workingSet": {
+      "context": [
+        {
+          "id": "c1",
+          "kind": "context",
+          "label": "As a skeptical LP, evaluate traction and moat for this deck",
+          "text": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+          "mime": null,
+          "pinned": true,
+          "organized": true,
+          "sourceSnapshot": {
+            "id": "c1",
+            "text": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency."
+          }
+        },
+        {
+          "id": "c2",
+          "kind": "drawing",
+          "label": "whiteboard",
+          "text": "Draw the competitive map and compare alternatives. whiteboard",
+          "mime": null,
+          "pinned": true,
+          "organized": true,
+          "sourceSnapshot": {
+            "id": "c2",
+            "kind": "drawing",
+            "label": "whiteboard",
+            "text": "Draw the competitive map and compare alternatives."
+          }
+        },
+        {
+          "id": "c3",
+          "kind": "transcript",
+          "label": "Voice: rewrite the problem slide but keep the weird metaphors",
+          "text": "Voice: rewrite the problem slide but keep the weird metaphors.",
+          "mime": null,
+          "pinned": true,
+          "organized": true,
+          "sourceSnapshot": {
+            "id": "c3",
+            "kind": "transcript",
+            "text": "Voice: rewrite the problem slide but keep the weird metaphors."
+          }
+        },
+        {
+          "id": "c1b",
+          "kind": "context",
+          "label": "As a skeptical LP, evaluate traction and moat for this deck",
+          "text": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+          "mime": null,
+          "pinned": true,
+          "organized": true,
+          "sourceSnapshot": {
+            "id": "c1b",
+            "text": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency."
+          }
+        }
+      ],
+      "lenses": [
+        {
+          "id": "as-role:skeptical-lp",
+          "name": "skeptical LP",
+          "strength": 0.72,
+          "description": "Cultivated way of seeing from “As a skeptical LP, evaluate traction and moat for this deck”: As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency."
+        }
+      ],
+      "selections": [],
+      "branches": [],
+      "checkpoints": []
+    },
+    "id": "audit-orb-2",
+    "sceneId": "audit-scene",
+    "placement": {
+      "x": 120,
+      "y": 40,
+      "radius": 24
+    },
+    "version": 1,
+    "kind": "semantic-orb",
+    "parentOrbId": null,
+    "childOrbIds": [],
+    "lineage": [],
+    "provenance": {
+      "organize": {
+        "version": 1,
+        "at": "2026-07-22T06:28:24.233Z",
+        "removedRedundantCount": 8,
+        "evidenceCount": 4,
+        "note": "Organize-only: richness preserved as evidence; structure deduped into Moves → Functions → Lenses."
+      }
+    },
+    "aesthetic": null,
+    "archived": false,
+    "createdAt": "2026-07-22T06:28:24.226Z",
+    "updatedAt": "2026-07-22T06:28:24.226Z",
+    "moves": [
+      {
+        "id": "move:critique:c1",
+        "name": "Critique",
+        "description": "Drawn from dump “As a skeptical LP, evaluate traction and moat for this deck”: As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+        "kind": "move",
+        "evidenceRefs": [
+          "c1",
+          "c1b"
+        ],
+        "authorship": "organized"
+      },
+      {
+        "id": "move:brainstorm:c2",
+        "name": "Brainstorm",
+        "description": "Drawn from dump “whiteboard”: Draw the competitive map and compare alternatives. whiteboard",
+        "kind": "move",
+        "evidenceRefs": [
+          "c2"
+        ],
+        "authorship": "organized"
+      },
+      {
+        "id": "move:rewrite:c3",
+        "name": "Rewrite",
+        "description": "Drawn from dump “Voice: rewrite the problem slide but keep the weird metaphors”: Voice: rewrite the problem slide but keep the weird metaphors.",
+        "kind": "move",
+        "evidenceRefs": [
+          "c3"
+        ],
+        "authorship": "organized"
+      }
+    ],
+    "functions": [
+      {
+        "id": "function:organize:audit-orb-2",
+        "name": "Messy multimodal dump organized process",
+        "description": "Replay the organized dump as Moves → Functions → Lenses while keeping 4 evidence units intact.",
+        "kind": "function",
+        "steps": [
+          {
+            "name": "As a skeptical LP, evaluate traction and moat for this deck",
+            "prompt": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+            "evidenceRefs": [
+              "c1"
+            ]
+          },
+          {
+            "name": "whiteboard",
+            "prompt": "Draw the competitive map and compare alternatives. whiteboard",
+            "evidenceRefs": [
+              "c2"
+            ]
+          },
+          {
+            "name": "Voice: rewrite the problem slide but keep the weird metaphors",
+            "prompt": "Voice: rewrite the problem slide but keep the weird metaphors.",
+            "evidenceRefs": [
+              "c3"
+            ]
+          },
+          {
+            "name": "As a skeptical LP, evaluate traction and moat for this deck",
+            "prompt": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+            "evidenceRefs": [
+              "c1b"
+            ]
+          }
+        ],
+        "evidenceRefs": [
+          "c1",
+          "c2",
+          "c3",
+          "c1b"
+        ],
+        "authorship": "organized"
+      }
+    ],
+    "lenses": [
+      {
+        "id": "as-role:skeptical-lp",
+        "name": "skeptical LP",
+        "description": "Cultivated way of seeing from “As a skeptical LP, evaluate traction and moat for this deck”: As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+        "kind": "lens",
+        "strength": 0.72,
+        "evidenceRefs": [
+          "c1",
+          "c1b"
+        ],
+        "authorship": "organized"
+      }
+    ]
+  },
+  "organization": {
+    "order": [
+      "moves",
+      "functions",
+      "lenses"
+    ],
+    "moves": [
+      {
+        "id": "move:critique:c1",
+        "name": "Critique",
+        "description": "Drawn from dump “As a skeptical LP, evaluate traction and moat for this deck”: As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+        "kind": "move",
+        "evidenceRefs": [
+          "c1",
+          "c1b"
+        ],
+        "authorship": "organized"
+      },
+      {
+        "id": "move:brainstorm:c2",
+        "name": "Brainstorm",
+        "description": "Drawn from dump “whiteboard”: Draw the competitive map and compare alternatives. whiteboard",
+        "kind": "move",
+        "evidenceRefs": [
+          "c2"
+        ],
+        "authorship": "organized"
+      },
+      {
+        "id": "move:rewrite:c3",
+        "name": "Rewrite",
+        "description": "Drawn from dump “Voice: rewrite the problem slide but keep the weird metaphors”: Voice: rewrite the problem slide but keep the weird metaphors.",
+        "kind": "move",
+        "evidenceRefs": [
+          "c3"
+        ],
+        "authorship": "organized"
+      }
+    ],
+    "functions": [
+      {
+        "id": "function:organize:audit-orb-2",
+        "name": "Messy multimodal dump organized process",
+        "description": "Replay the organized dump as Moves → Functions → Lenses while keeping 4 evidence units intact.",
+        "kind": "function",
+        "steps": [
+          {
+            "name": "As a skeptical LP, evaluate traction and moat for this deck",
+            "prompt": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+            "evidenceRefs": [
+              "c1"
+            ]
+          },
+          {
+            "name": "whiteboard",
+            "prompt": "Draw the competitive map and compare alternatives. whiteboard",
+            "evidenceRefs": [
+              "c2"
+            ]
+          },
+          {
+            "name": "Voice: rewrite the problem slide but keep the weird metaphors",
+            "prompt": "Voice: rewrite the problem slide but keep the weird metaphors.",
+            "evidenceRefs": [
+              "c3"
+            ]
+          },
+          {
+            "name": "As a skeptical LP, evaluate traction and moat for this deck",
+            "prompt": "As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+            "evidenceRefs": [
+              "c1b"
+            ]
+          }
+        ],
+        "evidenceRefs": [
+          "c1",
+          "c2",
+          "c3",
+          "c1b"
+        ],
+        "authorship": "organized"
+      }
+    ],
+    "lenses": [
+      {
+        "id": "as-role:skeptical-lp",
+        "name": "skeptical LP",
+        "description": "Cultivated way of seeing from “As a skeptical LP, evaluate traction and moat for this deck”: As a skeptical LP, evaluate traction and moat for this deck. Care about capital efficiency.",
+        "kind": "lens",
+        "strength": 0.72,
+        "evidenceRefs": [
+          "c1",
+          "c1b"
+        ],
+        "authorship": "organized"
+      }
+    ]
+  },
+  "preservedEvidenceCount": 4,
+  "removedRedundantCount": 8,
+  "effects": [
+    "pearl-organized",
+    "semantic-orb-updated"
+  ]
+}

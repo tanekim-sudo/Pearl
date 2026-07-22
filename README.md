@@ -16,6 +16,21 @@ Most AI products make the prompt, model response, and conversation the primary u
 - The spatial arrangement, transformation history, and user’s taste remain part of the artifact.
 - Direct manipulation, voice, companion execution, and browser-extension execution must produce equivalent durable effects.
 
+### Current product surface (as of 2026-07)
+
+What is shipped and wired today (verify with handlers + tests; live model critique still needs credentials):
+
+- **Reef home** — pearls spread for mix/match/merge; companion is always available without wearing a pearl.
+- **Pearl Studio** — focused single-pearl view with load-bearing section order **Moves → Functions → Lenses**; freeform multimodal dump surface plus an **Organize** control that structures richness without summarizing it away.
+- **5-slot gauntlet** — companion working memory (mother pearl + up to five worn pearls). Shelf pearls default inactive; drag into sockets to activate. Full gauntlet blocks silent drop.
+- **Explicit GO** — staged extension stacks never auto-run; GO / Enter / voice “go” fires through the current gauntlet pack as working-memory context.
+- **Forming-pearl import** — paste chats/docs/drafts → ≤5 organized shelf pearls (Moves → Functions → Lenses).
+- **Pearl remix primitives** — merge / compose / synthesize (mutual or directed notice) / **organize** / **counter (opposition breeding)** / wear / encode — freeform intents map to these validated verbs.
+- **Gauntlet evaluation** — with cultivated lens pearls in the gauntlet, capture page/deck material and prepare a grounded evaluation query through those lenses. Preparing the query is deterministic; **live model evaluation requires provider credentials** and must not be reported as proven without a real run.
+- **Companion generality** — metadata cursor for pearl harness edits plus within/between-pearl ops via adaptive planner over shared primitives. Precise blockers for locked pearls, empty gauntlet, missing capture, missing credentials, and browser-protected pages.
+
+Known honest bounds: Hobby Vercel function limits, browser-protected pages, cross-origin frames, and credential-dependent AI paths.
+
 ### Experience principles
 
 1. **The page Pearl is primary.** A person selects material and states a goal on the page already in use; the website opens only when that work needs more room.
@@ -134,7 +149,7 @@ Normal companion execution invokes capability handlers directly, emits a typed d
 
 Inactive semantic orbs remain compact, constant-readable points on the Stage. New orbs appear at the pointer or beside their source with collision-aware placement; dense groups collapse to a counted cluster that can be revealed without changing persisted coordinates. A person can create an empty orb, turn any Stage material or external page capture into one, drag material or a Lens into it, move it, rename it, duplicate it, archive it, or use keyboard and touch equivalents.
 
-Orb-on-orb drops always remain productive and source-preserving: **Nest** establishes reversible hierarchy, **Merge** creates a grouped-context capsule, and **Compose** creates an ordered capsule. Splitting produces lineage-linked capsules from the represented sources. Merely adding context never executes a model; execution still requires an explicit command or GO.
+Orb-on-orb drops always remain productive and source-preserving: **Nest** establishes reversible hierarchy, **Merge** creates a grouped-context capsule, **Compose** creates an ordered capsule, **Synthesize** creates a mutual/directed observation pearl, and **Counter** breeds an opposition pearl with lineage. **Organize** restructures a pearl’s multimodal dump into Moves → Functions → Lenses while preserving evidence. Splitting produces lineage-linked capsules from the represented sources. Merely adding context never executes a model; execution still requires an explicit command or GO.
 
 The authoritative record is `scene.semanticOrbs[]` plus `scene.activeSemanticOrbId` in Scene v4. Each record has a stable ID, schema version, placement, representation kind and references, working set, parent/children, lineage, provenance, and archive state. Runtime phase, live traces, candidate streams, and worker records are not serialized into semantic capsules. Canvas saves rebase onto the latest Scene snapshot so they cannot erase capsule or working-set edits.
 
@@ -613,7 +628,7 @@ The companion is a complete alternate command interface for every meaningful dir
 
 The registry, planner, runtime handlers, extension verbs, and effect tests must remain in parity. If a capability cannot be automated safely, the companion states the exact boundary and provides the safest reachable fallback.
 
-The pre-expansion parity checkpoint was **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. The current canonical baseline is **206 executable capabilities**: **170 app/director effects** and **36 extension effects**, adding grounded creative proposal, first-class Taste Lens judgment, and explicit-selection extension handoff. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract. Adding or removing a capability requires updating this baseline and regenerating the effect matrix.
+The pre-expansion parity checkpoint was **198 executable capabilities**: **164 app/director effects** and **34 extension effects**. Later baselines added Taste Lens judgment, gauntlet working memory, forming-pearl import, organize, counter-pearl, and gauntlet evaluation. Treat the generated companion capability graph / orb preservation matrix as the live count — regenerate with `npm run orb:matrix` after capability changes. A registry entry is not sufficient by itself; every capability must resolve to a callable handler, execute against seeded production-shaped state, produce its declared observable effect or precise safe blocker, and remain represented in the owning feature contract.
 
 `CompanionCapabilityGraph` is the generated, versioned self-description of that surface. Its nodes join the manifest to canonical domain commands and feature contracts, adding stable IDs, typed inputs/outputs, observations, risk/approval/autonomy policy, cost/network boundaries, persistence, undo/compensation, surfaces, expected effects, and test identities. Generated dataflow edges connect compatible outputs to typed reference inputs and mark write conflicts and parallel safety. Exact and bounded semantic retrieval select only goal-relevant nodes for each planning pass; the full catalog is never inserted into every adaptive prompt. The release gate validates the graph and rejects a stale generated graph artifact.
 

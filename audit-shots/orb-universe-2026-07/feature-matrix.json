@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T06:20:00.061Z",
+  "generatedAt": "2026-07-22T06:29:15.909Z",
   "counts": {
-    "features": 60,
-    "companion": 394,
-    "extension": 117,
-    "commands": 128
+    "features": 63,
+    "companion": 400,
+    "extension": 120,
+    "commands": 131
   },
   "features": [
     {
@@ -339,7 +339,10 @@
       "id": "companion.pearl-gauntlet",
       "commands": [
         "activateSemanticOrb",
-        "mergeSemanticOrbs"
+        "mergeSemanticOrbs",
+        "organizePearl",
+        "createCounterPearl",
+        "evaluateWithGauntlet"
       ],
       "companion": [
         "wearPearl",
@@ -349,6 +352,9 @@
         "rearrangeGauntlet",
         "mergeSemanticOrbs",
         "synthesizeSemanticOrbs",
+        "organizePearl",
+        "createCounterPearl",
+        "evaluateWithGauntlet",
         "inspectPearlMetadata"
       ],
       "extension": [
@@ -357,13 +363,72 @@
         "rearrangeExternalGauntlet",
         "mergeExternalSemanticOrbs",
         "synthesizeExternalSemanticOrbs",
+        "organizeExternalPearl",
+        "createExternalCounterPearl",
+        "evaluateExternalWithGauntlet",
         "pressExternalGo"
       ],
       "tests": [
         "shared/companion-pearl-gauntlet.test.js",
         "shared/companion-pearl-orbit.test.js",
         "shared/domain-commands.test.js",
-        "shared/lens-runtime.test.js"
+        "shared/lens-runtime.test.js",
+        "shared/pearl-organize.test.js"
+      ]
+    },
+    {
+      "id": "pearl.organize",
+      "commands": [
+        "organizePearl"
+      ],
+      "companion": [
+        "organizePearl"
+      ],
+      "extension": [
+        "organizeExternalPearl"
+      ],
+      "tests": [
+        "shared/pearl-organize.test.js",
+        "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "pearl.counter",
+      "commands": [
+        "createCounterPearl"
+      ],
+      "companion": [
+        "createCounterPearl"
+      ],
+      "extension": [
+        "createExternalCounterPearl"
+      ],
+      "tests": [
+        "shared/pearl-organize.test.js",
+        "shared/domain-commands.test.js",
+        "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "pearl.gauntlet-evaluation",
+      "commands": [
+        "evaluateWithGauntlet"
+      ],
+      "companion": [
+        "evaluateWithGauntlet",
+        "wearPearl",
+        "captureScreenAsEvidence"
+      ],
+      "extension": [
+        "evaluateExternalWithGauntlet",
+        "capturePageSelection",
+        "captureExternalVisibleTab",
+        "pressExternalGo"
+      ],
+      "tests": [
+        "shared/pearl-organize.test.js",
+        "shared/lens-runtime.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {

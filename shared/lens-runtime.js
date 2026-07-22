@@ -158,6 +158,13 @@ function normalizeWorkingMemory(workingMemory = null) {
       lenses: (pack.lenses || []).slice(0, 8).map((lens) => ({
         id: String(lens.id || ""),
         name: String(lens.name || "").slice(0, 80),
+        description: String(lens.description || lens.judgment || "").slice(0, 220),
+        judgment: String(lens.judgment || lens.description || "").slice(0, 220),
+      })),
+      moves: (pack.moves || []).slice(0, 8).map((move) => ({
+        id: String(move.id || ""),
+        name: String(move.name || "").slice(0, 80),
+        description: String(move.description || "").slice(0, 180),
       })),
       functions: (pack.functions || []).slice(0, 8).map((fn) => ({
         id: String(fn.id || ""),
@@ -180,14 +187,18 @@ export function workingMemoryPrompt(workingMemory) {
   const memory = normalizeWorkingMemory(workingMemory);
   if (!memory?.packs?.length) return "";
   const lines = memory.packs.map((pack, index) => {
-    const lenses = pack.lenses.map((lens) => lens.name).filter(Boolean).join(", ") || "none";
+    const lenses = pack.lenses.map((lens) => {
+      const judgment = lens.judgment || lens.description;
+      return judgment ? `${lens.name} (${judgment})` : lens.name;
+    }).filter(Boolean).join("; ") || "none";
+    const moves = (pack.moves || []).map((move) => move.name).filter(Boolean).join(", ") || "none";
     const functions = pack.functions.map((fn) => fn.name).filter(Boolean).join(", ") || "none";
     const context = pack.context.map((entry) => entry.summary || entry.label).filter(Boolean).slice(0, 3).join(" · ");
-    return `${index + 1}. ${pack.name}: lenses [${lenses}]; functions [${functions}]${context ? `; context: ${context}` : ""}`;
+    return `${index + 1}. ${pack.name}: lenses [${lenses}]; moves [${moves}]; functions [${functions}]${context ? `; context: ${context}` : ""}`;
   });
   return [
-    "[GAUNTLET WORKING MEMORY — active pearls the companion currently carries]",
-    "Interpret and transform the selected material through this stack. Prefer bound lenses/functions and evidenced context. Do not invent pack contents.",
+    "[GAUNTLET WORKING MEMORY — cultivated ways of seeing the companion currently carries]",
+    "Interpret and transform the selected material through this stack. Prefer bound lenses (judgment/taste/philosophy), moves, functions, and evidenced context. Do not invent pack contents.",
     ...lines,
   ].join("\n");
 }

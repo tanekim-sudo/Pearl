@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 60,
+    "features": 63,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,10 +27,10 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 60,
-    "domainCommands": 116,
-    "companionCapabilities": 217,
-    "extensionEntries": 85
+    "featureContracts": 63,
+    "domainCommands": 119,
+    "companionCapabilities": 221,
+    "extensionEntries": 88
   },
   "requirements": [
     {
@@ -54,16 +54,16 @@
         "companion.pearl-wear",
         "companion.mother-orbit",
         "companion.pearl-gauntlet",
+        "pearl.organize",
+        "pearl.counter",
+        "pearl.gauntlet-evaluation",
         "highlight.explicit-go",
         "ai.node-gestures",
         "persistence.account-adoption",
         "extension.distribution",
         "companion.destructive-clear",
         "companion.effect-trace",
-        "interaction.semantic-transfer",
-        "companion.transaction-harness",
-        "registry.cognitive-packages",
-        "artifacts.higher-order"
+        "interaction.semantic-transfer"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -89,6 +89,9 @@
         "bindSemanticOrb",
         "addSemanticOrbContext",
         "mergeSemanticOrbs",
+        "organizePearl",
+        "createCounterPearl",
+        "evaluateWithGauntlet",
         "createFunctionFromContent"
       ],
       "webEntries": [
@@ -111,15 +114,12 @@
         "extension/src/content/bridge.js",
         "shared/companion-pearl-orbit.js",
         "extension/src/sidepanel/sidepanel.css",
+        "client/components/PearlStudioView.jsx",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
         "client/components/CompanionChat.jsx",
         "client/components/GhostCursor.jsx:ghost-cursor-effect-status",
-        "client/App.jsx:resolveLeftColumnSemanticTarget",
-        "client/components/CompanionChat.jsx:companion-mode-bar",
-        "client/components/CompanionChat.jsx:companion-plan-strip",
-        "client/components/CognitivePackageRegistry.jsx",
-        "client/components/CognitiveWorkflowStudio.jsx:higher-order"
+        "client/App.jsx:resolveLeftColumnSemanticTarget"
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -177,6 +177,10 @@
         "rearrangeGauntlet",
         "mergeSemanticOrbs",
         "synthesizeSemanticOrbs",
+        "organizePearl",
+        "createCounterPearl",
+        "evaluateWithGauntlet",
+        "captureScreenAsEvidence",
         "cancelPendingBrush",
         "moveAiNode",
         "openExtensionDownload",
@@ -184,16 +188,6 @@
         "clearFunctions",
         "clearLenses",
         "semanticTransfer",
-        "runFunctionTestBench",
-        "observeWorkspace",
-        "openPackageRegistry",
-        "createSignedPackage",
-        "publishCognitivePackage",
-        "installCognitivePackage",
-        "rollbackCognitivePackage",
-        "deprecateCognitivePackage",
-        "proposeHigherOrderPatch",
-        "applyHigherOrderPatch",
         "capturePageSelection",
         "openExternalArtifact",
         "pressExternalGo",
@@ -218,13 +212,13 @@
         "rearrangeExternalGauntlet",
         "mergeExternalSemanticOrbs",
         "synthesizeExternalSemanticOrbs",
+        "organizeExternalPearl",
+        "createExternalCounterPearl",
+        "evaluateExternalWithGauntlet",
+        "captureExternalVisibleTab",
         "previewExternalGo",
         "showExternalLibraryImport",
-        "saveExternalCaptureAsFunction",
-        "captureExternalVisibleTab",
-        "browseExternalPackages",
-        "installExternalPackage",
-        "openExternalCognitiveStudio"
+        "saveExternalCaptureAsFunction"
       ],
       "extensionEntries": [
         "capturePageSelection",
@@ -251,13 +245,13 @@
         "rearrangeExternalGauntlet",
         "mergeExternalSemanticOrbs",
         "synthesizeExternalSemanticOrbs",
+        "organizeExternalPearl",
+        "createExternalCounterPearl",
+        "evaluateExternalWithGauntlet",
+        "captureExternalVisibleTab",
         "previewExternalGo",
         "showExternalLibraryImport",
-        "saveExternalCaptureAsFunction",
-        "captureExternalVisibleTab",
-        "browseExternalPackages",
-        "installExternalPackage",
-        "openExternalCognitiveStudio"
+        "saveExternalCaptureAsFunction"
       ],
       "persistenceAndMigrations": [
         "lens.unified-workspace.v2",
@@ -269,14 +263,9 @@
         "lens.learn-from-chat.draft.v1",
         "lens.companion.worn-pearl.v1",
         "lens.companion.gauntlet.v1",
+        "lens.semantic-orbs.v1",
         "lens.ai.nodes.v1",
-        "lens.board.items.v1",
-        "lens.companion.run-ledger.v1",
-        "lens.companion.mode.v1",
-        "cognitive_packages",
-        "cognitive_package_keys",
-        "lens.cognitive-packages.installed.v1",
-        "lens.higher-order-patches.v1"
+        "lens.board.items.v1"
       ],
       "automatedTests": [
         "shared/workspace-observation.test.js",
@@ -302,20 +291,14 @@
         "shared/companion-pearl-orbit.test.js",
         "shared/companion-pearl-gauntlet.test.js",
         "shared/lens-runtime.test.js",
+        "shared/pearl-organize.test.js",
         "client/lib/ai-layout.test.js",
         "client/lib/board-sync.test.js",
         "shared/lens-library.test.js",
         "extension/tests/release.test.js",
         "client/lib/companion-plan.test.js",
         "client/lib/director.test.js",
-        "shared/drop-intent-resolver.test.js",
-        "client/lib/companion-harness.test.js",
-        "client/lib/companion-executor.test.js",
-        "client/lib/companion-capability-graph.test.js",
-        "shared/function-test-bench.test.js",
-        "shared/cognitive-package.test.js",
-        "server/cognitive-package-registry.test.js",
-        "shared/higher-order-artifacts.test.js"
+        "shared/drop-intent-resolver.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -338,15 +321,15 @@
         "shared/companion-pearl-wear.js",
         "shared/companion-pearl-orbit.js",
         "shared/companion-pearl-gauntlet.js",
+        "shared/pearl-organize.js",
+        "shared/pearl-counter.js",
+        "shared/pearl-gauntlet-eval.js",
         "shared/lens-runtime.js",
         "client/lib/board-sync.js",
         "extension/scripts/package.mjs",
         "client/lib/companion-plan.js",
         "client/lib/director.js",
-        "shared/drop-intent-resolver.js",
-        "client/lib/companion-harness.js",
-        "shared/cognitive-package.js",
-        "shared/higher-order-artifacts.js"
+        "shared/drop-intent-resolver.js"
       ],
       "reachable": true
     },
@@ -3051,5 +3034,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T06:20:00.722Z"
+  "generatedAt": "2026-07-22T06:28:59.252Z"
 }

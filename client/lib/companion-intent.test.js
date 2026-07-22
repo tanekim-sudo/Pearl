@@ -61,6 +61,12 @@ test("critique stream and version history intents are deterministic", () => {
   });
   assert.equal(parsePearlRemixCommand("synthesize these pearls").verb, "synthesizeSemanticOrbs");
   assert.equal(parsePearlRemixCommand("apply this pearl onto that pearl").args.mode, "directed");
+  assert.equal(parsePearlRemixCommand("organize this pearl").verb, "organizePearl");
+  assert.equal(parsePearlRemixCommand("organize the dump into moves functions and lenses").verb, "organizePearl");
+  assert.equal(parsePearlRemixCommand("develop a counter pearl to this one").verb, "createCounterPearl");
+  assert.equal(parsePearlRemixCommand("make a foil pearl against that orb").verb, "createCounterPearl");
+  assert.equal(parsePearlRemixCommand("evaluate this deck with my startup pearl").verb, "evaluateWithGauntlet");
+  assert.equal(parsePearlRemixCommand("run the gauntlet over this page").verb, "evaluateWithGauntlet");
   assert.equal(parsePearlRemixCommand("split this orb").verb, "splitSemanticOrb");
   assert.equal(parsePearlRemixCommand("apply my skeptical Lens to this orb").verb, "applySemanticOrbLens");
   assert.equal(parseAutomationLoopCommand("capture this tab as the format").verb, "captureScreenAsEvidence");

@@ -1,0 +1,142 @@
+{
+  "id": "audit-orb-3",
+  "name": "Counter · 3-year startup pearl",
+  "lineage": [
+    {
+      "orbId": "audit-orb-1",
+      "operation": "counter",
+      "preserved": true,
+      "mode": "opposition"
+    }
+  ],
+  "organization": {
+    "order": [
+      "moves",
+      "functions",
+      "lenses"
+    ],
+    "moves": [
+      {
+        "id": "move:counter:audit-orb-1:invert",
+        "name": "Invert thesis",
+        "description": "Invert the core thesis and taste of “3-year startup pearl” while citing the source verbatim. Instruction: foil the LP taste deliberately",
+        "kind": "move",
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter"
+      },
+      {
+        "id": "move:counter:audit-orb-1:steelman-then-attack",
+        "name": "Steelman then attack",
+        "description": "State the strongest charitable reading of “3-year startup pearl”, then attack it with the strongest opposition case. Instruction: foil the LP taste deliberately",
+        "kind": "move",
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter"
+      },
+      {
+        "id": "move:counter:audit-orb-1:counterevidence",
+        "name": "Gather counterevidence",
+        "description": "Collect counterexamples and counterevidence that “3-year startup pearl” would undervalue or miss. Instruction: foil the LP taste deliberately",
+        "kind": "move",
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter"
+      }
+    ],
+    "functions": [
+      {
+        "id": "function:counter:audit-orb-1",
+        "name": "Counter · 3-year startup pearl opposition process",
+        "description": "Cultivate deliberate opposition to “3-year startup pearl”: invert, steelman-then-attack, and gather counterevidence while preserving source material.",
+        "kind": "function",
+        "steps": [
+          {
+            "name": "Invert thesis",
+            "prompt": "Invert the core thesis and taste of “3-year startup pearl” while citing the source verbatim. Instruction: foil the LP taste deliberately",
+            "evidenceRefs": [
+              "audit-orb-1"
+            ]
+          },
+          {
+            "name": "Steelman then attack",
+            "prompt": "State the strongest charitable reading of “3-year startup pearl”, then attack it with the strongest opposition case. Instruction: foil the LP taste deliberately",
+            "evidenceRefs": [
+              "audit-orb-1"
+            ]
+          },
+          {
+            "name": "Gather counterevidence",
+            "prompt": "Collect counterexamples and counterevidence that “3-year startup pearl” would undervalue or miss. Instruction: foil the LP taste deliberately",
+            "evidenceRefs": [
+              "audit-orb-1"
+            ]
+          }
+        ],
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter"
+      }
+    ],
+    "lenses": [
+      {
+        "id": "lens:counter:audit-orb-1:foil",
+        "name": "3-year startup pearl foil",
+        "description": "Deliberately opposite judgment to “3-year startup pearl”: what would a rigorous foil notice, reject, or invert? Opposes lenses: Skeptical LP.",
+        "kind": "lens",
+        "strength": 0.78,
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter",
+        "oppositionTo": {
+          "pearlId": "audit-orb-1",
+          "pearlName": "3-year startup pearl",
+          "opposedLensNames": [
+            "Skeptical LP"
+          ]
+        }
+      },
+      {
+        "id": "lens:counter:audit-orb-1:disconfirm",
+        "name": "Disconfirm 3-year startup pearl",
+        "description": "Hunt disconfirming evidence against the attractions and concerns cultivated in “3-year startup pearl”. Opposes lenses: Skeptical LP.",
+        "kind": "lens",
+        "strength": 0.78,
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter",
+        "oppositionTo": {
+          "pearlId": "audit-orb-1",
+          "pearlName": "3-year startup pearl",
+          "opposedLensNames": [
+            "Skeptical LP"
+          ]
+        }
+      },
+      {
+        "id": "lens:counter:audit-orb-1:failure-modes",
+        "name": "Failure modes first",
+        "description": "Prefer failure modes, weak assumptions, and opposition cases before charity toward “3-year startup pearl”. Opposes lenses: Skeptical LP.",
+        "kind": "lens",
+        "strength": 0.78,
+        "evidenceRefs": [
+          "audit-orb-1"
+        ],
+        "authorship": "counter",
+        "oppositionTo": {
+          "pearlId": "audit-orb-1",
+          "pearlName": "3-year startup pearl",
+          "opposedLensNames": [
+            "Skeptical LP"
+          ]
+        }
+      }
+    ]
+  }
+}

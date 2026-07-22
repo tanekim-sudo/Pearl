@@ -148,6 +148,37 @@ test("semantic orb capsules preserve sources, activate singly, nest, merge, and 
   const after = synthesized.state.semanticOrbs.find((orb) => orb.id === "orb-1");
   assert.deepEqual(after, before, "source pearl content is unchanged");
   assert.equal(synthesized.undo().semanticOrbs.length, 2);
+
+  const dumpState = {
+    semanticOrbs: [{
+      ...created.state.semanticOrbs[0],
+      id: "orb-dump",
+      name: "Messy dump",
+      workingSet: {
+        context: [
+          { id: "d1", text: "As a skeptical LP, evaluate traction and moat. Care about capital efficiency." },
+          { id: "d2", text: "Rewrite the problem slide but keep the metaphors." },
+        ],
+        lenses: [],
+      },
+      placement: { x: 10, y: 10, radius: 24 },
+    }],
+    activeSemanticOrbId: "orb-dump",
+  };
+  const organized = await executeDomainCommand("organizePearl", dumpState, { id: "orb-dump" }, options);
+  assert.ok(organized.result.effects.includes("pearl-organized"));
+  assert.ok(organized.result.organization.moves.length >= 1);
+  assert.equal(organized.state.semanticOrbs.find((orb) => orb.id === "orb-dump").workingSet.context.length >= 2, true);
+
+  const countered = await executeDomainCommand("createCounterPearl", nested.state, {
+    id: "orb-1",
+    sceneId: "scene-1",
+    instruction: "foil the source",
+  }, options);
+  assert.ok(countered.result.effects.includes("pearl-counter-created"));
+  assert.equal(countered.result.object.representation.kind, "counter");
+  assert.ok(nested.state.semanticOrbs.some((orb) => orb.id === "orb-1"));
+  assert.equal(countered.state.semanticOrbs.find((orb) => orb.id === "orb-1").name, nested.state.semanticOrbs.find((orb) => orb.id === "orb-1").name);
 });
 
 test("every command declares complete release contract metadata", () => {

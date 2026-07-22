@@ -233,9 +233,40 @@ export function parsePearlRemixCommand(text) {
   ) {
     return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "directed" } };
   }
+  if (
+    /\b(?:counter[- ]?pearl|opposition pearl|foil pearl)\b/i.test(value)
+    || /\b(?:develop|breed|create|make|birth)\b.+\b(?:counter|opposition|foil)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\b(?:counter|opposition|foil)\b.+\b(?:to|for|against)\b.+\b(?:pearl|orb|this|that)\b/i.test(value)
+    || /\bbreed\b.+\b(?:opposition|foil|counter)\b/i.test(value)
+  ) {
+    return { verb: "createCounterPearl", args: { instruction: value } };
+  }
   if (/\b(?:exchange insights?|breed|birth (?:a )?third)\b.+\b(?:pearl|orb)s?\b/i.test(value)
     || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|breed)\b/i.test(value)) {
     return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "mutual" } };
+  }
+  if (
+    /\borganiz(?:e|ing)\b.+\b(?:pearl|orb|dump|mess)\b/i.test(value)
+    || /\b(?:pearl|orb)\b.+\borganiz(?:e|ing)\b/i.test(value)
+    || /\borganiz(?:e|ing)\b.+\b(?:moves?|functions?|lenses?)\b/i.test(value)
+    || /^organiz(?:e|ing)(?:\s+this|\s+it)?$/i.test(value)
+  ) {
+    return { verb: "organizePearl", args: {} };
+  }
+  if (
+    /\bevaluat(?:e|ing)\b.+\b(?:deck|page|screen|slide|pitch|material|this|that)\b/i.test(value)
+    || /\b(?:deck|page|screen|slide)\b.+\b(?:through|with|via)\b.+\b(?:pearl|gauntlet|lens)\b/i.test(value)
+    || /\brun\b.+\bgauntlet\b.+\b(?:over|on|through)\b/i.test(value)
+    || /\bevaluat(?:e|ing)\b.+\b(?:startup|gauntlet|pearl)\b/i.test(value)
+  ) {
+    return {
+      verb: "evaluateWithGauntlet",
+      args: {
+        instruction: value,
+        capturePage: /\b(?:page|screen|tab|deck|slide)\b/i.test(value),
+        captureScreen: /\b(?:screen|tab|visible)\b/i.test(value),
+      },
+    };
   }
   if (/\b(?:import|discover|find)\b.+\b(?:forming )?pearls?\b/i.test(value)
     || /\bpearls that were already forming\b/i.test(value)
@@ -729,7 +760,7 @@ Rules:
 - Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
-- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. synthesizeSemanticOrbs mutual-applies selected/worn pearls into a new observation pearl (sources stay intact); use mode directed to apply A onto B. For freeform “do X with these pearls,” observe pearl metadata then map to validated verbs (create/edit/merge/compose/synthesize/wear/encode) — never invent success. Pearls never replace the mother.
+- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. synthesizeSemanticOrbs mutual-applies selected/worn pearls into a new observation pearl (sources stay intact); use mode directed to apply A onto B. createCounterPearl breeds a deliberate opposition/foil pearl with lineage. organizePearl turns multimodal dump into Moves → Functions → Lenses without summarizing away richness. evaluateWithGauntlet grounds page/deck material in the active gauntlet lenses (capture when needed); live model output needs credentials — never fake success. For freeform “do X with these pearls,” observe pearl metadata then map to validated verbs (create/edit/organize/merge/compose/synthesize/counter/wear/encode/evaluate) — never invent success. Pearls never replace the mother.
 - Output destinations: when the user says where output should go, call chooseResultDestination with their wording (new tab, download as md/html/json/csv/pdf/txt, drag/create text box, point with cursor / mother pearl, caret insert, copy, Studio). Then confirmResultPlacement after they confirm. Use indicateOutputWithCursor when they want to point with the mother pearl.
 - When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
 - Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
@@ -824,7 +855,7 @@ Rules:
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
-- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
+- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, createCounterPearl for counter/opposition/foil intents, organizePearl for organize-dump / Moves→Functions→Lenses intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, evaluateWithGauntlet for deck/page evaluation through worn lenses, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.

@@ -155,6 +155,33 @@ export default function PearlStudioView({ localRef }) {
         animation={status === "Restored" ? "recover" : status === "Saving…" ? "stream" : null}
       />
       <button type="button" className="web-pearl-studio__trigger" aria-expanded={structureOpen} aria-keyshortcuts="Meta+K Control+K" onClick={() => setStructureOpen((value) => !value)}>Inspect structure</button>
+      <button type="button" className="web-pearl-studio__trigger" data-testid="pearl-organize" onClick={async () => {
+        setStatus("Organizing…");
+        try {
+          const { organizePearlContents, applyOrganizeToPearl } = await import("../../shared/pearl-organize.js");
+          const organized = organizePearlContents(entity, { extraText: text });
+          if (!organized.ok) {
+            setStatus(organized.reason);
+            return;
+          }
+          const next = applyOrganizeToPearl(entity, organized);
+          await run("editPearlEntity", {
+            pearlId: entity.id,
+            expectedRevision: entity.revision,
+            idempotencyKey: crypto.randomUUID(),
+            patch: {
+              moves: next.moves,
+              functions: next.functions,
+              lenses: next.lenses,
+              workingSet: next.workingSet,
+              provenance: next.provenance,
+            },
+          });
+          setStatus(`Organized · ${organized.organization.moves.length}M · ${organized.organization.functions.length}F · ${organized.organization.lenses.length}L`);
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }}>Organize</button>
       <button type="button" className="web-pearl-studio__trigger" aria-expanded={historyOpen} data-testid="pearl-version-history" onClick={() => setHistoryOpen((value) => !value)}>Version history</button>
       <button type="button" className="web-pearl-studio__close" onClick={leavePearlStudio}>Close Studio</button>
     </div>
