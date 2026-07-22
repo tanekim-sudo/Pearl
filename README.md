@@ -4,95 +4,55 @@ A New Primitive for Intelligence
 
 Every era of computing has been defined by a new primitive. The graphical user interface gave us the Window. The spreadsheet gave us the Cell. The web gave us the Hyperlink. Git gave us the Commit. These were not merely new features — they were new ways of thinking with computers.
 
-Artificial intelligence has transformed what computers can do. It has not yet transformed how humans think with them. Pearl is an attempt to do that.
+Artificial intelligence has transformed what computers can do. It has not yet transformed how humans think with them. Pearl is an attempt to do that: not another chatbot, but the notation layer for ways of seeing on the AI metamedium — native operations on perception the way Git gave code branch, fork, merge, and diff.
 
 This document is both the pitch and the contract. The philosophy below explains why Pearl exists. After the Reef, the engineering sections describe what ships today. Nothing in What's next is a promise — verify shipped capabilities against `shared/feature-contracts.js` and the generated capability graph.
 
-## Part I — The Problem
+## Part I — Why This Medium
 
-### Intelligence Changed. Our Interface Didn't.
+### Medium Determines Thought
 
-The arrival of large language models is one of the largest shifts in computing history. For the first time, computation is no longer limited to executing explicit instructions. It can interpret language, recognize patterns, synthesize ideas, transform information, and collaborate on open-ended cognitive work. The capability of the computer has fundamentally changed. The interface has not.
+We do not think in a vacuum. We think in the languages and media we inherit. Change the medium and you change what can be thought — not only how thoughts are stored, but which operations become cheap enough to perform without thinking about them.
 
-Today, almost every AI product still follows the same interaction loop:
+Marshall McLuhan’s law of media is blunt: a new medium externalizes a faculty, makes it operable, and then compounds. Oral culture externalized memory as formula and rhythm. Writing made memory an object that could leave the skull. The deepest revolutions were notations — Hindu-Arabic numerals, algebra’s *x*, staff lines for music — each externalizing a cognitive *operation*, not merely storage. Whitehead put it plainly: civilization advances by extending the number of important operations we can perform without thinking about them.
 
-Human thinks → Human translates thought into language → AI receives language → AI returns language → Human translates language back into thought
+The computer was supposed to be the metamedium — Engelbart’s augmentation, Kay’s dynamic medium that could simulate all others. Mostly we built faster paper and a skeuomorph office: the incunabula stage, when printed books still looked like manuscripts and cars were horseless carriages. Code eventually escaped. Git’s branch, fork, merge, and diff are native operations *on the medium itself*. Writing-at-large never got that. Thought never got that. Until now we preserve conclusions and lose the generative path — Picasso’s compositional moves, Bach’s voice-leading habits, Socrates’ elenchus, Darwin’s slow reframe — as advice, biography, or vibe. The path of attention was never installable machinery.
 
-This works. But it is not natural. Language is already a compression. Before we speak, we notice, wonder, feel tension, recognize patterns, sense beauty, and become curious — only afterward do we attempt to describe those experiences with words.
+### What AI Actually Externalizes
 
-Current AI assumes language is the native interface to intelligence. We believe language is only one expression of thought — not thought itself. The prompt box is not inevitable; it is simply the first interface history happened to discover. Just as the command line once seemed like the natural interface to computation, prompting may ultimately be remembered as an early interaction model superseded by something more direct.
+The cheap take is that AI prints essays faster. That is print-class thinking. What large models actually externalize is the **transformation** — the perceptual move that used to die inside private skulls: compress, expand, invert, translate across domains, ground in evidence, find shared structure. AI is our paper; the ink is thought — not static text, but thought-moves, style as recurring operable patterns. For the first time those moves can be run, inspected, forked, merged, and shared as structure rather than as tips.
 
-Our belief is simple: the interface should remove every unnecessary translation layer between human intention and computational possibility. Humans should not have to become programmers of intelligence. Intelligence should become a material humans can think with directly.
+Chat is the horseless carriage. Conversation is a useful costume, but it buries what the medium wants: operable, persistent, composable moves under something like Docs, Git, staff lines, or algebra — a notation layer where the first-class objects are ways of seeing. Algebra’s placeholder for the not-yet-understood; sendable paths of attention (“come; notice this…”); version control for perception. Without that layer, every prompt rebuilds scaffolding by hand. Intelligence has become cheap. Structure is the bottleneck.
 
-### Every Great Interface Reduced Translation
-
-The history of computing is not primarily the history of faster machines. It is the history of removing unnecessary translation. Every major interface innovation allowed humans to interact with computers in a way that more closely matched how they already thought.
-
-The command line required people to remember syntax. The graphical user interface allowed them to manipulate visual objects. Hyperlinks allowed people to navigate by association instead of location. Spreadsheets allowed people to think directly with numbers instead of writing programs. Git transformed software from snapshots into histories.
-
-Each invention discovered the native object of its domain — windows, cells, hyperlinks, commits. These primitives were not arbitrary; they captured something fundamental about how people naturally reason within those domains. The result was not simply better software, but an entirely new category of software.
-
-Artificial intelligence has not yet discovered its native primitive. Instead, nearly every AI interface is built around artifacts inherited from previous generations of computing:
-
-- chats
-- prompts
-- documents
-- conversations
-- messages
-- files
-
-These are excellent containers for information. They are poor containers for understanding.
+Most domains never externalized their world-logic — relationships, dependencies, contested interpretation versus a smooth, finite, checkable, sourced substrate. Chat hides the problem the way a franchise dumps facts without the internal rules that make a world cohere. The future that matters is not more fluent generation into a void; it is a structured world you can map first, then think with. Pearl exists to be that notation layer for AI-mediated cognition.
 
 ### The Wrong Question
 
-Most AI products ask: how do we make prompting better? We believe that is the wrong question. The more important question is: what is the native object of AI-mediated cognition?
+Most AI products ask: how do we make prompting better? That is improving the carriage. The better question is: what are the native objects and operations of AI-mediated cognition — the commits and staff lines of thought — so intelligence becomes manipulable rather than merely conversational?
 
-The GUI did not improve computation; it made computation manipulable. The web did not improve information; it made information navigable. Git did not improve code; it made software evolution manipulable. Likewise, the opportunity before AI is not merely improving language models. It is discovering a new interaction language for intelligence itself — finding the native objects and interactions that make intelligence manipulable rather than merely conversational.
+The GUI did not improve computation; it made computation manipulable. The web did not improve information; it made information navigable. Git did not improve code; it made software evolution manipulable. The opportunity before AI is not merely larger models. It is discovering the interaction language that makes ways of seeing first-class.
 
 ### Understanding Is Not Information
 
-Most software is designed around storing information. Documents store text. Folders store documents. Databases store records. Chats store conversations. These systems assume that information is the thing users ultimately value.
+Most software stores information: documents, folders, databases, chats. Humans are not fundamentally collecting information; they are cultivating understanding. Understanding grows, deepens, connects, changes character, acquires taste, and becomes capable of acting. It cannot simply be copied; it must be formed. Great ideas begin as a question, an observation, a contradiction, a fragment, an intuition — and only later gather evidence, survive criticism, and change how we see. Current software asks users to organize those fragments. We believe software should help cultivate them — and keep the generative path, not only the conclusion.
 
-We think something deeper is happening. Humans are not fundamentally trying to collect information; they are trying to cultivate understanding. Understanding behaves differently: it grows, deepens, connects, changes, develops character, acquires taste, and becomes capable of acting. Unlike information, understanding cannot simply be copied from one place to another. It must be formed.
+### Three Layers Should Separate
 
-Great ideas rarely arrive complete. They begin as something small:
+Modern knowledge work mixes three different things into one application: **reality** (documents, code, books, sites, conversations), **tools** (search, summarize, translate, compare — portable ways of seeing), and **understanding** (the perspective you have built: assumptions you revisit, taste, trusted frameworks, living questions). Every app stores its own content, ships its own tools, and forgets your understanding. Every AI session begins near zero: rebuild context, re-explain thinking, reconstruct mental models. The computer never remembers how you have learned to see.
 
-- a question
-- an observation
-- a contradiction
-- a fragment
-- an intuition
-- a moment of wonder
-
-Over time they gather evidence, connect to other ideas, survive criticism, and become clearer — eventually becoming something capable of changing how we see the world. Current software asks users to organize these fragments. We believe software should help cultivate them.
-
-### Today's Software Bundles Three Different Things Together
-
-Modern knowledge work quietly mixes three fundamentally different concepts into one application.
-
-First, there is reality — the documents, code, books, music, websites, conversations, and raw material itself. Second, there are tools — search, summarize, translate, rewrite, analyze, compare. Third, there is understanding — the accumulated perspective you have built over years of thinking: the assumptions you continually revisit, the taste you have developed, the frameworks you trust, and the questions that remain alive.
-
-Today these three things are inseparable. Every application stores its own content, ships its own tools, and forgets your understanding. As a result, every AI session begins almost from zero: you rebuild context, re-explain your thinking, repeat your preferences, and reconstruct your mental models — again and again. The computer never remembers how you have learned to see.
-
-### A Different Architecture
-
-We believe these three layers should become independent. Reality should stay where it naturally belongs — documents in Google Docs, code in GitHub, music in Spotify, the web as the web. Tools should become portable: ways of seeing, transforming, comparing, and exploring. Understanding should become persistent, portable, composable, and executable.
-
-Rather than carrying documents from application to application, users should carry their cultivated understanding. This is the architectural shift Pearl proposes: not another AI workspace, but a new computational layer that travels with the user across every application, every model, and every piece of reality they encounter.
+These layers should become independent. Reality stays where it belongs — Docs, GitHub, Spotify, the web. Tools become portable: Moves, Functions, Lenses. Understanding becomes persistent, portable, composable, and executable — the Pearl. Rather than carrying documents from app to app, users carry cultivated ways of seeing across every surface and model they encounter.
 
 ### Our Thesis
 
-We believe the next generation of computing will not be defined by larger language models. It will be defined by better interfaces for thinking with them. The breakthrough is unlikely to be another chatbot. It will be a new computational primitive that allows intelligence itself to become persistent, manipulable, composable, and reusable.
-
-That primitive is the Pearl.
+The next generation of computing will not be defined by larger language models alone. It will be defined by better media for thinking with them — a notation layer where thought-moves are first-class objects under version control. That primitive is the Pearl.
 
 ## Part II — The Pearl
 
 ### A New Computational Primitive
 
-If the first section explained why Pearl must exist, this section explains what it is. The easiest mistake is to think of a Pearl as a note, a chat, a document, a memory, or a folder. It is none of those.
+If Part I explained why a notation layer must exist, this section names its native object. The easiest mistake is to think of a Pearl as a note, a chat, a document, a memory, or a folder. It is none of those.
 
-A Pearl is a new computational primitive. Just as the spreadsheet introduced the Cell and Git introduced the Commit, Pearl introduces a new native object for AI-mediated cognition: a persistent, executable unit of cultivated understanding — the first computational object designed not to store information, but to cultivate understanding itself.
+A Pearl is a persistent, executable unit of cultivated understanding — the first computational object designed not to store information, but to cultivate and carry a way of seeing. Moves, Functions, and Lenses are the operable notation around it: run, inspect, fork, merge, and share perceptual machinery the way Git operates on code. Chat remains available; it is no longer the substrate.
 
 ### What is a Pearl?
 
@@ -104,7 +64,7 @@ A Pearl is a sovereign computational object: self-contained, portable, composabl
 
 **Capability.** Every Pearl eventually becomes capable of acting — not because someone programmed it, but because understanding naturally produces capability. A Design Pearl can critique interfaces. A Biology Pearl can reason about biological systems. A Startup Pearl can evaluate companies. Capabilities emerge from cultivated understanding; they are not separate plugins.
 
-**Provenance.** Every Pearl carries the complete history of its own formation. Nothing is anonymous; nothing appears from nowhere. Every conclusion can be traced, every transformation is inspectable, and every contribution remains visible. Understanding becomes trustworthy because its formation remains transparent.
+**Provenance.** Every Pearl carries the complete history of its own formation. Nothing is anonymous; nothing appears from nowhere. Every conclusion can be traced, every transformation is inspectable, and every contribution remains visible. Understanding becomes trustworthy because its formation remains transparent — the generative path stays on the object, not trapped in a lost chat scroll.
 
 Together these four properties create something software has never possessed before: not information, not intelligence — cultivated understanding.
 
@@ -136,7 +96,7 @@ Imagine dropping a startup pitch into an Investment Pearl. Without prompting, it
 
 No single Pearl understands everything. Humans do not think through one perspective; neither should software. Multiple Pearls can become active simultaneously — a Design Pearl, a Systems Pearl, a Writing Pearl, a Psychology Pearl — and together produce entirely new ways of seeing.
 
-These combinations are temporary. Each Pearl remains independent. Their interaction creates a shared cognitive field that exists only for the present task. Understanding becomes composable.
+These combinations are temporary. Each Pearl remains independent. Their interaction creates a shared cognitive field that exists only for the present task. Understanding becomes composable — structure you equip, not scaffolding you retype into every prompt.
 
 ### Pearls Are More Than Context
 
@@ -154,9 +114,9 @@ The invention of the Pearl changes more than the object. It changes the relation
 
 ### From Prompting to Cultivation
 
-Today's interaction model is simple: prompt, answer, copy, paste, repeat. This model assumes intelligence is something users command. Pearl proposes something different.
+Today's interaction model is simple: prompt, answer, copy, paste, repeat. That loop treats intelligence as something you command in language — the carriage, not the engine. Pearl proposes something different.
 
-Every breakthrough begins with a seed — a question, a contradiction, an observation, an intuition. The user places that seed into a Pearl. The Pearl expands possibilities: connections appear, contradictions surface, unexpected relationships emerge. The user notices, selects, returns, and refines. The Pearl matures. This is not prompting. It is cultivation.
+Every breakthrough begins with a seed — a question, a contradiction, an observation, an intuition. The user places that seed into a Pearl. The Pearl expands possibilities: connections appear, contradictions surface, unexpected relationships emerge. The user notices, selects, returns, and refines. The Pearl matures. This is not prompting. It is cultivation — and the path stays on the object.
 
 ### Human and AI Garden Different Things
 
@@ -214,7 +174,7 @@ Pearls remember. Lenses reveal. A Lens is a reusable way of seeing. It does not 
 
 ### Moves
 
-If Lenses answer "How should I see this?", Moves answer "What should happen next?" Moves transform understanding: Branch, Compare, Compress, Expand, Connect, Challenge, Reframe, Extract, Synthesize, Translate. Moves never operate in isolation. They always act through a Pearl's cultivated understanding and the currently active Lenses. The same Move applied through different Pearls produces different results because each Pearl carries a different history, perspective, and capability.
+If Lenses answer "How should I see this?", Moves answer "What should happen next?" Moves are the externalized transformation — compress, expand, invert, branch, compare, connect, challenge, reframe, extract, synthesize, translate — first-class and operable, not tips buried in a chat. Moves never operate in isolation. They always act through a Pearl's cultivated understanding and the currently active Lenses. The same Move applied through different Pearls produces different results because each Pearl carries a different history, perspective, and capability.
 
 ### Functions
 
@@ -224,7 +184,7 @@ Functions are reusable compositions of Lenses and Moves. Over time users natural
 - Rewrite a paper through Writing and Teaching Pearls.
 - Analyze a scientific article through Biology and Statistics Pearls.
 
-Functions allow cultivated understanding to become executable. They transform experience into reusable capability.
+Functions allow cultivated understanding to become executable. They transform experience into reusable capability — structure that survives the session instead of being rebuilt in the next prompt.
 
 ### Understanding Travels, Not Files
 
@@ -452,7 +412,7 @@ The most important interaction in Pearl isn't clicking, typing, or prompting. It
 
 ### Conversation Returns to the Margin
 
-Conversation remains valuable. It simply stops being the primary surface. Dialogue belongs beside reality, not replacing it. Comments become anchored; questions remain attached to specific passages; reasoning stays where it originated. Conversation becomes contextual rather than chronological. The page remains primary; dialogue becomes secondary.
+Conversation remains valuable. It simply stops being the primary surface — the costume, not the notation. Dialogue belongs beside reality, not replacing it. Comments become anchored; questions remain attached to specific passages; reasoning stays where it originated. Conversation becomes contextual rather than chronological. The page remains primary; dialogue becomes secondary.
 
 ## Part VIII — The Platform
 
@@ -482,6 +442,8 @@ Everything in Pearl should satisfy these principles.
 
 **Cultivation Over Generation.** Great ideas grow. They are rarely generated whole.
 
+**Structure Over Fluent Void.** Prefer world-logic you can map, fork, and check over generation that rebuilds scaffolding every turn.
+
 **Transparency Over Automation.** The user should always understand why something happened. Formation should never become opaque.
 
 **Unforcedness.** The interface must never ask the human to do the computer's work. The computer must never ask the human to surrender judgment. The interaction should feel inevitable, graceful, and natural. The interface disappears; understanding remains.
@@ -496,7 +458,7 @@ Everything in Pearl should satisfy these principles.
 
 ## Part X — Long-Term Vision
 
-The graphical user interface made computation manipulable. The web made information navigable. Git made software evolution persistent. Pearl aims to make understanding itself manipulable — not by replacing human judgment or automating thought, but by giving cultivated understanding a native computational form for the first time.
+The graphical user interface made computation manipulable. The web made information navigable. Git made software evolution persistent. Pearl aims to make understanding itself manipulable — not by replacing human judgment or automating thought, but by giving cultivated ways of seeing a native computational form: fork, diff, and merge for perception, not another chat.
 
 We believe intelligence deserves its own primitive: not another prompt box, chatbot, or workspace, but a new object — one that grows, remembers, sees, acts, travels, combines, and quietly becomes wiser alongside the people who cultivate it.
 
