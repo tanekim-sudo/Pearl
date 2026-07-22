@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 47,
+    "features": 48,
     "minimumCompanionCapabilities": 130,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,7 +27,7 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 47,
+    "featureContracts": 48,
     "domainCommands": 106,
     "companionCapabilities": 188,
     "extensionEntries": 77
@@ -2858,5 +2858,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-21T19:17:31.044Z"
+  "generatedAt": "2026-07-21T22:09:12.744Z"
 }

@@ -31,6 +31,12 @@ import {
 import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import { boardSyncEnabled, setBoardSyncEnabled } from "../lib/board-sync.js";
 import {
+  PEARL_GUIDE_STORAGE_KEY,
+  PEARL_WELCOME_STORAGE_KEY,
+  guideSectionsFor,
+  recordPearlGuideOpen,
+} from "../lib/pearl-guide.js";
+import {
   LEGACY_UNIFIED_WORKSPACE_KEYS,
   UNIFIED_WORKSPACE_KEY,
   createScene,
@@ -282,10 +288,60 @@ function PearlActionPalette({ onRun }) {
   </section>;
 }
 
+function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onDismiss }) {
+  return <section className="pearl-welcome" aria-label="Welcome to Pearl">
+    <button type="button" className="pearl-welcome-mark" aria-label="Ask Pearl" onClick={onAsk}>
+      <PhysicalPearl variant="primary" state="idle" size={46} decorative />
+    </button>
+    <h1>Pearl</h1>
+    <p>One small companion that notices, shapes, and carries your work anywhere.</p>
+    <div className="pearl-welcome-actions">
+      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>Ask Pearl anything</button>
+      <button type="button" onClick={onScene}>Start a Scene</button>
+      <button type="button" onClick={onGuide}>See how Pearl works</button>
+      <button type="button" onClick={onInstall}>Get the browser extension</button>
+    </div>
+    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Not now — just explore</button>
+  </section>;
+}
+
+const GUIDE_TRY_COMMANDS = new Set([
+  "open a new scene",
+  "show me the scene controls",
+  "show my saved library",
+  "install the extension",
+  "what is stored here?",
+]);
+
+function PearlGuidePanel({ onClose, onTry }) {
+  return <aside className="pearl-guide-panel" role="dialog" aria-label="How Pearl works">
+    <header>
+      <b>How Pearl works</b>
+      <button type="button" onClick={onClose}>Close</button>
+    </header>
+    {guideSectionsFor("app").map((section, index) => <section key={section.id} style={{ "--guide-index": index }}>
+      <h2>{section.title}</h2>
+      <p>{section.summary}</p>
+      <ul>
+        {section.items.map((item) => <li key={item.id}>
+          <b>{item.label}</b>
+          <span>{item.detail}</span>
+          {item.gesture && <i>{item.gesture}</i>}
+          {item.command && !GUIDE_TRY_COMMANDS.has(item.command) && <i>Say “{item.command}”</i>}
+          {item.command && GUIDE_TRY_COMMANDS.has(item.command) && onTry && <button type="button" onClick={() => onTry(item.command)}>
+            Try “{item.command.replace(/\?$/, "")}”
+          </button>}
+        </li>)}
+      </ul>
+    </section>)}
+  </aside>;
+}
+
 function LibraryHome({
   route,
   scenes,
   onCreateScene,
+  onOpenGuide,
   onContinueHandoff,
   extensionHandoff,
   handoffStatus,
@@ -321,6 +377,10 @@ function LibraryHome({
       <div className="orb-kicker">Saved work</div>
       <h1>{title}</h1>
       <p>Click Pearl to begin here, or select material on a page to create your first saved Pearl.</p>
+      <div className="orb-home-intro-actions">
+        <button type="button" onClick={onCreateScene}>Start a Scene</button>
+        <button type="button" onClick={onOpenGuide}>How Pearl works</button>
+      </div>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
       <div>
@@ -389,7 +449,7 @@ function LibraryHome({
   </main>;
 }
 
-function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, semanticOrbActions, onOpenStudio }) {
+function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, semanticOrbActions, onOpenStudio, onOpenGuide }) {
   const materials = useMemo(() => [
     ...(scene?.items || []).map((item) => ({
       ...item,
@@ -435,6 +495,11 @@ function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, seman
       ? <section className="orb-stage-empty">
           <h1>Bring material into this Scene.</h1>
           <p>Drag onto the orb, speak a goal, or open a saved working set. Nothing is created until you choose it.</p>
+          <div className="orb-stage-empty-actions">
+            <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Place a pearl here</button>
+            <button type="button" onClick={onOpenGuide}>How Pearl works</button>
+          </div>
+          <small className="orb-stage-empty-hint">Double-click anywhere on the stage to place a pearl. Triple-click any pearl to open its Studio.</small>
         </section>
       : view === "Table"
         ? <table className="orb-stage-table"><thead><tr><th>Material</th><th>Kind</th><th>Lineage</th></tr></thead><tbody>
@@ -534,6 +599,9 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
   });
   const [externalCursorMode, setExternalCursorMode] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => readJson(PEARL_WELCOME_STORAGE_KEY, null)?.dismissed === true);
+  const [companionExpanded, setCompanionExpanded] = useState(false);
   const [sceneView, setSceneView] = useState("Stage");
   const [outputToolsOpen, setOutputToolsOpen] = useState(false);
   const [outputFrameOpen, setOutputFrameOpen] = useState(() => {
@@ -559,6 +627,30 @@ export default function OrbUniverseShell({ StageComponent }) {
       }));
     }
   }, [route.path]);
+
+  const openGuide = useCallback(() => {
+    try {
+      localStorage.setItem(PEARL_GUIDE_STORAGE_KEY, JSON.stringify(recordPearlGuideOpen(readJson(PEARL_GUIDE_STORAGE_KEY, null))));
+    } catch {
+      /* guide open still works without persistence */
+    }
+    setGuideOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const open = () => setGuideOpen(true);
+    window.addEventListener("lens:open-pearl-guide", open);
+    return () => window.removeEventListener("lens:open-pearl-guide", open);
+  }, []);
+
+  const dismissWelcome = useCallback(() => {
+    try {
+      localStorage.setItem(PEARL_WELCOME_STORAGE_KEY, JSON.stringify({ dismissed: true, at: new Date().toISOString() }));
+    } catch {
+      /* dismissal still applies for this session */
+    }
+    setWelcomeDismissed(true);
+  }, []);
 
   const refreshInstall = useCallback(() => {
     setInstall({ status: "checking", trusted: false });
@@ -757,6 +849,12 @@ export default function OrbUniverseShell({ StageComponent }) {
         commandId: "toggleOrbCursor",
         effectId: `orb-cursor:${cursorRequest ? "on" : "off"}`,
       }));
+      return;
+    }
+    if (/^(?:help|guide|how do i\b.*|how does (?:this|pearl) work\??|what can (?:you|pearl) do\??|show me how\b.*|open (?:the )?(?:pearl )?(?:guide|help))$/i.test(recorded.entry.normalized)) {
+      openGuide();
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPearlGuide" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openPearlGuide", effectId: `guide:${Date.now()}` }));
       return;
     }
     const privacyIntent = recorded.entry.normalized;
@@ -1771,13 +1869,23 @@ export default function OrbUniverseShell({ StageComponent }) {
         onContextAdd={addOrbContext}
         semanticOrbActions={semanticOrbActions}
         onOpenStudio={openActivePearlStudio}
+        onOpenGuide={openGuide}
       />}
       {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
         onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
         onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
         onOpenStudio={openActivePearlStudio}
+        onExpandedChange={setCompanionExpanded}
+        quickActions={[
+          { label: "How Pearl works", run: openGuide },
+          { label: "Actions", run: () => setEmittedView("actions") },
+          { label: "View & frame", run: () => setEmittedView("scene") },
+          { label: "Saved work", run: () => navigate("/library") },
+        ]}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
+      {!cursorMode && !guideOpen && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
+      {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
       {emittedView && <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
@@ -1815,6 +1923,12 @@ export default function OrbUniverseShell({ StageComponent }) {
   }
 
   const showInstall = route.kind === "install";
+  const freshRoot = !showInstall
+    && route.path === "/"
+    && (sceneWorkspace.scenes || []).length === 0
+    && continuationMaterialCount(extensionHandoff) === 0
+    && !route.handoff;
+  const showWelcome = freshRoot && !welcomeDismissed && !companionExpanded && !guideOpen && !cursorMode && !emittedView;
   return <div className="orb-universe">
     {showInstall
       ? <InstallLanding install={install} onContinue={continueToLibrary} onRetry={refreshInstall} />
@@ -1822,6 +1936,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           route={route}
           scenes={sceneWorkspace.scenes || []}
           onCreateScene={createBlankScene}
+          onOpenGuide={openGuide}
           onContinueHandoff={continueExtensionWork}
           extensionHandoff={extensionHandoff}
           handoffStatus={handoffStatus}
@@ -1859,8 +1974,24 @@ export default function OrbUniverseShell({ StageComponent }) {
       onApproval={decideApproval}
       onWorkerCancel={cancelWorker}
       onOpenStudio={openActivePearlStudio}
+      onExpandedChange={setCompanionExpanded}
+      quickActions={[
+        { label: "How Pearl works", run: openGuide },
+        { label: "New Scene", run: createBlankScene },
+        { label: "Saved work", run: () => setEmittedView("library") },
+        { label: "Get the extension", run: () => navigate("/install") },
+      ]}
       hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0 ? "Click to begin · hold to speak · triple-click for Studio" : null}
     />}
+    {showWelcome && <PearlWelcome
+      onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}
+      onScene={() => { dismissWelcome(); createBlankScene(); }}
+      onGuide={() => { dismissWelcome(); openGuide(); }}
+      onInstall={() => { dismissWelcome(); navigate("/install"); }}
+      onDismiss={dismissWelcome}
+    />}
+    {!cursorMode && !guideOpen && !showWelcome && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
+    {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
     {emittedView === "privacy" && privacyNotice && <aside className="orb-stage-emission" aria-label="Privacy view emitted by Pearl">
       <button type="button" onClick={() => setEmittedView(null)}>Close</button>
       <b>{privacyNotice.title}</b>

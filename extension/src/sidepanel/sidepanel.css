@@ -747,3 +747,63 @@ main[data-orb-view="idle"] .extension-orb{
     max-height:calc(50vh - 34px);
   }
 }
+
+/* How Pearl works: always-reachable guide */
+.extension-guide-button{
+  position:fixed;
+  right:12px;
+  bottom:12px;
+  z-index:44;
+  width:40px;
+  height:40px;
+  min-height:40px;
+  padding:0;
+  border:1px solid var(--pearl-ui-line-strong);
+  border-radius:50%;
+  background:rgba(9,11,12,.72);
+  color:var(--pearl-ui-text-muted);
+  font:500 15px/1.25 Inter,ui-sans-serif,system-ui,sans-serif;
+  transition:color .2s,border-color .2s,transform .25s var(--ex-ease);
+}
+.extension-guide-button:hover{color:var(--pearl-ui-text);border-color:var(--pearl-ui-line-strong);background:rgba(255,255,255,.03);transform:scale(1.08)}
+.extension-pearl-guide{
+  position:fixed;
+  inset:12px 12px 12px auto;
+  z-index:46;
+  display:block;
+  width:min(320px,calc(100vw - 24px));
+  padding:var(--pearl-ui-space-3) var(--pearl-ui-space-3) var(--pearl-ui-space-4);
+  overflow:auto;
+  border:0;
+  border-left:1px solid var(--pearl-ui-line-strong);
+  background:rgba(9,11,12,.97);
+  animation:extension-emission-enter .25s var(--ex-ease) both;
+}
+main .extension-pearl-guide header,
+main[data-orb-view="idle"] .extension-pearl-guide header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:auto;
+  padding:0 0 var(--pearl-ui-space-2);
+  border:0;
+  border-bottom:1px solid var(--pearl-ui-line);
+}
+.extension-pearl-guide header b{color:var(--pearl-ui-text);font-size:13px}
+.extension-pearl-guide header button{min-height:32px;padding:0 12px;border:1px solid var(--pearl-ui-line);border-radius:999px;background:transparent;color:var(--pearl-ui-text-muted)}
+.extension-guide-section{
+  padding:var(--pearl-ui-space-2) 0;
+  border-bottom:1px solid var(--pearl-ui-line);
+  animation:extension-emission-enter .35s var(--ex-ease) calc(var(--guide-index,0) * 60ms) both;
+}
+.extension-guide-section h3{margin:0 0 2px;color:var(--pearl-ui-text);font-size:12px;font-weight:560}
+.extension-guide-section > p{margin:0 0 6px;color:var(--pearl-ui-text-muted);font-size:11px;line-height:1.5}
+.extension-guide-section ul{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.extension-guide-section li{display:grid;gap:1px;font-size:11px;line-height:1.5}
+.extension-guide-section li b{color:var(--pearl-ui-text);font-weight:540}
+.extension-guide-section li span{color:var(--pearl-ui-text-muted)}
+.extension-guide-section li i{color:var(--pearl-ui-text-dim);font-size:10px;font-style:normal}
+@media(prefers-reduced-motion:reduce){
+  .extension-pearl-guide,.extension-guide-section{animation:none!important}
+  .extension-guide-button{transition:none!important;transform:none!important}
+}

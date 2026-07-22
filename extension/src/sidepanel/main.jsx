@@ -12,6 +12,7 @@ import { normalizeGenerationPlan } from "../../../shared/generation-plan.js";
 import { verifyCognitivePackage } from "../../../shared/cognitive-package.js";
 import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/semantic-orbs.js";
 import { pearlActionPrompt, searchPearlActions } from "../../../client/lib/pearl-shell.js";
+import { guideSectionsFor } from "../../../client/lib/pearl-guide.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
 import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
 import { createPearlPrivacyPolicy } from "../../../shared/pearl-privacy-policy.js";
@@ -129,6 +130,7 @@ function App() {
   const [pearlSoundscapes, setPearlSoundscapes] = useState({});
   const [privacySurface, setPrivacySurface] = useState(null);
   const [privacyProposal, setPrivacyProposal] = useState(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [audioSearchResults, setAudioSearchResults] = useState([]);
   const fileRef = useRef(null);
   const audioFileRef = useRef(null);
@@ -1066,6 +1068,11 @@ function App() {
         addAudio: addPearlAudio,
         controlAudio: controlPearlAudio,
         updateAudio: (args) => controlPearlAudio("volume", args),
+        openGuide: () => {
+          setGuideOpen(true);
+          setActiveView("idle");
+          return { type: "extension-guide", opened: true };
+        },
         animate: async () => {
           setGhost(true);
           await new Promise((resolve) => setTimeout(resolve, 240));
@@ -1242,6 +1249,20 @@ function App() {
       <label><span className="sr-only">Soundscape volume</span><input type="range" min="0" max="1" step=".05" value={activeSoundscape.volume} onChange={(event) => controlPearlAudio("volume", { volume: Number(event.target.value) }).catch(() => {})} /></label>
       <button type="button" onClick={() => controlPearlAudio("stop").catch(() => {})}>Stop</button>
     </section>}
+    {guideOpen && <section className="extension-pearl-guide" role="dialog" aria-label="How Pearl works">
+      <header><b>How Pearl works</b><button type="button" onClick={() => setGuideOpen(false)}>Close</button></header>
+      {guideSectionsFor("extension").map((section, index) => <div key={section.id} className="extension-guide-section" style={{ "--guide-index": index }}>
+        <h3>{section.title}</h3>
+        <p>{section.summary}</p>
+        <ul>{section.items.map((item) => <li key={item.id}>
+          <b>{item.label}</b>
+          <span>{item.detail}</span>
+          {item.gesture && <i>{item.gesture}</i>}
+          {item.command && <i>Say “{item.command}”</i>}
+        </li>)}</ul>
+      </div>)}
+    </section>}
+    {!guideOpen && !pearlOpen && <button type="button" className="extension-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={() => setGuideOpen(true)}>?</button>}
     {pearlOpen && <aside className="extension-pearl-halo" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
       {!powerSearch && <form onSubmit={directCompanion}>
         <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="What do you want?" />

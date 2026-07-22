@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-20T22:19:46.086Z",
+  "generatedAt": "2026-07-21T22:02:55.703Z",
   "counts": {
-    "features": 47,
-    "companion": 334,
-    "extension": 101,
+    "features": 48,
+    "companion": 336,
+    "extension": 102,
     "commands": 119
   },
   "features": [
@@ -1014,6 +1014,19 @@
       ],
       "tests": [
         "shared/pearl-cognitive-layers.test.js"
+      ]
+    },
+    {
+      "id": "interface.pearl-guide",
+      "commands": [],
+      "companion": [
+        "openPearlGuide"
+      ],
+      "extension": [
+        "openExternalPearlGuide"
+      ],
+      "tests": [
+        "client/lib/pearl-guide.test.js"
       ]
     }
   ],

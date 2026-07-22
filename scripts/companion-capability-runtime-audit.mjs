@@ -1091,6 +1091,10 @@ async function runExtensionCapabilities() {
         state.operation = "privacy-inspected";
         return { type: "local-privacy-summary", mode: "local-only", encrypted: true };
       },
+      openGuide: () => {
+        state.operation = "guide-opened";
+        return { type: "extension-guide", opened: true };
+      },
       exportLocalData: () => {
         state.operation = "privacy-exported";
         return { type: "local-privacy-export", profile: "anonymous" };

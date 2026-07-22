@@ -16,6 +16,7 @@ function canonicalPearlAction({ action, args, confirmed }, command, commandArgs)
 
 export const EXTENSION_VERBS = Object.freeze({
   capturePageSelection: ({ action }) => action("capture-selection"),
+  openExternalPearlGuide: ({ openGuide }) => openGuide(),
   openExternalSaveAs: ({ openSaveAs }) => openSaveAs(),
   saveExternalCaptureAsMove: ({ saveCaptureAs }) => saveCaptureAs("move"),
   saveExternalCaptureAsFunction: ({ saveCaptureAs }) => saveCaptureAs("function"),
@@ -232,6 +233,9 @@ export async function executeExtensionVerb(name, args, context) {
 
 export function parseExtensionIntent(text) {
   const value = String(text || "").trim();
+  if (/^(?:help|guide|how do i\b.*\??|how does (?:this|pearl) work(?: here)?\??|what can (?:you|pearl) do(?: here)?\??|open (?:the )?(?:pearl )?(?:guide|help))$/i.test(value)) {
+    return { name: "openExternalPearlGuide", args: {} };
+  }
   if (/^(capture|highlight) (this |the )?(selection|text)$/i.test(value)) return { name: "capturePageSelection", args: {} };
   if (/^save (?:this|the selection) as(?:…|\.\.\.)?$/i.test(value)) return { name: "openExternalSaveAs", args: {} };
   if (/^save (?:this|the selected|selected) (?:text|content|selection)? ?as (?:a )?move$/i.test(value)) return { name: "saveExternalCaptureAsMove", args: {} };

@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-3ca09bd0",
+  "fingerprint": "fnv1a-57917f5b",
   "counts": {
-    "nodes": 334,
+    "nodes": 336,
     "edges": 516
   },
   "nodes": [
@@ -1027,6 +1027,81 @@
         "capability-openRoleSetup"
       ],
       "featureIds": [],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.openPearlGuide",
+      "version": 1,
+      "kind": "capability",
+      "name": "openPearlGuide",
+      "purpose": "Open the How Pearl works guide and record the teaching moment",
+      "examples": [
+        "how do I use Pearl?"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [],
+      "observerQuery": {
+        "scopes": [
+          "viewport"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [],
+      "tests": [
+        "capability-openPearlGuide",
+        "feature:interface.pearl-guide"
+      ],
+      "featureIds": [
+        "interface.pearl-guide"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -24328,6 +24403,92 @@
         "interface"
       ],
       "platform": "app"
+    },
+    {
+      "id": "companion.capability.extension.openExternalPearlGuide",
+      "version": 1,
+      "kind": "capability",
+      "name": "openExternalPearlGuide",
+      "purpose": "Open the How Pearl works guide inside the side panel",
+      "examples": [
+        "how does pearl work here?"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed"
+      ],
+      "tests": [
+        "capability-openExternalPearlGuide",
+        "feature:interface.pearl-guide"
+      ],
+      "featureIds": [
+        "interface.pearl-guide"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "interface"
+      ],
+      "platform": "extension"
     },
     {
       "id": "companion.capability.extension.openExternalSaveAs",

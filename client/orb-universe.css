@@ -891,10 +891,13 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
     top: clamp(8px, var(--orb-y), calc(100vh - var(--orb-size) - 8px));
   }
   .pearl-start-hint {
-    left: auto;
-    right: calc(var(--orb-size) + 10px);
-    max-width: calc(100vw - var(--orb-size) - 32px);
-    text-align: right;
+    left: calc(var(--orb-size) / 2);
+    right: auto;
+    top: auto;
+    bottom: calc(var(--orb-size) + 8px);
+    max-width: min(260px, 78vw);
+    text-align: center;
+    transform: translateX(-50%);
   }
   .orb-continuation {
     top: 50%;
@@ -1069,4 +1072,233 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   font-size: 11px;
   font-weight: 430;
   line-height: 1.45;
+}
+
+/* First-run welcome, Pearl guide, and quick actions */
+.pearl-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+}
+.pearl-welcome > * { pointer-events: auto; }
+.pearl-welcome-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform .5s var(--orb-ease);
+  animation: pearl-welcome-item .7s var(--orb-ease) both;
+}
+.pearl-welcome-mark:hover { transform: scale(1.06); }
+.pearl-welcome h1 {
+  margin: 4px 0 0;
+  color: var(--orb-text-1);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 520;
+  letter-spacing: -.04em;
+  animation: pearl-welcome-item .7s var(--orb-ease) .08s both;
+}
+.pearl-welcome > p {
+  margin: 0 0 16px;
+  max-width: 340px;
+  color: var(--orb-text-3);
+  font-size: 13px;
+  line-height: 1.55;
+  animation: pearl-welcome-item .7s var(--orb-ease) .16s both;
+}
+.pearl-welcome-actions {
+  display: grid;
+  gap: 8px;
+  width: min(300px, calc(100vw - 64px));
+  animation: pearl-welcome-item .7s var(--orb-ease) .24s both;
+}
+.pearl-welcome-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orb-text-2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, transform .25s var(--orb-ease);
+}
+.pearl-welcome-actions button:hover { border-color: var(--orb-text-2); color: var(--orb-text-1); transform: translateY(-1px); }
+.pearl-welcome-actions .pearl-welcome-primary { border-color: var(--orb-text-2); color: var(--orb-text-1); }
+.pearl-welcome-dismiss {
+  min-height: 32px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--orb-text-3);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color .2s;
+  animation: pearl-welcome-item .7s var(--orb-ease) .32s both;
+}
+.pearl-welcome-dismiss:hover { color: var(--orb-text-2); }
+@keyframes pearl-welcome-item {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pearl-guide-button {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9500;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 50%;
+  background: rgba(9, 11, 12, .72);
+  color: var(--orb-text-3);
+  font: 500 15px/1.25 Inter, ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, transform .25s var(--orb-ease);
+}
+.pearl-guide-button:hover { color: var(--orb-text-1); border-color: var(--orb-text-2); transform: scale(1.08); }
+
+.pearl-guide-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9600;
+  width: min(380px, 100vw);
+  padding: 16px 20px 28px;
+  overflow: auto;
+  border-left: 1px solid var(--pearl-ui-line-strong);
+  background: rgba(9, 11, 12, .97);
+  font: 12px/1.5 Inter, ui-sans-serif, system-ui, sans-serif;
+  animation: pearl-guide-in .35s var(--orb-ease) both;
+}
+.pearl-guide-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.pearl-guide-panel > header b { color: var(--orb-text-1); font-size: 14px; letter-spacing: -.01em; }
+.pearl-guide-panel > header button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--pearl-ui-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orb-text-3);
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+.pearl-guide-panel > header button:hover { color: var(--orb-text-1); border-color: var(--orb-text-2); }
+.pearl-guide-panel section {
+  padding: 12px 0;
+  border-top: 1px solid var(--pearl-ui-line);
+  animation: pearl-welcome-item .5s var(--orb-ease) calc(var(--guide-index, 0) * 60ms) both;
+}
+.pearl-guide-panel h2 { margin: 0 0 2px; color: var(--orb-text-1); font-size: 12.5px; font-weight: 560; }
+.pearl-guide-panel section > p { margin: 0 0 8px; color: var(--orb-text-3); font-size: 11.5px; line-height: 1.5; }
+.pearl-guide-panel ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.pearl-guide-panel li { display: grid; gap: 2px; font-size: 11.5px; line-height: 1.5; }
+.pearl-guide-panel li b { color: var(--orb-text-2); font-weight: 540; }
+.pearl-guide-panel li span { color: var(--orb-text-3); }
+.pearl-guide-panel li i { color: var(--orb-text-3); font-size: 10.5px; font-style: normal; opacity: .85; }
+.pearl-guide-panel li button {
+  justify-self: start;
+  min-height: 30px;
+  margin-top: 2px;
+  padding: 0 12px;
+  border: 1px solid var(--pearl-ui-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orb-text-2);
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.pearl-guide-panel li button:hover { border-color: var(--orb-text-2); color: var(--orb-text-1); }
+@keyframes pearl-guide-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pearl-quick-actions { display: grid; }
+.pearl-quick-actions button {
+  min-height: var(--pearl-ui-control);
+  padding: 0 var(--pearl-ui-space-2);
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--pearl-ui-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--pearl-ui-text-muted);
+  cursor: pointer;
+  transition: color .18s;
+  animation: pearl-welcome-item .4s var(--orb-ease) calc(var(--quick-index, 0) * 45ms) both;
+}
+.pearl-quick-actions button:hover { color: var(--orb-text-1); }
+
+.orb-stage-empty-actions,
+.orb-home-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+.orb-home-intro-actions { justify-content: flex-start; }
+.orb-stage-empty-actions button,
+.orb-home-intro-actions button {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orb-text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, transform .25s var(--orb-ease);
+}
+.orb-stage-empty-actions button:hover,
+.orb-home-intro-actions button:hover { border-color: var(--orb-text-2); color: var(--orb-text-1); transform: translateY(-1px); }
+.orb-stage-empty-hint { display: block; margin-top: 14px; color: var(--orb-text-3); font-size: 10.5px; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .pearl-guide-button { right: 14px; bottom: 76px; }
+  .pearl-welcome { padding-bottom: 96px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pearl-welcome-mark,
+  .pearl-welcome h1,
+  .pearl-welcome > p,
+  .pearl-welcome-actions,
+  .pearl-welcome-dismiss,
+  .pearl-guide-panel,
+  .pearl-guide-panel section,
+  .pearl-quick-actions button { animation: none !important; }
+  .pearl-welcome-mark,
+  .pearl-welcome-actions button,
+  .pearl-welcome-dismiss,
+  .pearl-guide-button,
+  .pearl-guide-panel > header button,
+  .pearl-guide-panel li button,
+  .pearl-quick-actions button,
+  .orb-stage-empty-actions button,
+  .orb-home-intro-actions button { transition: none !important; transform: none !important; }
 }

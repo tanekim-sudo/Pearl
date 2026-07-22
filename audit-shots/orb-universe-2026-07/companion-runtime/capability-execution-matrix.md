@@ -1,7 +1,7 @@
 # Companion capability runtime-effect matrix
 
-- Total: 334
-- Passed: 334
+- Total: 336
+- Passed: 336
 - Failed: 0
 - Skipped: 0
 
@@ -17,6 +17,7 @@
 - PASS — `toggleWorkspaceTheme` (app): state-or-visible-artifact-changed
 - PASS — `startWorkspaceTour` (app): state-or-visible-artifact-changed
 - PASS — `openRoleSetup` (app): state-or-visible-artifact-changed
+- PASS — `openPearlGuide` (app): state-or-visible-artifact-changed
 - PASS — `spawnText` (app): state-or-visible-artifact-changed
 - PASS — `createMove` (app): state-or-visible-artifact-changed
 - PASS — `editMove` (app): state-or-visible-artifact-changed
@@ -188,7 +189,7 @@
 - PASS — `publishCognitivePackage` (app): precise setup or authentication boundary before mutation
 - PASS — `installCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `rollbackCognitivePackage` (app): state-or-visible-artifact-changed
-- PASS — `deprecateCognitivePackage` (app): precise setup or authentication boundary before mutation
+- PASS — `deprecateCognitivePackage` (app): state-or-visible-artifact-changed
 - PASS — `openCognitiveWorkflowStudio` (app): state-or-visible-artifact-changed
 - PASS — `proposeHigherOrderPatch` (app): state-or-visible-artifact-changed
 - PASS — `applyHigherOrderPatch` (app): state-or-visible-artifact-changed
@@ -239,6 +240,7 @@
 - PASS — `confirmResultPlacement` (app): state-or-visible-artifact-changed
 - PASS — `cancelResultPlacement` (app): state-or-visible-artifact-changed
 - PASS — `capturePageSelection` (extension): controlled extension state changed
+- PASS — `openExternalPearlGuide` (extension): controlled extension state changed
 - PASS — `openExternalSaveAs` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsMove` (extension): controlled extension state changed
 - PASS — `saveExternalCaptureAsFunction` (extension): controlled extension state changed

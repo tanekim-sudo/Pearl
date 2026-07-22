@@ -279,6 +279,7 @@ import { layoutObjects, avoidOverlaps } from "./lib/companion-geometry.js";
 import { executeCompanionPlan } from "./lib/companion-executor.js";
 import { planNeedsPreview, summarizePlan } from "./lib/companion-plan.js";
 import { COMPANION_CAPABILITIES } from "./lib/companion-capabilities.js";
+import { PEARL_GUIDE_STORAGE_KEY, normalizePearlGuideRecord, recordPearlGuideOpen } from "./lib/pearl-guide.js";
 import {
   buildLiveContextIndex,
   createRunLedger,
@@ -12519,6 +12520,18 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     openRoleSetup: async () => {
       setOnboard({ step: "role" });
       return { effectId: `workspace-role-setup:${Date.now()}`, effects: ["workspace-role-setup-opened"] };
+    },
+    openPearlGuide: async () => {
+      let stored = null;
+      try {
+        stored = JSON.parse(localStorage.getItem(PEARL_GUIDE_STORAGE_KEY) || "null");
+      } catch {
+        stored = null;
+      }
+      const record = recordPearlGuideOpen(normalizePearlGuideRecord(stored));
+      localStorage.setItem(PEARL_GUIDE_STORAGE_KEY, JSON.stringify(record));
+      window.dispatchEvent(new CustomEvent("lens:open-pearl-guide"));
+      return { effectId: `pearl-guide:${record.opens}`, effects: ["pearl-guide-opened"] };
     },
     spawnText: async (a, tk, ctx) => {
       const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);

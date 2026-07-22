@@ -39,6 +39,8 @@ export default function CompanionOrb({
   onOrbCreate,
   onOpenStudio,
   hint = null,
+  quickActions = null,
+  onExpandedChange,
 }) {
   const titleId = useId();
   const rootRef = useRef(null);
@@ -103,6 +105,20 @@ export default function CompanionOrb({
     window.addEventListener("resize", keepVisible);
     return () => window.removeEventListener("resize", keepVisible);
   }, [featured]);
+
+  useEffect(() => {
+    onExpandedChange?.(expanded);
+  }, [expanded, onExpandedChange]);
+
+  useEffect(() => {
+    function expandFromOutside() {
+      setPowerSearch(false);
+      setExpanded(true);
+      requestAnimationFrame(() => commandInputRef.current?.focus());
+    }
+    window.addEventListener("lens:companion-expand", expandFromOutside);
+    return () => window.removeEventListener("lens:companion-expand", expandFromOutside);
+  }, []);
 
   useEffect(() => {
     function openActionSearch(event) {
@@ -394,6 +410,17 @@ export default function CompanionOrb({
             }}
           >{nextAction.label}</button>}
           {!powerSearch && !approval && !nextAction && onOpenStudio && <button type="button" className="pearl-next-action" onClick={onOpenStudio}>Open Studio</button>}
+          {!powerSearch && !approval && quickActions?.length > 0 && <div className="pearl-quick-actions" role="group" aria-label="Pearl quick actions">
+            {quickActions.map((quick) => <button
+              type="button"
+              key={quick.label}
+              style={{ "--quick-index": quickActions.indexOf(quick) }}
+              onClick={() => {
+                setExpanded(false);
+                quick.run?.();
+              }}
+            >{quick.label}</button>)}
+          </div>}
         </div>
       )}
     </aside>

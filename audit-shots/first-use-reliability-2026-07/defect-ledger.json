@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-21T17:48:47.010Z",
+  "generatedAt": "2026-07-22T01:15:55.598Z",
   "baseline": {
     "command": "production build plus scripts/orb-universe-audit.mjs and extension/scripts/orb-audit.mjs",
     "result": "real browser inspection reproduced invisible and blank first-use states, placeholder Pearls, false blocked success, overlay hit-testing risk, and responsive overlap",

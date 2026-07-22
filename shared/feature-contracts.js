@@ -488,11 +488,21 @@ export const FEATURE_CONTRACTS = Object.freeze([
     tests: ["shared/pearl-cognitive-layers.test.js"],
     owner: "shared/pearl-cognitive-layers.js",
   }),
+  feature("interface.pearl-guide", {
+    domains: ["interface", "extension"],
+    commands: [],
+    ui: ["client/components/OrbUniverseShell.jsx:pearl-guide-panel", "extension/src/sidepanel/main.jsx:extension-pearl-guide", "client/lib/pearl-guide.js"],
+    companion: ["openPearlGuide"],
+    extension: ["openExternalPearlGuide"],
+    persistence: ["lens.pearl.guide.v1", "lens.pearl.welcome.v1"],
+    tests: ["client/lib/pearl-guide.test.js"],
+    owner: "client/lib/pearl-guide.js",
+  }),
 ]);
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 47,
+  features: 48,
   minimumCompanionCapabilities: 130,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],
