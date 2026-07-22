@@ -72,19 +72,23 @@ export function nextEscapeAction({
   approvalPending = false,
   companionExpanded = false,
   emittedView = null,
+  outputFrameOpen = false,
   cursorMode = false,
   guideOpen = false,
   welcomeOpen = false,
   installRoute = false,
   studioOpen = false,
+  sceneRoute = false,
 } = {}) {
   if (approvalPending) return "cancelApproval";
   if (companionExpanded) return "collapseCompanion";
   if (emittedView) return "closeEmission";
+  if (outputFrameOpen) return "closeOutputFrame";
   if (cursorMode) return "exitCursor";
   if (guideOpen) return "closeGuide";
   if (welcomeOpen) return "dismissWelcome";
   if (studioOpen) return "leaveStudio";
   if (installRoute) return "leaveInstall";
+  if (sceneRoute) return "leaveScene";
   return null;
 }

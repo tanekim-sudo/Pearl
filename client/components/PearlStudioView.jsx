@@ -131,6 +131,9 @@ export default function PearlStudioView({ localRef }) {
   return <main className="web-pearl-studio">
     <style>{`
       .web-pearl-studio{box-sizing:border-box;width:min(760px,calc(100vw - 40px));margin:clamp(60px,12vh,150px) auto;color:var(--orb-text,#232825)}
+      .web-pearl-studio__banner{margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+      .web-pearl-studio__banner span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.62;margin-bottom:6px}
+      .web-pearl-studio__banner p{margin:0;font-size:14px;line-height:1.5;opacity:.84}
       .web-pearl-studio__pearl{display:flex;align-items:center;gap:16px;margin-bottom:30px}.web-pearl-studio input,.web-pearl-studio textarea{box-sizing:border-box;width:100%;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);border-radius:0;background:transparent;color:inherit;outline:none}
       .web-pearl-studio input{padding:0 0 18px;font:500 clamp(24px,4vw,44px)/1.1 inherit}.web-pearl-studio textarea{min-height:42vh;padding:22px 0;resize:vertical;font:400 15px/1.7 inherit}
       .web-pearl-studio__trigger{opacity:.62;transition:opacity .16s}.web-pearl-studio:hover .web-pearl-studio__trigger,.web-pearl-studio:focus-within .web-pearl-studio__trigger,.web-pearl-studio__trigger:focus-visible{opacity:1}.web-pearl-studio__trigger[data-testid=pearl-organize]{opacity:.9;font-weight:550}.web-pearl-studio__actions{display:flex;gap:14px;align-items:center;margin-top:18px;flex-wrap:wrap}.web-pearl-studio button,.web-pearl-studio select{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:0;background:transparent;color:inherit;padding:7px 0}.web-pearl-studio [role=status]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -145,6 +148,10 @@ export default function PearlStudioView({ localRef }) {
       .web-pearl-studio__name-row input{font:400 14px/1.4 inherit!important;padding:0 0 8px!important}
       @media(prefers-reduced-motion:reduce){.web-pearl-studio *{animation:none!important;transition:none!important}}
     `}</style>
+    <header className="web-pearl-studio__banner" data-testid="studio-banner">
+      <span>Pearl Studio</span>
+      <p><b>Next:</b> Name this pearl, write in the big text area, then use Organize or Close Studio. “Close Studio” returns you to the Reef/workspace.</p>
+    </header>
     <div className="web-pearl-studio__pearl">
       <PhysicalPearl
         variant={entity.kind === "result" ? "result" : "primary"}

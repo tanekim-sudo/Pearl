@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-07-22T21:54:54.697Z",
+  "baseUrl": "http://127.0.0.1:41737",
+  "checks": [
+    {
+      "id": "home-is-reef",
+      "ok": true,
+      "detail": "reef=1"
+    },
+    {
+      "id": "reef-chrome-spells-next",
+      "ok": true,
+      "detail": "chrome=1 next=1 hasNext=true"
+    },
+    {
+      "id": "no-auto-paper-on-home",
+      "ok": true,
+      "detail": "outputFrameHosts=0"
+    },
+    {
+      "id": "companion-visible",
+      "ok": true,
+      "detail": "companion=1"
+    },
+    {
+      "id": "gauntlet-labeled",
+      "ok": true,
+      "detail": "legend=1"
+    },
+    {
+      "id": "scene-opens",
+      "ok": true,
+      "detail": "stage=1"
+    },
+    {
+      "id": "scene-chrome-visible",
+      "ok": true,
+      "detail": "chrome=1"
+    },
+    {
+      "id": "no-auto-output-frame-on-scene",
+      "ok": true,
+      "detail": "frame=0"
+    },
+    {
+      "id": "empty-state-teaches",
+      "ok": true,
+      "detail": "empty=1"
+    },
+    {
+      "id": "pearl-created",
+      "ok": true,
+      "detail": "pearls=1"
+    },
+    {
+      "id": "delete-removes-pearl",
+      "ok": true,
+      "detail": "before=1 after=0"
+    },
+    {
+      "id": "frame-opens-from-chrome",
+      "ok": true,
+      "detail": "frame=1"
+    },
+    {
+      "id": "frame-labeled",
+      "ok": true,
+      "detail": "label=1"
+    },
+    {
+      "id": "frame-keeps-chrome",
+      "ok": true,
+      "detail": "chrome=1 home=1"
+    },
+    {
+      "id": "esc-closes-output-frame",
+      "ok": true,
+      "detail": "frame=0"
+    },
+    {
+      "id": "reef-escape-hatch",
+      "ok": true,
+      "detail": "reef=1"
+    },
+    {
+      "id": "drag-does-not-clone",
+      "ok": true,
+      "detail": "materials=1"
+    },
+    {
+      "id": "drag-moves-material",
+      "ok": true,
+      "detail": "before={\"x\":496.3125,\"y\":340.453125,\"width\":240,\"height\":125} after={\"x\":671.546875,\"y\":357.25,\"width\":240,\"height\":125}"
+    },
+    {
+      "id": "delete-removes-material",
+      "ok": true,
+      "detail": "count=0"
+    },
+    {
+      "id": "no-console-errors",
+      "ok": true,
+      "detail": "none"
+    }
+  ],
+  "screenshots": [
+    "01-first-open-reef.png",
+    "01b-reef-after-welcome.png",
+    "02-new-scene-empty.png",
+    "03-pearl-placed.png",
+    "04-pearl-deleted.png",
+    "05-output-frame-intentional.png",
+    "06-esc-closes-frame.png",
+    "07-back-to-reef.png",
+    "08-scene-with-material.png",
+    "09-after-drag-move.png",
+    "10-material-deleted.png"
+  ],
+  "defects": []
+}

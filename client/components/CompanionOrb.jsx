@@ -337,6 +337,9 @@ export default function CompanionOrb({
       onDrop={drop}
     >
       <div className="orb-emissions" aria-live="polite">
+        <span className="orb-gauntlet-legend" data-testid="gauntlet-legend">
+          Working memory — up to {MAX_GAUNTLET_SLOTS} active pearls
+        </span>
         {(state.lenses || []).map((lens, index) => (
           <button
             type="button"
@@ -422,9 +425,9 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        title="Companion · click to ask · hold to speak · wear a pearl anytime · Shift+Enter for Studio"
+        title="Companion — click, type what you want, press GO"
       >
-        <span id={titleId} className="sr-only">{label}. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.</span>
+        <span id={titleId} className="sr-only">{label}. Click to open the command box, type what you want, then press GO. Hold to speak. The five rings are working memory for up to {MAX_GAUNTLET_SLOTS} active pearls.</span>
         <PhysicalPearl
           variant="primary"
           state={["listening", "executing", "blocked", "failed", "loading"].includes(phase) ? phase : "idle"}
@@ -441,18 +444,19 @@ export default function CompanionOrb({
                   : ""
         }</span>
       </button>
-      {!expanded && hint && <span className="pearl-start-hint">{hint}</span>}
+      {!expanded && <span className="pearl-start-hint">{hint || "Click → type what you want → press GO"}</span>}
       {expanded && (
         <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
+          <p className="orb-ledger-howto">Type a goal below, then press <b>GO</b>. Esc closes this panel.</p>
           {!approval && <form onSubmit={submit}>
             <input
               ref={commandInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               aria-label="Tell Pearl your goal"
-              placeholder="What do you want?"
+              placeholder="Type what you want Pearl to do…"
             />
-            <button type="submit" aria-label="GO — run staged command">GO</button>
+            <button type="submit" aria-label="GO — run your command">GO</button>
           </form>}
           {approval && <section className="orb-approval" aria-label="Plan approval required">
             <b>{approval.title || "Review plan"}</b>

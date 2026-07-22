@@ -34,25 +34,44 @@ class RootErrorBoundary extends React.Component {
           }}
         >
           <div style={{ maxWidth: 480, textAlign: "center" }}>
-            <h1 style={{ fontSize: 20, margin: "0 0 12px" }}>Lens couldn&apos;t load</h1>
+            <h1 style={{ fontSize: 20, margin: "0 0 12px" }}>Pearl hit a crash</h1>
             <p style={{ margin: "0 0 16px", lineHeight: 1.5, color: "#4a4f57" }}>
-              Something crashed on startup. Try a hard refresh (Cmd+Shift+R). If it persists, clear site
-              data for this page.
+              The app stopped unexpectedly. Reload to continue. If it keeps happening, clear site data
+              for this page, then reopen — your Pearls stay on this device unless you wipe them.
             </p>
-            <button
-              type="button"
-              style={{
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 16px",
-                background: "#101216",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-              onClick={() => window.location.reload()}
-            >
-              Reload
-            </button>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 16px",
+                  background: "#101216",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  this.setState({ error: null });
+                  window.location.assign("/");
+                }}
+              >
+                Go to Reef (home)
+              </button>
+              <button
+                type="button"
+                style={{
+                  border: "1px solid #101216",
+                  borderRadius: 8,
+                  padding: "10px 16px",
+                  background: "transparent",
+                  color: "#101216",
+                  cursor: "pointer",
+                }}
+                onClick={() => window.location.reload()}
+              >
+                Reload page
+              </button>
+            </div>
           </div>
         </div>
       );

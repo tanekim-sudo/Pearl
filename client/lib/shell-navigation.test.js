@@ -11,14 +11,16 @@ test("Escape prefers approval cancel over collapsing Pearl", () => {
   }), "cancelApproval");
 });
 
-test("Escape walks emission then cursor then guide then install", () => {
+test("Escape walks emission then Output Frame then cursor then guide then install/scene", () => {
   assert.equal(nextEscapeAction({ companionExpanded: true }), "collapseCompanion");
   assert.equal(nextEscapeAction({ emittedView: "encode" }), "closeEmission");
+  assert.equal(nextEscapeAction({ outputFrameOpen: true }), "closeOutputFrame");
   assert.equal(nextEscapeAction({ cursorMode: true }), "exitCursor");
   assert.equal(nextEscapeAction({ guideOpen: true }), "closeGuide");
   assert.equal(nextEscapeAction({ welcomeOpen: true }), "dismissWelcome");
   assert.equal(nextEscapeAction({ installRoute: true }), "leaveInstall");
   assert.equal(nextEscapeAction({ studioOpen: true }), "leaveStudio");
+  assert.equal(nextEscapeAction({ sceneRoute: true }), "leaveScene");
   assert.equal(nextEscapeAction({}), null);
 });
 

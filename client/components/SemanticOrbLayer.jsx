@@ -93,19 +93,29 @@ export default function SemanticOrbLayer({
         onActivate?.(null);
       } else if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
-        onArchive?.(active.id, true);
+        setConfirmDelete(active.id);
       } else if (event.key.startsWith("Arrow")) {
         event.preventDefault();
         const step = event.shiftKey ? 48 : 12;
+        const x = Number(active.placement?.x) || 0;
+        const y = Number(active.placement?.y) || 0;
         onMove?.(active.id, {
-          x: active.placement.x + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0),
-          y: active.placement.y + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0),
+          x: x + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0),
+          y: y + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0),
         });
       }
     }
+    function onChromeDelete() {
+      if (!active) return;
+      setConfirmDelete(active.id);
+    }
     window.addEventListener("keydown", keyDown);
-    return () => window.removeEventListener("keydown", keyDown);
-  }, [active, onActivate, onArchive, onCreate, onMove, onOpenStudio]);
+    window.addEventListener("lens:scene-delete-selection", onChromeDelete);
+    return () => {
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("lens:scene-delete-selection", onChromeDelete);
+    };
+  }, [active, onActivate, onCreate, onMove, onOpenStudio]);
 
   function stagePoint(event) {
     const box = rootRef.current?.getBoundingClientRect();
@@ -122,7 +132,7 @@ export default function SemanticOrbLayer({
       id: orb.id,
       pointerId: event.pointerId,
       point: stagePoint(event),
-      start: orb.placement,
+      start: { x: Number(orb.placement?.x) || 0, y: Number(orb.placement?.y) || 0 },
       moved: false,
     };
   }
@@ -227,9 +237,10 @@ export default function SemanticOrbLayer({
             aria-pressed={activeId === orb.id}
             draggable="true"
             onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = "copyMove";
+              // Pointer drag already moves pearls; HTML5 payload is for drop-onto-pearl compose only.
+              event.dataTransfer.effectAllowed = "linkMove";
               event.dataTransfer.setData("text/plain", labelFor(orb));
-              event.dataTransfer.setData(PAYLOAD, JSON.stringify(orb));
+              event.dataTransfer.setData(PAYLOAD, JSON.stringify({ ...orb, kind: "semantic-orb" }));
             }}
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => drop(event, orb)}
@@ -277,8 +288,16 @@ export default function SemanticOrbLayer({
             </div>
             {confirmDelete === orb.id
               ? <div className="semantic-orb-delete-confirm" role="alert">
-                  <span>Delete this pearl? Referenced source material remains.</span>
-                  <button type="button" onClick={() => { onDelete?.(orb.id); setConfirmDelete(null); }}>Delete</button>
+                  <span>Remove this pearl from the workspace? Source notes stay on your device.</span>
+                  <button type="button" data-testid="confirm-delete-pearl" onClick={async () => {
+                    try {
+                      await onDelete?.(orb.id);
+                    } catch (error) {
+                      console.error("Pearl delete failed; archiving instead.", error);
+                      await onArchive?.(orb.id, true);
+                    }
+                    setConfirmDelete(null);
+                  }}>Delete</button>
                   <button type="button" onClick={() => setConfirmDelete(null)}>Cancel</button>
                 </div>
               : <button className="semantic-orb-delete" type="button" onClick={() => setConfirmDelete(orb.id)}>Delete pearl…</button>}

@@ -5160,6 +5160,18 @@ export default function App({ sceneId = null, pearlShell = false }) {
     setSelection([]);
   }
 
+  useEffect(() => {
+    function onShellDelete() {
+      if (highlightSelectionRef.current.length) {
+        deleteHighlightSelection();
+        return;
+      }
+      if (selRef.current.length) deleteSelection();
+    }
+    window.addEventListener("lens:delete-selection", onShellDelete);
+    return () => window.removeEventListener("lens:delete-selection", onShellDelete);
+  });
+
   // ---- composed operators (functions made of functions) ----
   const opMap = useMemo(() => Object.fromEntries(operators.map((o) => [o.id, o])), [operators]);
 

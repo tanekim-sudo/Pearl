@@ -118,11 +118,13 @@ try {
     }));
     throw new Error(`Pearl did not emit view controls: ${JSON.stringify(state)}`);
   });
-  const editingTools = sceneActions.getByRole("button", { name: "Editing tools", exact: true });
+  const editingTools = sceneActions.getByRole("button", { name: /Show editing tools|Editing tools|Hide editing tools/ });
   if (!(await editingTools.isVisible())) {
-    await sceneActions.getByRole("button", { name: "Focus on the result", exact: true }).click();
+    await sceneActions.getByRole("button", { name: /Open page canvas|Open Output Frame/ }).click();
   }
-  await editingTools.click();
+  if (await editingTools.isVisible() && !(await editingTools.getAttribute("aria-pressed") === "true")) {
+    await editingTools.click();
+  }
   await page.waitForSelector('[data-tool="highlight"]');
 
   const brushTool = page.locator('[data-tool="highlight"]');

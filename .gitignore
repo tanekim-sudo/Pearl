@@ -17,6 +17,8 @@ audit-shots/*
 !audit-shots/new-user-e2e-2026-07-22/**
 !audit-shots/launch-ready-2026-07-22/
 !audit-shots/launch-ready-2026-07-22/**
+!audit-shots/web-workability-2026-07-22/
+!audit-shots/web-workability-2026-07-22/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/
