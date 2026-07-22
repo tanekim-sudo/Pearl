@@ -26,6 +26,7 @@ import {
 } from "./extension-api.js";
 import { inferBeforeAfterTransformation } from "./before-after-inference.js";
 import { inferTranscriptArtifacts } from "./transcript-inference.js";
+import { inferAutomationPearl } from "./automation-inference.js";
 import { getModelCatalog } from "./model-catalog.js";
 import { modelGateway } from "./model-gateway.js";
 import { encodeLens } from "./lens-encoder.js";
@@ -267,6 +268,18 @@ app.post("/api/infer-transcript-artifacts", express.json({ limit: "8mb" }), asyn
     console.error("[lens] /api/infer-transcript-artifacts failed:", err?.message || err);
     res.status(err?.status || 500).json({
       error: err?.message || "Could not learn from this chat. Your private draft is preserved; retry.",
+    });
+  }
+});
+
+app.post("/api/infer-automation", express.json({ limit: "8mb" }), async (req, res) => {
+  if (!(await guardAiRequest(req, res))) return;
+  try {
+    res.json(await inferAutomationPearl(req.body || {}));
+  } catch (err) {
+    console.error("[pearl] /api/infer-automation failed:", err?.message || err);
+    res.status(err?.status || 500).json({
+      error: err?.message || "Could not compile the Automation Pearl. Your evidence is preserved; retry.",
     });
   }
 });

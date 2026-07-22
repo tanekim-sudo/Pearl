@@ -58,6 +58,7 @@ const SECRET_PATTERNS = Object.freeze([
   ["credential", /\b(?:password|passwd|secret|access[_ -]?token|refresh[_ -]?token|client[_ -]?secret)\s*[:=]\s*\S+/i],
   ["connection-string", /\b(?:postgres|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s]+/i],
   ["private-context", /\b(?:confidential|internal only|do not distribute|firm[- ]private|privileged and confidential)\b/i],
+  ["private-context", /\b(?:limited partner|lp briefing|lp meeting|investment committee|\bic memo\b|pitchbook|affinity crm|capital call|management fee|carry)\b/i],
 ]);
 const BLOCKED_KEYS = new Set(["__proto__", "prototype", "constructor", "code", "script", "eval", "executable", "wasm"]);
 const clone = (value) => value == null ? value : structuredClone(value);

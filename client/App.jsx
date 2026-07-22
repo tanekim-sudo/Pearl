@@ -240,6 +240,17 @@ import {
 import { executeCapabilityScriptDirect, registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
 import { executePearlActionEvent } from "../shared/pearl-action-protocol.js";
 import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entity.js";
+import { listPearlVersions } from "../shared/pearl-version-history.js";
+import {
+  answerClarificationSession,
+  clarificationPromptText,
+  createClarificationSession,
+  inspectInstructionSpecificity,
+  loadClarificationSession,
+  saveClarificationSession,
+} from "../shared/companion-clarification.js";
+import { compileAutomationPearl } from "../shared/automation-pearl.js";
+import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
 import { PEARL_STORE_KEY } from "../shared/pearl-store.js";
 import {
   buildAdaptiveCompanionPrompt,
@@ -253,6 +264,10 @@ import {
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
+  parseCritiqueCommand,
+  parsePearlVersionCommand,
+  parsePearlRemixCommand,
+  parseAutomationLoopCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTasteNavigationCommand,
@@ -12245,6 +12260,266 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     reviseAutomationPearl: async (a) => runCanonicalPearlAction("reviseAutomationPearl", { patch: a.patch, expectedVersion: a.expectedVersion }, a.pearlId),
     researchAutomationPearl: async (a) => runCanonicalPearlAction("planAutomationResearch", { plan: a.plan }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
     approveAutomationContextPatch: async (a) => runCanonicalPearlAction("approveAutomationContextPatch", { patchId: a.patchId, approved: true }, a.pearlId, { disclosureApproved: true, destructiveApproved: true }),
+    inspectInstructionSpecificity: async (a, tk) => {
+      const { store, entity } = ensureCanonicalPearlStore(a.pearlId);
+      const automation = store.automationPearls?.[entity?.id] || store.automationPearls?.[a.pearlId] || entity?.automation || null;
+      const inspection = inspectInstructionSpecificity({
+        instruction: a.instruction || "",
+        pearl: automation,
+        inputs: a.inputs || {},
+        researchApproved: a.researchApproved === true,
+        destructiveConfirmed: a.destructiveConfirmed === true,
+      });
+      await tk.wait(120);
+      return { type: "clarification-inspection", object: inspection, effects: ["instruction-specificity-inspected"] };
+    },
+    requestClarification: async (a, tk) => {
+      const { store, entity } = ensureCanonicalPearlStore(a.pearlId);
+      const automation = store.automationPearls?.[entity?.id] || store.automationPearls?.[a.pearlId] || null;
+      const inspection = inspectInstructionSpecificity({
+        instruction: a.instruction || "",
+        pearl: automation,
+        inputs: a.inputs || {},
+      });
+      if (inspection.ready) {
+        await tk.wait(80);
+        return { type: "clarification", status: "ready", object: inspection, effects: ["clarification-unnecessary"] };
+      }
+      const session = createClarificationSession(inspection, {
+        resumeAction: a.resumeAction || null,
+        resumeArgs: a.resumeArgs || {},
+        instruction: a.instruction || "",
+        pearlId: a.pearlId || entity?.id || null,
+      });
+      saveClarificationSession(session);
+      await tk.wait(160);
+      return {
+        type: "clarification",
+        status: "awaiting",
+        object: session,
+        effects: ["clarification-requested"],
+        visibleText: clarificationPromptText(session),
+      };
+    },
+    answerClarification: async (a, tk, ctx) => {
+      const current = loadClarificationSession();
+      if (!current) throw new Error("no clarification is waiting");
+      const next = answerClarificationSession(current, a.text, { questionId: a.questionId });
+      saveClarificationSession(next.status === "resolved" ? null : next);
+      if (next.status === "resolved" && next.resumeAction) {
+        const resumed = await executeCapabilityScriptDirect([
+          { verb: next.resumeAction, args: { ...(next.resumeArgs || {}), skipClarification: true, instruction: next.instruction } },
+        ], { title: "Continue after clarification", signal: tk.signal, vars: ctx.vars });
+        await tk.wait(180);
+        return {
+          type: "clarification",
+          status: "resolved",
+          object: next,
+          resumed: resumed?.value || null,
+          effects: ["clarification-resolved", "automation-resumed"],
+        };
+      }
+      await tk.wait(120);
+      return {
+        type: "clarification",
+        status: next.status,
+        object: next,
+        effects: next.status === "resolved" ? ["clarification-resolved"] : ["clarification-answered"],
+        visibleText: next.status === "awaiting" ? clarificationPromptText(next) : null,
+      };
+    },
+    captureScreenAsEvidence: async (a, tk) => {
+      tk.caption("share the tab or window that shows the format");
+      const image = await captureAuthorizedDisplayFrame();
+      const result = await runClaude(
+        [
+          "Extract a reusable format or content evidence record from this authorized ephemeral screen capture.",
+          "Return plain text only: a concise template or example that preserves headings, section order, and visible constraints.",
+          "Do not invent unseen fields. Mark unknowns explicitly.",
+        ].join("\n"),
+        "Authorized ephemeral screen capture for Automation Pearl evidence.",
+        { profile: "workspace_visual_interpretation", image, maxTokens: 2400, returnEnvelope: true },
+      );
+      const text = String(result.text || result.output || "").trim();
+      if (!text) throw new Error("screen capture produced no grounded evidence");
+      const kind = ["format-template", "example", "instructions", "attachment-extract"].includes(a.kind) ? a.kind : "format-template";
+      const evidenceItem = {
+        id: `evidence:screen:${Date.now()}`,
+        kind,
+        name: a.name || (kind === "example" ? "Screen example" : "Format from screen"),
+        content: text,
+        provenance: { source: "authorized-screen-capture", ephemeralImage: true, capturedAt: Date.now() },
+      };
+      const store = load(PEARL_STORE_KEY, { entities: {}, automationPearls: {} });
+      const pending = Array.isArray(store.pendingAutomationEvidence) ? store.pendingAutomationEvidence : [];
+      pending.push(evidenceItem);
+      const pearlId = a.pearlId || store.activePearlId;
+      if (pearlId && store.automationPearls?.[pearlId]) {
+        const pearl = store.automationPearls[pearlId];
+        const nextEvidence = [...(pearl.material?.evidence || []), {
+          ...classifyDroppedText(evidenceItem.content, { kind: evidenceItem.kind, name: evidenceItem.name }),
+          id: evidenceItem.id,
+          verbatim: evidenceItem.content,
+          provenance: evidenceItem.provenance,
+        }];
+        const revised = compileAutomationPearl(nextEvidence, null, { id: pearlId });
+        store.automationPearls[pearlId] = revised;
+        store.entities[pearlId] = createPearlEntity({
+          ...store.entities[pearlId],
+          id: pearlId,
+          kind: "automation",
+          identity: revised.identity,
+          material: revised.material,
+          automation: revised,
+        });
+      }
+      localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+        ...store,
+        pendingAutomationEvidence: pending.slice(-24),
+        updatedAt: Date.now(),
+      }));
+      await tk.wait(280);
+      return {
+        type: "automation-evidence",
+        id: evidenceItem.id,
+        object: evidenceItem,
+        effects: ["screen-evidence-captured", "automation-evidence-updated"],
+        imagePersisted: false,
+      };
+    },
+    encodeAutomationFromInstruction: async (a, tk, ctx) => {
+      const instruction = String(a.instruction || "").trim();
+      if (!instruction) throw new Error("instruction text is required");
+      if (a.captureScreen) {
+        await executeCapabilityScriptDirect([
+          { verb: "captureScreenAsEvidence", args: { kind: "format-template", name: "Format from screen" } },
+        ], { title: "Capture format context", signal: tk.signal, vars: ctx.vars });
+      }
+      const store = load(PEARL_STORE_KEY, { entities: {}, automationPearls: {}, pendingAutomationEvidence: [] });
+      const pending = store.pendingAutomationEvidence || [];
+      const evidence = buildEncodeEvidenceList([
+        { kind: "instructions", name: a.name || "Voice instruction", content: instruction },
+        ...pending,
+      ]);
+      if (!a.skipClarification) {
+        const inspection = inspectInstructionSpecificity({ instruction, evidence });
+        if (!inspection.ready) {
+          const session = createClarificationSession(inspection, {
+            resumeAction: "encodeAutomationFromInstruction",
+            resumeArgs: { instruction, captureScreen: false, name: a.name || null },
+            instruction,
+          });
+          saveClarificationSession(session);
+          await tk.wait(160);
+          return {
+            type: "clarification",
+            status: "awaiting",
+            object: session,
+            effects: ["clarification-requested"],
+            visibleText: clarificationPromptText(session),
+          };
+        }
+      }
+      let compiled = null;
+      try {
+        const response = await fetch("/api/infer-automation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ evidence }),
+        });
+        if (response.ok) compiled = (await response.json()).pearl;
+      } catch { /* local compile */ }
+      if (!compiled) compiled = compileAutomationPearl(evidence);
+      const entity = createPearlEntity({
+        id: compiled.id,
+        kind: "automation",
+        identity: compiled.identity,
+        privacyPolicy: compiled.privacyPolicy,
+        cognition: compiled.cognition,
+        material: compiled.material,
+        automation: compiled,
+      });
+      localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+        ...store,
+        entities: { ...(store.entities || {}), [entity.id]: entity },
+        automationPearls: { ...(store.automationPearls || {}), [compiled.id]: compiled },
+        activePearlId: entity.id,
+        pendingAutomationEvidence: [],
+        updatedAt: Date.now(),
+      }));
+      saveClarificationSession(null);
+      await tk.wait(260);
+      return {
+        type: "automation-pearl",
+        id: compiled.id,
+        object: compiled,
+        effects: ["automation-pearl-compiled", "pearl-entity-edited"],
+      };
+    },
+    runAutomationPearl: async (a, tk, ctx) => {
+      const { store, pearlId, entity } = ensureCanonicalPearlStore(a.pearlId);
+      const automation = store.automationPearls?.[pearlId] || store.automationPearls?.[a.pearlId] || entity?.automation;
+      if (!automation) throw new Error("No Automation Pearl is active. Encode instructions first.");
+      if (!a.skipClarification) {
+        const inspection = inspectInstructionSpecificity({
+          pearl: automation,
+          inputs: a.inputs || {},
+          researchApproved: a.researchApproved === true,
+        });
+        if (!inspection.ready) {
+          const session = createClarificationSession(inspection, {
+            resumeAction: "runAutomationPearl",
+            resumeArgs: { pearlId, inputs: a.inputs || {}, researchApproved: a.researchApproved === true },
+            pearlId,
+          });
+          saveClarificationSession(session);
+          await tk.wait(160);
+          return {
+            type: "clarification",
+            status: "awaiting",
+            object: session,
+            effects: ["clarification-requested"],
+            visibleText: clarificationPromptText(session),
+          };
+        }
+      }
+      const functionLayer = automation.functions?.[0] || entity?.cognition?.layers?.find((entry) => entry.kind === "function");
+      const template = automation.templates?.[0]?.verbatim || automation.outputSpecs?.[0]?.structure || "";
+      const sources = [
+        ...(automation.material?.evidence || []).map((entry) => `${entry.kind}: ${entry.verbatim || entry.content || ""}`),
+        a.inputs ? `Inputs: ${JSON.stringify(a.inputs)}` : "",
+        template ? `Exact format constraints:\n${typeof template === "string" ? template : JSON.stringify(template)}` : "",
+      ].filter(Boolean);
+      await tk.moveTo(window.innerWidth * 0.52, window.innerHeight * 0.4);
+      const output = await runClaude(
+        [
+          `Run the reusable automation “${automation.identity?.name || "Automation Pearl"}”.`,
+          "Produce the exact declared output format. Preserve citations and mark unknowns. Return only the artifact.",
+          functionLayer?.purpose ? `Process purpose: ${functionLayer.purpose}` : "",
+        ].filter(Boolean).join("\n"),
+        sources.join("\n\n---\n\n"),
+        { maxTokens: 3600, clientAbortMs: null, signal: tk.signal },
+      );
+      const text = String(output || "").trim();
+      if (!text) throw new Error("automation produced no output");
+      const results = [{ id: `${pearlId}:run:${Date.now()}`, status: "ready", text, via: { name: automation.identity?.name || "Automation Pearl" } }];
+      await runCanonicalPearlAction("editPearlEntity", {
+        pearlId,
+        expectedRevision: ensureCanonicalPearlStore(pearlId).entity.revision,
+        idempotencyKey: crypto.randomUUID(),
+        patch: { results },
+      }, pearlId);
+      const [created] = spawnAiOutputs([text], [], { name: automation.identity?.name || "Automation output" });
+      if (created) ctx.vars.lastAiNodeId = created.id;
+      saveClarificationSession(null);
+      await tk.wait(280);
+      return {
+        type: "automation-run",
+        id: pearlId,
+        outputId: created?.id || results[0].id,
+        effects: ["automation-pearl-executed", "ai-state-changed", "pearl-entity-edited"],
+      };
+    },
     chooseResultDestination: async (a) => {
       const { entity } = ensureCanonicalPearlStore(a.pearlId);
       if (!entity?.outputRouting || !["choosing", "clarifying", "confirming"].includes(entity.outputRouting.stage)) {
@@ -12532,6 +12807,43 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       localStorage.setItem(PEARL_GUIDE_STORAGE_KEY, JSON.stringify(record));
       window.dispatchEvent(new CustomEvent("lens:open-pearl-guide"));
       return { effectId: `pearl-guide:${record.opens}`, effects: ["pearl-guide-opened"] };
+    },
+    openAuth: async (_a, tk) => {
+      const pearl = tk.elementCenter?.("anchor:companion-orb") || tk.elementCenter?.("button.companion-orb");
+      if (pearl) await tk.moveTo(pearl.x, pearl.y);
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openAuth" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-auth-open:${Date.now()}`, effects: ["auth-opened"] };
+    },
+    signOut: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "signOut" } }));
+      await tk.wait?.(200);
+      return { effectId: `shell-sign-out:${Date.now()}`, effects: ["signed-out"] };
+    },
+    navigateHome: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "navigateHome" } }));
+      await tk.wait?.(240);
+      return { effectId: `shell-home:${Date.now()}`, effects: ["navigated-home"] };
+    },
+    navigateBack: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "navigateBack" } }));
+      await tk.wait?.(240);
+      return { effectId: `shell-back:${Date.now()}`, effects: ["navigated-back"] };
+    },
+    openSettings: async (a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openSettings", panel: a.panel || "account" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-settings:${Date.now()}`, effects: ["settings-opened"] };
+    },
+    openEncodeAnything: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openEncode" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-encode:${Date.now()}`, effects: ["encode-opened"] };
+    },
+    closeSurface: async (_a, tk) => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "closeSurface" } }));
+      await tk.wait?.(160);
+      return { effectId: `shell-close:${Date.now()}`, effects: ["surface-closed"] };
     },
     spawnText: async (a, tk, ctx) => {
       const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);
@@ -14591,7 +14903,55 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(300);
       return { type: "critique-session", id: session.id, status: "active", effects: ["critique-session-started"] };
     },
-    ingestCritique: async (a, tk) => {
+    applyCritiqueEdits: async (a, tk, ctx) => {
+      const session = critiqueSessionRef.current;
+      if (!session) throw new Error("start critique mode first");
+      const snapshot = session.snapshot();
+      const wanted = new Set((a.clauseIds || []).map(String));
+      const executable = snapshot.clauses.filter((clause) => {
+        if (!["requested-edit", "organization", "artifact-idea"].includes(clause.kind)) return false;
+        if (wanted.size && !wanted.has(clause.id)) return false;
+        return session.markDispatched(clause.id);
+      });
+      if (!executable.length) {
+        await tk.wait(120);
+        return { type: "critique-result", id: session.id, applied: 0, effects: ["critique-edits-noop"] };
+      }
+      const targets = snapshot.targets.map((entry) => entry.id || entry).filter(Boolean);
+      const preserve = snapshot.clauses.some((clause) => clause.kind === "preserve");
+      for (const clause of executable) {
+        if (clause.kind === "requested-edit" || clause.kind === "artifact-idea") {
+          await executeCapabilityScriptDirect([
+            {
+              verb: "transformMaterial",
+              args: {
+                mode: "revise",
+                targets,
+                instruction: clause.text,
+                preserveOriginal: preserve,
+                outputCount: 1,
+              },
+            },
+          ], { title: "Apply critique edit", signal: tk.signal, vars: ctx.vars });
+        } else if (clause.kind === "organization") {
+          await executeCapabilityScriptDirect([
+            {
+              verb: "annotateFeedback",
+              args: { target: targets[0], text: clause.text, kind: "feedback" },
+            },
+          ], { title: "Apply critique organization", signal: tk.signal, vars: ctx.vars });
+        }
+      }
+      localStorage.setItem("lens.critique-session.v1", JSON.stringify(session.snapshot()));
+      await tk.wait(280);
+      return {
+        type: "critique-result",
+        id: session.id,
+        applied: executable.length,
+        effects: ["critique-edits-applied", "paper-state-changed", "ai-state-changed"],
+      };
+    },
+    ingestCritique: async (a, tk, ctx) => {
       const session = critiqueSessionRef.current;
       if (!session) throw new Error("start critique mode first");
       const targetSnapshot = {
@@ -14608,8 +14968,25 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
       }
       localStorage.setItem("lens.critique-session.v1", JSON.stringify(session.snapshot()));
+      const autoApply = a.autoApply !== false && result.executable.length > 0;
+      let applied = 0;
+      if (autoApply) {
+        const appliedResult = await executeCapabilityScriptDirect([
+          { verb: "applyCritiqueEdits", args: { clauseIds: result.executable.map((clause) => clause.id) } },
+        ], { title: "Stream critique edits", signal: tk.signal, vars: ctx.vars });
+        applied = appliedResult?.value?.applied ?? result.executable.length;
+      }
       await tk.wait(250);
-      return { type: "critique-result", id: session.id, clauses: result.clauses, executable: result.executable, effects: ["critique-annotations-created"] };
+      return {
+        type: "critique-result",
+        id: session.id,
+        clauses: result.clauses,
+        executable: result.executable,
+        applied,
+        effects: autoApply
+          ? ["critique-annotations-created", "critique-edits-applied"]
+          : ["critique-annotations-created"],
+      };
     },
     stopCritiqueSession: async (a, tk) => {
       const session = critiqueSessionRef.current;
@@ -14620,6 +14997,136 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       critiqueSessionRef.current = null;
       await tk.wait(200);
       return { type: "critique-session", id: snapshot.id, status: snapshot.status, effects: ["critique-session-stopped"] };
+    },
+    browsePearlHistory: async (a, tk) => {
+      const { entity } = ensureCanonicalPearlStore(a.pearlId);
+      if (!entity) throw new Error("No canonical Pearl is active.");
+      const history = listPearlVersions(entity);
+      await tk.wait(180);
+      return { type: "pearl-history", id: entity.id, object: history, effects: ["pearl-history-observed"] };
+    },
+    snapshotPearlVersion: async (a, tk) => {
+      const result = await runCanonicalPearlAction("snapshotPearlVersion", {
+        label: a.label,
+        idempotencyKey: crypto.randomUUID(),
+      }, a.pearlId);
+      await tk.wait(220);
+      return { ...result, effects: ["pearl-version-named"] };
+    },
+    labelPearlVersion: async (a, tk) => {
+      const result = await runCanonicalPearlAction("labelPearlVersion", {
+        checkpointId: a.checkpointId,
+        label: a.label,
+      }, a.pearlId);
+      await tk.wait(180);
+      return { ...result, effects: ["pearl-version-labeled"] };
+    },
+    restorePearlVersion: async (a, tk) => {
+      let checkpointId = a.checkpointId;
+      if (checkpointId && !String(checkpointId).startsWith("pearl-checkpoint:")) {
+        const { entity } = ensureCanonicalPearlStore(a.pearlId);
+        const versions = listPearlVersions(entity).versions;
+        const needle = String(checkpointId).toLowerCase();
+        const match = versions.find((entry) => String(entry.label || "").toLowerCase() === needle)
+          || versions.find((entry) => String(entry.label || "").toLowerCase().includes(needle));
+        if (!match) throw new Error(`No Pearl version matching “${checkpointId}”`);
+        checkpointId = match.id;
+      }
+      const result = await runCanonicalPearlAction("restorePearlVersion", {
+        checkpointId,
+        confirmed: true,
+      }, a.pearlId, { destructiveApproved: true });
+      await tk.wait(320);
+      return { ...result, effects: ["pearl-version-restored"] };
+    },
+    editPearlOutput: async (a, tk) => {
+      const { pearlId, entity } = ensureCanonicalPearlStore(a.pearlId);
+      if (!entity) throw new Error("No canonical Pearl is active.");
+      const nextText = a.append
+        ? `${entity.results?.[0]?.text || entity.identity.description || ""}${a.text || ""}`
+        : (a.text || "");
+      if (a.instruction && !a.text) {
+        return executeCapabilityScriptDirect([
+          {
+            verb: "revisePearlFromFeedback",
+            args: { pearlId, text: a.instruction, preserveOriginal: false },
+          },
+        ], { title: "Edit pearl from instruction", signal: tk.signal });
+      }
+      const results = entity.results?.length
+        ? entity.results.map((entry, index) => (index ? entry : { ...entry, text: nextText }))
+        : [{ id: pearlId, status: "ready", text: nextText }];
+      await tk.moveTo(window.innerWidth * 0.5, window.innerHeight * 0.42);
+      const result = await runCanonicalPearlAction("editPearlEntity", {
+        pearlId,
+        expectedRevision: entity.revision,
+        idempotencyKey: crypto.randomUUID(),
+        patch: { results },
+      }, pearlId);
+      await tk.wait(240);
+      return { ...result, effects: ["pearl-entity-edited"] };
+    },
+    revisePearlFromFeedback: async (a, tk, ctx) => {
+      const selected = [
+        ...selRef.current,
+        ...selectedAiNodeIdsRef.current,
+      ];
+      const { entity } = ensureCanonicalPearlStore(a.pearlId);
+      const targets = selected.length
+        ? selected
+        : entity?.results?.[0]
+          ? [entity.id]
+          : [];
+      if (!targets.length) throw new Error("select an output or activate a Pearl to revise");
+      if (entity && targets.includes(entity.id)) {
+        const material = entity.results?.[0]?.text || entity.identity.description || "";
+        if (!material) throw new Error("Pearl has no readable output to revise");
+        const point = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 };
+        await tk.moveTo(point.x, point.y);
+        const output = await runClaude(
+          [
+            "Operation: revise.",
+            `Instruction: ${a.text}`,
+            "Return only the revised artifact text, with no acknowledgement or narration.",
+          ].join("\n"),
+          material,
+          { maxTokens: 2400, clientAbortMs: null, signal: tk.signal }
+        );
+        const text = String(output || "").trim();
+        if (!text) throw new Error("the revision produced no material");
+        const results = entity.results?.length
+          ? entity.results.map((entry, index) => (index ? entry : { ...entry, text }))
+          : [{ id: entity.id, status: "ready", text }];
+        if (a.preserveOriginal !== false) {
+          await runCanonicalPearlAction("snapshotPearlVersion", {
+            pearlId: entity.id,
+            label: `Before feedback ${new Date().toLocaleString()}`,
+            idempotencyKey: crypto.randomUUID(),
+          }, entity.id);
+        }
+        const result = await runCanonicalPearlAction("editPearlEntity", {
+          pearlId: entity.id,
+          expectedRevision: (ensureCanonicalPearlStore(entity.id).entity || entity).revision,
+          idempotencyKey: crypto.randomUUID(),
+          patch: { results },
+        }, entity.id);
+        await tk.wait(280);
+        return { ...result, effects: ["pearl-entity-edited", "critique-edits-applied"] };
+      }
+      await executeCapabilityScriptDirect([
+        {
+          verb: "transformMaterial",
+          args: {
+            mode: "revise",
+            targets,
+            instruction: a.text,
+            preserveOriginal: a.preserveOriginal !== false,
+            outputCount: 1,
+          },
+        },
+      ], { title: "Revise from feedback", signal: tk.signal, vars: ctx.vars });
+      await tk.wait(200);
+      return { type: "critique-result", effects: ["critique-edits-applied", "paper-state-changed", "ai-state-changed"] };
     },
     openPackageRegistry: async (_a, tk) => {
       const target = tk.elementCenter(".page-title-packages");
@@ -15798,6 +16305,90 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["semantic-transfer-completed"] }
         : { status: "failed", failure: result.errors?.[0] || "Semantic transfer failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
+    const pendingClarification = loadClarificationSession();
+    if (pendingClarification?.status === "awaiting") {
+      onPhase?.("executing");
+      const result = await executeCompanionScript([
+        { verb: "answerClarification", args: { text } },
+      ], { title: "Answer clarification" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["clarification-answered"] }
+        : { status: "failed", failure: result.errors?.[0] || "Clarification failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      const visible = result.value?.visibleText;
+      return visible ? { visible: true, text: visible } : null;
+    }
+
+    const automationLoop = parseAutomationLoopCommand(text);
+    if (automationLoop) {
+      onPhase?.("executing");
+      const result = await executeCompanionScript([automationLoop], { title: "Automation loop" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["automation-pearl-compiled"] }
+        : { status: "failed", failure: result.errors?.[0] || "Automation command failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      if (result.value?.visibleText) return { visible: true, text: result.value.visibleText };
+      return null;
+    }
+
+    const critiqueIntent = parseCritiqueCommand(text, { sessionActive: Boolean(critiqueSessionRef.current) });
+    if (critiqueIntent) {
+      onPhase?.("executing");
+      const steps = critiqueIntent.verb === "ingestCritique" && critiqueIntent.args?.autoApply !== false
+        ? [critiqueIntent]
+        : [critiqueIntent];
+      const result = await executeCompanionScript(steps, { title: "Critique feedback" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["critique-edits-applied"] }
+        : { status: "failed", failure: result.errors?.[0] || "Critique command failed" });
+      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+    }
+
+    const versionIntent = parsePearlVersionCommand(text);
+    if (versionIntent) {
+      onPhase?.("executing");
+      const result = await executeCompanionScript([versionIntent], { title: "Pearl version history" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["pearl-history-observed"] }
+        : { status: "failed", failure: result.errors?.[0] || "Version history command failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      if (versionIntent.verb === "browsePearlHistory") {
+        const history = result.value?.object || result.value;
+        const versions = history?.versions || [];
+        if (versions.length) {
+          return {
+            visible: true,
+            text: versions.slice(0, 8).map((entry) => `• ${entry.label}${entry.named ? " (named)" : ""} · rev ${entry.revision}`).join("\n"),
+          };
+        }
+      }
+      return null;
+    }
+
+    const remixIntent = parsePearlRemixCommand(text);
+    if (remixIntent) {
+      onPhase?.("executing");
+      const activeOrbId = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("lens.scenes.v4") || "{}")?.activeSemanticOrbId || null;
+        } catch {
+          return null;
+        }
+      })();
+      const step = { ...remixIntent, args: { ...remixIntent.args } };
+      if (step.args.id === "active" && activeOrbId) step.args.id = activeOrbId;
+      if (step.args.sceneId === "") step.args.sceneId = sceneId;
+      if (Array.isArray(step.args.ids) && step.args.ids.length === 0) {
+        const selectedOrbIds = highlightSelectionRef.current.length ? highlightSelectionRef.current : [];
+        step.args.ids = selectedOrbIds.length ? selectedOrbIds : (activeOrbId ? [activeOrbId] : []);
+      }
+      const result = await executeCompanionScript([step], { title: "Pearl remix" });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["scene-state-changed"] }
+        : { status: "failed", failure: result.errors?.[0] || "Remix failed" });
       return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
     }
 

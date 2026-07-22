@@ -1268,10 +1268,16 @@ function App() {
         <input autoFocus aria-label="Tell Pearl your goal" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="What do you want?" />
         <button type="submit" aria-label="Send command">→</button>
       </form>}
-      {!powerSearch && <button type="button" className="pearl-contextual-action" onClick={() => {
-        contextualAction.run?.();
-        setPearlOpen(false);
-      }}>{contextualAction.label}</button>}
+      {!powerSearch && <div className="pearl-quick-actions" role="group" aria-label="Pearl quick actions">
+        <button type="button" onClick={() => { setGuideOpen(true); setPearlOpen(false); }}>How Pearl works</button>
+        <button type="button" onClick={() => { setActiveView("orbs"); setPearlOpen(false); }}>Library</button>
+        <button type="button" onClick={() => { setActiveView("settings"); setPearlOpen(false); }}>{auth ? "Account" : "Sign in"}</button>
+        <button type="button" onClick={() => { setActiveView("context"); setPearlOpen(false); }}>Import / capture</button>
+        <button type="button" className="pearl-contextual-action" onClick={() => {
+          contextualAction.run?.();
+          setPearlOpen(false);
+        }}>{contextualAction.label}</button>
+      </div>}
       {powerSearch && <>
         <input autoFocus type="search" aria-label="Search every Pearl action" value={pearlQuery} onChange={(event) => setPearlQuery(event.target.value)} placeholder="Search by intent…" />
         <div className="extension-pearl-actions">
@@ -1341,7 +1347,8 @@ function App() {
       {!packages.length && <p>No public or team packages are visible.</p>}
     </section>}
     {!characters && !session.queue.length && <section className={`orb-panel ${activeView === "context" ? "active" : ""} quick-start`}>
-      <p>Highlight anything, choose a Move or Function, optionally add Lens context, then press GO</p>
+      <p>Import a chat, paste notes, or highlight the page — then make your first Pearl. Or ask Pearl in plain language.</p>
+      <button type="button" className="gold" onClick={() => { setChatOpen(true); setActiveView("context"); }}>Paste a ChatGPT / Claude export</button>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
         <b>{sampleLens.name}</b><small>Sample Primitive Move</small>
       </button>}
@@ -1350,8 +1357,8 @@ function App() {
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
       {characters > 0 && !semanticOrbs.length && <div className="first-pearl">
-        <b>Your first material is ready.</b>
-        <small>Preserve it with provenance and context before deciding whether to shape it.</small>
+        <b>Your first Pearl is one click away.</b>
+        <small>Keep this capture with its source link, then open Studio or encode a reusable process from it.</small>
         <button className="gold" type="button" onClick={() => semanticOrbAction("create", { material: session.fragments.at(-1) }).catch(() => {})}>Make a pearl</button>
       </div>}
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>

@@ -12,13 +12,15 @@ export const PEARL_GUIDE_SECTIONS = Object.freeze([
   Object.freeze({
     id: "begin",
     title: "Begin with the pearl",
-    summary: "Pearl is one small companion. Everything starts by talking to it.",
+    summary: "Pearl is one small companion. Everything starts by talking to it — or by importing what you already have.",
     platforms: Object.freeze(["app", "extension"]),
     items: Object.freeze([
       Object.freeze({ id: "ask", label: "Ask for anything", detail: "Click the pearl and type a goal in plain language.", gesture: "Click the pearl", command: null }),
       Object.freeze({ id: "speak", label: "Speak instead", detail: "Press and hold the pearl to talk. Release to send.", gesture: "Hold the pearl", command: null }),
+      Object.freeze({ id: "encode", label: "Import or encode material", detail: "Paste a chat, email, PDF, Drive link, or Pitchbook/Affinity export. Pearl compiles a reviewable Automation Pearl.", gesture: "Pearl → Encode anything", command: "encode anything" }),
       Object.freeze({ id: "search", label: "Find every action", detail: "Search all Pearl actions by intent, from anywhere.", gesture: "Press ⌘K or Ctrl+K", command: null }),
       Object.freeze({ id: "drop", label: "Give it material", detail: "Drag text, notes, or a Lens onto the pearl to add bounded context.", gesture: "Drop onto the pearl", command: null }),
+      Object.freeze({ id: "account", label: "Sign in and privacy", detail: "Open Account & privacy from the pearl halo. Pearls stay local unless you enable sync.", gesture: "Pearl → Account & privacy", command: "open account and privacy" }),
     ]),
   }),
   Object.freeze({

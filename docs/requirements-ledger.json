@@ -2,8 +2,8 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 48,
-    "minimumCompanionCapabilities": 130,
+    "features": 53,
+    "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
       "move",
@@ -27,9 +27,9 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 48,
-    "domainCommands": 106,
-    "companionCapabilities": 188,
+    "featureContracts": 53,
+    "domainCommands": 111,
+    "companionCapabilities": 201,
     "extensionEntries": 77
   },
   "requirements": [
@@ -369,7 +369,12 @@
         "createSemanticOrb",
         "editPearlEntity",
         "applyPearlCognitivePatch",
-        "completeOutputPlacement"
+        "completeOutputPlacement",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion"
       ],
       "webEntries": [
         "client/components/CompanionOrb.jsx:pearl-action-search",
@@ -392,6 +397,12 @@
         "exportWorkspace",
         "openExtensionDownload",
         "executeUnifiedPearlAction",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
         "capturePageSelection",
         "createExternalSemanticOrb",
         "queueExternalAction",
@@ -437,7 +448,9 @@
         "extension/tests/core.test.js",
         "client/lib/extension-funnel.test.js",
         "client/lib/extension-continuation.test.js",
-        "shared/pearl-entity.test.js"
+        "shared/pearl-entity.test.js",
+        "shared/pearl-animation.test.js",
+        "shared/physical-pearl.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -761,6 +774,10 @@
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
         "spawnResultPearl",
         "placeResultPearl",
         "moveResultPearl",
@@ -798,6 +815,12 @@
         "unlockLocalPearls",
         "deleteLocalData",
         "executeUnifiedPearlAction",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback",
         "preparePearlShare",
         "sharePearl",
         "revokePearlShare",
@@ -858,6 +881,7 @@
         "shared/local-privacy-vault.test.js",
         "extension/tests/session-isolation.test.js",
         "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js",
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs",
@@ -1228,6 +1252,10 @@
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
         "inspectPearlPrivacy",
         "interpretOutputPlacement",
         "addOrbContext",
@@ -1252,6 +1280,12 @@
       ],
       "companionCapabilities": [
         "executeUnifiedPearlAction",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback",
         "observeUnifiedPearl",
         "semanticTransfer",
         "createSemanticOrb",
@@ -1274,6 +1308,7 @@
       ],
       "automatedTests": [
         "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js",
         "shared/pearl-entity.test.js",
         "shared/orb-universe.test.js",
         "shared/drop-intent-resolver.test.js"
@@ -1458,6 +1493,7 @@
       ],
       "webEntries": [
         "extension/src/sidepanel/main.jsx",
+        "client/components/EncodeAnythingPanel.jsx",
         "client/components/LearnFromChat.jsx",
         "client/components/BeforeAfterLensEditor.jsx"
       ],
@@ -1466,6 +1502,9 @@
         "reviseAutomationPearl",
         "researchAutomationPearl",
         "approveAutomationContextPatch",
+        "encodeAutomationFromInstruction",
+        "captureScreenAsEvidence",
+        "runAutomationPearl",
         "openTranscriptLearning",
         "generateTranscriptArtifacts",
         "saveTranscriptArtifacts",
@@ -1473,11 +1512,13 @@
         "inferBeforeAfterTransformation",
         "saveLearnedFunction",
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter"
       ],
       "extensionEntries": [
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter"
       ],
@@ -1489,6 +1530,8 @@
       "automatedTests": [
         "shared/automation-pearl.test.js",
         "shared/automation-research.test.js",
+        "shared/companion-clarification.test.js",
+        "shared/encode-evidence.test.js",
         "shared/transcript-learning.test.js",
         "shared/before-after-examples.test.js"
       ],
@@ -1530,6 +1573,7 @@
       ],
       "webEntries": [
         "extension/src/sidepanel/main.jsx",
+        "client/components/EncodeAnythingPanel.jsx",
         "extension/src/content/selection.js",
         "extension/src/content/page-canvas.js",
         "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
@@ -1539,10 +1583,14 @@
         "reviseAutomationPearl",
         "researchAutomationPearl",
         "approveAutomationContextPatch",
+        "encodeAutomationFromInstruction",
+        "captureScreenAsEvidence",
+        "runAutomationPearl",
         "inspectPearlPrivacyPolicy",
         "proposePearlPrivacyChange",
         "applyPearlPrivacyChange",
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "bindExternalCanvasContext",
         "inspectExternalPearlPrivacy",
         "proposeExternalPearlPrivacyChange",
@@ -1550,6 +1598,7 @@
       ],
       "extensionEntries": [
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "bindExternalCanvasContext",
         "inspectExternalPearlPrivacy",
         "proposeExternalPearlPrivacyChange",
@@ -1565,6 +1614,8 @@
       "automatedTests": [
         "shared/automation-pearl.test.js",
         "shared/automation-research.test.js",
+        "shared/companion-clarification.test.js",
+        "shared/encode-evidence.test.js",
         "shared/page-observation.test.js",
         "shared/pearl-privacy-policy.test.js",
         "shared/organization-envelope.test.js"
@@ -1744,7 +1795,13 @@
         "inspectPearlPrivacy",
         "interpretOutputPlacement",
         "applyPearlCognitivePatch",
-        "completeOutputPlacement"
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion"
       ],
       "webEntries": [
         "client/components/PhysicalPearl.jsx",
@@ -1756,6 +1813,12 @@
       "companionCapabilities": [
         "observeUnifiedPearl",
         "executeUnifiedPearlAction",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1766,7 +1829,9 @@
         "pearlEntities.v1.history.events"
       ],
       "automatedTests": [
-        "shared/pearl-entity.test.js"
+        "shared/pearl-entity.test.js",
+        "shared/pearl-animation.test.js",
+        "shared/physical-pearl.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -1790,7 +1855,13 @@
       "domainCommands": [
         "editPearlEntity",
         "applyPearlCognitivePatch",
-        "completeOutputPlacement"
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion"
       ],
       "webEntries": [
         "client/lib/director.js",
@@ -1807,6 +1878,12 @@
       ],
       "companionCapabilities": [
         "executeUnifiedPearlAction",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1818,6 +1895,7 @@
       ],
       "automatedTests": [
         "shared/pearl-entity.test.js",
+        "shared/pearl-animation.test.js",
         "shared/physical-pearl.test.js",
         "scripts/pearl-visual-contract-audit.mjs",
         "docs/pearl-visual-contract.md",
@@ -1954,6 +2032,7 @@
         "client/components/PearlStudioView.jsx",
         "extension/src/result/main.js",
         "extension/src/sidepanel/main.jsx",
+        "client/components/EncodeAnythingPanel.jsx",
         "server/index.js:/api/pearl-shares"
       ],
       "companionCapabilities": [
@@ -1971,6 +2050,9 @@
         "reviseAutomationPearl",
         "researchAutomationPearl",
         "approveAutomationContextPatch",
+        "encodeAutomationFromInstruction",
+        "captureScreenAsEvidence",
+        "runAutomationPearl",
         "preparePearlShare",
         "sharePearl",
         "revokePearlShare",
@@ -1986,6 +2068,7 @@
         "stepExternalPearlFunction",
         "cancelExternalPearlFunction",
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "prepareExternalPearlShare",
         "installExternalSharedPearl"
       ],
@@ -2001,6 +2084,7 @@
         "stepExternalPearlFunction",
         "cancelExternalPearlFunction",
         "compileExternalAutomationPearl",
+        "captureExternalVisibleTab",
         "prepareExternalPearlShare",
         "installExternalSharedPearl"
       ],
@@ -2014,6 +2098,8 @@
         "shared/pearl-cognitive-layers.test.js",
         "shared/automation-pearl.test.js",
         "shared/automation-research.test.js",
+        "shared/companion-clarification.test.js",
+        "shared/encode-evidence.test.js",
         "shared/pearl-sharing.test.js",
         "server/pearl-share-registry.test.js"
       ],
@@ -2052,6 +2138,10 @@
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
         "composeCanonicalObjects"
       ],
       "webEntries": [
@@ -2072,6 +2162,12 @@
         "stepPearlFunction",
         "cancelPearlFunction",
         "executeUnifiedPearlAction",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback",
         "stackFunctions",
         "saveCompoundFunction",
         "inspectExternalPearlCognition",
@@ -2114,6 +2210,7 @@
       "automatedTests": [
         "shared/pearl-cognitive-layers.test.js",
         "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js",
         "shared/composition-algebra.test.js",
         "shared/material.test.js"
       ],
@@ -2534,7 +2631,11 @@
         "editPearlEntity",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
-        "redoPearlEntityEdit"
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
       ],
       "webEntries": [
         "client/components/ExtensionDownloadModal.jsx",
@@ -2550,6 +2651,12 @@
         "confirmResultPlacement",
         "cancelResultPlacement",
         "executeUnifiedPearlAction",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback",
         "showExternalLibraryImport",
         "activateExternalPearlCanvas",
         "deactivateExternalPearlCanvas",
@@ -2614,7 +2721,8 @@
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "shared/output-routing.test.js",
-        "shared/pearl-studio.test.js"
+        "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -2774,7 +2882,11 @@
         "editPearlEntity",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
-        "redoPearlEntityEdit"
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
       ],
       "webEntries": [
         "client/components/PhysicalPearl.jsx",
@@ -2801,6 +2913,12 @@
         "openPackageRegistry",
         "redoWorkspace",
         "exportWorkspace",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback",
         "executeExternalPearlAction",
         "capturePageSelection",
         "createExternalSemanticOrb",
@@ -2843,7 +2961,8 @@
         "client/lib/pearl-shell.test.js",
         "shared/orb-universe.test.js",
         "extension/tests/core.test.js",
-        "shared/pearl-studio.test.js"
+        "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -2858,5 +2977,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-21T22:09:12.744Z"
+  "generatedAt": "2026-07-22T03:19:18.245Z"
 }

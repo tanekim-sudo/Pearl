@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-57917f5b",
+  "fingerprint": "fnv1a-0f807bc7",
   "counts": {
-    "nodes": 336,
+    "nodes": 356,
     "edges": 516
   },
   "nodes": [
@@ -8506,7 +8506,14 @@
         "Output Frame exists",
         "explicit GO before generation",
         "worker exists",
-        "context is explicit"
+        "context is explicit",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -8554,7 +8561,11 @@
         "scene.workingSet.lenses",
         "scene.items.append",
         "scene.pendingBranches.append",
-        "scene.orbInstances.update"
+        "scene.orbInstances.update",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "none",
@@ -8564,7 +8575,9 @@
         "restore-orb-lenses",
         "restore-scene-snapshot",
         "remove-queued-branch",
-        "restore-worker-context"
+        "restore-worker-context",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -8590,16 +8603,22 @@
         "scene-material-created",
         "frame-material-created",
         "branch-material-queued",
-        "worker-context-changed"
+        "worker-context-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-createSemanticOrb",
         "feature:scene.semantic-orbs",
-        "feature:interaction.orb-gesture"
+        "feature:interaction.orb-gesture",
+        "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
         "scene.semantic-orbs",
-        "interaction.orb-gesture"
+        "interaction.orb-gesture",
+        "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -8625,7 +8644,11 @@
         "materializeOnStage",
         "materializeInOutputFrame",
         "queueBranchMaterial",
-        "assignWorkerContext"
+        "assignWorkerContext",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -9827,7 +9850,14 @@
         "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
-        "scoped destructive confirmation was granted"
+        "scoped destructive confirmation was granted",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -9870,12 +9900,18 @@
         "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
         "scene.semanticOrbs.update",
-        "scene.semanticOrbs.delete"
+        "scene.semanticOrbs.delete",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "none",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "restore-active-semantic-orb",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -9895,14 +9931,20 @@
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
         "semantic-orb-archived",
-        "semantic-orb-deleted"
+        "semantic-orb-deleted",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-nestSemanticOrb",
-        "feature:scene.semantic-orbs"
+        "feature:scene.semantic-orbs",
+        "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
-        "scene.semantic-orbs"
+        "scene.semantic-orbs",
+        "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -9922,7 +9964,11 @@
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
-        "deleteSemanticOrb"
+        "deleteSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10113,7 +10159,14 @@
         "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
-        "scoped destructive confirmation was granted"
+        "scoped destructive confirmation was granted",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -10156,12 +10209,18 @@
         "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
         "scene.semanticOrbs.update",
-        "scene.semanticOrbs.delete"
+        "scene.semanticOrbs.delete",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "none",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "restore-active-semantic-orb",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -10181,14 +10240,20 @@
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
         "semantic-orb-archived",
-        "semantic-orb-deleted"
+        "semantic-orb-deleted",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-mergeSemanticOrbs",
-        "feature:scene.semantic-orbs"
+        "feature:scene.semantic-orbs",
+        "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
-        "scene.semantic-orbs"
+        "scene.semantic-orbs",
+        "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -10208,7 +10273,11 @@
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
-        "deleteSemanticOrb"
+        "deleteSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10257,7 +10326,14 @@
         "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
-        "scoped destructive confirmation was granted"
+        "scoped destructive confirmation was granted",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -10300,12 +10376,18 @@
         "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
         "scene.semanticOrbs.update",
-        "scene.semanticOrbs.delete"
+        "scene.semanticOrbs.delete",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "none",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "restore-active-semantic-orb",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -10325,14 +10407,20 @@
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
         "semantic-orb-archived",
-        "semantic-orb-deleted"
+        "semantic-orb-deleted",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-composeSemanticOrbs",
-        "feature:scene.semantic-orbs"
+        "feature:scene.semantic-orbs",
+        "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
-        "scene.semantic-orbs"
+        "scene.semantic-orbs",
+        "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -10352,7 +10440,11 @@
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
-        "deleteSemanticOrb"
+        "deleteSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -10400,7 +10492,14 @@
         "at least two orbs exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
-        "scoped destructive confirmation was granted"
+        "scoped destructive confirmation was granted",
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -10443,12 +10542,18 @@
         "scene.semanticOrbs.append",
         "scene.activeSemanticOrbId",
         "scene.semanticOrbs.update",
-        "scene.semanticOrbs.delete"
+        "scene.semanticOrbs.delete",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "none",
         "restore-semantic-orbs",
-        "restore-active-semantic-orb"
+        "restore-active-semantic-orb",
+        "undo-pearl-entity-edit",
+        "undo-output-placement"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -10468,14 +10573,20 @@
         "semantic-orb-lenses-changed",
         "semantic-orb-hierarchy-changed",
         "semantic-orb-archived",
-        "semantic-orb-deleted"
+        "semantic-orb-deleted",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-splitSemanticOrb",
-        "feature:scene.semantic-orbs"
+        "feature:scene.semantic-orbs",
+        "feature:runtime.pearl-action-animation"
       ],
       "featureIds": [
-        "scene.semantic-orbs"
+        "scene.semantic-orbs",
+        "runtime.pearl-action-animation"
       ],
       "canonicalCommands": [
         "openOrbCreationPreview",
@@ -10495,7 +10606,11 @@
         "splitSemanticOrb",
         "duplicateSemanticOrb",
         "archiveSemanticOrb",
-        "deleteSemanticOrb"
+        "deleteSemanticOrb",
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -17875,9 +17990,12 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-startCritiqueSession"
+        "capability-startCritiqueSession",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -17894,7 +18012,7 @@
       "version": 1,
       "kind": "capability",
       "name": "ingestCritique",
-      "purpose": "Normalize and materialize critique clauses against stable targets",
+      "purpose": "Normalize stream-of-consciousness critique, materialize linked annotations, and apply executable edit clauses",
       "examples": [
         "keep the first one but rewrite the second"
       ],
@@ -17902,7 +18020,8 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "text": "string"
+          "text": "string",
+          "autoApply": "boolean?"
         }
       },
       "outputSchema": {
@@ -17964,9 +18083,103 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-ingestCritique"
+        "capability-ingestCritique",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "paper",
+        "ai"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.applyCritiqueEdits",
+      "version": 1,
+      "kind": "capability",
+      "name": "applyCritiqueEdits",
+      "purpose": "Execute pending critique edit clauses with real director transforms against their targets",
+      "examples": [
+        "apply the critique edits now"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "clauseIds": "array?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "model",
+        "maxCalls": 1
+      },
+      "timeoutMs": 120000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": true,
+        "boundary": "configured-provider-or-app-gateway"
+      },
+      "sideEffects": [
+        "paper-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "paper-state-changed",
+        "ai-state-changed"
+      ],
+      "tests": [
+        "capability-applyCritiqueEdits",
+        "feature:companion.critique-edits"
+      ],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -18050,9 +18263,12 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-stopCritiqueSession"
+        "capability-stopCritiqueSession",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -18061,6 +18277,844 @@
         "paper",
         "ai",
         "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.browsePearlHistory",
+      "version": 1,
+      "kind": "capability",
+      "name": "browsePearlHistory",
+      "purpose": "Browse Google Docs–style version history for the active Pearl",
+      "examples": [
+        "show version history for this pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-browsePearlHistory",
+        "feature:studio.pearl",
+        "feature:pearl.version-history"
+      ],
+      "featureIds": [
+        "studio.pearl",
+        "pearl.version-history"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "read-only",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.snapshotPearlVersion",
+      "version": 1,
+      "kind": "capability",
+      "name": "snapshotPearlVersion",
+      "purpose": "Name and save the current Pearl state as a restorable version",
+      "examples": [
+        "name this version review ready"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "label": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-snapshotPearlVersion",
+        "feature:studio.pearl",
+        "feature:pearl.version-history"
+      ],
+      "featureIds": [
+        "studio.pearl",
+        "pearl.version-history"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.labelPearlVersion",
+      "version": 1,
+      "kind": "capability",
+      "name": "labelPearlVersion",
+      "purpose": "Rename an existing Pearl version checkpoint",
+      "examples": [
+        "call that checkpoint client send"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "checkpointId": "string",
+          "label": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-labelPearlVersion",
+        "feature:studio.pearl",
+        "feature:pearl.version-history"
+      ],
+      "featureIds": [
+        "studio.pearl",
+        "pearl.version-history"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.restorePearlVersion",
+      "version": 1,
+      "kind": "capability",
+      "name": "restorePearlVersion",
+      "purpose": "Restore a prior Pearl version into a new revision while keeping full history",
+      "examples": [
+        "restore the review ready version"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "checkpointId": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
+        "Pearl exists in the canonical entity store",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "high",
+      "approval": {
+        "required": true,
+        "scope": "object-or-domain"
+      },
+      "autonomy": "explicit-approval",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion",
+        "pearlStudioSessions.upsert",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "undo-output-placement",
+        "restore-semantic-orbs",
+        "none",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-approved-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
+        "pearl-studio-opening",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled"
+      ],
+      "tests": [
+        "capability-restorePearlVersion",
+        "feature:runtime.pearl-action-animation",
+        "feature:studio.pearl",
+        "feature:pearl.version-history"
+      ],
+      "featureIds": [
+        "runtime.pearl-action-animation",
+        "studio.pearl",
+        "pearl.version-history"
+      ],
+      "canonicalCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
+        "openPearlStudio",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion"
+      ],
+      "destructive": true,
+      "confirmation": "framework",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.editPearlOutput",
+      "version": 1,
+      "kind": "capability",
+      "name": "editPearlOutput",
+      "purpose": "Edit Pearl output text directly through the companion with a live director path",
+      "examples": [
+        "change this pearl output to the shorter memo"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "text": "string",
+          "append": "boolean?",
+          "instruction": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "paper-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "paper-state-changed",
+        "ai-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-editPearlOutput",
+        "feature:studio.pearl",
+        "feature:companion.critique-edits"
+      ],
+      "featureIds": [
+        "studio.pearl",
+        "companion.critique-edits"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "paper",
+        "ai"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.revisePearlFromFeedback",
+      "version": 1,
+      "kind": "capability",
+      "name": "revisePearlFromFeedback",
+      "purpose": "Apply stream-of-consciousness feedback as a revise transform on Pearl or selected output",
+      "examples": [
+        "make this warmer and cut the third paragraph"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "text": "string",
+          "preserveOriginal": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "paper-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "paper-state-changed",
+        "ai-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-revisePearlFromFeedback",
+        "feature:studio.pearl",
+        "feature:companion.critique-edits"
+      ],
+      "featureIds": [
+        "studio.pearl",
+        "companion.critique-edits"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "paper",
+        "ai"
       ],
       "platform": "app"
     },
@@ -20253,9 +21307,20 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
         "package signature, scope, and privacy review are valid",
         "opaque link identifier is server-generated",
         "server authorization, rate limit, expiry, and recipient binding passed atomically",
@@ -20307,9 +21372,13 @@
         "resultPearls.routing.plan.replace",
         "pearlEntities.cognition.patch",
         "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
+        "pearlEntities.history.checkpoints",
         "pearlShareGrants.upsert",
         "pearlShareGrants.consume,receivedPearls.stage",
         "pearlShareGrants.revoke",
@@ -20320,6 +21389,7 @@
         "none",
         "revise-placement-plan",
         "undo-output-placement",
+        "restore-semantic-orbs",
         "redo-pearl-entity-edit",
         "revoke-pearl-share",
         "decline-received-pearl",
@@ -20342,9 +21412,15 @@
         "output-placement-interpreted",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
         "pearl-share-grant-created",
         "pearl-share-received",
         "pearl-share-revoked",
@@ -20372,9 +21448,18 @@
         "interpretOutputPlacement",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
         "createPearlShareGrant",
         "consumePearlShareGrant",
         "revokePearlShareGrant",
@@ -23487,6 +24572,596 @@
       "platform": "app"
     },
     {
+      "id": "companion.capability.app.openAuth",
+      "version": 1,
+      "kind": "capability",
+      "name": "openAuth",
+      "purpose": "Open Sign in from the Pearl shell",
+      "examples": [
+        "sign me in"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-openAuth",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.signOut",
+      "version": 1,
+      "kind": "capability",
+      "name": "signOut",
+      "purpose": "Sign out of the current account on this device",
+      "examples": [
+        "sign me out"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-signOut",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.navigateHome",
+      "version": 1,
+      "kind": "capability",
+      "name": "navigateHome",
+      "purpose": "Return to the Pearl home / continuation hub",
+      "examples": [
+        "go home"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [],
+      "observerQuery": {
+        "scopes": [
+          "viewport"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [],
+      "tests": [
+        "capability-navigateHome",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.navigateBack",
+      "version": 1,
+      "kind": "capability",
+      "name": "navigateBack",
+      "purpose": "Go back one Pearl surface, or home if history is empty",
+      "examples": [
+        "go back"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [],
+      "observerQuery": {
+        "scopes": [
+          "viewport"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [],
+      "tests": [
+        "capability-navigateBack",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.openSettings",
+      "version": 1,
+      "kind": "capability",
+      "name": "openSettings",
+      "purpose": "Open Account & privacy emitted by Pearl",
+      "examples": [
+        "open account and privacy"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "panel": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "privacy-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "privacy-state-changed"
+      ],
+      "tests": [
+        "capability-openSettings",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "privacy"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.openEncodeAnything",
+      "version": 1,
+      "kind": "capability",
+      "name": "openEncodeAnything",
+      "purpose": "Open Encode anything to compile prompts, emails, PDFs, and Drive material into a Pearl",
+      "examples": [
+        "encode this email into a pearl"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "prompt evidence is bounded and treated as untrusted",
+        "verbatim evidence is preserved"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "automationPearls.upsert"
+      ],
+      "undo": [
+        "delete-automation-pearl-draft"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "automation-pearl-compiled",
+        "automation-semantic-diff-required"
+      ],
+      "tests": [
+        "capability-openEncodeAnything",
+        "feature:encode.automation-anything"
+      ],
+      "featureIds": [
+        "encode.automation-anything"
+      ],
+      "canonicalCommands": [
+        "compileAutomationPearl"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "function",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.closeSurface",
+      "version": 1,
+      "kind": "capability",
+      "name": "closeSurface",
+      "purpose": "Close the current Pearl-emitted surface",
+      "examples": [
+        "close this panel"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [],
+      "observerQuery": {
+        "scopes": [
+          "viewport"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [],
+      "tests": [
+        "capability-closeSurface",
+        "feature:shell.pearl-navigability"
+      ],
+      "featureIds": [
+        "shell.pearl-navigability"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
       "id": "companion.capability.app.compileAutomationPearl",
       "version": 1,
       "kind": "capability",
@@ -23597,10 +25272,12 @@
       ],
       "tests": [
         "capability-compileAutomationPearl",
-        "feature:automation.pearl-compiler"
+        "feature:automation.pearl-compiler",
+        "feature:encode.automation-anything"
       ],
       "featureIds": [
-        "automation.pearl-compiler"
+        "automation.pearl-compiler",
+        "encode.automation-anything"
       ],
       "canonicalCommands": [
         "compileAutomationPearl",
@@ -24014,6 +25691,689 @@
         "scene",
         "function",
         "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.inspectInstructionSpecificity",
+      "version": 1,
+      "kind": "capability",
+      "name": "inspectInstructionSpecificity",
+      "purpose": "Check instructions or an Automation Pearl for vagueness and missing implementation specifics before committing work",
+      "examples": [
+        "is this LP briefing instruction specific enough"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instruction": "string?",
+          "pearlId": "string?",
+          "inputs": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [],
+      "tests": [
+        "capability-inspectInstructionSpecificity",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "read-only",
+      "domains": [
+        "scene",
+        "function",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.requestClarification",
+      "version": 1,
+      "kind": "capability",
+      "name": "requestClarification",
+      "purpose": "Ask Cursor-style clarifying questions when automation or edits are ambiguous, then pause until answered",
+      "examples": [
+        "check what is still vague before automating this"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instruction": "string?",
+          "pearlId": "string?",
+          "resumeAction": "string?",
+          "resumeArgs": "object?",
+          "inputs": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "tests": [
+        "capability-requestClarification",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "function"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.answerClarification",
+      "version": 1,
+      "kind": "capability",
+      "name": "answerClarification",
+      "purpose": "Answer the active companion clarification and continue the paused automation when ready",
+      "examples": [
+        "use the firm memo sections and capture the format tab"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": "string",
+          "questionId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed"
+      ],
+      "tests": [
+        "capability-answerClarification",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "function"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.captureScreenAsEvidence",
+      "version": 1,
+      "kind": "capability",
+      "name": "captureScreenAsEvidence",
+      "purpose": "Authorize an ephemeral screen/tab capture, extract grounded format or content, and fold it into Automation Pearl evidence",
+      "examples": [
+        "capture this tab as the format template"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": "format-template|example|instructions|attachment-extract?",
+          "name": "string?",
+          "pearlId": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "prompt evidence is bounded and treated as untrusted",
+        "verbatim evidence is preserved",
+        "semantic diff was reviewed",
+        "evidence lineage remains immutable",
+        "public query context is separated",
+        "private disclosure is explicitly approved when present",
+        "research result contains verified citable sources",
+        "proposal is read-only",
+        "exact context diff and source evidence are visible",
+        "context patch checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "automationPearls.upsert",
+        "automationPearls.update",
+        "automationResearchPlans.upsert",
+        "automationContextPatches.upsert",
+        "automationPearls.context.update,automationContextPatches.status.update",
+        "automationPearls.context.restore"
+      ],
+      "undo": [
+        "delete-automation-pearl-draft",
+        "restore-automation-pearl-checkpoint",
+        "cancel-research-plan",
+        "discard-context-patch",
+        "undo-automation-context-patch",
+        "reapply-context-patch"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "automation-pearl-compiled",
+        "automation-semantic-diff-required",
+        "automation-pearl-revised",
+        "automation-research-planned",
+        "automation-context-patch-proposed",
+        "automation-context-patch-applied",
+        "automation-context-patch-undone"
+      ],
+      "tests": [
+        "capability-captureScreenAsEvidence",
+        "feature:automation.pearl-compiler"
+      ],
+      "featureIds": [
+        "automation.pearl-compiler"
+      ],
+      "canonicalCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "lens",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.encodeAutomationFromInstruction",
+      "version": 1,
+      "kind": "capability",
+      "name": "encodeAutomationFromInstruction",
+      "purpose": "Turn voice/text instructions plus optional screen captures into a reviewable Automation Pearl, clarifying first when vague",
+      "examples": [
+        "automate LP briefings from what I am showing and saying"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instruction": "string",
+          "captureScreen": "boolean?",
+          "skipClarification": "boolean?",
+          "name": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "prompt evidence is bounded and treated as untrusted",
+        "verbatim evidence is preserved",
+        "semantic diff was reviewed",
+        "evidence lineage remains immutable",
+        "public query context is separated",
+        "private disclosure is explicitly approved when present",
+        "research result contains verified citable sources",
+        "proposal is read-only",
+        "exact context diff and source evidence are visible",
+        "context patch checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "automationPearls.upsert",
+        "automationPearls.update",
+        "automationResearchPlans.upsert",
+        "automationContextPatches.upsert",
+        "automationPearls.context.update,automationContextPatches.status.update",
+        "automationPearls.context.restore"
+      ],
+      "undo": [
+        "delete-automation-pearl-draft",
+        "restore-automation-pearl-checkpoint",
+        "cancel-research-plan",
+        "discard-context-patch",
+        "undo-automation-context-patch",
+        "reapply-context-patch"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "automation-pearl-compiled",
+        "automation-semantic-diff-required",
+        "automation-pearl-revised",
+        "automation-research-planned",
+        "automation-context-patch-proposed",
+        "automation-context-patch-applied",
+        "automation-context-patch-undone"
+      ],
+      "tests": [
+        "capability-encodeAutomationFromInstruction",
+        "feature:automation.pearl-compiler",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "automation.pearl-compiler",
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.runAutomationPearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "runAutomationPearl",
+      "purpose": "Execute an Automation Pearl only after specificity check-ins pass, producing outputs in the encoded format",
+      "examples": [
+        "run the LP briefing pearl for Westwood"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "inputs": "object?",
+          "skipClarification": "boolean?",
+          "researchApproved": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "prompt evidence is bounded and treated as untrusted",
+        "verbatim evidence is preserved",
+        "semantic diff was reviewed",
+        "evidence lineage remains immutable",
+        "public query context is separated",
+        "private disclosure is explicitly approved when present",
+        "research result contains verified citable sources",
+        "proposal is read-only",
+        "exact context diff and source evidence are visible",
+        "context patch checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "ai-state-changed"
+      ],
+      "persistence": [
+        "automationPearls.upsert",
+        "automationPearls.update",
+        "automationResearchPlans.upsert",
+        "automationContextPatches.upsert",
+        "automationPearls.context.update,automationContextPatches.status.update",
+        "automationPearls.context.restore"
+      ],
+      "undo": [
+        "delete-automation-pearl-draft",
+        "restore-automation-pearl-checkpoint",
+        "cancel-research-plan",
+        "discard-context-patch",
+        "undo-automation-context-patch",
+        "reapply-context-patch"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "ai-state-changed",
+        "automation-pearl-compiled",
+        "automation-semantic-diff-required",
+        "automation-pearl-revised",
+        "automation-research-planned",
+        "automation-context-patch-proposed",
+        "automation-context-patch-applied",
+        "automation-context-patch-undone"
+      ],
+      "tests": [
+        "capability-runAutomationPearl",
+        "feature:automation.pearl-compiler",
+        "feature:companion.clarification-checkin"
+      ],
+      "featureIds": [
+        "automation.pearl-compiler",
+        "companion.clarification-checkin"
+      ],
+      "canonicalCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "ai"
       ],
       "platform": "app"
     },
@@ -29471,7 +31831,18 @@
       },
       "resultType": "action-result",
       "refArgs": {},
-      "preconditions": [],
+      "preconditions": [
+        "prompt evidence is bounded and treated as untrusted",
+        "verbatim evidence is preserved",
+        "semantic diff was reviewed",
+        "evidence lineage remains immutable",
+        "public query context is separated",
+        "private disclosure is explicitly approved when present",
+        "research result contains verified citable sources",
+        "proposal is read-only",
+        "exact context diff and source evidence are visible",
+        "context patch checkpoint exists"
+      ],
       "requiredObservations": [
         "selection",
         "objects",
@@ -29510,9 +31881,21 @@
         "paper-state-changed",
         "ai-state-changed"
       ],
-      "persistence": [],
+      "persistence": [
+        "automationPearls.upsert",
+        "automationPearls.update",
+        "automationResearchPlans.upsert",
+        "automationContextPatches.upsert",
+        "automationPearls.context.update,automationContextPatches.status.update",
+        "automationPearls.context.restore"
+      ],
       "undo": [
-        "workspace-checkpoint"
+        "delete-automation-pearl-draft",
+        "restore-automation-pearl-checkpoint",
+        "cancel-research-plan",
+        "discard-context-patch",
+        "undo-automation-context-patch",
+        "reapply-context-patch"
       ],
       "compensation": "restore-workspace-checkpoint",
       "animation": "director",
@@ -29523,16 +31906,32 @@
       "expectedEffects": [
         "extension-state-changed",
         "paper-state-changed",
-        "ai-state-changed"
+        "ai-state-changed",
+        "automation-pearl-compiled",
+        "automation-semantic-diff-required",
+        "automation-pearl-revised",
+        "automation-research-planned",
+        "automation-context-patch-proposed",
+        "automation-context-patch-applied",
+        "automation-context-patch-undone"
       ],
       "tests": [
         "capability-captureExternalVisibleTab",
-        "feature:companion.transaction-harness"
+        "feature:companion.transaction-harness",
+        "feature:automation.pearl-compiler"
       ],
       "featureIds": [
-        "companion.transaction-harness"
+        "companion.transaction-harness",
+        "automation.pearl-compiler"
       ],
-      "canonicalCommands": [],
+      "canonicalCommands": [
+        "compileAutomationPearl",
+        "reviseAutomationPearl",
+        "planAutomationResearch",
+        "proposeAutomationContextPatch",
+        "approveAutomationContextPatch",
+        "undoAutomationContextPatch"
+      ],
       "destructive": false,
       "confirmation": "none",
       "idempotency": "idempotency-key",
@@ -29753,9 +32152,12 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-startExternalCritique"
+        "capability-startExternalCritique",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -29843,9 +32245,12 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-ingestExternalCritique"
+        "capability-ingestExternalCritique",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -29931,9 +32336,12 @@
         "ai-state-changed"
       ],
       "tests": [
-        "capability-stopExternalCritique"
+        "capability-stopExternalCritique",
+        "feature:companion.critique-edits"
       ],
-      "featureIds": [],
+      "featureIds": [
+        "companion.critique-edits"
+      ],
       "canonicalCommands": [],
       "destructive": false,
       "confirmation": "none",
@@ -33276,7 +35684,10 @@
         "expected revision matches",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
-        "an undo snapshot exists"
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
       ],
       "requiredObservations": [
         "selection",
@@ -33331,7 +35742,10 @@
         "pearlEntities.compareAndSwap",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
-        "pearlEntities.restoreRedo"
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
       ],
       "undo": [
         "delete-spawned-result-pearl",
@@ -33380,7 +35794,11 @@
         "pearl-entity-edited",
         "pearl-studio-represented",
         "pearl-entity-undo",
-        "pearl-entity-redo"
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
       ],
       "tests": [
         "capability-openExternalResultPearlTab",
@@ -33411,7 +35829,11 @@
         "editPearlEntity",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
-        "redoPearlEntityEdit"
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -34399,9 +36821,20 @@
         "proposal revision still matches",
         "semantic changes are confirmed",
         "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two orbs exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
         "package signature, scope, and privacy review are valid",
         "opaque link identifier is server-generated",
         "server authorization, rate limit, expiry, and recipient binding passed atomically",
@@ -34454,9 +36887,13 @@
         "resultPearls.routing.plan.replace",
         "pearlEntities.cognition.patch",
         "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
+        "pearlEntities.history.checkpoints",
         "pearlShareGrants.upsert",
         "pearlShareGrants.consume,receivedPearls.stage",
         "pearlShareGrants.revoke",
@@ -34467,6 +36904,7 @@
         "none",
         "revise-placement-plan",
         "undo-output-placement",
+        "restore-semantic-orbs",
         "redo-pearl-entity-edit",
         "revoke-pearl-share",
         "decline-received-pearl",
@@ -34489,9 +36927,15 @@
         "output-placement-interpreted",
         "pearl-cognitive-patch-applied",
         "output-placement-completed",
+        "semantic-orb-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
         "pearl-share-grant-created",
         "pearl-share-received",
         "pearl-share-revoked",
@@ -34502,6 +36946,7 @@
         "feature:runtime.unified-pearl",
         "feature:runtime.pearl-action-animation",
         "feature:studio.pearl",
+        "feature:pearl.version-history",
         "feature:sharing.organization-trust",
         "feature:visual.physical-pearl"
       ],
@@ -34509,6 +36954,7 @@
         "runtime.unified-pearl",
         "runtime.pearl-action-animation",
         "studio.pearl",
+        "pearl.version-history",
         "sharing.organization-trust",
         "visual.physical-pearl"
       ],
@@ -34519,9 +36965,18 @@
         "interpretOutputPlacement",
         "applyPearlCognitivePatch",
         "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
         "createPearlShareGrant",
         "consumePearlShareGrant",
         "revokePearlShareGrant",
@@ -36867,10 +39322,12 @@
       ],
       "tests": [
         "capability-compileExternalAutomationPearl",
-        "feature:automation.pearl-compiler"
+        "feature:automation.pearl-compiler",
+        "feature:encode.automation-anything"
       ],
       "featureIds": [
-        "automation.pearl-compiler"
+        "automation.pearl-compiler",
+        "encode.automation-anything"
       ],
       "canonicalCommands": [
         "compileAutomationPearl",

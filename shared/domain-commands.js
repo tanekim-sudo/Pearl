@@ -83,6 +83,12 @@ import {
 import { applyPearlEntityPatch, createPearlEntity } from "./pearl-entity.js";
 import { createPearlStudioOpenRequest, createPearlStudioViewModel } from "./pearl-studio.js";
 import {
+  labelPearlVersion as labelPearlVersionState,
+  listPearlVersions,
+  restorePearlVersion as restorePearlVersionState,
+  snapshotPearlVersion as snapshotPearlVersionState,
+} from "./pearl-version-history.js";
+import {
   advanceCognitivePlayback,
   applyCognitiveLayerPatch,
   cancelCognitivePlayback,
@@ -2470,6 +2476,84 @@ export const DOMAIN_COMMANDS = Object.freeze({
       const pearlRedo = { ...(state.pearlRedo || {}) };
       delete pearlRedo[args.pearlId];
       return { state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: restored }, pearlRedo }, result: result("pearl-entity", restored, ["pearl-entity-redo"]) };
+    },
+  },
+  browsePearlHistory: {
+    schema: { pearlId: "string" },
+    preconditions: ["Pearl exists"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "none",
+    observableEffects: ["pearl-history-observed"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("Pearl not found");
+      const history = listPearlVersions(entity);
+      return { state, result: result("pearl-history", history, ["pearl-history-observed"]) };
+    },
+  },
+  snapshotPearlVersion: {
+    schema: { pearlId: "string", label: "string", idempotencyKey: "string?" },
+    preconditions: ["Pearl exists", "label is explicit"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "pearlEntities.history.checkpoints",
+    observableEffects: ["pearl-version-named"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("Pearl not found");
+      const snapped = snapshotPearlVersionState(entity, args.label, {
+        source: "domain-command",
+        idempotencyKey: args.idempotencyKey,
+      });
+      return {
+        state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: snapped.entity } },
+        result: result("pearl-version", snapped.version || snapped.checkpoint, ["pearl-version-named"]),
+      };
+    },
+  },
+  labelPearlVersion: {
+    schema: { pearlId: "string", checkpointId: "string", label: "string" },
+    preconditions: ["checkpoint exists", "label is explicit"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "pearlEntities.history.checkpoints",
+    observableEffects: ["pearl-version-labeled"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("Pearl not found");
+      const next = labelPearlVersionState(entity, args.checkpointId, args.label);
+      return {
+        state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: next } },
+        result: result("pearl-version", { id: args.checkpointId, label: args.label }, ["pearl-version-labeled"]),
+      };
+    },
+  },
+  restorePearlVersion: {
+    schema: { pearlId: "string", checkpointId: "string", confirmed: "boolean?" },
+    preconditions: ["checkpoint exists"],
+    risk: "medium", confirmation: "preview", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "pearlEntities.restoreVersion",
+    observableEffects: ["pearl-version-restored"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("Pearl not found");
+      const restored = restorePearlVersionState(entity, args.checkpointId, { source: "domain-command" });
+      return {
+        state: {
+          ...state,
+          pearlEntities: { ...state.pearlEntities, [args.pearlId]: restored.entity },
+          pearlRedo: { ...(state.pearlRedo || {}), [args.pearlId]: createPearlEntity(entity) },
+        },
+        result: {
+          type: "pearl-entity",
+          id: restored.entity.id,
+          object: restored.entity,
+          effects: ["pearl-version-restored"],
+          restoredFrom: restored.restoredFrom,
+        },
+      };
     },
   },
   upsertCanonicalObject: {

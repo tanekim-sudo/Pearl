@@ -2,10 +2,26 @@ import { normalizeOutputSpec } from "./output-specifications.js";
 import { parseTranscript } from "./transcript-learning.js";
 import { createPearlPrivacyPolicy } from "./pearl-privacy-policy.js";
 import { createPearlCognition } from "./pearl-cognitive-layers.js";
+import { detectEncodeIntent, lpBriefingSections } from "./encode-evidence.js";
+import { inferAutomationAmbiguities } from "./companion-clarification.js";
 
 export const AUTOMATION_PEARL_VERSION = 1;
-export const AUTOMATION_EVIDENCE_KINDS = Object.freeze(["system-prompt", "example", "before-after", "template", "transcript", "instructions"]);
+export const AUTOMATION_EVIDENCE_KINDS = Object.freeze([
+  "system-prompt",
+  "example",
+  "before-after",
+  "template",
+  "transcript",
+  "instructions",
+  "email-thread",
+  "attachment-extract",
+  "drive-doc",
+  "format-template",
+  "crm-export",
+]);
 export const AUTOMATION_PERMISSION_TYPES = Object.freeze(["model", "research", "private-context", "page-write", "download", "share"]);
+
+const FIRM_EVIDENCE = new Set(["email-thread", "attachment-extract", "drive-doc", "crm-export", "format-template"]);
 
 const clone = (value) => value == null ? value : structuredClone(value);
 const bounded = (value, limit = 120_000) => String(value ?? "").slice(0, limit);
@@ -46,8 +62,11 @@ function titleFromEvidence(evidence) {
   return (firstHeading || "Reusable automation").trim().replace(/[.:]+$/, "");
 }
 
-function outputCandidates(text) {
+function outputCandidates(text, intent = {}) {
   const candidates = [];
+  if (intent.lpBriefing) {
+    candidates.push({ id: "lp-briefing", label: "LP briefing" });
+  }
   const patterns = [
     [/\bone[- ]pager\b/i, "one-pager", "One-pager"],
     [/\binvestment memo\b|\bmemo\b/i, "memo", "Memo"],
@@ -64,7 +83,7 @@ function outputCandidates(text) {
   return candidates.length ? candidates : [{ id: "primary-output", label: "Primary output" }];
 }
 
-function contextFields(text) {
+function contextFields(text, intent = {}) {
   const known = [
     ["company", /\bcompany\b/i],
     ["organization", /\borganization\b|\bfirm\b/i],
@@ -74,13 +93,30 @@ function contextFields(text) {
     ["team", /\bteam\b|\bfounders?\b/i],
     ["traction", /\btraction\b|\bmetrics?\b/i],
     ["constraints", /\bconstraints?\b|\brequirements?\b/i],
+    ["limitedPartner", /\blimited partner\b|\b\blp\b|\bwestwood\b/i],
+    ["priorBriefings", /\bprior briefing\b|\bprevious briefing\b|\bbriefings folder\b/i],
+    ["attendees", /\battendees?\b|\bbios?\b/i],
+    ["formatTemplateId", /\bformat\b|\btemplate\b/i],
   ];
-  return known.filter(([, pattern]) => pattern.test(text)).map(([name]) => ({
+  const fields = known.filter(([, pattern]) => pattern.test(text)).map(([name]) => ({
     name,
-    type: name === "sourceMaterial" ? "artifact[]" : "text",
-    required: ["sourceMaterial", "company"].includes(name),
-    private: ["organization", "constraints"].includes(name),
+    type: ["sourceMaterial", "priorBriefings", "attendees"].includes(name) ? "artifact[]" : "text",
+    required: ["sourceMaterial", "company", "limitedPartner"].includes(name),
+    private: ["organization", "constraints", "priorBriefings", "attendees", "limitedPartner"].includes(name),
   }));
+  if (intent.lpBriefing) {
+    for (const name of ["limitedPartner", "priorBriefings", "attendees", "formatTemplateId"]) {
+      if (!fields.some((field) => field.name === name)) {
+        fields.push({
+          name,
+          type: ["priorBriefings", "attendees"].includes(name) ? "artifact[]" : "text",
+          required: name === "limitedPartner",
+          private: true,
+        });
+      }
+    }
+  }
+  return fields;
 }
 
 function inferredSteps(text, needsResearch) {
@@ -113,17 +149,19 @@ Never invent credentials, hidden context, sources, citations, or completed tests
 export function compileAutomationPearl(evidenceInput, inference = null, options = {}) {
   const evidence = normalizeAutomationEvidence(evidenceInput);
   const text = evidence.map((entry) => entry.verbatim).join("\n\n");
-  const outputs = outputCandidates(text);
-  const needsResearch = RESEARCH.test(text);
+  const intent = detectEncodeIntent(text);
+  const firmMaterial = evidence.some((entry) => FIRM_EVIDENCE.has(entry.kind)) || intent.lpBriefing;
+  const outputs = outputCandidates(text, intent);
+  const needsResearch = RESEARCH.test(text) || intent.researchIntents.length > 0;
   const steps = inferredSteps(text, needsResearch);
   const pearlId = bounded(options.id || id("automation-pearl"), 220);
   const generated = inference || {};
   const identity = {
-    name: bounded(generated.identity?.name || titleFromEvidence(evidence), 120),
+    name: bounded(generated.identity?.name || (intent.lpBriefing ? "LP meeting briefing" : titleFromEvidence(evidence)), 120),
     description: bounded(generated.identity?.description || `Reusable automation compiled from ${evidence.length} user-provided evidence item${evidence.length === 1 ? "" : "s"}.`, 1_000),
     purpose: bounded(generated.identity?.purpose || outputs.map((entry) => entry.label).join(" and "), 600),
   };
-  const fields = generated.contextSchema?.fields || contextFields(text);
+  const fields = generated.contextSchema?.fields || contextFields(text, intent);
   const moves = (generated.moves || steps).slice(0, 40).map((move, index) => ({
     id: bounded(move.id || `${pearlId}:move:${index + 1}`, 220),
     version: Math.max(1, Number(move.version) || 1),
@@ -143,7 +181,9 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
     id: `${pearlId}:output:${output.id}`,
     name: output.label,
     format: "markdown",
-    structure: [],
+    structure: intent.lpBriefing && output.id === "lp-briefing"
+      ? lpBriefingSections().map((section) => ({ id: section.id, label: section.label, required: section.required }))
+      : [],
     constraints: ["Preserve citations and provenance", "Mark unknowns instead of fabricating"],
   }, { id: output.id, name: output.label }))).map((spec, index) => ({
     ...clone(spec),
@@ -151,12 +191,24 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
     name: bounded(spec.name || outputs[index]?.label || `Output ${index + 1}`, 120),
   }));
   const permissions = [...new Set(generated.permissions || [
-    "model",
-    ...(needsResearch ? ["research"] : []),
-    ...(fields.some((field) => field.private) ? ["private-context"] : []),
+    ...(firmMaterial ? [] : ["model"]),
+    ...(needsResearch && !firmMaterial ? ["research"] : []),
+    ...(fields.some((field) => field.private) || firmMaterial ? ["private-context"] : []),
     "download",
-    "share",
   ])].filter((entry) => AUTOMATION_PERMISSION_TYPES.includes(entry));
+  const privacyPolicy = createPearlPrivacyPolicy({
+    pearlId,
+    audience: "local-only",
+    sensitivity: firmMaterial ? "firm-internal" : "personal",
+    storage: { mode: "device-only", queuedEncryptedSync: false },
+    disclosure: {
+      model: { allowed: !firmMaterial, requiresApproval: true },
+      research: { allowed: false, requiresApproval: true },
+      share: { allowed: false, requiresApproval: true },
+      export: { allowed: true, requiresApproval: firmMaterial },
+    },
+    provenance: { source: "automation-compiler-default", firmMaterial },
+  });
   const criticalLines = text.split(/\r?\n/).map((line) => line.trim()).filter((line) =>
     /\b(?:must|never|required|only|do not|don't|always|format|template)\b/i.test(line)
   ).slice(0, 100);
@@ -229,12 +281,15 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
       createdAt: Date.now(),
     }],
   });
-  return {
+  const formatTemplates = evidence.filter((entry) => entry.kind === "format-template" || entry.kind === "template");
+  const pearl = {
     id: pearlId,
     stableId: pearlId,
     version: 1,
     kind: "automation-pearl",
-    privacyPolicy: createPearlPrivacyPolicy({ pearlId, provenance: { source: "automation-compiler-default" } }),
+    privacyPolicy,
+    encodeIntent: intent,
+    briefingSections: intent.lpBriefing ? lpBriefingSections() : [],
     identity,
     cognition,
     material: { type: "automation-evidence", evidence: clone(evidence), verbatimPreserved: true },
@@ -250,7 +305,12 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
     moves,
     functions: clone(functions),
     outputSpecs,
-    templates: clone(generated.templates || []),
+    templates: clone(generated.templates || formatTemplates.map((entry) => ({
+      id: `${pearlId}:template:${entry.id}`,
+      name: entry.name,
+      evidenceRef: entry.id,
+      verbatim: entry.verbatim,
+    }))),
     examples: clone(generated.examples || []),
     generationPlan: clone(generated.generationPlan || {
       candidateCount: outputs.length,
@@ -263,9 +323,11 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
       verifiedSourcesOnly: true,
       publicQueryContextOnly: true,
       privateDisclosureRequiresApproval: true,
+      intents: intent.researchIntents,
       maxSources: 8,
       maxIterations: 2,
       recurring: false,
+      blockedUntilApproval: firmMaterial,
     }),
     evaluation: clone(generated.evaluation || {
       rubric: ["factual support", "citation integrity", "output-spec compliance", "explicit unknowns"],
@@ -295,6 +357,10 @@ export function compileAutomationPearl(evidenceInput, inference = null, options 
     status: "draft-review",
     checkpoints: [{ id: id("checkpoint"), type: "compiled", at: Date.now(), sourceVersion: 0 }],
   };
+  if (!generated.ambiguities?.length) {
+    pearl.semanticDiff.unresolved = inferAutomationAmbiguities(evidence, pearl);
+  }
+  return pearl;
 }
 
 export function reviseAutomationPearl(pearl, patch, options = {}) {

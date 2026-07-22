@@ -1,4 +1,5 @@
 import { createPearlEntity } from "./pearl-entity.js";
+import { listPearlVersions } from "./pearl-version-history.js";
 
 export const PEARL_STUDIO_VERSION = 1;
 export const PEARL_STUDIO_REPRESENTATIONS = Object.freeze(["document", "gallery", "spatial", "lineage", "branch-comparison", "process"]);
@@ -61,7 +62,7 @@ export function createPearlStudioViewModel(entityInput, options = {}) {
     (entity.relationships.parentPearlId || entity.relationships.childPearlIds.length || entity.relationships.relatedPearlIds.length) && studioSection("relationships", "Relationships", entity.relationships),
     studioSection("privacy", "Privacy", { policy: entity.privacy.effectivePolicy, permissions: entity.permissions }, false),
     entity.sharing.grants.length && studioSection("sharing", "Sharing", entity.sharing),
-    entity.history.checkpoints.length && studioSection("history", "History", { checkpointCount: entity.history.checkpoints.length, undoCursor: entity.history.undoCursor }, false),
+    studioSection("history", "Version history", listPearlVersions(entity), false),
   ].filter(Boolean);
   return {
     version: PEARL_STUDIO_VERSION,

@@ -8,6 +8,10 @@ export const PEARL_ANIMATION_VOCABULARY = Object.freeze({
   settle: { durationMs: 360, motion: "soft-overshoot-settle", layers: ["body", "contact"], cancellable: true },
   split: { durationMs: 480, motion: "mass-separate", layers: ["body", "satellites"], cancellable: true },
   merge: { durationMs: 480, motion: "surface-tension-merge", layers: ["body", "nucleus"], cancellable: true },
+  nest: { durationMs: 440, motion: "child-orbit-settle", layers: ["body", "satellites", "nacre"], cancellable: true },
+  compose: { durationMs: 520, motion: "ordered-surface-braid", layers: ["body", "nucleus", "nacre"], cancellable: true },
+  duplicate: { durationMs: 480, motion: "mass-echo-emerge", layers: ["body", "nucleus", "contact"], cancellable: true },
+  remix: { durationMs: 560, motion: "interior-recombine", layers: ["nucleus", "nacre", "reflection"], cancellable: true },
   arrive: { durationMs: 420, motion: "sparse-source-arrival", layers: ["satellites", "nacre"], cancellable: true },
   crossfade: { durationMs: 650, motion: "interior-crossfade", layers: ["nucleus"], cancellable: true },
   transfer: { durationMs: 760, motion: "mass-transfer-settle", layers: ["body", "contact", "nacre"], cancellable: true },
@@ -19,9 +23,26 @@ export const PEARL_ANIMATION_VOCABULARY = Object.freeze({
 
 const COMMAND_ANIMATION = Object.freeze({
   addOrbContext: "absorb",
+  addSemanticOrbContext: "absorb",
   collectLensMaterial: "absorb",
   applyOrbLens: "refract",
+  applySemanticOrbLens: "refract",
   applyLensInference: "refract",
+  removeOrbLens: "settle",
+  removeSemanticOrbLens: "settle",
+  createSemanticOrb: "emerge",
+  openOrbCreationPreview: "unfold",
+  duplicateSemanticOrb: "duplicate",
+  nestSemanticOrb: "nest",
+  unnestSemanticOrb: "emerge",
+  mergeSemanticOrbs: "merge",
+  composeSemanticOrbs: "compose",
+  splitSemanticOrb: "split",
+  bindSemanticOrb: "absorb",
+  renameSemanticOrb: "settle",
+  moveSemanticOrb: "settle",
+  archiveSemanticOrb: "settle",
+  deleteSemanticOrb: "settle",
   spawnResultPearl: "emerge",
   setResultPearlStatus: "stream",
   requestOutputPlacement: "unfold",
@@ -32,6 +53,13 @@ const COMMAND_ANIMATION = Object.freeze({
   activatePearlPageCanvas: "unfold",
   setPearlCanvasInputMode: "refract",
   openPearlStudio: "unfold",
+  editPearlEntity: "stream",
+  browsePearlHistory: "unfold",
+  snapshotPearlVersion: "settle",
+  labelPearlVersion: "settle",
+  restorePearlVersion: "recover",
+  undoPearlEntityEdit: "recover",
+  redoPearlEntityEdit: "recover",
   createWorker: "split",
   mergeWorkers: "merge",
   proposeAutomationContextPatch: "arrive",
@@ -47,18 +75,34 @@ const COMMAND_ANIMATION = Object.freeze({
   undoPearlPageCanvas: "recover",
   failOutputPlacement: "fail",
   addPearlCognitiveLayer: "emerge",
-  mutatePearlCognitiveLayer: "settle",
-  composePearlCognitiveLayers: "merge",
+  mutatePearlCognitiveLayer: "remix",
+  composePearlCognitiveLayers: "compose",
   proposePearlCognitivePatch: "refract",
   applyPearlCognitivePatch: "absorb",
   resolvePearlCognitiveUncertainty: "unlock",
   startPearlCognitivePlayback: "split",
   advancePearlCognitivePlayback: "absorb",
   cancelPearlCognitivePlayback: "settle",
+  composeObjects: "compose",
 });
 
+function inferAnimationSemantic(command) {
+  if (COMMAND_ANIMATION[command]) return COMMAND_ANIMATION[command];
+  if (/createSemanticOrb|spawn|birth|duplicate/i.test(command)) return /duplicate/i.test(command) ? "duplicate" : "emerge";
+  if (/compose/i.test(command)) return "compose";
+  if (/merge|combine/i.test(command)) return "merge";
+  if (/nest/i.test(command) && !/unnest/i.test(command)) return "nest";
+  if (/split|fork/i.test(command)) return "split";
+  if (/remix|recombin|mutate/i.test(command)) return "remix";
+  if (/delete|revoke|archive/i.test(command)) return "settle";
+  if (/undo|restore|retry|recover/i.test(command)) return "recover";
+  if (/lens|refract|encode/i.test(command)) return "refract";
+  if (/context|absorb|bind/i.test(command)) return "absorb";
+  return "refract";
+}
+
 export function pearlAnimationForCommand(command, options = {}) {
-  const semantic = options.semantic || COMMAND_ANIMATION[command] || (/delete|revoke|archive/i.test(command) ? "settle" : /undo|restore|retry/i.test(command) ? "recover" : "refract");
+  const semantic = options.semantic || inferAnimationSemantic(command);
   const definition = PEARL_ANIMATION_VOCABULARY[semantic];
   if (!definition) throw new Error(`unknown Pearl animation semantic "${semantic}"`);
   return {

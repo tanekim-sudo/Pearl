@@ -1279,6 +1279,104 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 .orb-home-intro-actions button:hover { border-color: var(--orb-text-2); color: var(--orb-text-1); transform: translateY(-1px); }
 .orb-stage-empty-hint { display: block; margin-top: 14px; color: var(--orb-text-3); font-size: 10.5px; line-height: 1.5; }
 
+.pearl-cursor-escape {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 80;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--orb-surface, #f7f4ef) 88%, transparent);
+  color: var(--orb-text-2);
+  font: inherit;
+  font-size: 11px;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+.pearl-account-panel,
+.pearl-encode-panel {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+  padding: 4px 2px 10px;
+  color: var(--orb-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.pearl-account-panel header,
+.pearl-encode-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pearl-account-actions,
+.pearl-encode-actions,
+.pearl-encode-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pearl-account-actions button,
+.pearl-encode-actions button,
+.pearl-encode-slots button,
+.pearl-encode-drop button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--pearl-ui-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pearl-encode-slots button[aria-pressed="true"],
+.pearl-encode-primary {
+  border-color: color-mix(in srgb, var(--orb-text-1) 35%, transparent);
+  color: var(--orb-text-1);
+}
+.pearl-encode-drop {
+  display: grid;
+  gap: 8px;
+  place-items: start;
+  min-height: 88px;
+  padding: 16px;
+  border: 1px dashed var(--pearl-ui-line-strong);
+  border-radius: 18px;
+}
+.pearl-encode-panel textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 0;
+  border-bottom: 1px solid var(--pearl-ui-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.55;
+  outline: none;
+}
+.pearl-encode-list,
+.pearl-encode-result ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.pearl-encode-list li,
+.pearl-encode-result {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pearl-ui-line);
+}
+.pearl-account-note,
+.pearl-encode-panel > p { color: var(--orb-text-3); font-size: 12px; }
+
 @media (max-width: 760px) {
   .pearl-guide-button { right: 14px; bottom: 76px; }
   .pearl-welcome { padding-bottom: 96px; }

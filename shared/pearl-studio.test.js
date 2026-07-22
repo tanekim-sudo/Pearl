@@ -72,3 +72,36 @@ test("Studio edits use canonical CAS checkpoints with undo and redo", async () =
   const redone = await executeDomainCommand("redoPearlEntityEdit", undone.state, { pearlId: "p1" });
   assert.equal(redone.state.pearlEntities.p1.identity.name, "After");
 });
+
+test("Studio version history can name and restore without deleting intermediates", async () => {
+  let state = { pearlEntities: { p1: createPearlEntity({ id: "p1", name: "A", results: [{ id: "r", text: "one" }] }) } };
+  state = (await executeDomainCommand("editPearlEntity", state, {
+    pearlId: "p1",
+    patch: { identity: { ...state.pearlEntities.p1.identity, name: "B" }, results: [{ id: "r", text: "two" }] },
+    expectedRevision: 0,
+    idempotencyKey: "v1",
+  })).state;
+  state = (await executeDomainCommand("snapshotPearlVersion", state, {
+    pearlId: "p1",
+    label: "Review ready",
+    idempotencyKey: "snap:1",
+  })).state;
+  state = (await executeDomainCommand("editPearlEntity", state, {
+    pearlId: "p1",
+    patch: { identity: { ...state.pearlEntities.p1.identity, name: "C" }, results: [{ id: "r", text: "three" }] },
+    expectedRevision: state.pearlEntities.p1.revision,
+    idempotencyKey: "v2",
+  })).state;
+  const history = await executeDomainCommand("browsePearlHistory", state, { pearlId: "p1" });
+  const named = history.result.object.versions.find((entry) => entry.label === "Review ready");
+  assert.ok(named);
+  const restored = await executeDomainCommand("restorePearlVersion", state, {
+    pearlId: "p1",
+    checkpointId: named.id,
+    confirmed: true,
+  });
+  assert.equal(restored.state.pearlEntities.p1.results[0].text, "two");
+  assert.ok(restored.state.pearlEntities.p1.history.checkpoints.some((entry) => entry.metadata?.label === "Review ready" || entry.reason === "Review ready"));
+  const view = createPearlStudioViewModel(restored.state.pearlEntities.p1);
+  assert.ok(view.sections.some((section) => section.id === "history" && section.value.count >= 1));
+});

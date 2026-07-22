@@ -16,6 +16,10 @@ import {
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
+  parseCritiqueCommand,
+  parsePearlVersionCommand,
+  parsePearlRemixCommand,
+  parseAutomationLoopCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
@@ -33,6 +37,27 @@ test("pearl creation intent uses the canonical semantic capsule command", () => 
     verb: "createSemanticOrb",
     args: { sceneId: "", name: "Evidence" },
   });
+});
+
+test("critique stream and version history intents are deterministic", () => {
+  assert.equal(parseCritiqueCommand("start critique mode").verb, "startCritiqueSession");
+  assert.deepEqual(parseCritiqueCommand("make the opening warmer", { sessionActive: true }), {
+    verb: "ingestCritique",
+    args: { text: "make the opening warmer", autoApply: true },
+  });
+  assert.equal(parseCritiqueCommand("make this output warmer").verb, "revisePearlFromFeedback");
+  assert.equal(parsePearlVersionCommand("show version history").verb, "browsePearlHistory");
+  assert.deepEqual(parsePearlVersionCommand("name this version Review ready"), {
+    verb: "snapshotPearlVersion",
+    args: { label: "Review ready" },
+  });
+  assert.equal(parsePearlVersionCommand("restore the Review ready version").verb, "restorePearlVersion");
+  assert.equal(parsePearlRemixCommand("merge these orbs").verb, "mergeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("split this orb").verb, "splitSemanticOrb");
+  assert.equal(parsePearlRemixCommand("apply my skeptical Lens to this orb").verb, "applySemanticOrbLens");
+  assert.equal(parseAutomationLoopCommand("capture this tab as the format").verb, "captureScreenAsEvidence");
+  assert.equal(parseAutomationLoopCommand("automate LP briefings from what I am showing").verb, "encodeAutomationFromInstruction");
+  assert.equal(parseAutomationLoopCommand("run the LP briefing pearl").verb, "runAutomationPearl");
 });
 
 test("cognitive workflow intents preserve teaching scope and grounded review boundaries", () => {
@@ -369,6 +394,8 @@ test("planner requires executable commands to act without chatter", () => {
   const prompt = buildCompanionSystemPrompt();
   assert.match(prompt, /for every executable request, set "say" to ""/);
   assert.match(prompt, /Do not acknowledge, praise, summarize, or announce/);
+  assert.match(prompt, /Cursor-style check-ins/);
+  assert.match(prompt, /captureScreenAsEvidence/);
 });
 
 test("adaptive planner documents framework metadata outside capability args", () => {

@@ -3,6 +3,11 @@ export const PHYSICAL_PEARL_VARIANTS = Object.freeze(["primary", "semantic", "re
 export const PHYSICAL_PEARL_STATES = Object.freeze(["idle", "new", "listening", "executing", "blocked", "failed", "loading"]);
 export const PHYSICAL_PEARL_SIZES = Object.freeze({ cursor: 18, compact: 30, idle: 34, studio: 112 });
 export const PHYSICAL_PEARL_SURROUNDINGS = Object.freeze(["auto", "light", "dark", "colored", "text-heavy"]);
+export const PHYSICAL_PEARL_ANIMATIONS = Object.freeze([
+  "absorb", "refract", "emerge", "stream", "unfold", "settle", "split", "merge",
+  "nest", "compose", "duplicate", "remix", "arrive", "crossfade", "transfer",
+  "lock", "unlock", "recover", "fail",
+]);
 
 const safeToken = (value, fallback) => {
   const token = String(value || fallback).toLowerCase();
@@ -12,6 +17,7 @@ const safeToken = (value, fallback) => {
 export function normalizePhysicalPearl(options = {}) {
   const variant = PHYSICAL_PEARL_VARIANTS.includes(options.variant) ? options.variant : "primary";
   const state = PHYSICAL_PEARL_STATES.includes(options.state) ? options.state : "idle";
+  const animation = PHYSICAL_PEARL_ANIMATIONS.includes(options.animation) ? options.animation : null;
   const size = variant === "cursor"
     ? PHYSICAL_PEARL_SIZES.cursor
     : Math.max(16, Math.min(240, Number(options.size) || PHYSICAL_PEARL_SIZES.idle));
@@ -19,6 +25,7 @@ export function normalizePhysicalPearl(options = {}) {
     variant,
     state,
     size,
+    animation,
     id: safeToken(options.id, `pearl-${Math.random().toString(36).slice(2)}`),
     className: String(options.className || "").replace(/[<>"']/g, ""),
     label: String(options.label || "Pearl").replace(/[<>&"]/g, ""),
@@ -30,7 +37,8 @@ export function normalizePhysicalPearl(options = {}) {
 export function physicalPearlMarkup(options = {}) {
   const pearl = normalizePhysicalPearl(options);
   const prefix = pearl.id;
-  return `<svg class="physical-pearl ${pearl.className}" data-pearl-renderer="${PHYSICAL_PEARL_VERSION}" data-pearl-variant="${pearl.variant}" data-pearl-state="${pearl.state}" data-pearl-surrounding="${pearl.surrounding}" width="${pearl.size}" height="${pearl.size}" viewBox="0 0 100 100" ${pearl.decorative ? 'aria-hidden="true"' : `role="img" aria-label="${pearl.label}"`}>
+  const animationAttr = pearl.animation ? ` data-pearl-animation="${pearl.animation}"` : "";
+  return `<svg class="physical-pearl ${pearl.className}" data-pearl-renderer="${PHYSICAL_PEARL_VERSION}" data-pearl-variant="${pearl.variant}" data-pearl-state="${pearl.state}" data-pearl-surrounding="${pearl.surrounding}"${animationAttr} width="${pearl.size}" height="${pearl.size}" viewBox="0 0 100 100" ${pearl.decorative ? 'aria-hidden="true"' : `role="img" aria-label="${pearl.label}"`}>
     <defs>
       <clipPath id="${prefix}-sphere"><circle cx="50" cy="50" r="43"/></clipPath>
       <radialGradient id="${prefix}-body" cx="37%" cy="31%" r="75%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".25" stop-color="#f4eee5"/><stop offset=".58" stop-color="#deded7"/><stop offset=".82" stop-color="#b8bfba"/><stop offset=".96" stop-color="#7e8985"/><stop offset="1" stop-color="#65716e"/></radialGradient>
@@ -108,6 +116,11 @@ export const PHYSICAL_PEARL_CSS = `
 .physical-pearl[data-pearl-animation=crossfade] .physical-pearl__nucleus{animation:pearl-effect-crossfade .65s ease-in-out}
 .physical-pearl[data-pearl-animation=transfer] .physical-pearl__mass{animation:pearl-effect-transfer .76s cubic-bezier(.18,.78,.24,1)}
 .physical-pearl[data-pearl-animation=recover] .physical-pearl__reflection{animation:pearl-effect-recover .42s ease-out}
+.physical-pearl[data-pearl-animation=nest] .physical-pearl__mass{animation:pearl-effect-nest .44s cubic-bezier(.2,.72,.2,1)}
+.physical-pearl[data-pearl-animation=compose] .physical-pearl__nacre{animation:pearl-effect-compose .52s cubic-bezier(.18,.78,.24,1)}
+.physical-pearl[data-pearl-animation=duplicate] .physical-pearl__mass{animation:pearl-effect-duplicate .48s cubic-bezier(.18,.78,.24,1)}
+.physical-pearl[data-pearl-animation=remix] .physical-pearl__nucleus{animation:pearl-effect-remix .56s ease-in-out}
+.physical-pearl[data-pearl-animation=stream] .physical-pearl__nucleus{animation:pearl-effect-stream .68s ease-in-out}
 @keyframes pearl-effect-absorb{0%{transform:scale(1)}48%{transform:scale(.91)}72%{transform:scale(1.025)}100%{transform:scale(1)}}
 @keyframes pearl-effect-refract{0%{opacity:.68;transform:translate(-1px,1px)}62%{opacity:1;transform:translate(1px,-1px)}100%{opacity:.82;transform:none}}
 @keyframes pearl-effect-emerge{0%{opacity:0;transform:scale(.58) translateY(3px)}68%{opacity:1;transform:scale(1.035) translateY(-1px)}100%{transform:scale(1)}}
@@ -122,6 +135,11 @@ export const PHYSICAL_PEARL_CSS = `
 @keyframes pearl-effect-crossfade{0%,100%{opacity:.58}50%{opacity:.86}}
 @keyframes pearl-effect-transfer{0%{opacity:.5;transform:translateX(-4px) scale(.96)}62%{opacity:1;transform:translateX(1px) scale(1.02)}100%{transform:none}}
 @keyframes pearl-effect-recover{0%{opacity:.12;transform:translateY(2px)}100%{opacity:.34;transform:none}}
+@keyframes pearl-effect-nest{0%{transform:scale(1)}42%{transform:scale(.88) translate(2px,-1px)}78%{transform:scale(1.03)}100%{transform:none}}
+@keyframes pearl-effect-compose{0%{opacity:.3;transform:scale(1.06) translateX(-2px)}55%{opacity:.9;transform:scale(.96) translateX(1px)}100%{opacity:.48;transform:none}}
+@keyframes pearl-effect-duplicate{0%{opacity:0;transform:scale(.62) translateX(-4px)}58%{opacity:1;transform:scale(1.04) translateX(1px)}100%{transform:none}}
+@keyframes pearl-effect-remix{0%{opacity:.45;transform:scale(.9)}50%{opacity:.95;transform:scale(1.06)}100%{opacity:.72;transform:none}}
+@keyframes pearl-effect-stream{0%,100%{opacity:.5;transform:scale(.96)}50%{opacity:.92;transform:scale(1.04)}}
 @keyframes physical-pearl-breath{0%,100%{transform:scale(.98)}50%{transform:scale(1.02)}}
 @media(prefers-color-scheme:dark){.physical-pearl[data-pearl-surrounding=auto]{--pearl-edge-dark:#d6ddd8;--pearl-reflection-light:#eef4ef;--pearl-reflection-mid:#a8b7b0;--pearl-reflection-dark:#51625b}}
 @media(prefers-reduced-motion:reduce){.physical-pearl[data-pearl-animation] *,.physical-pearl__mass{animation:none!important}.physical-pearl__nucleus,.physical-pearl__nacre,.physical-pearl__reflection{transform:none!important;transition:none!important}}

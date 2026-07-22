@@ -135,6 +135,113 @@ export function parsePearlCreationCommand(text) {
   };
 }
 
+/** Voice-first critique and stream-of-consciousness feedback. */
+export function parseCritiqueCommand(text, { sessionActive = false } = {}) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\b(?:stop|end|leave)\b.*\bcritique\b/i.test(value) || /^stop critique(?: mode)?$/i.test(value)) {
+    return { verb: "stopCritiqueSession", args: {} };
+  }
+  if (/\b(?:start|begin|enter)\b.*\bcritique\b/i.test(value) || /^critique mode$/i.test(value)) {
+    return { verb: "startCritiqueSession", args: {} };
+  }
+  if (/\bapply(?: the)? critique(?: edits?)?\b/i.test(value)) {
+    return { verb: "applyCritiqueEdits", args: {} };
+  }
+  if (sessionActive) {
+    return { verb: "ingestCritique", args: { text: value, autoApply: true } };
+  }
+  if (/\b(?:make this|rewrite|revise|shorten|warm(?:er)?|cut|tighten|expand)\b/i.test(value)
+    && /\b(?:this|that|the (?:output|memo|draft|paragraph|result))\b/i.test(value)) {
+    return { verb: "revisePearlFromFeedback", args: { text: value, preserveOriginal: /\bkeep(?: the)? original\b/i.test(value) } };
+  }
+  return null;
+}
+
+/** Docs-style Pearl version history intents. */
+export function parsePearlVersionCommand(text) {
+  const value = String(text || "").replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\b(?:show|open|browse|list)\b.*\b(?:version history|versions|history)\b/i.test(value)
+    || /^(?:version history|show versions)$/i.test(value)) {
+    return { verb: "browsePearlHistory", args: {} };
+  }
+  const named = value.match(/\b(?:name|save|snapshot)\b(?:\s+this)?(?:\s+version)?(?:\s+as)?\s+["“]?([^"”]+)["”]?\s*$/i)
+    || value.match(/\bname this version\s+(.+)$/i);
+  if (named?.[1] && /\b(?:name|save|snapshot)\b/i.test(value) && /\bversion\b/i.test(value)) {
+    return { verb: "snapshotPearlVersion", args: { label: named[1].trim() } };
+  }
+  const restore = value.match(/\brestore\b(?:\s+the)?(?:\s+version)?\s+["“]?([^"”]+?)["”]?\s*$/i)
+    || value.match(/\brestore\b(?:\s+to)?(?:\s+version)?\s+(.+)$/i);
+  if (restore?.[1] && /\brestore\b/i.test(value)) {
+    return { verb: "restorePearlVersion", args: { checkpointId: restore[1].trim() }, confirmed: true };
+  }
+  return null;
+}
+
+/** IR / investor automation: instruct, capture screen/format, encode, run. */
+export function parseAutomationLoopCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\b(?:capture|grab|use)\b.+\b(?:tab|screen|window|format|example)\b/i.test(value)
+    || /^(?:capture (?:this|the) (?:tab|screen|format)|use (?:this|that) as (?:the )?format)\b/i.test(value)) {
+    const kind = /\bexample\b/i.test(value) ? "example" : "format-template";
+    return { verb: "captureScreenAsEvidence", args: { kind, name: kind === "example" ? "Screen example" : "Format from screen" } };
+  }
+  if (/\b(?:automate|encode|compile)\b/i.test(value)
+    && /\b(?:briefing|memo|one[- ]pager|workflow|this|what i(?:'m| am) (?:showing|saying))\b/i.test(value)) {
+    return {
+      verb: "encodeAutomationFromInstruction",
+      args: {
+        instruction: value,
+        captureScreen: /\b(?:showing|screen|tab|format)\b/i.test(value),
+      },
+    };
+  }
+  if (/\brun\b.+\b(?:pearl|automation|briefing|memo)\b/i.test(value) || /^run (?:it|this|that)$/i.test(value)) {
+    return { verb: "runAutomationPearl", args: {} };
+  }
+  if (/\b(?:what(?:'s| is) (?:still )?vague|check(?: in)?(?: on)? (?:specificity|vagueness|this)|is this specific enough)\b/i.test(value)) {
+    return { verb: "inspectInstructionSpecificity", args: { instruction: value } };
+  }
+  return null;
+}
+
+/** High-confidence remix / recombination intents for pearls and orbs. */
+export function parsePearlRemixCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  if (/\bmerge\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+orbs?\b/i.test(value) || /^merge (?:them|these|the selected(?: orbs?)?)$/i.test(value)) {
+    return { verb: "mergeSemanticOrbs", args: { ids: [], sceneId: "" } };
+  }
+  if (/\bcompose\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+orbs?\b/i.test(value)) {
+    return { verb: "composeSemanticOrbs", args: { ids: [], sceneId: "" } };
+  }
+  if (/\bsplit\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value) || /^split (?:this|it)$/i.test(value)) {
+    return { verb: "splitSemanticOrb", args: { id: "active", sceneId: "" } };
+  }
+  if (/\b(?:nest|put)\b.+\binside\b.+\borb\b/i.test(value)) {
+    return { verb: "nestSemanticOrb", args: { childId: "selection", parentId: "target" } };
+  }
+  if (/\bunnest\b|\btake .+ (?:back )?out\b/i.test(value)) {
+    return { verb: "unnestSemanticOrb", args: { id: "active" } };
+  }
+  if (/\bduplicate\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value)) {
+    return { verb: "duplicateSemanticOrb", args: { id: "active" } };
+  }
+  const lens = value.match(/\bapply\b(?:\s+my)?\s+(.+?)\s+lens\b(?:\s+to\b(?:\s+(?:this|the))?(?:\s+(\w+))?\s+orb)?/i);
+  if (lens) {
+    return {
+      verb: "applySemanticOrbLens",
+      args: {
+        id: "active",
+        lens: { name: lens[1].trim() },
+      },
+    };
+  }
+  return null;
+}
+
 export function parseCognitiveWorkflowCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   const teach = value.match(/^(?:from now on,?\s*)?when i say [“"'‘]?(.+?)[”"'’]?,?\s*(?:do|run|mean)\s+(.+?)(?:\.\s*)?(?:only remember this in (?:this )?(session|workspace|account|team))?$/i);
@@ -461,6 +568,8 @@ Reply with ONLY a JSON object, no prose, no code fences:
 
 Rules:
 - Action-first: for every executable request, set "say" to "" and emit the steps immediately. Do not acknowledge, praise, summarize, or announce what you will do.
+- Cursor-style check-ins: when instructions, Automation Pearls, or IR workflows are vague, missing format/source/audience specifics, or destructive, call inspectInstructionSpecificity or requestClarification BEFORE compile/run/edit. Put the clarifying question in "say" and emit no mutating steps until answered. After the user answers, call answerClarification or continue with encodeAutomationFromInstruction / runAutomationPearl.
+- Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
 - Use captions only as terse operation/target labels when the visual action would otherwise be ambiguous. Never narrate or explain routine steps.
 - If a prebuilt demo answers a "how do I / show me" question, return demoId and empty steps.
 - Move means one atomic instruction and exactly one model call. Use createMove/applyMove. Function means an ordered, branched, or nested process. Use createFunction/applyFunction for multi-step work. Lens means bounded context/a way of seeing; it is not an action.

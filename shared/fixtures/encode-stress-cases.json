@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "lp-briefing",
+      "label": "LP meeting briefing from messy email",
+      "evidence": [
+        {
+          "kind": "email-thread",
+          "content": "From: allison@firm.com\nSubject: LP briefing\nDraft a briefing for a limited partner meeting for Westwood Management. Pull overview from Pitchbook, bios from public sources, and prior objectives from Drive."
+        },
+        {
+          "kind": "crm-export",
+          "content": "Pitchbook overview: Westwood Management — AUM and contact notes."
+        },
+        {
+          "kind": "drive-doc",
+          "content": "https://drive.google.com/drive/folders/152k90SmmTQCO-4GP-TxclM0SFxZCCnQH"
+        },
+        {
+          "kind": "format-template",
+          "content": "Use the new briefing format with clear section headers."
+        }
+      ]
+    },
+    {
+      "id": "travel-plan",
+      "label": "Consumer travel plan from messy notes",
+      "evidence": [
+        {
+          "kind": "instructions",
+          "content": "Turn these notes into a three-day Kyoto itinerary with food, temples, and rain backups."
+        }
+      ]
+    },
+    {
+      "id": "writing-taste",
+      "label": "Creator style lens from ChatGPT export",
+      "evidence": [
+        {
+          "kind": "transcript",
+          "content": "User: make my writing less AI. Assistant: cut filler, prefer concrete nouns, keep rhythm."
+        }
+      ]
+    },
+    {
+      "id": "study-guide",
+      "label": "Student study guide from PDF extract",
+      "evidence": [
+        {
+          "kind": "attachment-extract",
+          "content": "Chapter 4 photosynthesis summary… convert into a quiz and flashcards."
+        }
+      ]
+    },
+    {
+      "id": "meeting-followups",
+      "label": "Ops meeting notes to follow-ups",
+      "evidence": [
+        {
+          "kind": "instructions",
+          "content": "From these meeting notes extract owners, deadlines, and open questions as a follow-up list."
+        }
+      ]
+    }
+  ]
+}

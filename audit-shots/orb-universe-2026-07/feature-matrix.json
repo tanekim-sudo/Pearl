@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-21T22:02:55.703Z",
+  "generatedAt": "2026-07-22T03:19:17.021Z",
   "counts": {
-    "features": 48,
-    "companion": 336,
+    "features": 53,
+    "companion": 356,
     "extension": 102,
-    "commands": 119
+    "commands": 123
   },
   "features": [
     {
@@ -810,16 +810,30 @@
       "commands": [
         "editPearlEntity",
         "applyPearlCognitivePatch",
-        "completeOutputPlacement"
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion"
       ],
       "companion": [
-        "executeUnifiedPearlAction"
+        "executeUnifiedPearlAction",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion"
       ],
       "extension": [
         "executeExternalPearlAction"
       ],
       "tests": [
-        "shared/pearl-entity.test.js"
+        "shared/pearl-entity.test.js",
+        "shared/pearl-animation.test.js",
+        "shared/physical-pearl.test.js"
       ]
     },
     {
@@ -886,14 +900,36 @@
         "compileAutomationPearl",
         "reviseAutomationPearl",
         "researchAutomationPearl",
-        "approveAutomationContextPatch"
+        "approveAutomationContextPatch",
+        "encodeAutomationFromInstruction",
+        "captureScreenAsEvidence",
+        "runAutomationPearl"
       ],
       "extension": [
-        "compileExternalAutomationPearl"
+        "compileExternalAutomationPearl",
+        "captureExternalVisibleTab"
       ],
       "tests": [
         "shared/automation-pearl.test.js",
-        "shared/automation-research.test.js"
+        "shared/automation-research.test.js",
+        "shared/companion-clarification.test.js",
+        "shared/encode-evidence.test.js"
+      ]
+    },
+    {
+      "id": "companion.clarification-checkin",
+      "commands": [],
+      "companion": [
+        "inspectInstructionSpecificity",
+        "requestClarification",
+        "answerClarification",
+        "encodeAutomationFromInstruction",
+        "runAutomationPearl"
+      ],
+      "extension": [],
+      "tests": [
+        "shared/companion-clarification.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {
@@ -928,17 +964,71 @@
         "editPearlEntity",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
-        "redoPearlEntityEdit"
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
       ],
       "companion": [
-        "executeUnifiedPearlAction"
+        "executeUnifiedPearlAction",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion",
+        "editPearlOutput",
+        "revisePearlFromFeedback"
       ],
       "extension": [
         "executeExternalPearlAction",
         "openExternalResultPearlTab"
       ],
       "tests": [
+        "shared/pearl-studio.test.js",
+        "shared/pearl-version-history.test.js"
+      ]
+    },
+    {
+      "id": "pearl.version-history",
+      "commands": [
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "companion": [
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "extension": [
+        "executeExternalPearlAction"
+      ],
+      "tests": [
+        "shared/pearl-version-history.test.js",
         "shared/pearl-studio.test.js"
+      ]
+    },
+    {
+      "id": "companion.critique-edits",
+      "commands": [],
+      "companion": [
+        "startCritiqueSession",
+        "ingestCritique",
+        "applyCritiqueEdits",
+        "stopCritiqueSession",
+        "revisePearlFromFeedback",
+        "editPearlOutput"
+      ],
+      "extension": [
+        "startExternalCritique",
+        "ingestExternalCritique",
+        "stopExternalCritique"
+      ],
+      "tests": [
+        "shared/critique-session.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {
@@ -1027,6 +1117,39 @@
       ],
       "tests": [
         "client/lib/pearl-guide.test.js"
+      ]
+    },
+    {
+      "id": "shell.pearl-navigability",
+      "commands": [],
+      "companion": [
+        "openAuth",
+        "signOut",
+        "navigateHome",
+        "navigateBack",
+        "openSettings",
+        "closeSurface"
+      ],
+      "extension": [],
+      "tests": [
+        "client/lib/shell-navigation.test.js"
+      ]
+    },
+    {
+      "id": "encode.automation-anything",
+      "commands": [
+        "compileAutomationPearl"
+      ],
+      "companion": [
+        "openEncodeAnything",
+        "compileAutomationPearl"
+      ],
+      "extension": [
+        "compileExternalAutomationPearl"
+      ],
+      "tests": [
+        "shared/encode-evidence.test.js",
+        "shared/automation-pearl.test.js"
       ]
     }
   ],

@@ -1,8 +1,8 @@
 # Companion capability runtime-effect matrix
 
-- Total: 336
-- Passed: 336
-- Failed: 0
+- Total: 343
+- Passed: 341
+- Failed: 2
 - Skipped: 0
 
 - PASS — `caption` (app): state-or-visible-artifact-changed
@@ -145,7 +145,7 @@
 - PASS — `removeGrindExample` (app): state-or-visible-artifact-changed
 - PASS — `reorderGrindExample` (app): state-or-visible-artifact-changed
 - PASS — `compileGrindDraft` (app): state-or-visible-artifact-changed
-- PASS — `testGrindDraft` (app): bounded model execution dispatched and returned
+- PASS — `testGrindDraft` (app): state-or-visible-artifact-changed
 - PASS — `runFunctionTestBench` (app): state-or-visible-artifact-changed
 - PASS — `refineGrindDraft` (app): state-or-visible-artifact-changed
 - PASS — `shapeForgedFunction` (app): state-or-visible-artifact-changed
@@ -231,7 +231,16 @@
 - PASS — `preparePearlShare` (app): state-or-visible-artifact-changed
 - PASS — `sharePearl` (app): state-or-visible-artifact-changed
 - PASS — `revokePearlShare` (app): state-or-visible-artifact-changed
-- PASS — `installSharedPearl` (app): state-or-visible-artifact-changed
+- FAIL — `installSharedPearl` (app): page.evaluate: Execution context was destroyed, most likely because of a navigation.
+- PASS — `openAuth` (app): state-or-visible-artifact-changed
+- PASS — `signOut` (app): state-or-visible-artifact-changed
+- PASS — `navigateHome` (app): state-or-visible-artifact-changed
+- FAIL — `navigateBack` (app): page.evaluate: SecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.
+    at UtilityScript.evaluate (<anonymous>:305:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44) | Failed to read the 'localStorage' property from 'Window': Access is denied for this document.
+- PASS — `openSettings` (app): state-or-visible-artifact-changed
+- PASS — `openEncodeAnything` (app): state-or-visible-artifact-changed
+- PASS — `closeSurface` (app): state-or-visible-artifact-changed
 - PASS — `compileAutomationPearl` (app): state-or-visible-artifact-changed
 - PASS — `reviseAutomationPearl` (app): state-or-visible-artifact-changed
 - PASS — `researchAutomationPearl` (app): state-or-visible-artifact-changed

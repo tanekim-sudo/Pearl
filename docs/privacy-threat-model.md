@@ -2,6 +2,8 @@
 
 Pearl stores user material locally by default in a profile-scoped AES-GCM envelope. Browser storage encryption without a user secret only protects against casual file inspection; it does not protect against malicious code already running with the extension or site origin.
 
+Firm-internal Automation Pearls (email, Drive, CRM, LP briefing material) default to `local-only` / `device-only` with model, research, and share disclosure blocked until an explicit Pearl approval. Optional account board sync is consent-gated and is **not** end-to-end vault encryption — do not treat it as fund-grade encrypted cloud sync.
+
 ## Lock boundary
 
 Choosing **Lock my Pearls** migrates the current profile to a passphrase-wrapped data key. PBKDF2-SHA-256 uses a per-profile random salt and 310,000 iterations; the wrapping key and passphrase are never persisted. The unwrapped data key exists only while the profile is unlocked and is cleared on lock, logout, account switch, deletion, or the 15-minute inactivity timeout.

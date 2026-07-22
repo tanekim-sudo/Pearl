@@ -3,6 +3,8 @@ import CompanionOrb from "./CompanionOrb.jsx";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import OrbCursorLayer from "./OrbCursorLayer.jsx";
 import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
+import AuthOverlay from "./AuthOverlay.jsx";
+import EncodeAnythingPanel from "./EncodeAnythingPanel.jsx";
 import { createWebPearlStudioReference } from "./PearlStudioView.jsx";
 import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
@@ -44,6 +46,15 @@ import {
   serializeUnifiedWorkspace,
   updateSceneWorkspace,
 } from "../lib/unified-workspace.js";
+import { useSupabaseSession } from "../lib/auth-session.js";
+import { getSupabase, isSupabaseConfigured } from "../lib/supabase.js";
+import {
+  SHELL_ACTION_EVENT,
+  navigateBackOrHome,
+  navigateHome,
+  nextEscapeAction,
+} from "../lib/shell-navigation.js";
+import { registerDirectorVerbs } from "../lib/director.js";
 
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
 const SpeechRecognitionImpl =
@@ -92,7 +103,7 @@ export function parseOrbRoute(locationLike = globalThis.location) {
 }
 
 function navigate(path) {
-  history.pushState({}, "", path);
+  history.pushState({ pearlNav: true }, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
@@ -154,7 +165,7 @@ function loadSceneWorkspace() {
   });
 }
 
-function InstallLanding({ install, onContinue, onRetry }) {
+function InstallLanding({ install, onContinue, onRetry, onHome }) {
   const browser = useMemo(() => detectExtensionBrowser(navigator.userAgent), []);
   const storeUrl = validChromeStoreUrl(import.meta.env.VITE_CHROME_WEB_STORE_URL);
   const release = typeof __LENS_EXTENSION_RELEASE__ === "undefined" ? null : __LENS_EXTENSION_RELEASE__;
@@ -171,6 +182,7 @@ function InstallLanding({ install, onContinue, onRetry }) {
               {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
             </a>}
         {install.status === "unknown" && <button className="orb-secondary" type="button" onClick={onRetry}>Check extension again</button>}
+        <button className="orb-secondary" type="button" onClick={onHome}>Back to Pearl</button>
       </div>
       <p className="orb-status" role="status">
         {install.status === "checking" ? "Checking trusted extension status…"
@@ -181,16 +193,53 @@ function InstallLanding({ install, onContinue, onRetry }) {
   </main>;
 }
 
+function AccountPrivacyPanel({
+  session,
+  syncEnabled,
+  onSignIn,
+  onSignOut,
+  onToggleSync,
+  onLock,
+  onUnlock,
+  onDeleteLocal,
+  onOpenEncode,
+}) {
+  const email = session?.user?.email || null;
+  return <section className="pearl-account-panel" aria-label="Account and privacy">
+    <p className="pearl-account-status">
+      {email
+        ? <>Signed in as <b>{email}</b>. Pearls stay on this device unless you enable sync.</>
+        : <>Working locally. Sign in only if you want optional account sync — Pearls remain device-first.</>}
+    </p>
+    <div className="pearl-account-actions">
+      {email
+        ? <button type="button" onClick={onSignOut}>Sign out</button>
+        : <button type="button" onClick={onSignIn}>Sign in</button>}
+      <button type="button" aria-pressed={syncEnabled} onClick={() => onToggleSync(!syncEnabled)}>
+        {syncEnabled ? "Disable account sync" : "Enable account sync"}
+      </button>
+      <button type="button" onClick={onLock}>Lock local Pearls</button>
+      <button type="button" onClick={onUnlock}>Unlock local Pearls</button>
+      <button type="button" onClick={onDeleteLocal}>Delete local Pearl data</button>
+      <button type="button" onClick={onOpenEncode}>Encode anything into a Pearl</button>
+    </div>
+    <p className="pearl-account-note">
+      Account sync is opt-in and is not end-to-end vault encryption. Firm material defaults to local-only until you explicitly approve model, research, or share.
+    </p>
+  </section>;
+}
+
 const libraryObjects = [
-  ["Actions", "Things Pearl can repeat.", "/library?kind=moves", "wide"],
-  ["Processes", "Ways Pearl can carry work through several steps.", "/library?kind=functions"],
-  ["Context", "Material that shapes how Pearl responds.", "/library?kind=lenses"],
-  ["Shared tools", "Trusted reusable work from you or your team.", "/packages", "wide"],
-  ["Saved spaces", "Return to material you were working with.", "/tasks?view=scenes"],
-  ["Activity", "Review, recover, or continue earlier work.", "/tasks"],
-  ["Phrases", "Teach Pearl language you use.", "/settings?vocabulary=1"],
-  ["Connections", "Choose where Pearl can work.", "/settings?connectors=1"],
-  ["Sync health", "Anonymous local work, account adoption, import, and export.", "/settings?sync=1"],
+  ["Actions", "Things Pearl can repeat.", { emit: "library", kind: "moves" }, "wide"],
+  ["Processes", "Ways Pearl can carry work through several steps.", { emit: "library", kind: "functions" }],
+  ["Context", "Material that shapes how Pearl responds.", { emit: "library", kind: "lenses" }],
+  ["Shared tools", "Trusted reusable work from you or your team.", { emit: "packages" }, "wide"],
+  ["Saved spaces", "Return to material you were working with.", { emit: "library", kind: "scenes" }],
+  ["Activity", "Review, recover, or continue earlier work.", { emit: "tasks" }],
+  ["Phrases", "Teach Pearl language you use.", { emit: "settings", panel: "vocabulary" }],
+  ["Connections", "Choose where Pearl can work.", { emit: "settings", panel: "connectors" }],
+  ["Account & privacy", "Sign in, sync consent, lock, and local wipe.", { emit: "settings", panel: "account" }],
+  ["Encode anything", "Turn prompts, emails, PDFs, and Drive material into a Pearl.", { emit: "encode" }],
 ];
 
 function ContextInspector({ items, onChange, onRemove }) {
@@ -288,15 +337,16 @@ function PearlActionPalette({ onRun }) {
   </section>;
 }
 
-function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onDismiss }) {
+function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onImport, onDismiss }) {
   return <section className="pearl-welcome" aria-label="Welcome to Pearl">
     <button type="button" className="pearl-welcome-mark" aria-label="Ask Pearl" onClick={onAsk}>
       <PhysicalPearl variant="primary" state="idle" size={46} decorative />
     </button>
     <h1>Pearl</h1>
-    <p>One small companion that notices, shapes, and carries your work anywhere.</p>
+    <p>Import what you already have — chats, docs, PDFs, notes — or just ask. Pearl turns that into your first reusable Pearls.</p>
     <div className="pearl-welcome-actions">
-      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>Ask Pearl anything</button>
+      <button type="button" className="pearl-welcome-primary" onClick={onImport}>Import or encode material</button>
+      <button type="button" onClick={onAsk}>Ask Pearl anything</button>
       <button type="button" onClick={onScene}>Start a Scene</button>
       <button type="button" onClick={onGuide}>See how Pearl works</button>
       <button type="button" onClick={onInstall}>Get the browser extension</button>
@@ -311,6 +361,8 @@ const GUIDE_TRY_COMMANDS = new Set([
   "show my saved library",
   "install the extension",
   "what is stored here?",
+  "encode anything",
+  "open account and privacy",
 ]);
 
 function PearlGuidePanel({ onClose, onTry }) {
@@ -436,12 +488,12 @@ function LibraryHome({
               onChange={(event) => setQuery(event.target.value)}
             />
             <nav>
-              {visibleObjects.map(([name, description, href]) => <a key={name} href={href} onClick={(event) => {
-                event.preventDefault();
-                navigate(href);
+              {visibleObjects.map(([name, description, target]) => <button type="button" key={name} onClick={() => {
+                const emit = target?.emit || "library";
+                onView(emit === "library" ? "library" : emit, target);
               }}>
                 <i /> <b>{name}</b><small>{description}</small>
-              </a>)}
+              </button>)}
               {!visibleObjects.length && <span role="status">No library areas match “{query}”.</span>}
             </nav>
           </>}
@@ -559,6 +611,10 @@ function SceneStage({ scene, view = "Stage", onMaterialDrop, onContextAdd, seman
 
 export default function OrbUniverseShell({ StageComponent }) {
   const route = useRoute();
+  const supaAuth = useSupabaseSession();
+  const [authOpen, setAuthOpen] = useState(() => isSupabaseConfigured() && Boolean(supaAuth.bootAuthError));
+  const [authBootError, setAuthBootError] = useState(supaAuth.bootAuthError);
+  const [syncEnabled, setSyncEnabled] = useState(() => boardSyncEnabled());
   const [sceneWorkspace, setSceneWorkspace] = useState(loadSceneWorkspace);
   const voiceSessionRef = useRef(null);
   const voiceGenerationRef = useRef(0);
@@ -586,7 +642,19 @@ export default function OrbUniverseShell({ StageComponent }) {
       },
     });
   });
-  const [emittedView, setEmittedView] = useState(null);
+  const [emittedView, setEmittedView] = useState(() => {
+    if (route.kind === "library" && route.section === "settings") return "settings";
+    if (route.kind === "library" && route.section === "packages") return "packages";
+    if (route.kind === "library" && route.section === "tasks") return "tasks";
+    return null;
+  });
+  const [settingsPanel, setSettingsPanel] = useState(() => {
+    const query = new URLSearchParams(typeof location !== "undefined" ? location.search : "");
+    if (query.get("vocabulary")) return "vocabulary";
+    if (query.get("connectors")) return "connectors";
+    if (query.get("sync")) return "sync";
+    return "account";
+  });
   const [privacyNotice, setPrivacyNotice] = useState(null);
   const [hasOrbUndo, setHasOrbUndo] = useState(false);
   const [hasOrbRedo, setHasOrbRedo] = useState(false);
@@ -609,6 +677,25 @@ export default function OrbUniverseShell({ StageComponent }) {
     return ["legacy", "workspace"].includes(query.get("frame")) || [...query.keys()].some((key) => /(?:audit|tour|brush|learn)/i.test(key));
   });
   orbRef.current = orb;
+
+  const openEmittedView = useCallback((view, meta = null) => {
+    setEmittedView(view);
+    if (meta?.panel) setSettingsPanel(meta.panel);
+    if (view === "settings" && !meta?.panel) setSettingsPanel("account");
+  }, []);
+
+  useEffect(() => {
+    if (supaAuth.passwordRecovery || supaAuth.bootAuthError) {
+      setAuthOpen(true);
+      if (supaAuth.bootAuthError) setAuthBootError(supaAuth.bootAuthError);
+    }
+  }, [supaAuth.passwordRecovery, supaAuth.bootAuthError]);
+
+  useEffect(() => {
+    if (route.kind === "library" && route.section === "settings") openEmittedView("settings", { panel: settingsPanel || "account" });
+    else if (route.kind === "library" && route.section === "packages") openEmittedView("packages");
+    else if (route.kind === "library" && route.section === "tasks") openEmittedView("tasks");
+  }, [route.kind, route.section, openEmittedView, settingsPanel]);
 
   useEffect(() => {
     setSceneView("Stage");
@@ -642,6 +729,139 @@ export default function OrbUniverseShell({ StageComponent }) {
     window.addEventListener("lens:open-pearl-guide", open);
     return () => window.removeEventListener("lens:open-pearl-guide", open);
   }, []);
+
+  useEffect(() => {
+    registerDirectorVerbs({
+      openAuth: async () => {
+        setAuthOpen(true);
+        return { effectId: `shell-auth-open:${Date.now()}`, effects: ["auth-opened"] };
+      },
+      signOut: async () => {
+        await getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
+        return { effectId: `shell-sign-out:${Date.now()}`, effects: ["signed-out"] };
+      },
+      navigateHome: async () => {
+        navigateHome();
+        return { effectId: `shell-home:${Date.now()}`, effects: ["navigated-home"] };
+      },
+      navigateBack: async () => {
+        navigateBackOrHome();
+        return { effectId: `shell-back:${Date.now()}`, effects: ["navigated-back"] };
+      },
+      openSettings: async (a) => {
+        openEmittedView("settings", { panel: a?.panel || "account" });
+        return { effectId: `shell-settings:${Date.now()}`, effects: ["settings-opened"] };
+      },
+      openEncodeAnything: async () => {
+        openEmittedView("encode");
+        return { effectId: `shell-encode:${Date.now()}`, effects: ["encode-opened"] };
+      },
+      closeSurface: async () => {
+        setEmittedView(null);
+        setGuideOpen(false);
+        setCompanionExpanded(false);
+        return { effectId: `shell-close:${Date.now()}`, effects: ["surface-closed"] };
+      },
+    });
+  }, [openEmittedView]);
+
+  const decideApprovalRef = useRef(null);
+  const handleShellEscape = useCallback(() => {
+    const action = nextEscapeAction({
+      approvalPending: Boolean(pendingApproval),
+      companionExpanded,
+      emittedView,
+      cursorMode,
+      guideOpen,
+      welcomeOpen: !welcomeDismissed && route.path === "/" && (sceneWorkspace.scenes || []).length === 0,
+      installRoute: route.kind === "install",
+      studioOpen: false,
+    });
+    if (action === "cancelApproval") {
+      decideApprovalRef.current?.(false);
+      return;
+    }
+    if (action === "collapseCompanion") {
+      setCompanionExpanded(false);
+      window.dispatchEvent(new CustomEvent("lens:companion-collapse"));
+      return;
+    }
+    if (action === "closeEmission") {
+      setEmittedView(null);
+      return;
+    }
+    if (action === "exitCursor") {
+      setCursorModeState(false);
+      return;
+    }
+    if (action === "closeGuide") {
+      setGuideOpen(false);
+      return;
+    }
+    if (action === "dismissWelcome") {
+      try {
+        localStorage.setItem(PEARL_WELCOME_STORAGE_KEY, JSON.stringify({ dismissed: true, at: new Date().toISOString() }));
+      } catch { /* ignore */ }
+      setWelcomeDismissed(true);
+      return;
+    }
+    if (action === "leaveInstall") {
+      navigateHome();
+    }
+  }, [pendingApproval, companionExpanded, emittedView, cursorMode, guideOpen, welcomeDismissed, route.path, route.kind, sceneWorkspace.scenes]);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      if (event.target?.closest?.("input,textarea,[contenteditable=true]")) return;
+      event.preventDefault();
+      handleShellEscape();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleShellEscape]);
+
+  useEffect(() => {
+    const onShellAction = (event) => {
+      const action = event.detail?.action;
+      if (action === "openAuth") setAuthOpen(true);
+      if (action === "signOut") {
+        getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
+        setAuthOpen(false);
+      }
+      if (action === "navigateHome") navigateHome();
+      if (action === "navigateBack") navigateBackOrHome();
+      if (action === "openSettings") openEmittedView("settings", { panel: event.detail?.panel || "account" });
+      if (action === "openEncode") openEmittedView("encode");
+      if (action === "closeSurface") {
+        setEmittedView(null);
+        setGuideOpen(false);
+        setCompanionExpanded(false);
+      }
+      if (action === "openLibrary") {
+        if (route.kind === "stage") navigate("/library");
+        else openEmittedView("library");
+      }
+    };
+    window.addEventListener(SHELL_ACTION_EVENT, onShellAction);
+    return () => window.removeEventListener(SHELL_ACTION_EVENT, onShellAction);
+  }, [openEmittedView, route.kind]);
+
+  const pearlNavQuickActions = useMemo(() => {
+    const signedIn = Boolean(supaAuth.session?.user);
+    return [
+      { label: "How Pearl works", run: openGuide },
+      { label: signedIn ? "Sign out" : "Sign in", run: () => (signedIn
+        ? getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {})
+        : setAuthOpen(true)) },
+      { label: route.kind === "stage" || route.kind === "install" ? "Back / Home" : "Saved work", run: () => {
+        if (route.kind === "stage" || route.kind === "install") navigateBackOrHome();
+        else openEmittedView("library");
+      } },
+      { label: "Account & privacy", run: () => openEmittedView("settings", { panel: "account" }) },
+      { label: "Encode anything", run: () => openEmittedView("encode") },
+    ];
+  }, [supaAuth.session, openGuide, route.kind, openEmittedView]);
 
   const dismissWelcome = useCallback(() => {
     try {
@@ -855,6 +1075,42 @@ export default function OrbUniverseShell({ StageComponent }) {
       openGuide();
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPearlGuide" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openPearlGuide", effectId: `guide:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:sign(?: me)? in|log(?: me)? in|open (?:sign[- ]?in|account))$/i.test(recorded.entry.normalized)) {
+      setAuthOpen(true);
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openAuth" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openAuth", effectId: `auth:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:sign(?: me)? out|log(?: me)? out)$/i.test(recorded.entry.normalized)) {
+      getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "signOut" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "signOut", effectId: `signout:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:go home|open home|back to (?:pearl|home))$/i.test(recorded.entry.normalized)) {
+      navigateHome();
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateHome" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateHome", effectId: `home:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:go back|navigate back)$/i.test(recorded.entry.normalized)) {
+      navigateBackOrHome();
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateBack" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateBack", effectId: `back:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:open (?:account|settings|privacy|sync)|show (?:account|settings|privacy))$/i.test(recorded.entry.normalized)) {
+      openEmittedView("settings", { panel: "account" });
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openSettings" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openSettings", effectId: `settings:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:encode(?: anything)?|make (?:this|it) a pearl|import (?:this |my )?(?:chat|transcript|pdf|docs?|material)|compile (?:this )?(?:automation|prompt))$/i.test(recorded.entry.normalized)) {
+      openEmittedView("encode");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openEncodeAnything" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openEncodeAnything", effectId: `encode:${Date.now()}` }));
       return;
     }
     const privacyIntent = recorded.entry.normalized;
@@ -1155,6 +1411,84 @@ export default function OrbUniverseShell({ StageComponent }) {
     approvalResolverRef.current = null;
     setPendingApproval(null);
     resolve?.({ decision });
+  }
+  decideApprovalRef.current = decideApproval;
+
+  function renderPearlEmission() {
+    if (!emittedView) return null;
+    const title = emittedView === "context" ? "What Pearl noticed"
+      : emittedView === "actions" ? "Actions"
+      : emittedView === "taste" ? "Choices"
+      : emittedView === "scene" ? "View"
+      : emittedView === "privacy" ? (privacyNotice?.title || "Privacy")
+      : emittedView === "settings" ? "Account & privacy"
+      : emittedView === "encode" ? "Encode anything"
+      : emittedView === "packages" ? "Shared tools"
+      : emittedView === "tasks" ? "Activity"
+      : "Saved work";
+    return <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
+      <button type="button" onClick={() => setEmittedView(null)}>Close</button>
+      <b>{title}</b>
+      {emittedView === "actions"
+        ? <PearlActionPalette onRun={executePearlAction} />
+        : emittedView === "scene"
+          ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
+              <button type="button" onClick={() => navigate("/library")}>Past work</button>
+              <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
+                {outputFrameOpen ? "Return to space" : "Focus on the result"}
+              </button>
+              {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
+                {outputToolsOpen ? "Hide editing tools" : "Editing tools"}
+              </button>}
+              {[["Stage", "Space"], ["Gallery", "Grid"], ["Graph", "Connections"], ["Table", "Details"], ["Timeline", "Sequence"]].map(([option, optionLabel]) => <button
+                type="button"
+                key={option}
+                aria-pressed={!outputFrameOpen && sceneView === option}
+                onClick={() => { setOutputFrameOpen(false); setSceneView(option); }}
+              >{optionLabel}</button>)}
+            </nav>
+          : emittedView === "settings"
+            ? <AccountPrivacyPanel
+                session={supaAuth.session}
+                syncEnabled={syncEnabled}
+                onSignIn={() => setAuthOpen(true)}
+                onSignOut={() => getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {})}
+                onToggleSync={(enabled) => {
+                  setBoardSyncEnabled(enabled);
+                  setSyncEnabled(enabled);
+                  window.dispatchEvent(new CustomEvent("pearl-board-sync-consent", { detail: { enabled } }));
+                  setPrivacyNotice({
+                    title: enabled ? "Sync enabled for this profile" : "Local only",
+                    detail: enabled
+                      ? "Account sync is opt-in and is not end-to-end vault encryption."
+                      : "No Pearl metadata will sync.",
+                  });
+                }}
+                onLock={() => command("lock my pearls")}
+                onUnlock={() => command("unlock my pearls")}
+                onDeleteLocal={() => command("delete my local pearl data")}
+                onOpenEncode={() => openEmittedView("encode")}
+              />
+            : emittedView === "encode"
+              ? <EncodeAnythingPanel onClose={() => setEmittedView(null)} onCompiled={() => {
+                setPrivacyNotice({ title: "Automation Pearl saved locally", detail: "Review before enabling model or research disclosure." });
+              }} />
+            : emittedView === "packages" || emittedView === "tasks"
+              ? <p role="status">{emittedView === "packages"
+                ? "Open Encode anything or Shared tools from Pearl after you have reviewed a package. Trusted installs stay in your local library."
+                : "Recent Scenes appear as Pearls on the home orbit. Create a Scene to begin, or continue from the extension."}</p>
+            : emittedView === "privacy"
+              ? <span>{privacyNotice?.detail}</span>
+              : emittedView === "context"
+                ? <ContextInspector items={orb.context || []} onChange={updateOrbContext} onRemove={removeOrbContext} />
+                : emittedView === "lenses"
+                  ? <LensAtmosphereInspector lenses={orb.lenses || []} onChange={updateOrbLens} onRemove={removeOrbLens} />
+                  : emittedView === "taste"
+                    ? <CandidateInspector candidates={orb.candidates || []} onTaste={tasteCandidate} />
+                    : libraryObjects.slice(0, 8).map(([name, description]) => <button type="button" key={name} onClick={() => openEmittedView("library")}>
+                      <b>{name}</b><small>{description}</small>
+                    </button>)}
+    </aside>;
   }
 
   async function undoOrbEffect() {
@@ -1872,53 +2206,34 @@ export default function OrbUniverseShell({ StageComponent }) {
         onOpenGuide={openGuide}
       />}
       {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
-        onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={setEmittedView}
+        onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={openEmittedView}
         onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
         onOpenStudio={openActivePearlStudio}
         onExpandedChange={setCompanionExpanded}
         quickActions={[
-          { label: "How Pearl works", run: openGuide },
-          { label: "Actions", run: () => setEmittedView("actions") },
-          { label: "View & frame", run: () => setEmittedView("scene") },
-          { label: "Saved work", run: () => navigate("/library") },
+          ...pearlNavQuickActions,
+          { label: "Actions", run: () => openEmittedView("actions") },
+          { label: "View & frame", run: () => openEmittedView("scene") },
         ]}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
       {!cursorMode && !guideOpen && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
       {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
+      {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
-      {emittedView && <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
-        <button type="button" onClick={() => setEmittedView(null)}>Close</button>
-        <b>{emittedView === "context" ? "What Pearl noticed" : emittedView === "actions" ? "Actions" : emittedView === "taste" ? "Choices" : emittedView === "scene" ? "View" : emittedView === "privacy" ? privacyNotice?.title : "Saved work"}</b>
-        {emittedView === "actions"
-          ? <PearlActionPalette onRun={executePearlAction} />
-          : emittedView === "scene"
-          ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
-              <button type="button" onClick={() => navigate("/library")}>Past work</button>
-              <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
-                {outputFrameOpen ? "Return to space" : "Focus on the result"}
-              </button>
-              {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
-                {outputToolsOpen ? "Hide editing tools" : "Editing tools"}
-              </button>}
-              {[["Stage", "Space"], ["Gallery", "Grid"], ["Graph", "Connections"], ["Table", "Details"], ["Timeline", "Sequence"]].map(([option, optionLabel]) => <button
-                type="button"
-                key={option}
-                aria-pressed={!outputFrameOpen && sceneView === option}
-                onClick={() => { setOutputFrameOpen(false); setSceneView(option); }}
-              >{optionLabel}</button>)}
-            </nav>
-          : emittedView === "privacy"
-          ? <span>{privacyNotice?.detail}</span>
-          : emittedView === "context"
-          ? <ContextInspector items={orb.context || []} onChange={updateOrbContext} onRemove={removeOrbContext} />
-          : emittedView === "lenses"
-            ? <LensAtmosphereInspector lenses={orb.lenses || []} onChange={updateOrbLens} onRemove={removeOrbLens} />
-            : emittedView === "taste"
-              ? <CandidateInspector candidates={orb.candidates || []} onTaste={tasteCandidate} />
-            : libraryObjects.slice(0, 5).map(([name]) => <span key={name}>{name}</span>)}
-      </aside>}
+      {renderPearlEmission()}
+      {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
+        forced={supaAuth.passwordRecovery}
+        accountEmail={supaAuth.session?.user?.email || null}
+        bootError={authBootError}
+        onClose={() => { setAuthOpen(false); setAuthBootError(null); }}
+        onPasswordUpdated={() => {
+          supaAuth.clearPasswordRecovery();
+          setAuthOpen(false);
+          setAuthBootError(null);
+        }}
+      />}
     </div>;
   }
 
@@ -1931,7 +2246,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   const showWelcome = freshRoot && !welcomeDismissed && !companionExpanded && !guideOpen && !cursorMode && !emittedView;
   return <div className="orb-universe">
     {showInstall
-      ? <InstallLanding install={install} onContinue={continueToLibrary} onRetry={refreshInstall} />
+      ? <InstallLanding install={install} onContinue={continueToLibrary} onRetry={refreshInstall} onHome={() => navigateHome()} />
       : <LibraryHome
           route={route}
           scenes={sceneWorkspace.scenes || []}
@@ -1942,7 +2257,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           handoffStatus={handoffStatus}
           onRetryHandoff={refreshHandoff}
           activeView={emittedView}
-          onView={setEmittedView}
+          onView={openEmittedView}
           install={install}
           context={orb.context || []}
           lenses={orb.lenses || []}
@@ -1953,7 +2268,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
         />}
-    {!showInstall && !cursorMode && <CompanionOrb
+    {!cursorMode && <CompanionOrb
       key="universe-orb"
       featured
       state={orb}
@@ -1966,7 +2281,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       onVoiceEnd={endVoice}
       onContextAdd={addOrbContext}
       onLensAdd={addOrbLens}
-      onEmitView={setEmittedView}
+      onEmitView={openEmittedView}
       onOrbCreate={createBlankScene}
       cursorMode={cursorMode}
       onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
@@ -1976,26 +2291,36 @@ export default function OrbUniverseShell({ StageComponent }) {
       onOpenStudio={openActivePearlStudio}
       onExpandedChange={setCompanionExpanded}
       quickActions={[
-        { label: "How Pearl works", run: openGuide },
-        { label: "New Scene", run: createBlankScene },
-        { label: "Saved work", run: () => setEmittedView("library") },
-        { label: "Get the extension", run: () => navigate("/install") },
+        ...pearlNavQuickActions,
+        ...(showInstall ? [] : [
+          { label: "New Scene", run: createBlankScene },
+          { label: "Get the extension", run: () => navigate("/install") },
+        ]),
       ]}
-      hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0 ? "Click to begin · hold to speak · triple-click for Studio" : null}
+      hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0 ? "Click to begin · hold to speak · import material · triple-click for Studio" : null}
     />}
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}
       onScene={() => { dismissWelcome(); createBlankScene(); }}
       onGuide={() => { dismissWelcome(); openGuide(); }}
       onInstall={() => { dismissWelcome(); navigate("/install"); }}
+      onImport={() => { dismissWelcome(); openEmittedView("encode"); }}
       onDismiss={dismissWelcome}
     />}
     {!cursorMode && !guideOpen && !showWelcome && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
     {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
-    {emittedView === "privacy" && privacyNotice && <aside className="orb-stage-emission" aria-label="Privacy view emitted by Pearl">
-      <button type="button" onClick={() => setEmittedView(null)}>Close</button>
-      <b>{privacyNotice.title}</b>
-      <span>{privacyNotice.detail}</span>
-    </aside>}
+    {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
+    {renderPearlEmission()}
+    {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
+      forced={supaAuth.passwordRecovery}
+      accountEmail={supaAuth.session?.user?.email || null}
+      bootError={authBootError}
+      onClose={() => { setAuthOpen(false); setAuthBootError(null); }}
+      onPasswordUpdated={() => {
+        supaAuth.clearPasswordRecovery();
+        setAuthOpen(false);
+        setAuthBootError(null);
+      }}
+    />}
   </div>;
 }
