@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detectExtensionBrowser, requestTrustedExtensionHandoff, validChromeStoreUrl } from "./extension-funnel.js";
+import { configuredExtensionId, detectExtensionBrowser, requestTrustedExtensionHandoff, validChromeStoreUrl } from "./extension-funnel.js";
 
 test("Chrome store URL must be an official secure listing", () => {
   assert.match(validChromeStoreUrl("https://chromewebstore.google.com/detail/lens/abc"), /^https:/);
@@ -16,7 +16,12 @@ test("extension browser messaging distinguishes supported desktop browsers", () 
 });
 
 test("workspace handoff degrades safely without a trusted extension", async () => {
-  assert.deepEqual(await requestTrustedExtensionHandoff(""), { connected: false, handoff: null });
+  assert.deepEqual(await requestTrustedExtensionHandoff(""), { connected: false, handoff: null, reason: "invalid-token" });
+  assert.equal(configuredExtensionId(""), "");
+  assert.equal(
+    await requestTrustedExtensionHandoff("0123456789abcdef0123456789abcdef", "").then((entry) => entry.reason),
+    "missing-extension-id",
+  );
 });
 
 test("workspace handoff requires the extension-issued nonce and never requests general private state", async () => {
@@ -33,6 +38,7 @@ test("workspace handoff requires the extension-issued nonce and never requests g
   const token = "0123456789abcdef0123456789abcdef";
   const value = await requestTrustedExtensionHandoff(token, "trusted-extension");
   assert.equal(value.connected, true);
+  assert.equal(value.reason, "ok");
   assert.deepEqual(sent[0].message, { type: "pearl-workspace-handoff", version: 1, nonce: token });
   assert.equal(await requestTrustedExtensionHandoff("spoof", "trusted-extension").then((entry) => entry.connected), false);
   delete globalThis.chrome;

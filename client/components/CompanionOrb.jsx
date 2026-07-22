@@ -442,7 +442,7 @@ export default function CompanionOrb({
               ref={commandInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              aria-label="Tell the companion your goal"
+              aria-label="Tell Pearl your goal"
               placeholder="What do you want?"
             />
             <button type="submit" aria-label="Send command">Send</button>

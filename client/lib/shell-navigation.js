@@ -17,6 +17,18 @@ export function navigateHome() {
   return { path: "/" };
 }
 
+/** Deterministic companion phrases that must work without planner/credentials. */
+export function matchShellNavigationIntent(text = "") {
+  const normalized = String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (/^(?:go home(?: to the reef)?|open home|open(?: the)? reef|show(?: the)? reef|back to (?:pearl|home|reef))$/i.test(normalized)) {
+    return "navigateHome";
+  }
+  if (/^(?:go back|navigate back)$/i.test(normalized)) {
+    return "navigateBack";
+  }
+  return null;
+}
+
 /**
  * Stay on-origin. Only rewind history when this session pushed a Pearl route;
  * otherwise return to `/` via pushState so companion audits and embeds never

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { collectReefPearls, isReefHomePath } from "./reef-home.js";
-import { navigateBackOrHome, navigateHome, nextEscapeAction } from "./shell-navigation.js";
+import { matchShellNavigationIntent, navigateBackOrHome, navigateHome, nextEscapeAction } from "./shell-navigation.js";
 
 test("Escape prefers approval cancel over collapsing Pearl", () => {
   assert.equal(nextEscapeAction({
@@ -34,6 +34,14 @@ test("navigateHome lands on the Reef root path", () => {
   assert.equal(isReefHomePath("/library"), true);
   assert.equal(isReefHomePath("/toolbox"), true);
   assert.equal(isReefHomePath("/scene/x"), false);
+});
+
+test("shell navigation intents match Reef and Scene companion phrases", () => {
+  assert.equal(matchShellNavigationIntent("go home"), "navigateHome");
+  assert.equal(matchShellNavigationIntent("go home to the reef"), "navigateHome");
+  assert.equal(matchShellNavigationIntent("open the reef"), "navigateHome");
+  assert.equal(matchShellNavigationIntent("go back"), "navigateBack");
+  assert.equal(matchShellNavigationIntent("merge these pearls"), null);
 });
 
 test("Reef collects every non-archived pearl across scenes", () => {

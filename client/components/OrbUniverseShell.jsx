@@ -53,6 +53,7 @@ import { useSupabaseSession } from "../lib/auth-session.js";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase.js";
 import {
   SHELL_ACTION_EVENT,
+  matchShellNavigationIntent,
   navigateBackOrHome,
   navigateHome,
   nextEscapeAction,
@@ -458,11 +459,17 @@ function LibraryHome({
           ? pearlCount
             ? `${activePearl?.name || "Your pearl"} is ready to continue`
             : `${continuationCount} ${continuationCount === 1 ? "piece" : "pieces"} ready to become a pearl`
-          : route.handoff ? "No working set arrived" : "Open this space from the Pearl on any page"}</h2>
+          : route.handoff
+            ? (extensionHandoff?.reason === "missing-extension-id"
+              ? "This build cannot verify the browser extension"
+              : "No working set arrived")
+            : "Open this space from the Pearl on any page"}</h2>
         <p>{continuationCount
           ? `${pearlCount ? `${pearlCount} ${pearlCount === 1 ? "pearl remains" : "pearls remain"}` : "This captured material remains"} source-linked. Continue the capsule into one Scene to refine, use, insert, or arrange it without losing provenance.`
           : route.handoff
-            ? "The link opened, but no capture, queued action, Lens, candidate, or saved orb was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it."
+            ? (extensionHandoff?.reason === "missing-extension-id"
+              ? "Trusted continuation needs VITE_LENS_EXTENSION_ID in this web build so the page can ask the installed Pearl extension for the working set. Rebuild with that id, or open Arrange in full Scene from the extension again."
+              : "The link opened, but no capture, queued action, Lens, candidate, or saved orb was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it.")
             : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
       </div>
       {continuationCount
@@ -1122,13 +1129,14 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "signOut", effectId: `signout:${Date.now()}` }));
       return;
     }
-    if (/^(?:go home|open home|open(?: the)? reef|show(?: the)? reef|back to (?:pearl|home|reef))$/i.test(recorded.entry.normalized)) {
+    const shellNavIntent = matchShellNavigationIntent(recorded.entry.normalized);
+    if (shellNavIntent === "navigateHome") {
       navigateHome();
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateHome" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateHome", effectId: `home:${Date.now()}` }));
       return;
     }
-    if (/^(?:go back|navigate back)$/i.test(recorded.entry.normalized)) {
+    if (shellNavIntent === "navigateBack") {
       navigateBackOrHome();
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "navigateBack" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "navigateBack", effectId: `back:${Date.now()}` }));

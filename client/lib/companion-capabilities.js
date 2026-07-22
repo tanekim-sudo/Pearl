@@ -527,7 +527,7 @@ const INTENT_EXAMPLES = {
   openPearlGuide: ["how do I use Pearl?"],
   openAuth: ["sign me in"],
   signOut: ["sign me out"],
-  navigateHome: ["go home", "open the reef", "show the reef"],
+  navigateHome: ["go home", "go home to the reef", "open the reef", "show the reef", "back to the reef"],
   navigateBack: ["go back"],
   openSettings: ["open account and privacy"],
   openEncodeAnything: ["encode this email into a pearl"],

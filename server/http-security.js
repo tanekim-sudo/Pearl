@@ -3,7 +3,13 @@ const idempotency = new Map();
 
 export function configuredOrigins(env = process.env) {
   const localPort = String(env.PORT || "8787");
-  const local = ["http://localhost:5173", "http://localhost:8787", `http://localhost:${localPort}`];
+  // Module scripts use CORS + Origin. Audits, Playwright, and many local tools hit
+  // 127.0.0.1 while humans often use localhost — both must work in non-production.
+  const localHosts = ["localhost", "127.0.0.1"];
+  const localPorts = new Set(["5173", "8787", localPort]);
+  const local = [...localHosts].flatMap((host) =>
+    [...localPorts].map((port) => `http://${host}:${port}`)
+  );
   const configured = String(env.CORS_ALLOWED_ORIGINS || env.APP_ORIGIN || "")
     .split(",")
     .map((item) => item.trim().replace(/\/$/, ""))
@@ -23,7 +29,9 @@ export function corsOptions(env = process.env) {
     credentials: false,
     origin(origin, callback) {
       if (!origin || allowed.has(origin.replace(/\/$/, ""))) callback(null, true);
-      else callback(new Error("origin not allowed"));
+      // Deny without throwing — a thrown Error becomes HTTP 500 and blanks the
+      // production SPA when module/CSS assets are requested with a disallowed Origin.
+      else callback(null, false);
     },
     allowedHeaders: ["authorization", "content-type", "idempotency-key", "x-lens-client"],
     methods: ["GET", "POST", "DELETE", "OPTIONS"],

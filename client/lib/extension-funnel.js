@@ -43,17 +43,31 @@ export async function checkTrustedExtensionInstallation(extensionId = import.met
   });
 }
 
+export function configuredExtensionId(extensionId = import.meta.env?.VITE_LENS_EXTENSION_ID) {
+  const id = String(extensionId || "").trim();
+  return id || "";
+}
+
 export async function requestTrustedExtensionHandoff(token, extensionId = import.meta.env?.VITE_LENS_EXTENSION_ID) {
-  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !extensionId || !globalThis.chrome?.runtime?.sendMessage) {
-    return { connected: false, handoff: null };
+  const trustedId = configuredExtensionId(extensionId);
+  if (!/^[a-f0-9]{32}$/i.test(String(token || "")) || !trustedId || !globalThis.chrome?.runtime?.sendMessage) {
+    return {
+      connected: false,
+      handoff: null,
+      reason: !/^[a-f0-9]{32}$/i.test(String(token || ""))
+        ? "invalid-token"
+        : !trustedId
+          ? "missing-extension-id"
+          : "extension-unavailable",
+    };
   }
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(extensionId, { type: "pearl-workspace-handoff", version: 1, nonce: token }, (value) => {
+    chrome.runtime.sendMessage(trustedId, { type: "pearl-workspace-handoff", version: 1, nonce: token }, (value) => {
       if (chrome.runtime.lastError || !value?.ok) {
-        resolve({ connected: false, handoff: null });
+        resolve({ connected: false, handoff: null, reason: "extension-rejected" });
         return;
       }
-      resolve({ connected: true, ...(value.value || {}), handoff: value.value?.handoff || null });
+      resolve({ connected: true, ...(value.value || {}), handoff: value.value?.handoff || null, reason: "ok" });
     });
   });
 }

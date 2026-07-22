@@ -238,6 +238,7 @@ import {
   LensRackToolbar,
 } from "./components/LensGrammarPanels.jsx";
 import { executeCapabilityScriptDirect, registerDirectorVerbs, runDirectorScript } from "./lib/director.js";
+import { matchShellNavigationIntent } from "./lib/shell-navigation.js";
 import { executePearlActionEvent } from "../shared/pearl-action-protocol.js";
 import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entity.js";
 import { listPearlVersions } from "../shared/pearl-version-history.js";
@@ -16394,6 +16395,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       argsSnapshot: recovered?.argsSnapshot || null,
       plan: recovered?.plan || null,
     });
+    // Deterministic shell navigation — shared with OrbUniverseShell reef companion.
+    // Must not depend on live planner/credentials; new users say “go home” from a Scene.
+    const shellNav = matchShellNavigationIntent(text);
+    if (shellNav === "navigateHome" || shellNav === "navigateBack") {
+      await executeCompanionScript([{ verb: shellNav, args: {} }], { title: shellNav === "navigateHome" ? "Go home" : "Go back" });
+      const effect = shellNav === "navigateHome" ? "navigated-home" : "navigated-back";
+      updateCommand(commandEntry.id, { status: "executed", effects: [effect] });
+      return { completed: true, effects: [effect] };
+    }
     const goalEnvelope = providedGoal || normalizeGoal(text);
     const recommendedMode = recommendCompanionMode(goalEnvelope, {
       autonomy: loadCompanionMemory(supaAuth.session?.user?.id).preferences?.autonomy,

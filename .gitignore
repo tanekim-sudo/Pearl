@@ -13,6 +13,8 @@ supabase/.branches
 .pw-browsers/
 .cache/ms-playwright/
 audit-shots/*
+!audit-shots/new-user-e2e-2026-07-22/
+!audit-shots/new-user-e2e-2026-07-22/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

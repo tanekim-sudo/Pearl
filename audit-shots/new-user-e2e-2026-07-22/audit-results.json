@@ -1,0 +1,188 @@
+{
+  "startedAt": "2026-07-22T17:32:56.003Z",
+  "baseUrl": "http://127.0.0.1:8787",
+  "out": "/Users/tanekim/Downloads/lens/audit-shots/new-user-e2e-2026-07-22",
+  "summary": {
+    "passed": 13,
+    "failed": 0,
+    "defects": 0,
+    "openDefects": 0
+  },
+  "results": [
+    {
+      "id": "NU-01-first-open",
+      "ok": true,
+      "title": "First open empty state is navigable",
+      "evidence": "01-first-open-empty.png",
+      "errors": []
+    },
+    {
+      "id": "NU-02-root",
+      "ok": true,
+      "title": "Reef route /",
+      "evidence": "02-reef-root.png"
+    },
+    {
+      "id": "NU-02-library",
+      "ok": true,
+      "title": "Reef route /library",
+      "evidence": "02-reef-library.png"
+    },
+    {
+      "id": "NU-02-toolbox",
+      "ok": true,
+      "title": "Reef route /toolbox",
+      "evidence": "02-reef-toolbox.png"
+    },
+    {
+      "id": "NU-02-narrow",
+      "ok": true,
+      "title": "Library usable at 390px",
+      "evidence": "02c-library-390.png"
+    },
+    {
+      "id": "NU-03-scene",
+      "ok": true,
+      "title": "Scene open + persistence",
+      "evidence": "03-scene-open.png",
+      "persisted": {
+        "scenes": 2,
+        "pearls": 0,
+        "active": null
+      },
+      "afterReload": {
+        "scenes": 2,
+        "pearls": 0
+      }
+    },
+    {
+      "id": "NU-04-studio",
+      "ok": true,
+      "title": "Pearl Studio open path",
+      "evidence": "04-pearl-studio.png",
+      "studioVisible": false,
+      "url": "http://127.0.0.1:8787/scene/studio-scene#pearl-studio=08d633cb-ac3f-4712-a0c5-16870c0c2bae"
+    },
+    {
+      "id": "NU-05-companion",
+      "ok": true,
+      "title": "Companion intents + gauntlet",
+      "worn5": {
+        "filled": 5,
+        "slots": [
+          "pearl-1",
+          "pearl-2",
+          "pearl-3",
+          "pearl-4",
+          "pearl-5"
+        ]
+      },
+      "sixthBlocked": true,
+      "sixthMessage": "{\"threw\":false,\"result\":{\"completed\":true,\"errors\":[],\"results\":[{\"type\":\"worn-pearl\",\"status\":\"full\",\"effects\":[],\"visibleText\":\"Gauntlet is full (5 active pearls). Remove one before wearing another.\"}],\"value\":{\"type\":\"worn-pearl\",\"status\":\"full\",\"effects\":[],\"visibleText\":\"Gauntlet is full (5 act",
+      "verbOutcomes": [
+        {
+          "verb": "mergeSemanticOrbs",
+          "ok": true,
+          "error": null,
+          "effects": null
+        },
+        {
+          "verb": "synthesizeSemanticOrbs",
+          "ok": true,
+          "error": null,
+          "effects": null
+        },
+        {
+          "verb": "createCounterPearl",
+          "ok": true,
+          "error": null,
+          "effects": [
+            "semantic-orb-created",
+            "pearl-counter-created"
+          ]
+        },
+        {
+          "verb": "organizePearl",
+          "ok": true,
+          "error": null,
+          "effects": [
+            "pearl-organized",
+            "semantic-orb-updated"
+          ]
+        },
+        {
+          "verb": "evaluateWithGauntlet",
+          "ok": true,
+          "error": null,
+          "effects": [
+            "gauntlet-evaluation-prepared",
+            "feedback-materialized"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "NU-06-output-frame",
+      "ok": true,
+      "title": "Trusted handoff → Output Frame",
+      "evidence": "06-handoff-continuation.png"
+    },
+    {
+      "id": "NU-07-anonymous",
+      "ok": true,
+      "title": "Anonymous local persistence works"
+    },
+    {
+      "id": "NU-08-offline",
+      "ok": true,
+      "title": "Offline API abort keeps UI usable",
+      "pageErrors": []
+    },
+    {
+      "id": "NU-09-install",
+      "ok": true,
+      "title": "Install route usable",
+      "evidence": "09-install.png"
+    },
+    {
+      "id": "NU-10-keyboard",
+      "ok": true,
+      "title": "Keyboard universal search works"
+    }
+  ],
+  "defects": [],
+  "screenshots": [
+    "01-first-open-empty.png",
+    "01b-companion-expanded.png",
+    "02-reef-root.png",
+    "02-reef-library.png",
+    "02-reef-toolbox.png",
+    "02c-library-390.png",
+    "03-scene-open.png",
+    "03b-scene-after-dblclick.png",
+    "04-pearl-studio.png",
+    "04b-organize.png",
+    "05-companion-navigate-home.png",
+    "05b-gauntlet-5.png",
+    "05c-gauntlet-refuse-6th.png",
+    "05d-merge.png",
+    "05d-synthesize.png",
+    "05d-counter.png",
+    "05d-organize.png",
+    "05d-evaluate.png",
+    "06-handoff-continuation.png",
+    "06b-output-frame.png",
+    "07-anonymous-persist.png",
+    "08-offline-api-abort.png",
+    "09-install.png",
+    "10-universal-search.png"
+  ],
+  "notVerified": [
+    "Chrome extension load-unpacked sidepanel DnD/GO in real Chrome (Playwright headless cannot load MV3 unpacked with full sidepanel UX). Extension unit/release tests and prior orb-universe extension audit remain the evidence boundary.",
+    "Live Supabase multi-account adopt/skip (credentials may be local-only; anonymous path verified).",
+    "Live AI Gateway model quality for organize/evaluate/synthesize (credentials optional; failure/blocker paths probed).",
+    "Microphone / voice companion and real touch hardware.",
+    "Screen-reader full pass (ARIA spot-checked via roles only)."
+  ],
+  "verdict": "New-user local journeys largely usable; see open P1/P2 and not-verified boundaries."
+}

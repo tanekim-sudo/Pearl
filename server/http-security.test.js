@@ -9,7 +9,27 @@ test("production CORS is allowlist-only and supports configured extension ids", 
   assert.equal(origins.has("http://localhost:5173"), false);
   assert.equal(origins.has("https://lens.example"), true);
   assert.equal(origins.has("chrome-extension://abc"), true);
-  corsOptions(env).origin("https://evil.example", (error) => assert.match(error.message, /not allowed/));
+  corsOptions(env).origin("https://evil.example", (error, allow) => {
+    assert.equal(error, null);
+    assert.equal(allow, false);
+  });
+});
+
+test("local CORS allows both localhost and 127.0.0.1 for Vite and API ports", () => {
+  const env = { NODE_ENV: "development", PORT: "8787" };
+  const origins = configuredOrigins(env);
+  assert.equal(origins.has("http://localhost:5173"), true);
+  assert.equal(origins.has("http://127.0.0.1:5173"), true);
+  assert.equal(origins.has("http://localhost:8787"), true);
+  assert.equal(origins.has("http://127.0.0.1:8787"), true);
+  corsOptions(env).origin("http://127.0.0.1:8787", (error, allow) => {
+    assert.equal(error, null);
+    assert.equal(allow, true);
+  });
+  corsOptions(env).origin("https://evil.example", (error, allow) => {
+    assert.equal(error, null);
+    assert.equal(allow, false);
+  });
 });
 
 test("idempotency keys are scoped to the authenticated user", () => {
