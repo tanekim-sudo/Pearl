@@ -25,7 +25,7 @@ export default function CompanionOrb({
   onUndo,
   onRedo,
   storageKey = ORB_PLACEMENT_KEY,
-  label = "Pearl",
+  label = "Companion",
   compact = false,
   featured = false,
   onContextAdd,
@@ -346,7 +346,7 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        title="Pearl · click to ask · hold to speak · Shift+Enter for Studio"
+        title="Companion · click to ask · hold to speak · wear a pearl anytime · Shift+Enter for Studio"
       >
         <span id={titleId} className="sr-only">{label}. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.</span>
         <PhysicalPearl
@@ -356,7 +356,12 @@ export default function CompanionOrb({
           size={compact ? 30 : 34}
           decorative
         />
-        <span className="orb-phase" aria-hidden="true">{phase === "listening" ? "Listening" : phase === "executing" ? "Working" : ""}</span>
+        <span className="orb-phase" aria-hidden="true">{
+          phase === "listening" ? "Listening"
+            : phase === "executing" ? "Working"
+              : state.activeSemanticOrbId ? "Pearl on"
+                : ""
+        }</span>
       </button>
       {!expanded && hint && <span className="pearl-start-hint">{hint}</span>}
       {expanded && (
@@ -366,7 +371,7 @@ export default function CompanionOrb({
               ref={commandInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              aria-label="Tell Pearl your goal"
+              aria-label="Tell the companion your goal"
               placeholder="What do you want?"
             />
             <button type="submit" aria-label="Send command">Send</button>

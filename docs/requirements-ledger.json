@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 54,
+    "features": 55,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -27,10 +27,10 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 54,
-    "domainCommands": 113,
-    "companionCapabilities": 204,
-    "extensionEntries": 77
+    "featureContracts": 55,
+    "domainCommands": 115,
+    "companionCapabilities": 212,
+    "extensionEntries": 80
   },
   "requirements": [
     {
@@ -50,6 +50,7 @@
         "execution.lens-context",
         "learning.before-after",
         "learning.transcript",
+        "companion.pearl-wear",
         "highlight.explicit-go",
         "ai.node-gestures",
         "persistence.account-adoption",
@@ -62,8 +63,7 @@
         "artifacts.higher-order",
         "companion.personal-vocabulary",
         "extraction.cognitive-pull-request",
-        "scene.v4",
-        "companion.orb-runtime"
+        "scene.v4"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -84,15 +84,13 @@
         "collectLensMaterial",
         "setPrimitiveMove",
         "reorderPrimitiveMove",
+        "activateSemanticOrb",
+        "createSemanticOrb",
+        "bindSemanticOrb",
+        "addSemanticOrbContext",
         "createFunctionFromContent",
         "materializeOnStage",
-        "materializeInOutputFrame",
-        "addOrbContext",
-        "updateOrbContext",
-        "removeOrbContext",
-        "addOrbLens",
-        "updateOrbLens",
-        "removeOrbLens"
+        "materializeInOutputFrame"
       ],
       "webEntries": [
         "client/lib/companion-observation.js",
@@ -108,6 +106,8 @@
         "client/components/HighlightToolbar.jsx",
         "client/components/BeforeAfterLensEditor.jsx",
         "client/components/LearnFromChat.jsx",
+        "client/components/CompanionOrb.jsx",
+        "client/components/OrbUniverseShell.jsx",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
         "client/components/CompanionChat.jsx",
@@ -119,8 +119,7 @@
         "client/components/CognitiveWorkflowStudio.jsx:higher-order",
         "client/components/CognitiveWorkflowStudio.jsx:vocabulary",
         "client/components/CognitiveWorkflowStudio.jsx:pull-request",
-        "client/components/OrbUniverseShell.jsx:data-semantic-anchor=\"scene-stage\"",
-        "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\""
+        "client/components/OrbUniverseShell.jsx:data-semantic-anchor=\"scene-stage\""
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -167,6 +166,11 @@
         "openTranscriptLearning",
         "generateTranscriptArtifacts",
         "saveTranscriptArtifacts",
+        "encodeConversationAsPearl",
+        "suggestPearlForConversation",
+        "wearPearl",
+        "removeWornPearl",
+        "inspectWornPearl",
         "cancelPendingBrush",
         "moveAiNode",
         "openExtensionDownload",
@@ -192,13 +196,6 @@
         "mergeCognitivePullRequest",
         "orchestrateCognitiveWorkflow",
         "createCreativeResearchProposal",
-        "toggleOrbCursor",
-        "addOrbContext",
-        "updateOrbContext",
-        "removeOrbContext",
-        "addOrbLens",
-        "updateOrbLens",
-        "removeOrbLens",
         "capturePageSelection",
         "openExternalArtifact",
         "pressExternalGo",
@@ -215,6 +212,9 @@
         "armExternalMerge",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter",
+        "wearExternalPearl",
+        "removeExternalWornPearl",
+        "encodeExternalConversationAsPearl",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
@@ -223,8 +223,7 @@
         "openExternalCognitiveStudio",
         "teachExternalPersonalCommand",
         "openExternalCognitivePullRequest",
-        "openExternalCreativeExtraction",
-        "toggleExternalOrbCursor"
+        "openExternalCreativeExtraction"
       ],
       "extensionEntries": [
         "capturePageSelection",
@@ -243,6 +242,9 @@
         "armExternalMerge",
         "openExternalBeforeAfter",
         "inferExternalBeforeAfter",
+        "wearExternalPearl",
+        "removeExternalWornPearl",
+        "encodeExternalConversationAsPearl",
         "showExternalLibraryImport",
         "saveExternalCaptureAsFunction",
         "captureExternalVisibleTab",
@@ -251,8 +253,7 @@
         "openExternalCognitiveStudio",
         "teachExternalPersonalCommand",
         "openExternalCognitivePullRequest",
-        "openExternalCreativeExtraction",
-        "toggleExternalOrbCursor"
+        "openExternalCreativeExtraction"
       ],
       "persistenceAndMigrations": [
         "lens.unified-workspace.v2",
@@ -262,6 +263,7 @@
         "lens.item.history.v1",
         "lens.before-after.draft.v1",
         "lens.learn-from-chat.draft.v1",
+        "lens.companion.worn-pearl.v1",
         "lens.ai.nodes.v1",
         "lens.board.items.v1",
         "lens.companion.run-ledger.v1",
@@ -274,10 +276,7 @@
         "personalCommandVocabulary",
         "lens.cognitive-pull-requests.v1",
         "cognitivePullRequestHandoff",
-        "lens.scenes.v4",
-        "lens.orb.placement.v1",
-        "lens.orb.cursor.v1",
-        "orbCursorTabs"
+        "lens.scenes.v4"
       ],
       "automatedTests": [
         "shared/workspace-observation.test.js",
@@ -297,12 +296,13 @@
         "client/lib/ai-nodes.test.js",
         "shared/before-after-examples.test.js",
         "shared/transcript-learning.test.js",
+        "shared/companion-pearl-wear.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/lens-runtime.test.js",
         "client/lib/ai-layout.test.js",
         "client/lib/board-sync.test.js",
         "shared/lens-library.test.js",
         "extension/tests/release.test.js",
-        "client/lib/companion-intent.test.js",
         "client/lib/companion-plan.test.js",
         "client/lib/director.test.js",
         "shared/drop-intent-resolver.test.js",
@@ -316,9 +316,7 @@
         "shared/personal-command-vocabulary.test.js",
         "shared/cognitive-pull-request.test.js",
         "shared/research-grounded-creativity.test.js",
-        "client/lib/unified-workspace.test.js",
-        "shared/orb-universe.test.js",
-        "extension/tests/core.test.js"
+        "client/lib/unified-workspace.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -337,6 +335,7 @@
         "client/lib/ai-nodes.js",
         "shared/before-after-examples.js",
         "shared/transcript-learning.js",
+        "shared/companion-pearl-wear.js",
         "shared/lens-runtime.js",
         "client/lib/board-sync.js",
         "extension/scripts/package.mjs",
@@ -348,8 +347,7 @@
         "shared/higher-order-artifacts.js",
         "shared/personal-command-vocabulary.js",
         "shared/cognitive-pull-request.js",
-        "client/lib/unified-workspace.js",
-        "shared/orb-runtime.js"
+        "client/lib/unified-workspace.js"
       ],
       "reachable": true
     },
@@ -1515,6 +1513,8 @@
         "openTranscriptLearning",
         "generateTranscriptArtifacts",
         "saveTranscriptArtifacts",
+        "encodeConversationAsPearl",
+        "suggestPearlForConversation",
         "openBeforeAfterCreation",
         "inferBeforeAfterTransformation",
         "saveLearnedFunction",
@@ -1540,6 +1540,7 @@
         "shared/companion-clarification.test.js",
         "shared/encode-evidence.test.js",
         "shared/transcript-learning.test.js",
+        "shared/companion-pearl-wear.test.js",
         "shared/before-after-examples.test.js"
       ],
       "browserEvidence": [
@@ -2998,5 +2999,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T04:17:19.924Z"
+  "generatedAt": "2026-07-22T04:27:13.062Z"
 }

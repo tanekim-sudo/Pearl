@@ -253,6 +253,15 @@ import {
 import { dispatchPearlPowerFx, powerFxForCommand, MAX_FILAMENT_TARGETS } from "../shared/pearl-power-fx.js";
 import { findOnScreenMatching, matchRectsForPowerFx } from "../shared/pearl-screen-match.js";
 import { pearlAnimationForCommand } from "../shared/pearl-animation.js";
+import {
+  buildWornPearlPack,
+  companionWearPrompt,
+  compressConversationToPearlSpec,
+  loadWornPearlId,
+  saveWornPearlId,
+  suggestPearlForConversation,
+} from "../shared/companion-pearl-wear.js";
+import { parseTranscript } from "../shared/transcript-learning.js";
 import { compileAutomationPearl } from "../shared/automation-pearl.js";
 import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
 import { PEARL_STORE_KEY } from "../shared/pearl-store.js";
@@ -12107,6 +12116,31 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
   }
 
+  function resolveWornPearlPack(preferredId = null) {
+    const scene = currentSemanticScene();
+    const orbs = scene?.semanticOrbs || [];
+    const wornId = preferredId || loadWornPearlId() || scene?.activeSemanticOrbId || null;
+    const pearl = orbs.find((entry) => entry.id === wornId && !entry.archived)
+      || (preferredId ? null : orbs.find((entry) => entry.id === scene?.activeSemanticOrbId && !entry.archived))
+      || null;
+    if (!pearl) return null;
+    const functions = (operatorsRef.current || []).filter((entry) => entry.kind === "function" || entry.processGraph);
+    return buildWornPearlPack(pearl, { functions });
+  }
+
+  function resolvePearlByNameOrId(id, name) {
+    const scene = currentSemanticScene();
+    const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
+    if (id) return orbs.find((entry) => entry.id === id) || null;
+    if (name) {
+      const needle = String(name).trim().toLowerCase();
+      return orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
+        || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
+        || null;
+    }
+    return null;
+  }
+
   function ensureCanonicalPearlStore(requestedPearlId = null) {
     let store = load(PEARL_STORE_KEY, { version: 1, entities: {}, activePearlId: null });
     const pearlId = requestedPearlId || store.activePearlId || `primary:${sceneId || "workspace"}`;
@@ -12675,7 +12709,180 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     },
     activateSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: a.id } });
+      if (a.id) saveWornPearlId(a.id);
       return { effectId: `semantic-orb-active:${a.id || "scene"}`, id: a.id || null };
+    },
+    wearPearl: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || (a.id || a.name ? null : resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId));
+      if (!pearl) {
+        await tk.wait(80);
+        return {
+          type: "worn-pearl",
+          status: "missing",
+          effects: [],
+          visibleText: "No matching pearl to wear. Companion still works — create one, or name the pearl to put on.",
+        };
+      }
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`) || document.querySelector(".companion-orb");
+      if (host) await tk.moveTo(host);
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: pearl.id } });
+      saveWornPearlId(pearl.id);
+      const pack = resolveWornPearlPack(pearl.id);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "absorb", durationMs: 420 },
+      }));
+      await tk.wait(420);
+      return {
+        type: "worn-pearl",
+        status: "worn",
+        object: pack,
+        effects: ["pearl-worn"],
+        visibleText: companionWearPrompt(pack),
+      };
+    },
+    removeWornPearl: async (a, tk) => {
+      saveWornPearlId(null);
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: null } }).catch(() => {});
+      await tk.wait(120);
+      return {
+        type: "worn-pearl",
+        status: "bare",
+        object: null,
+        effects: ["pearl-removed"],
+        visibleText: companionWearPrompt(null),
+      };
+    },
+    inspectWornPearl: async (a, tk) => {
+      const pack = resolveWornPearlPack();
+      await tk.wait(80);
+      return {
+        type: "worn-pearl",
+        status: pack ? "worn" : "bare",
+        object: pack,
+        effects: ["worn-pearl-inspected"],
+        visibleText: companionWearPrompt(pack),
+      };
+    },
+    suggestPearlForConversation: async (a, tk) => {
+      const transcript = a.transcript || parseTranscript(a.text || "");
+      const spec = compressConversationToPearlSpec(transcript, { name: a.name });
+      const scene = currentSemanticScene();
+      const suggestion = suggestPearlForConversation(scene?.semanticOrbs || [], {
+        name: spec.function.name,
+        description: spec.function.description,
+        steps: spec.function.steps,
+        keywords: spec.keywords,
+      });
+      await tk.wait(100);
+      return { type: "pearl-suggestion", object: { suggestion, spec }, effects: ["pearl-suggestion-ready"] };
+    },
+    encodeConversationAsPearl: async (a, tk) => {
+      let text = a.text || "";
+      if (!text && !a.transcript && a.captureScreen) {
+        tk.caption("share the conversation tab");
+        const image = await captureAuthorizedDisplayFrame();
+        const extracted = await runClaude(
+          "Extract the visible AI conversation as plain role-prefixed lines (User:/Assistant:). Do not invent turns.",
+          "(authorized ephemeral screen capture of a chat)",
+          { profile: "screen_transcript_extract", images: [image], maxTokens: 4000 },
+        ).catch(() => ({ text: "" }));
+        text = extracted?.text || "";
+      }
+      if (!text && !a.transcript) {
+        try {
+          text = await navigator.clipboard.readText();
+        } catch {
+          text = "";
+        }
+      }
+      if (!text && !a.transcript) {
+        throw new Error("Provide the conversation text, paste it, or capture the chat tab.");
+      }
+      const transcript = a.transcript || parseTranscript(text);
+      const spec = compressConversationToPearlSpec(transcript, { name: a.name });
+      const scene = currentSemanticScene();
+      const suggestion = suggestPearlForConversation(scene?.semanticOrbs || [], {
+        name: spec.function.name,
+        description: spec.function.description,
+        steps: spec.function.steps,
+        keywords: spec.keywords,
+      });
+      let target = resolvePearlByNameOrId(a.targetPearlId, a.targetPearlName);
+      if (!target && a.preferExisting !== false && !a.forceNew && suggestion.suggestions[0] && !suggestion.preferNew) {
+        target = resolvePearlByNameOrId(suggestion.suggestions[0].pearlId);
+      }
+      const vars = {};
+      const createdFn = await executeCapabilityScriptDirect([
+        {
+          verb: "createFunction",
+          args: {
+            name: spec.function.name,
+            description: spec.function.description,
+            steps: spec.function.steps.map((step) => ({
+              name: step.name,
+              prompt: step.prompt,
+              description: step.name,
+            })),
+            saveAs: "conversationFn",
+          },
+        },
+      ], { title: "Create conversation function", signal: tk.signal, vars });
+      const functionId = vars.conversationFn
+        || createdFn?.value?.id
+        || createdFn?.id
+        || operatorsRef.current?.find((entry) => entry.name === spec.function.name)?.id
+        || null;
+      let pearlId = target?.id || null;
+      if (!pearlId) {
+        const created = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+          command: "createSemanticOrb",
+          args: {
+            sceneId: sceneId || scene?.id,
+            activate: true,
+            orb: { name: spec.pearl.name },
+            material: spec.pearl.workingSet.context[0],
+          },
+        });
+        pearlId = created?.id || created?.result?.id || null;
+      } else {
+        await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+          command: "addSemanticOrbContext",
+          args: { id: pearlId, items: spec.pearl.workingSet.context },
+        });
+        await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+          command: "activateSemanticOrb",
+          args: { id: pearlId },
+        });
+      }
+      if (pearlId) {
+        if (functionId) {
+          await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+            command: "bindSemanticOrb",
+            args: {
+              id: pearlId,
+              representation: { kind: "function", refs: [functionId], label: spec.function.name },
+            },
+          }).catch(() => {});
+        }
+        saveWornPearlId(pearlId);
+      }
+      const pack = resolveWornPearlPack(pearlId);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearlId || "companion", semantic: "emerge", durationMs: 520 },
+      }));
+      await tk.wait(520);
+      return {
+        type: "conversation-pearl",
+        id: pearlId,
+        object: { pearlId, function: spec.function, suggestion, worn: pack },
+        effects: pearlId ? ["conversation-encoded-as-pearl", "pearl-worn"] : ["conversation-function-created"],
+        visibleText: target
+          ? `Added the replayable function to “${target.name}”. Companion is wearing that pearl.`
+          : suggestion.preferNew === false && suggestion.suggestions[0]
+            ? `Created “${spec.pearl.name}”. Closest existing pearl was “${suggestion.suggestions[0].name}” — say if you want it moved there.`
+            : `Created pearl “${spec.pearl.name}” with a replayable function. Companion is wearing it.`,
+      };
     },
     moveSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "moveSemanticOrb", args: a });
@@ -14904,11 +15111,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     },
     observeWorkspace: async (a) => {
       const semanticScene = currentSemanticScene();
+      const wornPearlPack = resolveWornPearlPack();
       const snapshot = buildWorkspaceSnapshot({
         items: itemsRef.current.filter((item) => itemVisibleOnPage(item, activePageId, worldFilter)),
         nodes: aiNodesRef.current,
         semanticOrbs: semanticScene?.semanticOrbs || [],
-        activeSemanticOrbId: semanticScene?.activeSemanticOrbId || null,
+        activeSemanticOrbId: wornPearlPack?.pearlId || semanticScene?.activeSemanticOrbId || null,
+        wornPearlPack,
         selectedItemIds: selRef.current,
         selectedNodeIds: selectedAiNodeIdsRef.current,
         highlightedIds: highlightSelectionRef.current,
@@ -14917,7 +15126,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         scope: a.scope,
         focused: { itemId: selRef.current.at(-1) || null, nodeId: selectedAiNodeIdsRef.current.at(-1) || null },
       });
-      return { type: "workspace-observation", observation: snapshot.observations[a.scope] || snapshot.observation };
+      const observation = snapshot.observations[a.scope] || snapshot.observation;
+      return {
+        type: "workspace-observation",
+        observation,
+        wornPearl: wornPearlPack,
+        companion: snapshot.companion,
+      };
     },
     interpretThroughLens: async (a, tk, ctx) => {
       const lens = directorResolveGenerator(a.lens, ctx);
@@ -15719,9 +15934,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { visible: true, text: "Choose Ask, Plan, Agent, or Debug mode." };
     }
     if (mode === "ask") {
+      const semanticScene = currentSemanticScene();
+      const wornPearlPack = resolveWornPearlPack();
       const snapshot = buildWorkspaceSnapshot({
         items: itemsRef.current,
         nodes: aiNodesRef.current,
+        semanticOrbs: semanticScene?.semanticOrbs || [],
+        activeSemanticOrbId: wornPearlPack?.pearlId || semanticScene?.activeSemanticOrbId || null,
+        wornPearlPack,
         selectedItemIds: selRef.current,
         selectedNodeIds: selectedAiNodeIdsRef.current,
         highlightedIds: highlightSelectionRef.current,
@@ -16766,12 +16986,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
     updateCommand(commandEntry.id, { disclosureReceipt: disclosure.receipt });
     onPhase?.("planning");
+    const wornPearlPackForPlan = resolveWornPearlPack();
     const raw = await runClaude("Create the validated action plan for this request.", text, {
       system: buildAdaptiveCompanionPrompt({
         workspaceContext: JSON.stringify(disclosure.bundle),
         autonomy,
         mode,
         goal: goalEnvelope,
+        wornPearlPack: wornPearlPackForPlan,
       }),
       maxTokens: 3200,
       timeoutMs: PHASE_TIMEOUT.synthesizeComposite,

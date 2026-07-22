@@ -47,6 +47,7 @@ export function buildWorkspaceSnapshot({
   nodes = [],
   semanticOrbs = [],
   activeSemanticOrbId = null,
+  wornPearlPack = null,
   selectedItemIds = [],
   selectedNodeIds = [],
   highlightedIds = [],
@@ -118,6 +119,14 @@ export function buildWorkspaceSnapshot({
       viewport: sceneRelationships(viewportObservation),
       paper: sceneRelationships(paperObservation),
     },
+    // Companion is always available; worn pearl is an optional capability pack.
+    companion: {
+      alwaysOn: true,
+      requiresPearl: false,
+      wornPearl: wornPearlPack || null,
+      activeSemanticOrbId: activeSemanticOrbId || wornPearlPack?.pearlId || null,
+    },
+    wornPearl: wornPearlPack || null,
     objects: objects.slice(0, 500),
     selection: objects.filter((object) => selected.has(object.id)).slice(0, MAX_LIMIT),
     highlighted: objects.filter((object) => highlighted.has(object.id)).slice(0, MAX_LIMIT),

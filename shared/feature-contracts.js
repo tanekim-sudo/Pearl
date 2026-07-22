@@ -80,8 +80,18 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("learning.transcript", {
     domains: ["move", "function", "lens"], commands: ["upsertCanonicalObject"],
-    ui: ["client/components/LearnFromChat.jsx"], companion: ["openTranscriptLearning", "generateTranscriptArtifacts", "saveTranscriptArtifacts"],
-    extension: [], persistence: ["lens.learn-from-chat.draft.v1"], tests: ["shared/transcript-learning.test.js"], owner: "shared/transcript-learning.js",
+    ui: ["client/components/LearnFromChat.jsx"], companion: ["openTranscriptLearning", "generateTranscriptArtifacts", "saveTranscriptArtifacts", "encodeConversationAsPearl", "suggestPearlForConversation"],
+    extension: [], persistence: ["lens.learn-from-chat.draft.v1"], tests: ["shared/transcript-learning.test.js", "shared/companion-pearl-wear.test.js"], owner: "shared/transcript-learning.js",
+  }),
+  feature("companion.pearl-wear", {
+    domains: ["scene", "interface", "function"],
+    commands: ["activateSemanticOrb", "createSemanticOrb", "bindSemanticOrb", "addSemanticOrbContext"],
+    ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx"],
+    companion: ["wearPearl", "removeWornPearl", "inspectWornPearl", "encodeConversationAsPearl", "suggestPearlForConversation"],
+    extension: ["wearExternalPearl", "removeExternalWornPearl", "encodeExternalConversationAsPearl"],
+    persistence: ["lens.companion.worn-pearl.v1"],
+    tests: ["shared/companion-pearl-wear.test.js", "client/lib/companion-intent.test.js"],
+    owner: "shared/companion-pearl-wear.js",
   }),
   feature("highlight.explicit-go", {
     domains: ["paper", "ai", "move", "function", "lens"], commands: [],
@@ -568,7 +578,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 54,
+  features: 55,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],

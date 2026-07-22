@@ -359,6 +359,89 @@ function App() {
 
   async function semanticOrbAction(name, args = {}) {
     const byId = new Map(semanticOrbs.map((orb) => [orb.id, orb]));
+    if (name === "clear-wear") {
+      const { saveWornPearlId } = await import("../../../shared/companion-pearl-wear.js");
+      saveWornPearlId(null);
+      await persistSemanticOrbs(semanticOrbs, null);
+      setReadyMessage("Companion is bare — no pearl worn.");
+      return { type: "external-worn-pearl", status: "bare" };
+    }
+    if (name === "encode-conversation") {
+      const {
+        compressConversationToPearlSpec,
+        suggestPearlForConversation,
+        saveWornPearlId,
+      } = await import("../../../shared/companion-pearl-wear.js");
+      const { parseTranscript } = await import("../../../shared/transcript-learning.js");
+      let text = String(args.text || "").trim();
+      if (!text && args.captureScreen) {
+        const capture = await action("capture-visible-tab", { authorized: true });
+        text = String(capture?.text || capture?.transcript || "").trim();
+      }
+      if (!text) throw new Error("Paste the conversation or capture the chat tab first.");
+      const transcript = parseTranscript(text);
+      const spec = compressConversationToPearlSpec(transcript, { name: args.name });
+      const suggestion = suggestPearlForConversation(semanticOrbs, {
+        name: spec.function.name,
+        description: spec.function.description,
+        steps: spec.function.steps,
+        keywords: spec.keywords,
+      });
+      const library = await action("save-transcript-artifacts", {
+        kinds: ["function"],
+        result: {
+          transcript,
+          candidates: {
+            function: {
+              supported: true,
+              name: spec.function.name,
+              description: spec.function.description,
+              steps: spec.function.steps,
+              outputSpec: spec.function.outputSpec,
+            },
+          },
+        },
+      });
+      const functionId = (library?.operators || [])
+        .filter((entry) => entry.libraryKind === "function" && entry.name === spec.function.name)
+        .at(-1)?.id || null;
+      let targetId = args.targetPearlId || null;
+      if (!targetId && !args.forceNew && suggestion.suggestions[0] && !suggestion.preferNew) {
+        targetId = suggestion.suggestions[0].pearlId;
+      }
+      if (!targetId) {
+        const created = await semanticOrbAction("create", {
+          name: spec.pearl.name,
+          material: spec.pearl.workingSet.context[0],
+        });
+        targetId = created.id;
+      } else {
+        await semanticOrbAction("add-context", { id: targetId, items: spec.pearl.workingSet.context });
+      }
+      const storedOrbs = (await BrowserPlatform.storage.get("local", ["semanticOrbs"])).semanticOrbs || [];
+      if (targetId && functionId) {
+        const nextOrbs = storedOrbs.map((orb) => (
+          orb.id === targetId
+            ? createSemanticOrb({
+              ...orb,
+              representation: { kind: "function", refs: [functionId], label: spec.function.name },
+            })
+            : createSemanticOrb(orb)
+        ));
+        await persistSemanticOrbs(nextOrbs, targetId);
+      }
+      await semanticOrbAction("open", { id: targetId, wear: true });
+      saveWornPearlId(targetId);
+      call("library-refresh").then(applyLibrary).catch(() => {});
+      setReadyMessage(`Conversation encoded into pearl with function “${spec.function.name}”.`);
+      return {
+        type: "external-conversation-pearl",
+        id: targetId,
+        functionId,
+        functionName: spec.function.name,
+        suggestion,
+      };
+    }
     if (name === "create") {
       const id = args.id || `external-orb:${crypto.randomUUID()}`;
       const value = await action("make-pearl", {
@@ -390,7 +473,13 @@ function App() {
       setActiveView("orbs");
       return { type: "external-semantic-orb", id: merged.id, orb: merged };
     }
-    const orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
+    let orb = byId.get(args.id) || semanticOrbs.find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
+    if (!orb && args.id) {
+      const stored = (await BrowserPlatform.storage.get("local", ["semanticOrbs"])).semanticOrbs || [];
+      orb = stored.map((entry) => createSemanticOrb(entry)).find((entry) => entry.id === args.id)
+        || stored.map((entry) => createSemanticOrb(entry)).find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
+      if (orb) byId.set(orb.id, orb);
+    }
     if (!orb) throw new Error("orb not found");
     if (name === "open") {
       const previousPearlId = activeSemanticOrbId;
@@ -400,6 +489,10 @@ function App() {
         if (restored) setSession(restored);
       }
       await persistSemanticOrbs(semanticOrbs, orb.id);
+      if (args.wear !== false) {
+        const { saveWornPearlId } = await import("../../../shared/companion-pearl-wear.js");
+        saveWornPearlId(orb.id);
+      }
       await action("page-canvas-command", { command: "activatePearlPageCanvas", args: { pearlId: orb.id } }).catch(() => {});
       if (previousPearlId && previousPearlId !== orb.id && pearlSoundscapes[previousPearlId]?.playback === "playing") {
         await controlPearlAudio("stop", { pearlId: previousPearlId }).catch(() => {});
@@ -408,7 +501,8 @@ function App() {
         await controlPearlAudio("play", { pearlId: orb.id }).catch(() => {});
       }
       setActiveView("orbs");
-      return { type: "external-semantic-orb-active", id: orb.id };
+      setReadyMessage(args.wear !== false ? `Wearing “${orb.name}” — companion has its context.` : `Opened “${orb.name}”.`);
+      return { type: "external-semantic-orb-active", id: orb.id, worn: args.wear !== false };
     }
     if (name === "add-context") {
       const items = args.items?.length ? args.items : session.fragments.slice(-1);

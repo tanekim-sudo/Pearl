@@ -390,12 +390,48 @@ test("bulk clear verbs are accepted by validated companion replies", () => {
   }
 });
 
+test("wear / remove / encode conversation parse as companion pearl verbs", () => {
+  assert.deepEqual(parseTranscriptLearningCommand("put on the LP briefings pearl"), {
+    verb: "wearPearl",
+    args: { name: "LP briefings" },
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("take off the worn pearl"), {
+    verb: "removeWornPearl",
+    args: {},
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("make this conversation a function I can replay"), {
+    verb: "encodeConversationAsPearl",
+    args: { preferExisting: true },
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("encode this chat into a new pearl"), {
+    verb: "encodeConversationAsPearl",
+    args: { forceNew: true },
+  });
+  assert.deepEqual(parseTranscriptLearningCommand("add this conversation into the LP briefings pearl"), {
+    verb: "encodeConversationAsPearl",
+    args: { targetPearlName: "LP briefings" },
+  });
+  const adaptive = buildAdaptiveCompanionPrompt({
+    wornPearlPack: { name: "LP briefings", pearlId: "p1", functions: [{ name: "Memo" }], lenses: [], context: [{}] },
+  });
+  assert.match(adaptive, /Worn pearl pack: “LP briefings”/);
+  assert.ok(COMPANION_VERBS.wearPearl);
+  assert.ok(COMPANION_VERBS.removeWornPearl);
+  assert.ok(COMPANION_VERBS.encodeConversationAsPearl);
+});
+
 test("planner requires executable commands to act without chatter", () => {
   const prompt = buildCompanionSystemPrompt();
   assert.match(prompt, /for every executable request, set "say" to ""/);
   assert.match(prompt, /Do not acknowledge, praise, summarize, or announce/);
   assert.match(prompt, /Cursor-style check-ins/);
   assert.match(prompt, /captureScreenAsEvidence/);
+  assert.match(prompt, /wearPearl/);
+  assert.match(prompt, /encodeConversationAsPearl/);
+  const worn = buildCompanionSystemPrompt({
+    wornPearlPack: { name: "LP briefings", functions: [{ name: "Memo" }], context: [{}] },
+  });
+  assert.match(worn, /Worn pearl: “LP briefings”/);
 });
 
 test("adaptive planner documents framework metadata outside capability args", () => {

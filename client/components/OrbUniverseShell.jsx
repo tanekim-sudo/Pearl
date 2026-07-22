@@ -2343,7 +2343,9 @@ export default function OrbUniverseShell({ StageComponent }) {
           { label: "Get the extension", run: () => navigate("/install") },
         ]),
       ]}
-      hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0 ? "Click to begin · hold to speak · import material · triple-click for Studio" : null}
+      hint={(sceneWorkspace.scenes || []).length === 0 && continuationMaterialCount(extensionHandoff) === 0
+        ? "Companion is ready · hold to speak · wear a pearl anytime · import material · triple-click for Studio"
+        : (orb.activeSemanticOrbId ? null : "Companion on · no pearl worn — put one on anytime")}
     />}
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}

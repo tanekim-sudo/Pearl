@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-22T04:17:08.159Z",
+  "generatedAt": "2026-07-22T04:27:21.934Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -375,7 +375,9 @@
       "orbVoice": [
         "openTranscriptLearning",
         "generateTranscriptArtifacts",
-        "saveTranscriptArtifacts"
+        "saveTranscriptArtifacts",
+        "encodeConversationAsPearl",
+        "suggestPearlForConversation"
       ],
       "extension": [],
       "canonicalCommands": [
@@ -385,7 +387,8 @@
         "lens.learn-from-chat.draft.v1"
       ],
       "appTests": [
-        "shared/transcript-learning.test.js"
+        "shared/transcript-learning.test.js",
+        "shared/companion-pearl-wear.test.js"
       ]
     },
     {
