@@ -330,6 +330,12 @@ import {
   publicCompanionError,
   updateCommand,
 } from "./lib/companion-command-ledger.js";
+import {
+  EXECUTION_CODES,
+  companionCommandReply,
+  ensureExecutionOnReply,
+  mapErrorToExecutionResult,
+} from "../shared/execution-result.js";
 import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
 import {
   buildWorkspaceSnapshot,
@@ -13446,7 +13452,16 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       if (!evaluation.ok) {
         await tk.wait(80);
-        throw new Error(evaluation.reason);
+        const code = /gauntlet working memory is empty/i.test(evaluation.reason)
+          ? EXECUTION_CODES.EMPTY_GAUNTLET
+          : /no page\/deck material/i.test(evaluation.reason)
+            ? EXECUTION_CODES.NO_MATERIAL
+            : EXECUTION_CODES.VALIDATION_ERROR;
+        const err = new Error(evaluation.reason);
+        err.code = code;
+        err.stage = "execute";
+        err.details = { verb: "evaluateWithGauntlet", requiresModel: evaluation.requiresModel === true };
+        throw err;
       }
       document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
         detail: { pearlId: packs[0]?.pearlId || "companion", semantic: "refract", durationMs: 360 },
@@ -16408,7 +16423,35 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     clearWorkspaceDomains: async (a) => stageCompanionClear(a.domains),
   });
 
+  function finalizeCompanionReply(result) {
+    return ensureExecutionOnReply(result);
+  }
+
   async function handleCompanionCommand(text, {
+    signal,
+    onPhase,
+    onPlan,
+    onWorker,
+    mode = "agent",
+    goal: providedGoal = null,
+    planApproved: restoredApproval = false,
+  } = {}) {
+    try {
+      return finalizeCompanionReply(await runCompanionCommand(text, {
+        signal,
+        onPhase,
+        onPlan,
+        onWorker,
+        mode,
+        goal: providedGoal,
+        planApproved: restoredApproval,
+      }));
+    } catch (error) {
+      return companionCommandReply(mapErrorToExecutionResult(error, { stage: "execute" }));
+    }
+  }
+
+  async function runCompanionCommand(text, {
     signal,
     onPhase,
     onPlan,
@@ -16502,7 +16545,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     };
     if (!modePermission(mode, { kind: "query", mutating: false }).allowed) {
       updateCommand(commandEntry.id, { status: "blocked", failure: "unknown companion mode" });
-      return { visible: true, text: "Choose Ask, Plan, Agent, or Debug mode." };
+      return companionCommandReply({
+        status: "blocked",
+        code: EXECUTION_CODES.MISSING_ARGS,
+        message: "Choose Ask, Plan, Agent, or Debug mode.",
+        stage: "confirm",
+      });
     }
     if (mode === "ask") {
       const semanticScene = currentSemanticScene();
@@ -17930,12 +17978,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     );
     onPlan?.(null);
     if (!execution.completed) {
-      if (execution.cancelled) return null;
+      if (execution.cancelled) {
+        return companionCommandReply({
+          status: "cancelled",
+          code: EXECUTION_CODES.CANCELLED,
+          message: "Cancelled. The workspace was not changed.",
+          stage: "execute",
+        });
+      }
       updateCommand(commandEntry.id, { status: "failed", failure: execution.error, effects: execution.effects || [] });
-      return {
-        visible: true,
-        text: publicCompanionError(execution.error),
-      };
+      return companionCommandReply(mapErrorToExecutionResult(execution.error, {
+        stage: "execute",
+        details: { effects: execution.effects || [] },
+      }));
     }
     harnessRun = transitionRun(harnessRun, { status: "completed" });
     persistRunLedger(harnessRun, localStorage);

@@ -528,6 +528,20 @@ export const FEATURE_CONTRACTS = Object.freeze([
     tests: ["shared/companion-clarification.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/companion-clarification.js",
   }),
+  feature("companion.execution-diagnostics", {
+    domains: ["interface", "companion", "extension"],
+    commands: [],
+    ui: [
+      "client/components/CompanionChat.jsx:companion-diagnostics",
+      "client/components/SurfaceErrorBoundary.jsx",
+      "client/main.jsx",
+    ],
+    companion: [],
+    extension: [],
+    persistence: ["lens.companion.execution-events.v1"],
+    tests: ["shared/execution-result.test.js", "client/lib/companion-intent.test.js"],
+    owner: "shared/execution-result.js",
+  }),
   feature("output.two-stage-routing", {
     domains: ["result", "extension", "ai", "interface"],
     commands: ["requestOutputPlacement", "interpretOutputPlacement", "confirmOutputPlacement", "beginOutputPlacement", "completeOutputPlacement", "failOutputPlacement", "cancelOutputPlacement"],
@@ -658,7 +672,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 63,
+  features: 64,
   minimumCompanionCapabilities: 137,
   minimumExtensionCapabilities: 15,
   requiredKinds: ["move", "function", "lens"],
@@ -675,5 +689,7 @@ export const FEATURE_BASELINE = Object.freeze({
     "shared/pearl-entity.js:createPearlEntity",
     "shared/pearl-action-protocol.js:executePearlActionEvent",
     "shared/pearl-animation.js:pearlAnimationForCommand",
+    "shared/execution-result.js:createExecutionResult",
+    "shared/execution-result.js:normalizeCompanionCommandResult",
   ],
 });

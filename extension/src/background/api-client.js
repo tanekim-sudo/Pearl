@@ -14,8 +14,15 @@ async function authToken() {
   return stored.accessToken || "";
 }
 
-function authError(code, message) {
-  return Object.assign(new Error(message), { code });
+function authError(code, message, extras = {}) {
+  return Object.assign(new Error(message), {
+    code,
+    stage: extras.stage || "api",
+    details: extras.details,
+    // Align with shared/execution-result.js codes when surfaced in companion/GO.
+    executionCode: extras.executionCode
+      || (code === "AUTH_REQUIRED" || code === "AUTH_EXPIRED" ? "needs-credentials" : undefined),
+  });
 }
 
 export async function authStatus() {
@@ -91,7 +98,15 @@ export async function apiRequest(path, options = {}) {
     await BrowserPlatform.storage.remove("session", ["accessToken"]).catch(() => {});
     throw authError("AUTH_EXPIRED", "Session expired. Sign in again.");
   }
-  if (!response.ok) throw Object.assign(new Error(`Request failed (${response.status}).`), { code: "API_REQUEST_FAILED", status: response.status });
+  if (!response.ok) {
+    throw Object.assign(new Error(`Request failed (${response.status}).`), {
+      code: "API_REQUEST_FAILED",
+      status: response.status,
+      stage: "api",
+      executionCode: response.status >= 500 ? "network-error" : "permission-denied",
+      details: { httpStatus: response.status, path: String(path || "").slice(0, 120) },
+    });
+  }
   return data;
 }
 

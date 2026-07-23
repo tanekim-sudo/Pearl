@@ -1,3 +1,5 @@
+import { mapErrorToExecutionResult } from "../../shared/execution-result.js";
+
 export const COMPANION_COMMAND_LEDGER_VERSION = 1;
 export const COMPANION_COMMAND_LEDGER_KEY = "lens.companion.command-ledger.v1";
 const MAX_ENTRIES = 100;
@@ -78,13 +80,10 @@ export function isRetryRequest(text) {
 }
 
 export function publicCompanionError(error) {
-  const message = String(error?.message || error || "");
-  if (error?.name === "AbortError") return "That action was stopped. Nothing else changed.";
-  if (/fetch failed|network|timeout|gateway/i.test(message)) {
-    return "The planning service is unavailable right now. Your workspace was not changed.";
-  }
-  if (/plan\.|schema|supported workspace query|is not accepted by|must be|unknown capability|invalid companion plan|referenceerror|is not defined/i.test(message)) {
-    return "I could not validate that action safely. Your workspace was not changed; you can retry it.";
-  }
-  return "That action could not be completed safely. Your workspace was not changed.";
+  return mapErrorToExecutionResult(error).message;
+}
+
+/** Structured failure for callers that want code + stage alongside sanitized copy. */
+export function publicCompanionExecution(error, options = {}) {
+  return mapErrorToExecutionResult(error, options);
 }

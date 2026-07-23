@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { redactPrivacyDiagnostic } from "../shared/local-privacy-vault.js";
+import { formatCrashDiagnostic, recordAndLogExecution } from "../shared/execution-result.js";
 import { installSecureLocalStorage } from "./lib/secure-local-storage.js";
 import "../shared/pearl-interface-tokens.css";
 import "./styles.css";
@@ -11,16 +12,33 @@ import "./orb-universe.css";
 class RootErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, diagnostic: null };
   }
   static getDerivedStateFromError(error) {
-    return { error };
+    const isDev = Boolean(import.meta.env?.DEV);
+    return { error, diagnostic: formatCrashDiagnostic(error, { isDev }) };
   }
   componentDidCatch(error, info) {
-    console.error("Pearl failed to render:", redactPrivacyDiagnostic(error), { componentStack: Boolean(info?.componentStack) });
+    const isDev = Boolean(import.meta.env?.DEV);
+    const diagnostic = formatCrashDiagnostic(error, { isDev });
+    recordAndLogExecution({
+      status: "failed",
+      code: "crash",
+      message: diagnostic.message,
+      stage: "execute",
+      details: { digest: diagnostic.digest, componentStack: Boolean(info?.componentStack) },
+    });
+    console.error(
+      "Pearl failed to render:",
+      redactPrivacyDiagnostic(error),
+      { digest: diagnostic.digest, componentStack: Boolean(info?.componentStack) },
+    );
   }
   render() {
     if (this.state.error) {
+      const diagnostic = this.state.diagnostic || formatCrashDiagnostic(this.state.error, {
+        isDev: Boolean(import.meta.env?.DEV),
+      });
       return (
         <div
           style={{
@@ -33,12 +51,33 @@ class RootErrorBoundary extends React.Component {
             color: "#101216",
           }}
         >
-          <div style={{ maxWidth: 480, textAlign: "center" }}>
+          <div style={{ maxWidth: 520, textAlign: "center" }}>
             <h1 style={{ fontSize: 20, margin: "0 0 12px" }}>Pearl hit a crash</h1>
-            <p style={{ margin: "0 0 16px", lineHeight: 1.5, color: "#4a4f57" }}>
-              The app stopped unexpectedly. Reload to continue. If it keeps happening, clear site data
-              for this page, then reopen — your Pearls stay on this device unless you wipe them.
+            <p style={{ margin: "0 0 10px", lineHeight: 1.5, color: "#4a4f57" }}>
+              {diagnostic.message}
             </p>
+            <p style={{ margin: "0 0 16px", fontSize: 12, color: "#6a707a" }}>
+              Digest <code style={{ fontSize: 11 }}>{diagnostic.digest}</code>
+              {" · "}Reload to continue. Pearls stay on this device unless you wipe site data.
+            </p>
+            {diagnostic.stackSnippet && (
+              <pre
+                style={{
+                  textAlign: "left",
+                  fontSize: 11,
+                  lineHeight: 1.4,
+                  padding: 12,
+                  margin: "0 0 16px",
+                  maxHeight: 160,
+                  overflow: "auto",
+                  background: "#ebecef",
+                  borderRadius: 8,
+                  color: "#2a2f38",
+                }}
+              >
+                {diagnostic.stackSnippet}
+              </pre>
+            )}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -51,7 +90,7 @@ class RootErrorBoundary extends React.Component {
                   cursor: "pointer",
                 }}
                 onClick={() => {
-                  this.setState({ error: null });
+                  this.setState({ error: null, diagnostic: null });
                   window.location.assign("/");
                 }}
               >

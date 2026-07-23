@@ -324,6 +324,22 @@ test("raw planner, schema, gateway, and ReferenceError details never become user
   }
 });
 
+test("empty gauntlet and credential blockers map to stable execution codes in chat copy", async () => {
+  const { formatExecutionChatMessage, inferExecutionCode, EXECUTION_CODES } = await import("../../shared/execution-result.js");
+  assert.equal(
+    inferExecutionCode("Gauntlet working memory is empty — wear at least one pearl before evaluating on-screen material."),
+    EXECUTION_CODES.EMPTY_GAUNTLET,
+  );
+  const chat = formatExecutionChatMessage({
+    status: "blocked",
+    code: EXECUTION_CODES.EMPTY_GAUNTLET,
+    message: "Gauntlet working memory is empty — wear at least one pearl first.",
+  });
+  assert.match(chat, /\[empty-gauntlet\]/);
+  assert.match(chat, /^Blocked:/);
+  assert.equal(inferExecutionCode("Live model critique needs credentials"), EXECUTION_CODES.NEEDS_CREDENTIALS);
+});
+
 test("typo-filled first-run clear request routes before profile capture", () => {
   const text = "get rid fo all functions and drawings and ai stuff let me start completely from scratch";
   assert.deepEqual(parseAdministrativeCommand(text), {

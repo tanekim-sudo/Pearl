@@ -56,7 +56,12 @@ export function getSupabase() {
     try {
       client = createClientFn(CONFIG.url, CONFIG.key);
     } catch (err) {
-      console.warn("[lens] Supabase client init failed:", err);
+      console.warn("[lens] Supabase client init failed:", {
+        status: "failed",
+        code: "needs-credentials",
+        stage: "api",
+        message: err?.message || String(err),
+      });
       return null;
     }
   }

@@ -27,6 +27,13 @@ import {
   saveCompanionMemory,
   setCompanionAutonomy,
 } from "../lib/companion-memory.js";
+import {
+  clearExecutionEvents,
+  formatExecutionChatMessage,
+  loadExecutionEvents,
+  normalizeCompanionCommandResult,
+  recordAndLogExecution,
+} from "../../shared/execution-result.js";
 
 const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
@@ -61,6 +68,8 @@ export default function CompanionChat({
     },
   ]);
   const [memoryOpen, setMemoryOpen] = useState(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState(() => loadExecutionEvents());
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState("");
@@ -166,9 +175,50 @@ export default function CompanionChat({
       utter.rate = 1.04;
       utter.pitch = 1.0;
       speechSynthesis.speak(utter);
-    } catch {
-      /* voice out is best-effort */
+    } catch (error) {
+      console.warn("[pearl:voice] speechSynthesis failed", error?.message || error);
     }
+  }
+
+  function refreshDiagnostics() {
+    setDiagnostics(loadExecutionEvents());
+  }
+
+  function surfaceExecution(result, error = null) {
+    const execution = result?.execution || normalizeCompanionCommandResult(result, error);
+    const problem = execution.status === "blocked"
+      || execution.status === "failed"
+      || execution.status === "cancelled";
+    // Persist problems for reload debugging; successes stay in-chat only.
+    if (problem) recordAndLogExecution(execution);
+    else if (import.meta.env?.DEV) recordAndLogExecution(execution);
+    refreshDiagnostics();
+    if (typeof window !== "undefined") {
+      window.__lensCompanionLastExecution = execution;
+      if (import.meta.env?.DEV) {
+        window.__lensCompanionLastError = problem ? execution : null;
+      }
+    }
+    if (problem) {
+      const text = formatExecutionChatMessage(execution);
+      setMessages((m) => [...m, {
+        role: "companion",
+        text,
+        error: execution.status !== "cancelled",
+        execution,
+      }]);
+      speak(execution.message);
+      return execution;
+    }
+    // Brief success confirmation so GO never feels silent.
+    const text = result?.visible && result?.text
+      ? result.text
+      : (execution.message && execution.message !== "Done."
+        ? execution.message
+        : "Done.");
+    setMessages((m) => [...m, { role: "companion", text, execution }]);
+    if (result?.visible && result?.text) speak(result.text);
+    return execution;
   }
 
   async function send(rawText, sourceOrEnvelope = "unknown") {
@@ -245,20 +295,14 @@ export default function CompanionChat({
           setMemory(next);
           const commandReply = await onCommand(route.command, commandOptions);
           setMemory(rememberCompanionAction(userId, route.command));
-          if (commandReply?.visible && commandReply.text) {
-            setMessages((m) => [...m, { role: "companion", text: commandReply.text }]);
-            speak(commandReply.text);
-          }
+          surfaceExecution(commandReply);
           return;
         }
         if (route.kind === "command") {
           setMemory(pauseCompanionInterview(userId));
           const commandReply = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
-          if (commandReply?.visible && commandReply.text) {
-            setMessages((m) => [...m, { role: "companion", text: commandReply.text }]);
-            speak(commandReply.text);
-          }
+          surfaceExecution(commandReply);
           return;
         }
         const next = saveCompanionMemory(userId, applyInterviewAnswer(memory, text));
@@ -268,39 +312,21 @@ export default function CompanionChat({
         if (field === "goal") {
           const result = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
-          if (result?.visible && result.text) {
-            setMessages((m) => [...m, { role: "companion", text: result.text }]);
-            speak(result.text);
-          }
+          surfaceExecution(result);
         }
         return;
       }
       const result = await onCommand(text, commandOptions);
       setMemory(rememberCompanionAction(userId, text));
-      if (result?.visible && result.text) {
-        setMessages((m) => [...m, { role: "companion", text: result.text }]);
-        speak(result.text);
-      } else if (pearlShell) {
-        const doneText = result?.completed === false
-          ? "That didn’t finish — try again, or say what you wanted differently."
-          : "Done. Watch the workspace (or gauntlet) for the result.";
-        setMessages((m) => [...m, { role: "companion", text: doneText }]);
-      }
+      surfaceExecution(result);
     } catch (err) {
-      if (typeof window !== "undefined" && import.meta.env?.DEV) {
-        window.__lensCompanionLastError = {
-          name: err?.name || "Error",
-          message: err?.message || String(err),
-          stack: err?.stack || null,
-        };
-      }
       if (run.signal.aborted || err?.name === "AbortError") {
+        surfaceExecution(null, err);
         setDraft(text);
         return;
       }
-      const msg = publicCompanionError(err);
+      surfaceExecution({ completed: false, text: publicCompanionError(err) }, err);
       setDraft(text);
-      setMessages((m) => [...m, { role: "companion", text: msg, error: true }]);
     } finally {
       const isCurrent = submitGuardRef.current.active()?.id === run.id;
       submitGuardRef.current.finish(run.id);
@@ -528,6 +554,19 @@ export default function CompanionChat({
         </button>
         <button
           type="button"
+          className={"companion-head-btn" + (diagnosticsOpen ? " on" : "")}
+          data-testid="companion-diagnostics-toggle"
+          onClick={() => {
+            refreshDiagnostics();
+            setDiagnosticsOpen((v) => !v);
+            setMemoryOpen(false);
+          }}
+          title="Why didn’t that run? — last execution problems"
+        >
+          why?
+        </button>
+        <button
+          type="button"
           className={"companion-head-btn" + (voiceOut ? " on" : "")}
           onClick={() => {
             if (voiceOut && typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
@@ -580,6 +619,40 @@ export default function CompanionChat({
           </button>
         )}
       </div>
+
+      {diagnosticsOpen && (
+        <div className="companion-diagnostics" data-testid="companion-diagnostics">
+          <strong>Why didn’t that run?</strong>
+          <p className="companion-diagnostics-hint">
+            Last {Math.max(diagnostics.length, 1)} execution event{diagnostics.length === 1 ? "" : "s"}
+            {" "}(kept for this tab session).
+          </p>
+          {diagnostics.length === 0 ? (
+            <p className="companion-diagnostics-empty">No blocked or failed runs yet in this session.</p>
+          ) : (
+            <ol className="companion-diagnostics-list">
+              {[...diagnostics].reverse().slice(0, 12).map((event, index) => (
+                <li key={`${event.at}-${event.code}-${index}`} className={`companion-diagnostics-item status-${event.status}`}>
+                  <code>{event.code}</code>
+                  <span className="companion-diagnostics-status">{event.status}</span>
+                  <span className="companion-diagnostics-stage">{event.stage}</span>
+                  <p>{event.message}</p>
+                  {event.details?.verb && <small>verb: {event.details.verb}</small>}
+                </li>
+              ))}
+            </ol>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              clearExecutionEvents();
+              refreshDiagnostics();
+            }}
+          >
+            clear session log
+          </button>
+        </div>
+      )}
 
       {memoryOpen && (
         <div className="companion-memory" data-testid="companion-memory">
@@ -705,7 +778,11 @@ export default function CompanionChat({
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={"companion-msg " + m.role + (m.error ? " error" : "")}>
+          <div
+            key={i}
+            className={"companion-msg " + m.role + (m.error ? " error" : "") + (m.execution ? ` exec-${m.execution.status}` : "")}
+            data-execution-code={m.execution?.code || undefined}
+          >
             {m.text}
           </div>
         ))}

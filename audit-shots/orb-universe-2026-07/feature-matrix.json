@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T17:38:34.963Z",
+  "generatedAt": "2026-07-23T20:49:59.092Z",
   "counts": {
-    "features": 63,
+    "features": 64,
     "companion": 402,
     "extension": 120,
     "commands": 131
@@ -1146,6 +1146,16 @@
       "extension": [],
       "tests": [
         "shared/companion-clarification.test.js",
+        "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "companion.execution-diagnostics",
+      "commands": [],
+      "companion": [],
+      "extension": [],
+      "tests": [
+        "shared/execution-result.test.js",
         "client/lib/companion-intent.test.js"
       ]
     },

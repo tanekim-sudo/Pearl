@@ -86,6 +86,11 @@ import {
   wearPearlIdInGauntlet,
 } from "../../shared/companion-pearl-gauntlet.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
+import {
+  EXECUTION_CODES,
+  mapErrorToExecutionResult,
+  recordAndLogExecution,
+} from "../../shared/execution-result.js";
 
 export { collectReefPearls, findWorkspacePearl, isReefHomePath } from "../lib/reef-home.js";
 
@@ -1975,10 +1980,21 @@ export default function OrbUniverseShell({ StageComponent }) {
           commandId: "clearWorkspaceDomains",
         }));
       }
-      if (result?.visible) {
+      const execution = result?.execution || null;
+      const problem = execution
+        && (execution.status === "blocked" || execution.status === "failed" || execution.status === "cancelled");
+      if (result?.visible || problem) {
+        if (execution) recordAndLogExecution(execution);
+        const boundary = execution
+          ? `${execution.message} [${execution.code}]`
+          : result.text;
         setOrb((value) => value.phase === "blocked" ? value : transitionOrb(value, "blocked", {
           taskId: recorded.entry.id,
-          evidence: { boundary: result.text },
+          evidence: {
+            boundary,
+            code: execution?.code,
+            stage: execution?.stage,
+          },
         }));
         return;
       }
@@ -1993,11 +2009,19 @@ export default function OrbUniverseShell({ StageComponent }) {
           taskId: recorded.entry.id,
           commandId: "companion-plan",
           effectId: `companion:${recorded.entry.id}`,
-          evidence: result?.text ? { title: result.text } : { title: "Done" },
+          evidence: result?.text
+            ? { title: result.text }
+            : { title: execution?.message || "Done", code: execution?.code },
         });
       });
     } catch (error) {
       if (error.name === "AbortError" || controller.signal.aborted) {
+        recordAndLogExecution({
+          status: "cancelled",
+          code: EXECUTION_CODES.ABORTED,
+          message: "Stopped by user",
+          stage: "execute",
+        });
         setOrb((value) => createOrbState({
           ...value,
           phase: "paused",
@@ -2008,20 +2032,28 @@ export default function OrbUniverseShell({ StageComponent }) {
             to: "paused",
             taskId: recorded.entry.id,
             at: new Date().toISOString(),
-            evidence: { boundary: "Stopped by user" },
+            evidence: { boundary: "Stopped by user", code: "aborted" },
           }],
         }));
         return;
       }
-      const boundary = /did not become ready/i.test(error?.message || "")
+      const runtimeStarting = /did not become ready/i.test(error?.message || "");
+      const fallbackBoundary = runtimeStarting
         ? "Companion runtime is still starting — click the Companion Pearl again in a moment, or try “open a new scene”."
         : (error.message || "That action could not be completed.");
+      const execution = mapErrorToExecutionResult(error, {
+        stage: "execute",
+        code: runtimeStarting ? EXECUTION_CODES.RUNTIME_UNAVAILABLE : undefined,
+        message: runtimeStarting ? fallbackBoundary : undefined,
+      });
+      recordAndLogExecution(execution);
+      const boundary = `${execution.message} [${execution.code}]`;
       setOrb((value) => {
         if (value.phase === "blocked") return value;
         const recoverable = ["executing", "paused"].includes(value.phase)
           ? transitionOrb(value, "recovery", { taskId: recorded.entry.id, evidence: { error: error.message } })
           : value;
-        return transitionOrb(recoverable, "blocked", { taskId: recorded.entry.id, evidence: { boundary } });
+        return transitionOrb(recoverable, "blocked", { taskId: recorded.entry.id, evidence: { boundary, code: execution.code } });
       });
     } finally {
       if (activeRunAbortRef.current === controller) activeRunAbortRef.current = null;

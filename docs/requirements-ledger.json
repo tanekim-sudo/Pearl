@@ -2,7 +2,7 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 63,
+    "features": 64,
     "minimumCompanionCapabilities": 137,
     "minimumExtensionCapabilities": 15,
     "requiredKinds": [
@@ -22,12 +22,14 @@
       "extension/src/sidepanel/companion.js:EXTENSION_VERBS",
       "shared/pearl-entity.js:createPearlEntity",
       "shared/pearl-action-protocol.js:executePearlActionEvent",
-      "shared/pearl-animation.js:pearlAnimationForCommand"
+      "shared/pearl-animation.js:pearlAnimationForCommand",
+      "shared/execution-result.js:createExecutionResult",
+      "shared/execution-result.js:normalizeCompanionCommandResult"
     ]
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 63,
+    "featureContracts": 64,
     "domainCommands": 119,
     "companionCapabilities": 221,
     "extensionEntries": 88
@@ -3034,5 +3036,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-22T17:38:40.507Z"
+  "generatedAt": "2026-07-23T20:49:59.336Z"
 }
