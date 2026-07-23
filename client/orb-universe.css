@@ -648,7 +648,7 @@
   bottom: calc(100% + 10px);
   transform: translateX(-50%);
   width: max-content;
-  max-width: 220px;
+  max-width: 240px;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(8, 10, 11, .72);
@@ -657,6 +657,11 @@
   letter-spacing: .01em;
   pointer-events: none;
   text-align: center;
+  opacity: .88;
+}
+.companion-orb-shell.expanded .orb-gauntlet-legend,
+.companion-orb-shell:focus-within .orb-gauntlet-legend {
+  opacity: 1;
 }
 .orb-ledger-howto {
   margin: 0 0 8px;
@@ -708,6 +713,15 @@
   background: transparent;
   color: var(--orb-text-2);
   font: 500 12px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.pearl-scene-chrome .pearl-scene-primary-action {
+  color: var(--orb-text-1);
+  border-bottom-color: var(--orb-focus);
+  font-weight: 560;
+}
+.pearl-scene-chrome .pearl-scene-secondary-action {
+  opacity: .78;
+  order: 3;
 }
 .pearl-scene-chrome button:hover,
 .pearl-scene-chrome button:focus-visible { color: var(--orb-text-1); border-bottom-color: var(--orb-focus); }
@@ -1330,14 +1344,14 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 }
 
 /* First-run welcome, Pearl guide, and quick actions */
-/* Welcome owns the first viewport — hide reef orbit chrome so labels cannot collide. */
+/* Welcome owns the first viewport — hide reef shelf/intro so Companion teaching is not duplicated. */
 .orb-universe:has(.pearl-welcome) .orb-recent-orbit,
-.orb-universe:has(.pearl-welcome) .orb-home-prompt {
+.orb-universe:has(.pearl-welcome) .orb-home-prompt,
+.orb-universe:has(.pearl-welcome) .orb-home-intro,
+.orb-universe:has(.pearl-welcome) .orb-reef-kicker,
+.orb-universe:has(.pearl-welcome) .pearl-reef-chrome {
   visibility: hidden;
   pointer-events: none;
-}
-.orb-universe:has(.pearl-welcome) .pearl-reef-chrome {
-  z-index: 9001;
 }
 .pearl-welcome {
   position: fixed;
@@ -1405,7 +1419,30 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   transition: border-color .2s, color .2s, transform .25s var(--orb-ease);
 }
 .pearl-welcome-actions button:hover { border-color: var(--orb-text-2); color: var(--orb-text-1); transform: translateY(-1px); }
-.pearl-welcome-actions .pearl-welcome-primary { border-color: var(--orb-text-2); color: var(--orb-text-1); }
+.pearl-welcome-actions .pearl-welcome-primary { border-color: var(--orb-text-2); color: var(--orb-text-1); font-weight: 550; }
+.pearl-welcome-actions .pearl-welcome-secondary {
+  border-color: transparent;
+  border-bottom: 1px solid var(--orb-line);
+  border-radius: 0;
+  min-height: 34px;
+  opacity: .82;
+  font-size: 11.5px;
+}
+.pearl-welcome[data-companion-first="true"] .pearl-welcome-mark {
+  width: 72px;
+  height: 72px;
+}
+.orb-reef-home[data-companion-first="true"] .orb-home-intro {
+  max-width: 400px;
+}
+.orb-reef-home[data-companion-first="true"] .orb-recent-orbit {
+  opacity: .92;
+}
+.orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro,
+.orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-recent-orbit {
+  opacity: .42;
+  pointer-events: none;
+}
 .pearl-welcome-dismiss {
   min-height: 32px;
   margin-top: 14px;

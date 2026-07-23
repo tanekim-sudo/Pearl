@@ -122,7 +122,7 @@ test("Companion and Studio remain explicit without simultaneous management clutt
   assert.match(shell, /collectReefPearls/);
   assert.match(shell, /matchShellNavigationIntent|navigateHome/);
   assert.match(source("client/lib/companion-capabilities.js"), /open the reef/);
-  assert.match(source("client/lib/shell-navigation.js"), /open(?: the)? reef/);
+  assert.match(source("client/lib/shell-navigation.js"), /open\(\?: the\)\? reef/);
 });
 
 test("every capability family remains reachable by intent and relevant Studio commands", () => {
@@ -160,12 +160,16 @@ test("cold first use is visible and renders only the actionable primary Pearl", 
   assert.match(universe, /What do you want to do\?/);
   assert.match(universe, /const firstUse = isRoot && scenes\.length === 0/);
   assert.match(universe, /const emptyLibrary = !isRoot && scenes\.length === 0/);
-  assert.match(universe, /Click Pearl/);
-  assert.match(universe, /Create a pearl workspace/);
-  assert.match(universe, /Reef · home for all your pearls/);
+  assert.match(universe, /Click Companion/);
+  assert.match(universe, /Open a Scene workspace/);
+  assert.match(universe, /Reef · shelf of context pearls/);
+  assert.match(universe, /Companion Pearl<\/b> is how you ask|context add-ons|up to 5/i);
   assert.doesNotMatch(universe, /white orb/i);
+  assert.doesNotMatch(universe, /two pearls competing|competing companions/i);
+  assert.match(universe, /not rival companions|not a second app/i);
   assert.doesNotMatch(styles, /\.orb-home-intro,\s*\.orb-home-prompt\s*\{\s*display:\s*none/);
   assert.match(styles, /\.orb-universe:has\(\.companion-orb-shell\.expanded\) \.orb-home-prompt/);
+  assert.match(styles, /\.orb-universe:has\(\.pearl-welcome\) \.orb-home-intro/);
   assert.doesNotMatch(universe, /className="orb-continuation-pearl"/);
   assert.doesNotMatch(universe, /className="orb-stage-locus"/);
 });

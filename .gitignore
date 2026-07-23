@@ -25,6 +25,8 @@ audit-shots/*
 !audit-shots/all-paths-2026-07-22/**
 !audit-shots/pearl-clean-2026-07-22/
 !audit-shots/pearl-clean-2026-07-22/**
+!audit-shots/companion-first-simple-2026-07-22/
+!audit-shots/companion-first-simple-2026-07-22/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

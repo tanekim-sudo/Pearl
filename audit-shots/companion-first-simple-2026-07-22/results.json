@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-07-23T06:05:12.653Z",
+  "baseUrl": "http://127.0.0.1:41737",
+  "checks": [
+    {
+      "id": "welcome-visible",
+      "status": "pass",
+      "detail": "welcome companion-first",
+      "severity": "P1"
+    },
+    {
+      "id": "welcome-teaches-companion",
+      "status": "pass",
+      "detail": "companion pearl\n\nwhat do you want to do?\n\nnext: talk through the companion pearl. context pearls (up to 5) load into its gauntlet as working memory — not rival companions.\n\nclick c",
+      "severity": "P1"
+    },
+    {
+      "id": "welcome-no-dual-teaching",
+      "status": "pass",
+      "detail": "no competing-companion copy",
+      "severity": "P1"
+    },
+    {
+      "id": "welcome-primary-cta",
+      "status": "pass",
+      "detail": "primary Next CTA",
+      "severity": "P1"
+    },
+    {
+      "id": "reef-shelf",
+      "status": "pass",
+      "detail": "reef marked companion-first",
+      "severity": "P1"
+    },
+    {
+      "id": "reef-shelf-copy",
+      "status": "pass",
+      "detail": "reef (shelf)\nreef · shelf of context pearls\ncompanion (type + go)\nyou are here\nstart with the companion\n\nnext: click the companion, type what you want, press go. the shelf below stores context pearls ",
+      "severity": "P1"
+    },
+    {
+      "id": "reef-not-second-app",
+      "status": "pass",
+      "detail": "shelf framing",
+      "severity": "P1"
+    },
+    {
+      "id": "companion-expanded",
+      "status": "pass",
+      "detail": "companion open",
+      "severity": "P1"
+    },
+    {
+      "id": "gauntlet-legend",
+      "status": "pass",
+      "detail": "gauntlet — up to 5 context pearls",
+      "severity": "P1"
+    },
+    {
+      "id": "gauntlet-sockets",
+      "status": "pass",
+      "detail": "sockets=5",
+      "severity": "P1"
+    },
+    {
+      "id": "scene-chrome-companion",
+      "status": "pass",
+      "detail": "← reef (shelf)\nscene · overflow canvas\nuntitled scene\nnext: companion → type → go. context pearls here can wear into the gauntlet — output frame is optional.\nop",
+      "severity": "P1"
+    },
+    {
+      "id": "scene-output-secondary",
+      "status": "pass",
+      "detail": "Output Frame present but not primary teaching",
+      "severity": "P1"
+    },
+    {
+      "id": "scene-empty-companion",
+      "status": "pass",
+      "detail": "empty scene — ask the companion\n\nnext: click the companion → type what you want → press go. or create a context pearl here and wear it into the gauntlet (up to ",
+      "severity": "P1"
+    },
+    {
+      "id": "context-pearl-created",
+      "status": "pass",
+      "detail": "pearls=1",
+      "severity": "P1"
+    },
+    {
+      "id": "wear-without-output-frame",
+      "status": "pass",
+      "detail": "filled=1; frameOpen=false",
+      "severity": "P1"
+    },
+    {
+      "id": "narrow-companion-present",
+      "status": "pass",
+      "detail": "390px companion",
+      "severity": "P1"
+    },
+    {
+      "id": "extension-shelf-copy",
+      "status": "pass",
+      "detail": "sidepanel shelf teaches gauntlet equip",
+      "severity": "P1"
+    },
+    {
+      "id": "extension-companion-aria",
+      "status": "pass",
+      "detail": "companion aria",
+      "severity": "P1"
+    }
+  ],
+  "screenshots": [
+    "01-welcome-companion-first.png",
+    "02-reef-shelf.png",
+    "03-companion-expanded.png",
+    "04-scene-empty-companion-first.png",
+    "05-context-pearl-on-scene.png",
+    "06-wear-from-scene.png",
+    "07-reef-return-shelf.png",
+    "08-reef-narrow-390.png",
+    "09-reef-zoom-200.png"
+  ],
+  "defects": [],
+  "gaps": [
+    "Loaded Chrome extension page Pearl / sidepanel UI not exercised in this browser session (source + web dogfood only).",
+    "Live model / credential paths not verified."
+  ]
+}

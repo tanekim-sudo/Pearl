@@ -149,8 +149,8 @@ export default function PearlStudioView({ localRef }) {
       @media(prefers-reduced-motion:reduce){.web-pearl-studio *{animation:none!important;transition:none!important}}
     `}</style>
     <header className="web-pearl-studio__banner" data-testid="studio-banner">
-      <span>Pearl Studio</span>
-      <p><b>Next:</b> Name this pearl, write in the big text area, then use Organize or Close Studio. “Close Studio” returns you to the Reef/workspace.</p>
+      <span>Pearl Studio · overflow tools</span>
+      <p><b>Next:</b> Edit this context pearl, then Close Studio to return to the Companion and Reef shelf. Studio is not a second home.</p>
     </header>
     <div className="web-pearl-studio__pearl">
       <PhysicalPearl

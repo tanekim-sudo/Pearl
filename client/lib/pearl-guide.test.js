@@ -50,14 +50,21 @@ test("platform filtering keeps shared sections and drops the other surface", () 
   assert.ok(extension.some((section) => section.id === "import-pearls"));
 });
 
-test("guide teaches Reef home and Studio Moves → Functions → Lenses order", () => {
+test("guide teaches Reef shelf, Companion-first begin, and Studio Moves → Functions → Lenses order", () => {
+  const begin = PEARL_GUIDE_SECTIONS.find((section) => section.id === "begin");
   const studio = PEARL_GUIDE_SECTIONS.find((section) => section.id === "studio");
   const reef = PEARL_GUIDE_SECTIONS.find((section) => section.id === "reef");
+  assert.ok(begin);
   assert.ok(studio);
   assert.ok(reef);
+  assert.match(begin.title, /Companion/i);
+  assert.match(begin.summary, /Companion Pearl/i);
+  assert.match(begin.items.find((item) => item.id === "gauntlet")?.detail || "", /not rival companions/i);
   assert.match(studio.summary, /Moves → Functions → Lenses/);
+  assert.match(studio.summary, /overflow/i);
   assert.match(studio.items[0].gesture, /Triple-click/);
-  assert.match(reef.summary, /Reef|home/i);
+  assert.match(reef.summary, /shelf|library/i);
+  assert.match(reef.summary, /not a second control center/i);
   assert.equal(reef.items.find((item) => item.id === "open-reef")?.command, "open the reef");
 });
 

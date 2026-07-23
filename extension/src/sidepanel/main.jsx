@@ -103,7 +103,7 @@ function ExtensionOrb({
     className="extension-orb-shell"
     data-orb-state={phase}
     data-gauntlet="true"
-    aria-label={`Pearl gauntlet, ${filled} of ${MAX_GAUNTLET_SLOTS} working-memory sockets filled, ${phase}`}
+    aria-label={`Companion Pearl gauntlet, ${filled} of ${MAX_GAUNTLET_SLOTS} context-pearl sockets filled, ${phase}`}
     onPointerMove={moveLight}
     onDragOver={(event) => event.preventDefault()}
     onDrop={onDropMaterial}
@@ -113,7 +113,7 @@ function ExtensionOrb({
       {Array.from({ length: Math.min(6, contextCount) }, (_, index) => <i className="extension-context-star" key={index} style={{ "--star-index": index, "--star-count": Math.min(6, contextCount) }} />)}
       {Array.from({ length: Math.min(5, candidateCount) }, (_, index) => <span className="extension-candidate-star" key={index} style={{ "--candidate-index": index }} dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-candidate-${index}`, variant: "candidate", state: "new", size: 16, decorative: true }) }} />)}
     </div>
-    <div className="extension-gauntlet" aria-label="Gauntlet working memory">
+    <div className="extension-gauntlet" aria-label="Gauntlet — context pearls in working memory">
       {sockets.map((layout, index) => {
         const pearlId = slots[index];
         const pearl = pearlId ? pearlsById[pearlId] : null;
@@ -168,7 +168,7 @@ function ExtensionOrb({
             />}
         </button>;
       })}
-      <button type="button" className="extension-orb" aria-label={`Open Pearl actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
+      <button type="button" className="extension-orb" aria-label={`Open Companion actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
         <style>{PHYSICAL_PEARL_CSS}</style>
         <span
           data-pearl-aesthetic={aesthetic?.preset || undefined}
@@ -1814,9 +1814,9 @@ function App() {
       </>}
     </aside>}
     {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
-    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Pearl shelf">
+    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Context pearl shelf">
       <div className="extension-semantic-orb-head">
-        <div><h2>Shelf</h2><small>Pearls rest here by default. Drag into a gauntlet socket to load working memory; drag out to return.</small></div>
+        <div><h2>Shelf</h2><small>Context pearls rest here. Drag into a Companion gauntlet socket (up to {MAX_GAUNTLET_SLOTS}) to equip; drag out to return. Not rival companions.</small></div>
         <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
           {session.fragments.length ? "Make a pearl" : "New empty pearl"}
         </button>
@@ -1866,7 +1866,7 @@ function App() {
           <b>{orb.name}</b>
           <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context</small>
         </button>)}
-        {!semanticOrbs.some((orb) => !orb.archived) && <p>No saved pearls yet. Select page material and make your first pearl.</p>}
+        {!semanticOrbs.some((orb) => !orb.archived) && <p>Shelf empty. Select page material, make a context pearl, then drag it into the Companion gauntlet.</p>}
       </div>
       {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
         <input
@@ -1909,7 +1909,7 @@ function App() {
       {!packages.length && <p>No public or team packages are visible.</p>}
     </section>}
     {!characters && !session.queue.length && <section className={`orb-panel ${activeView === "context" ? "active" : ""} quick-start`}>
-      <p>Import a chat, paste notes, or highlight the page — then make your first Pearl. Or ask Pearl in plain language.</p>
+      <p><b>Next:</b> Click the Companion → type → GO. Or import a chat / highlight the page, make a context pearl, and wear it into the gauntlet.</p>
       <button type="button" className="gold" onClick={() => { setChatOpen(true); setActiveView("context"); }}>Paste a ChatGPT / Claude export</button>
       {sampleLens && <button onClick={() => action("queue-lens", { lens: { id: sampleLens.id, name: sampleLens.name, version: sampleLens.version, kind: "lens", outputSpec: outputContractFor(sampleLens.operator, map) } })}>
         <b>{sampleLens.name}</b><small>Sample Primitive Move</small>
@@ -1919,9 +1919,9 @@ function App() {
       <button onClick={() => action("toggle-highlighter")} className="gold">Highlight page</button>
       <button onClick={() => action("capture-selection")}>Capture selection</button>
       {characters > 0 && !semanticOrbs.length && <div className="first-pearl">
-        <b>Your first Pearl is one click away.</b>
-        <small>Keep this capture with its source link, then open Studio or encode a reusable process from it.</small>
-        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { material: session.fragments.at(-1) }).catch(() => {})}>Make a pearl</button>
+        <b>Your first context pearl is one click away.</b>
+        <small>Keep this capture with its source link, then drag it into a Companion gauntlet socket when you need it.</small>
+        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { material: session.fragments.at(-1) }).catch(() => {})}>Make a context pearl</button>
       </div>}
       <button className="save-as-toggle" disabled={!characters} onClick={() => setSaveAsOpen((value) => !value)}>Save capture as…</button>
       {saveAsOpen && <div className="save-as-chooser" role="dialog" aria-label="Save capture as">

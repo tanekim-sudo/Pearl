@@ -60,7 +60,7 @@ import {
   navigateHome,
   nextEscapeAction,
 } from "../lib/shell-navigation.js";
-import { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
+import { collectReefPearls, findWorkspacePearl, isReefHomePath } from "../lib/reef-home.js";
 import {
   materialFromIngestedText,
   resolveSceneMaterialDrop,
@@ -82,7 +82,7 @@ import {
 } from "../../shared/companion-pearl-gauntlet.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
 
-export { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
+export { collectReefPearls, findWorkspacePearl, isReefHomePath } from "../lib/reef-home.js";
 
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
 const SpeechRecognitionImpl =
@@ -388,21 +388,21 @@ function PearlActionPalette({ onRun }) {
 }
 
 function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onImport, onDismiss }) {
-  return <section className="pearl-welcome" aria-label="Welcome to Pearl">
-    <button type="button" className="pearl-welcome-mark" aria-label="Ask Pearl — type a goal and press GO" onClick={onAsk}>
+  return <section className="pearl-welcome" aria-label="Welcome to Pearl" data-companion-first="true">
+    <button type="button" className="pearl-welcome-mark" aria-label="Open Companion — type a goal and press GO" onClick={onAsk}>
       <PhysicalPearl variant="primary" state="idle" size={46} decorative />
     </button>
-    <p className="pearl-welcome-kicker">You are on the Reef — home</p>
+    <p className="pearl-welcome-kicker">Companion Pearl</p>
     <h1>What do you want to do?</h1>
-    <p><b>Next:</b> Pearl keeps reusable ideas (“pearls”) and a companion that can help. Pick one clear action:</p>
+    <p><b>Next:</b> Talk through the Companion Pearl. Context pearls (up to 5) load into its gauntlet as working memory — not rival companions.</p>
     <div className="pearl-welcome-actions">
-      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>1. Click Pearl → type what you want → press GO</button>
-      <button type="button" onClick={onScene}>2. Create a pearl workspace (Scene)</button>
-      <button type="button" onClick={onImport}>3. Import notes / chats / docs</button>
-      <button type="button" onClick={onGuide}>4. Read a 60-second how-to</button>
-      <button type="button" onClick={onInstall}>5. Install the browser extension</button>
+      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>Click Companion → type → press GO</button>
+      <button type="button" onClick={onImport}>Import notes / chats / docs</button>
+      <button type="button" onClick={onScene}>Open a Scene workspace</button>
+      <button type="button" className="pearl-welcome-secondary" onClick={onGuide}>60-second how-to</button>
+      <button type="button" className="pearl-welcome-secondary" onClick={onInstall}>Install browser extension</button>
     </div>
-    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Skip — show me home</button>
+    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Skip — show the shelf</button>
   </section>;
 }
 
@@ -475,35 +475,35 @@ function LibraryHome({
     ? route.section[0].toUpperCase() + route.section.slice(1)
     : null;
   const title = sectionLabel
-    || (firstUse ? "Home — start here"
-      : emptyLibrary ? "Library — nothing saved yet"
-        : "Home — your Reef");
+    || (firstUse ? "Start with the Companion"
+      : emptyLibrary ? "Shelf — nothing saved yet"
+        : "Reef — your pearl shelf");
   const nextStep = firstUse || emptyLibrary
-    ? "Click Pearl, type what you want, press GO — or create a pearl workspace."
-    : "Open a pearl card below, or click Pearl and press GO.";
+    ? "Click the Companion, type what you want, press GO. The shelf below stores context pearls you can equip."
+    : "Wear a context pearl into the gauntlet, or click the Companion and press GO.";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
-  return <main className="orb-library-home orb-reef-home" data-reef-home="true" aria-label="Reef home dashboard">
+  return <main className="orb-library-home orb-reef-home" data-reef-home="true" data-companion-first="true" aria-label="Reef pearl shelf">
     <header className="pearl-reef-chrome" data-testid="reef-chrome" aria-label="Reef navigation">
-      <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef (home)</button>
-      <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · home for all your pearls"}</span>
-      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Ask Pearl (type + GO)</button>
+      <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef (shelf)</button>
+      <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · shelf of context pearls"}</span>
+      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion (type + GO)</button>
     </header>
     {(firstUse || emptyLibrary || (isRoot && !continuationCount && !route.handoff)) && <section className="orb-home-intro orb-reef-kicker" data-testid="reef-next-step">
       <div className="orb-kicker">You are here</div>
       <h1>{title}</h1>
       <p><b>Next:</b> {nextStep}</p>
-      <p className="orb-home-plain">A <b>pearl</b> is a reusable idea or workflow. The companion <b>Pearl</b> is how you ask — click it, type, press <b>GO</b>. The five rings around it are <b>working memory</b> (up to 5 active pearls).</p>
+      <p className="orb-home-plain">The <b>Companion Pearl</b> is how you ask — click it, type, press <b>GO</b>. Other pearls are <b>context add-ons</b>: wear up to 5 into the gauntlet rings (working memory). This shelf is a library, not a second app.</p>
       <div className="orb-home-intro-actions">
-        <button type="button" className="orb-primary" onClick={onCreateScene}>Create a pearl workspace</button>
-        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Ask the companion</button>
+        <button type="button" className="orb-primary" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Open Companion</button>
+        <button type="button" onClick={onCreateScene}>Open a Scene workspace</button>
         <button type="button" onClick={onOpenGuide}>How Pearl works</button>
       </div>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
       <div>
-        <small>{extensionHandoff?.connected ? "Pearl extension connected" : handoffStatus === "loading" ? "Checking the page Pearl" : "Waiting for the page Pearl"}</small>
+        <small>{extensionHandoff?.connected ? "Extension Companion connected" : handoffStatus === "loading" ? "Checking the page Companion" : "Waiting for the page Companion"}</small>
         <h2>{continuationCount
           ? pearlCount
             ? `${activePearl?.name || "Your pearl"} is ready to continue`
@@ -519,7 +519,7 @@ function LibraryHome({
             ? (extensionHandoff?.reason === "missing-extension-id"
               ? "Trusted continuation needs VITE_LENS_EXTENSION_ID in this web build so the page can ask the installed Pearl extension for the working set. Rebuild with that id, or open Arrange in full Scene from the extension again."
               : "The link opened, but no capture, queued action, Lens, candidate, or saved pearl was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it.")
-            : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
+            : "On a page, ask the Companion to arrange, compare, edit deeply, inspect history, or open a full Scene. It will carry the explicit working set here."}</p>
       </div>
       {continuationCount
         ? <button className="orb-primary" type="button" onClick={onContinueHandoff}>Continue this work</button>
@@ -529,8 +529,8 @@ function LibraryHome({
           ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
     </section>}
-    <section className="orb-recent-orbit orb-reef" aria-label="Your pearls and workspaces">
-      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Open one of these" : "Nothing saved yet — create the first workspace"}</p>
+    <section className="orb-recent-orbit orb-reef" aria-label="Context pearl shelf">
+      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Context pearls on the shelf — open or ask Companion to wear" : "Shelf empty — ask the Companion, or open a Scene"}</p>
       {reefPearls.map((pearl, index) => <button
         key={pearl.id}
         type="button"
@@ -545,7 +545,7 @@ function LibraryHome({
       >
         <i className="reef-pearl-dot" aria-hidden="true" />
         <b>{pearl.name}</b>
-        <small>Pearl · in “{pearl.sceneName}” · click to open</small>
+        <small>Context pearl · “{pearl.sceneName}” · click to open</small>
       </button>)}
       {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
         key={scene.id}
@@ -553,9 +553,9 @@ function LibraryHome({
         onClick={() => navigate(`/scene/${encodeURIComponent(scene.id)}`)}
       >
         <i />{scene.name || "Untitled workspace"}
-        <small>Workspace · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items · click to open</small>
+        <small>Scene · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items · overflow canvas</small>
       </button>)}
-      {(isRoot || !reefPearls.length) && <button className="recent-scene scene-c" onClick={onCreateScene}><i />Create a pearl workspace<small>Empty canvas — add pearls, notes, results</small></button>}
+      {(isRoot || !reefPearls.length) && <button className="recent-scene scene-c" onClick={onCreateScene}><i />Open a Scene workspace<small>Optional canvas — arrange context pearls & notes</small></button>}
     </section>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} from Pearl`}>
       <div>
@@ -736,14 +736,14 @@ function SceneStage({
   >
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty" data-testid="scene-empty">
-          <h1>Empty workspace — nothing is here yet</h1>
-          <p><b>Next:</b> Create a pearl, drop a file or paste notes onto this stage, or click Pearl → type what you want → press <b>GO</b>. Drop notes onto Pearl to hold them in working memory.</p>
+          <h1>Empty Scene — ask the Companion</h1>
+          <p><b>Next:</b> Click the Companion → type what you want → press <b>GO</b>. Or create a context pearl here and wear it into the gauntlet (up to 5). Output Frame is optional later.</p>
           <div className="orb-stage-empty-actions">
-            <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Create a pearl here</button>
-            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Type to companion</button>
+            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Open Companion</button>
+            <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Create a context pearl</button>
             <button type="button" onClick={onOpenGuide}>How Pearl works</button>
           </div>
-          <small className="orb-stage-empty-hint">Drag moves items (does not copy). Select + Delete removes junk. Esc closes panels, then returns to Reef (home).</small>
+          <small className="orb-stage-empty-hint">Drag moves items (does not copy). Select + Delete removes junk. Esc closes panels, then returns to the Reef shelf.</small>
         </section>
       : view === "Table"
         ? <table className="orb-stage-table"><thead><tr><th>Material</th><th>Kind</th><th>Lineage</th></tr></thead><tbody>
@@ -829,21 +829,22 @@ function PearlSceneChrome({
   onDeleteSelection,
   onOpenCompanionHint,
 }) {
-  return <header className="pearl-scene-chrome" data-testid="pearl-scene-chrome" aria-label="Scene navigation">
+  return <header className="pearl-scene-chrome" data-testid="pearl-scene-chrome" data-companion-first="true" aria-label="Scene navigation">
     <div className="pearl-scene-chrome-primary">
-      <button type="button" data-testid="scene-home" onClick={onHome}>← Reef (home)</button>
+      <button type="button" data-testid="scene-home" onClick={onHome}>← Reef (shelf)</button>
       <div className="pearl-scene-chrome-title">
-        <span>{outputFrameOpen ? "Output Frame" : "Workspace (Scene)"}</span>
+        <span>{outputFrameOpen ? "Output Frame" : "Scene · overflow canvas"}</span>
         <b>{sceneName || "Untitled workspace"}</b>
         <small>{outputFrameOpen
-          ? "Output Frame — your finished writing goes here. Esc or “Back to workspace” leaves. Select junk → Delete."
-          : "Nothing appears until you add it. Next: Create a pearl, or click Pearl → type → GO."}</small>
+          ? "Finished writing surface. Esc or “Back to Scene” leaves. Companion still works from here."
+          : "Next: Companion → type → GO. Context pearls here can wear into the gauntlet — Output Frame is optional."}</small>
       </div>
     </div>
     <div className="pearl-scene-chrome-actions">
-      {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>Create a pearl</button>}
-      <button type="button" data-testid="scene-toggle-frame" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
-        {outputFrameOpen ? "Back to workspace" : "Open Output Frame"}
+      <button type="button" data-testid="scene-ask-pearl" className="pearl-scene-primary-action" onClick={onOpenCompanionHint}>Open Companion</button>
+      {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>Create context pearl</button>}
+      <button type="button" data-testid="scene-toggle-frame" className="pearl-scene-secondary-action" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
+        {outputFrameOpen ? "Back to Scene" : "Output Frame"}
       </button>
       {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={onToggleTools}>
         {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
@@ -855,7 +856,6 @@ function PearlSceneChrome({
         onClick={onDeleteSelection}
         title="Delete selected item (or press Delete / Backspace)"
       >Delete selected</button>
-      <button type="button" data-testid="scene-ask-pearl" onClick={onOpenCompanionHint}>Type to companion</button>
     </div>
   </header>;
 }
@@ -1402,7 +1402,19 @@ export default function OrbUniverseShell({ StageComponent }) {
       return;
     }
     const remixIntent = parsePearlRemixCommand(recorded.entry.raw || recorded.entry.normalized);
-    if (remixIntent?.verb === "discoverFormingPearls" && route.kind === "stage") {
+    // Companion remix/gauntlet intents work on Scene and Reef without Output Frame.
+    // Scene-local mutations resolve a sceneId; gauntlet wear resolves pearls across the shelf.
+    const companionSurfaceOk = route.kind === "stage" || route.kind === "home" || route.kind === "library";
+    function resolveRemixScene(workspace = loadSceneWorkspace()) {
+      if (route.kind === "stage") return activeStageScene(workspace);
+      const withPearls = (workspace.scenes || []).find((entry) =>
+        (entry.semanticOrbs || []).some((orb) => !orb.archived));
+      return withPearls || (workspace.scenes || [])[0] || null;
+    }
+    function reefPearlCatalog(workspace = loadSceneWorkspace()) {
+      return collectReefPearls(workspace.scenes || []);
+    }
+    if (remixIntent?.verb === "discoverFormingPearls" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "discoverFormingPearls" });
       setOrb(next);
       try {
@@ -1420,9 +1432,15 @@ export default function OrbUniverseShell({ StageComponent }) {
         if (!text?.trim()) {
           setOrb(transitionOrb(next, "blocked", {
             taskId: recorded.entry.id,
-            evidence: { boundary: "Paste a chat, docs, or drafts (or drop them onto Pearl) to discover forming pearls." },
+            evidence: { boundary: "Paste a chat, docs, or drafts (or drop them onto the Companion) to discover forming pearls." },
           }));
           return;
+        }
+        const workspace = loadSceneWorkspace();
+        let scene = resolveRemixScene(workspace);
+        if (!scene) {
+          scene = createScene({ id: `scene-${Date.now()}`, name: "Import shelf" });
+          persistSceneWorkspace({ ...workspace, scenes: [...(workspace.scenes || []), scene], activeSceneId: scene.id });
         }
         const discovery = discoverFormingPearlsFromImport(text, {
           source: "companion-import",
@@ -1431,7 +1449,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         const createdIds = [];
         for (const entry of discovery.pearls) {
           const created = await applySemanticOrbCommand("createSemanticOrb", {
-            sceneId: route.sceneId,
+            sceneId: scene.id,
             activate: false,
             orb: {
               name: entry.pearl.name,
@@ -1454,7 +1472,7 @@ export default function OrbUniverseShell({ StageComponent }) {
             title: discovery.reason,
             preview: true,
             steps: createdIds.length
-              ? [`Materialized ${createdIds.length} pearl${createdIds.length === 1 ? "" : "s"} on the shelf`]
+              ? [`Materialized ${createdIds.length} context pearl${createdIds.length === 1 ? "" : "s"} on the shelf`]
               : [discovery.reason],
           },
         }));
@@ -1466,15 +1484,18 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "organizePearl" && route.kind === "stage") {
+    if (remixIntent?.verb === "organizePearl" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "organizePearl" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
-        const activeId = scene?.activeSemanticOrbId
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim();
+        const matched = findWorkspacePearl(workspace.scenes || [], needle);
+        const scene = matched?.scene || resolveRemixScene(workspace);
+        const activeId = matched?.id
+          || scene?.activeSemanticOrbId
           || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
-        if (!activeId) throw new Error("Create or select a pearl with dump material first.");
+        if (!scene || !activeId) throw new Error("Create or select a context pearl with dump material first.");
         const extraText = (orbRef.current?.context || [])
           .map((item) => String(item.text || item.label || "").trim())
           .filter(Boolean)
@@ -1497,34 +1518,39 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "wearPearl" && route.kind === "stage") {
+    if (remixIntent?.verb === "wearPearl" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "wearPearl" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
-        const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
-        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim().toLowerCase();
-        const pearl = needle
-          ? orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
-            || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
-            || orbs.find((entry) => entry.id === remixIntent.args?.id)
-          : orbs.find((entry) => entry.id === scene?.activeSemanticOrbId) || orbs[0];
-        if (!pearl) throw new Error("No matching pearl to wear. Create one, or name the pearl to put on.");
-        await applySemanticOrbCommand("activateSemanticOrb", { id: pearl.id });
-        wearPearlIdInGauntlet(pearl.id, {
+        const catalog = reefPearlCatalog(workspace);
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim();
+        let match = findWorkspacePearl(workspace.scenes || [], needle);
+        if (!match && route.kind === "stage") {
+          const scene = activeStageScene(workspace);
+          const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
+          const pearl = orbs.find((entry) => entry.id === scene?.activeSemanticOrbId) || orbs[0];
+          if (pearl) match = { id: pearl.id, name: pearl.name, scene, orb: pearl, aesthetic: pearl.aesthetic };
+        }
+        if (!match && catalog[0]) match = catalog[0];
+        if (!match) throw new Error("No matching context pearl to wear. Create one on the shelf, or name the pearl to put on.");
+        if (match.scene?.id) {
+          await applySemanticOrbCommand("activateSemanticOrb", { id: match.id, sceneId: match.scene.id });
+        }
+        wearPearlIdInGauntlet(match.id, {
           replace: remixIntent.args?.replace === true,
           slot: Number.isInteger(remixIntent.args?.slot) ? remixIntent.args.slot : undefined,
         });
         const gauntlet = loadGauntletState();
         const orbit = loadWornOrbitState();
+        const byId = new Map(catalog.map((entry) => [entry.id, entry]));
         const packs = gauntlet.pearlIds.map((id) => {
-          const match = orbs.find((entry) => entry.id === id);
+          const entry = byId.get(id);
           return {
             pearlId: id,
             id,
-            name: match?.name || id,
-            aesthetic: match?.aesthetic || null,
+            name: entry?.name || id,
+            aesthetic: entry?.aesthetic || null,
           };
         });
         document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
@@ -1543,10 +1569,10 @@ export default function OrbUniverseShell({ StageComponent }) {
         setOrb(transitionOrb(orbRef.current || next, "completed", {
           taskId: recorded.entry.id,
           commandId: "wearPearl",
-          effectId: `wear:${pearl.id}:${Date.now()}`,
+          effectId: `wear:${match.id}:${Date.now()}`,
           evidence: {
-            title: `Loaded ${pearl.name || "pearl"} into gauntlet`,
-            steps: [`Working memory ${gauntlet.filled}/${MAX_GAUNTLET_SLOTS}`],
+            title: `Loaded ${match.name || "pearl"} into gauntlet`,
+            steps: [`Context pearls in working memory ${gauntlet.filled}/${MAX_GAUNTLET_SLOTS}`],
           },
         }));
       } catch (error) {
@@ -1557,28 +1583,25 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "removeWornPearl" && route.kind === "stage") {
+    if (remixIntent?.verb === "removeWornPearl" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "removeWornPearl" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
-        const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
-        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim().toLowerCase();
-        const match = needle
-          ? orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
-            || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
-          : null;
+        const catalog = reefPearlCatalog(workspace);
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim();
+        const match = needle ? findWorkspacePearl(workspace.scenes || [], needle) : null;
         removePearlIdFromGauntlet(match?.id || null);
         const gauntlet = loadGauntletState();
         const orbit = loadWornOrbitState();
+        const byId = new Map(catalog.map((entry) => [entry.id, entry]));
         document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
           detail: {
             pearlIds: orbit.pearlIds,
             primaryPearlId: orbit.primaryPearlId,
             packs: gauntlet.pearlIds.map((id) => {
-              const orb = orbs.find((entry) => entry.id === id);
-              return { pearlId: id, id, name: orb?.name || id, aesthetic: orb?.aesthetic || null };
+              const entry = byId.get(id);
+              return { pearlId: id, id, name: entry?.name || id, aesthetic: entry?.aesthetic || null };
             }),
             gauntlet: {
               slots: gauntlet.slots,
@@ -1601,14 +1624,14 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "mergeSemanticOrbs" && route.kind === "stage") {
+    if (remixIntent?.verb === "mergeSemanticOrbs" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "mergeSemanticOrbs" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
+        const scene = resolveRemixScene(workspace);
         const ids = (scene?.semanticOrbs || []).filter((entry) => !entry.archived).slice(0, 4).map((entry) => entry.id);
-        if (ids.length < 2) throw new Error("Select or create at least two pearls to merge.");
+        if (!scene || ids.length < 2) throw new Error("Select or create at least two context pearls to merge.");
         await applySemanticOrbCommand("mergeSemanticOrbs", { ids, sceneId: scene.id });
         setOrb(transitionOrb(orbRef.current || next, "completed", {
           taskId: recorded.entry.id,
@@ -1623,14 +1646,14 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "synthesizeSemanticOrbs" && route.kind === "stage") {
+    if (remixIntent?.verb === "synthesizeSemanticOrbs" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "synthesizeSemanticOrbs" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
+        const scene = resolveRemixScene(workspace);
         const ids = (scene?.semanticOrbs || []).filter((entry) => !entry.archived).slice(0, 4).map((entry) => entry.id);
-        if (ids.length < 2) throw new Error("Select or create at least two pearls to synthesize.");
+        if (!scene || ids.length < 2) throw new Error("Select or create at least two context pearls to synthesize.");
         await applySemanticOrbCommand("synthesizeSemanticOrbs", {
           ids,
           sceneId: scene.id,
@@ -1650,15 +1673,18 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "createCounterPearl" && route.kind === "stage") {
+    if (remixIntent?.verb === "createCounterPearl" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createCounterPearl" });
       setOrb(next);
       try {
         const workspace = loadSceneWorkspace();
-        const scene = activeStageScene(workspace);
-        const activeId = scene?.activeSemanticOrbId
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim();
+        const matched = findWorkspacePearl(workspace.scenes || [], needle);
+        const scene = matched?.scene || resolveRemixScene(workspace);
+        const activeId = matched?.id
+          || scene?.activeSemanticOrbId
           || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
-        if (!activeId) throw new Error("Create or select a pearl first.");
+        if (!scene || !activeId) throw new Error("Create or select a context pearl first.");
         await applySemanticOrbCommand("createCounterPearl", {
           id: activeId,
           sceneId: scene.id,
@@ -1747,7 +1773,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     if (/\b(?:open|start|new)\b.*\bscene\b/i.test(recorded.entry.normalized)) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openScene" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openScene", effectId: "route:scene" }));
-      navigate(`/scene/${crypto.randomUUID()}`);
+      createBlankScene();
       return;
     }
     if (/\b(?:install|set up|add)\b.*\b(?:pearl|extension)\b/i.test(recorded.entry.normalized)) {
@@ -1775,7 +1801,12 @@ export default function OrbUniverseShell({ StageComponent }) {
       return;
     }
     if (route.kind !== "stage") {
-      setOrb(transitionOrb(next, "blocked", { taskId: recorded.entry.id, evidence: { boundary: "Open or create a Scene before mutating material." } }));
+      setOrb(transitionOrb(next, "blocked", {
+        taskId: recorded.entry.id,
+        evidence: {
+          boundary: "Ask the Companion to open a Scene for material edits — gauntlet wear/merge/organize already work from the Reef shelf. Output Frame is never required.",
+        },
+      }));
       return;
     }
     setOrb(next);
@@ -1998,7 +2029,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
               <button type="button" onClick={() => navigateHome()}>Reef</button>
               <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
-                {outputFrameOpen ? "Back to workspace" : "Open Output Frame"}
+                {outputFrameOpen ? "Back to Scene" : "Open Output Frame"}
               </button>
               {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
                 {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
@@ -2327,13 +2358,17 @@ export default function OrbUniverseShell({ StageComponent }) {
     return persistWorkspace(updated);
   }
 
-  async function applySemanticOrbCommand(name, args) {
+  async function applySemanticOrbCommand(name, args = {}) {
     const currentOrb = orbRef.current || createOrbState();
     const ready = ["idle", "completed"].includes(currentOrb.phase)
       ? currentOrb
       : createOrbState({ ...currentOrb, phase: "idle", effectId: null, commandId: null });
     const workspace = loadSceneWorkspace();
-    const sceneId = route.sceneId || workspace.activeSceneId;
+    // Honor explicit sceneId so Companion remix works from Reef (shelf) as well as Scene.
+    const commandArgs = { ...args };
+    const requestedSceneId = typeof commandArgs.sceneId === "string" ? commandArgs.sceneId : null;
+    delete commandArgs.sceneId;
+    const sceneId = requestedSceneId || route.sceneId || workspace.activeSceneId;
     let scene = workspace.scenes?.find((entry) => entry.id === sceneId);
     if (!scene && sceneId) {
       scene = createScene({ id: sceneId, name: "Untitled workspace", metadata: { createdFrom: "recover-missing-scene" } });
@@ -2368,7 +2403,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         activeSemanticOrbId: scene.activeSemanticOrbId || null,
         orbWorkers: scene.orbWorkers || {},
       },
-      args,
+      args: commandArgs,
       taskId: `semantic-orb:${name}:${Date.now()}`,
       observe: async ({ result }) => ({ effects: result.effects }),
     });
@@ -2955,7 +2990,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         onOpenCompanionHint={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}
       />
       {outputFrameOpen && <p className="pearl-frame-banner" data-testid="output-frame-label">
-        Output Frame — your finished writing goes here. Use “Show editing tools” for pen/text. “Back to workspace” or Esc leaves.
+        Output Frame — optional writing surface. Companion still runs from here. “Back to Scene” or Esc leaves.
       </p>}
       <SurfaceErrorBoundary
         label="Scene surface"
@@ -3011,12 +3046,12 @@ export default function OrbUniverseShell({ StageComponent }) {
         onOpenStudio={openActivePearlStudio}
         onExpandedChange={setCompanionExpanded}
         hint={outputFrameOpen
-          ? "Companion · click → type → press GO · rings = working memory (5 slots)"
-          : "Companion · click → type what you want → press GO · drop files onto Pearl or the stage"}
+          ? "Companion Pearl · type → GO · gauntlet = up to 5 context pearls"
+          : "Companion Pearl · type → GO · wear context pearls into the gauntlet"}
         quickActions={[
           ...pearlNavQuickActions,
-          { label: "Create a pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 } }) },
-          { label: outputFrameOpen ? "Back to workspace" : "Open Output Frame", run: () => setOutputFrameOpen((value) => !value) },
+          { label: "Create context pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 } }) },
+          { label: outputFrameOpen ? "Back to Scene" : "Open Output Frame", run: () => setOutputFrameOpen((value) => !value) },
           { label: "Encode anything", run: () => openEmittedView("encode") },
           { label: "What can I do?", run: () => openEmittedView("actions") },
         ]}
@@ -3098,11 +3133,11 @@ export default function OrbUniverseShell({ StageComponent }) {
       quickActions={[
         ...pearlNavQuickActions,
         ...(showInstall ? [] : [
-          { label: "New Scene", run: createBlankScene },
+          { label: "Open Scene workspace", run: createBlankScene },
           { label: "Get the extension", run: () => navigate("/install") },
         ]),
       ]}
-      hint="Companion · click → type → press GO · rings = working memory (5)"
+      hint="Companion Pearl · type → GO · gauntlet holds up to 5 context pearls"
     />}
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}

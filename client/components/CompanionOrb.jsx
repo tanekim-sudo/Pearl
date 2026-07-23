@@ -369,7 +369,7 @@ export default function CompanionOrb({
     >
       <div className="orb-emissions" aria-live="polite">
         <span className="orb-gauntlet-legend" data-testid="gauntlet-legend">
-          Working memory — up to {MAX_GAUNTLET_SLOTS} active pearls
+          Gauntlet — up to {MAX_GAUNTLET_SLOTS} context pearls
         </span>
         {(state.lenses || []).map((lens, index) => (
           <button
@@ -456,9 +456,9 @@ export default function CompanionOrb({
         onPointerCancel={() => { dragRef.current = null; onVoiceEnd?.(); }}
         onKeyDown={keyDown}
         onContextMenu={(event) => event.preventDefault()}
-        title="Companion — click, type what you want, press GO"
+        title="Companion Pearl — click, type what you want, press GO"
       >
-        <span id={titleId} className="sr-only">{label}. Click to open the command box, type what you want, then press GO. Hold to speak. The five rings are working memory for up to {MAX_GAUNTLET_SLOTS} active pearls.</span>
+        <span id={titleId} className="sr-only">{label}. Primary Companion Pearl. Click to open the command box, type what you want, then press GO. Hold to speak. The five rings are the gauntlet for up to {MAX_GAUNTLET_SLOTS} context pearls.</span>
         <PhysicalPearl
           variant="primary"
           state={["listening", "executing", "blocked", "failed", "loading"].includes(phase) ? phase : "idle"}
@@ -485,7 +485,7 @@ export default function CompanionOrb({
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               aria-label="Tell Pearl your goal"
-              placeholder="Type what you want Pearl to do…"
+              placeholder="Type what you want → press GO…"
             />
             <button type="submit" aria-label="GO — run your command">GO</button>
           </form>}
