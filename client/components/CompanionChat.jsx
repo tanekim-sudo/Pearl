@@ -63,8 +63,8 @@ export default function CompanionChat({
       role: "companion",
       text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
         (pearlShell
-          ? "I’m the Companion Pearl. Type a goal below (or tap the mic), then press GO — I’ll do it in the app and show you."
-          : "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app."),
+          ? "Type what you want, then press GO."
+          : "Type what you want, then press GO."),
     },
   ]);
   const [memoryOpen, setMemoryOpen] = useState(false);
@@ -77,6 +77,7 @@ export default function CompanionChat({
   const [planDraft, setPlanDraft] = useState("");
   const [planEditing, setPlanEditing] = useState(false);
   const [reviewSelections, setReviewSelections] = useState({});
+  // Modes (ask/plan/agent/debug) are chosen automatically per utterance — never a user picker.
   const [mode, setMode] = useState(() => {
     const stored = typeof localStorage !== "undefined" ? localStorage.getItem(MODE_KEY) : null;
     return COMPANION_MODES.includes(stored) ? stored : "agent";
@@ -235,10 +236,16 @@ export default function CompanionChat({
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
     setPhase("understanding");
+    const goal = normalizeGoal(text);
+    const resolvedMode = recommendCompanionMode(goal, {
+      autonomy: memory.preferences?.autonomy,
+    }).mode;
+    setMode(resolvedMode);
+    try { localStorage.setItem(MODE_KEY, resolvedMode); } catch { /* private mode / quota */ }
     const commandOptions = {
       signal: run.signal,
-      mode,
-      goal: normalizeGoal(text),
+      mode: resolvedMode,
+      goal,
       planApproved: envelope.planApproved === true,
       onPhase(nextPhase) {
         if (!run.signal.aborted) setPhase(nextPhase);
@@ -260,10 +267,10 @@ export default function CompanionChat({
           (plan.review?.sections || []).map((section) => [section.id, section.selected !== false])
         ));
         if (!plan.preview) return Promise.resolve({ decision: "accept", plan: plan.plan || null });
-        let pendingRun = createRunLedger(normalizeGoal(text), plan.plan || plan, { mode });
+        let pendingRun = createRunLedger(goal, plan.plan || plan, { mode: resolvedMode });
         pendingRun = transitionRun(pendingRun, { status: "awaiting-approval" });
         planRunRef.current = persistRunLedger(pendingRun, localStorage);
-        localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ version: 1, rawText: text, mode, plan }));
+        localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ version: 1, rawText: text, mode: resolvedMode, plan }));
         return new Promise((resolve) => {
           planDecisionRef.current = resolve;
         });
@@ -516,9 +523,6 @@ export default function CompanionChat({
   );
 
   const playing = !!director?.running;
-  const modeRecommendation = draft.trim()
-    ? recommendCompanionMode(normalizeGoal(draft), { autonomy: memory.preferences?.autonomy })
-    : null;
 
   if (!open) {
     // In the Orb Universe shell the Mother Pearl (CompanionOrb) is the open affordance.
@@ -544,10 +548,11 @@ export default function CompanionChat({
       className={"companion-panel" + (pearlShell ? " shell-dock" : "") + (foreground ? " foreground" : "") + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}
       data-testid="companion-chat"
       data-pearl-shell={pearlShell ? "true" : "false"}
+      data-auto-mode={mode}
       onPointerDown={() => setForeground(true)}
     >
       <div className="companion-head">
-        <span className="companion-head-orb" />
+        <span className="companion-head-orb" aria-hidden="true" />
         <span className="companion-head-title">Companion</span>
         <button type="button" className="companion-head-btn" onClick={() => setMemoryOpen((v) => !v)} title="Inspect Pearl memory">
           memory
@@ -587,37 +592,6 @@ export default function CompanionChat({
         >
           ×
         </button>
-      </div>
-      <div className="companion-mode-bar">
-        <label>
-          mode
-          <select
-            aria-label="Companion mode"
-            value={mode}
-            onChange={(event) => {
-              const next = event.target.value;
-              setMode(next);
-              localStorage.setItem(MODE_KEY, next);
-            }}
-          >
-            <option value="ask">Ask · inspect only</option>
-            <option value="plan">Plan · approve before changes</option>
-            <option value="agent">Agent · execute reversible work</option>
-            <option value="debug">Debug · reproduce and verify</option>
-          </select>
-        </label>
-        {modeRecommendation && modeRecommendation.mode !== mode && (
-          <button
-            type="button"
-            onClick={() => {
-              setMode(modeRecommendation.mode);
-              localStorage.setItem(MODE_KEY, modeRecommendation.mode);
-            }}
-            title={modeRecommendation.reasons.join(" · ")}
-          >
-            use {modeRecommendation.mode}
-          </button>
-        )}
       </div>
 
       {diagnosticsOpen && (

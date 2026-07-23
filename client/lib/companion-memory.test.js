@@ -47,8 +47,22 @@ test("anonymous memory is adopted once without overwriting account context", () 
   assert.deepEqual(adoptAnonymousCompanionMemory("user-1", store).goals, ["map this"]);
 });
 
-test("interview asks identity, role, then first goal and completes", () => {
-  let memory = emptyCompanionMemory();
+test("empty memory is zero-demand — no interview quiz by default", () => {
+  const memory = emptyCompanionMemory();
+  assert.equal(memory.interviewComplete, true);
+  assert.equal(memory.interviewPaused, true);
+  assert.equal(nextInterviewPrompt(memory), null);
+});
+
+test("interview asks identity, role, then first goal and completes when explicitly started", () => {
+  let memory = {
+    ...emptyCompanionMemory(),
+    interviewComplete: false,
+    interviewPaused: false,
+    identity: "",
+    role: "",
+    goals: [],
+  };
   assert.match(nextInterviewPrompt(memory), /who are you/i);
   memory = applyInterviewAnswer(memory, "Ada");
   assert.match(nextInterviewPrompt(memory), /what do you do/i);
@@ -61,6 +75,13 @@ test("interview asks identity, role, then first goal and completes", () => {
 
 test("commands pause onboarding idempotently until setup is explicitly resumed", () => {
   const store = storage();
+  saveCompanionMemory(null, {
+    interviewComplete: false,
+    interviewPaused: false,
+    identity: "",
+    role: "",
+    goals: [],
+  }, store);
   assert.match(nextInterviewPrompt(loadCompanionMemory(null, store)), /who are you/i);
   pauseCompanionInterview(null, store);
   pauseCompanionInterview(null, store);

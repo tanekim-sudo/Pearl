@@ -480,6 +480,10 @@ test("pearl aesthetic commands parse presets, reset, and sample", () => {
 });
 
 test("wear / remove / encode conversation parse as companion pearl verbs", () => {
+  assert.deepEqual(parsePearlRemixCommand("wear Friday standup"), {
+    verb: "wearPearl",
+    args: { name: "Friday standup" },
+  });
   assert.deepEqual(parseTranscriptLearningCommand("put on the LP briefings pearl"), {
     verb: "wearPearl",
     args: { name: "LP briefings" },

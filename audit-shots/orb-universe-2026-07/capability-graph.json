@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-1c47732e",
+  "fingerprint": "fnv1a-9ffa55ef",
   "counts": {
     "nodes": 404,
     "edges": 516
@@ -8473,12 +8473,13 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "sceneId": "string",
+          "sceneId": "string?",
           "id": "string?",
           "name": "string?",
           "material": "object?",
           "placement": "object?",
-          "orb": "object?"
+          "orb": "object?",
+          "activate": "boolean?"
         }
       },
       "outputSchema": {

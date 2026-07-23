@@ -2441,7 +2441,7 @@
         "extension/src/sidepanel/main.jsx",
         "extension/src/content/bridge.js",
         "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\"",
-        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:data-auto-mode",
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "extension/src/sidepanel/main.jsx:pearl-privacy-surface"
       ],
@@ -2550,7 +2550,7 @@
       "webEntries": [
         "client/components/CompanionOrb.jsx:data-semantic-anchor=\"primary-orb\"",
         "client/components/CompanionOrb.jsx",
-        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:data-auto-mode",
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "extension/src/content/result-pearls.js",
         "extension/src/sidepanel/main.jsx",
@@ -2823,7 +2823,7 @@
         "installValidatedPearlPackage"
       ],
       "webEntries": [
-        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:data-auto-mode",
         "client/components/CompanionChat.jsx:companion-plan-strip",
         "extension/src/content/page-canvas.js",
         "client/lib/secure-local-storage.js",
@@ -3038,5 +3038,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-23T21:51:08.412Z"
+  "generatedAt": "2026-07-23T23:50:36.724Z"
 }

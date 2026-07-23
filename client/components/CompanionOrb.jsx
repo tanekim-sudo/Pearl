@@ -493,26 +493,28 @@ export default function CompanionOrb({
                   : ""
         }</span>
       </button>
-      {!expanded && <span className="pearl-start-hint">{hint || "Click → type what you want → press GO"}</span>}
+      {!expanded && <span className="pearl-start-hint">{hint || "Talk · type · GO"}</span>}
       {expanded && (
-        <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
-          <p className="orb-ledger-howto" data-testid="companion-status">
-            {phase === "listening" ? "Status: listening…"
-              : phase === "executing" || phase === "planning" || phase === "researching" ? "Status: working…"
-                : phase === "blocked" ? "Status: needs a choice or fix — see chat"
-                  : phase === "approval" ? "Status: confirm in chat"
-                    : phase === "completed" ? "Status: done"
-                      : "Chat panel: type a goal, press GO. Mic speaks the same path. Esc closes."}
+        <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Companion"}>
+          <p className="orb-ledger-howto" data-testid="companion-status" hidden={!["listening", "executing", "planning", "researching", "blocked", "approval", "completed"].includes(phase)}>
+            {phase === "listening" ? "Listening…"
+              : phase === "executing" || phase === "planning" || phase === "researching" ? "Working…"
+                : phase === "blocked" ? "Needs a choice — see chat"
+                  : phase === "approval" ? "Confirm in chat"
+                    : phase === "completed" ? "Done"
+                      : ""}
           </p>
-          {!approval && <form onSubmit={submit}>
+          {/* Featured Mother Pearl: Companion chat owns type+GO. Ledger form is fallback only. */}
+          {!approval && !featured && <form onSubmit={submit} data-testid="companion-orb-go-form">
             <input
               ref={commandInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              aria-label="Tell Pearl your goal"
+              aria-label="Tell Companion what you want"
               placeholder="Type what you want → press GO…"
+              data-testid="companion-orb-input"
             />
-            <button type="submit" aria-label="GO — run your command">GO</button>
+            <button type="submit" aria-label="GO — run your command" data-testid="companion-orb-go">GO</button>
           </form>}
           {approval && <section className="orb-approval" aria-label="Plan approval required">
             <b>{approval.title || "Review plan"}</b>
@@ -550,26 +552,6 @@ export default function CompanionOrb({
               {actionQuery.trim() && !visibleActions.length && <span role="status">No match. Describe the outcome instead.</span>}
             </div>
           </section>}
-          {!powerSearch && !approval && nextAction && <button
-            type="button"
-            className="pearl-next-action"
-            onClick={() => {
-              nextAction.run?.();
-              setExpanded(false);
-            }}
-          >{nextAction.label}</button>}
-          {!powerSearch && !approval && !nextAction && onOpenStudio && <button type="button" className="pearl-next-action" onClick={onOpenStudio}>Open Studio</button>}
-          {!powerSearch && !approval && quickActions?.length > 0 && <div className="pearl-quick-actions" role="group" aria-label="Pearl quick actions">
-            {quickActions.map((quick) => <button
-              type="button"
-              key={quick.label}
-              style={{ "--quick-index": quickActions.indexOf(quick) }}
-              onClick={() => {
-                setExpanded(false);
-                quick.run?.();
-              }}
-            >{quick.label}</button>)}
-          </div>}
         </div>
       )}
     </aside>

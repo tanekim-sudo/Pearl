@@ -73,15 +73,21 @@ async function companionInput(page) {
 }
 
 async function typeAndGo(page, text) {
-  const input = await companionInput(page);
-  await input.fill(text);
-  const go = page.locator(".companion-orb-shell.expanded button:has-text('GO'), [data-testid='companion-go'], button.orb-go").first();
-  if (await go.count()) {
-    await go.click({ force: true });
+  await expandCompanion(page);
+  const chatInput = page.locator("[data-testid='companion-chat-input']");
+  if (await chatInput.count()) {
+    await chatInput.fill(text);
+    const go = page.locator("[data-testid='companion-go']");
+    if (await go.count()) await go.click({ force: true });
+    else await chatInput.press("Enter");
   } else {
-    await page.keyboard.press("Enter");
+    const input = await companionInput(page);
+    await input.fill(text);
+    const go = page.locator("[data-testid='companion-orb-go'], .companion-orb-shell.expanded button:has-text('GO')").first();
+    if (await go.count()) await go.click({ force: true });
+    else await page.keyboard.press("Enter");
   }
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1100);
 }
 
 async function main() {
@@ -113,31 +119,31 @@ async function main() {
   const welcomeText = (await welcome.innerText().catch(() => "")).toLowerCase();
   record(
     "welcome-names-companion",
-    /companion pearl/.test(welcomeText),
+    /companion pearl/.test(welcomeText) && /just talk/.test(welcomeText),
     welcomeText.slice(0, 220),
     "P0",
   );
   record(
-    "welcome-teaches-type-go",
-    /type/.test(welcomeText) && /go/.test(welcomeText),
-    "type + GO mentioned",
+    "welcome-zero-demand",
+    /say what you want|handles the rest|just talk/.test(welcomeText),
+    "demands nothing beyond talking",
     "P0",
   );
   record(
-    "welcome-teaches-gauntlet",
-    /gauntlet|context pearl/.test(welcomeText),
-    "gauntlet / context pearls mentioned",
+    "welcome-no-mode-teaching",
+    !/\b(?:ask|plan|agent|debug)\s*mode\b/.test(welcomeText),
+    "no companion mode teaching",
     "P0",
   );
   record(
     "welcome-no-orb-teaching",
     !/\borb\b/.test(welcomeText),
     welcomeText.includes("orb") ? "still teaches orb" : "no orb teaching",
-    "P1",
+    "P0",
   );
   record(
     "welcome-primary-cta",
-    await page.getByRole("button", { name: /Click Companion → type → press GO/i }).count() > 0,
+    await page.getByTestId("welcome-talk").count() > 0,
     "primary CTA present",
     "P0",
   );
@@ -145,18 +151,19 @@ async function main() {
   const companionOnWelcome = await page.locator(".companion-orb").count() > 0;
   record("companion-visible-on-welcome", companionOnWelcome, "Companion Pearl visible without dismissing", "P0");
 
-  // Count competing CTAs — too many = dense/unclear
+  // Count competing CTAs — zero-demand = mark + Talk + dismiss at most
   const welcomeButtons = await page.locator(".pearl-welcome button").count();
+  const welcomePrimaryActions = await page.locator(".pearl-welcome-actions button").count();
   record(
     "welcome-cta-budget",
-    welcomeButtons <= 6,
-    `welcome buttons=${welcomeButtons} (≤6 preferred)`,
-    "P2",
+    welcomeButtons <= 3 && welcomePrimaryActions === 1,
+    `welcome buttons=${welcomeButtons}, primary actions=${welcomePrimaryActions}`,
+    "P0",
   );
 
   // ── 2. Open Companion → type → GO ──────────────────────────────────────
   note("Primary path: open Companion, type simple ask, press GO");
-  await page.getByRole("button", { name: /Click Companion → type → press GO/i }).click({ force: true });
+  await page.getByTestId("welcome-talk").click({ force: true });
   await page.waitForTimeout(500);
   await shot(page, "02-companion-opened-from-welcome");
 
@@ -174,6 +181,11 @@ async function main() {
   const goBtn = page.locator(".companion-orb-shell.expanded button:has-text('GO'), [data-testid='companion-go'], button.orb-go").first();
   const goVisible = (await goBtn.count()) > 0 && (await goBtn.isVisible().catch(() => false));
   record("go-button-visible", goVisible || true, goVisible ? "GO button visible" : "GO via Enter fallback", "P0");
+
+  const modePicker = await page.getByLabel("Companion mode").count();
+  record("no-mode-picker", modePicker === 0, `mode pickers=${modePicker}`, "P0");
+  const chat = page.locator("[data-testid='companion-chat']");
+  record("auto-mode-attr", await chat.getAttribute("data-auto-mode").then((v) => !!v).catch(() => false), "internal auto-mode present", "P1");
 
   const legend = (await page.locator("[data-testid='gauntlet-legend']").innerText().catch(() => "")).toLowerCase();
   record("gauntlet-legend-readable", /gauntlet|context/.test(legend), legend || "(empty legend)", "P0");

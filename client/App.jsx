@@ -2512,9 +2512,8 @@ export default function App({ sceneId = null, pearlShell = false }) {
   const captureSelRef = useRef(null);
   // The companion interview replaces the old blocking role/setup overlay.
   const [onboard, setOnboard] = useState(null);
-  const [companionAutoOpen, setCompanionAutoOpen] = useState(
-    () => !loadCompanionMemory(null).interviewComplete || !localStorage.getItem(COMPANION_SEEN_KEY)
-  );
+  // Zero-demand: never auto-open chat or interview. User opens Companion when ready.
+  const [companionAutoOpen, setCompanionAutoOpen] = useState(false);
   const [columnLayout, setColumnLayout] = useState(loadColumnLayout);
   const [columnResizing, setColumnResizing] = useState(null);
   const [colGridWidth, setColGridWidth] = useState(0);
@@ -16652,6 +16651,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       updateCommand(commandEntry.id, { status: "executed", effects: [effect] });
       return { completed: true, effects: [effect] };
     }
+    // Deterministic Scene open — works from Reef via Companion chat without planner/credentials.
+    if (/\b(?:open|start|new)\b.*\bscene\b/i.test(text) || /^(?:open|start)(?: a)?(?: new)?(?: blank)? workspace$/i.test(text)) {
+      document.dispatchEvent(new CustomEvent("lens:shell-open-scene", { detail: { source: "companion-chat" } }));
+      updateCommand(commandEntry.id, { status: "executed", effects: ["opened-scene"] });
+      return { completed: true, effects: ["opened-scene"], visible: true, text: "Opened a play space." };
+    }
     const goalEnvelope = providedGoal || normalizeGoal(text);
     const recommendedMode = recommendCompanionMode(goalEnvelope, {
       autonomy: loadCompanionMemory(supaAuth.session?.user?.id).preferences?.autonomy,
@@ -16688,7 +16693,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return companionCommandReply({
         status: "blocked",
         code: EXECUTION_CODES.MISSING_ARGS,
-        message: "Choose Ask, Plan, Agent, or Debug mode.",
+        message: "I could not pick a safe way to run that. Try again in plain language.",
         stage: "confirm",
       });
     }
@@ -17610,10 +17615,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           text: materialText || pearlCreation.args.name || "Context pearl",
           provenance: { source: "companion-create" },
         };
+      // sceneId optional — Reef auto-creates a shelf workspace when absent.
+      const resolvedSceneId = sceneId
+        || currentSemanticScene()?.id
+        || null;
       const step = {
         ...pearlCreation,
         args: {
-          sceneId,
+          ...(resolvedSceneId ? { sceneId: resolvedSceneId } : {}),
           name: pearlCreation.args.name || material.label,
           material,
           activate: true,

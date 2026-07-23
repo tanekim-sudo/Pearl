@@ -399,22 +399,18 @@ function PearlActionPalette({ onRun }) {
   </section>;
 }
 
-function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onImport, onDismiss }) {
-  return <section className="pearl-welcome" aria-label="Welcome to Pearl" data-companion-first="true">
-    <button type="button" className="pearl-welcome-mark" aria-label="Open Companion — type a goal and press GO" onClick={onAsk}>
+function PearlWelcome({ onAsk, onDismiss }) {
+  return <section className="pearl-welcome" aria-label="Welcome to Pearl" data-companion-first="true" data-zero-demand="true">
+    <button type="button" className="pearl-welcome-mark" aria-label="Companion Pearl" onClick={onAsk}>
       <PhysicalPearl variant="primary" state="idle" size={46} decorative />
     </button>
     <p className="pearl-welcome-kicker">Companion Pearl</p>
-    <h1>What do you want to do?</h1>
-    <p><b>Next:</b> Talk through the Companion Pearl. Context pearls (up to 5) load into its gauntlet as working memory — not rival companions.</p>
+    <h1>Just talk.</h1>
+    <p>This is your Companion. Say what you want — it handles the rest.</p>
     <div className="pearl-welcome-actions">
-      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>Click Companion → type → press GO</button>
-      <button type="button" onClick={onImport}>Import notes / chats / docs</button>
-      <button type="button" onClick={onScene}>Open a Scene workspace</button>
-      <button type="button" className="pearl-welcome-secondary" onClick={onGuide}>60-second how-to</button>
-      <button type="button" className="pearl-welcome-secondary" onClick={onInstall}>Install browser extension</button>
+      <button type="button" className="pearl-welcome-primary" data-testid="welcome-talk" onClick={onAsk}>Talk to Companion</button>
     </div>
-    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Skip — show the shelf</button>
+    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Explore the Reef</button>
   </section>;
 }
 
@@ -487,30 +483,24 @@ function LibraryHome({
     ? route.section[0].toUpperCase() + route.section.slice(1)
     : null;
   const title = sectionLabel
-    || (firstUse ? "Start with the Companion"
-      : emptyLibrary ? "Shelf — nothing saved yet"
-        : "Reef — your pearl shelf");
-  const nextStep = firstUse || emptyLibrary
-    ? "Click the Companion, type what you want, press GO. The shelf below stores context pearls you can equip."
-    : "Wear a context pearl into the gauntlet, or click the Companion and press GO.";
+    || (firstUse ? "Your Reef"
+      : emptyLibrary ? "Reef — empty for now"
+        : "Reef");
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
-  return <main className="orb-library-home orb-reef-home" data-reef-home="true" data-companion-first="true" aria-label="Reef pearl shelf">
+  return <main className="orb-library-home orb-reef-home" data-reef-home="true" data-companion-first="true" data-zero-demand="true" aria-label="Reef — home of pearls">
     <header className="pearl-reef-chrome" data-testid="reef-chrome" aria-label="Reef navigation">
-      <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef (shelf)</button>
-      <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · shelf of context pearls"}</span>
-      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion (type + GO)</button>
+      <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef</button>
+      <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · where pearls live"}</span>
+      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion</button>
     </header>
     {(firstUse || emptyLibrary || (isRoot && !continuationCount && !route.handoff)) && <section className="orb-home-intro orb-reef-kicker" data-testid="reef-next-step">
-      <div className="orb-kicker">You are here</div>
+      <div className="orb-kicker">Home of pearls</div>
       <h1>{title}</h1>
-      <p><b>Next:</b> {nextStep}</p>
-      <p className="orb-home-plain">The <b>Companion Pearl</b> is how you ask — click it, type, press <b>GO</b>. Other pearls are <b>context add-ons</b>: wear up to 5 into the gauntlet rings (working memory). This shelf is a library, not a second app.</p>
+      <p>Pearls form, play, and expand here. Talk to your Companion — it does the rest.</p>
       <div className="orb-home-intro-actions">
-        <button type="button" className="orb-primary" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Open Companion</button>
-        <button type="button" onClick={onCreateScene}>Open a Scene workspace</button>
-        <button type="button" onClick={onOpenGuide}>How Pearl works</button>
+        <button type="button" className="orb-primary" data-testid="reef-talk" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Talk to Companion</button>
       </div>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
@@ -541,8 +531,8 @@ function LibraryHome({
           ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
     </section>}
-    <section className="orb-recent-orbit orb-reef" aria-label="Context pearl shelf">
-      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Context pearls on the shelf — open or ask Companion to wear" : "Shelf empty — ask the Companion, or open a Scene"}</p>
+    <section className="orb-recent-orbit orb-reef" aria-label="Pearl canvas">
+      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Your pearls — open one, or ask Companion to wear it" : "Empty canvas — ask Companion to make a pearl"}</p>
       {reefPearls.map((pearl, index) => <button
         key={pearl.id}
         type="button"
@@ -553,11 +543,11 @@ function LibraryHome({
           event.preventDefault();
           onOpenStudio?.(pearl);
         }}
-        title={`${pearl.name} — click to open workspace`}
+        title={`${pearl.name} — open this pearl`}
       >
         <i className="reef-pearl-dot" aria-hidden="true" />
         <b>{pearl.name}</b>
-        <small>Context pearl · “{pearl.sceneName}” · click to open</small>
+        <small>Pearl · open to explore</small>
       </button>)}
       {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
         key={scene.id}
@@ -565,9 +555,8 @@ function LibraryHome({
         onClick={() => navigate(`/scene/${encodeURIComponent(scene.id)}`)}
       >
         <i />{scene.name || "Untitled workspace"}
-        <small>Scene · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items · overflow canvas</small>
+        <small>Workspace · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items</small>
       </button>)}
-      {(isRoot || !reefPearls.length) && <button className="recent-scene scene-c" onClick={onCreateScene}><i />Open a Scene workspace<small>Optional canvas — arrange context pearls & notes</small></button>}
     </section>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} from Pearl`}>
       <div>
@@ -747,15 +736,12 @@ function SceneStage({
     }}
   >
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
-      ? <section className="orb-stage-empty" data-testid="scene-empty">
-          <h1>Empty Scene — ask the Companion</h1>
-          <p><b>Next:</b> Click the Companion → type what you want → press <b>GO</b>. Or create a context pearl here and wear it into the gauntlet (up to 5). Output Frame is optional later.</p>
+      ? <section className="orb-stage-empty" data-testid="scene-empty" data-zero-demand="true">
+          <h1>Nothing here yet</h1>
+          <p>Ask your Companion what you want — pearls appear here to play with.</p>
           <div className="orb-stage-empty-actions">
-            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Open Companion</button>
-            <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Create a context pearl</button>
-            <button type="button" onClick={onOpenGuide}>How Pearl works</button>
+            <button type="button" className="orb-primary" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Talk to Companion</button>
           </div>
-          <small className="orb-stage-empty-hint">Drag moves items (does not copy). Select + Delete removes junk. Esc closes panels, then returns to the Reef shelf.</small>
         </section>
       : view === "Table"
         ? <table className="orb-stage-table"><thead><tr><th>Material</th><th>Kind</th><th>Lineage</th></tr></thead><tbody>
@@ -841,25 +827,25 @@ function PearlSceneChrome({
   onDeleteSelection,
   onOpenCompanionHint,
 }) {
-  return <header className="pearl-scene-chrome" data-testid="pearl-scene-chrome" data-companion-first="true" aria-label="Scene navigation">
+  return <header className="pearl-scene-chrome" data-testid="pearl-scene-chrome" data-companion-first="true" data-zero-demand="true" aria-label="Scene navigation">
     <div className="pearl-scene-chrome-primary">
-      <button type="button" data-testid="scene-home" onClick={onHome}>← Reef (shelf)</button>
+      <button type="button" data-testid="scene-home" onClick={onHome}>← Reef</button>
       <div className="pearl-scene-chrome-title">
-        <span>{outputFrameOpen ? "Output Frame" : "Scene · overflow canvas"}</span>
+        <span>{outputFrameOpen ? "Output Frame" : "Playing with pearls"}</span>
         <b>{sceneName || "Untitled workspace"}</b>
         <small>{outputFrameOpen
-          ? "Finished writing surface. Esc or “Back to Scene” leaves. Companion still works from here."
-          : "Next: Companion → type → GO. Context pearls here can wear into the gauntlet — Output Frame is never required."}</small>
+          ? "Writing surface — Companion still works. Esc returns."
+          : "Talk to Companion, or open a pearl. Extra tools stay out of the way."}</small>
       </div>
     </div>
     <div className="pearl-scene-chrome-actions">
-      <button type="button" data-testid="scene-ask-pearl" className="pearl-scene-primary-action" onClick={onOpenCompanionHint}>Open Companion</button>
-      {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>Create context pearl</button>}
-      <button type="button" data-testid="scene-toggle-frame" className="pearl-scene-secondary-action" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
-        {outputFrameOpen ? "Back to Scene" : "Output Frame"}
-      </button>
+      <button type="button" data-testid="scene-ask-pearl" className="pearl-scene-primary-action" onClick={onOpenCompanionHint}>Talk to Companion</button>
+      {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>New pearl</button>}
+      {outputFrameOpen && <button type="button" data-testid="scene-toggle-frame" className="pearl-scene-secondary-action" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
+        Back
+      </button>}
       {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={onToggleTools}>
-        {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
+        {outputToolsOpen ? "Hide tools" : "Tools"}
       </button>}
       <button
         type="button"
@@ -867,7 +853,7 @@ function PearlSceneChrome({
         data-testid="scene-delete"
         onClick={onDeleteSelection}
         title="Delete selected item (or press Delete / Backspace)"
-      >Delete selected</button>
+      >Delete</button>
     </div>
   </header>;
 }
@@ -1036,6 +1022,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
   }, [openEmittedView]);
 
+  useEffect(() => {
+    function onOpenScene() {
+      createBlankScene();
+    }
+    document.addEventListener("lens:shell-open-scene", onOpenScene);
+    return () => document.removeEventListener("lens:shell-open-scene", onOpenScene);
+  }, []);
+
   const decideApprovalRef = useRef(null);
   const handleShellEscape = useCallback(() => {
     const action = nextEscapeAction({
@@ -1134,21 +1128,8 @@ export default function OrbUniverseShell({ StageComponent }) {
     return () => window.removeEventListener(SHELL_ACTION_EVENT, onShellAction);
   }, [openEmittedView, route.kind]);
 
-  const pearlNavQuickActions = useMemo(() => {
-    const signedIn = Boolean(supaAuth.session?.user);
-    return [
-      { label: "How Pearl works", run: openGuide },
-      { label: signedIn ? "Sign out" : "Sign in", run: () => (signedIn
-        ? getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {})
-        : setAuthOpen(true)) },
-      { label: route.kind === "stage" || route.kind === "install" ? "Back / Home" : "Saved work", run: () => {
-        if (route.kind === "stage" || route.kind === "install") navigateBackOrHome();
-        else openEmittedView("library");
-      } },
-      { label: "Account & privacy", run: () => openEmittedView("settings", { panel: "account" }) },
-      { label: "Encode anything", run: () => openEmittedView("encode") },
-    ];
-  }, [supaAuth.session, openGuide, route.kind, openEmittedView]);
+  // Zero-demand: no quick-action walls on the Mother Pearl. Reach overflow via chat intent.
+  const pearlNavQuickActions = useMemo(() => [], []);
 
   const dismissWelcome = useCallback(() => {
     try {
@@ -3301,21 +3282,12 @@ export default function OrbUniverseShell({ StageComponent }) {
           setCompanionExpanded(value);
           if (value) window.dispatchEvent(new CustomEvent("lens:companion-expand"));
         }}
-        hint={outputFrameOpen
-          ? "Companion Pearl · open chat → type → GO · gauntlet = up to 5 context pearls"
-          : "Companion Pearl · open chat → type → GO · wear context pearls into the gauntlet"}
-        quickActions={[
-          ...pearlNavQuickActions,
-          { label: "Create context pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 }, name: "Context pearl" }) },
-          { label: outputFrameOpen ? "Back to Scene" : "Open Output Frame", run: () => setOutputFrameOpen((value) => !value) },
-          { label: "Encode anything", run: () => openEmittedView("encode") },
-          { label: "What can I do?", run: () => openEmittedView("actions") },
-        ]}
+        hint="Talk · type · GO"
+        quickActions={pearlNavQuickActions}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}
-      {!cursorMode && !guideOpen && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
       {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
-      {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
+      {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Esc</button>}
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Pearl cursor on" : "Pearl cursor off"}</span>
       {renderPearlEmission()}
       {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
@@ -3404,26 +3376,15 @@ export default function OrbUniverseShell({ StageComponent }) {
         setCompanionExpanded(value);
         if (value) window.dispatchEvent(new CustomEvent("lens:companion-expand"));
       }}
-      quickActions={[
-        ...pearlNavQuickActions,
-        ...(showInstall ? [] : [
-          { label: "Open Scene workspace", run: createBlankScene },
-          { label: "Get the extension", run: () => navigate("/install") },
-        ]),
-      ]}
-      hint="Companion Pearl · open chat → type → GO · gauntlet holds up to 5 context pearls"
+      quickActions={pearlNavQuickActions}
+      hint="Talk · type · GO"
     />}
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}
-      onScene={() => { dismissWelcome(); createBlankScene(); }}
-      onGuide={() => { dismissWelcome(); openGuide(); }}
-      onInstall={() => { dismissWelcome(); navigate("/install"); }}
-      onImport={() => { dismissWelcome(); openEmittedView("encode"); }}
       onDismiss={dismissWelcome}
     />}
-    {!cursorMode && !guideOpen && !showWelcome && <button type="button" className="pearl-guide-button" aria-label="How Pearl works" title="How Pearl works" onClick={openGuide}>?</button>}
     {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
-    {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
+    {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Esc</button>}
     <PearlPowerFxOverlay />
     {renderPearlEmission()}
     {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay

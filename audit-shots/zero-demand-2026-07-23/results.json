@@ -1,0 +1,206 @@
+{
+  "generatedAt": "2026-07-23T23:55:31.063Z",
+  "baseUrl": "http://127.0.0.1:41737",
+  "productModel": {
+    "mother": "Companion Pearl — only primary interface",
+    "gauntlet": "≤5 orbiting context pearls",
+    "reef": "canvas where pearls live / form / play"
+  },
+  "screens": [
+    {
+      "id": "01-welcome",
+      "file": "01-welcome.png",
+      "note": "First land — what do I do?",
+      "status": "captured"
+    },
+    {
+      "id": "welcome-visible",
+      "status": "pass",
+      "detail": "zero-demand welcome present",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-just-talk",
+      "status": "pass",
+      "detail": "companion pearl\n\njust talk.\n\nthis is your companion. say what you want — it handles the rest.\n\ntalk to companion\nexplore the reef",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-no-orb",
+      "status": "pass",
+      "detail": "no user-facing orb teaching",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-no-modes",
+      "status": "pass",
+      "detail": "no mode chooser copy",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-one-action",
+      "status": "pass",
+      "detail": "primary actions=1",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-companion-visible",
+      "status": "pass",
+      "detail": "Mother Pearl visible",
+      "severity": "P0"
+    },
+    {
+      "id": "02-companion-open",
+      "file": "02-companion-open.png",
+      "note": "Companion chat — type + GO",
+      "status": "captured"
+    },
+    {
+      "id": "03-after-make-pearl",
+      "file": "03-after-make-pearl.png",
+      "note": "Make pearl via Companion",
+      "status": "captured"
+    },
+    {
+      "id": "04-reef",
+      "file": "04-reef.png",
+      "note": "Reef — home of pearls",
+      "status": "captured"
+    },
+    {
+      "id": "reef-canvas",
+      "status": "pass",
+      "detail": "reef\nreef · where pearls live\ncompanion\nhome of pearls\nreef\n\npearls form, play, and expand here. talk to your companion — it does the rest.\n\ntalk to companion\n\nyour pearls — open one, or ask companion to wear it\n\nfriday ",
+      "severity": "P0"
+    },
+    {
+      "id": "reef-not-mode-center",
+      "status": "pass",
+      "detail": "Reef is not a mode chooser",
+      "severity": "P0"
+    },
+    {
+      "id": "reef-one-clear-action",
+      "status": "pass",
+      "detail": "Talk to Companion on Reef or pearls present",
+      "severity": "P0"
+    },
+    {
+      "id": "06-gauntlet-wear",
+      "file": "06-gauntlet-wear.png",
+      "note": "Gauntlet charged stone",
+      "status": "captured"
+    },
+    {
+      "id": "05-scene",
+      "file": "05-scene.png",
+      "note": "Scene / play space",
+      "status": "captured"
+    },
+    {
+      "id": "scene-talk-primary",
+      "status": "pass",
+      "detail": "← reef\nplaying with pearls\nuntitled scene\ntalk to companion, or open a pearl. extra tools stay out of the way.\ntalk to companion\nnew pearl\ndelete",
+      "severity": "P0"
+    },
+    {
+      "id": "07-studio-or-scene",
+      "file": "07-studio-or-scene.png",
+      "note": "Studio / pearl detail if reachable",
+      "status": "captured"
+    },
+    {
+      "id": "08-narrow-390",
+      "file": "08-narrow-390.png",
+      "note": "390px first land",
+      "status": "captured"
+    },
+    {
+      "id": "narrow-primary-cta",
+      "status": "pass",
+      "detail": "Talk CTA survives 390px",
+      "severity": "P1"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "open-companion",
+      "status": "pass",
+      "detail": "Companion expands from Talk CTA",
+      "severity": "P0"
+    },
+    {
+      "id": "no-mode-picker",
+      "status": "pass",
+      "detail": "mode pickers=0",
+      "severity": "P0"
+    },
+    {
+      "id": "auto-mode-internal",
+      "status": "pass",
+      "detail": "data-auto-mode=agent",
+      "severity": "P1"
+    },
+    {
+      "id": "go-visible",
+      "status": "pass",
+      "detail": "GO is the obvious action",
+      "severity": "P0"
+    },
+    {
+      "id": "make-pearl-no-block",
+      "status": "pass",
+      "detail": "companion\nmemory\nwhy?\nvoice off\n×\ntype what you want, then press go.\nmake a pearl about friday standup\ncreated context pearl “friday standup”. wear it into the gauntlet when you need it.\na reversible capability sample\npe",
+      "severity": "P0"
+    },
+    {
+      "id": "make-pearl",
+      "status": "pass",
+      "detail": "dom=1 persisted=0 key=null",
+      "severity": "P0"
+    },
+    {
+      "id": "no-untitled-orb",
+      "status": "pass",
+      "detail": "no Untitled orb label",
+      "severity": "P0"
+    },
+    {
+      "id": "wear-gauntlet",
+      "status": "pass",
+      "detail": "filled=1 wornState=1",
+      "severity": "P0"
+    },
+    {
+      "id": "open-scene",
+      "status": "pass",
+      "detail": "Scene reachable via Companion",
+      "severity": "P0"
+    },
+    {
+      "id": "studio-what-it-does",
+      "status": "pass",
+      "detail": "studio not opened (gap ok if dblclick missed)",
+      "severity": "P2"
+    },
+    {
+      "id": "no-crash",
+      "status": "pass",
+      "detail": "no crash console",
+      "severity": "P0"
+    }
+  ],
+  "defects": [],
+  "fixed": [
+    "Removed Ask/Plan/Agent/Debug mode picker — auto-select via recommendCompanionMode",
+    "Welcome reduced to one action: Talk to Companion",
+    "Reef reframed as pearl canvas, not mode/shelf instruction wall",
+    "Scene empty + chrome: one Talk CTA; Output Frame buried",
+    "Killed first-use guide ? button and competing Scene/Import/How-to CTAs"
+  ],
+  "gaps": [
+    "Extension page Pearl / side panel not exercised in this web session",
+    "Live model / credentials not required for these deterministic paths",
+    "Ghost-cursor visual proof needs headed browser"
+  ]
+}

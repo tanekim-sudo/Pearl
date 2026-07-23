@@ -217,7 +217,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("companion.transaction-harness", {
     domains: ["paper", "ai", "move", "function", "lens", "extension"],
     commands: [],
-    ui: ["client/components/CompanionChat.jsx:companion-mode-bar", "client/components/CompanionChat.jsx:companion-plan-strip"],
+    ui: ["client/components/CompanionChat.jsx:data-auto-mode", "client/components/CompanionChat.jsx:companion-plan-strip"],
     companion: ["runFunctionTestBench", "observeWorkspace"],
     extension: ["captureExternalVisibleTab", "saveExternalCaptureAsMove", "saveExternalCaptureAsFunction", "saveExternalCaptureAsLens"],
     persistence: ["lens.companion.run-ledger.v1", "lens.companion.mode.v1"],

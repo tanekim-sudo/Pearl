@@ -159,8 +159,11 @@ const input = page.locator(".companion-input");
 await input.waitFor({ state: "visible" });
 
 async function chooseMode(mode) {
-  await page.getByLabel("Companion mode").selectOption(mode);
-  check(`mode selector chooses ${mode}`, await page.getByLabel("Companion mode").inputValue() === mode);
+  // Modes are auto-selected internally; verify no user-facing picker remains.
+  const pickers = await page.getByLabel("Companion mode").count();
+  check(`mode selector removed (wanted ${mode} auto)`, pickers === 0);
+  const auto = await page.locator("[data-testid='companion-chat']").getAttribute("data-auto-mode");
+  check(`auto-mode attribute present for ${mode}`, !!auto);
 }
 
 async function send(value) {

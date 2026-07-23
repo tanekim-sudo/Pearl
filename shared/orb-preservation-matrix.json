@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-22T17:38:41.091Z",
+  "generatedAt": "2026-07-23T23:56:16.736Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -561,7 +561,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/components/CompanionChat.jsx:companion-mode-bar",
+        "client/components/CompanionChat.jsx:data-auto-mode",
         "client/components/CompanionChat.jsx:companion-plan-strip"
       ],
       "orbVoice": [

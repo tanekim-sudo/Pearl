@@ -62,7 +62,7 @@ async function main() {
   record("no-crash-land", !(await crashed(page)), "fresh land");
 
   // Welcome primary CTA — or Open Companion if shelf already showing
-  const welcomeCta = page.getByRole("button", { name: /Click Companion → type → press GO/i });
+  const welcomeCta = page.getByTestId("welcome-talk");
   const openCompanion = page.getByRole("button", { name: /^Open Companion$/i }).first();
   const companionChrome = page.getByRole("button", { name: /Companion \(type \+ GO\)/i }).first();
   if (await welcomeCta.count()) {

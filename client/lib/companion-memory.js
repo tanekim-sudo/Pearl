@@ -19,8 +19,9 @@ export function emptyCompanionMemory() {
     references: { lenses: [], generators: [], paths: [] },
     actions: [],
     memories: [],
-    interviewComplete: false,
-    interviewPaused: false,
+    // Zero-demand: never quiz the user before helping. Memory can still fill in passively.
+    interviewComplete: true,
+    interviewPaused: true,
     updatedAt: null,
   };
 }
@@ -61,7 +62,12 @@ function compact(memory) {
           .slice(-MAX_MEMORIES)
           .map(normalizeMemoryEntry)
       : [],
-    interviewPaused: Boolean(memory?.interviewPaused),
+    interviewComplete: memory?.interviewComplete == null
+      ? true
+      : Boolean(memory.interviewComplete),
+    interviewPaused: memory?.interviewPaused == null
+      ? true
+      : Boolean(memory.interviewPaused),
     updatedAt: memory?.updatedAt || null,
   };
 }
@@ -199,11 +205,11 @@ export function adoptAnonymousCompanionMemory(userId, storage = globalThis.local
 }
 
 export function nextInterviewPrompt(memory) {
-  if (memory.interviewPaused) return null;
+  // Zero-demand default: never quiz unless an explicit incomplete interview is resumed.
+  if (memory.interviewPaused || memory.interviewComplete) return null;
   if (!memory.identity) return "Who are you?";
   if (!memory.role) return "What do you do?";
-  if (!memory.interviewComplete) return "What should I do first?";
-  return null;
+  return "What should I do first?";
 }
 
 export function applyInterviewAnswer(memory, answer) {

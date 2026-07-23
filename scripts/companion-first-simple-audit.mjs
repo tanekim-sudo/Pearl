@@ -58,9 +58,10 @@ async function main() {
   const welcome = await page.locator(".pearl-welcome[data-companion-first='true']");
   record("welcome-visible", await welcome.count() > 0, "welcome companion-first");
   const welcomeText = (await welcome.innerText().catch(() => "")).toLowerCase();
-  record("welcome-teaches-companion", /companion pearl/.test(welcomeText) && /gauntlet|context pearls/.test(welcomeText), welcomeText.slice(0, 180));
-  record("welcome-no-dual-teaching", !/two pearls competing|competing companions/.test(welcomeText), "no competing-companion copy");
-  record("welcome-primary-cta", await page.getByRole("button", { name: /Click Companion → type → press GO/i }).count() > 0, "primary Next CTA");
+  record("welcome-teaches-companion", /companion pearl/.test(welcomeText) && /just talk|talk to companion/.test(welcomeText), welcomeText.slice(0, 180));
+  record("welcome-no-dual-teaching", !/two pearls competing|competing companions|\borb\b/.test(welcomeText), "no competing-companion or orb teaching");
+  record("welcome-primary-cta", await page.getByTestId("welcome-talk").count() > 0, "primary Talk CTA");
+  record("welcome-single-cta", (await page.locator(".pearl-welcome-actions button").count()) === 1, "one primary welcome action");
 
   await page.locator(".pearl-welcome-dismiss").click({ force: true });
   await page.locator(".pearl-welcome").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
@@ -68,8 +69,8 @@ async function main() {
   const reef = page.locator("[data-reef-home='true'][data-companion-first='true']");
   record("reef-shelf", await reef.count() > 0, "reef marked companion-first");
   const reefText = (await reef.innerText().catch(() => "")).toLowerCase();
-  record("reef-shelf-copy", /shelf of context pearls|companion pearl/.test(reefText), reefText.slice(0, 200));
-  record("reef-not-second-app", /not a second app|shelf/.test(reefText), "shelf framing");
+  record("reef-canvas-copy", /where pearls live|home of pearls|your reef/.test(reefText), reefText.slice(0, 200));
+  record("reef-talk-cta", await page.getByTestId("reef-talk").count() > 0, "reef talk CTA");
 
   await page.locator(".companion-orb").click();
   await page.waitForTimeout(350);

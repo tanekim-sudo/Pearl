@@ -285,12 +285,18 @@ export function parsePearlRemixCommand(text) {
   ) {
     return { verb: "createCounterPearl", args: { instruction: value } };
   }
-  if ((/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
-    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
+  // "wear Friday standup", "wear the Alpha pearl", "load X into the gauntlet"
+  if ((/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
+    || (/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+      && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
     || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
     const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+      || value.match(/^(?:wear|put on|load)\s+(?:the\s+)?(.+?)(?:\s+into(?:\s+the)?\s+gauntlet)?$/i)
       || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
-    const args = { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined };
+    const rawName = named?.[1]?.replace(/[.?!"']/g, "").trim();
+    const args = {
+      name: rawName && !/^(?:this|that|it|active|current)$/i.test(rawName) ? rawName : undefined,
+    };
     if (/\b(?:only|instead|replace)\b/i.test(value)) args.replace = true;
     return { verb: "wearPearl", args };
   }
@@ -597,12 +603,18 @@ export function parseTranscriptLearningCommand(text) {
     && (/\bpearls?\b/i.test(value) || /\b(?:gauntlet|working memory|slots?)\b/i.test(value))) {
     return { verb: "listWornPearls", args: {} };
   }
-  if ((/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
-    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
+  // "wear Friday standup", "wear the Alpha pearl", "load X into the gauntlet"
+  if ((/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
+    || (/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+      && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
     || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
     const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+      || value.match(/^(?:wear|put on|load)\s+(?:the\s+)?(.+?)(?:\s+into(?:\s+the)?\s+gauntlet)?$/i)
       || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
-    const args = { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined };
+    const rawName = named?.[1]?.replace(/[.?!"']/g, "").trim();
+    const args = {
+      name: rawName && !/^(?:this|that|it|active|current)$/i.test(rawName) ? rawName : undefined,
+    };
     if (/\b(?:only|instead|replace)\b/i.test(value)) args.replace = true;
     return { verb: "wearPearl", args };
   }

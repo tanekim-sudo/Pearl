@@ -101,11 +101,13 @@ test("Companion and Studio remain explicit without simultaneous management clutt
   const orb = source("client/components/CompanionOrb.jsx");
   const studio = source("client/components/PearlStudioView.jsx");
   const extensionStudio = source("extension/src/result/main.js");
-  assert.match(orb, /Click → type what you want → press GO/);
+  assert.match(orb, /Talk · type · GO/);
   assert.match(orb, /Hold to speak/);
   assert.match(orb, /onTriple:\s*\(\)\s*=>/);
-  assert.match(orb, />Open Studio<\/button>/);
-  assert.match(orb, /!powerSearch && !approval && !nextAction/);
+  // Zero-demand: no Open Studio / quick-action wall on the Mother Pearl — Studio via triple-click / chat.
+  assert.doesNotMatch(orb, />Open Studio<\/button>/);
+  assert.doesNotMatch(orb, /Chat panel: type a goal/);
+  assert.match(orb, /!approval && !featured && <form/);
   assert.match(studio, /useState\(false\)/);
   assert.match(studio, />Inspect structure<\/button>/);
   assert.match(studio, /structureOpen && <>/);
@@ -156,17 +158,19 @@ test("power search presents outcomes without requiring internal ontology", () =>
 test("cold first use is visible and renders only the actionable primary Pearl", () => {
   const universe = source("client/components/OrbUniverseShell.jsx");
   const styles = source("client/orb-universe.css");
+  const chat = source("client/components/CompanionChat.jsx");
 
-  assert.match(universe, /What do you want to do\?/);
+  assert.match(universe, /Just talk\./);
+  assert.match(universe, /Talk to Companion/);
   assert.match(universe, /const firstUse = isRoot && scenes\.length === 0/);
   assert.match(universe, /const emptyLibrary = !isRoot && scenes\.length === 0/);
-  assert.match(universe, /Click Companion/);
-  assert.match(universe, /Open a Scene workspace/);
-  assert.match(universe, /Reef · shelf of context pearls/);
-  assert.match(universe, /Companion Pearl<\/b> is how you ask|context add-ons|up to 5/i);
+  assert.match(universe, /Reef · where pearls live/);
+  assert.match(universe, /data-zero-demand="true"/);
   assert.doesNotMatch(universe, /white orb/i);
   assert.doesNotMatch(universe, /two pearls competing|competing companions/i);
-  assert.match(universe, /not rival companions|not a second app/i);
+  assert.doesNotMatch(universe, /Click Companion → type → press GO|60-second how-to|Import notes/);
+  assert.doesNotMatch(chat, /aria-label="Companion mode"/);
+  assert.match(chat, /recommendCompanionMode/);
   assert.doesNotMatch(styles, /\.orb-home-intro,\s*\.orb-home-prompt\s*\{\s*display:\s*none/);
   assert.match(styles, /\.orb-universe:has\(\.companion-orb-shell\.expanded\) \.orb-home-prompt/);
   assert.match(styles, /\.orb-universe:has\(\.pearl-welcome\) \.orb-home-intro/);

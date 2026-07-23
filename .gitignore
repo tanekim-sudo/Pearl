@@ -29,6 +29,8 @@ audit-shots/*
 !audit-shots/companion-first-simple-2026-07-22/**
 !audit-shots/investor-pearl-e2e-2026-07-23/
 !audit-shots/investor-pearl-e2e-2026-07-23/**
+!audit-shots/zero-demand-2026-07-23/
+!audit-shots/zero-demand-2026-07-23/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

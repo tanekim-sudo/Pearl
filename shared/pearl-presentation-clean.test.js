@@ -31,10 +31,10 @@ test("Reef/Scene presentation no longer teaches white orb or auto-opens Output F
   assert.doesNotMatch(shell, /Untitled orb/);
   assert.doesNotMatch(shell, /Cognitive library/);
   assert.doesNotMatch(shell, /Open page canvas/);
-  assert.match(shell, /Open Output Frame/);
-  assert.match(shell, /Click Companion/);
+  assert.match(shell, /Talk to Companion/);
   assert.match(shell, /companionSurfaceOk/);
-  assert.match(shell, /Output Frame is never required/);
+  assert.match(shell, /data-zero-demand="true"/);
+  assert.doesNotMatch(shell, /companion-mode-bar|Ask · inspect only|Agent · execute/);
   // Handoff must wait for explicit Continue — no auto continueExtensionWork effect.
   assert.doesNotMatch(
     shell,
@@ -45,18 +45,21 @@ test("Reef/Scene presentation no longer teaches white orb or auto-opens Output F
   assert.match(shell, /setOutputFrameOpen\(false\);\s*navigate\(`\/scene\/\$\{encodeURIComponent\(id\)\}`\)/);
 });
 
-test("companion-first model: mother Companion + ≤5 context pearls, Reef is shelf", () => {
+test("companion-first model: mother Companion + ≤5 context pearls, Reef is home canvas", () => {
   const shell = read("client/components/OrbUniverseShell.jsx");
   const guide = read("client/lib/pearl-guide.js");
+  const chat = read("client/components/CompanionChat.jsx");
   const panel = read("extension/src/sidepanel/main.jsx");
   const reef = read("client/lib/reef-home.js");
   assert.match(shell, /data-companion-first="true"/);
-  assert.match(shell, /Context pearls on the shelf|shelf of context pearls/i);
+  assert.match(shell, /Reef · where pearls live|home of pearls/i);
   assert.match(shell, /findWorkspacePearl/);
   assert.match(guide, /Begin with the Companion/);
   assert.match(guide, /not rival companions/);
   assert.match(panel, /Not rival companions/);
   assert.match(reef, /findWorkspacePearl/);
+  assert.match(chat, /data-auto-mode/);
+  assert.doesNotMatch(chat, /aria-label="Companion mode"/);
   assert.doesNotMatch(shell, /Pearl keeps reusable ideas/);
   assert.doesNotMatch(shell, /Ask the companion/);
 });

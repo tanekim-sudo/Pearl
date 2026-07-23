@@ -1883,11 +1883,11 @@ function App() {
       </>}
     </aside>}
     {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
-    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Context pearl shelf">
+    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Pearl tray">
       <div className="extension-semantic-orb-head">
-        <div><h2>Shelf</h2><small>Context pearls rest here. Drag into a Companion gauntlet socket (up to {MAX_GAUNTLET_SLOTS}) to equip; drag out to return. Not rival companions.</small></div>
-        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: "Untitled pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
-          {session.fragments.length ? "Make a pearl" : "New empty pearl"}
+        <div><h2>Pearls</h2><small>Drag a pearl onto the Companion (up to {MAX_GAUNTLET_SLOTS}) when you need it. Not rival companions.</small></div>
+        <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: session.fragments.length ? "From capture" : "New pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
+          {session.fragments.length ? "Make a pearl" : "New pearl"}
         </button>
       </div>
       <div
