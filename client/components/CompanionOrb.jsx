@@ -344,14 +344,16 @@ export default function CompanionOrb({
   const visibleActions = powerSearch && actionQuery.trim()
     ? searchPearlActions(actionQuery).slice(0, 8)
     : [];
-  const nextAction = (state.candidates || []).length
-    ? { label: "Choose a result", run: () => onEmitView?.("taste") }
-    : phase === "executing"
-      ? { label: "Stop", run: onStop }
-      : phase === "blocked" && onUndo
-        ? { label: "Undo", run: onUndo }
-        : (state.context || []).length && onOrbCreate
-          ? { label: "Keep this", run: onOrbCreate }
+  // Keep this stays primary when working memory has dump material — do not bury it
+  // under Undo/blocked chrome after a failed companion run.
+  const nextAction = (state.context || []).length && onOrbCreate
+    ? { label: "Keep this", run: onOrbCreate }
+    : (state.candidates || []).length
+      ? { label: "Choose a result", run: () => onEmitView?.("taste") }
+      : phase === "executing"
+        ? { label: "Stop", run: onStop }
+        : phase === "blocked" && onUndo
+          ? { label: "Undo", run: onUndo }
           : null;
   if (cursorMode) return null;
   return (

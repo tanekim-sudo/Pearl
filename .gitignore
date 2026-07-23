@@ -21,6 +21,8 @@ audit-shots/*
 !audit-shots/web-workability-2026-07-22/**
 !audit-shots/real-functionality-2026-07-22/
 !audit-shots/real-functionality-2026-07-22/**
+!audit-shots/all-paths-2026-07-22/
+!audit-shots/all-paths-2026-07-22/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

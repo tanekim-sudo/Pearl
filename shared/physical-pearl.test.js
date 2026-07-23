@@ -15,9 +15,11 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 test("shared physical renderer contains every required optical layer", () => {
   const markup = physicalPearlMarkup({ id: "contract-pearl", variant: "result", state: "new", size: 32 });
-  for (const layer of ["contact", "body", "subsurface--far", "subsurface--near", "nucleus", "caustic", "depth", "nacre", "environment", "reflection", "rim", "specular", "pinlight"]) {
+  for (const layer of ["contact", "body", "subsurface--far", "core", "nucleus", "ring--outer", "ring--inner", "subsurface--near", "caustic", "depth", "nacre", "environment", "reflection", "rim", "specular", "pinlight"]) {
     assert.match(markup, new RegExp(`physical-pearl__${layer}`), `missing ${layer} optical layer`);
   }
+  assert.match(PHYSICAL_PEARL_CSS, /physical-pearl-core-breath/);
+  assert.match(PHYSICAL_PEARL_CSS, /data-pearl-variant=primary/);
   assert.match(markup, /data-pearl-variant="result"/);
   assert.match(markup, /data-pearl-state="new"/);
   assert.doesNotMatch(PHYSICAL_PEARL_CSS, /outer-glow|box-shadow\s*:/i);

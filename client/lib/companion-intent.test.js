@@ -55,6 +55,7 @@ test("critique stream and version history intents are deterministic", () => {
   });
   assert.equal(parsePearlVersionCommand("restore the Review ready version").verb, "restorePearlVersion");
   assert.equal(parsePearlRemixCommand("merge these orbs").verb, "mergeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("merge these pearls").verb, "mergeSemanticOrbs");
   assert.deepEqual(parsePearlRemixCommand("what do these pearls notice about each other"), {
     verb: "synthesizeSemanticOrbs",
     args: { ids: [], sceneId: "", mode: "mutual" },
@@ -64,7 +65,13 @@ test("critique stream and version history intents are deterministic", () => {
   assert.equal(parsePearlRemixCommand("organize this pearl").verb, "organizePearl");
   assert.equal(parsePearlRemixCommand("organize the dump into moves functions and lenses").verb, "organizePearl");
   assert.equal(parsePearlRemixCommand("develop a counter pearl to this one").verb, "createCounterPearl");
+  assert.equal(parsePearlRemixCommand("create a counter pearl").verb, "createCounterPearl");
   assert.equal(parsePearlRemixCommand("make a foil pearl against that orb").verb, "createCounterPearl");
+  assert.deepEqual(parsePearlRemixCommand("wear the Alpha pearl"), {
+    verb: "wearPearl",
+    args: { name: "Alpha" },
+  });
+  assert.equal(parsePearlRemixCommand("remove the worn pearl").verb, "removeWornPearl");
   assert.equal(parsePearlRemixCommand("evaluate this deck with my startup pearl").verb, "evaluateWithGauntlet");
   assert.equal(parsePearlRemixCommand("run the gauntlet over this page").verb, "evaluateWithGauntlet");
   assert.equal(parsePearlRemixCommand("split this orb").verb, "splitSemanticOrb");

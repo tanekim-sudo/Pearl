@@ -2,7 +2,7 @@ import React, { useId, useInsertionEffect, useMemo } from "react";
 import { PHYSICAL_PEARL_CSS, normalizePhysicalPearl, physicalPearlMarkup } from "../../shared/physical-pearl.js";
 import { pearlAestheticStyle } from "../../shared/pearl-aesthetic.js";
 
-const STYLE_ID = "physical-pearl-renderer-v2";
+const STYLE_ID = "physical-pearl-renderer-v3";
 
 function ensurePhysicalPearlStyles() {
   if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;

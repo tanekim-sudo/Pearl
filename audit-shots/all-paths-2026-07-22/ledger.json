@@ -1,0 +1,380 @@
+{
+  "generatedAt": "2026-07-23T05:06:03.183Z",
+  "baseUrl": "http://127.0.0.1:41737",
+  "checks": [
+    {
+      "id": "unit-arc-reactor-contract",
+      "status": "pass",
+      "detail": "valid=true contract=3 renderer=3 elements=20",
+      "severity": "P0",
+      "pathId": "visual.physical-pearl"
+    },
+    {
+      "id": "unit-arc-reactor-layers",
+      "status": "pass",
+      "detail": "core+rings+breath",
+      "severity": "P0",
+      "pathId": "visual.physical-pearl"
+    },
+    {
+      "id": "unit-gauntlet-cap-5",
+      "status": "pass",
+      "detail": "filled=5 cap=5 threw=true",
+      "severity": "P0",
+      "pathId": "companion.pearl-gauntlet"
+    },
+    {
+      "id": "unit-merge-preserves-sources",
+      "status": "pass",
+      "detail": "orbs=3 preserved=audit-1,audit-2",
+      "severity": "P0",
+      "pathId": "scene.semantic-orbs.merge"
+    },
+    {
+      "id": "unit-synthesize-mutual",
+      "status": "pass",
+      "detail": "orbs=3 kind=synthesis",
+      "severity": "P0",
+      "pathId": "scene.semantic-orbs.synthesize"
+    },
+    {
+      "id": "unit-counter-pearl",
+      "status": "pass",
+      "detail": "kind=counter orbs=3",
+      "severity": "P0",
+      "pathId": "pearl.counter"
+    },
+    {
+      "id": "unit-forming-pearls",
+      "status": "pass",
+      "detail": "pearls=4",
+      "severity": "P0",
+      "pathId": "learning.forming-pearls"
+    },
+    {
+      "id": "unit-extract-text-file",
+      "status": "pass",
+      "detail": "note.txt",
+      "severity": "P0",
+      "pathId": "scene.ingest"
+    },
+    {
+      "id": "unit-encode-local-compile",
+      "status": "pass",
+      "detail": "LP meeting briefing",
+      "severity": "P0",
+      "pathId": "encode.automation-anything"
+    },
+    {
+      "id": "unit-organize-dump",
+      "status": "pass",
+      "detail": "Organized into 1 Moves · 0 Functions · 1 Lenses. Preserved 1 evidence unit; removed 4 redundant structure.",
+      "severity": "P0",
+      "pathId": "pearl.organize"
+    },
+    {
+      "id": "reef-nav",
+      "status": "pass",
+      "detail": "home reef",
+      "severity": "P0",
+      "pathId": "shell.reef-home"
+    },
+    {
+      "id": "live-mother-arc-reactor",
+      "status": "pass",
+      "detail": "{\"ok\":true,\"version\":\"3\",\"variant\":\"primary\",\"hasCore\":true,\"hasRing\":true,\"size\":\"34\",\"emptySockets\":5}",
+      "severity": "P0",
+      "pathId": "visual.physical-pearl"
+    },
+    {
+      "id": "live-empty-gauntlet-sockets",
+      "status": "pass",
+      "detail": "empty=5",
+      "severity": "P1",
+      "pathId": "companion.pearl-gauntlet"
+    },
+    {
+      "id": "paste-to-stage",
+      "status": "pass",
+      "detail": "nodes=1",
+      "severity": "P0",
+      "pathId": "scene.ingest.paste"
+    },
+    {
+      "id": "file-drop-material",
+      "status": "pass",
+      "detail": "material present",
+      "severity": "P0",
+      "pathId": "scene.ingest.drop"
+    },
+    {
+      "id": "create-pearls",
+      "status": "pass",
+      "detail": "pearls=3",
+      "severity": "P0",
+      "pathId": "scene.semantic-orbs"
+    },
+    {
+      "id": "wear-gauntlet",
+      "status": "fixed",
+      "detail": "{\"filled\":1,\"empty\":4,\"stones\":1,\"stored\":1}",
+      "severity": "P0",
+      "pathId": "companion.pearl-wear"
+    },
+    {
+      "id": "live-merge",
+      "status": "fixed",
+      "detail": "before=3 after=4",
+      "severity": "P0",
+      "pathId": "scene.semantic-orbs.merge"
+    },
+    {
+      "id": "live-synthesize",
+      "status": "fixed",
+      "detail": "before=4 after=5",
+      "severity": "P0",
+      "pathId": "scene.semantic-orbs.synthesize"
+    },
+    {
+      "id": "live-counter",
+      "status": "fixed",
+      "detail": "before=5 after=6",
+      "severity": "P0",
+      "pathId": "pearl.counter"
+    },
+    {
+      "id": "keep-this",
+      "status": "fixed",
+      "detail": "before=6 after=7 dump=true",
+      "severity": "P0",
+      "pathId": "companion.keep-this"
+    },
+    {
+      "id": "live-organize",
+      "status": "fixed",
+      "detail": "{\"moves\":1,\"functions\":1,\"lenses\":1,\"context\":2}",
+      "severity": "P1",
+      "pathId": "pearl.organize"
+    },
+    {
+      "id": "drag-move-not-delete",
+      "status": "pass",
+      "detail": "{\"ok\":true,\"hint\":true,\"count\":7}",
+      "severity": "P1",
+      "pathId": "interaction.orb-gesture"
+    },
+    {
+      "id": "output-frame-on-intent",
+      "status": "fixed",
+      "detail": "before=0 after=2",
+      "severity": "P1",
+      "pathId": "scene.output-frame"
+    },
+    {
+      "id": "delete-pearl",
+      "status": "pass",
+      "detail": "before=0 after=0",
+      "severity": "P1",
+      "pathId": "scene.semantic-orbs.delete"
+    },
+    {
+      "id": "studio-open",
+      "status": "pass",
+      "detail": "hosts=2",
+      "severity": "P2",
+      "pathId": "studio.pearl"
+    },
+    {
+      "id": "reef-return",
+      "status": "pass",
+      "detail": "home",
+      "severity": "P1",
+      "pathId": "shell.reef-home"
+    },
+    {
+      "id": "encode-panel",
+      "status": "pass",
+      "detail": "panel=1",
+      "severity": "P0",
+      "pathId": "encode.automation-anything"
+    },
+    {
+      "id": "no-fatal-console",
+      "status": "pass",
+      "detail": "clean",
+      "severity": "P1",
+      "pathId": null
+    }
+  ],
+  "screenshots": [
+    "01-reef-home.png",
+    "02-mother-pearl-reactor.png",
+    "03-paste-to-stage.png",
+    "04-file-drop.png",
+    "05-two-pearls.png",
+    "06-gauntlet-worn.png",
+    "07-merge.png",
+    "08-synthesize.png",
+    "09-counter.png",
+    "11-keep-this.png",
+    "10-organize.png",
+    "12-drag-move.png",
+    "13-output-frame.png",
+    "14-delete.png",
+    "15-studio.png",
+    "16-reef-return.png",
+    "17-encode.png"
+  ],
+  "defects": [],
+  "gaps": [
+    "Live model GO / evaluateWithGauntlet model rewrite not proven — needs credentials and provider access.",
+    "Screen encode (encodeConversationAsPearl capture) and /api/infer-automation not proven in this run.",
+    "Browser extension side panel / page Pearl dogfood not loaded here; shared renderer + CSS updated and unit-covered; extension build verified by release:check:fast.",
+    "Voice/mic, Supabase multi-account, and Chrome Web Store packaged install not exercised."
+  ],
+  "paths": [
+    {
+      "id": "visual.physical-pearl",
+      "status": "pass",
+      "checks": [
+        "unit-arc-reactor-contract",
+        "unit-arc-reactor-layers",
+        "live-mother-arc-reactor"
+      ]
+    },
+    {
+      "id": "companion.pearl-gauntlet",
+      "status": "pass",
+      "checks": [
+        "unit-gauntlet-cap-5",
+        "live-empty-gauntlet-sockets"
+      ]
+    },
+    {
+      "id": "scene.semantic-orbs.merge",
+      "status": "fixed",
+      "checks": [
+        "unit-merge-preserves-sources",
+        "live-merge"
+      ]
+    },
+    {
+      "id": "scene.semantic-orbs.synthesize",
+      "status": "fixed",
+      "checks": [
+        "unit-synthesize-mutual",
+        "live-synthesize"
+      ]
+    },
+    {
+      "id": "pearl.counter",
+      "status": "fixed",
+      "checks": [
+        "unit-counter-pearl",
+        "live-counter"
+      ]
+    },
+    {
+      "id": "learning.forming-pearls",
+      "status": "pass",
+      "checks": [
+        "unit-forming-pearls"
+      ]
+    },
+    {
+      "id": "scene.ingest",
+      "status": "pass",
+      "checks": [
+        "unit-extract-text-file"
+      ]
+    },
+    {
+      "id": "encode.automation-anything",
+      "status": "pass",
+      "checks": [
+        "unit-encode-local-compile",
+        "encode-panel"
+      ]
+    },
+    {
+      "id": "pearl.organize",
+      "status": "fixed",
+      "checks": [
+        "unit-organize-dump",
+        "live-organize"
+      ]
+    },
+    {
+      "id": "shell.reef-home",
+      "status": "pass",
+      "checks": [
+        "reef-nav",
+        "reef-return"
+      ]
+    },
+    {
+      "id": "scene.ingest.paste",
+      "status": "pass",
+      "checks": [
+        "paste-to-stage"
+      ]
+    },
+    {
+      "id": "scene.ingest.drop",
+      "status": "pass",
+      "checks": [
+        "file-drop-material"
+      ]
+    },
+    {
+      "id": "scene.semantic-orbs",
+      "status": "pass",
+      "checks": [
+        "create-pearls"
+      ]
+    },
+    {
+      "id": "companion.pearl-wear",
+      "status": "fixed",
+      "checks": [
+        "wear-gauntlet"
+      ]
+    },
+    {
+      "id": "companion.keep-this",
+      "status": "fixed",
+      "checks": [
+        "keep-this"
+      ]
+    },
+    {
+      "id": "interaction.orb-gesture",
+      "status": "pass",
+      "checks": [
+        "drag-move-not-delete"
+      ]
+    },
+    {
+      "id": "scene.output-frame",
+      "status": "fixed",
+      "checks": [
+        "output-frame-on-intent"
+      ]
+    },
+    {
+      "id": "scene.semantic-orbs.delete",
+      "status": "pass",
+      "checks": [
+        "delete-pearl"
+      ]
+    },
+    {
+      "id": "studio.pearl",
+      "status": "pass",
+      "checks": [
+        "studio-open"
+      ]
+    }
+  ],
+  "consoleErrors": []
+}

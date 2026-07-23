@@ -74,6 +74,13 @@ import {
   MAX_FORMING_PEARLS,
 } from "../../shared/forming-pearls.js";
 import { extractTextFromFile } from "../../shared/encode-evidence.js";
+import {
+  loadGauntletState,
+  MAX_GAUNTLET_SLOTS,
+  removePearlIdFromGauntlet,
+  wearPearlIdInGauntlet,
+} from "../../shared/companion-pearl-gauntlet.js";
+import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
 
 export { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
 
@@ -1092,6 +1099,13 @@ export default function OrbUniverseShell({ StageComponent }) {
       if (action === "navigateBack") navigateBackOrHome();
       if (action === "openSettings") openEmittedView("settings", { panel: event.detail?.panel || "account" });
       if (action === "openEncode") openEmittedView("encode");
+      if (action === "openOutputFrame" || action === "openPageCanvas") {
+        setOutputFrameOpen(true);
+      }
+      if (action === "closeOutputFrame" || action === "closePageCanvas") {
+        setOutputFrameOpen(false);
+        setOutputToolsOpen(false);
+      }
       if (action === "closeSurface") {
         setEmittedView(null);
         setGuideOpen(false);
@@ -1461,7 +1475,15 @@ export default function OrbUniverseShell({ StageComponent }) {
         const activeId = scene?.activeSemanticOrbId
           || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
         if (!activeId) throw new Error("Create or select a pearl with dump material first.");
-        await applySemanticOrbCommand("organizePearl", { id: activeId, sceneId: scene.id });
+        const extraText = (orbRef.current?.context || [])
+          .map((item) => String(item.text || item.label || "").trim())
+          .filter(Boolean)
+          .join("\n\n");
+        await applySemanticOrbCommand("organizePearl", {
+          id: activeId,
+          sceneId: scene.id,
+          ...(extraText ? { extraText } : {}),
+        });
         setOrb(transitionOrb(orbRef.current || next, "completed", {
           taskId: recorded.entry.id,
           commandId: "organizePearl",
@@ -1471,6 +1493,186 @@ export default function OrbUniverseShell({ StageComponent }) {
         setOrb(transitionOrb(next, "blocked", {
           taskId: recorded.entry.id,
           evidence: { boundary: error?.message || "Nothing to organize." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "wearPearl" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "wearPearl" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim().toLowerCase();
+        const pearl = needle
+          ? orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
+            || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
+            || orbs.find((entry) => entry.id === remixIntent.args?.id)
+          : orbs.find((entry) => entry.id === scene?.activeSemanticOrbId) || orbs[0];
+        if (!pearl) throw new Error("No matching pearl to wear. Create one, or name the pearl to put on.");
+        await applySemanticOrbCommand("activateSemanticOrb", { id: pearl.id });
+        wearPearlIdInGauntlet(pearl.id, {
+          replace: remixIntent.args?.replace === true,
+          slot: Number.isInteger(remixIntent.args?.slot) ? remixIntent.args.slot : undefined,
+        });
+        const gauntlet = loadGauntletState();
+        const orbit = loadWornOrbitState();
+        const packs = gauntlet.pearlIds.map((id) => {
+          const match = orbs.find((entry) => entry.id === id);
+          return {
+            pearlId: id,
+            id,
+            name: match?.name || id,
+            aesthetic: match?.aesthetic || null,
+          };
+        });
+        document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
+          detail: {
+            pearlIds: orbit.pearlIds,
+            primaryPearlId: orbit.primaryPearlId,
+            packs,
+            gauntlet: {
+              slots: gauntlet.slots,
+              activeSlot: gauntlet.activeSlot,
+              filled: gauntlet.filled,
+              capacity: MAX_GAUNTLET_SLOTS,
+            },
+          },
+        }));
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "wearPearl",
+          effectId: `wear:${pearl.id}:${Date.now()}`,
+          evidence: {
+            title: `Loaded ${pearl.name || "pearl"} into gauntlet`,
+            steps: [`Working memory ${gauntlet.filled}/${MAX_GAUNTLET_SLOTS}`],
+          },
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not wear pearl." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "removeWornPearl" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "removeWornPearl" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
+        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim().toLowerCase();
+        const match = needle
+          ? orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
+            || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
+          : null;
+        removePearlIdFromGauntlet(match?.id || null);
+        const gauntlet = loadGauntletState();
+        const orbit = loadWornOrbitState();
+        document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
+          detail: {
+            pearlIds: orbit.pearlIds,
+            primaryPearlId: orbit.primaryPearlId,
+            packs: gauntlet.pearlIds.map((id) => {
+              const orb = orbs.find((entry) => entry.id === id);
+              return { pearlId: id, id, name: orb?.name || id, aesthetic: orb?.aesthetic || null };
+            }),
+            gauntlet: {
+              slots: gauntlet.slots,
+              activeSlot: gauntlet.activeSlot,
+              filled: gauntlet.filled,
+              capacity: MAX_GAUNTLET_SLOTS,
+            },
+          },
+        }));
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "removeWornPearl",
+          effectId: `unwear:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not clear gauntlet socket." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "mergeSemanticOrbs" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "mergeSemanticOrbs" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const ids = (scene?.semanticOrbs || []).filter((entry) => !entry.archived).slice(0, 4).map((entry) => entry.id);
+        if (ids.length < 2) throw new Error("Select or create at least two pearls to merge.");
+        await applySemanticOrbCommand("mergeSemanticOrbs", { ids, sceneId: scene.id });
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "mergeSemanticOrbs",
+          effectId: `merge:${ids.join("+")}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not merge pearls." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "synthesizeSemanticOrbs" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "synthesizeSemanticOrbs" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const ids = (scene?.semanticOrbs || []).filter((entry) => !entry.archived).slice(0, 4).map((entry) => entry.id);
+        if (ids.length < 2) throw new Error("Select or create at least two pearls to synthesize.");
+        await applySemanticOrbCommand("synthesizeSemanticOrbs", {
+          ids,
+          sceneId: scene.id,
+          mode: remixIntent.args?.mode || "mutual",
+          instruction: remixIntent.args?.instruction,
+        });
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "synthesizeSemanticOrbs",
+          effectId: `synthesize:${ids.join("+")}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not synthesize pearls." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "createCounterPearl" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createCounterPearl" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const activeId = scene?.activeSemanticOrbId
+          || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
+        if (!activeId) throw new Error("Create or select a pearl first.");
+        await applySemanticOrbCommand("createCounterPearl", {
+          id: activeId,
+          sceneId: scene.id,
+          instruction: remixIntent.args?.instruction || recorded.entry.raw,
+        });
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "createCounterPearl",
+          effectId: `counter:${activeId}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not create counter pearl." },
         }));
       }
       return;

@@ -4,7 +4,7 @@ Version 1 applies to every primary, semantic, Result, worker, candidate, cursor,
 
 ## Required optical stack
 
-Pearl is one shared SVG renderer with a warm translucent body, off-center nucleus, far and near subsurface volumes at different focus depths, an internal caustic, restrained depth gradient, rose/celadon/pale-gold nacre, reflected-environment band, internal reflection, curved edge, fixed-light specular, pinlight, and contact shadow. The optical stack is clipped to the sphere except for its contact shadow. No external effect may provide the illusion of depth.
+Pearl is one shared SVG renderer with a bright arc-reactor optical stack: translucent cool body, concentrated white/cyan core, concentric internal energy rings, centered luminous nucleus, far and near subsurface volumes at different focus depths, an internal caustic, restrained depth gradient, cool nacre sheen, reflected-environment band, internal reflection, curved edge, fixed-light specular, pinlight, and contact shadow. Gauntlet sockets read as Infinity Stones — empty sockets look uncharged; filled sockets hold saturated, energetic gem pearls (aesthetic-driven when data exists). The optical stack is clipped to the sphere except for its contact shadow. Intensity comes from internal light and material, not size or outer spectacle. No external effect may provide the illusion of depth.
 
 The idle body is 28–36 CSS pixels; the precision cursor is 16–20 CSS pixels. The Result variant is quietly celadon. Surrounding modes are `auto`, `light`, `dark`, `colored`, and `text-heavy`. Surrounding adaptation changes neutral edge and reflection contrast, never the semantic state or sampled page content.
 
@@ -57,7 +57,7 @@ Final review:
 - Glow/tackiness: absent; no external light effect, saturated accent, heavy shadow, or ornamental motion is present.
 - Competing UI: absent in the evidence fields; surrounding text is neutral, low contrast, still legible, and motionless.
 - Optical edge: consistent and environment-aware on light, dark, colored, and text-heavy fields.
-- Material consistency: all eight variants and seven states use renderer version 2.
+- Material consistency: all eight variants and seven states use renderer version 3 (arc-reactor optical stack).
 - Reduced motion: the static optical stack is unchanged and no Pearl animation is running.
 
 Any later capture that fails one item blocks release until the renderer and evidence are regenerated and reviewed.

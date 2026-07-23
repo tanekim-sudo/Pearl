@@ -1,9 +1,9 @@
 import { PHYSICAL_PEARL_CSS, PHYSICAL_PEARL_SIZES, physicalPearlMarkup } from "./physical-pearl.js";
 
-export const PEARL_VISUAL_CONTRACT_VERSION = 2;
+export const PEARL_VISUAL_CONTRACT_VERSION = 3;
 export const PEARL_VISUAL_REQUIRED_LAYERS = Object.freeze([
-  "contact", "body", "subsurface--far", "nucleus", "subsurface--near", "caustic", "depth",
-  "nacre", "environment", "reflection", "rim", "specular", "pinlight",
+  "contact", "body", "subsurface--far", "core", "nucleus", "ring--outer", "ring--inner",
+  "subsurface--near", "caustic", "depth", "nacre", "environment", "reflection", "rim", "specular", "pinlight",
 ]);
 export const PEARL_VISUAL_FAIL_CONDITIONS = Object.freeze([
   "plain-white-dot",

@@ -211,7 +211,10 @@ export function parseAutomationLoopCommand(text) {
 export function parsePearlRemixCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
-  if (/\bmerge\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+orbs?\b/i.test(value) || /^merge (?:them|these|the selected(?: orbs?)?)$/i.test(value)) {
+  if (
+    /\bmerge\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+(?:pearls?|orbs?)\b/i.test(value)
+    || /^merge (?:them|these|the selected(?: (?:pearls?|orbs?)?)?)$/i.test(value)
+  ) {
     return { verb: "mergeSemanticOrbs", args: { ids: [], sceneId: "" } };
   }
   if (/\bcompose\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+orbs?\b/i.test(value)) {
@@ -236,10 +239,30 @@ export function parsePearlRemixCommand(text) {
   if (
     /\b(?:counter[- ]?pearl|opposition pearl|foil pearl)\b/i.test(value)
     || /\b(?:develop|breed|create|make|birth)\b.+\b(?:counter|opposition|foil)\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\b(?:create|make|breed)\s+a\s+counter\s+pearl\b/i.test(value)
     || /\b(?:counter|opposition|foil)\b.+\b(?:to|for|against)\b.+\b(?:pearl|orb|this|that)\b/i.test(value)
     || /\bbreed\b.+\b(?:opposition|foil|counter)\b/i.test(value)
   ) {
     return { verb: "createCounterPearl", args: { instruction: value } };
+  }
+  if ((/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+    && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
+    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
+    const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+      || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
+    const args = { name: named?.[1]?.replace(/[.?!"']/g, "").trim() || undefined };
+    if (/\b(?:only|instead|replace)\b/i.test(value)) args.replace = true;
+    return { verb: "wearPearl", args };
+  }
+  if (/\b(?:take off|remove|clear)\b/i.test(value)
+    && (/\b(?:worn\s+)?pearl\b/i.test(value) || /\bgauntlet\b/i.test(value))
+    && /\b(?:worn|off|remove|clear|orbit|gauntlet|slot|working memory)\b/i.test(value)) {
+    const named = value.match(/\b(?:take off|remove|clear)\s+(?:the\s+)?(.+?)\s+pearl\b/i);
+    const name = named?.[1]?.replace(/[.?!"']/g, "").trim();
+    if (!name || /^(?:worn|orbiting|active|current|gauntlet)$/i.test(name)) {
+      return { verb: "removeWornPearl", args: {} };
+    }
+    return { verb: "removeWornPearl", args: { name } };
   }
   if (/\b(?:exchange insights?|breed|birth (?:a )?third)\b.+\b(?:pearl|orb)s?\b/i.test(value)
     || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|breed)\b/i.test(value)) {

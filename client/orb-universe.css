@@ -153,26 +153,44 @@
   height: 22px;
   min-height: 22px;
   padding: 0;
-  border: 1px solid rgba(216, 194, 141, .28);
+  border: 1px solid rgba(140, 170, 185, .28);
   border-radius: 50%;
-  background: rgba(255, 255, 255, .03);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(180, 210, 220, .05) 0 28%, transparent 58%),
+    radial-gradient(circle at 50% 50%, rgba(10, 16, 20, .72) 0 46%, rgba(18, 28, 34, .4) 70%, transparent 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35);
   animation: none;
+  opacity: .72;
+}
+.orb-gauntlet-socket.filled {
+  width: auto;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  filter: saturate(1.28) brightness(1.08);
+}
+.orb-gauntlet-socket.filled .physical-pearl {
+  filter: saturate(1.18) contrast(1.06);
 }
 .orb-gauntlet-socket.active {
-  outline: 1px solid rgba(232, 221, 190, .55);
+  outline: 1px solid rgba(180, 230, 245, .7);
   outline-offset: 2px;
 }
 .orb-gauntlet-ring {
   display: block;
   width: 10px;
   height: 10px;
-  border: 1px solid rgba(232, 221, 190, .4);
+  border: 1px solid rgba(150, 185, 200, .38);
   border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, rgba(160, 195, 210, .08), transparent 65%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .28);
 }
 @keyframes orb-worn-orbit {
-  from { filter: brightness(1); }
-  50% { filter: brightness(1.06); }
-  to { filter: brightness(1); }
+  from { filter: brightness(1) saturate(1.28); }
+  50% { filter: brightness(1.1) saturate(1.36); }
+  to { filter: brightness(1) saturate(1.28); }
 }
 @media (prefers-reduced-motion: reduce) {
   .orb-worn-addon { animation: none; }
