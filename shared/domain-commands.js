@@ -322,9 +322,35 @@ export const DOMAIN_COMMANDS = Object.freeze({
         return { state, result: { type: "idempotent-replay", id, effects: [] } };
       }
       const placement = placeSemanticOrb(state.semanticOrbs, args.placement || args.orb?.placement || {});
-      const orb = args.material
-        ? semanticOrbFromMaterial(args.material, { id, sceneId: args.sceneId, placement, now: context.now })
-        : createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+      const hasOrganizedOrb = Boolean(
+        args.orb
+        && (
+          args.orb.moves?.length
+          || args.orb.functions?.length
+          || args.orb.lenses?.length
+          || args.orb.workingSet?.context?.length
+          || args.orb.representation
+        )
+      );
+      let orb;
+      if (hasOrganizedOrb) {
+        // Prefer explicit orb payload (forming pearls / encode) so Moves→Functions→Lenses survive.
+        orb = createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+        if (args.material && !(orb.workingSet?.context || []).length) {
+          const seeded = semanticOrbFromMaterial(args.material, {
+            id, sceneId: args.sceneId, placement, now: context.now,
+          });
+          orb = createSemanticOrb({
+            ...orb,
+            workingSet: { ...orb.workingSet, context: seeded.workingSet.context },
+            provenance: { ...(seeded.provenance || {}), ...(orb.provenance || {}) },
+          }, { now: context.now });
+        }
+      } else if (args.material) {
+        orb = semanticOrbFromMaterial(args.material, { id, sceneId: args.sceneId, placement, now: context.now });
+      } else {
+        orb = createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+      }
       return {
         state: {
           ...state,

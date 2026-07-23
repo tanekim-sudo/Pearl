@@ -270,8 +270,24 @@ export function parsePearlRemixCommand(text) {
   }
   if (/\b(?:import|discover|find)\b.+\b(?:forming )?pearls?\b/i.test(value)
     || /\bpearls that were already forming\b/i.test(value)
-    || /\b(?:chat|docs?|drafts?|transcript)\b.+\b(?:into|as) (?:at most )?five pearls?\b/i.test(value)) {
-    return { verb: "discoverFormingPearls", args: { text: value, materialize: true } };
+    || /\b(?:chat|docs?|drafts?|transcript)\b.+\b(?:into|as) (?:at most )?five pearls?\b/i.test(value)
+    || /\b(?:turn|make|convert)\b.+\b(?:into|as)\b.+\b(?:at most )?five pearls?\b/i.test(value)) {
+    // Never pass the short command utterance as the corpus — that blocks clipboard /
+    // working-memory ingest. Long paste+command text keeps the non-command body.
+    const corpus = value
+      .replace(/\b(?:import|discover|find)\b.+\b(?:forming )?pearls?\b/gi, " ")
+      .replace(/\bpearls that were already forming\b/gi, " ")
+      .replace(/\b(?:turn|make|convert)\b.+\b(?:into|as)\b.+\b(?:at most )?five pearls?\b/gi, " ")
+      .replace(/\b(?:chat|docs?|drafts?|transcript)\b.+\b(?:into|as) (?:at most )?five pearls?\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return {
+      verb: "discoverFormingPearls",
+      args: {
+        ...(corpus.length >= 40 ? { text: corpus } : {}),
+        materialize: true,
+      },
+    };
   }
   if (/\b(?:inspect|show)\b.+\b(?:metadata|harness|organization)\b.+\b(?:pearl|orb)\b/i.test(value)
     || /\bmetadata (?:under|beneath|for) (?:this |the )?pearl\b/i.test(value)) {

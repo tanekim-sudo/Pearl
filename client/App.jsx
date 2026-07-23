@@ -13165,6 +13165,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     discoverFormingPearls: async (a, tk) => {
       let text = a.text || "";
       if (!text && !a.transcript) {
+        const contextDump = (window.__lensOrbRuntime?.orbContext?.() || [])
+          .map((item) => item.text || item.label || "")
+          .filter(Boolean)
+          .join("\n\n");
+        if (contextDump.trim().length >= 40) text = contextDump;
+      }
+      if (!text && !a.transcript) {
         try { text = await navigator.clipboard.readText(); } catch { text = ""; }
       }
       if (!text && !a.transcript) throw new Error("Paste a chat, docs, or drafts to discover forming pearls.");
@@ -13199,7 +13206,6 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
                 lenses: entry.organization.lenses,
                 provenance: entry.pearl.provenance,
               },
-              material: entry.pearl.workingSet.context[0] || null,
             },
           });
           const id = created?.id || created?.result?.id;

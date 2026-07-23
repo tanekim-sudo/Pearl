@@ -7,6 +7,7 @@ import { clampCompanionPlacement, companionViewportSize } from "../lib/companion
 import { defaultPearlAesthetic } from "../../shared/pearl-aesthetic.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
 import { gauntletSocketLayout, loadGauntletState, MAX_GAUNTLET_SLOTS } from "../../shared/companion-pearl-gauntlet.js";
+import { extractTextFromFile } from "../../shared/encode-evidence.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
 
@@ -288,8 +289,36 @@ export default function CompanionOrb({
     setDraft("");
   }
 
-  function drop(event) {
+  async function drop(event) {
     event.preventDefault();
+    const files = [...(event.dataTransfer?.files || [])];
+    if (files.length) {
+      for (const file of files) {
+        try {
+          const extracted = await extractTextFromFile(file);
+          onContextAdd?.({
+            id: `file:${file.name}:${file.lastModified || Date.now()}`,
+            kind: "file",
+            label: file.name,
+            text: extracted.text,
+            filename: extracted.filename,
+            mime: extracted.mime,
+            priority: 1,
+            pinned: false,
+          });
+        } catch (reason) {
+          onContextAdd?.({
+            id: `file:${file.name}:${Date.now()}`,
+            kind: "file",
+            label: file.name,
+            text: `[Could not read ${file.name}: ${reason?.message || "unsupported"}]`,
+            priority: 1,
+            pinned: false,
+          });
+        }
+      }
+      return;
+    }
     const text = event.dataTransfer?.getData("text/plain")?.trim();
     const portable = event.dataTransfer?.getData("application/x-lens-object");
     if (!text && !portable) return;

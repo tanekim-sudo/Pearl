@@ -62,10 +62,18 @@ import {
 } from "../lib/shell-navigation.js";
 import { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
 import {
+  materialFromIngestedText,
   resolveSceneMaterialDrop,
+  shouldAcceptSceneStageTransfer,
   wantsOutputFrameFromSearch,
 } from "../lib/scene-stage-interactions.js";
 import { registerDirectorVerbs } from "../lib/director.js";
+import { parsePearlRemixCommand } from "../lib/companion-intent.js";
+import {
+  discoverFormingPearls as discoverFormingPearlsFromImport,
+  MAX_FORMING_PEARLS,
+} from "../../shared/forming-pearls.js";
+import { extractTextFromFile } from "../../shared/encode-evidence.js";
 
 export { collectReefPearls, isReefHomePath } from "../lib/reef-home.js";
 
@@ -628,6 +636,8 @@ function SceneStage({
     className="orb-black-stage"
     aria-label={`Scene ${scene?.name || scene?.id || "untitled"}`}
     data-stage-view={view.toLowerCase()}
+    data-testid="scene-stage-surface"
+    tabIndex={0}
     onDoubleClick={(event) => {
       if (event.target.closest?.("article,button,input,.semantic-orb-capsule,.pearl-scene-chrome")) return;
       semanticOrbActions?.create?.({
@@ -635,18 +645,74 @@ function SceneStage({
       });
     }}
     onDragOver={(event) => {
-      if (event.dataTransfer?.types?.includes("application/x-lens-object")) {
+      if (shouldAcceptSceneStageTransfer(event.dataTransfer?.types || [])) {
         event.preventDefault();
         event.dataTransfer.dropEffect = event.altKey ? "copy" : "move";
       }
     }}
-    onDrop={(event) => {
-      const portable = event.dataTransfer?.getData("application/x-lens-object");
-      if (!portable) return;
+    onPaste={async (event) => {
+      if (event.target?.closest?.("input,textarea,select,[contenteditable='true']")) return;
+      const text = event.clipboardData?.getData("text/plain")?.trim();
+      const files = [...(event.clipboardData?.files || [])];
+      if (!text && !files.length) return;
       event.preventDefault();
+      const worldPoint = { x: 0, y: -24 };
+      for (const file of files) {
+        try {
+          const extracted = await extractTextFromFile(file);
+          const item = materialFromIngestedText({
+            text: extracted.text,
+            filename: extracted.filename,
+            mime: extracted.mime,
+            sourceKind: "file",
+          });
+          if (item) onMaterialDrop?.(item, worldPoint);
+        } catch {
+          /* skip unreadable clipboard files */
+        }
+      }
+      if (text) {
+        const item = materialFromIngestedText({ text, sourceKind: "paste" });
+        if (item) onMaterialDrop?.(item, worldPoint);
+      }
+    }}
+    onDrop={async (event) => {
+      event.preventDefault();
+      const worldPoint = { x: event.clientX - innerWidth / 2, y: event.clientY - innerHeight / 2 };
+      const files = [...(event.dataTransfer?.files || [])];
+      if (files.length) {
+        for (const [index, file] of files.entries()) {
+          try {
+            const extracted = await extractTextFromFile(file);
+            const item = materialFromIngestedText({
+              text: extracted.text,
+              filename: extracted.filename,
+              mime: extracted.mime,
+              sourceKind: "file",
+              id: `ingest:file:${file.name}:${file.lastModified || Date.now()}:${index}`,
+            });
+            if (item) onMaterialDrop?.(item, { x: worldPoint.x + index * 24, y: worldPoint.y + index * 24 });
+          } catch (reason) {
+            const item = materialFromIngestedText({
+              text: `[Could not read ${file.name}: ${reason?.message || "unsupported"}]`,
+              filename: file.name,
+              sourceKind: "file",
+            });
+            if (item) onMaterialDrop?.(item, worldPoint);
+          }
+        }
+        return;
+      }
+      const plain = event.dataTransfer?.getData("text/plain")?.trim();
+      const portable = event.dataTransfer?.getData("application/x-lens-object");
+      if (!portable && plain) {
+        const item = materialFromIngestedText({ text: plain, sourceKind: "drop-text" });
+        if (item) onMaterialDrop?.(item, worldPoint);
+        return;
+      }
+      if (!portable) return;
       try {
         const source = JSON.parse(portable);
-        const worldPoint = { x: event.clientX - innerWidth / 2, y: event.clientY - innerHeight / 2 };
         const resolved = resolveSceneMaterialDrop({
           source,
           sceneId: scene?.id,
@@ -664,7 +730,7 @@ function SceneStage({
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty" data-testid="scene-empty">
           <h1>Empty workspace — nothing is here yet</h1>
-          <p><b>Next:</b> Create a pearl, or click the white companion orb → type what you want → press <b>GO</b>. Drop notes onto the orb to hold them in working memory.</p>
+          <p><b>Next:</b> Create a pearl, drop a file or paste notes onto this stage, or click the white companion orb → type what you want → press <b>GO</b>. Drop notes onto the orb to hold them in working memory.</p>
           <div className="orb-stage-empty-actions">
             <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Create a pearl here</button>
             <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Type to companion</button>
@@ -1321,6 +1387,94 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openEncodeAnything", effectId: `encode:${Date.now()}` }));
       return;
     }
+    const remixIntent = parsePearlRemixCommand(recorded.entry.raw || recorded.entry.normalized);
+    if (remixIntent?.verb === "discoverFormingPearls" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "discoverFormingPearls" });
+      setOrb(next);
+      try {
+        let text = remixIntent.args?.text || "";
+        if (!text) {
+          const contextDump = (orbRef.current?.context || [])
+            .map((item) => item.text || item.label || "")
+            .filter(Boolean)
+            .join("\n\n");
+          if (contextDump.trim().length >= 40) text = contextDump;
+        }
+        if (!text) {
+          try { text = await navigator.clipboard.readText(); } catch { text = ""; }
+        }
+        if (!text?.trim()) {
+          setOrb(transitionOrb(next, "blocked", {
+            taskId: recorded.entry.id,
+            evidence: { boundary: "Paste a chat, docs, or drafts (or drop them onto Pearl) to discover forming pearls." },
+          }));
+          return;
+        }
+        const discovery = discoverFormingPearlsFromImport(text, {
+          source: "companion-import",
+          maxPearls: MAX_FORMING_PEARLS,
+        });
+        const createdIds = [];
+        for (const entry of discovery.pearls) {
+          const created = await applySemanticOrbCommand("createSemanticOrb", {
+            sceneId: route.sceneId,
+            activate: false,
+            orb: {
+              name: entry.pearl.name,
+              representation: entry.pearl.representation,
+              workingSet: entry.pearl.workingSet,
+              moves: entry.organization.moves,
+              functions: entry.organization.functions,
+              lenses: entry.organization.lenses,
+              provenance: entry.pearl.provenance,
+            },
+          });
+          const id = created?.result?.id || created?.id;
+          if (id) createdIds.push(id);
+        }
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "discoverFormingPearls",
+          effectId: `forming:${createdIds.length}:${Date.now()}`,
+          evidence: {
+            title: discovery.reason,
+            preview: true,
+            steps: createdIds.length
+              ? [`Materialized ${createdIds.length} pearl${createdIds.length === 1 ? "" : "s"} on the shelf`]
+              : [discovery.reason],
+          },
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not discover forming pearls." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "organizePearl" && route.kind === "stage") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "organizePearl" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = activeStageScene(workspace);
+        const activeId = scene?.activeSemanticOrbId
+          || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
+        if (!activeId) throw new Error("Create or select a pearl with dump material first.");
+        await applySemanticOrbCommand("organizePearl", { id: activeId, sceneId: scene.id });
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "organizePearl",
+          effectId: `organize:${activeId}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Nothing to organize." },
+        }));
+      }
+      return;
+    }
     const privacyIntent = recorded.entry.normalized;
     if (/^what(?:'s| is) stored(?: here| locally| on this device)?\??$/i.test(privacyIntent)) {
       const summary = window.__pearlPrivacy?.describe?.() || { locked: true, profile: "unknown", keys: [] };
@@ -1677,8 +1831,27 @@ export default function OrbUniverseShell({ StageComponent }) {
                 onOpenEncode={() => openEmittedView("encode")}
               />
             : emittedView === "encode"
-              ? <EncodeAnythingPanel onClose={() => setEmittedView(null)} onCompiled={() => {
+              ? <EncodeAnythingPanel onClose={() => setEmittedView(null)} onCompiled={({ pearl, entity }) => {
                 setPrivacyNotice({ title: "Automation Pearl saved locally", detail: "Review before enabling model or research disclosure." });
+                if (route.kind === "stage") {
+                  const evidenceText = (pearl?.material?.evidence || pearl?.evidence || [])
+                    .map((entry) => entry.content || entry.verbatim || entry.text || "")
+                    .filter(Boolean)
+                    .join("\n\n");
+                  const label = pearl?.identity?.name || entity?.identity?.name || "Automation Pearl";
+                  semanticOrbActions.create({
+                    placement: { x: 0, y: -40 },
+                    material: {
+                      id: pearl?.id || entity?.id || `automation:${Date.now()}`,
+                      kind: "automation",
+                      label,
+                      name: label,
+                      text: evidenceText || pearl?.identity?.description || label,
+                    },
+                  }).catch(() => {
+                    /* local automation store already persisted */
+                  });
+                }
               }} />
             : emittedView === "packages" || emittedView === "tasks"
               ? <p role="status">{emittedView === "packages"
@@ -2613,17 +2786,38 @@ export default function OrbUniverseShell({ StageComponent }) {
       </SurfaceErrorBoundary>
       {!cursorMode && <CompanionOrb key="stage-orb" featured state={orb} onStateChange={setOrb} onCommand={command} onStop={stopOrb} onUndo={undoOrbEffect} onRedo={hasOrbRedo ? redoOrbEffect : undefined}
         onVoiceStart={beginVoice} onVoiceEnd={endVoice} onContextAdd={addOrbContext} onLensAdd={addOrbLens} onEmitView={openEmittedView}
-        onOrbCreate={() => semanticOrbActions.create({ placement: { x: 0, y: 0 } })}
+        onOrbCreate={() => {
+          const context = orbRef.current?.context || orb.context || [];
+          const dumpText = context
+            .map((item) => String(item.text || item.label || item.name || "").trim())
+            .filter(Boolean)
+            .join("\n\n");
+          if (dumpText) {
+            semanticOrbActions.create({
+              placement: { x: 0, y: 0 },
+              material: {
+                id: `orb-dump:${Date.now()}`,
+                kind: "dump",
+                label: dumpText.slice(0, 48),
+                text: dumpText,
+                items: context,
+              },
+            });
+            return;
+          }
+          semanticOrbActions.create({ placement: { x: 0, y: 0 } });
+        }}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
         onOpenStudio={openActivePearlStudio}
         onExpandedChange={setCompanionExpanded}
         hint={outputFrameOpen
           ? "Companion · click → type → press GO · rings = working memory (5 slots)"
-          : "Companion · click → type what you want → press GO"}
+          : "Companion · click → type what you want → press GO · drop files onto Pearl or the stage"}
         quickActions={[
           ...pearlNavQuickActions,
           { label: "Create a pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 } }) },
           { label: outputFrameOpen ? "Back to workspace" : "Open page canvas", run: () => setOutputFrameOpen((value) => !value) },
+          { label: "Encode anything", run: () => openEmittedView("encode") },
           { label: "What can I do?", run: () => openEmittedView("actions") },
         ]}
         approval={pendingApproval} onApproval={decideApproval} onWorkerCancel={cancelWorker} />}

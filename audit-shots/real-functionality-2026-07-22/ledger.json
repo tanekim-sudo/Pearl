@@ -1,0 +1,113 @@
+{
+  "generatedAt": "2026-07-23T03:46:04.464Z",
+  "baseUrl": "http://127.0.0.1:41737",
+  "checks": [
+    {
+      "id": "unit-forming-pearls",
+      "status": "pass",
+      "detail": "pearls=5 reason=Found 5 forming pearls (capped at 5)."
+    },
+    {
+      "id": "unit-extract-text-file",
+      "status": "pass",
+      "detail": "note.txt"
+    },
+    {
+      "id": "unit-encode-local-compile",
+      "status": "pass",
+      "detail": "LP meeting briefing"
+    },
+    {
+      "id": "unit-organize-dump",
+      "status": "pass",
+      "detail": "Organized into 1 Moves · 0 Functions · 1 Lenses. Preserved 1 evidence unit; removed 7 redundant structure."
+    },
+    {
+      "id": "reef-nav",
+      "status": "pass",
+      "detail": "home reef"
+    },
+    {
+      "id": "encode-panel-opens",
+      "status": "pass",
+      "detail": "panel=1"
+    },
+    {
+      "id": "encode-anything-compiles",
+      "status": "fixed",
+      "detail": "ui=1 store=true"
+    },
+    {
+      "id": "upload-file-to-material",
+      "status": "fixed",
+      "detail": "before=0 after=1"
+    },
+    {
+      "id": "create-pearl",
+      "status": "pass",
+      "detail": "pearls=1"
+    },
+    {
+      "id": "companion-text-drop",
+      "status": "pass",
+      "detail": "context=1"
+    },
+    {
+      "id": "keep-this-preserves-dump",
+      "status": "fixed",
+      "detail": "before=1 after=2 dump=true"
+    },
+    {
+      "id": "discover-forming-pearls",
+      "status": "fixed",
+      "detail": "formingMeta=2 visible=4"
+    },
+    {
+      "id": "organize-pearl",
+      "status": "pass",
+      "detail": "{\"moves\":1,\"functions\":0,\"lenses\":1,\"organized\":false}"
+    },
+    {
+      "id": "gauntlet-labeled",
+      "status": "pass",
+      "detail": "legend=1"
+    },
+    {
+      "id": "studio-open",
+      "status": "pass",
+      "detail": "studioHosts=2 url=http://127.0.0.1:41737/scene/scene-b96ca975-ee28-4fbd-a21e-37d99ce52a70#pearl-studio"
+    },
+    {
+      "id": "reef-return",
+      "status": "pass",
+      "detail": "home"
+    },
+    {
+      "id": "no-fatal-console",
+      "status": "pass",
+      "detail": "clean"
+    }
+  ],
+  "screenshots": [
+    "01-reef-home.png",
+    "02-encode-panel.png",
+    "03-encode-compiled.png",
+    "04-scene-empty.png",
+    "05-file-drop-material.png",
+    "06-pearl-from-material.png",
+    "07-companion-context.png",
+    "08-keep-this-pearl.png",
+    "09-forming-pearls.png",
+    "10-organize.png",
+    "11-gauntlet.png",
+    "12-studio.png",
+    "13-reef-return.png"
+  ],
+  "defects": [],
+  "gaps": [
+    "Live model inference (/api/infer-automation, encodeConversation screen capture, evaluateWithGauntlet model rewrite) not proven — local deterministic paths exercised.",
+    "Browser extension side panel not loaded in this audit (web Scene + Encode only).",
+    "PDF binary extract quality depends on PDF structure; text/md/json proven."
+  ],
+  "consoleErrors": []
+}

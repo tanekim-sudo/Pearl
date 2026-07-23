@@ -485,7 +485,23 @@ test("pearl remix maps exchange/breed/import/metadata intents to validated verbs
     verb: "synthesizeSemanticOrbs",
     args: { ids: [], sceneId: "", mode: "mutual" },
   });
-  assert.equal(parsePearlRemixCommand("import this chat and find the pearls that were already forming")?.verb, "discoverFormingPearls");
+  assert.deepEqual(parsePearlRemixCommand("import this chat and find the pearls that were already forming"), {
+    verb: "discoverFormingPearls",
+    args: { materialize: true },
+  });
+  assert.equal(
+    parsePearlRemixCommand("import this chat and find the pearls that were already forming")?.args?.text,
+    undefined,
+  );
+  const pasted = [
+    "User: Can you summarize this investment memo as an LP briefing for partners?",
+    "Assistant: Here is a draft.",
+    "User: Rewrite that for a limited partner meeting and tighten bios.",
+    "find the pearls that were already forming",
+  ].join("\n\n");
+  const withCorpus = parsePearlRemixCommand(pasted);
+  assert.equal(withCorpus?.verb, "discoverFormingPearls");
+  assert.match(withCorpus?.args?.text || "", /summarize this investment memo/);
   assert.equal(parsePearlRemixCommand("inspect the metadata under this pearl")?.verb, "inspectPearlMetadata");
   assert.deepEqual(parsePearlRemixCommand("reorder the gauntlet pearls"), {
     verb: "rearrangeGauntlet",

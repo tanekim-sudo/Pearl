@@ -181,6 +181,30 @@ test("semantic orb capsules preserve sources, activate singly, nest, merge, and 
   assert.equal(countered.state.semanticOrbs.find((orb) => orb.id === "orb-1").name, nested.state.semanticOrbs.find((orb) => orb.id === "orb-1").name);
 });
 
+test("createSemanticOrb keeps forming-pearl Moves→Functions→Lenses when material is also passed", async () => {
+  let nextId = 0;
+  const options = { idFactory: () => `form-${++nextId}`, now: 100 };
+  const forming = await executeDomainCommand("createSemanticOrb", { semanticOrbs: [], activeSemanticOrbId: null }, {
+    sceneId: "scene-1",
+    activate: false,
+    orb: {
+      name: "Forming LP",
+      representation: { kind: "function", label: "Forming LP", discovery: "forming-pearls" },
+      workingSet: { context: [{ id: "ev-1", text: "summarize LP briefing" }] },
+      moves: [{ id: "m1", name: "Summarize", kind: "move" }],
+      functions: [{ id: "f1", name: "Brief", kind: "function" }],
+      lenses: [{ id: "l1", name: "Partner", kind: "lens" }],
+    },
+    material: { id: "ignored", text: "should not wipe organization" },
+  }, options);
+  const formed = forming.state.semanticOrbs[0];
+  assert.equal(formed.name, "Forming LP");
+  assert.equal(formed.moves?.[0]?.name, "Summarize");
+  assert.equal(formed.functions?.[0]?.name, "Brief");
+  assert.equal(formed.lenses?.[0]?.name, "Partner");
+  assert.equal(formed.workingSet.context[0].text, "summarize LP briefing");
+});
+
 test("every command declares complete release contract metadata", () => {
   for (const [name, command] of Object.entries(DOMAIN_COMMANDS)) {
     for (const field of ["schema", "preconditions", "risk", "confirmation", "undo", "surfaces", "persistenceEffect", "observableEffects", "execute"]) {

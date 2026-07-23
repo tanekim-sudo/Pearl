@@ -49,3 +49,16 @@ test("openPearlStudioDocument reloads when popups are blocked so Studio can remo
   assert.deepEqual(calls[0], ["replace", "/scene/a#pearl-studio=ref-blocked"]);
   assert.equal(calls[1], "reload");
 });
+
+test("openPearlStudioDocument reloads when popup window is already closed", () => {
+  const calls = [];
+  const result = openPearlStudioDocument("ref-closed", {
+    open: () => ({ closed: true }),
+    reload: () => calls.push("reload"),
+    replaceState: () => calls.push("replace"),
+    session: { setItem: () => {} },
+    locationRef: { pathname: "/", search: "" },
+  });
+  assert.equal(result.mode, "reload");
+  assert.ok(calls.includes("reload"));
+});

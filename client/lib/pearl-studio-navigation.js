@@ -24,8 +24,15 @@ export function openPearlStudioDocument(ref, deps = {}) {
     locationRef = globalThis.location,
   } = deps;
   const href = buildPearlStudioHref(ref, locationRef);
-  const opened = open?.(href, "_blank", "noopener");
-  if (opened) return { mode: "popup", href };
+  let opened = null;
+  try {
+    opened = open?.(href, "_blank", "noopener") || null;
+  } catch {
+    opened = null;
+  }
+  if (opened && typeof opened === "object" && opened.closed !== true) {
+    return { mode: "popup", href };
+  }
   try {
     session?.setItem?.("pearlStudioActiveRef", ref);
   } catch {
