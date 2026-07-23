@@ -95,6 +95,14 @@ test("normalizeCompanionCommandResult maps silent success, visible blockers, and
   const failed = normalizeCompanionCommandResult(null, new Error("fetch failed"));
   assert.equal(failed.status, "failed");
   assert.equal(failed.code, EXECUTION_CODES.NETWORK_ERROR);
+
+  const empty = mapErrorToExecutionResult(
+    Object.assign(new Error("Gauntlet working memory is empty — wear at least one pearl first."), {
+      code: EXECUTION_CODES.EMPTY_GAUNTLET,
+    }),
+  );
+  assert.equal(empty.status, "blocked");
+  assert.equal(empty.code, EXECUTION_CODES.EMPTY_GAUNTLET);
 });
 
 test("companionCommandReply and ensureExecutionOnReply preserve chat contract", () => {

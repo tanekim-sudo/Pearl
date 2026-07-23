@@ -185,8 +185,22 @@ export function inferExecutionCode(messageOrError, hint = {}) {
   return EXECUTION_CODES.UNKNOWN_ERROR;
 }
 
+const BLOCKED_CODES = new Set([
+  EXECUTION_CODES.EMPTY_GAUNTLET,
+  EXECUTION_CODES.NO_MATERIAL,
+  EXECUTION_CODES.NEEDS_CREDENTIALS,
+  EXECUTION_CODES.NEEDS_CLARIFICATION,
+  EXECUTION_CODES.NEEDS_APPROVAL,
+  EXECUTION_CODES.MISSING_ARGS,
+  EXECUTION_CODES.MISSING_EXTENSION_ID,
+  EXECUTION_CODES.EXTENSION_UNAVAILABLE,
+  EXECUTION_CODES.UNKNOWN_INTENT,
+  EXECUTION_CODES.PERMISSION_DENIED,
+  EXECUTION_CODES.RUNTIME_UNAVAILABLE,
+]);
+
 export function mapErrorToExecutionResult(error, {
-  status = "failed",
+  status = undefined,
   stage = "execute",
   code = undefined,
   details = undefined,
@@ -201,8 +215,12 @@ export function mapErrorToExecutionResult(error, {
       : null)
     || publicSafeMessage(error, inferred);
 
+  const resolvedStatus = error?.name === "AbortError" || inferred === EXECUTION_CODES.ABORTED || inferred === EXECUTION_CODES.CANCELLED
+    ? "cancelled"
+    : status || (BLOCKED_CODES.has(inferred) ? "blocked" : "failed");
+
   return createExecutionResult({
-    status: error?.name === "AbortError" ? "cancelled" : status,
+    status: resolvedStatus,
     code: inferred,
     message: safeMessage,
     stage: error?.stage || stage,
