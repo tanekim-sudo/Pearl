@@ -70,7 +70,7 @@ export const PEARL_GUIDE_SECTIONS = Object.freeze([
     platforms: Object.freeze(["extension"]),
     items: Object.freeze([
       Object.freeze({ id: "capture-selection", label: "Capture a selection", detail: "Select text on the page, then ask Pearl to capture it.", gesture: null, command: "capture the selection" }),
-      Object.freeze({ id: "make-orb", label: "Keep it as a pearl", detail: "Preserve captured material with its source link.", gesture: null, command: "make a pearl from this" }),
+      Object.freeze({ id: "make-pearl", label: "Keep it as a pearl", detail: "Preserve captured material with its source link.", gesture: null, command: "make a pearl from this" }),
     ]),
   }),
   Object.freeze({

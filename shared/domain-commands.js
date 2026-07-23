@@ -139,7 +139,7 @@ function updateSemanticOrb(state, id, update) {
     found = true;
     return createSemanticOrb(typeof update === "function" ? update(orb) : { ...orb, ...update });
   });
-  if (!found) throw new Error("semantic orb not found");
+  if (!found) throw new Error("pearl not found");
   return { ...state, semanticOrbs };
 }
 
@@ -370,7 +370,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     observableEffects: ["semantic-orb-activation-changed"],
     execute(state, args) {
       if (args.id && !(state.semanticOrbs || []).some((orb) => orb.id === args.id && !orb.archived)) {
-        throw new Error("semantic orb not found");
+        throw new Error("pearl not found");
       }
       return {
         state: { ...state, activeSemanticOrbId: args.id || null },
@@ -403,7 +403,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     observableEffects: ["semantic-orb-updated"],
     execute(state, args, context) {
       const name = String(args.name || "").trim();
-      if (!name) throw new Error("semantic orb name is required");
+      if (!name) throw new Error("pearl name is required");
       const next = updateSemanticOrb(state, args.id, (orb) => ({
         ...orb,
         name: name.slice(0, 80),
@@ -484,7 +484,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args, context) {
       const next = updateSemanticOrb(state, args.id, (orb) => {
         const contextItems = (orb.workingSet.context || []).filter((item) => item.id !== args.itemId);
-        if (contextItems.length === (orb.workingSet.context || []).length) throw new Error("semantic orb context item not found");
+        if (contextItems.length === (orb.workingSet.context || []).length) throw new Error("pearl context item not found");
         return { ...orb, workingSet: { ...orb.workingSet, context: contextItems }, updatedAt: new Date(context.now).toISOString() };
       });
       return { state: next, result: { type: "semantic-orb-context", id: args.id, effects: ["semantic-orb-context-changed"] } };
@@ -517,7 +517,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args, context) {
       const next = updateSemanticOrb(state, args.id, (orb) => {
         const lenses = (orb.workingSet.lenses || []).filter((lens) => lens.id !== args.lensId);
-        if (lenses.length === (orb.workingSet.lenses || []).length) throw new Error("semantic orb Lens not found");
+        if (lenses.length === (orb.workingSet.lenses || []).length) throw new Error("pearl Lens not found");
         return { ...orb, workingSet: { ...orb.workingSet, lenses }, updatedAt: new Date(context.now).toISOString() };
       });
       return { state: next, result: { type: "semantic-orb-lens", id: args.id, effects: ["semantic-orb-lenses-changed"] } };
@@ -535,10 +535,10 @@ export const DOMAIN_COMMANDS = Object.freeze({
       const byId = new Map((state.semanticOrbs || []).map((orb) => [orb.id, orb]));
       const child = byId.get(args.childId);
       const parent = byId.get(args.parentId);
-      if (!child || !parent) throw new Error("semantic orb not found");
+      if (!child || !parent) throw new Error("pearl not found");
       let cursor = parent;
       while (cursor?.parentOrbId) {
-        if (cursor.parentOrbId === child.id) throw new Error("semantic orb nesting must remain acyclic");
+        if (cursor.parentOrbId === child.id) throw new Error("pearl nesting must remain acyclic");
         cursor = byId.get(cursor.parentOrbId);
       }
       const priorParent = child.parentOrbId ? byId.get(child.parentOrbId) : null;
@@ -561,7 +561,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     observableEffects: ["semantic-orb-hierarchy-changed"],
     execute(state, args, context) {
       const child = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
-      if (!child) throw new Error("semantic orb not found");
+      if (!child) throw new Error("pearl not found");
       const parentId = child.parentOrbId;
       const at = new Date(context.now).toISOString();
       const semanticOrbs = (state.semanticOrbs || []).map((orb) => {
@@ -574,7 +574,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
   },
   mergeSemanticOrbs: {
     schema: { ids: "array", name: "string?", sceneId: "string" },
-    preconditions: ["at least two orbs exist"],
+    preconditions: ["at least two pearls exist"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
     surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.append",
@@ -582,7 +582,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args, context) {
       const ids = [...new Set(args.ids || [])];
       const sources = (state.semanticOrbs || []).filter((orb) => ids.includes(orb.id));
-      if (sources.length < 2) throw new Error("at least two semantic orbs are required");
+      if (sources.length < 2) throw new Error("at least two pearls are required");
       const id = context.idFactory();
       const placement = placeSemanticOrb(state.semanticOrbs, {
         x: sources.reduce((sum, orb) => sum + orb.placement.x, 0) / sources.length,
@@ -599,7 +599,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
         representation: {
           kind: "grouped-context",
           refs: sourceIds,
-          label: args.name || "Merged orb",
+          label: args.name || "Merged pearl",
           preserveIndividuals: true,
           sourcePearlIds: sourceIds,
         },
@@ -628,7 +628,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
   },
   composeSemanticOrbs: {
     schema: { ids: "array", name: "string?", sceneId: "string" },
-    preconditions: ["at least two orbs exist", "composition order is explicit"],
+    preconditions: ["at least two pearls exist", "composition order is explicit"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
     surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.append",
@@ -662,7 +662,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
       mode: "mutual|directed?",
       instruction: "string?",
     },
-    preconditions: ["at least two orbs exist"],
+    preconditions: ["at least two pearls exist"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
     surfaces: ["web", "companion", "extension"],
     persistenceEffect: "scene.semanticOrbs.append",
@@ -670,7 +670,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     execute(state, args, context) {
       const ids = [...new Set(args.ids || [])];
       const sources = (state.semanticOrbs || []).filter((orb) => ids.includes(orb.id));
-      if (sources.length < 2) throw new Error("at least two semantic orbs are required");
+      if (sources.length < 2) throw new Error("at least two pearls are required");
       const ordered = ids.map((id) => sources.find((orb) => orb.id === id)).filter(Boolean);
       const { mode, instruction, observations, sourceIds } = buildPearlMutualObservations(ordered, {
         mode: args.mode,
@@ -841,7 +841,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     observableEffects: ["semantic-orb-created"],
     execute(state, args, context) {
       const source = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
-      if (!source) throw new Error("semantic orb not found");
+      if (!source) throw new Error("pearl not found");
       const id = context.idFactory();
       const placement = placeSemanticOrb(state.semanticOrbs, { x: source.placement.x + 36, y: source.placement.y + 36 });
       const duplicate = createSemanticOrb({
@@ -867,11 +867,11 @@ export const DOMAIN_COMMANDS = Object.freeze({
     observableEffects: ["semantic-orb-created"],
     execute(state, args, context) {
       const source = (state.semanticOrbs || []).find((orb) => orb.id === args.id);
-      if (!source) throw new Error("semantic orb not found");
+      if (!source) throw new Error("pearl not found");
       const parts = source.workingSet.context?.length
         ? source.workingSet.context
         : (source.childOrbIds || []).map((id) => ({ id, kind: "grouped-context", label: id }));
-      if (!parts.length) throw new Error("semantic orb has nothing to split");
+      if (!parts.length) throw new Error("pearl has nothing to split");
       let occupied = [...(state.semanticOrbs || [])];
       const additions = parts.map((part, index) => {
         const id = context.idFactory();
@@ -913,7 +913,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     persistenceEffect: "scene.semanticOrbs.delete",
     observableEffects: ["semantic-orb-deleted"],
     execute(state, args) {
-      if (!(state.semanticOrbs || []).some((orb) => orb.id === args.id)) throw new Error("semantic orb not found");
+      if (!(state.semanticOrbs || []).some((orb) => orb.id === args.id)) throw new Error("pearl not found");
       const semanticOrbs = (state.semanticOrbs || [])
         .filter((orb) => orb.id !== args.id)
         .map((orb) => createSemanticOrb({

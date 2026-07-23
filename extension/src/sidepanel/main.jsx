@@ -596,7 +596,7 @@ function App() {
     }
     if (name === "merge") {
       const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
-      if (sources.length < 2) throw new Error("choose at least two orbs");
+      if (sources.length < 2) throw new Error("choose at least two pearls");
       const sourceIds = sources.map((entry) => entry.id);
       const context = new Map(sources.flatMap((entry) => entry.workingSet.context || []).map((item) => [item.id, item]));
       const lenses = new Map(sources.flatMap((entry) => entry.workingSet.lenses || []).map((lens) => [lens.id, lens]));
@@ -607,7 +607,7 @@ function App() {
         representation: {
           kind: "grouped-context",
           refs: sourceIds,
-          label: args.name || "Merged orb",
+          label: args.name || "Merged pearl",
           preserveIndividuals: true,
           sourcePearlIds: sourceIds,
         },
@@ -617,7 +617,7 @@ function App() {
           merge: {
             mode: "preserve-individuals",
             sourcePearlIds: sourceIds,
-            note: "Source pearls remain independent library pearls; this orb is an additional composition.",
+            note: "Source pearls remain independent library pearls; this pearl is an additional composition.",
           },
         },
       });
@@ -637,7 +637,7 @@ function App() {
     if (name === "synthesize") {
       const { buildPearlMutualObservations } = await import("../../../shared/semantic-orbs.js");
       const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
-      if (sources.length < 2) throw new Error("choose at least two orbs");
+      if (sources.length < 2) throw new Error("choose at least two pearls");
       const { mode, instruction, observations, sourceIds } = buildPearlMutualObservations(sources, {
         mode: args.mode,
         instruction: args.instruction,
@@ -736,7 +736,7 @@ function App() {
         || stored.map((entry) => createSemanticOrb(entry)).find((entry) => entry.name.toLowerCase().includes(String(args.id || "").toLowerCase()));
       if (orb) byId.set(orb.id, orb);
     }
-    if (!orb) throw new Error("orb not found");
+    if (!orb) throw new Error("pearl not found");
     if (name === "open") {
       const previousPearlId = activeSemanticOrbId;
       const fragments = (orb.workingSet.context || []).filter((item) => item?.id && (item.quote || item.text));
@@ -796,7 +796,7 @@ function App() {
         workingSet: { ...orb.workingSet, lenses: (orb.workingSet.lenses || []).filter((lens) => lens.id !== args.lensId) },
       }));
     } else if (name === "rename") {
-      byId.set(orb.id, createSemanticOrb({ ...orb, name: String(args.name || "Untitled orb").slice(0, 80) }));
+      byId.set(orb.id, createSemanticOrb({ ...orb, name: String(args.name || "Untitled pearl").slice(0, 80) }));
     } else if (name === "duplicate") {
       const duplicate = createSemanticOrb({
         ...orb,
@@ -1870,7 +1870,7 @@ function App() {
       </div>
       {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
         <input
-          aria-label="Semantic orb name"
+          aria-label="Pearl name"
           key={`${activeSemanticOrbId}:${semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}`}
           defaultValue={semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}
           onBlur={(event) => {
@@ -1895,7 +1895,7 @@ function App() {
         <button type="button" onClick={() => action("open-web-handoff", { surface: "semantic-orb-scene", orbId: activeSemanticOrbId, preservePayload: true })}>Arrange in full Scene</button>
         <button type="button" onClick={() => semanticOrbAction("archive", { id: activeSemanticOrbId, archived: true })}>Archive</button>
         <button type="button" onClick={() => {
-          if (confirm("Delete this orb? Its source material and library objects will remain.")) semanticOrbAction("delete", { id: activeSemanticOrbId });
+          if (confirm("Delete this pearl? Its source material and library objects will remain.")) semanticOrbAction("delete", { id: activeSemanticOrbId });
         }}>Delete</button>
       </div>}
     </section>
@@ -2073,7 +2073,7 @@ function App() {
       {session.results.flatMap((run) => run.outputs.map((output, outputIndex) =>
         <article className={`result ${output.tasteFeedback?.decision || ""}`} key={output.id}><small className="result-type">{output.semanticType || "Candidate"}{output.branchIndex != null ? ` · structural output ${output.branchIndex + 1}` : ""}</small><p>{output.text}</p>{(output.provenance || run.provenance) && <small className="model-provenance">{(output.provenance || run.provenance).requestedModel || "auto"} → {(output.provenance || run.provenance).resolvedModel || (output.provenance || run.provenance).model || "compatible model"}{(output.provenance || run.provenance).providerRoute ? ` via ${(output.provenance || run.provenance).providerRoute}` : ""}{(output.provenance || run.provenance).fallback ? " · fallback" : ""}</small>}<div><button aria-label="Accept candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "accepted" })}>Yes</button><button aria-label="Reject candidate" onClick={() => action("taste-feedback", { outputId: output.id, decision: "rejected" })}>No</button>{output.tasteFeedback && <button onClick={() => action("taste-feedback", { outputId: output.id, decision: "undecided" })}>Undo</button>}<button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "copy it")}>Copy</button><button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "insert at the caret")}>Insert</button><button onClick={() => proposeResultPlacement(`result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}`, "replace this selection")}>Replace</button><button onClick={() => action("result-pearl-open-tab", { resultId: `result-pearl:${run.runId}:${output.branchIndex ?? outputIndex}` })}>Open Pearl</button></div></article>
       ))}</section>
-    <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Orb settings">
+    <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Pearl settings">
       <h2>Settings</h2>
       <p className="muted">Voice stays local until you explicitly run a capability. Page capture always requires your action.</p>
       <button type="button" aria-pressed={orbCursorEnabled} onClick={() => toggleOrbCursor()}>
@@ -2083,7 +2083,7 @@ function App() {
       <button type="button" onClick={auth ? signOut : signIn}>{auth ? "Sign out and return to local Pearls" : "Sign in for sync"}</button>
       <a href="https://representation-eta.vercel.app/settings" target="_blank" rel="noreferrer">Connections, phrases, and privacy</a>
     </section>
-    <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true">●</i><input aria-label="Pearl command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell Pearl your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
+    <form className={`companion ${activeView === "command" ? "active" : ""}`} onSubmit={directCompanion}><i className={ghost ? "ghost active" : "ghost"} aria-hidden="true" /><input aria-label="Pearl command" value={companion} onChange={(event) => setCompanion(event.target.value)} placeholder="Tell Pearl your goal…" /><button type="button" aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice command" : "Start voice command"} onClick={toggleCompanionVoice}>{voiceListening ? "■" : "🎙"}</button><button>Run</button></form>
     {error && <aside className="recovery-alert" role="alert"><span>{error}</span>{retryAction && <button type="button" onClick={retryAction}>Retry</button>}<button type="button" aria-label="Dismiss error" onClick={() => { setError(""); setRetryAction(null); }}>Dismiss</button></aside>}
   </main>;
 }

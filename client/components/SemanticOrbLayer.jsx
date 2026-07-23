@@ -263,17 +263,17 @@ export default function SemanticOrbLayer({
               event.preventDefault();
               if (rename.trim() && rename.trim() !== orb.name) onRename?.(orb.id, rename.trim());
             }}>
-              <input aria-label="Orb name" value={rename} onChange={(event) => setRename(event.target.value)} />
+              <input aria-label="Pearl name" value={rename} onChange={(event) => setRename(event.target.value)} />
               <button type="submit">Rename</button>
             </form>
             <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context · {orb.workingSet?.lenses?.length || 0} Lenses</small>
-            {(orb.workingSet?.context || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Orb context">
+            {(orb.workingSet?.context || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Pearl context">
               {orb.workingSet.context.slice(0, 6).map((item) => <li key={item.id}>
                 <span>{item.label || item.name || item.text || "Context material"}</span>
                 <button type="button" onClick={() => onRemoveContext?.(orb.id, item.id)}>Remove</button>
               </li>)}
             </ul>}
-            {(orb.workingSet?.lenses || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Orb Lenses">
+            {(orb.workingSet?.lenses || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Pearl Lenses">
               {orb.workingSet.lenses.slice(0, 6).map((lens) => <li key={lens.id}>
                 <span>{lens.name || lens.label || "Lens"}</span>
                 <button type="button" onClick={() => onRemoveLens?.(orb.id, lens.id)}>Remove</button>

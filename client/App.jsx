@@ -12846,7 +12846,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           sceneId: a.sceneId || sceneId,
           placement: a.placement,
           material: a.material,
-          orb: a.material ? (a.id ? { id: a.id } : undefined) : { id: a.id, name: a.name || "Untitled orb" },
+          orb: a.material ? (a.id ? { id: a.id } : undefined) : { id: a.id, name: a.name || "Untitled pearl" },
           activate: true,
         },
       });

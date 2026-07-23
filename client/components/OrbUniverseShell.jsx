@@ -290,7 +290,7 @@ const libraryObjects = [
 ];
 
 function ContextInspector({ items, onChange, onRemove }) {
-  if (!items.length) return <p role="status">No working context yet. Drop material onto the orb to add it without changing the source.</p>;
+  if (!items.length) return <p role="status">No working context yet. Drop material onto Pearl to add it without changing the source.</p>;
   return <ul className="orb-context-inspector" aria-label="Working context priority">
     {items.map((item) => <li key={item.id}>
       <span><b>{item.label || item.text || "Context material"}</b><small>{item.kind || "material"}</small></span>
@@ -314,7 +314,7 @@ function ContextInspector({ items, onChange, onRemove }) {
 }
 
 function LensAtmosphereInspector({ lenses, onChange, onRemove }) {
-  if (!lenses.length) return <p role="status">No Lens atmosphere is active. Drag a Lens onto the orb to apply it.</p>;
+  if (!lenses.length) return <p role="status">No Lens atmosphere is active. Drag a Lens onto Pearl to apply it.</p>;
   return <ul className="orb-context-inspector orb-lens-inspector" aria-label="Active Lens atmosphere">
     {lenses.map((lens) => <li key={lens.id}>
       <span><b>{lens.name || lens.label || "Untitled Lens"}</b><small>Lens atmosphere</small></span>
@@ -328,7 +328,7 @@ function LensAtmosphereInspector({ lenses, onChange, onRemove }) {
 }
 
 function CandidateInspector({ candidates, onTaste }) {
-  if (!candidates.length) return <p role="status">No active candidates. Ask the orb for alternatives to create a constellation.</p>;
+  if (!candidates.length) return <p role="status">No active candidates. Ask Pearl for alternatives to create a constellation.</p>;
   return <ul className="orb-context-inspector orb-candidate-inspector" aria-label="Candidate constellation">
     {candidates.map((candidate) => <li key={candidate.id}>
       <span><b>{candidate.title || "Candidate"}</b><small>{candidate.distinction || candidate.status || "Generated branch"}</small></span>
@@ -396,7 +396,7 @@ function PearlWelcome({ onAsk, onScene, onGuide, onInstall, onImport, onDismiss 
     <h1>What do you want to do?</h1>
     <p><b>Next:</b> Pearl keeps reusable ideas (“pearls”) and a companion that can help. Pick one clear action:</p>
     <div className="pearl-welcome-actions">
-      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>1. Click the white orb → type what you want → press GO</button>
+      <button type="button" className="pearl-welcome-primary" onClick={onAsk}>1. Click Pearl → type what you want → press GO</button>
       <button type="button" onClick={onScene}>2. Create a pearl workspace (Scene)</button>
       <button type="button" onClick={onImport}>3. Import notes / chats / docs</button>
       <button type="button" onClick={onGuide}>4. Read a 60-second how-to</button>
@@ -479,8 +479,8 @@ function LibraryHome({
       : emptyLibrary ? "Library — nothing saved yet"
         : "Home — your Reef");
   const nextStep = firstUse || emptyLibrary
-    ? "Click the white orb (bottom-right), type what you want, press GO — or create a pearl workspace."
-    : "Open a pearl card below, or click the white orb and press GO.";
+    ? "Click Pearl, type what you want, press GO — or create a pearl workspace."
+    : "Open a pearl card below, or click Pearl and press GO.";
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
@@ -494,7 +494,7 @@ function LibraryHome({
       <div className="orb-kicker">You are here</div>
       <h1>{title}</h1>
       <p><b>Next:</b> {nextStep}</p>
-      <p className="orb-home-plain">A <b>pearl</b> is a reusable idea or workflow. The white orb is your <b>companion</b> — click it, type, press <b>GO</b>. The five rings around it are <b>working memory</b> (up to 5 active pearls).</p>
+      <p className="orb-home-plain">A <b>pearl</b> is a reusable idea or workflow. The companion <b>Pearl</b> is how you ask — click it, type, press <b>GO</b>. The five rings around it are <b>working memory</b> (up to 5 active pearls).</p>
       <div className="orb-home-intro-actions">
         <button type="button" className="orb-primary" onClick={onCreateScene}>Create a pearl workspace</button>
         <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Ask the companion</button>
@@ -518,7 +518,7 @@ function LibraryHome({
           : route.handoff
             ? (extensionHandoff?.reason === "missing-extension-id"
               ? "Trusted continuation needs VITE_LENS_EXTENSION_ID in this web build so the page can ask the installed Pearl extension for the working set. Rebuild with that id, or open Arrange in full Scene from the extension again."
-              : "The link opened, but no capture, queued action, Lens, candidate, or saved orb was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it.")
+              : "The link opened, but no capture, queued action, Lens, candidate, or saved pearl was verified. Return to the extension and choose Arrange in full Scene, or retry after reconnecting it.")
             : "On a page, ask Pearl to arrange, compare, edit deeply, inspect history, or open a full Scene. Pearl will carry the explicit working set here."}</p>
       </div>
       {continuationCount
@@ -557,9 +557,9 @@ function LibraryHome({
       </button>)}
       {(isRoot || !reefPearls.length) && <button className="recent-scene scene-c" onClick={onCreateScene}><i />Create a pearl workspace<small>Empty canvas — add pearls, notes, results</small></button>}
     </section>
-    {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} emitted by orb`}>
+    {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} from Pearl`}>
       <div>
-        <span>{activeView === "library" ? "Cognitive library" : activeView}</span>
+        <span>{activeView === "library" ? "Library" : activeView}</span>
         <button type="button" aria-label="Close emitted view" onClick={() => onView(null)}>×</button>
       </div>
       {activeView === "actions"
@@ -737,7 +737,7 @@ function SceneStage({
     {!materials.length && !(scene?.semanticOrbs || []).filter((orb) => !orb.archived).length
       ? <section className="orb-stage-empty" data-testid="scene-empty">
           <h1>Empty workspace — nothing is here yet</h1>
-          <p><b>Next:</b> Create a pearl, drop a file or paste notes onto this stage, or click the white companion orb → type what you want → press <b>GO</b>. Drop notes onto the orb to hold them in working memory.</p>
+          <p><b>Next:</b> Create a pearl, drop a file or paste notes onto this stage, or click Pearl → type what you want → press <b>GO</b>. Drop notes onto Pearl to hold them in working memory.</p>
           <div className="orb-stage-empty-actions">
             <button type="button" onClick={() => semanticOrbActions?.create?.({ placement: { x: 0, y: -40 } })}>Create a pearl here</button>
             <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Type to companion</button>
@@ -833,17 +833,17 @@ function PearlSceneChrome({
     <div className="pearl-scene-chrome-primary">
       <button type="button" data-testid="scene-home" onClick={onHome}>← Reef (home)</button>
       <div className="pearl-scene-chrome-title">
-        <span>{outputFrameOpen ? "Page canvas" : "Workspace (Scene)"}</span>
+        <span>{outputFrameOpen ? "Output Frame" : "Workspace (Scene)"}</span>
         <b>{sceneName || "Untitled workspace"}</b>
         <small>{outputFrameOpen
-          ? "Page canvas — your finished writing goes here. Esc or “Back to workspace” leaves. Select junk → Delete."
-          : "Nothing appears until you add it. Next: Create a pearl, or click the white orb → type → GO."}</small>
+          ? "Output Frame — your finished writing goes here. Esc or “Back to workspace” leaves. Select junk → Delete."
+          : "Nothing appears until you add it. Next: Create a pearl, or click Pearl → type → GO."}</small>
       </div>
     </div>
     <div className="pearl-scene-chrome-actions">
       {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>Create a pearl</button>}
       <button type="button" data-testid="scene-toggle-frame" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
-        {outputFrameOpen ? "Back to workspace" : "Open page canvas"}
+        {outputFrameOpen ? "Back to workspace" : "Open Output Frame"}
       </button>
       {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={onToggleTools}>
         {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
@@ -1989,7 +1989,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       : emittedView === "packages" ? "Shared tools"
       : emittedView === "tasks" ? "Activity"
       : "Saved work";
-    return <aside className="orb-stage-emission" aria-label={`${emittedView} view emitted by orb`}>
+    return <aside className="orb-stage-emission" aria-label={`${emittedView} view from Pearl`}>
       <button type="button" onClick={() => setEmittedView(null)}>Close</button>
       <b>{title}</b>
       {emittedView === "actions"
@@ -1998,7 +1998,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           ? <nav className="pearl-scene-actions" aria-label="Scene and Output Frame actions">
               <button type="button" onClick={() => navigateHome()}>Reef</button>
               <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
-                {outputFrameOpen ? "Back to workspace" : "Open page canvas"}
+                {outputFrameOpen ? "Back to workspace" : "Open Output Frame"}
               </button>
               {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
                 {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
@@ -2439,7 +2439,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       sceneId: route.sceneId,
       placement,
       activate: true,
-      ...(material ? { material } : { orb: { name: name || "Untitled orb" } }),
+      ...(material ? { material } : { orb: { name: name || "Untitled pearl" } }),
     }),
     activate: (id) => applySemanticOrbCommand("activateSemanticOrb", { id }),
     move: (id, placement) => applySemanticOrbCommand("moveSemanticOrb", { id, placement }),
@@ -2882,14 +2882,12 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
     localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
     setSceneWorkspace(JSON.parse(serialized));
-    setOutputFrameOpen(true);
-    navigate(`/scene/${encodeURIComponent(id)}?frame=workspace`);
+    setOutputFrameOpen(false);
+    navigate(`/scene/${encodeURIComponent(id)}`);
   }
 
-  useEffect(() => {
-    if (route.handoff !== "result-pearl" || handoffStatus !== "ready" || !extensionHandoff?.resultPearl) return;
-    continueExtensionWork();
-  }, [route.handoff, handoffStatus, extensionHandoff?.resultPearl?.id]);
+  // Result-pearl handoff stays on Reef until the user explicitly continues —
+  // never auto-materialize a Scene or open Output Frame without intent.
 
   function openActivePearlStudio(selectedPearl = null) {
     const scene = (sceneWorkspace.scenes || []).find((entry) => entry.id === (route.sceneId || sceneWorkspace.activeSceneId));
@@ -2957,7 +2955,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         onOpenCompanionHint={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}
       />
       {outputFrameOpen && <p className="pearl-frame-banner" data-testid="output-frame-label">
-        Page canvas — your finished writing goes here. Use “Show editing tools” for pen/text. “Back to workspace” or Esc leaves.
+        Output Frame — your finished writing goes here. Use “Show editing tools” for pen/text. “Back to workspace” or Esc leaves.
       </p>}
       <SurfaceErrorBoundary
         label="Scene surface"
@@ -3018,7 +3016,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         quickActions={[
           ...pearlNavQuickActions,
           { label: "Create a pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 } }) },
-          { label: outputFrameOpen ? "Back to workspace" : "Open page canvas", run: () => setOutputFrameOpen((value) => !value) },
+          { label: outputFrameOpen ? "Back to workspace" : "Open Output Frame", run: () => setOutputFrameOpen((value) => !value) },
           { label: "Encode anything", run: () => openEmittedView("encode") },
           { label: "What can I do?", run: () => openEmittedView("actions") },
         ]}
@@ -3027,7 +3025,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
       {cursorMode && !externalCursorMode && <OrbCursorLayer state={orb} onDisable={() => setCursorMode(false, "control")} />}
       {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Pearl · Esc</button>}
-      <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Orb cursor on" : "Orb cursor off"}</span>
+      <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Pearl cursor on" : "Pearl cursor off"}</span>
       {renderPearlEmission()}
       {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
         forced={supaAuth.passwordRecovery}

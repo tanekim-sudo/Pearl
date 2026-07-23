@@ -143,7 +143,7 @@ export function createOutputFrame(value = {}) {
     id: value.id || DEFAULT_OUTPUT_FRAME_ID,
     kind: "output-frame",
     format: value.format || "paper",
-    name: value.name || "Legacy Paper",
+    name: value.name || "Output Frame",
     x: Number.isFinite(value.x) ? value.x : 0,
     y: Number.isFinite(value.y) ? value.y : 0,
     width: Math.max(120, Number(value.width) || PAPER_WIDTH),
@@ -320,7 +320,7 @@ export function migrateUnifiedWorkspace({ items = [], nodes = [], pages = [], ac
     const frameId = index === 0 ? (unified?.frames?.[0]?.id || DEFAULT_OUTPUT_FRAME_ID) : `frame-legacy-paper:${page.id}`;
     const frame = createOutputFrame({
       id: frameId,
-      name: page.name || `Legacy Paper ${index + 1}`,
+      name: page.name || `Output Frame ${index + 1}`,
       metadata: { migrationSourceVersion: Number(unified?.version) || 1, legacyPageId: page.id },
     });
     const pageItems = sourceItems.filter((item) => (item.pageId || pageRecords[0].id) === page.id);

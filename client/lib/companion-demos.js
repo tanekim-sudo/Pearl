@@ -9,7 +9,7 @@ export const COMPANION_DEMOS = [
     id: "safe-capability-sample",
     title: "A reversible capability sample",
     blurb: "create and organize a local thought without a model call",
-    keywords: ["anything", "what can you do", "show me"],
+    keywords: ["what can you do", "show me what you can do", "capability sample"],
     steps: [
       { verb: "spawnText", args: { text: "A thought can become branches, a synthesis, deeper principles, a challenge, or a concrete example.", saveAs: "sample" } },
       { verb: "zoomToItem", args: { target: "sample" } },
@@ -48,7 +48,7 @@ export const COMPANION_DEMOS = [
       { verb: "caption", args: { text: "lens has three layers. the middle is your paper — one page, like a real sheet.", ms: 2600 } },
       { verb: "fitPaper", args: {} },
       { verb: "caption", args: { text: "the left rail holds your lenses — reusable ways of transforming ideas.", ms: 2400 } },
-      { verb: "showLenses", args: { caption: "below them, generators: open workspaces for collecting and shaping material." } },
+      { verb: "showLenses", args: { caption: "below them, Lenses: reusable ways of collecting and shaping material." } },
       { verb: "caption", args: { text: "the right side is the AI space — every transformation blooms there first, and you drag back what you want to keep.", ms: 3000 } },
     ],
   },
@@ -154,7 +154,7 @@ export const COMPANION_DEMOS = [
       { verb: "spawnText", args: { text: "Immune tolerance ignores what it could attack", saveAs: "h2" } },
       { verb: "caption", args: { text: "the highlighter is additive — every stroke joins one living selection, across objects and layers.", ms: 2600 } },
       { verb: "highlight", args: { targets: ["h1", "h2"] } },
-      { verb: "caption", args: { text: "it survives letting go. operate on all of it at once, or save it into a generator.", ms: 2600 } },
+      { verb: "caption", args: { text: "it survives letting go. operate on all of it at once, or save it as a Lens.", ms: 2600 } },
     ],
   },
   {
@@ -173,11 +173,11 @@ export const COMPANION_DEMOS = [
   },
   {
     id: "lenses",
-    title: "Build with generators",
-    blurb: "collect and arrange material in an open generator workspace",
-    keywords: ["generator", "collect", "arrange", "save page", "workspace", "material", "diamond"],
+    title: "Build with Lenses",
+    blurb: "collect and arrange material in an open Lens workspace",
+    keywords: ["lens", "lenses", "collect", "arrange", "save page", "workspace", "material"],
     steps: [
-      { verb: "showLenses", args: { caption: "generators collect material in an open spatial workspace" } },
+      { verb: "showLenses", args: { caption: "Lenses collect material in an open spatial workspace" } },
       { verb: "caption", args: { text: "attach observations, arrange them, select material, and craft a lens", ms: 520 } },
     ],
   },

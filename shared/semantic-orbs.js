@@ -37,7 +37,7 @@ export function createSemanticOrb(value = {}, options = {}) {
     id,
     kind: SEMANTIC_ORB_KIND,
     sceneId: value.sceneId || null,
-    name: String(value.name || representation.label || "Untitled orb"),
+    name: String(value.name || representation.label || "Untitled pearl"),
     placement: {
       x: finite(value.placement?.x ?? value.x),
       y: finite(value.placement?.y ?? value.y),
@@ -98,7 +98,7 @@ export function semanticOrbFromMaterial(material, options = {}) {
       : sourceKind.includes("candidate")
         ? "candidate"
         : "material";
-  const label = material.name || material.label || material.text || material.quote || options.name || "Untitled orb";
+  const label = material.name || material.label || material.text || material.quote || options.name || "Untitled pearl";
   return createSemanticOrb({
     id: options.id,
     sceneId: options.sceneId || material.sceneId || null,
@@ -160,7 +160,7 @@ export function summarizeSemanticOrbForSynthesis(orb) {
  */
 export function buildPearlMutualObservations(sources = [], options = {}) {
   const orbs = (Array.isArray(sources) ? sources : []).filter(Boolean);
-  if (orbs.length < 2) throw new Error("at least two semantic orbs are required");
+  if (orbs.length < 2) throw new Error("at least two pearls are required");
   const mode = options.mode === "directed" ? "directed" : "mutual";
   const instruction = String(options.instruction || "").trim().slice(0, 400);
   const pairs = [];

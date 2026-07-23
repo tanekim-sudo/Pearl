@@ -305,7 +305,7 @@ function contentIntents(sources, target, context) {
   }
 
   if (target.kind === "orb" || target.kind === "context-orbit") {
-    return [intent("add-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to the Context Orbit`, "orb-context", {
+    return [intent("add-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to Pearl working memory`, "orb-context", {
       command: "addOrbContext",
       metadata: { priority: Number.isFinite(context.priority) ? context.priority : 1, target: target.kind },
     })];
@@ -317,16 +317,16 @@ function contentIntents(sources, target, context) {
     if (sourceOrbIds.length === sources.length) {
       const ids = [...sourceOrbIds, targetId].filter(Boolean);
       return [
-        intent("nest-semantic-orb", 130, "Nest this orb inside the target orb", "semantic-orb", {
+        intent("nest-semantic-orb", 130, "Nest this pearl inside the target pearl", "semantic-orb", {
           command: "nestSemanticOrb",
           choices: ["nest", "merge", "compose", "synthesize"],
           metadata: { childId: sourceOrbIds[0], parentId: targetId },
         }),
-        intent("merge-semantic-orbs", 120, "Merge preserved contexts into a new orb", "semantic-orb", {
+        intent("merge-semantic-orbs", 120, "Merge preserved contexts into a new pearl", "semantic-orb", {
           command: "mergeSemanticOrbs",
           metadata: { ids },
         }),
-        intent("compose-semantic-orbs", 110, "Compose the orbs in source-to-target order", "semantic-orb", {
+        intent("compose-semantic-orbs", 110, "Compose the pearls in source-to-target order", "semantic-orb", {
           command: "composeSemanticOrbs",
           metadata: { ids },
         }),
@@ -336,7 +336,7 @@ function contentIntents(sources, target, context) {
         }),
       ];
     }
-    return [intent("add-semantic-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to this orb`, "semantic-orb-context", {
+    return [intent("add-semantic-orb-context", 130, `Add ${count} preserved source${count === 1 ? "" : "s"} to this pearl`, "semantic-orb-context", {
       command: "addSemanticOrbContext",
       metadata: { id: targetId },
     })];
