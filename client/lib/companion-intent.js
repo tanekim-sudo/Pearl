@@ -127,7 +127,45 @@ export function parseSemanticTransferCommand(text) {
 
 export function parsePearlCreationCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
-  const match = value.match(/^(?:make|create|save) (?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i);
+  if (!value) return null;
+
+  // make a pearl from this: <material body>
+  const fromBody = value.match(
+    /^(?:make|create|save) (?:a |this )?pearl from this\s*[:\-–]\s*(.+)$/i,
+  );
+  if (fromBody?.[1]?.trim()) {
+    const body = fromBody[1].trim();
+    return {
+      verb: "createSemanticOrb",
+      args: {
+        sceneId: "",
+        name: body.slice(0, 48),
+        materialText: body,
+      },
+    };
+  }
+
+  // make a pearl about|called|named|titled X (optional : body)
+  const about = value.match(
+    /^(?:make|create|save) (?:a |this )?pearl(?:\s+(?:about|called|named|titled)\s+)(.+?)(?:\s*[:\-–]\s*(.+))?$/i,
+  );
+  if (about?.[1]?.trim()) {
+    const name = about[1].trim().replace(/^["“]|["”]$/g, "");
+    const body = (about[2] || name).trim();
+    return {
+      verb: "createSemanticOrb",
+      args: {
+        sceneId: "",
+        name: name.slice(0, 80),
+        ...(body ? { materialText: body } : {}),
+      },
+    };
+  }
+
+  // make a pearl [from this|the selection|these notes] [called Name]
+  const match = value.match(
+    /^(?:make|create|save) (?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i,
+  );
   if (!match) return null;
   return {
     verb: "createSemanticOrb",

@@ -63,7 +63,13 @@ export default function CompanionOrb({
     gestureRef.current = createPearlGestureArbiter({
       onSingle: () => {
         setPowerSearch(false);
-        setExpanded((value) => !value);
+        setExpanded((value) => {
+          const next = !value;
+          if (next) {
+            queueMicrotask(() => window.dispatchEvent(new CustomEvent("lens:companion-expand")));
+          }
+          return next;
+        });
       },
       onTriple: () => {
         setExpanded(false);
@@ -183,13 +189,25 @@ export default function CompanionOrb({
 
   useEffect(() => {
     if (!expanded) return;
-    requestAnimationFrame(() => (powerSearch ? actionSearchRef.current : commandInputRef.current)?.focus());
+    // Prefer the restored CompanionChat dock when present; keep local field as fallback.
+    const chatInput = document.querySelector("[data-testid='companion-chat-input'], .companion-panel .companion-input");
+    requestAnimationFrame(() => {
+      if (chatInput) chatInput.focus?.();
+      else (powerSearch ? actionSearchRef.current : commandInputRef.current)?.focus();
+    });
     function collapse(event) {
       if (event.type === "keydown" && event.key !== "Escape") return;
-      if (event.type === "pointerdown" && rootRef.current?.contains(event.target)) return;
+      if (event.type === "pointerdown") {
+        if (rootRef.current?.contains(event.target)) return;
+        // Clicks inside the Companion chat panel must not collapse the mother Pearl.
+        if (event.target?.closest?.(".companion-panel, [data-testid='companion-chat']")) return;
+      }
       setExpanded(false);
       setPowerSearch(false);
       setActionQuery("");
+      if (event.type === "keydown" && event.key === "Escape") {
+        window.dispatchEvent(new CustomEvent("lens:companion-collapse"));
+      }
       requestAnimationFrame(() => triggerRef.current?.focus());
     }
     document.addEventListener("pointerdown", collapse, true);
@@ -478,7 +496,14 @@ export default function CompanionOrb({
       {!expanded && <span className="pearl-start-hint">{hint || "Click → type what you want → press GO"}</span>}
       {expanded && (
         <div className="orb-ledger" role="region" aria-label={powerSearch ? "Universal Pearl command search" : "Pearl command"}>
-          <p className="orb-ledger-howto">Type a goal below, then press <b>GO</b>. Esc closes this panel.</p>
+          <p className="orb-ledger-howto" data-testid="companion-status">
+            {phase === "listening" ? "Status: listening…"
+              : phase === "executing" || phase === "planning" || phase === "researching" ? "Status: working…"
+                : phase === "blocked" ? "Status: needs a choice or fix — see chat"
+                  : phase === "approval" ? "Status: confirm in chat"
+                    : phase === "completed" ? "Status: done"
+                      : "Chat panel: type a goal, press GO. Mic speaks the same path. Esc closes."}
+          </p>
           {!approval && <form onSubmit={submit}>
             <input
               ref={commandInputRef}

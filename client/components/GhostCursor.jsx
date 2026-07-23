@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 
 /**
  * Ghost cursor overlay — renders the director's animated cursor, drag chip,
  * click ripples, and caption bubble while a demonstration plays.
  * Any real pointer press stops the show (the user takes back the controls).
+ * Always portaled to document.body so a clipped pearlShell runtime host cannot
+ * hide or trap the demonstration layer.
  */
 export default function GhostCursor() {
   const [d, setD] = useState(null);
@@ -40,7 +43,7 @@ export default function GhostCursor() {
 
   if (!d?.running && !d?.cursor?.visible) return null;
 
-  return (
+  const layer = (
     <>
       <div
         className="ghost-cursor-effect-status"
@@ -83,4 +86,7 @@ export default function GhostCursor() {
       </div>
     </>
   );
+
+  if (typeof document === "undefined") return layer;
+  return createPortal(layer, document.body);
 }

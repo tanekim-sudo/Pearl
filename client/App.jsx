@@ -2696,20 +2696,32 @@ export default function App({ sceneId = null, pearlShell = false }) {
     return frame ? clampAiNodeToOutputFrame(node, frame) : node;
   }, [sceneFrameById]);
 
-  useEffect(() => localStorage.setItem(ITEMS_KEY, JSON.stringify(items)), [items]);
+  // Reef runtime host mounts App only for CompanionChat + director bridge.
+  // Never let it seed pages/items into localStorage or the shelf becomes a fake Migrated Scene.
+  const runtimeHostOnly = Boolean(pearlShell && !sceneId);
   useEffect(() => {
+    if (runtimeHostOnly) return;
+    localStorage.setItem(ITEMS_KEY, JSON.stringify(items));
+  }, [items, runtimeHostOnly]);
+  useEffect(() => {
+    if (runtimeHostOnly) return;
     localStorage.setItem(PAGES_KEY, JSON.stringify(pages));
     setSavedIndicator(true);
-  }, [pages]);
+  }, [pages, runtimeHostOnly]);
   useEffect(() => {
+    if (runtimeHostOnly) return;
     localStorage.setItem(DOC_TITLE_KEY, JSON.stringify(docTitle));
     setSavedIndicator(true);
-  }, [docTitle]);
-  useEffect(() => localStorage.setItem(DOC_STAR_KEY, JSON.stringify(docStarred)), [docStarred]);
+  }, [docTitle, runtimeHostOnly]);
+  useEffect(() => {
+    if (runtimeHostOnly) return;
+    localStorage.setItem(DOC_STAR_KEY, JSON.stringify(docStarred));
+  }, [docStarred, runtimeHostOnly]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    if (runtimeHostOnly) return;
     localStorage.setItem(THEME_KEY, JSON.stringify(theme));
-  }, [theme]);
+  }, [theme, runtimeHostOnly]);
   useEffect(() => {
     function onResize() {
       const gridW = threeColumnGridRef.current?.clientWidth;
@@ -2724,7 +2736,10 @@ export default function App({ sceneId = null, pearlShell = false }) {
     const t = setTimeout(() => setSavedIndicator(true), 400);
     return () => clearTimeout(t);
   }, [items]);
-  useEffect(() => localStorage.setItem(CAMERA_KEY, JSON.stringify(camera)), [camera]);
+  useEffect(() => {
+    if (runtimeHostOnly) return;
+    localStorage.setItem(CAMERA_KEY, JSON.stringify(camera));
+  }, [camera, runtimeHostOnly]);
   // Storage, cloud hydration, undo, generators, imports, and companion actions
   // all converge here. Only material attached to an Output Frame is bounded;
   // free Scene material remains in the unbounded world.
@@ -2763,14 +2778,24 @@ export default function App({ sceneId = null, pearlShell = false }) {
   useEffect(() => localStorage.setItem(RACK_META_KEY, JSON.stringify(rackMeta)), [rackMeta]);
   useEffect(() => localStorage.setItem(PRIMITIVE_MOVE_PREFERENCES_KEY, JSON.stringify(primitiveMovePreferences)), [primitiveMovePreferences]);
   useEffect(() => {
+    if (runtimeHostOnly) return;
     try {
       localStorage.setItem(AI_NODES_KEY, JSON.stringify(aiNodes));
     } catch {
       /* quota */
     }
-  }, [aiNodes]);
+  }, [aiNodes, runtimeHostOnly]);
   useEffect(() => {
     try {
+      // Hidden reef runtime host (pearlShell, no sceneId) must not seed a fake
+      // "Migrated Scene" into the shelf — that hid welcome and made first-use look broken.
+      if (runtimeHostOnly) return;
+      const emptyBoard = (!items || items.length === 0) && (!aiNodes || aiNodes.length === 0);
+      if (pearlShell && !sceneId && emptyBoard) {
+        const existing = load(UNIFIED_WORKSPACE_KEY, null);
+        const existingScenes = Array.isArray(existing?.scenes) ? existing.scenes : [];
+        if (!existing || existingScenes.length === 0) return;
+      }
       // Rebase canvas writes onto the latest Scene snapshot. The orb shell can
       // update working sets and semantic capsules while this frame is mounted;
       // serializing the mount-time snapshot would silently erase those edits.
@@ -2803,7 +2828,7 @@ export default function App({ sceneId = null, pearlShell = false }) {
     } catch {
       /* quota / privacy mode: legacy stores still provide recovery */
     }
-  }, [items, aiNodes, camera, initialUnifiedWorkspace, sceneFrames, sceneId]);
+  }, [items, aiNodes, camera, initialUnifiedWorkspace, sceneFrames, sceneId, pearlShell]);
 
   useEffect(() => {
     cleanupEmptyDrafts();
@@ -17350,28 +17375,47 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     if (pearlCreation) {
       const ids = highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current;
       const selected = itemsRef.current.filter((item) => ids.includes(item.id));
-      if (!selected.length) {
-        const error = "Select or highlight material before making a pearl.";
+      const materialText = String(pearlCreation.args.materialText || "").trim();
+      if (!selected.length && !materialText && !pearlCreation.args.name) {
+        const error = "Tell me what the pearl is about (e.g. “make a pearl about Friday standup”), or select material first.";
         updateCommand(commandEntry.id, { status: "failed", failure: error });
         return { visible: true, text: error };
       }
-      const material = {
-        id: `pearl-selection:${selected.map((item) => item.id).join("+")}`,
-        kind: "selection",
-        label: pearlCreation.args.name || selected[0]?.text || "Pearl from selection",
-        sourceIds: selected.map((item) => item.id),
-        items: selected,
-        provenance: { source: "explicit-scene-selection" },
-      };
+      const material = selected.length
+        ? {
+          id: `pearl-selection:${selected.map((item) => item.id).join("+")}`,
+          kind: "selection",
+          label: pearlCreation.args.name || selected[0]?.text || "Pearl from selection",
+          sourceIds: selected.map((item) => item.id),
+          items: selected,
+          provenance: { source: "explicit-scene-selection" },
+        }
+        : {
+          id: `pearl-text:${Date.now()}`,
+          kind: "dump",
+          label: pearlCreation.args.name || materialText.slice(0, 48) || "Context pearl",
+          text: materialText || pearlCreation.args.name || "Context pearl",
+          provenance: { source: "companion-create" },
+        };
       const step = {
         ...pearlCreation,
-        args: { ...pearlCreation.args, sceneId, material },
+        args: {
+          sceneId,
+          name: pearlCreation.args.name || material.label,
+          material,
+          activate: true,
+        },
       };
       const result = await executeCompanionScript([step], { title: "Make a pearl" });
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["semantic-orb-created"] }
         : { status: "failed", failure: result.errors?.[0] || "Pearl creation failed" });
-      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      return {
+        visible: true,
+        text: `Created context pearl “${step.args.name || material.label}”. Wear it into the gauntlet when you need it.`,
+        completed: true,
+      };
     }
 
     const parallelBranch = parseParallelBranchCommand(text);
@@ -19614,13 +19658,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         />
       )}
       <GhostCursor />
-      {!pearlShell && <CompanionChat
+      <CompanionChat
         demos={COMPANION_DEMOS}
         onCommand={handleCompanionCommand}
         userId={supaAuth.session?.user?.id || null}
         notice={companionNotice}
         confirmationOpen={!!pendingCompanionClear}
         initialOpen={companionAutoOpen}
+        pearlShell={pearlShell}
         onOpened={() => {
           if (companionAutoOpen) setCompanionAutoOpen(false);
           try {
@@ -19629,7 +19674,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             /* private mode */
           }
         }}
-      />}
+      />
     </div>
   );
 }

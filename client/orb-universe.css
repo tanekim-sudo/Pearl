@@ -28,7 +28,15 @@
 }
 
 .companion-orb,
-.orb-ledger {
+.orb-ledger,
+.orb-ledger button,
+.orb-ledger input,
+.orb-ledger form,
+.pearl-quick-actions,
+.pearl-quick-actions button,
+.pearl-next-action,
+.orb-approval,
+.orb-approval button {
   pointer-events: auto;
 }
 .companion-orb:focus-visible,
@@ -474,7 +482,14 @@
 .scene-d { left: 22vw; top: 18vh; }
 .scene-e { left: 48vw; bottom: 22vh; }
 .scene-f { right: 28vw; top: 42vh; }
-.orb-reef-home .orb-reef-kicker { pointer-events: none; max-width: 420px; }
+.orb-reef-home .orb-reef-kicker { max-width: 420px; }
+/* Never kill clicks on intro CTAs — prior pointer-events:none made Open Companion / Scene dead. */
+.orb-reef-home .orb-reef-kicker .orb-home-intro-actions,
+.orb-reef-home .orb-reef-kicker .orb-home-intro-actions button,
+.orb-reef-home .orb-home-intro-actions,
+.orb-reef-home .orb-home-intro-actions button {
+  pointer-events: auto;
+}
 .orb-reef-home .orb-reef-kicker h1 { margin-bottom: 8px; }
 .orb-reef .reef-pearl b { font-weight: 550; color: var(--orb-text-1); }
 .orb-reef .reef-pearl-dot {
@@ -1704,4 +1719,67 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   .pearl-quick-actions button,
   .orb-stage-empty-actions button,
   .orb-home-intro-actions button { transition: none !important; transform: none !important; }
+}
+
+/* Hidden App host keeps __lensOrbRuntime + CompanionChat mounted without covering Scene/Reef. */
+.orb-runtime-host {
+  position: fixed;
+  width: 2px;
+  height: 2px;
+  left: -40px;
+  top: -40px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Companion chat docked beside Mother Pearl (portaled to body). */
+.companion-panel.shell-dock {
+  position: fixed !important;
+  right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  z-index: 5200;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 24px));
+  border-radius: 14px;
+  background: rgba(10, 12, 14, 0.96);
+  color: rgba(244, 246, 248, 0.96);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(120, 220, 255, 0.12);
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.companion-panel.shell-dock .companion-head-title {
+  letter-spacing: 0.04em;
+}
+.companion-panel.shell-dock .companion-msg.user {
+  background: rgba(80, 200, 255, 0.14);
+}
+.companion-panel.shell-dock .companion-send {
+  min-width: 52px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+.companion-panel.shell-dock .companion-mic.listening {
+  color: #7de7ff;
+  box-shadow: 0 0 0 1px rgba(125, 231, 255, 0.45);
+}
+
+/* Charged gauntlet stones — brimming energy when filled. */
+.orb-gauntlet-socket.filled {
+  box-shadow:
+    0 0 0 1px rgba(140, 230, 255, 0.35),
+    0 0 18px rgba(90, 210, 255, 0.35),
+    inset 0 0 12px rgba(180, 240, 255, 0.18);
+}
+.orb-gauntlet-socket.filled .physical-pearl {
+  filter: saturate(1.15) brightness(1.08);
+}
+.companion-orb-shell[data-orb-state="executing"] .companion-orb .physical-pearl,
+.companion-orb-shell[data-orb-state="listening"] .companion-orb .physical-pearl {
+  filter: drop-shadow(0 0 10px rgba(120, 230, 255, 0.55));
 }

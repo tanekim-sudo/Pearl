@@ -56,29 +56,87 @@ export function createOrbState(overrides = {}) {
   };
 }
 
+/**
+ * Transition companion phase. Invalid edges no longer throw — they coerce
+ * through a safe hop so a raced setState updater cannot brick the whole app
+ * with RootErrorBoundary ("Pearl hit a crash").
+ */
 export function transitionOrb(state, phase, event = {}) {
   const current = state?.phase || "idle";
-  if (!ORB_STATES.includes(phase)) throw new Error(`unknown orb state "${phase}"`);
+  if (!ORB_STATES.includes(phase)) {
+    // Unknown phase is a programmer error; keep prior state rather than crash UI.
+    return {
+      ...state,
+      updatedAt: event.at || nowIso(),
+      trace: [...(state.trace || []), {
+        id: event.traceId || `${event.taskId || state.taskId || "orb"}:bad-phase`,
+        from: current,
+        to: current,
+        taskId: event.taskId ?? state.taskId ?? null,
+        effectId: event.effectId ?? state.effectId ?? null,
+        commandId: event.commandId ?? state.commandId ?? null,
+        at: event.at || nowIso(),
+        evidence: { boundary: `unknown orb state "${phase}" (ignored)` },
+      }].slice(-500),
+    };
+  }
+  let from = current;
+  let base = state;
   if (phase !== current && !TRANSITIONS[current]?.includes(phase)) {
-    throw new Error(`invalid orb transition ${current} → ${phase}`);
+    // Coerce: snap to idle (always legal from completed/blocked/paused via create),
+    // then apply the requested phase from idle when possible.
+    const coerced = createOrbState({
+      ...state,
+      phase: "idle",
+      effectId: null,
+      commandId: null,
+    });
+    from = "idle";
+    base = coerced;
+    if (phase !== "idle" && !TRANSITIONS.idle?.includes(phase)) {
+      // Still impossible from idle — just set the phase with a recovery note.
+      const at = event.at || nowIso();
+      return {
+        ...coerced,
+        phase,
+        taskId: event.taskId ?? state.taskId ?? null,
+        effectId: event.effectId ?? state.effectId ?? null,
+        commandId: event.commandId ?? state.commandId ?? null,
+        updatedAt: at,
+        trace: [...(state.trace || []), {
+          id: event.traceId || `${event.taskId || state.taskId || "orb"}:coerced`,
+          from: current,
+          to: phase,
+          taskId: event.taskId ?? state.taskId ?? null,
+          effectId: event.effectId ?? state.effectId ?? null,
+          commandId: event.commandId ?? state.commandId ?? null,
+          at,
+          evidence: {
+            ...(event.evidence || {}),
+            coercedFrom: current,
+            boundary: event.evidence?.boundary || `coerced invalid transition ${current} → ${phase}`,
+          },
+        }].slice(-500),
+      };
+    }
   }
   const at = event.at || nowIso();
   return {
-    ...state,
+    ...base,
     phase,
-    taskId: event.taskId ?? state.taskId ?? null,
-    effectId: event.effectId ?? state.effectId ?? null,
-    commandId: event.commandId ?? state.commandId ?? null,
+    taskId: event.taskId ?? base.taskId ?? null,
+    effectId: event.effectId ?? base.effectId ?? null,
+    commandId: event.commandId ?? base.commandId ?? null,
     updatedAt: at,
-    trace: [...(state.trace || []), {
-      id: event.traceId || `${event.taskId || state.taskId || "orb"}:${(state.trace || []).length + 1}`,
-      from: current,
+    trace: [...(base.trace || state.trace || []), {
+      id: event.traceId || `${event.taskId || base.taskId || "orb"}:${(base.trace || state.trace || []).length + 1}`,
+      from,
       to: phase,
-      taskId: event.taskId ?? state.taskId ?? null,
-      effectId: event.effectId ?? state.effectId ?? null,
-      commandId: event.commandId ?? state.commandId ?? null,
+      taskId: event.taskId ?? base.taskId ?? null,
+      effectId: event.effectId ?? base.effectId ?? null,
+      commandId: event.commandId ?? base.commandId ?? null,
       at,
-      evidence: event.evidence || null,
+      evidence: event.evidence || (from !== current ? { coercedFrom: current } : null),
     }].slice(-500),
   };
 }

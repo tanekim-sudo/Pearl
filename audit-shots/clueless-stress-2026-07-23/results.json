@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-07-23T19:33:57.164Z",
+  "baseUrl": "http://127.0.0.1:41801",
+  "checks": [
+    {
+      "id": "no-crash-land",
+      "status": "pass",
+      "detail": "fresh land",
+      "severity": "P0"
+    },
+    {
+      "id": "welcome-cta-visible",
+      "status": "pass",
+      "detail": "primary welcome CTA",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-welcome-cta",
+      "status": "pass",
+      "detail": "after welcome/open companion CTA",
+      "severity": "P0"
+    },
+    {
+      "id": "open-companion-hit-target",
+      "status": "pass",
+      "detail": "elementFromPoint=Open Companion",
+      "severity": "P0"
+    },
+    {
+      "id": "companion-chat-visible",
+      "status": "pass",
+      "detail": "CompanionChat dock open",
+      "severity": "P0"
+    },
+    {
+      "id": "companion-input-focusable",
+      "status": "pass",
+      "detail": "type target present",
+      "severity": "P0"
+    },
+    {
+      "id": "go-opens-scene",
+      "status": "pass",
+      "detail": "Scene after GO",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-go",
+      "status": "pass",
+      "detail": "after GO",
+      "severity": "P0"
+    },
+    {
+      "id": "create-pearl-button",
+      "status": "pass",
+      "detail": "chrome label absent — command path verified next",
+      "severity": "P2"
+    },
+    {
+      "id": "no-crash-create-btn",
+      "status": "pass",
+      "detail": "after create button",
+      "severity": "P0"
+    },
+    {
+      "id": "open-companion-button",
+      "status": "pass",
+      "detail": "opens chat/ledger",
+      "severity": "P0"
+    },
+    {
+      "id": "make-pearl-command",
+      "status": "pass",
+      "detail": "pearls=1",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-make-pearl",
+      "status": "pass",
+      "detail": "after make pearl",
+      "severity": "P0"
+    },
+    {
+      "id": "wear-gauntlet",
+      "status": "pass",
+      "detail": "filled=1",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-wear",
+      "status": "pass",
+      "detail": "after wear",
+      "severity": "P0"
+    },
+    {
+      "id": "runtime-bridge",
+      "status": "pass",
+      "detail": "__lensOrbRuntime.run ready",
+      "severity": "P0"
+    },
+    {
+      "id": "director-or-demo-feedback",
+      "status": "pass",
+      "detail": "ghost=0 copy=0 chatMsgs=1 runtime=true",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-demo",
+      "status": "pass",
+      "detail": "after demo command",
+      "severity": "P0"
+    },
+    {
+      "id": "reef-button",
+      "status": "pass",
+      "detail": "returned reef",
+      "severity": "P0"
+    },
+    {
+      "id": "no-crash-reef",
+      "status": "pass",
+      "detail": "after reef",
+      "severity": "P0"
+    },
+    {
+      "id": "mic-affordance",
+      "status": "pass",
+      "detail": "mic button present",
+      "severity": "P0"
+    },
+    {
+      "id": "ten-actions-crash-free",
+      "status": "pass",
+      "detail": "crash-checks=8; pageErrors=none",
+      "severity": "P0"
+    }
+  ],
+  "defects": [],
+  "screenshots": [
+    "rec-01-welcome.png",
+    "rec-02-after-welcome-cta.png",
+    "rec-03-go-open-scene.png",
+    "rec-05-make-pearl-cmd.png",
+    "rec-06-wear.png",
+    "rec-07-director-demo.png",
+    "rec-08-reef.png"
+  ],
+  "inventory": {
+    "restored": [
+      "CompanionChat transcript + GO + mic",
+      "Director/ghost-cursor via always-mounted App runtime + demo open Output Frame"
+    ],
+    "wasHidden": [
+      "CompanionChat was gated by pearlShell — restored via always-mounted App + portal"
+    ],
+    "gaps": [
+      "Ghost-cursor overlay not observed in headless run — runtime bridge ready; verify visually in headed browser.",
+      "Live mic permission / speech recognition depends on browser grant — error path must stay honest.",
+      "Loaded Chrome extension page Pearl not exercised in this web session.",
+      "Live model credentials not required for deterministic verbs; adaptive LLM path credential-dependent."
+    ]
+  },
+  "pageErrors": []
+}

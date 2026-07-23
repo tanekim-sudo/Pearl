@@ -68,7 +68,12 @@ import {
   wantsOutputFrameFromSearch,
 } from "../lib/scene-stage-interactions.js";
 import { registerDirectorVerbs } from "../lib/director.js";
-import { parsePearlRemixCommand } from "../lib/companion-intent.js";
+import {
+  parsePearlCreationCommand,
+  parsePearlRemixCommand,
+  parseSafeDemonstrationCommand,
+} from "../lib/companion-intent.js";
+import { findDemo } from "../lib/companion-demos.js";
 import {
   discoverFormingPearls as discoverFormingPearlsFromImport,
   MAX_FORMING_PEARLS,
@@ -837,7 +842,7 @@ function PearlSceneChrome({
         <b>{sceneName || "Untitled workspace"}</b>
         <small>{outputFrameOpen
           ? "Finished writing surface. Esc or “Back to Scene” leaves. Companion still works from here."
-          : "Next: Companion → type → GO. Context pearls here can wear into the gauntlet — Output Frame is optional."}</small>
+          : "Next: Companion → type → GO. Context pearls here can wear into the gauntlet — Output Frame is never required."}</small>
       </div>
     </div>
     <div className="pearl-scene-chrome-actions">
@@ -1703,6 +1708,68 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
+    const pearlCreation = parsePearlCreationCommand(recorded.entry.raw || recorded.entry.normalized);
+    if (pearlCreation && companionSurfaceOk) {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createSemanticOrb" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        let scene = resolveRemixScene(workspace);
+        if (!scene) {
+          scene = createScene({ id: `scene-${Date.now()}`, name: "Shelf" });
+          persistSceneWorkspace({
+            ...workspace,
+            scenes: [...(workspace.scenes || []), scene],
+            activeSceneId: scene.id,
+          });
+        }
+        const contextDump = (orbRef.current?.context || [])
+          .map((item) => String(item.text || item.label || item.name || "").trim())
+          .filter(Boolean)
+          .join("\n\n");
+        const materialText = String(pearlCreation.args.materialText || contextDump || "").trim();
+        const name = String(pearlCreation.args.name || materialText.slice(0, 48) || "Context pearl").trim();
+        const material = materialText
+          ? {
+            id: `pearl-create:${Date.now()}`,
+            kind: "dump",
+            label: name,
+            text: materialText,
+            provenance: { source: "companion-create" },
+          }
+          : null;
+        const created = await applySemanticOrbCommand("createSemanticOrb", {
+          sceneId: scene.id,
+          activate: true,
+          ...(material
+            ? { material, orb: { name } }
+            : { orb: { name } }),
+          placement: { x: 0, y: -40 },
+        });
+        const createdId = created?.result?.id || created?.id;
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "createSemanticOrb",
+          effectId: `create:${createdId || name}:${Date.now()}`,
+          evidence: {
+            title: `Created context pearl “${name}”`,
+            steps: [
+              materialText ? "Material saved into the pearl" : "Empty context pearl placed on the shelf",
+              "Wear it into a gauntlet socket when you need it as working memory",
+            ],
+          },
+        }));
+        if (route.kind !== "stage" && scene?.id) {
+          navigate(`/scene/${encodeURIComponent(scene.id)}`);
+        }
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not create a context pearl." },
+        }));
+      }
+      return;
+    }
     const privacyIntent = recorded.entry.normalized;
     if (/^what(?:'s| is) stored(?: here| locally| on this device)?\??$/i.test(privacyIntent)) {
       const summary = window.__pearlPrivacy?.describe?.() || { locked: true, profile: "unknown", keys: [] };
@@ -1800,21 +1867,51 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "inspectScene", effectId: "view:scene" }));
       return;
     }
-    if (route.kind !== "stage") {
-      setOrb(transitionOrb(next, "blocked", {
+    // Director demos need the Output Frame paper surface visible to show the ghost cursor.
+    const demoIntent = parseSafeDemonstrationCommand(
+      recorded.entry.raw || recorded.entry.normalized,
+      ((orbRef.current?.context || []).length === 0),
+    );
+    if (demoIntent) {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      if (route.kind === "stage") setOutputFrameOpen(true);
+      else {
+        // Open a Scene + Output Frame so months of director harness can play for real.
+        try {
+          const workspace = loadSceneWorkspace();
+          let scene = (workspace.scenes || [])[0];
+          if (!scene) {
+            scene = createScene({ id: `scene-${Date.now()}`, name: "Demo Scene" });
+            persistSceneWorkspace({
+              ...workspace,
+              scenes: [...(workspace.scenes || []), scene],
+              activeSceneId: scene.id,
+            });
+          }
+          setOutputFrameOpen(true);
+          navigate(`/scene/${encodeURIComponent(scene.id)}`);
+        } catch {
+          /* navigation best-effort; runtime may still execute */
+        }
+      }
+      next = transitionOrb(next, "executing", {
         taskId: recorded.entry.id,
-        evidence: {
-          boundary: "Ask the Companion to open a Scene for material edits — gauntlet wear/merge/organize already work from the Reef shelf. Output Frame is never required.",
-        },
-      }));
-      return;
+        commandId: demoIntent.verb || "runDirectorDemo",
+        evidence: { title: findDemo(demoIntent.demoId)?.title || "Demonstrating…" },
+      });
     }
+
+    // Prefer the full App companion runtime (director + animations) whenever it is
+    // mounted — including from Reef. Never silent-no-op when the bridge is ready.
     setOrb(next);
-    // Stay on Scene space unless the user explicitly opened Output Frame.
     const controller = new AbortController();
     activeRunAbortRef.current = controller;
     try {
-      const runtime = await waitForOrbRuntime();
+      // Give newly navigated Scene a beat to mount App + register __lensOrbRuntime.
+      if (demoIntent) {
+        await new Promise((resolve) => setTimeout(resolve, 450));
+      }
+      const runtime = await waitForOrbRuntime((demoIntent || route.kind === "stage") ? 12_000 : 8_000);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const phaseMap = {
         planning: "planning",
@@ -1896,6 +1993,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           taskId: recorded.entry.id,
           commandId: "companion-plan",
           effectId: `companion:${recorded.entry.id}`,
+          evidence: result?.text ? { title: result.text } : { title: "Done" },
         });
       });
     } catch (error) {
@@ -1915,12 +2013,15 @@ export default function OrbUniverseShell({ StageComponent }) {
         }));
         return;
       }
+      const boundary = /did not become ready/i.test(error?.message || "")
+        ? "Companion runtime is still starting — click the Companion Pearl again in a moment, or try “open a new scene”."
+        : (error.message || "That action could not be completed.");
       setOrb((value) => {
         if (value.phase === "blocked") return value;
         const recoverable = ["executing", "paused"].includes(value.phase)
           ? transitionOrb(value, "recovery", { taskId: recorded.entry.id, evidence: { error: error.message } })
           : value;
-        return transitionOrb(recoverable, "blocked", { taskId: recorded.entry.id, evidence: { boundary: error.message } });
+        return transitionOrb(recoverable, "blocked", { taskId: recorded.entry.id, evidence: { boundary } });
       });
     } finally {
       if (activeRunAbortRef.current === controller) activeRunAbortRef.current = null;
@@ -3003,11 +3104,17 @@ export default function OrbUniverseShell({ StageComponent }) {
           setSceneWorkspace(loadSceneWorkspace());
         }}
       >
-        {outputFrameOpen
-          ? <div className={`orb-output-frame-host ${outputToolsOpen ? "tools-emitted" : ""}`} data-semantic-anchor="output-frame">
-              <StageComponent key={route.sceneId || "untitled"} sceneId={route.sceneId} pearlShell />
-            </div>
-          : <SceneStage
+        {/* Always mount App so CompanionChat + director/ghost-cursor runtime stay alive. */}
+        <div
+          className={outputFrameOpen
+            ? `orb-output-frame-host ${outputToolsOpen ? "tools-emitted" : ""}`
+            : "orb-runtime-host"}
+          data-semantic-anchor={outputFrameOpen ? "output-frame" : "companion-runtime"}
+          aria-hidden={outputFrameOpen ? undefined : "true"}
+        >
+          <StageComponent key={route.sceneId || "untitled"} sceneId={route.sceneId} pearlShell />
+        </div>
+        {!outputFrameOpen && <SceneStage
               scene={routedScene}
               view={sceneView}
               onMaterialDrop={materializeOnStage}
@@ -3030,6 +3137,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           if (dumpText) {
             semanticOrbActions.create({
               placement: { x: 0, y: 0 },
+              name: dumpText.slice(0, 48),
               material: {
                 id: `orb-dump:${Date.now()}`,
                 kind: "dump",
@@ -3040,17 +3148,20 @@ export default function OrbUniverseShell({ StageComponent }) {
             });
             return;
           }
-          semanticOrbActions.create({ placement: { x: 0, y: 0 } });
+          semanticOrbActions.create({ placement: { x: 0, y: 0 }, name: "Context pearl" });
         }}
         cursorMode={cursorMode} onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
         onOpenStudio={openActivePearlStudio}
-        onExpandedChange={setCompanionExpanded}
+        onExpandedChange={(value) => {
+          setCompanionExpanded(value);
+          if (value) window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+        }}
         hint={outputFrameOpen
-          ? "Companion Pearl · type → GO · gauntlet = up to 5 context pearls"
-          : "Companion Pearl · type → GO · wear context pearls into the gauntlet"}
+          ? "Companion Pearl · open chat → type → GO · gauntlet = up to 5 context pearls"
+          : "Companion Pearl · open chat → type → GO · wear context pearls into the gauntlet"}
         quickActions={[
           ...pearlNavQuickActions,
-          { label: "Create context pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 } }) },
+          { label: "Create context pearl", run: () => semanticOrbActions.create({ placement: { x: 0, y: -40 }, name: "Context pearl" }) },
           { label: outputFrameOpen ? "Back to Scene" : "Open Output Frame", run: () => setOutputFrameOpen((value) => !value) },
           { label: "Encode anything", run: () => openEmittedView("encode") },
           { label: "What can I do?", run: () => openEmittedView("actions") },
@@ -3108,6 +3219,10 @@ export default function OrbUniverseShell({ StageComponent }) {
           onCandidateTaste={tasteCandidate}
           onOpenStudio={openActivePearlStudio}
         />}
+    {/* Keep App runtime + CompanionChat alive on Reef so GO/voice/director never die. */}
+    {!showInstall && <div className="orb-runtime-host" data-semantic-anchor="companion-runtime" aria-hidden="true">
+      <StageComponent key="reef-runtime" sceneId={sceneWorkspace.activeSceneId || null} pearlShell />
+    </div>}
     {!cursorMode && <CompanionOrb
       key="universe-orb"
       featured
@@ -3122,14 +3237,28 @@ export default function OrbUniverseShell({ StageComponent }) {
       onContextAdd={addOrbContext}
       onLensAdd={addOrbLens}
       onEmitView={openEmittedView}
-      onOrbCreate={createBlankScene}
+      onOrbCreate={() => {
+        const context = orbRef.current?.context || orb.context || [];
+        const dumpText = context
+          .map((item) => String(item.text || item.label || item.name || "").trim())
+          .filter(Boolean)
+          .join("\n\n");
+        if (dumpText) {
+          void command(`make a pearl from this: ${dumpText.slice(0, 1200)}`);
+          return;
+        }
+        void command("make a pearl about new context");
+      }}
       cursorMode={cursorMode}
       onCursorToggle={(enabled) => setCursorMode(enabled, "control")}
       approval={pendingApproval}
       onApproval={decideApproval}
       onWorkerCancel={cancelWorker}
       onOpenStudio={openActivePearlStudio}
-      onExpandedChange={setCompanionExpanded}
+      onExpandedChange={(value) => {
+        setCompanionExpanded(value);
+        if (value) window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      }}
       quickActions={[
         ...pearlNavQuickActions,
         ...(showInstall ? [] : [
@@ -3137,7 +3266,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           { label: "Get the extension", run: () => navigate("/install") },
         ]),
       ]}
-      hint="Companion Pearl · type → GO · gauntlet holds up to 5 context pearls"
+      hint="Companion Pearl · open chat → type → GO · gauntlet holds up to 5 context pearls"
     />}
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}

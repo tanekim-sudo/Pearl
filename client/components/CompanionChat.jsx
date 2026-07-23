@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 import { classifyInterviewInput } from "../lib/companion-intent.js";
 import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
@@ -45,6 +46,7 @@ export default function CompanionChat({
   userId = null,
   notice = null,
   confirmationOpen = false,
+  pearlShell = false,
 }) {
   const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
@@ -53,7 +55,9 @@ export default function CompanionChat({
     {
       role: "companion",
       text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
-        "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app.",
+        (pearlShell
+          ? "I’m the Companion Pearl. Type a goal below (or tap the mic), then press GO — I’ll do it in the app and show you."
+          : "Welcome back — tell me what you want to think through, transform, or build, and I’ll do it in the app."),
     },
   ]);
   const [memoryOpen, setMemoryOpen] = useState(false);
@@ -114,6 +118,23 @@ export default function CompanionChat({
   useEffect(() => {
     if (open) onOpened?.();
   }, [open, onOpened]);
+
+  useEffect(() => {
+    function expand() {
+      setForeground(true);
+      setOpen(true);
+    }
+    function collapse() {
+      setOpen(false);
+      setForeground(false);
+    }
+    window.addEventListener("lens:companion-expand", expand);
+    window.addEventListener("lens:companion-collapse", collapse);
+    return () => {
+      window.removeEventListener("lens:companion-expand", expand);
+      window.removeEventListener("lens:companion-collapse", collapse);
+    };
+  }, []);
 
   useEffect(() => {
     if (!notice?.text) return;
@@ -259,6 +280,11 @@ export default function CompanionChat({
       if (result?.visible && result.text) {
         setMessages((m) => [...m, { role: "companion", text: result.text }]);
         speak(result.text);
+      } else if (pearlShell) {
+        const doneText = result?.completed === false
+          ? "That didn’t finish — try again, or say what you wanted differently."
+          : "Done. Watch the workspace (or gauntlet) for the result.";
+        setMessages((m) => [...m, { role: "companion", text: doneText }]);
       }
     } catch (err) {
       if (typeof window !== "undefined" && import.meta.env?.DEV) {
@@ -392,6 +418,11 @@ export default function CompanionChat({
         // "no-speech" just means a quiet stretch — the restart below handles it.
         if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
           endVoiceSession({ send: false });
+          setMessages((m) => [...m, {
+            role: "companion",
+            text: "Microphone permission was blocked. Allow mic for this site in the browser address bar, then tap the mic again — or type and press GO.",
+            error: true,
+          }]);
         }
       };
       rec.onend = () => {
@@ -431,10 +462,22 @@ export default function CompanionChat({
       return;
     }
     if (!SpeechRecognitionImpl) {
-      setMessages((m) => [...m, { role: "companion", text: "voice input isn't available in this browser — typing works just as well.", error: true }]);
+      setMessages((m) => [...m, {
+        role: "companion",
+        text: "Voice isn’t available in this browser. Type your goal in the chat and press GO.",
+        error: true,
+      }]);
       return;
     }
-    startVoiceSession();
+    try {
+      startVoiceSession();
+    } catch {
+      setMessages((m) => [...m, {
+        role: "companion",
+        text: "Could not start the microphone. Check browser permission for this site, then try again — or type and press GO.",
+        error: true,
+      }]);
+    }
   }
 
   useEffect(
@@ -452,6 +495,8 @@ export default function CompanionChat({
     : null;
 
   if (!open) {
+    // In the Orb Universe shell the Mother Pearl (CompanionOrb) is the open affordance.
+    if (pearlShell) return null;
     return (
       <button
         type="button"
@@ -460,22 +505,24 @@ export default function CompanionChat({
           setForeground(true);
           setOpen(true);
         }}
-        title="Ask Pearl"
+        title="Open Companion chat"
       >
         <span className="companion-fab-orb" />
-        <span className="companion-fab-label">pearl</span>
+        <span className="companion-fab-label">Companion</span>
       </button>
     );
   }
 
-  return (
+  const panel = (
     <div
-      className={"companion-panel" + (foreground ? " foreground" : "") + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}
+      className={"companion-panel" + (pearlShell ? " shell-dock" : "") + (foreground ? " foreground" : "") + (playing ? " playing" : "") + (!memory.interviewComplete ? " interviewing" : "") + (confirmationOpen ? " confirming" : "")}
+      data-testid="companion-chat"
+      data-pearl-shell={pearlShell ? "true" : "false"}
       onPointerDown={() => setForeground(true)}
     >
       <div className="companion-head">
         <span className="companion-head-orb" />
-        <span className="companion-head-title">pearl</span>
+        <span className="companion-head-title">Companion</span>
         <button type="button" className="companion-head-btn" onClick={() => setMemoryOpen((v) => !v)} title="Inspect Pearl memory">
           memory
         </button>
@@ -709,7 +756,8 @@ export default function CompanionChat({
           type="button"
           className={"companion-mic" + (listening ? " listening" : "")}
           onClick={toggleMic}
-          title={listening ? "Stop listening" : "Speak to Pearl"}
+          aria-label={listening ? "Stop listening and send" : "Speak — then press GO"}
+          title={listening ? "Stop listening and send" : "Speak your goal (same as typing + GO)"}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <rect x="9" y="2" width="6" height="12" rx="3" />
@@ -719,8 +767,9 @@ export default function CompanionChat({
         <input
           name="companionRequest"
           className="companion-input"
-          aria-label="Companion request"
-          placeholder={listening ? "listening — pause when done, or tap the mic to send" : "ask, or tell me what to build…"}
+          data-testid="companion-chat-input"
+          aria-label="Type your goal for the Companion"
+          placeholder={listening ? "Listening… tap mic or pause to send" : "Type what you want → press GO"}
           value={draft}
           onFocus={() => submitGuardRef.current.resetDedupe()}
           onChange={(e) => {
@@ -744,10 +793,16 @@ export default function CompanionChat({
           }}
           disabled={busy}
         />
-        <button type="submit" className="companion-send" disabled={busy || !draft.trim()}>
-          ↑
+        <button type="submit" className="companion-send" data-testid="companion-go" disabled={busy || !draft.trim()} aria-label="GO — run your command">
+          GO
         </button>
       </form>
     </div>
   );
+
+  // Portal out of the clipped orb-runtime-host so chat stays visible on Reef/Scene.
+  if (pearlShell && typeof document !== "undefined") {
+    return createPortal(panel, document.body);
+  }
+  return panel;
 }

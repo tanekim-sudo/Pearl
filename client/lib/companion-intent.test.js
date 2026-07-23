@@ -39,6 +39,11 @@ test("pearl creation intent uses the canonical semantic capsule command", () => 
     verb: "createSemanticOrb",
     args: { sceneId: "", name: "Evidence" },
   });
+  assert.deepEqual(parsePearlCreationCommand("make a pearl about Friday standup"), {
+    verb: "createSemanticOrb",
+    args: { sceneId: "", name: "Friday standup", materialText: "Friday standup" },
+  });
+  assert.equal(parsePearlCreationCommand("make a pearl from this: ship the shelf").args.materialText, "ship the shelf");
 });
 
 test("critique stream and version history intents are deterministic", () => {
