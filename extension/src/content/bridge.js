@@ -714,6 +714,23 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
       return { ok: true, enabled };
     }
     if (type === "capture-selection") return { ok: true, fragments: await capture(), adapter: detectAdapter() };
+    if (type === "capture-page-text") {
+      const limit = Math.max(200, Math.min(24_000, Number(payload.limit) || 12_000));
+      const root = document.querySelector("main, article, [role='main'], .deck, .slides") || document.body;
+      const text = String(root?.innerText || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, limit);
+      return {
+        ok: true,
+        text,
+        quote: text,
+        title: document.title || "",
+        url: location.href,
+        characters: text.length,
+        adapter: detectAdapter(),
+      };
+    }
     if (type === "page-canvas-state") {
       pageCanvas.hydrate(payload.canvas || null);
       return { ok: true };

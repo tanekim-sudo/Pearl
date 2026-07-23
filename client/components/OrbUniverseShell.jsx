@@ -69,10 +69,12 @@ import {
 } from "../lib/scene-stage-interactions.js";
 import { registerDirectorVerbs } from "../lib/director.js";
 import {
+  parseInvestorRolePearlCommand,
   parsePearlCreationCommand,
   parsePearlRemixCommand,
   parseSafeDemonstrationCommand,
 } from "../lib/companion-intent.js";
+import { buildInvestorRolePearlScaffold } from "../../shared/role-pearl-scaffold.js";
 import { findDemo } from "../lib/companion-demos.js";
 import {
   discoverFormingPearls as discoverFormingPearlsFromImport,
@@ -1247,7 +1249,16 @@ export default function OrbUniverseShell({ StageComponent }) {
       const detail = event.detail || {};
       try {
         const execution = await applySemanticOrbCommand(detail.command, detail.args || {});
-        detail.resolve?.({ completed: true, id: execution.result?.id || null, result: execution.result });
+        if (!execution) {
+          detail.reject?.(new Error("Create or open a workspace first — the pearl could not be placed."));
+          return;
+        }
+        detail.resolve?.({
+          completed: true,
+          id: execution.result?.id || null,
+          result: execution.result,
+          object: execution.result?.object || null,
+        });
       } catch (error) {
         detail.reject?.(error);
       }
@@ -1713,6 +1724,78 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
+    const rolePearlIntent = parseInvestorRolePearlCommand(recorded.entry.raw || recorded.entry.normalized);
+    if (rolePearlIntent && companionSurfaceOk) {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createRolePearl" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        let scene = resolveRemixScene(workspace);
+        if (!scene) {
+          scene = createScene({
+            id: `scene-${Date.now()}`,
+            name: "Investor shelf",
+            metadata: { createdFrom: "role-pearl-scaffold" },
+          });
+          persistSceneWorkspace({
+            ...workspace,
+            scenes: [...(workspace.scenes || []), scene],
+            activeSceneId: scene.id,
+          });
+        }
+        const scaffold = buildInvestorRolePearlScaffold({
+          utterance: recorded.entry.raw || recorded.entry.normalized,
+          firm: rolePearlIntent.args.firm,
+          role: rolePearlIntent.args.role,
+          name: rolePearlIntent.args.name,
+        });
+        const created = await applySemanticOrbCommand("createRolePearl", {
+          sceneId: scene.id,
+          role: scaffold.role,
+          firm: scaffold.firm,
+          name: scaffold.pearl.name,
+          utterance: recorded.entry.raw || recorded.entry.normalized,
+          activate: true,
+          openStudio: rolePearlIntent.args.openStudio !== false,
+          wear: rolePearlIntent.args.wear !== false,
+        });
+        const createdId = created?.result?.id || created?.id;
+        if (createdId && rolePearlIntent.args.wear !== false) {
+          try {
+            wearPearlIdInGauntlet(createdId, { replace: false });
+          } catch {
+            // Shelf still holds the pearl when gauntlet is full.
+          }
+        }
+        if (createdId && rolePearlIntent.args.openStudio !== false) {
+          // Flush vault before Studio remount so the new pearl entity is readable.
+          try { await window.__pearlPrivacy?.flush?.(); } catch { /* best effort */ }
+          window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: createdId } }));
+        }
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "createRolePearl",
+          effectId: `role-pearl:${createdId || scaffold.pearl.name}:${Date.now()}`,
+          evidence: {
+            title: `Created “${scaffold.pearl.name}”`,
+            steps: [
+              "Investment memo + Diligence Functions",
+              `${scaffold.organization.lenses[0]?.name || "Investor lens"}`,
+              `${scaffold.organization.moves.length} Moves · Studio inspectable`,
+              rolePearlIntent.args.wear !== false ? "Worn on the gauntlet" : "On the shelf",
+              "Deterministic scaffold — live firm research needs credentials",
+            ],
+          },
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not create the investor pearl." },
+        }));
+      }
+      return;
+    }
+
     const pearlCreation = parsePearlCreationCommand(recorded.entry.raw || recorded.entry.normalized);
     if (pearlCreation && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createSemanticOrb" });
@@ -2496,22 +2579,38 @@ export default function OrbUniverseShell({ StageComponent }) {
     const ready = ["idle", "completed"].includes(currentOrb.phase)
       ? currentOrb
       : createOrbState({ ...currentOrb, phase: "idle", effectId: null, commandId: null });
-    const workspace = loadSceneWorkspace();
+    let workspace = loadSceneWorkspace();
     // Honor explicit sceneId so Companion remix works from Reef (shelf) as well as Scene.
     const commandArgs = { ...args };
     const requestedSceneId = typeof commandArgs.sceneId === "string" ? commandArgs.sceneId : null;
     delete commandArgs.sceneId;
-    const sceneId = requestedSceneId || route.sceneId || workspace.activeSceneId;
+    let sceneId = requestedSceneId || route.sceneId || workspace.activeSceneId;
     let scene = workspace.scenes?.find((entry) => entry.id === sceneId);
     if (!scene && sceneId) {
       scene = createScene({ id: sceneId, name: "Untitled workspace", metadata: { createdFrom: "recover-missing-scene" } });
-      const repaired = {
+      workspace = {
         ...workspace,
         scenes: [...(workspace.scenes || []), scene],
         activeSceneId: scene.id,
       };
-      localStorage.setItem(UNIFIED_WORKSPACE_KEY, serializeUnifiedWorkspace(repaired));
-      setSceneWorkspace(repaired);
+      localStorage.setItem(UNIFIED_WORKSPACE_KEY, serializeUnifiedWorkspace(workspace));
+      setSceneWorkspace(workspace);
+    }
+    // Creating a pearl from Reef / home should not require a prior Scene click.
+    if (!scene && ["createSemanticOrb", "createRolePearl", "discoverFormingPearls"].includes(name)) {
+      scene = createScene({
+        id: `scene-${Date.now()}`,
+        name: name === "createRolePearl" ? "Investor shelf" : "Shelf",
+        metadata: { createdFrom: "auto-shelf-for-pearl" },
+      });
+      sceneId = scene.id;
+      workspace = {
+        ...workspace,
+        scenes: [...(workspace.scenes || []), scene],
+        activeSceneId: scene.id,
+      };
+      localStorage.setItem(UNIFIED_WORKSPACE_KEY, serializeUnifiedWorkspace(workspace));
+      setSceneWorkspace(workspace);
     }
     if (!scene) {
       console.error("Open a workspace before creating a pearl");
@@ -2536,7 +2635,8 @@ export default function OrbUniverseShell({ StageComponent }) {
         activeSemanticOrbId: scene.activeSemanticOrbId || null,
         orbWorkers: scene.orbWorkers || {},
       },
-      args: commandArgs,
+      // Re-inject sceneId for domain commands that persist it on the pearl.
+      args: { ...commandArgs, sceneId },
       taskId: `semantic-orb:${name}:${Date.now()}`,
       observe: async ({ result }) => ({ effects: result.effects }),
     });
@@ -3057,7 +3157,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   // Result-pearl handoff stays on Reef until the user explicitly continues —
   // never auto-materialize a Scene or open Output Frame without intent.
 
-  function openActivePearlStudio(selectedPearl = null) {
+  async function openActivePearlStudio(selectedPearl = null) {
     const scene = (sceneWorkspace.scenes || []).find((entry) => entry.id === (route.sceneId || sceneWorkspace.activeSceneId));
     const active = selectedPearl || scene?.semanticOrbs?.find((entry) => entry.id === scene.activeSemanticOrbId)
       || scene?.semanticOrbs?.[0]
@@ -3080,17 +3180,30 @@ export default function OrbUniverseShell({ StageComponent }) {
       updatedAt: Date.now(),
     }));
     const ref = createWebPearlStudioReference(entity.id);
-    // Popup preferred; blocked-popup path must full-reload so main.jsx boots Studio.
-    openPearlStudioDocument(ref);
+    // Flush vault before popup/reload so Studio remount can read the entity + ref.
+    await openPearlStudioDocument(ref, { pearlId: entity.id });
   }
 
   useEffect(() => {
     const open = (event) => {
       const pearlId = event.detail?.pearlId;
-      const selected = pearlId
+      let selected = pearlId
         ? (sceneWorkspace.scenes || []).flatMap((scene) => scene.semanticOrbs || []).find((entry) => entry.id === pearlId)
         : null;
-      openActivePearlStudio(selected);
+      // React state can lag createRolePearl persistence — read the latest shelf.
+      if (pearlId && !selected) {
+        try {
+          const workspace = loadSceneWorkspace();
+          selected = (workspace.scenes || [])
+            .flatMap((scene) => scene.semanticOrbs || [])
+            .find((entry) => entry.id === pearlId)
+            || (workspace.semanticOrbs || []).find((entry) => entry.id === pearlId)
+            || null;
+        } catch {
+          selected = null;
+        }
+      }
+      void openActivePearlStudio(selected);
     };
     window.addEventListener("lens:open-pearl-studio", open);
     return () => window.removeEventListener("lens:open-pearl-studio", open);

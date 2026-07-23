@@ -12,6 +12,7 @@ export const MESSAGE_TYPES = Object.freeze([
   "pearl-aesthetic-apply",
   "pearl-worn-orbit",
   "capture-selection",
+  "capture-page-text",
   "make-pearl",
   "fragments-changed",
   "remove-fragment",

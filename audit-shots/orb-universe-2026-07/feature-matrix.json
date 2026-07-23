@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-23T20:49:59.092Z",
+  "generatedAt": "2026-07-23T21:51:07.941Z",
   "counts": {
-    "features": 64,
-    "companion": 402,
-    "extension": 120,
-    "commands": 131
+    "features": 65,
+    "companion": 404,
+    "extension": 121,
+    "commands": 132
   },
   "features": [
     {
@@ -390,6 +390,31 @@
       "tests": [
         "shared/pearl-organize.test.js",
         "client/lib/companion-intent.test.js"
+      ]
+    },
+    {
+      "id": "pearl.role-scaffold",
+      "commands": [
+        "createRolePearl",
+        "createSemanticOrb",
+        "evaluateWithGauntlet"
+      ],
+      "companion": [
+        "createRolePearl",
+        "wearPearl",
+        "openPearlStudio",
+        "evaluateWithGauntlet",
+        "chooseResultDestination"
+      ],
+      "extension": [
+        "createExternalRolePearl",
+        "wearExternalPearl",
+        "evaluateExternalWithGauntlet"
+      ],
+      "tests": [
+        "shared/role-pearl-scaffold.test.js",
+        "client/lib/companion-intent.test.js",
+        "extension/tests/core.test.js"
       ]
     },
     {

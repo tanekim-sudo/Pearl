@@ -1,0 +1,81 @@
+{
+  "date": "2026-07-23",
+  "workflow": "S32 investor pearl",
+  "baseUrl": "http://localhost:8787",
+  "steps": [
+    {
+      "step": "01 web home",
+      "ok": true,
+      "detail": "http://localhost:8787",
+      "evidence": "01-web-home.png"
+    },
+    {
+      "step": "02 companion + mic",
+      "ok": true,
+      "detail": "mic control visible",
+      "evidence": "02-companion-open-mic.png"
+    },
+    {
+      "step": "03 S32 utterance typed",
+      "ok": true,
+      "detail": "utterance filled",
+      "evidence": "03-s32-utterance.png"
+    },
+    {
+      "step": "04 create role pearl",
+      "ok": true,
+      "detail": "S32 investor pearl: moves=4 functions=Investment memo,Diligence lenses=S32 investor lens",
+      "evidence": "04-after-go.png"
+    },
+    {
+      "step": "05 Studio structure",
+      "ok": true,
+      "detail": "Studio shows Moves→Functions→Lenses / what-it-does",
+      "evidence": "05-studio-structure.png"
+    },
+    {
+      "step": "06 worn on gauntlet",
+      "ok": true,
+      "detail": "gauntlet has pearl",
+      "evidence": null
+    },
+    {
+      "step": "07 evaluate with page context",
+      "ok": true,
+      "detail": "evaluate path exercised (model credentials not required for grounded query prep)",
+      "evidence": "07-evaluate-page.png"
+    },
+    {
+      "step": "08 output routing command",
+      "ok": true,
+      "detail": "download PDF / destination intent sent through companion",
+      "evidence": "08-output-routing.png"
+    },
+    {
+      "step": "09 extension build",
+      "ok": true,
+      "detail": "/Users/tanekim/Downloads/lens/extension/dist/chrome",
+      "evidence": null
+    },
+    {
+      "step": "10 extension page + load",
+      "ok": true,
+      "detail": "Playwright loaded unpacked extension against example.com",
+      "evidence": "09-extension-page.png"
+    }
+  ],
+  "defects": [],
+  "gaps": [],
+  "mode": {
+    "pearlCreation": "deterministic-scaffold",
+    "liveModel": false,
+    "extensionLoadUnpacked": true
+  },
+  "summary": {
+    "passed": 10,
+    "failed": 0,
+    "deterministicScaffold": true,
+    "liveModelUsed": false,
+    "note": "Pearl materialization uses deterministic investor scaffold. Live model critique/research still requires credentials."
+  }
+}

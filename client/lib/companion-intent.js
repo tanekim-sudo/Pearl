@@ -10,8 +10,10 @@ import {
 } from "./companion-capabilities.js";
 import { capabilityContextPrompt } from "./companion-capability-graph.js";
 import { parseCompanionPlan } from "./companion-plan.js";
+import { parseRolePearlCommand as parseRolePearlScaffoldCommand } from "../../shared/role-pearl-scaffold.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
+export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
 
 const VERB_NAMES = new Set(Object.keys(COMPANION_VERBS));
 
@@ -404,8 +406,18 @@ export function parseCognitiveWorkflowCommand(text) {
   return null;
 }
 
+/**
+ * Investor / role pearl: research + memo + diligence + investor lens as one real pearl.
+ * Prefer this over bare createFunction when the utterance asks for a pearl.
+ */
+export function parseInvestorRolePearlCommand(text) {
+  return parseRolePearlScaffoldCommand(text);
+}
+
 export function parseFunctionCreationCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
+  // Role-pearl utterances include function words but must materialize a pearl, not orphan Functions.
+  if (parseRolePearlScaffoldCommand(value)) return null;
   if (!/\b(?:create|make|build)\b/i.test(value) || !/\bfunction\b/i.test(value)) return null;
   const investment = /\binvestment memo\b/i.test(value);
   const spielberg = /\b(?:movie|film)\b/i.test(value) && /\bsteven spielberg\b/i.test(value);

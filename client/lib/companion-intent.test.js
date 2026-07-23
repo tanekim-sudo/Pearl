@@ -13,6 +13,7 @@ import {
   parseExtensionDownloadCommand,
   parseFunctionCreationCommand,
   parseFunctionOutputCommand,
+  parseInvestorRolePearlCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
@@ -268,6 +269,17 @@ test("screenshot Function requests use canonical deterministic steps without gat
   assert.ok(parsed.steps.every((step) => step.args.steps.length >= 5));
   assert.match(parsed.steps[1].args.description, /without claiming his private judgment/);
   assert.equal(parseFunctionCreationCommand("create an investment memo function").steps.length, 1);
+});
+
+test("S32 investor utterance scaffolds a role pearl instead of orphan Functions", () => {
+  const utterance =
+    "I'm an investor at S32 and I want you to research a pearl and make me a pearl that has an investment memo function and a diligence function that understands my lens as an investor.";
+  const role = parseInvestorRolePearlCommand(utterance);
+  assert.equal(role.verb, "createRolePearl");
+  assert.equal(role.args.firm, "S32");
+  assert.equal(role.args.wear, true);
+  assert.equal(role.args.openStudio, true);
+  assert.equal(parseFunctionCreationCommand(utterance), null);
 });
 
 test("three named branch perspectives parse exactly and vague safe requests choose a reversible demo", () => {

@@ -10,6 +10,7 @@ import {
   normalizePearlAesthetic,
   saveCompanionAesthetic,
 } from "../../../shared/pearl-aesthetic.js";
+import { parseRolePearlCommand } from "../../../shared/role-pearl-scaffold.js";
 
 function canonicalPearlAction({ action, args, confirmed }, command, commandArgs) {
   return action("pearl-action", {
@@ -133,6 +134,7 @@ export const EXTENSION_VERBS = Object.freeze({
   deleteExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "deleteResultPearl", resultId: args.resultId }),
   undoExternalResultPearl: ({ args, action }) => action("result-pearl-command", { command: "undoResultPearl", resultId: args.resultId }),
   createExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("create", args),
+  createExternalRolePearl: ({ args, semanticOrbAction }) => semanticOrbAction("create-role", args),
   openExternalSemanticOrb: ({ args, semanticOrbAction }) => semanticOrbAction("open", args),
   addExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("add-context", args),
   removeExternalSemanticOrbContext: ({ args, semanticOrbAction }) => semanticOrbAction("remove-context", args),
@@ -346,6 +348,20 @@ export function parseExtensionIntent(text) {
   const value = String(text || "").trim();
   if (/^(?:help|guide|how do i\b.*\??|how does (?:this|pearl) work(?: here)?\??|what can (?:you|pearl) do(?: here)?\??|open (?:the )?(?:pearl )?(?:guide|help))$/i.test(value)) {
     return { name: "openExternalPearlGuide", args: {} };
+  }
+  const rolePearl = parseRolePearlCommand(value);
+  if (rolePearl) {
+    return {
+      name: "createExternalRolePearl",
+      args: {
+        utterance: value,
+        role: rolePearl.args.role,
+        firm: rolePearl.args.firm,
+        name: rolePearl.args.name,
+        wear: rolePearl.args.wear !== false,
+        openStudio: rolePearl.args.openStudio !== false,
+      },
+    };
   }
   if (/^(capture|highlight) (this |the )?(selection|text)$/i.test(value)) return { name: "capturePageSelection", args: {} };
   if (/^save (?:this|the selection) as(?:…|\.\.\.)?$/i.test(value)) return { name: "openExternalSaveAs", args: {} };

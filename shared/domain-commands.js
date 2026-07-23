@@ -30,6 +30,7 @@ import {
 import { applyOrganizeToPearl, organizePearlContents } from "./pearl-organize.js";
 import { materializeCounterPearl } from "./pearl-counter.js";
 import { buildGauntletEvaluationQuery } from "./pearl-gauntlet-eval.js";
+import { buildInvestorRolePearlScaffold } from "./role-pearl-scaffold.js";
 import { createOrbInstance, fuseWorkerProposals, MAX_ORB_WORKERS, splitOrbWorkers } from "./orb-swarm.js";
 import {
   activatePearlCanvas,
@@ -358,6 +359,64 @@ export const DOMAIN_COMMANDS = Object.freeze({
           activeSemanticOrbId: args.activate === true ? id : state.activeSemanticOrbId || null,
         },
         result: { type: "semantic-orb", id, object: orb, effects: ["semantic-orb-created"] },
+      };
+    },
+  },
+  createRolePearl: {
+    schema: {
+      sceneId: "string?",
+      role: "string?",
+      firm: "string?",
+      name: "string?",
+      utterance: "string?",
+      placement: "object?",
+      activate: "boolean?",
+      openStudio: "boolean?",
+      wear: "boolean?",
+      materializeLibrary: "boolean?",
+    },
+    preconditions: ["Scene is explicit", "role or utterance implies investor scaffold"],
+    risk: "low",
+    confirmation: "none",
+    undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.append",
+    observableEffects: ["role-pearl-created", "semantic-orb-created"],
+    execute(state, args, context) {
+      const scaffold = buildInvestorRolePearlScaffold({
+        utterance: args.utterance,
+        role: args.role,
+        firm: args.firm,
+        name: args.name,
+        now: context.now,
+      });
+      const id = String(context.idFactory());
+      if ((state.semanticOrbs || []).some((orb) => orb.id === id)) {
+        return { state, result: { type: "idempotent-replay", id, effects: [] } };
+      }
+      const placement = placeSemanticOrb(state.semanticOrbs, args.placement || {});
+      const orb = createSemanticOrb({
+        ...scaffold.pearl,
+        id,
+        sceneId: args.sceneId,
+        placement,
+      }, { now: context.now });
+      return {
+        state: {
+          ...state,
+          semanticOrbs: [...(state.semanticOrbs || []), orb],
+          activeSemanticOrbId: args.activate === false ? state.activeSemanticOrbId || null : id,
+        },
+        result: {
+          type: "role-pearl",
+          id,
+          object: orb,
+          scaffold,
+          openStudio: args.openStudio !== false,
+          wear: args.wear !== false,
+          materializeLibrary: args.materializeLibrary !== false,
+          effects: ["role-pearl-created", "semantic-orb-created"],
+        },
       };
     },
   },

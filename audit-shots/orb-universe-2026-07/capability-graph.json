@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-3c1e878e",
+  "fingerprint": "fnv1a-1c47732e",
   "counts": {
-    "nodes": 402,
+    "nodes": 404,
     "edges": 516
   },
   "nodes": [
@@ -7700,9 +7700,9 @@
       "version": 1,
       "kind": "capability",
       "name": "toggleOrbCursor",
-      "purpose": "Make the primary orb the literal pointer or restore the native cursor",
+      "purpose": "Make Pearl the literal pointer or restore the native cursor",
       "examples": [
-        "please make the primary orb the literal pointer or restore the native cursor"
+        "please make Pearl the literal pointer or restore the native cursor"
       ],
       "inputSchema": {
         "type": "object",
@@ -7807,9 +7807,9 @@
       "version": 1,
       "kind": "capability",
       "name": "addOrbContext",
-      "purpose": "Bring explicit material into the orb context without changing its source",
+      "purpose": "Bring explicit material into Pearl working memory without changing its source",
       "examples": [
-        "bring these selected notes into the orb context"
+        "bring these selected notes into Pearl working memory"
       ],
       "inputSchema": {
         "type": "object",
@@ -7916,7 +7916,7 @@
       "version": 1,
       "kind": "capability",
       "name": "updateOrbContext",
-      "purpose": "Change the priority, pin, or group of an explicit orb context item",
+      "purpose": "Change the priority, pin, or group of an explicit Pearl context item",
       "examples": [
         "pin this context item and make it highest priority"
       ],
@@ -8026,9 +8026,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeOrbContext",
-      "purpose": "Remove one explicit item from the orb context without deleting its source",
+      "purpose": "Remove one explicit item from Pearl working memory without deleting its source",
       "examples": [
-        "remove this item from the orb context"
+        "remove this item from Pearl working memory"
       ],
       "inputSchema": {
         "type": "object",
@@ -8133,9 +8133,9 @@
       "version": 1,
       "kind": "capability",
       "name": "addOrbLens",
-      "purpose": "Apply a Lens as an editable atmosphere around the orb",
+      "purpose": "Apply a Lens as an editable atmosphere around Pearl",
       "examples": [
-        "apply my concise writing Lens around the orb at eighty percent"
+        "apply my concise writing Lens around Pearl at eighty percent"
       ],
       "inputSchema": {
         "type": "object",
@@ -8244,7 +8244,7 @@
       "version": 1,
       "kind": "capability",
       "name": "updateOrbLens",
-      "purpose": "Change the strength of an active orb Lens atmosphere",
+      "purpose": "Change the strength of an active Pearl Lens atmosphere",
       "examples": [
         "turn that active Lens down to thirty percent"
       ],
@@ -8357,7 +8357,7 @@
       "name": "removeOrbLens",
       "purpose": "Remove an active Lens atmosphere without deleting the Lens",
       "examples": [
-        "remove the concise writing Lens from the orb"
+        "remove the concise writing Lens from Pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -8477,7 +8477,8 @@
           "id": "string?",
           "name": "string?",
           "material": "object?",
-          "placement": "object?"
+          "placement": "object?",
+          "orb": "object?"
         }
       },
       "outputSchema": {
@@ -8498,7 +8499,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -8669,13 +8670,136 @@
       "platform": "app"
     },
     {
+      "id": "companion.capability.app.createRolePearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "createRolePearl",
+      "purpose": "Scaffold a real role pearl (investor memo + diligence + investor lens) with Moves→Functions→Lenses, optionally wear it and open Studio",
+      "examples": [
+        "I'm an investor at S32 and I want you to research a pearl and make me a pearl that has an investment memo function and a diligence function that understands my lens as an investor"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sceneId": "string?",
+          "role": "string?",
+          "firm": "string?",
+          "name": "string?",
+          "utterance": "string?",
+          "openStudio": "boolean?",
+          "wear": "boolean?",
+          "materializeLibrary": "boolean?",
+          "placement": "object?"
+        }
+      },
+      "outputSchema": {
+        "type": "role-pearl"
+      },
+      "resultType": "role-pearl",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved",
+        "gauntlet packs present",
+        "material disclosed"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "move-state-changed",
+        "function-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "none"
+      ],
+      "undo": [
+        "restore-semantic-orbs",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "move-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "role-pearl-created",
+        "semantic-orb-created",
+        "gauntlet-evaluation-prepared"
+      ],
+      "tests": [
+        "capability-createRolePearl",
+        "feature:pearl.role-scaffold"
+      ],
+      "featureIds": [
+        "pearl.role-scaffold"
+      ],
+      "canonicalCommands": [
+        "createRolePearl",
+        "createSemanticOrb",
+        "evaluateWithGauntlet"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "move",
+        "function",
+        "lens",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
       "id": "companion.capability.app.activateSemanticOrb",
       "version": 1,
       "kind": "capability",
       "name": "activateSemanticOrb",
-      "purpose": "Open one semantic orb as the active agent capsule or return to the Scene shell",
+      "purpose": "Open one pearl as the active capsule or return to the Scene shell",
       "examples": [
-        "open the Picasso studies orb"
+        "open the Picasso studies pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -8702,7 +8826,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -8818,9 +8942,9 @@
       "version": 1,
       "kind": "capability",
       "name": "moveSemanticOrb",
-      "purpose": "Move a semantic orb without changing what it represents",
+      "purpose": "Move a pearl without changing what it represents",
       "examples": [
-        "move the Picasso orb to the upper left"
+        "move the Picasso pearl to the upper left"
       ],
       "inputSchema": {
         "type": "object",
@@ -8848,7 +8972,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -8964,9 +9088,9 @@
       "version": 1,
       "kind": "capability",
       "name": "renameSemanticOrb",
-      "purpose": "Rename a semantic orb",
+      "purpose": "Rename a pearl",
       "examples": [
-        "rename this orb Visual grammar"
+        "rename this pearl Visual grammar"
       ],
       "inputSchema": {
         "type": "object",
@@ -8994,7 +9118,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9110,9 +9234,9 @@
       "version": 1,
       "kind": "capability",
       "name": "bindSemanticOrb",
-      "purpose": "Bind a semantic orb to a Move, Function, Lens, Scene, query, candidate, branch, transcript, or material",
+      "purpose": "Bind a pearl to a Move, Function, Lens, Scene, query, candidate, branch, transcript, or material",
       "examples": [
-        "make this orb represent my investor memo Function"
+        "make this pearl represent my investor memo Function"
       ],
       "inputSchema": {
         "type": "object",
@@ -9140,7 +9264,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9255,9 +9379,9 @@
       "version": 1,
       "kind": "capability",
       "name": "addSemanticOrbContext",
-      "purpose": "Add preserved material to a semantic orb",
+      "purpose": "Add preserved material to a pearl",
       "examples": [
-        "put these three references into the Picasso orb"
+        "put these three references into the Picasso pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -9285,7 +9409,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9400,9 +9524,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeSemanticOrbContext",
-      "purpose": "Remove context from a semantic orb without deleting the source",
+      "purpose": "Remove context from a pearl without deleting the source",
       "examples": [
-        "remove that draft from this orb but keep the source"
+        "remove that draft from this pearl but keep the source"
       ],
       "inputSchema": {
         "type": "object",
@@ -9430,7 +9554,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9545,9 +9669,9 @@
       "version": 1,
       "kind": "capability",
       "name": "applySemanticOrbLens",
-      "purpose": "Apply an editable Lens atmosphere to a semantic orb",
+      "purpose": "Apply an editable Lens atmosphere to a pearl",
       "examples": [
-        "apply my skeptical Lens to the Picasso orb"
+        "apply my skeptical Lens to the Picasso pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -9576,7 +9700,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9694,9 +9818,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeSemanticOrbLens",
-      "purpose": "Remove a Lens from a semantic orb",
+      "purpose": "Remove a Lens from a pearl",
       "examples": [
-        "remove the skeptical Lens from this orb"
+        "remove the skeptical Lens from this pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -9724,7 +9848,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -9842,9 +9966,9 @@
       "version": 1,
       "kind": "capability",
       "name": "nestSemanticOrb",
-      "purpose": "Nest one semantic orb inside another",
+      "purpose": "Nest one pearl inside another",
       "examples": [
-        "put the color orb inside the Picasso orb"
+        "put the color pearl inside the Picasso pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -9872,7 +9996,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -10017,9 +10141,9 @@
       "version": 1,
       "kind": "capability",
       "name": "unnestSemanticOrb",
-      "purpose": "Move a nested semantic orb back to the Scene",
+      "purpose": "Move a nested pearl back to the Scene",
       "examples": [
-        "take the color orb back out"
+        "take the color pearl back out"
       ],
       "inputSchema": {
         "type": "object",
@@ -10046,7 +10170,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -10163,7 +10287,7 @@
       "name": "mergeSemanticOrbs",
       "purpose": "Merge into a new pearl while preserving source individuals in the library and gauntlet",
       "examples": [
-        "merge these three orbs into one"
+        "merge these three pearls into one"
       ],
       "inputSchema": {
         "type": "object",
@@ -10181,7 +10305,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -10352,9 +10476,9 @@
       "version": 1,
       "kind": "capability",
       "name": "composeSemanticOrbs",
-      "purpose": "Compose semantic orbs in an explicit order",
+      "purpose": "Compose pearls in an explicit order",
       "examples": [
-        "compose the evidence orb then the concise writing orb"
+        "compose the evidence pearl then the concise writing pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -10383,7 +10507,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -10552,7 +10676,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -10743,7 +10867,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -10875,7 +10999,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -11009,12 +11133,15 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
         "gauntlet packs present",
-        "material disclosed"
+        "material disclosed",
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -11087,15 +11214,18 @@
         "pearl-organized",
         "semantic-orb-updated",
         "pearl-counter-created",
-        "gauntlet-evaluation-prepared"
+        "gauntlet-evaluation-prepared",
+        "role-pearl-created"
       ],
       "tests": [
         "capability-evaluateWithGauntlet",
         "feature:companion.pearl-gauntlet",
+        "feature:pearl.role-scaffold",
         "feature:pearl.gauntlet-evaluation"
       ],
       "featureIds": [
         "companion.pearl-gauntlet",
+        "pearl.role-scaffold",
         "pearl.gauntlet-evaluation"
       ],
       "canonicalCommands": [
@@ -11103,7 +11233,9 @@
         "mergeSemanticOrbs",
         "organizePearl",
         "createCounterPearl",
-        "evaluateWithGauntlet"
+        "evaluateWithGauntlet",
+        "createRolePearl",
+        "createSemanticOrb"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -11123,9 +11255,9 @@
       "version": 1,
       "kind": "capability",
       "name": "splitSemanticOrb",
-      "purpose": "Split a semantic orb into source-preserving capsules",
+      "purpose": "Split a pearl into source-preserving capsules",
       "examples": [
-        "split this orb back into its source ideas"
+        "split this pearl back into its source ideas"
       ],
       "inputSchema": {
         "type": "object",
@@ -11153,7 +11285,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -11298,9 +11430,9 @@
       "version": 1,
       "kind": "capability",
       "name": "duplicateSemanticOrb",
-      "purpose": "Duplicate a semantic orb with lineage",
+      "purpose": "Duplicate a pearl with lineage",
       "examples": [
-        "duplicate this orb for a new direction"
+        "duplicate this pearl for a new direction"
       ],
       "inputSchema": {
         "type": "object",
@@ -11328,7 +11460,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -11469,12 +11601,13 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
         "gauntlet packs present",
-        "material disclosed"
+        "material disclosed",
+        "role or utterance implies investor scaffold"
       ],
       "requiredObservations": [
         "selection",
@@ -11538,13 +11671,15 @@
         "semantic-orb-context-changed",
         "pearl-organized",
         "pearl-counter-created",
-        "gauntlet-evaluation-prepared"
+        "gauntlet-evaluation-prepared",
+        "role-pearl-created"
       ],
       "tests": [
         "capability-wearPearl",
         "feature:companion.pearl-wear",
         "feature:companion.mother-orbit",
         "feature:companion.pearl-gauntlet",
+        "feature:pearl.role-scaffold",
         "feature:pearl.gauntlet-evaluation",
         "feature:shell.reef-home"
       ],
@@ -11552,6 +11687,7 @@
         "companion.pearl-wear",
         "companion.mother-orbit",
         "companion.pearl-gauntlet",
+        "pearl.role-scaffold",
         "pearl.gauntlet-evaluation",
         "shell.reef-home"
       ],
@@ -11563,7 +11699,8 @@
         "mergeSemanticOrbs",
         "organizePearl",
         "createCounterPearl",
-        "evaluateWithGauntlet"
+        "evaluateWithGauntlet",
+        "createRolePearl"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -11603,7 +11740,7 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -11730,7 +11867,7 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -11854,7 +11991,7 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -12877,7 +13014,7 @@
         "Scene is explicit",
         "source material is preserved",
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -13005,7 +13142,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -13256,7 +13393,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",
@@ -13400,7 +13537,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",
@@ -13870,7 +14007,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",
@@ -14099,9 +14236,9 @@
       "version": 1,
       "kind": "capability",
       "name": "archiveSemanticOrb",
-      "purpose": "Archive or restore a semantic orb without deleting it",
+      "purpose": "Archive or restore a pearl without deleting it",
       "examples": [
-        "archive this orb"
+        "archive this pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -14129,7 +14266,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -14244,9 +14381,9 @@
       "version": 1,
       "kind": "capability",
       "name": "deleteSemanticOrb",
-      "purpose": "Delete one semantic orb after scoped confirmation",
+      "purpose": "Delete one pearl after scoped confirmation",
       "examples": [
-        "delete only the abandoned orb"
+        "delete only the abandoned pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -14273,7 +14410,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -21100,7 +21237,7 @@
         "orb exists",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "Move or Function exists",
         "expected version matches",
@@ -22044,7 +22181,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",
@@ -24655,7 +24792,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",
@@ -24852,6 +24989,11 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved",
+        "gauntlet packs present",
+        "material disclosed",
         "Pearl exists in the canonical entity store",
         "profile is unlocked",
         "edit is canonical",
@@ -24900,16 +25042,18 @@
         "scene-state-changed"
       ],
       "persistence": [
+        "scene.semanticOrbs.append",
+        "none",
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
-        "none",
         "pearlEntities.history.checkpoints",
         "pearlEntities.restoreVersion"
       ],
       "undo": [
+        "restore-semantic-orbs",
         "none",
         "undo-pearl-entity-edit",
         "redo-pearl-entity-edit"
@@ -24923,6 +25067,9 @@
       ],
       "expectedEffects": [
         "scene-state-changed",
+        "role-pearl-created",
+        "semantic-orb-created",
+        "gauntlet-evaluation-prepared",
         "pearl-studio-opening",
         "pearl-entity-edited",
         "pearl-studio-represented",
@@ -24935,14 +25082,19 @@
       ],
       "tests": [
         "capability-openPearlStudio",
+        "feature:pearl.role-scaffold",
         "feature:studio.pearl",
         "feature:shell.reef-home"
       ],
       "featureIds": [
+        "pearl.role-scaffold",
         "studio.pearl",
         "shell.reef-home"
       ],
       "canonicalCommands": [
+        "createRolePearl",
+        "createSemanticOrb",
+        "evaluateWithGauntlet",
         "openPearlStudio",
         "editPearlEntity",
         "setPearlStudioRepresentation",
@@ -30020,6 +30172,11 @@
       "resultType": "action-result",
       "refArgs": {},
       "preconditions": [
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved",
+        "gauntlet packs present",
+        "material disclosed",
         "generation completed into a persisted staged Result Pearl",
         "a routing request is pending",
         "live observation is bounded and local",
@@ -30067,6 +30224,8 @@
         "ai-state-changed"
       ],
       "persistence": [
+        "scene.semanticOrbs.append",
+        "none",
         "resultPearls.routing.replace",
         "resultPearls.routing.plan.replace",
         "resultPearls.routing.confirm",
@@ -30076,6 +30235,8 @@
         "resultPearls.routing.cancel"
       ],
       "undo": [
+        "restore-semantic-orbs",
+        "none",
         "cancel-output-placement",
         "revise-placement-plan",
         "undo-output-placement",
@@ -30092,6 +30253,9 @@
       "expectedEffects": [
         "scene-state-changed",
         "ai-state-changed",
+        "role-pearl-created",
+        "semantic-orb-created",
+        "gauntlet-evaluation-prepared",
         "output-destination-requested",
         "output-placement-interpreted",
         "output-placement-confirmed",
@@ -30102,12 +30266,17 @@
       ],
       "tests": [
         "capability-chooseResultDestination",
+        "feature:pearl.role-scaffold",
         "feature:output.two-stage-routing"
       ],
       "featureIds": [
+        "pearl.role-scaffold",
         "output.two-stage-routing"
       ],
       "canonicalCommands": [
+        "createRolePearl",
+        "createSemanticOrb",
+        "evaluateWithGauntlet",
         "requestOutputPlacement",
         "interpretOutputPlacement",
         "confirmOutputPlacement",
@@ -31051,9 +31220,9 @@
       "version": 1,
       "kind": "capability",
       "name": "toggleExternalOrbCursor",
-      "purpose": "Toggle the literal orb cursor on the supported external page",
+      "purpose": "Toggle the literal Pearl cursor on the supported external page",
       "examples": [
-        "please toggle the literal orb cursor on the supported external page"
+        "please toggle the literal Pearl cursor on the supported external page"
       ],
       "inputSchema": {
         "type": "object",
@@ -31203,7 +31372,8 @@
         "properties": {
           "id": "string?",
           "name": "string?",
-          "material": "object?"
+          "material": "object?",
+          "orb": "object?"
         }
       },
       "outputSchema": {
@@ -31224,7 +31394,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted",
@@ -31381,13 +31551,134 @@
       "platform": "extension"
     },
     {
+      "id": "companion.capability.extension.createExternalRolePearl",
+      "version": 1,
+      "kind": "capability",
+      "name": "createExternalRolePearl",
+      "purpose": "Scaffold an investor/role pearl with memo + diligence + lens in the extension library and gauntlet",
+      "examples": [
+        "make me an investor pearl with investment memo and diligence that understands my lens"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": "string?",
+          "firm": "string?",
+          "name": "string?",
+          "utterance": "string?",
+          "wear": "boolean?",
+          "openStudio": "boolean?"
+        }
+      },
+      "outputSchema": {
+        "type": "role-pearl"
+      },
+      "resultType": "role-pearl",
+      "refArgs": {},
+      "preconditions": [
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved",
+        "gauntlet packs present",
+        "material disclosed"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "move-state-changed",
+        "function-state-changed",
+        "lens-state-changed"
+      ],
+      "persistence": [
+        "scene.semanticOrbs.append",
+        "none"
+      ],
+      "undo": [
+        "restore-semantic-orbs",
+        "none"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "move-state-changed",
+        "function-state-changed",
+        "lens-state-changed",
+        "role-pearl-created",
+        "semantic-orb-created",
+        "gauntlet-evaluation-prepared"
+      ],
+      "tests": [
+        "capability-createExternalRolePearl",
+        "feature:pearl.role-scaffold"
+      ],
+      "featureIds": [
+        "pearl.role-scaffold"
+      ],
+      "canonicalCommands": [
+        "createRolePearl",
+        "createSemanticOrb",
+        "evaluateWithGauntlet"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "move",
+        "function",
+        "lens"
+      ],
+      "platform": "extension"
+    },
+    {
       "id": "companion.capability.extension.openExternalSemanticOrb",
       "version": 1,
       "kind": "capability",
       "name": "openExternalSemanticOrb",
-      "purpose": "Open a saved semantic orb in the extension tray",
+      "purpose": "Open a saved pearl on the Pearl shelf",
       "examples": [
-        "please open a saved semantic orb in the extension tray"
+        "please open a saved pearl on the Pearl shelf"
       ],
       "inputSchema": {
         "type": "object",
@@ -31414,7 +31705,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31531,9 +31822,9 @@
       "version": 1,
       "kind": "capability",
       "name": "addExternalSemanticOrbContext",
-      "purpose": "Add the current capture or explicit material to a saved orb",
+      "purpose": "Add the current capture or explicit material to a saved pearl",
       "examples": [
-        "please add the current capture or explicit material to a saved orb"
+        "please add the current capture or explicit material to a saved pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -31561,7 +31852,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31678,9 +31969,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeExternalSemanticOrbContext",
-      "purpose": "Remove one explicit context item from a saved orb without deleting its source",
+      "purpose": "Remove one explicit context item from a saved pearl without deleting its source",
       "examples": [
-        "remove that capture from the research orb"
+        "remove that capture from the research pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -31708,7 +31999,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31825,9 +32116,9 @@
       "version": 1,
       "kind": "capability",
       "name": "applyExternalSemanticOrbLens",
-      "purpose": "Apply a synced Lens to a saved orb",
+      "purpose": "Apply a synced Lens to a saved pearl",
       "examples": [
-        "please apply a synced Lens to a saved orb"
+        "please apply a synced Lens to a saved pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -31856,7 +32147,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -31976,9 +32267,9 @@
       "version": 1,
       "kind": "capability",
       "name": "removeExternalSemanticOrbLens",
-      "purpose": "Remove one Lens atmosphere from a saved orb",
+      "purpose": "Remove one Lens atmosphere from a saved pearl",
       "examples": [
-        "remove the skeptical Lens from the research orb"
+        "remove the skeptical Lens from the research pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -32006,7 +32297,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -32126,9 +32417,9 @@
       "version": 1,
       "kind": "capability",
       "name": "renameExternalSemanticOrb",
-      "purpose": "Rename a saved semantic orb",
+      "purpose": "Rename a saved pearl",
       "examples": [
-        "rename the research orb Visual grammar"
+        "rename the research pearl Visual grammar"
       ],
       "inputSchema": {
         "type": "object",
@@ -32156,7 +32447,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -32273,7 +32564,7 @@
       "version": 1,
       "kind": "capability",
       "name": "mergeExternalSemanticOrbs",
-      "purpose": "Merge saved orb contexts into a new capsule",
+      "purpose": "Merge saved pearl contexts into a new capsule",
       "examples": [
         "merge these saved pearls"
       ],
@@ -32292,7 +32583,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -32455,7 +32746,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -32615,7 +32906,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -32745,7 +33036,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -32876,12 +33167,15 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
         "gauntlet packs present",
-        "material disclosed"
+        "material disclosed",
+        "Scene is explicit",
+        "role or utterance implies investor scaffold",
+        "source material is preserved"
       ],
       "requiredObservations": [
         "selection",
@@ -32953,15 +33247,18 @@
         "pearl-organized",
         "semantic-orb-updated",
         "pearl-counter-created",
-        "gauntlet-evaluation-prepared"
+        "gauntlet-evaluation-prepared",
+        "role-pearl-created"
       ],
       "tests": [
         "capability-evaluateExternalWithGauntlet",
         "feature:companion.pearl-gauntlet",
+        "feature:pearl.role-scaffold",
         "feature:pearl.gauntlet-evaluation"
       ],
       "featureIds": [
         "companion.pearl-gauntlet",
+        "pearl.role-scaffold",
         "pearl.gauntlet-evaluation"
       ],
       "canonicalCommands": [
@@ -32969,7 +33266,9 @@
         "mergeSemanticOrbs",
         "organizePearl",
         "createCounterPearl",
-        "evaluateWithGauntlet"
+        "evaluateWithGauntlet",
+        "createRolePearl",
+        "createSemanticOrb"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -32989,9 +33288,9 @@
       "version": 1,
       "kind": "capability",
       "name": "duplicateExternalSemanticOrb",
-      "purpose": "Duplicate a saved orb with independent editable state",
+      "purpose": "Duplicate a saved pearl with independent editable state",
       "examples": [
-        "duplicate the research orb"
+        "duplicate the research pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -33019,7 +33318,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -33136,9 +33435,9 @@
       "version": 1,
       "kind": "capability",
       "name": "splitExternalSemanticOrb",
-      "purpose": "Split a saved orb into one orb per context item or child",
+      "purpose": "Split a saved pearl into one pearl per context item or child",
       "examples": [
-        "split the research orb into its source ideas"
+        "split the research pearl into its source ideas"
       ],
       "inputSchema": {
         "type": "object",
@@ -33165,7 +33464,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -33282,9 +33581,9 @@
       "version": 1,
       "kind": "capability",
       "name": "unnestExternalSemanticOrb",
-      "purpose": "Remove a saved orb from its parent without deleting either orb",
+      "purpose": "Remove a saved pearl from its parent without deleting either pearl",
       "examples": [
-        "take the color orb out of its parent"
+        "take the color pearl out of its parent"
       ],
       "inputSchema": {
         "type": "object",
@@ -33311,7 +33610,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -33428,9 +33727,9 @@
       "version": 1,
       "kind": "capability",
       "name": "archiveExternalSemanticOrb",
-      "purpose": "Archive or restore a saved orb",
+      "purpose": "Archive or restore a saved pearl",
       "examples": [
-        "please archive or restore a saved orb"
+        "please archive or restore a saved pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -33458,7 +33757,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -33575,9 +33874,9 @@
       "version": 1,
       "kind": "capability",
       "name": "deleteExternalSemanticOrb",
-      "purpose": "Delete one saved semantic orb while preserving source material",
+      "purpose": "Delete one saved pearl while preserving source material",
       "examples": [
-        "delete only the abandoned extension orb"
+        "delete only the abandoned extension pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -33604,7 +33903,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -33721,9 +34020,9 @@
       "version": 1,
       "kind": "capability",
       "name": "openExternalSemanticOrbScene",
-      "purpose": "Open the authoritative web Scene to spatially arrange a saved orb",
+      "purpose": "Open the authoritative web Scene to spatially arrange a saved pearl",
       "examples": [
-        "please open the authoritative web Scene to spatially arrange a saved orb"
+        "please open the authoritative web Scene to spatially arrange a saved pearl"
       ],
       "inputSchema": {
         "type": "object",
@@ -33750,7 +34049,7 @@
         "orb and Lens exist",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "orb has referenced context or child orbs",
         "scoped destructive confirmation was granted"
@@ -34269,7 +34568,7 @@
         "completed candidate exists",
         "new cost stays within budget",
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -34791,7 +35090,7 @@
         "orb exists",
         "both orbs exist",
         "nesting remains acyclic",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit"
       ],
       "requiredObservations": [
@@ -36265,12 +36564,13 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
         "gauntlet packs present",
-        "material disclosed"
+        "material disclosed",
+        "role or utterance implies investor scaffold"
       ],
       "requiredObservations": [
         "selection",
@@ -36335,18 +36635,21 @@
         "semantic-orb-context-changed",
         "pearl-organized",
         "pearl-counter-created",
-        "gauntlet-evaluation-prepared"
+        "gauntlet-evaluation-prepared",
+        "role-pearl-created"
       ],
       "tests": [
         "capability-wearExternalPearl",
         "feature:companion.pearl-wear",
         "feature:companion.mother-orbit",
-        "feature:companion.pearl-gauntlet"
+        "feature:companion.pearl-gauntlet",
+        "feature:pearl.role-scaffold"
       ],
       "featureIds": [
         "companion.pearl-wear",
         "companion.mother-orbit",
-        "companion.pearl-gauntlet"
+        "companion.pearl-gauntlet",
+        "pearl.role-scaffold"
       ],
       "canonicalCommands": [
         "activateSemanticOrb",
@@ -36356,7 +36659,8 @@
         "mergeSemanticOrbs",
         "organizePearl",
         "createCounterPearl",
-        "evaluateWithGauntlet"
+        "evaluateWithGauntlet",
+        "createRolePearl"
       ],
       "destructive": false,
       "confirmation": "none",
@@ -36396,7 +36700,7 @@
         "orb exists",
         "representation is explicit",
         "material is explicit and preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -37394,7 +37698,7 @@
       "refArgs": {},
       "preconditions": [
         "orb exists when id is supplied",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "pearl exists",
         "multimodal dump or layers present",
         "source pearl exists",
@@ -42689,7 +42993,7 @@
         "surface adapter completed the exact confirmed PlacementPlan",
         "Scene is explicit",
         "source material is preserved",
-        "at least two orbs exist",
+        "at least two pearls exist",
         "composition order is explicit",
         "both orbs exist",
         "nesting remains acyclic",

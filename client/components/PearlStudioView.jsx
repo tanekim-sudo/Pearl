@@ -36,17 +36,32 @@ function leavePearlStudio() {
   location.assign("/");
 }
 
+function resolveStudioEntity(localRef) {
+  const store = read(PEARL_STORE_KEY, { entities: {} });
+  const entities = store.entities || {};
+  const ref = localRef ? read(REF_KEY, {})[localRef] : null;
+  if (ref && ref.expiresAt >= Date.now() && entities[ref.pearlId]) {
+    return entities[ref.pearlId];
+  }
+  // Fallbacks when opaque ref expired/missing but the pearl entity was flushed.
+  let backupId = null;
+  try { backupId = sessionStorage.getItem("pearlStudioActivePearlId"); } catch { /* private */ }
+  if (backupId && entities[backupId]) return entities[backupId];
+  if (store.activePearlId && entities[store.activePearlId]) return entities[store.activePearlId];
+  if (ref?.pearlId && entities[ref.pearlId]) return entities[ref.pearlId];
+  return null;
+}
+
 export default function PearlStudioView({ localRef }) {
-  const initial = useMemo(() => {
-    const ref = read(REF_KEY, {})[localRef];
-    if (!ref || ref.expiresAt < Date.now()) return null;
-    return read(PEARL_STORE_KEY, { entities: {} }).entities?.[ref.pearlId] || null;
-  }, [localRef]);
+  const initial = useMemo(() => resolveStudioEntity(localRef), [localRef]);
   const [entity, setEntity] = useState(() => initial && createPearlEntity(initial));
   const [status, setStatus] = useState(initial ? "Local · encrypted" : "This local Pearl reference is unavailable.");
   const [name, setName] = useState(initial?.identity?.name || "");
   const [text, setText] = useState(initial?.results?.[0]?.text || initial?.identity?.description || "");
-  const [structureOpen, setStructureOpen] = useState(false);
+  const [structureOpen, setStructureOpen] = useState(() => Boolean(
+    initial?.moves?.length || initial?.functions?.length || initial?.lenses?.length
+      || initial?.cognition?.layers?.length,
+  ));
   const [historyOpen, setHistoryOpen] = useState(false);
   const [versionLabel, setVersionLabel] = useState("");
   const timer = useRef();
@@ -134,6 +149,9 @@ export default function PearlStudioView({ localRef }) {
       .web-pearl-studio__banner{margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
       .web-pearl-studio__banner span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.62;margin-bottom:6px}
       .web-pearl-studio__banner p{margin:0;font-size:14px;line-height:1.5;opacity:.84}
+      .web-pearl-studio__what{margin:0 0 22px;padding:12px 0;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent)}
+      .web-pearl-studio__what p{margin:0 0 6px;font-size:14px;line-height:1.55;opacity:.9}
+      .web-pearl-studio__order{font-size:12px!important;opacity:.68!important;letter-spacing:.02em}
       .web-pearl-studio__pearl{display:flex;align-items:center;gap:16px;margin-bottom:30px}.web-pearl-studio input,.web-pearl-studio textarea{box-sizing:border-box;width:100%;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);border-radius:0;background:transparent;color:inherit;outline:none}
       .web-pearl-studio input{padding:0 0 18px;font:500 clamp(24px,4vw,44px)/1.1 inherit}.web-pearl-studio textarea{min-height:42vh;padding:22px 0;resize:vertical;font:400 15px/1.7 inherit}
       .web-pearl-studio__trigger{opacity:.62;transition:opacity .16s}.web-pearl-studio:hover .web-pearl-studio__trigger,.web-pearl-studio:focus-within .web-pearl-studio__trigger,.web-pearl-studio__trigger:focus-visible{opacity:1}.web-pearl-studio__trigger[data-testid=pearl-organize]{opacity:.9;font-weight:550}.web-pearl-studio__actions{display:flex;gap:14px;align-items:center;margin-top:18px;flex-wrap:wrap}.web-pearl-studio button,.web-pearl-studio select{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:0;background:transparent;color:inherit;padding:7px 0}.web-pearl-studio [role=status]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -152,6 +170,19 @@ export default function PearlStudioView({ localRef }) {
       <span>Pearl Studio · overflow tools</span>
       <p><b>Next:</b> Edit this context pearl, then Close Studio to return to the Companion and Reef shelf. Studio is not a second home.</p>
     </header>
+    {(entity.moves.length || entity.functions.length || entity.lenses.length) ? (
+      <section className="web-pearl-studio__what" data-testid="studio-what-it-does" aria-label="What this pearl does">
+        <p>
+          <b>What it does:</b>{" "}
+          {[
+            entity.functions.length ? `Functions — ${entity.functions.map((entry) => entry.name).filter(Boolean).join(", ")}` : null,
+            entity.lenses.length ? `Lens — ${entity.lenses.map((entry) => entry.name).filter(Boolean).join(", ")}` : null,
+            entity.moves.length ? `${entity.moves.length} Moves` : null,
+          ].filter(Boolean).join(" · ")}
+        </p>
+        <p className="web-pearl-studio__order">Visible structure order: Moves → Functions → Lenses</p>
+      </section>
+    ) : null}
     <div className="web-pearl-studio__pearl">
       <PhysicalPearl
         variant={entity.kind === "result" ? "result" : "primary"}

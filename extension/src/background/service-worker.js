@@ -1070,13 +1070,16 @@ async function handle(message, sender = {}) {
     const stored = await BrowserPlatform.storage.get("local", ["semanticOrbs", "activeSemanticOrbId"]);
     const idempotencyKey = String(payload.idempotencyKey || crypto.randomUUID());
     const id = String(payload.id || `external-pearl:${idempotencyKey}`).slice(0, 180);
+    const organizedOrb = payload.orb && typeof payload.orb === "object" ? payload.orb : null;
     const execution = await executeDomainCommand("createSemanticOrb", {
       semanticOrbs: stored.semanticOrbs || [],
       activeSemanticOrbId: stored.activeSemanticOrbId || null,
     }, {
       sceneId: "extension-captures",
       material,
-      orb: { id, name: payload.name || undefined },
+      orb: organizedOrb
+        ? { ...organizedOrb, id, name: organizedOrb.name || payload.name || undefined }
+        : { id, name: payload.name || undefined },
       placement: payload.placement || { x: 0, y: 0 },
       activate: true,
     }, {
@@ -1271,7 +1274,9 @@ async function handle(message, sender = {}) {
     if (!payload.navigation) await sendPage(type, payload);
     return clearPageMaterial();
   }
-  if (type === "toggle-highlighter" || type === "capture-selection") return sendPage(type, payload);
+  if (type === "toggle-highlighter" || type === "capture-selection" || type === "capture-page-text") {
+    return sendPage(type, payload);
+  }
   if (type === "pearl-power-fx" || type === "pearl-seek-to" || type === "pearl-find-matching" || type === "pearl-effect-animation" || type === "pearl-aesthetic-apply" || type === "pearl-worn-orbit") {
     return sendPage(type, payload);
   }

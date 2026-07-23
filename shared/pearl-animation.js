@@ -39,6 +39,7 @@ const COMMAND_ANIMATION = Object.freeze({
   removeOrbLens: "settle",
   removeSemanticOrbLens: "settle",
   createSemanticOrb: "emerge",
+  createRolePearl: "emerge",
   openOrbCreationPreview: "unfold",
   duplicateSemanticOrb: "duplicate",
   nestSemanticOrb: "nest",

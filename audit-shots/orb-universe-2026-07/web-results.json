@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T01:05:55.212Z",
+  "generatedAt": "2026-07-22T02:07:22.725Z",
   "browser": "149.0.7827.55",
   "checks": [
     {
@@ -22,34 +22,10 @@
           "scrollWidth": 1600,
           "clientWidth": 1600
         },
-        "animationCount": 7,
+        "animationCount": 1,
         "animations": [
           {
             "name": "physical-pearl-breath",
-            "playState": "running"
-          },
-          {
-            "name": "pearl-welcome-item",
-            "playState": "running"
-          },
-          {
-            "name": "physical-pearl-breath",
-            "playState": "running"
-          },
-          {
-            "name": "pearl-welcome-item",
-            "playState": "running"
-          },
-          {
-            "name": "pearl-welcome-item",
-            "playState": "running"
-          },
-          {
-            "name": "pearl-welcome-item",
-            "playState": "running"
-          },
-          {
-            "name": "pearl-welcome-item",
             "playState": "running"
           }
         ],
@@ -57,7 +33,6 @@
         "highContrast": false,
         "forcedColors": false,
         "pearlVersions": [
-          "2",
           "2"
         ],
         "textDefects": [],
@@ -68,12 +43,12 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 50,
-        "loadMs": 50,
+        "domContentLoadedMs": 51,
+        "loadMs": 51,
         "transferBytes": 2400,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - region \"Recent scenes and tasks\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio\n- region \"Welcome to Pearl\":\n  - button \"Ask Pearl\"\n  - heading \"Pearl\" [level=1]\n  - paragraph: One small companion that notices, shapes, and carries your work anywhere.\n  - button \"Ask Pearl anything\"\n  - button \"Start a Scene\"\n  - button \"See how Pearl works\"\n  - button \"Get the browser extension\"\n  - button \"Not now — just explore\""
+      "snapshot": "- main:\n  - region \"Recent scenes and tasks\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · import material · triple-click for Studio\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "02-library-laptop",
@@ -120,7 +95,7 @@
         "transferBytes": 2400,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n  - button \"Start a Scene\"\n  - button \"How Pearl works\"\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio\n- button \"How Pearl works\": \"?\""
+      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n  - button \"Start a Scene\"\n  - button \"How Pearl works\"\n  - region \"Recent scenes and tasks\":\n    - button \"New Scene Begin with an empty working set\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · import material · triple-click for Studio\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "03-library-narrow",
@@ -162,12 +137,12 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 62,
-        "loadMs": 63,
+        "domContentLoadedMs": 47,
+        "loadMs": 48,
         "transferBytes": 2400,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n  - button \"Start a Scene\"\n  - button \"How Pearl works\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · triple-click for Studio\n- button \"How Pearl works\": \"?\""
+      "snapshot": "- main:\n  - text: Saved work\n  - heading \"No saved work yet.\" [level=1]\n  - paragraph: Click Pearl to begin here, or select material on a page to create your first saved Pearl.\n  - button \"Start a Scene\"\n  - button \"How Pearl works\"\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · import material · triple-click for Studio\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "03a-trusted-handoff-output-frame",
@@ -209,8 +184,8 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 60,
-        "loadMs": 60,
+        "domContentLoadedMs": 69,
+        "loadMs": 70,
         "transferBytes": 2700,
         "longTasks": 0
       },
@@ -277,7 +252,7 @@
       },
       "metrics": {
         "domContentLoadedMs": 57,
-        "loadMs": 58,
+        "loadMs": 57,
         "transferBytes": 2700,
         "longTasks": 0
       },
@@ -323,8 +298,8 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 98,
-        "loadMs": 99,
+        "domContentLoadedMs": 61,
+        "loadMs": 62,
         "transferBytes": 2700,
         "longTasks": 0
       },
@@ -354,7 +329,9 @@
         "reducedMotion": true,
         "highContrast": false,
         "forcedColors": false,
-        "pearlVersions": [],
+        "pearlVersions": [
+          "2"
+        ],
         "textDefects": [],
         "weakLeading": [],
         "competingGradients": [],
@@ -363,12 +340,12 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 395,
-        "loadMs": 395,
-        "transferBytes": 587474,
+        "domContentLoadedMs": 1216,
+        "loadMs": 1218,
+        "transferBytes": 596604,
         "longTasks": 0
       },
-      "snapshot": "- main:\n  - text: Pearl\n  - heading \"Add Pearl to Chrome\" [level=1]\n  - paragraph: Use the same companion on any page.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Check extension again\"\n  - status: Installation status is unknown. You can check again after installing.\n- button \"How Pearl works\": \"?\""
+      "snapshot": "- main:\n  - text: Pearl\n  - heading \"Add Pearl to Chrome\" [level=1]\n  - paragraph: Use the same companion on any page.\n  - link \"Add Pearl to Chrome\":\n    - /url: /downloads/lens-everywhere-chrome-v1.0.0.zip\n  - button \"Check extension again\"\n  - button \"Back to Pearl\"\n  - status: Installation status is unknown. You can check again after installing.\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\"\n  - text: Click to begin · hold to speak · import material · triple-click for Studio\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "06-command-360-high-contrast",
@@ -389,7 +366,7 @@
           "scrollWidth": 360,
           "clientWidth": 360
         },
-        "animationCount": 7,
+        "animationCount": 10,
         "animations": [
           {
             "name": "companion-orb",
@@ -401,6 +378,18 @@
           },
           {
             "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
             "playState": "running"
           },
           {
@@ -434,12 +423,12 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 439,
-        "loadMs": 442,
-        "transferBytes": 587474,
+        "domContentLoadedMs": 2402,
+        "loadMs": 2402,
+        "transferBytes": 596604,
         "longTasks": 0
       },
-      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\"\n    - group \"Pearl quick actions\":\n      - button \"How Pearl works\"\n      - button \"New Scene\"\n      - button \"Saved work\"\n      - button \"Get the extension\"\n- button \"How Pearl works\": \"?\""
+      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\"\n    - group \"Pearl quick actions\":\n      - button \"How Pearl works\"\n      - button \"Sign in\"\n      - button \"Saved work\"\n      - button \"Account & privacy\"\n      - button \"Encode anything\"\n      - button \"New Scene\"\n      - button \"Get the extension\"\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "07-command-200-zoom-light",
@@ -460,7 +449,7 @@
           "scrollWidth": 720,
           "clientWidth": 720
         },
-        "animationCount": 7,
+        "animationCount": 10,
         "animations": [
           {
             "name": "companion-orb",
@@ -472,6 +461,18 @@
           },
           {
             "name": "physical-pearl-breath",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
+            "playState": "running"
+          },
+          {
+            "name": "pearl-welcome-item",
             "playState": "running"
           },
           {
@@ -505,12 +506,12 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 371,
-        "loadMs": 374,
-        "transferBytes": 587474,
+        "domContentLoadedMs": 1607,
+        "loadMs": 1611,
+        "transferBytes": 596604,
         "longTasks": 0
       },
-      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\"\n    - group \"Pearl quick actions\":\n      - button \"How Pearl works\"\n      - button \"New Scene\"\n      - button \"Saved work\"\n      - button \"Get the extension\"\n- button \"How Pearl works\": \"?\""
+      "snapshot": "- main\n- complementary \"Pearl, idle\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - textbox \"Tell Pearl your goal\":\n      - /placeholder: What do you want?\n    - button \"Send command\": Send\n    - button \"Open Studio\"\n    - group \"Pearl quick actions\":\n      - button \"How Pearl works\"\n      - button \"Sign in\"\n      - button \"Saved work\"\n      - button \"Account & privacy\"\n      - button \"Encode anything\"\n      - button \"New Scene\"\n      - button \"Get the extension\"\n- button \"How Pearl works\": \"?\""
     },
     {
       "name": "08-destructive-approval-390",
@@ -556,9 +557,9 @@
         "legacyPearlNodeCount": 0
       },
       "metrics": {
-        "domContentLoadedMs": 346,
-        "loadMs": 349,
-        "transferBytes": 587474,
+        "domContentLoadedMs": 1738,
+        "loadMs": 1738,
+        "transferBytes": 596604,
         "longTasks": 0
       },
       "snapshot": "- main\n- complementary \"Pearl, approval\":\n  - button \"Pearl. Click to ask, hold to speak, triple-click or press Shift+Enter for Studio, drop material for context, or use arrow keys to move.\" [expanded]\n  - region \"Pearl command\":\n    - region \"Plan approval required\":\n      - text: Delete this profile’s local Pearl metadata? Account data is untouched. A local deletion receipt is created\n      - button \"Confirm\"\n      - button \"Cancel\"\n- button \"How Pearl works\": \"?\""

@@ -2,9 +2,9 @@
   "version": 1,
   "featureBaseline": {
     "version": 1,
-    "features": 64,
-    "minimumCompanionCapabilities": 137,
-    "minimumExtensionCapabilities": 15,
+    "features": 65,
+    "minimumCompanionCapabilities": 139,
+    "minimumExtensionCapabilities": 16,
     "requiredKinds": [
       "move",
       "function",
@@ -29,10 +29,10 @@
   },
   "counts": {
     "requirements": 29,
-    "featureContracts": 64,
+    "featureContracts": 65,
     "domainCommands": 119,
-    "companionCapabilities": 221,
-    "extensionEntries": 88
+    "companionCapabilities": 223,
+    "extensionEntries": 89
   },
   "requirements": [
     {
@@ -57,6 +57,7 @@
         "companion.mother-orbit",
         "companion.pearl-gauntlet",
         "pearl.organize",
+        "pearl.role-scaffold",
         "pearl.counter",
         "pearl.gauntlet-evaluation",
         "highlight.explicit-go",
@@ -64,8 +65,7 @@
         "persistence.account-adoption",
         "extension.distribution",
         "companion.destructive-clear",
-        "companion.effect-trace",
-        "interaction.semantic-transfer"
+        "companion.effect-trace"
       ],
       "domainCommands": [
         "observeWorkspace",
@@ -94,7 +94,7 @@
         "organizePearl",
         "createCounterPearl",
         "evaluateWithGauntlet",
-        "createFunctionFromContent"
+        "createRolePearl"
       ],
       "webEntries": [
         "client/lib/companion-observation.js",
@@ -117,11 +117,10 @@
         "shared/companion-pearl-orbit.js",
         "extension/src/sidepanel/sidepanel.css",
         "client/components/PearlStudioView.jsx",
+        "client/components/CompanionChat.jsx",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
-        "client/components/CompanionChat.jsx",
-        "client/components/GhostCursor.jsx:ghost-cursor-effect-status",
-        "client/App.jsx:resolveLeftColumnSemanticTarget"
+        "client/components/GhostCursor.jsx:ghost-cursor-effect-status"
       ],
       "companionCapabilities": [
         "transformMaterial",
@@ -182,6 +181,9 @@
         "organizePearl",
         "createCounterPearl",
         "evaluateWithGauntlet",
+        "createRolePearl",
+        "openPearlStudio",
+        "chooseResultDestination",
         "captureScreenAsEvidence",
         "cancelPendingBrush",
         "moveAiNode",
@@ -189,7 +191,6 @@
         "clearWorkspaceDomains",
         "clearFunctions",
         "clearLenses",
-        "semanticTransfer",
         "capturePageSelection",
         "openExternalArtifact",
         "pressExternalGo",
@@ -217,10 +218,10 @@
         "organizeExternalPearl",
         "createExternalCounterPearl",
         "evaluateExternalWithGauntlet",
+        "createExternalRolePearl",
         "captureExternalVisibleTab",
         "previewExternalGo",
-        "showExternalLibraryImport",
-        "saveExternalCaptureAsFunction"
+        "showExternalLibraryImport"
       ],
       "extensionEntries": [
         "capturePageSelection",
@@ -250,10 +251,10 @@
         "organizeExternalPearl",
         "createExternalCounterPearl",
         "evaluateExternalWithGauntlet",
+        "createExternalRolePearl",
         "captureExternalVisibleTab",
         "previewExternalGo",
-        "showExternalLibraryImport",
-        "saveExternalCaptureAsFunction"
+        "showExternalLibraryImport"
       ],
       "persistenceAndMigrations": [
         "lens.unified-workspace.v2",
@@ -294,13 +295,14 @@
         "shared/companion-pearl-gauntlet.test.js",
         "shared/lens-runtime.test.js",
         "shared/pearl-organize.test.js",
+        "shared/role-pearl-scaffold.test.js",
+        "extension/tests/core.test.js",
         "client/lib/ai-layout.test.js",
         "client/lib/board-sync.test.js",
         "shared/lens-library.test.js",
         "extension/tests/release.test.js",
         "client/lib/companion-plan.test.js",
-        "client/lib/director.test.js",
-        "shared/drop-intent-resolver.test.js"
+        "client/lib/director.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -324,14 +326,14 @@
         "shared/companion-pearl-orbit.js",
         "shared/companion-pearl-gauntlet.js",
         "shared/pearl-organize.js",
+        "shared/role-pearl-scaffold.js",
         "shared/pearl-counter.js",
         "shared/pearl-gauntlet-eval.js",
         "shared/lens-runtime.js",
         "client/lib/board-sync.js",
         "extension/scripts/package.mjs",
         "client/lib/companion-plan.js",
-        "client/lib/director.js",
-        "shared/drop-intent-resolver.js"
+        "client/lib/director.js"
       ],
       "reachable": true
     },
@@ -3036,5 +3038,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-23T20:49:59.336Z"
+  "generatedAt": "2026-07-23T21:51:08.412Z"
 }

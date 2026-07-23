@@ -587,12 +587,68 @@ function App() {
         name: args.name,
         material: args.material || session.fragments.at(-1),
         idempotencyKey: args.idempotencyKey || id,
+        orb: args.orb,
       });
       if (!value?.pearl) throw new Error("Pearl could not be created");
       await persistSemanticOrbs(value.semanticOrbs || [...semanticOrbs, value.pearl], value.activeSemanticOrbId || id);
       setActiveView("orbs");
       setReadyMessage(`Pearl “${value.pearl.name}” is saved with its source and ready to reopen.`);
       return { type: "external-semantic-orb", id, orb: value.pearl };
+    }
+    if (name === "create-role") {
+      const { buildInvestorRolePearlScaffold } = await import("../../../shared/role-pearl-scaffold.js");
+      const scaffold = buildInvestorRolePearlScaffold({
+        utterance: args.utterance || "",
+        role: args.role,
+        firm: args.firm,
+        name: args.name,
+      });
+      const id = args.id || `external-orb:${crypto.randomUUID()}`;
+      const pageMaterial = session.fragments.at(-1) || null;
+      const orb = createSemanticOrb({
+        ...scaffold.pearl,
+        id,
+        sceneId: "extension-captures",
+        workingSet: {
+          ...scaffold.pearl.workingSet,
+          context: [
+            ...(scaffold.pearl.workingSet.context || []),
+            ...(pageMaterial
+              ? [{
+                id: pageMaterial.id || `capture:${id}`,
+                kind: pageMaterial.kind || "page-capture",
+                label: pageMaterial.title || pageMaterial.label || "Page capture",
+                text: pageMaterial.quote || pageMaterial.text || "",
+                url: pageMaterial.url || null,
+                pinned: false,
+              }]
+              : []),
+          ],
+        },
+      });
+      await persistSemanticOrbs([...semanticOrbs, orb], id);
+      if (args.wear !== false) {
+        try {
+          const worn = wearPearlIdInGauntlet(id, { replace: args.replace === true });
+          await publishGauntletOrbit(worn);
+        } catch {
+          // Shelf still holds the pearl when gauntlet is full.
+        }
+      }
+      setActiveView("orbs");
+      setReadyMessage(
+        `Created “${orb.name}” with Investment memo + Diligence + ${scaffold.organization.lenses[0]?.name}. `
+        + `${args.wear !== false ? "Worn on the gauntlet. " : ""}`
+        + "Deterministic scaffold — live firm research needs credentials. Inspect Moves→Functions→Lenses, then evaluate the page.",
+      );
+      setPearlOpen(true);
+      return {
+        type: "external-role-pearl",
+        id,
+        orb,
+        scaffold,
+        effects: ["role-pearl-created", "semantic-orb-created", ...(args.wear !== false ? ["pearl-worn"] : [])],
+      };
     }
     if (name === "merge") {
       const sources = (args.ids || []).map((id) => byId.get(id)).filter(Boolean);
@@ -1378,7 +1434,10 @@ function App() {
           if (!text && (args.capturePage || args.captureScreen)) {
             if (args.captureScreen) {
               try {
-                await action("capture-visible-tab", { authorized: true });
+                const visible = await action("capture-visible-tab", { authorized: true });
+                text = visible?.text || visible?.quote || text;
+                title = visible?.title || title;
+                url = visible?.url || url;
               } catch {
                 // Fall through to selection capture.
               }
@@ -1391,6 +1450,16 @@ function App() {
                 url = captured?.url || url;
               } catch {
                 text = session.fragments?.map((fragment) => fragment.quote || fragment.text).filter(Boolean).join("\n\n") || "";
+              }
+            }
+            if (!text) {
+              try {
+                const page = await action("capture-page-text", { authorized: true, limit: 12_000 });
+                text = page?.text || page?.quote || "";
+                title = page?.title || title;
+                url = page?.url || url;
+              } catch {
+                // Optional page-text capture may be unavailable on restricted tabs.
               }
             }
           }

@@ -133,6 +133,21 @@ export const FEATURE_CONTRACTS = Object.freeze([
     tests: ["shared/pearl-organize.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/pearl-organize.js",
   }),
+  feature("pearl.role-scaffold", {
+    domains: ["scene", "move", "function", "lens"],
+    commands: ["createRolePearl", "createSemanticOrb", "evaluateWithGauntlet"],
+    ui: [
+      "client/components/PearlStudioView.jsx",
+      "client/components/OrbUniverseShell.jsx",
+      "client/components/CompanionChat.jsx",
+      "extension/src/sidepanel/main.jsx",
+    ],
+    companion: ["createRolePearl", "wearPearl", "openPearlStudio", "evaluateWithGauntlet", "chooseResultDestination"],
+    extension: ["createExternalRolePearl", "wearExternalPearl", "evaluateExternalWithGauntlet"],
+    persistence: ["lens.semantic-orbs.v1", "lens.companion.gauntlet.v1"],
+    tests: ["shared/role-pearl-scaffold.test.js", "client/lib/companion-intent.test.js", "extension/tests/core.test.js"],
+    owner: "shared/role-pearl-scaffold.js",
+  }),
   feature("pearl.counter", {
     domains: ["scene", "lens", "move", "function"],
     commands: ["createCounterPearl"],
@@ -672,9 +687,9 @@ export const FEATURE_CONTRACTS = Object.freeze([
 
 export const FEATURE_BASELINE = Object.freeze({
   version: FEATURE_CONTRACT_VERSION,
-  features: 64,
-  minimumCompanionCapabilities: 137,
-  minimumExtensionCapabilities: 15,
+  features: 65,
+  minimumCompanionCapabilities: 139,
+  minimumExtensionCapabilities: 16,
   requiredKinds: ["move", "function", "lens"],
   requiredExports: [
     "shared/library-objects.js:normalizeLibraryObject",

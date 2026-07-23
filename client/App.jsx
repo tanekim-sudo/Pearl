@@ -305,6 +305,7 @@ import {
   parseExtensionDownloadCommand,
   parseFunctionCreationCommand,
   parseFunctionOutputCommand,
+  parseInvestorRolePearlCommand,
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
@@ -12871,17 +12872,141 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
     },
     createSemanticOrb: async (a) => {
+      const organizedOrb = a.orb && typeof a.orb === "object" ? a.orb : null;
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
         command: "createSemanticOrb",
         args: {
           sceneId: a.sceneId || sceneId,
           placement: a.placement,
           material: a.material,
-          orb: a.material ? (a.id ? { id: a.id } : undefined) : { id: a.id, name: a.name || "Untitled pearl" },
-          activate: true,
+          orb: organizedOrb
+            ? {
+              ...organizedOrb,
+              id: organizedOrb.id || a.id,
+              name: organizedOrb.name || a.name || organizedOrb.representation?.label || "Untitled pearl",
+            }
+            : a.material
+              ? (a.id ? { id: a.id, name: a.name } : (a.name ? { name: a.name } : undefined))
+              : { id: a.id, name: a.name || "Untitled pearl" },
+          activate: a.activate !== false,
         },
       });
-      return { effectId: `semantic-orb-created:${receipt.id}`, id: receipt.id };
+      return { effectId: `semantic-orb-created:${receipt.id}`, id: receipt.id, object: receipt.object || receipt };
+    },
+    createRolePearl: async (a, tk, ctx) => {
+      const { buildInvestorRolePearlScaffold } = await import("../shared/role-pearl-scaffold.js");
+      const scaffold = buildInvestorRolePearlScaffold({
+        utterance: a.utterance || a.text || "",
+        role: a.role,
+        firm: a.firm,
+        name: a.name,
+      });
+      tk.caption(a.caption || `scaffold “${scaffold.pearl.name}” with memo, diligence, and investor lens`);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "createRolePearl",
+        args: {
+          sceneId: a.sceneId || sceneId,
+          role: scaffold.role,
+          firm: scaffold.firm,
+          name: scaffold.pearl.name,
+          utterance: a.utterance || a.text || "",
+          placement: a.placement,
+          activate: true,
+          openStudio: a.openStudio !== false,
+          wear: a.wear !== false,
+          materializeLibrary: a.materializeLibrary !== false,
+        },
+      });
+      const pearlId = receipt?.id || receipt?.result?.id || null;
+      const createdFunctions = [];
+      if (a.materializeLibrary !== false) {
+        for (const fn of scaffold.libraryFunctions) {
+          try {
+            const steps = (fn.steps || []).map((s) => (typeof s === "string" ? { name: s, description: "" } : s));
+            const tree = {
+              name: fn.name,
+              description: fn.description || "",
+              steps: steps.map((s) => ({
+                name: s.name,
+                description: s.description || "",
+                prompt: buildDefaultLeafPrompt(s.name, s.description),
+              })),
+            };
+            const { ops, rootId } = treeToOperators(tree, { top: true });
+            const rootOp = ops.find((o) => o.id === rootId);
+            const orderedOps = [rootOp, ...ops.filter((o) => o.id !== rootId)].filter(Boolean);
+            for (const [index, op] of orderedOps.entries()) {
+              setOperators((prev) => (prev.some((entry) => entry.id === op.id) ? prev : [...prev, op]));
+              await tk.wait(index === 0 ? 160 : 200);
+            }
+            syncTransformationRepoForOperator(rootId, rootOp, {
+              isNew: true,
+              stepNames: steps.map((s) => s.name),
+              commitMessage: "created with the companion role pearl",
+            });
+            if (fn.saveAs) ctx.vars[fn.saveAs] = rootId;
+            createdFunctions.push({ id: rootId, name: fn.name });
+          } catch {
+            // Pearl Moves→Functions→Lenses still materialize even if the rail Function fails.
+          }
+        }
+        try {
+          const struct = createEmptyGenerator();
+          if (struct) {
+            const titled = {
+              ...struct,
+              title: scaffold.libraryLens.name,
+              name: scaffold.libraryLens.name,
+              contextPolicy: "bounded",
+              items: scaffold.pearl.workingSet.context.map((entry) => ({
+                id: entry.id,
+                text: entry.text,
+                kind: entry.kind,
+              })),
+            };
+            setLenses((current) => current.map((entry) => (entry.id === struct.id ? titled : entry)));
+            ctx.vars.lastGeneratorId = struct.id;
+            ctx.vars.investorLens = struct.id;
+          }
+        } catch {
+          // Pearl lens layer remains authoritative for Studio.
+        }
+        focusRailPane(RAIL_TRANSFORMATIONS);
+        pulseFunctionsRail();
+      }
+      if (pearlId && a.wear !== false) {
+        try {
+          wearPearlIdInGauntlet(pearlId, { replace: a.replace === true });
+          publishWornOrbit();
+          document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+            detail: { pearlId, semantic: "absorb", durationMs: 420 },
+          }));
+        } catch {
+          // Gauntlet may be full; pearl still exists on the shelf.
+        }
+      }
+      if (pearlId && a.openStudio !== false) {
+        try { await window.__pearlPrivacy?.flush?.(); } catch { /* best effort before Studio remount */ }
+        window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId } }));
+      }
+      await tk.wait(420);
+      const summary = [
+        `Created “${scaffold.pearl.name}”`,
+        `${scaffold.organization.moves.length} Moves`,
+        `${scaffold.organization.functions.length} Functions (Investment memo, Diligence)`,
+        `Lens: ${scaffold.organization.lenses[0]?.name}`,
+        a.wear !== false ? "worn on the gauntlet" : "on the shelf",
+        a.openStudio !== false ? "Studio open" : null,
+      ].filter(Boolean).join(" · ");
+      return {
+        type: "role-pearl",
+        id: pearlId,
+        object: receipt?.object || scaffold.pearl,
+        scaffold,
+        functions: createdFunctions,
+        effects: ["role-pearl-created", "semantic-orb-created", ...(pearlId && a.wear !== false ? ["pearl-worn", "gauntlet-updated"] : [])],
+        visibleText: `${summary}. Deterministic scaffold (live firm research needs credentials) — open Studio to inspect Moves→Functions→Lenses, then apply freely.`,
+      };
     },
     activateSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: a.id } });
@@ -13444,6 +13569,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (!text) {
         const selected = window.getSelection?.()?.toString?.() || "";
         if (selected.trim()) text = selected.trim();
+      }
+      if (!text && (a.capturePage || a.captureScreen)) {
+        // Bounded page material for worn-pearl evaluate/apply when clipboard/selection are empty.
+        try {
+          const main = document.querySelector("main, article, [role='main'], .deck, .slides, body");
+          const raw = String(main?.innerText || document.body?.innerText || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 12_000);
+          if (raw.length >= 40) {
+            text = raw;
+            title = title || document.title || null;
+            url = url || window.location?.href || null;
+          }
+        } catch { /* ignore DOM capture failures */ }
       }
       const evaluation = buildGauntletEvaluationQuery({
         packs,
@@ -17304,6 +17444,31 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
       updateCommand(commandEntry.id, { status: "executed", effects: result.effects || ["cognitive-workflow-updated"] });
       return null;
+    }
+
+    const rolePearl = parseInvestorRolePearlCommand(text);
+    if (rolePearl) {
+      onPhase?.("executing");
+      const step = {
+        verb: rolePearl.verb,
+        args: {
+          ...rolePearl.args,
+          sceneId: sceneId || rolePearl.args.sceneId,
+        },
+      };
+      updateCommand(commandEntry.id, { status: "planned", plan: { title: rolePearl.title, steps: [step] } });
+      const result = await executeCompanionScript([step], { title: rolePearl.title });
+      if (!result.completed) {
+        const error = result.errors?.[0] || "Role pearl creation did not complete";
+        updateCommand(commandEntry.id, { status: "failed", failure: error, effects: result.effects || [] });
+        return { visible: true, text: publicCompanionError(error) };
+      }
+      updateCommand(commandEntry.id, {
+        status: "executed",
+        effects: result.effects || ["role-pearl-created", "semantic-orb-created"],
+      });
+      const visible = result.value?.visibleText;
+      return visible ? { visible: true, text: visible, completed: true } : null;
     }
 
     const functionCreation = parseFunctionCreationCommand(text);

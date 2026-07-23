@@ -223,6 +223,19 @@ test("extension companion manifest and real handlers have exact parity", async (
   assert.equal(orbCursorEnabled, true);
   assert.equal(parseExtensionIntent("make this a new orb called Research").name, "createExternalSemanticOrb");
   assert.deepEqual(parseExtensionIntent("make a pearl from this"), { name: "createExternalSemanticOrb", args: { name: "Untitled pearl" } });
+  const investorUtterance =
+    "I'm an investor at S32 and I want you to research a pearl and make me a pearl that has an investment memo function and a diligence function that understands my lens as an investor.";
+  assert.equal(parseExtensionIntent(investorUtterance).name, "createExternalRolePearl");
+  let roleAction = null;
+  await executeExtensionVerb("createExternalRolePearl", { utterance: investorUtterance, wear: true }, {
+    animate: async () => {},
+    semanticOrbAction: async (name, args) => {
+      roleAction = { name, args };
+      return { type: "external-role-pearl", id: "role-1" };
+    },
+  });
+  assert.equal(roleAction.name, "create-role");
+  assert.match(roleAction.args.utterance, /S32/);
   let semanticAction = null;
   const createdOrb = await executeExtensionVerb("createExternalSemanticOrb", { id: "orb-1", name: "Research" }, {
     animate: async () => {},
