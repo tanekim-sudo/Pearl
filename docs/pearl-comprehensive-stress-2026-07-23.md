@@ -1,9 +1,9 @@
 # Pearl Comprehensive Stress Ledger — 2026-07-23
 
 - Standard: docs/pearl-stress-standard.md
-- Generated: 2026-07-24T01:23:33.454Z
+- Generated: 2026-07-24T01:25:23.618Z
 - Commit: 92e3331
-- Base URL: http://127.0.0.1:41812
+- Base URL: http://127.0.0.1:41822
 - Headed: false
 - Score: 126/126 checks
 - Defects: P0=0 P1=0 P2=0
@@ -84,10 +84,10 @@ skip
 - PASS [P0] create-go-hit-test: hit={"testid":"companion-go","tag":"BUTTON","text":"GO"}
 - PASS [P0] create-user-echo: user message before reply
 - PASS [P0] create-status-during-run: status=true probe=true
-- PASS [P0] create-director-animation: {"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":27,"uniquePositions":27,"maxTravelPx":488.1570141143114,"motionEventCount":16,"motionEvents":["cursor-move-start","cursor-move-complete","gesture-press","gesture-release"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Working…","Demonstrating — Make a pearl…"],"reducedMotion":false,"scriptTitle":"Make a pearl"}
+- PASS [P0] create-director-animation: {"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":27,"uniquePositions":27,"maxTravelPx":488.07866645961894,"motionEventCount":16,"motionEvents":["cursor-move-start","cursor-move-complete","gesture-press","gesture-release"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Working…","Demonstrating — Make a pearl…"],"reducedMotion":false,"scriptTitle":"Make a pearl"}
 - PASS [P0] create-mid-animation-shot: captured
-- PASS [P0] create-pearl-persisted: 8fd89cda-de9a-4d72-96ad-386960e3b673 / core stress reef notes
-- PASS [P0] create-survives-reload: restored 8fd89cda-de9a-4d72-96ad-386960e3b673
+- PASS [P0] create-pearl-persisted: 95fb7db4-c9f6-43fa-967c-afae562fc570 / core stress reef notes
+- PASS [P0] create-survives-reload: restored 95fb7db4-c9f6-43fa-967c-afae562fc570
 - PASS [P0] create-no-duplicate-on-reload: count of id=1
 - PASS [P0] reef-home-reachable: Reef home after create
 - PASS [P0] studio-opens: Studio chrome visible
@@ -96,14 +96,14 @@ skip
 - PASS [P0] scene-runtime-ready: runtime on seeded scene
 - PASS [P1] gauntlet-five-sockets: sockets=5 (0 ok if legend-only until expand)
 - PASS [P0] wear-effect: filled=1 wearOk=true err=
-- PASS [P1] wear-director-animation: {"wearMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":19,"uniquePositions":19,"maxTravelPx":196.90283269673904,"motionEventCount":8,"motionEvents":["cursor-move-start","cursor-move-complete"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demonstrating — Wear stress pearl…"],"reducedMotion":false,"scriptTitle":"Wear stress pearl"}
+- PASS [P1] wear-director-animation: {"wearMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":19,"uniquePositions":19,"maxTravelPx":196.84150578828644,"motionEventCount":8,"motionEvents":["cursor-move-start","cursor-move-complete"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demonstrating — Wear stress pearl…"],"reducedMotion":false,"scriptTitle":"Wear stress pearl"}
 - PASS [P0] gauntlet-fill-to-5: filled=5
 - PASS [P0] gauntlet-refuses-6th: blocked=true filled=5 sixth={"threw":false,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"worn-pearl","status":"full","effects":[],"visibleText":"Gauntlet is full (5 active pearls). Remove one before wearing another."}],
 - PASS [P0] gauntlet-survives-reload: filled after reload=5
 - PASS [P1] organize-real-effect: M=2 F=Risk scan L=Skeptical reading
-- PASS [P1] merge-creates-pearl: id=021babf6-30d8-4222-8262-fd294d0c4f30 sourcesKept=true
-- PASS [P1] synthesize-sources-intact: sourcesIntact=true synthPearl=82e40be5-9ee1-4c29-8b7a-c4a94ffc9248 {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-synthesized:82e40be5-9ee1-4c29-8b7a-c4a94ffc9248","id":"82e40be5-9ee1-4c29
-- PASS [P0] evaluate-no-fake-success: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"gauntlet-evaluation","id":"s-4i466ny","object":{"version":1,"ok":true,"reason":"Ready to evaluate 27 characters through 5 gauntlet pearls.","requiresModel
+- PASS [P1] merge-creates-pearl: id=03a021ed-5bab-4115-99c0-3b3627e20744 sourcesKept=true
+- PASS [P1] synthesize-sources-intact: sourcesIntact=true synthPearl=6c3c07e9-b3a3-4048-8a43-b9fe7acfd407 {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-synthesized:6c3c07e9-b3a3-4048-8a43-b9fe7acfd407","id":"6c3c07e9-b3a3-4048
+- PASS [P0] evaluate-no-fake-success: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"gauntlet-evaluation","id":"s-pr65rmh","object":{"version":1,"ok":true,"reason":"Ready to evaluate 27 characters through 5 gauntlet pearls.","requiresModel
 - PASS [P0] confirm-strip-visible: Accept/Reject strip in chat
 - PASS [P0] confirm-accept-reject-visible: accept=true reject=true
 - PASS [P0] confirm-not-false-done: staged or clear confirm
@@ -117,18 +117,18 @@ skip
 - PASS [P1] narrow-no-orb-copy: clean
 - PASS [P0] drag-moves-not-clones: before=1 after=1
 - PASS [P1] keyboard-escape-collapses: expanded=0
-- PASS [P0] role-pearl-created: id=a4eb4516-61cb-491d-9699-ea9a64058365 name=Stress Investor Pearl
+- PASS [P0] role-pearl-created: id=7972e50a-9529-454f-b2eb-d5410fc30be6 name=Stress Investor Pearl
 - PASS [P0] role-pearl-superpowers-structure: M=4 F=Investment memo,Diligence L=Stress Capital investor lens
 - PASS [P1] role-pearl-wear-optional: worn=true filled=1
 - PASS [P1] role-pearl-director: {"roleMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":1,"uniquePositions":1,"maxTravelPx":0,"motionEventCount":0,"motionEvents":[],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demo
-- PASS [P0] role-pearl-survives-reload: a4eb4516-61cb-491d-9699-ea9a64058365
-- PASS [P0] encode-conversation-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"conversation-pearl","id":"a927d475-8489-48bb-b040-2c1ff3820431","object":{"pearlId":"a927d475-8489-48bb-b040-2c1ff3820431","function":{"name":"Stress Encoded Chat Pearl","description":"Reusable 
+- PASS [P0] role-pearl-survives-reload: 7972e50a-9529-454f-b2eb-d5410fc30be6
+- PASS [P0] encode-conversation-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"conversation-pearl","id":"0586ba1a-c923-411c-8d5d-313f136719f3","object":{"pearlId":"0586ba1a-c923-411c-8d5d-313f136719f3","function":{"name":"Stress Encoded Chat Pearl","description":"Reusable 
 - PASS [P0] encode-conversation-no-fake-done: honest
 - PASS [P1] encode-anything-opens: panel=1 ok=true
-- PASS [P1] compile-automation-reviewable: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:7faab1b2-0db4-45f6-803c-ef2f425f10be","object":{"id":"stress-automation-1784856280333","stableId":"stress-automation-1784856280333"
-- PASS [P1] counter-pearl-effect: id=306efc42-44b3-4b69-87f2-873354ba61e8 sourceKept=true
-- PASS [P1] nest-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-nested:stress-pearl-1784856281209-2","id":"stress-pearl-1784856281209-2"}],"value":{"type":"action-result","effect
-- PASS [P1] split-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-split:stress-pearl-1784856281209-3","id":"stress-pearl-1784856281209-3"}],"value":{"type":"action-result","effectI
+- PASS [P1] compile-automation-reviewable: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:4034c8bb-6ccd-47a8-96b2-e56af64456c3","object":{"id":"stress-automation-1784856391268","stableId":"stress-automation-1784856391268"
+- PASS [P1] counter-pearl-effect: id=b29d23ce-4f0f-45d7-8282-9926796870e8 sourceKept=true
+- PASS [P1] nest-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-nested:stress-pearl-1784856392120-2","id":"stress-pearl-1784856392120-2"}],"value":{"type":"action-result","effect
+- PASS [P1] split-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-split:stress-pearl-1784856392120-3","id":"stress-pearl-1784856392120-3"}],"value":{"type":"action-result","effectI
 - PASS [P0] generation-no-fake-success: {"ok":true,"result":{"completed":false,"aborted":false,"errors":["no readable material matched the requested targets"],"results":[],"effects":[]}}
 - PASS [P1] output-frame-opens: opened=true label=2
 - PASS [P1] output-frame-escape: stillOpen=0 label=0
@@ -147,16 +147,16 @@ skip
 - PASS [P1] empty-recovery-create-works: elapsedMs=1778 echo=true status=false
 - PASS [P2] performance-no-obvious-hang: create path elapsedMs=1778
 - PASS [P0] naming-no-orb-fresh: clean
-- PASS [P1] compose-layers-effect: {"ok":true,"pearlId":"stress-pearl-1784856239081-1","leftId":"move-1784856239081","rightId":"fn-1784856239081","result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:875819b4-1663-4aec-afa2-4a4c55315bf9","object":{"ti
-- PASS [P1] version-snapshot-browse: {"ok":true,"pearlId":"8fd89cda-de9a-4d72-96ad-386960e3b673","label":"Stress checkpoint 1784856294549","checkpointId":"pearl-checkpoint:79b51f20-dfa0-4ef5-9d15-8f18630c6306","snapOk":true,"browseOk":true,"versionCount":2,"restoreOk":true,"snap":{"completed":true,"aborted":false,"e
-- PASS [P1] version-restore-effect: restored=true id=pearl-checkpoint:79b51f20-dfa0-4ef5-9d15-8f18630c6306
+- PASS [P1] compose-layers-effect: {"ok":true,"pearlId":"stress-pearl-1784856350187-1","leftId":"move-1784856350187","rightId":"fn-1784856350187","result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:b141719a-47fa-4fea-9e33-ae7d830d9537","object":{"ti
+- PASS [P1] version-snapshot-browse: {"ok":true,"pearlId":"stress-automation-1784856391268","label":"Stress checkpoint 1784856406150","checkpointId":"pearl-checkpoint:9aefdaa6-a36f-4249-a7b1-e59400befc8c","snapOk":true,"browseOk":true,"versionCount":3,"restoreOk":true,"restoreErrors":[],"snap":{"completed":true,"abo
+- PASS [P1] version-restore-effect: restored=true id=pearl-checkpoint:9aefdaa6-a36f-4249-a7b1-e59400befc8c errors=[]
 - PASS [P1] shell-route-library: Reef Reef · where pearls live Companion HOME OF PEARLS Reef Pearls form, play, and expand here. Talk to your Companion 
 - PASS [P1] shell-route-toolbox: Reef Reef · where pearls live Companion HOME OF PEARLS Reef Pearls form, play, and expand here. Talk to your Companion 
 - PASS [P1] shell-route-settings: Reef Settings · saved tools & settings Companion YOUR PEARLS — OPEN ONE, OR ASK COMPANION TO WEAR IT Stress Pearl 1 Pe
 - PASS [P1] shell-route-install: ← Reef (home) Install · browser extension Install Pearl in Chrome Add Pearl, then press Check again. Add Pearl to Chro
 - PASS [P0] no-user-facing-orb-primary: clean
 - PASS [P0] no-fatal-page-errors: none
-- PASS [P0] storage-stable-ids: tracked create ids=8fd89cda-de9a-4d72-96ad-386960e3b673 libBefore=2
+- PASS [P0] storage-stable-ids: tracked create ids=95fb7db4-c9f6-43fa-967c-afae562fc570 libBefore=2
 - PASS [P2] aesthetic:01-welcome: pass: Clean first viewport: Companion Pearl + Just talk + Talk CTA dominate. Low clutter, clear hierarchy, no orb copy. Footer gauntlet hint is tiny but secondary.
 - PASS [P2] aesthetic:02-after-talk: pass: Reef + open Companion readable. Your Reef title intact. Demo chips contrast improved. Talk CTA still visible behind chat on desktop (acceptable redundancy).
 - PASS [P2] aesthetic:03-create-mid-anim: pass: Director mid-frame: stop demonstration + chat status/trail readable; ghost cursor present; gauntlet not stacked with labels. Motion looks intentional.

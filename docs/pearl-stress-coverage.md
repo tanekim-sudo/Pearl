@@ -3,7 +3,7 @@
 Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)
 Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`
 Evidence: `audit-shots/pearl-comprehensive-stress-2026-07-23/`
-Last run commit: 92e3331 · 2026-07-24T01:23:33.454Z
+Last run commit: 92e3331 · 2026-07-24T01:25:23.618Z
 Score: 126/126 · P0=0 P1=0 P2=0
 
 ## Claimed vs stressed
