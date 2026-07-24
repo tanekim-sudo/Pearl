@@ -37,8 +37,10 @@ import {
   recordAndLogExecution,
 } from "../../shared/execution-result.js";
 
-const SpeechRecognitionImpl =
-  typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+function resolveSpeechRecognition() {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
 const MODE_KEY = "lens.companion.mode.v1";
 const PENDING_PLAN_KEY = "lens.companion.pending-plan.v1";
 const CHAT_MESSAGES_KEY = "lens.companion.chat-messages.v1";
@@ -720,6 +722,8 @@ export default function CompanionChat({
 
     const attach = () => {
       if (!session.isActive() || generation !== voiceGenerationRef.current) return;
+      const SpeechRecognitionImpl = resolveSpeechRecognition();
+      if (!SpeechRecognitionImpl) throw new Error("speech-recognition-unavailable");
       const rec = new SpeechRecognitionImpl();
       rec.lang = navigator.language || "en-US";
       rec.interimResults = true;
@@ -778,7 +782,7 @@ export default function CompanionChat({
       endVoiceSession({ send: true });
       return;
     }
-    if (!SpeechRecognitionImpl) {
+    if (!resolveSpeechRecognition()) {
       setMessages((m) => [...m, {
         role: "companion",
         text: "Voice isn’t available in this browser. Type your goal in the chat and press GO.",

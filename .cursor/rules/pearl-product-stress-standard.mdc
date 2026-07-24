@@ -1,0 +1,18 @@
+---
+description: Pearl Product Stress Standard — mandatory evaluation bar for any feature or flow
+alwaysApply: true
+---
+
+# Pearl Product Stress Standard
+
+Canonical detail: `docs/pearl-stress-standard.md`. Coverage ledger: `docs/pearl-stress-coverage.md`. Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`.
+
+Whenever you audit, stress, review, or claim completion for **any** new or existing feature/flow:
+
+1. Run (or extend) the headed Pearl stress harness against this standard — not unit tests alone.
+2. Evaluate from a **first-time / clueless user** with **zero demand**: no required modes, tours, or jargon.
+3. Cover all lenses in the standard doc: aesthetics (Read real PNGs), usability, functionality (real effects + hit-test), persistence, companion/director honesty, communication, vision alignment, accessibility, error/empty/recovery, performance feel, trust, cross-surface, naming consistency, undo/confirm.
+4. Prefer fixing broken claimed paths over documenting them as acceptable.
+5. Never claim production-ready / perfect / fully working / state of the art unless evidence supports that exact claim. State credential, mic, extension, and auth gaps explicitly.
+
+Hard fails: navigation traps, inaccessible primary action, fake Done, silent data loss/dupes, companion fake success, white-dot Pearl fallback, user-facing "orb", gauntlet >5, Studio not M→F→L when structure exists.

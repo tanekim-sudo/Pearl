@@ -31,6 +31,7 @@
     "test:pearl-shell": "node --test client/lib/pearl-shell.test.js",
     "graph:generate": "node scripts/companion-capability-graph-gate.mjs --update",
     "graph:check": "node scripts/companion-capability-graph-gate.mjs",
+    "stress:pearl": "node scripts/pearl-core-stress.mjs",
     "release:check:fast": "node scripts/release-check.mjs --fast",
     "release:check": "node scripts/release-check.mjs",
     "start": "node server/index.js",

@@ -96,8 +96,10 @@ import {
 export { collectReefPearls, findWorkspacePearl, isReefHomePath } from "../lib/reef-home.js";
 
 export const ORB_CONTINUE_KEY = "lens.orb-universe.continued.v1";
-const SpeechRecognitionImpl =
-  typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+function resolveSpeechRecognition() {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
 let initialHandoffFragment = null;
 if (typeof location !== "undefined" && location.hash) {
   const candidate = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -2189,7 +2191,7 @@ export default function OrbUniverseShell({ StageComponent }) {
                 onOpenEncode={() => openEmittedView("encode")}
               />
             : emittedView === "encode"
-              ? <EncodeAnythingPanel onClose={() => setEmittedView(null)} onCompiled={({ pearl, entity }) => {
+              ? <EncodeAnythingPanel embedded onClose={() => setEmittedView(null)} onCompiled={({ pearl, entity }) => {
                 setPrivacyNotice({ title: "Automation Pearl saved locally", detail: "Review before enabling model or research disclosure." });
                 if (route.kind === "stage") {
                   const evidenceText = (pearl?.material?.evidence || pearl?.evidence || [])
@@ -2347,7 +2349,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   function beginVoice() {
     if (activeRunAbortRef.current) stopOrb();
     finishVoice({ send: false });
-    if (!SpeechRecognitionImpl) {
+    if (!resolveSpeechRecognition()) {
       window.dispatchEvent(new CustomEvent("lens:companion-expand"));
       window.dispatchEvent(new CustomEvent("lens:companion-notice", {
         detail: {
@@ -2398,6 +2400,8 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
     const attach = () => {
       if (!session.isActive() || generation !== voiceGenerationRef.current) return;
+      const SpeechRecognitionImpl = resolveSpeechRecognition();
+      if (!SpeechRecognitionImpl) throw new Error("speech-recognition-unavailable");
       const recognition = new SpeechRecognitionImpl();
       recognition.lang = navigator.language || "en-US";
       recognition.interimResults = true;

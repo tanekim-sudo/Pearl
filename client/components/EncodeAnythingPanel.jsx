@@ -33,7 +33,7 @@ function persistAutomationPearl(pearl) {
   return entity;
 }
 
-export default function EncodeAnythingPanel({ onClose, onCompiled }) {
+export default function EncodeAnythingPanel({ onClose, onCompiled, embedded = false }) {
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState("");
   const [slot, setSlot] = useState("instructions");
@@ -101,11 +101,13 @@ export default function EncodeAnythingPanel({ onClose, onCompiled }) {
     }
   }
 
-  return <section className="pearl-encode-panel" aria-label="Encode anything into a Pearl">
-    <header>
-      <b>Encode anything</b>
-      <button type="button" onClick={onClose}>Close</button>
-    </header>
+  return <section className="pearl-encode-panel" aria-label="Encode anything into a Pearl" data-embedded={embedded ? "true" : undefined}>
+    {!embedded && (
+      <header>
+        <b>Encode anything</b>
+        <button type="button" onClick={onClose}>Close</button>
+      </header>
+    )}
     <p>Optional bulk drop surface. Prefer telling Pearl in the companion — voice or text — while switching tabs to show formats; Pearl captures screen context, clarifies vagueness, then compiles a reviewable Automation Pearl. Firm material stays local until you approve model or research.</p>
     <div
       className="pearl-encode-drop"

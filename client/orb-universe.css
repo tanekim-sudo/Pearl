@@ -1563,6 +1563,18 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
+/* Reduced motion: never leave welcome copy stuck at animation-fill opacity:0. */
+@media (prefers-reduced-motion: reduce) {
+  .pearl-welcome-mark,
+  .pearl-welcome h1,
+  .pearl-welcome > p,
+  .pearl-welcome-actions,
+  .pearl-welcome-dismiss {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
 
 .pearl-guide-button {
   position: fixed;

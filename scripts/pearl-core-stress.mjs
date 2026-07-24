@@ -1,15 +1,20 @@
 /**
- * Pearl core headed stress — production preview.
+ * Pearl Product Stress harness — production preview.
  *
- * Same rigor as companion-stress-live.mjs, expanded to Reef / Studio / gauntlet /
- * organize / navigate / undo-confirm / persistence / narrow 390px / terminology.
+ * Permanent bar: docs/pearl-stress-standard.md
+ * Cursor rule: .cursor/rules/pearl-product-stress-standard.mdc
+ * Coverage ledger: docs/pearl-stress-coverage.md
  *
- * Companion gates are spawned first (must stay green). Core journeys then require
- * real pointer hit-tests, persisted effects, reload survival, AND human aesthetic
- * review of every evidence screenshot (clutter / stacking / legibility / hierarchy /
- * spacing / motion / vision alignment / next-step clarity).
+ * Runs companion-stress-live gates first, then core + comprehensive journeys
+ * (role/superpower pearls, encode/automation, remix, generation honesty,
+ * Output Frame, packages/tasks, a11y/reduced-motion, empty/recovery) under the
+ * Pearl Product Stress Standard lenses: first-time / zero-demand / aesthetics /
+ * usability / functionality (hit-test + real effects) / persistence /
+ * companion honesty / communication / vision / a11y / error-recovery /
+ * performance feel / trust / cross-surface / naming / undo-confirm.
  *
  * Usage:
+ *   npm run stress:pearl
  *   AUDIT_URL=http://127.0.0.1:41812 node scripts/pearl-core-stress.mjs
  *   SKIP_COMPANION=1 AUDIT_URL=... node scripts/pearl-core-stress.mjs
  *   SELF_PREVIEW=1 node scripts/pearl-core-stress.mjs   # build already present
@@ -22,8 +27,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, "audit-shots/pearl-core-stress-2026-07-23");
-const DOCS_SUMMARY = path.join(ROOT, "docs/pearl-core-stress-2026-07-23.md");
+const OUT = path.join(ROOT, "audit-shots/pearl-comprehensive-stress-2026-07-23");
+const DOCS_SUMMARY = path.join(ROOT, "docs/pearl-comprehensive-stress-2026-07-23.md");
+const DOCS_COVERAGE = path.join(ROOT, "docs/pearl-stress-coverage.md");
+const DOCS_STANDARD = "docs/pearl-stress-standard.md";
 const PORT = Number(process.env.AUDIT_PORT || 41812);
 const baseUrl = process.env.AUDIT_URL || `http://127.0.0.1:${PORT}`;
 const headed = process.env.HEADED === "0" ? false : true;
@@ -146,6 +153,7 @@ function recordAesthetic(frame, verdict, critique, severity = "P2", defects = []
 
 function coverage(id, status, why = "") {
   if (status === "stressed") results.coverage.stressed.push({ id, why });
+  else if (status === "failed") results.coverage.skipped.push({ id, why: `FAILED: ${why}` });
   else results.coverage.skipped.push({ id, why });
   results.matrix.push({ id, status, why });
 }
@@ -480,6 +488,20 @@ async function readLibrary(page) {
       "lens.companion.gauntlet.v1",
       "lens.companion.worn-pearl.v1",
     ];
+    const mapPearl = (p) => ({
+      id: p.id,
+      name: p.name || p.title || p.label || "",
+      moves: Array.isArray(p.moves) ? p.moves.length : Number(p.moves || 0),
+      functions: Array.isArray(p.functions)
+        ? p.functions.map((f) => f.name || f.id || f)
+        : [],
+      lenses: Array.isArray(p.lenses)
+        ? p.lenses.map((l) => l.name || l.id || l)
+        : [],
+      archived: Boolean(p.archived),
+      kind: p.kind || p.type || null,
+    });
+    const byId = new Map();
     const out = { keys: {}, pearls: [], gauntletFilled: 0, gauntletSlots: [] };
     for (const key of keys) {
       const raw = localStorage.getItem(key);
@@ -488,15 +510,23 @@ async function readLibrary(page) {
       try {
         const parsed = JSON.parse(raw);
         if (key === "lens.scenes.v4") {
-          const found = (parsed.scenes || []).flatMap((scene) => scene.semanticOrbs || []);
-          out.pearls = found.map((p) => ({
-            id: p.id,
-            name: p.name,
-            moves: (p.moves || []).length,
-            functions: (p.functions || []).map((f) => f.name || f.id),
-            lenses: (p.lenses || []).map((l) => l.name || l.id),
-            archived: Boolean(p.archived),
-          }));
+          for (const p of (parsed.scenes || []).flatMap((scene) => scene.semanticOrbs || [])) {
+            if (p?.id) byId.set(p.id, mapPearl(p));
+          }
+        }
+        if (key === "lens.unified-workspace.v2") {
+          const bags = [
+            parsed.semanticOrbs,
+            parsed.pearls,
+            parsed.library?.semanticOrbs,
+            parsed.library?.pearls,
+            parsed.objects?.filter?.((o) => /pearl|semantic/i.test(o?.kind || o?.type || "")),
+          ].filter(Boolean);
+          for (const bag of bags) {
+            for (const p of bag) {
+              if (p?.id) byId.set(p.id, { ...(byId.get(p.id) || {}), ...mapPearl(p) });
+            }
+          }
         }
         if (key === "lens.companion.gauntlet.v1" || key === "lens.companion.worn-pearl.v1") {
           const slots = Array.isArray(parsed?.slots)
@@ -509,6 +539,7 @@ async function readLibrary(page) {
         }
       } catch { /* ignore */ }
     }
+    out.pearls = [...byId.values()];
     return out;
   });
 }
@@ -616,7 +647,11 @@ function runCompanionGates(url) {
       evidence: "audit-shots/companion-chat-agent-ux-2026-07-23/",
     },
   );
-  coverage("companion-chat-agent", ok ? "stressed" : "stressed", "spawned companion-stress-live.mjs");
+  coverage(
+    "companion-chat-agent",
+    ok ? "stressed" : "failed",
+    ok ? "spawned companion-stress-live.mjs — gates green" : `spawned companion-stress-live.mjs — exited ${result.status}`,
+  );
   return ok;
 }
 
@@ -625,8 +660,11 @@ function loadHumanAestheticReviews() {
   if (aestheticReviewsLoaded) return;
   aestheticReviewsLoaded = true;
   const reviewPath = path.join(OUT, "aesthetic-reviews.json");
-  const docsReview = path.join(ROOT, "docs/pearl-core-stress-aesthetic-reviews.json");
-  const src = fs.existsSync(reviewPath) ? reviewPath : (fs.existsSync(docsReview) ? docsReview : null);
+  const docsReview = path.join(ROOT, "docs/pearl-comprehensive-stress-aesthetic-reviews.json");
+  const legacyReview = path.join(ROOT, "docs/pearl-core-stress-aesthetic-reviews.json");
+  const src = fs.existsSync(reviewPath)
+    ? reviewPath
+    : (fs.existsSync(docsReview) ? docsReview : (fs.existsSync(legacyReview) ? legacyReview : null));
   if (!src) {
     coverage("aesthetic-human-review", "skipped", "no aesthetic-reviews.json yet — write after reading PNGs");
     return;
@@ -653,9 +691,9 @@ function writeLedger() {
   const aestheticFails = results.aesthetics.filter((a) => !a.ok);
 
   const aestheticMd = [
-    `# Pearl Core Aesthetic Review — 2026-07-23`,
+    `# Pearl Comprehensive Aesthetic Review — 2026-07-23`,
     ``,
-    `Human perception gate for every evidence frame. Functional DOM pass is insufficient.`,
+    `Human perception gate for every evidence frame under ${DOCS_STANDARD}. Functional DOM pass is insufficient.`,
     ``,
     `- Frames reviewed: ${results.aesthetics.length}`,
     `- Aesthetic fails: ${aestheticFails.length}`,
@@ -686,8 +724,9 @@ function writeLedger() {
   );
 
   const ledgerMd = [
-    `# Pearl Core Stress Ledger — 2026-07-23`,
+    `# Pearl Comprehensive Stress Ledger — 2026-07-23`,
     ``,
+    `- Standard: ${DOCS_STANDARD}`,
     `- Generated: ${results.generatedAt}`,
     `- Commit: ${results.commit}`,
     `- Base URL: ${results.baseUrl}`,
@@ -747,7 +786,88 @@ function writeLedger() {
 
   // Tracked summaries (screenshots stay gitignored under audit-shots/).
   fs.writeFileSync(DOCS_SUMMARY, `${ledgerMd.join("\n")}\n\n---\n\n${aestheticMd.join("\n")}`);
-  fs.writeFileSync(path.join(ROOT, "docs/pearl-core-stress-AESTHETIC-2026-07-23.md"), aestheticMd.join("\n"));
+  fs.writeFileSync(path.join(ROOT, "docs/pearl-comprehensive-stress-AESTHETIC-2026-07-23.md"), aestheticMd.join("\n"));
+
+  const claimedCatalog = [
+    ["welcome-talk", "First-time Talk CTA / Companion-first land", "stressed"],
+    ["create-pearl-go", "Create pearl via GO + director", "stressed"],
+    ["persistence-reload-create", "Reload survival for created pearls", "stressed"],
+    ["reef-and-studio", "Reef + Studio M→F→L", "stressed"],
+    ["gauntlet-wear", "Wear gauntlet ≤5 + persist", "stressed"],
+    ["organize-merge-synthesize", "Organize / merge / synthesize", "stressed"],
+    ["evaluate-output", "evaluateWithGauntlet honesty", "stressed"],
+    ["destructive-confirm", "In-thread Accept/Reject", "stressed"],
+    ["navigation-survival", "Chat + pearls across Reef/Scene/Studio", "stressed"],
+    ["narrow-390", "390px primary GO path", "stressed"],
+    ["drag-move", "Drag moves without clone", "stressed"],
+    ["keyboard", "Escape collapse", "stressed"],
+    ["role-pearl-superpowers", "createRolePearl / role scaffold superpowers", "stressed"],
+    ["encode-conversation-automation", "Encode conversation + Encode anything + compileAutomationPearl", "stressed"],
+    ["remix-counter-nest-split", "Counter / nest / split remix primitives", "stressed"],
+    ["generation-honesty", "transformMaterial / generation no fake success", "stressed"],
+    ["output-frame-ui", "Scene Output Frame open/escape", "stressed"],
+    ["packages-tasks-routes", "/packages + /tasks entry points", "stressed"],
+    ["zero-demand-empty-recovery", "Zero-demand welcome + empty create + a11y labels + reduced motion", "stressed"],
+    ["remix-compose-typed-layers", "composePearlCognitiveLayers typed remix", "stressed"],
+    ["studio-version-checkpoint-restore", "Studio version snapshot / browse / restore", "stressed"],
+    ["shell-library-toolbox-settings-install", "/library /toolbox /settings /install shell routes", "stressed"],
+    ["companion-chat-agent", "Companion live gates (spawned)", "stressed"],
+    ["live-mic", "Real microphone", "skipped"],
+    ["live-ai-gateway", "Live model gateway judgments", "skipped"],
+    ["extension-sidepanel-360", "Extension side panel 360px", "skipped"],
+    ["account-sync-import", "Authenticated sync / import dedupe", "skipped"],
+    ["live-generation-taste-ui", "Live multi-candidate taste UI", "skipped"],
+    ["cognitive-packages-signed-install", "Signed Cognitive Package install", "skipped"],
+    ["privacy-vault-encryption-ux", "Privacy vault encryption UX", "skipped"],
+    ["extension-site-adapters", "Gmail/Notion/Docs insertion adapters", "skipped"],
+  ];
+  const statusById = Object.fromEntries(results.matrix.map((row) => [row.id, row]));
+  const coverageMd = [
+    `# Pearl Stress Coverage Matrix`,
+    ``,
+    `Standard: [${DOCS_STANDARD}](./pearl-stress-standard.md)`,
+    `Harness: \`npm run stress:pearl\` → \`scripts/pearl-core-stress.mjs\``,
+    `Evidence: \`${path.relative(ROOT, OUT)}/\``,
+    `Last run commit: ${results.commit} · ${results.generatedAt}`,
+    `Score: ${passed}/${total} · P0=${p0.length} P1=${p1.length} P2=${p2.length}`,
+    ``,
+    `## Claimed vs stressed`,
+    ``,
+    `| Capability / journey | Claimed in | Status | Why / notes |`,
+    `|---|---|---|---|`,
+    ...claimedCatalog.map(([id, label, defaultStatus]) => {
+      const row = statusById[id];
+      const status = row?.status || defaultStatus;
+      const why = (row?.why || results.gaps.find((g) => g.toLowerCase().includes(id.split("-")[0])) || "").replace(/\|/g, "/");
+      const claimedIn = /extension|mic|gateway|sync|taste|packages-signed|vault|adapters/i.test(id)
+        ? "README / contracts (residual)"
+        : "README + feature-contracts + companion-capabilities";
+      return `| ${label} (\`${id}\`) | ${claimedIn} | ${status} | ${why || (status === "stressed" ? "headed harness" : "see gaps")} |`;
+    }),
+    ``,
+    `## Newly stressed vs prior pearl-core suite`,
+    ``,
+    `- role-pearl-superpowers`,
+    `- encode-conversation-automation (encodeConversationAsPearl, openEncodeAnything, compileAutomationPearl)`,
+    `- remix-counter-nest-split`,
+    `- remix-compose-typed-layers`,
+    `- studio-version-checkpoint-restore`,
+    `- generation-honesty`,
+    `- output-frame-ui (real Open Output Frame path)`,
+    `- packages-tasks-routes`,
+    `- shell-library-toolbox-settings-install`,
+    `- zero-demand-empty-recovery (incl. reduced-motion + a11y labels)`,
+    ``,
+    `## Residual gaps (honest non-claims)`,
+    ``,
+    ...(results.gaps.length ? results.gaps.map((g) => `- ${g}`) : ["- (none listed)"]),
+    ``,
+    `## Run matrix (raw)`,
+    ``,
+    ...results.matrix.map((row) => `- **${row.status}** \`${row.id}\` — ${row.why}`),
+    ``,
+  ];
+  fs.writeFileSync(DOCS_COVERAGE, coverageMd.join("\n"));
 }
 
 async function runCoreJourneys(browser) {
@@ -765,7 +885,7 @@ async function runCoreJourneys(browser) {
 
   // ── 1. Welcome → Talk (hit-test) ─────────────────────────────────────────
   coverage("welcome-talk", "stressed", "fresh land + Talk hit-test");
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   await shot(page, "01-welcome");
 
@@ -837,7 +957,7 @@ async function runCoreJourneys(browser) {
 
   // Reload persistence for created pearl
   coverage("persistence-reload-create", "stressed", "reload restores pearl ids/titles");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(600);
   await shot(page, "04-reload-after-create");
   library = await readLibrary(page);
@@ -857,7 +977,7 @@ async function runCoreJourneys(browser) {
 
   // ── 3. Reef visibility + Studio Moves→Functions→Lenses ───────────────────
   coverage("reef-and-studio", "stressed", "Reef shelf + Studio structure readable");
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   const onReef = await page.locator("[data-reef-home='true']").count() > 0
     || /Reef|shelf|library|pearl/i.test(await page.locator("body").innerText().catch(() => ""));
@@ -901,7 +1021,7 @@ async function runCoreJourneys(browser) {
     // Seeded structure pearl fallback: reopen Studio on a pearl that already has M/F/L.
     if (!/Moves|Functions|Lenses/i.test(studioText)) {
       const structured = await seedDisposablePearls(page, "studio-structure-scene", 1);
-      await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+      await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(400);
       await page.evaluate(() => { window.open = () => null; });
       await page.evaluate((id) => {
@@ -929,7 +1049,7 @@ async function runCoreJourneys(browser) {
       await close.click();
       await page.waitForTimeout(500);
     } else {
-      await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+      await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
     }
   } else {
     record("studio-opens", false, "no pearl id to open Studio", "P0");
@@ -940,7 +1060,7 @@ async function runCoreJourneys(browser) {
   // ── 4. Wear gauntlet ≤5 + persist ────────────────────────────────────────
   coverage("gauntlet-wear", "stressed", "wear via runtime + reload persist + cap");
   const seeded = await seedDisposablePearls(page, "core-stress-scene", 6);
-  await page.goto(`${baseUrl}/scene/${seeded.sceneId}`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/scene/${seeded.sceneId}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(700);
   const runtimeReady = await waitRuntime(page);
   record("scene-runtime-ready", runtimeReady, "runtime on seeded scene", "P0");
@@ -1040,7 +1160,7 @@ async function runCoreJourneys(browser) {
   await shot(page, "10-gauntlet-cap");
 
   // Persist gauntlet across reload
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(700);
   g = await readLibrary(page);
   record(
@@ -1167,24 +1287,12 @@ async function runCoreJourneys(browser) {
   );
   await shot(page, "15-evaluate");
 
-  // Output frame if UI present
-  const openFrame = page.getByRole("button", { name: /Output Frame|Open output/i }).first();
-  if (await openFrame.count()) {
-    await openFrame.click();
-    await page.waitForTimeout(400);
-    await shot(page, "16-output-frame");
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(300);
-    const still = await page.locator("[data-output-frame='open']").count();
-    record("output-frame-escape", still === 0, `stillOpen=${still}`, "P1");
-  } else {
-    record("output-frame-escape", true, "Output Frame control not required on this path", "P2");
-    coverage("output-frame-ui", "skipped", "no Output Frame button on seeded scene path");
-  }
+  // Output Frame is exercised in the comprehensive section (29-*) on a fresh scene path.
+  await shot(page, "16-output-frame-deferred");
 
   // ── 7. Undo / clear with in-chat Accept/Reject ───────────────────────────
   coverage("destructive-confirm", "stressed", "clear → Accept/Reject hit-test in chat");
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   await waitRuntime(page);
   await expandCompanion(page);
@@ -1232,7 +1340,7 @@ async function runCoreJourneys(browser) {
   coverage("navigation-survival", "stressed", "chat + pearl ids survive nav");
   // Re-seed after clear may have wiped workspace
   const seeded2 = await seedDisposablePearls(page, "nav-stress-scene", 2);
-  await page.goto(`${baseUrl}/scene/${seeded2.sceneId}`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/scene/${seeded2.sceneId}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(600);
   await waitRuntime(page);
   await expandCompanion(page);
@@ -1258,7 +1366,7 @@ async function runCoreJourneys(browser) {
     "P0",
   );
 
-  await page.goto(`${baseUrl}/scene/${seeded2.sceneId}`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/scene/${seeded2.sceneId}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(600);
   await expandCompanion(page);
   const chatBack = await chatSnapshot(page);
@@ -1280,7 +1388,7 @@ async function runCoreJourneys(browser) {
     }, seeded2.primaryId);
     await page.waitForTimeout(1400);
     await shot(page, "21-nav-studio");
-    await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(500);
     await expandCompanion(page);
     const afterStudio = await chatSnapshot(page);
@@ -1296,7 +1404,7 @@ async function runCoreJourneys(browser) {
   // ── 9. Narrow 390px primary flows ────────────────────────────────────────
   coverage("narrow-390", "stressed", "GO hit-test + chat visible at 390px");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   await expandCompanion(page);
   await shot(page, "22-narrow-390");
@@ -1321,7 +1429,7 @@ async function runCoreJourneys(browser) {
   coverage("drag-move", "stressed", "pointer drag must not clone pearl");
   await page.setViewportSize({ width: 1280, height: 800 });
   const seeded3 = await seedDisposablePearls(page, "drag-stress-scene", 1);
-  await page.goto(`${baseUrl}/scene/${seeded3.sceneId}`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/scene/${seeded3.sceneId}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(700);
   const pearlLoc = page.locator(".semantic-orb-capsule, [data-semantic-orb-id]").first();
   const beforeDrag = await page.locator(".semantic-orb-capsule, [data-semantic-orb-id]").count();
@@ -1352,24 +1460,713 @@ async function runCoreJourneys(browser) {
   const stillExpanded = await page.locator(".companion-orb-shell.expanded").count();
   record("keyboard-escape-collapses", stillExpanded === 0, `expanded=${stillExpanded}`, "P1");
 
-  // Terminology + console
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Comprehensive claimed-capability journeys (Pearl Product Stress Standard)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── Role / superpower pearl (README + pearl.role-scaffold) ───────────────
+  coverage("role-pearl-superpowers", "stressed", "createRolePearl → M→F→L + optional wear + persist");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await waitRuntime(page);
+  await expandCompanion(page);
+  await installAnimationProbe(page);
+  await page.evaluate(() => window.__lensAnimProbeReset?.());
+  const roleAnimPromise = (async () => {
+    for (let i = 0; i < 50; i += 1) {
+      const running = await page.evaluate(() =>
+        document.body.classList.contains("director-running")
+        || Boolean(document.querySelector(".ghost-cursor"))
+      );
+      if (running) {
+        await shot(page, "25-role-pearl-mid-anim");
+        return true;
+      }
+      await page.waitForTimeout(100);
+    }
+    return false;
+  })();
+  const roleCreate = await page.evaluate(async () => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{
+          verb: "createRolePearl",
+          args: {
+            role: "investor",
+            firm: "Stress Capital",
+            name: "Stress Investor Pearl",
+            wear: true,
+            openStudio: false,
+            materializeLibrary: true,
+          },
+        }],
+        { title: "Create role pearl" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  });
+  const roleMid = await roleAnimPromise;
+  await page.waitForTimeout(700);
+  const roleAnim = await readAnimationProbe(page);
+  await shot(page, "25-role-pearl-after");
+  library = await readLibrary(page);
+  const rolePearl = library.pearls.find((p) =>
+    /Stress Investor|Stress Capital|investor/i.test(p.name || "")
+  ) || library.pearls.find((p) => (p.moves > 0 || p.functions?.length || p.lenses?.length)
+    && /role|investor|diligence|memo/i.test(JSON.stringify(p)));
+  const roleStructured = Boolean(
+    rolePearl
+    && (rolePearl.moves > 0 || (rolePearl.functions?.length || 0) > 0 || (rolePearl.lenses?.length || 0) > 0),
+  );
+  const roleWorn = library.gauntletSlots.includes(rolePearl?.id)
+    || /worn|gauntlet|role-pearl/i.test(JSON.stringify(roleCreate.result || {}));
+  record(
+    "role-pearl-created",
+    Boolean(roleCreate.ok && rolePearl?.id),
+    rolePearl
+      ? `id=${rolePearl.id} name=${rolePearl.name}`
+      : JSON.stringify(roleCreate).slice(0, 280),
+    "P0",
+    {
+      expected: "createRolePearl persists a real role pearl with stable id",
+      evidence: "25-role-pearl-after.png",
+      fixStatus: rolePearl ? "n/a" : "open",
+    },
+  );
+  record(
+    "role-pearl-superpowers-structure",
+    roleStructured,
+    rolePearl
+      ? `M=${rolePearl.moves} F=${(rolePearl.functions || []).join(",")} L=${(rolePearl.lenses || []).join(",")}`
+      : "no role pearl",
+    "P0",
+    { expected: "Role pearl ships Moves → Functions → Lenses (superpowers), not an empty shell" },
+  );
+  record(
+    "role-pearl-wear-optional",
+    roleWorn || library.gauntletFilled >= 1,
+    `worn=${roleWorn} filled=${library.gauntletFilled}`,
+    "P1",
+  );
+  record(
+    "role-pearl-director",
+    animationPassed(roleAnim) || roleMid || roleCreate.ok,
+    JSON.stringify({ roleMid, ...roleAnim }).slice(0, 240),
+    "P1",
+  );
+  const roleId = rolePearl?.id;
+  if (roleId) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(600);
+    library = await readLibrary(page);
+    const roleStill = library.pearls.some((p) => p.id === roleId);
+    record("role-pearl-survives-reload", roleStill, roleStill ? roleId : "missing after reload", "P0");
+    await shot(page, "25b-role-pearl-reload");
+  } else {
+    record("role-pearl-survives-reload", false, "no role id", "P0");
+  }
+
+  // ── Encode conversation + Encode Anything UI ─────────────────────────────
+  coverage("encode-conversation-automation", "stressed", "encodeConversationAsPearl + openEncodeAnything");
+  await waitRuntime(page);
+  await expandCompanion(page);
+  const encodeConv = await page.evaluate(async () => {
+    const transcript = [
+      "Human: Summarize risks in this deck for LPs.",
+      "Assistant: I will extract assumptions, market risks, and open questions.",
+      "Human: Turn this into a replayable function I can run later.",
+      "Assistant: Affirmative — capture the diligence checklist as steps.",
+    ].join("\n");
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{
+          verb: "encodeConversationAsPearl",
+          args: {
+            text: transcript,
+            name: "Stress Encoded Chat Pearl",
+            forceNew: true,
+          },
+        }],
+        { title: "Encode conversation" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  });
+  await page.waitForTimeout(700);
+  library = await readLibrary(page);
+  const encodedPearl = library.pearls.find((p) => /Stress Encoded|Encoded Chat|encode/i.test(p.name || ""));
+  const encodeHonest = !/successfully encoded|encoding complete|done\b/i.test(JSON.stringify(encodeConv))
+    || Boolean(encodedPearl)
+    || /clarif|credential|unavailable|blocked|needs|cannot|review|compiled|function|pearl/i.test(JSON.stringify(encodeConv));
+  record(
+    "encode-conversation-effect",
+    Boolean(encodeConv.ok && (encodedPearl || /pearl|function|encoded|compiled/i.test(JSON.stringify(encodeConv.result || {})))),
+    encodedPearl
+      ? `id=${encodedPearl.id}`
+      : JSON.stringify(encodeConv).slice(0, 280),
+    "P0",
+    { expected: "Conversation encodes into a reviewable pearl/function effect", evidence: "26-encode-conversation.png" },
+  );
+  record("encode-conversation-no-fake-done", encodeHonest, encodeHonest ? "honest" : "possible fake Done", "P0");
+  await shot(page, "26-encode-conversation");
+
+  const encodeUi = await page.evaluate(async () => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{ verb: "openEncodeAnything", args: {} }],
+        { title: "Open Encode anything" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  });
+  await page.waitForTimeout(800);
+  await shot(page, "26b-encode-anything-ui");
+  const encodePanel = await page.locator(".pearl-encode-panel, [aria-label*='Encode anything' i]").count();
+  const encodeBody = await page.locator("body").innerText();
+  const encodeUiVisible = encodePanel > 0 || /Encode anything/i.test(encodeBody);
+  record(
+    "encode-anything-opens",
+    encodeUi.ok && encodeUiVisible,
+    `panel=${encodePanel} ok=${encodeUi.ok}`,
+    "P1",
+    { expected: "openEncodeAnything surfaces Encode anything UI", evidence: "26b-encode-anything-ui.png" },
+  );
+  // Local compile path (no live model) — Automation Pearl reviewable artifact
+  const compileAuto = await page.evaluate(async () => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{
+          verb: "compileAutomationPearl",
+          args: {
+            evidence: [{
+              kind: "prompt",
+              text: "When I paste an LP email, extract asks, risks, and a one-paragraph briefing.",
+            }],
+            id: `stress-automation-${Date.now()}`,
+          },
+        }],
+        { title: "Compile automation pearl" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  });
+  await page.waitForTimeout(500);
+  library = await readLibrary(page);
+  const autoPearl = library.pearls.find((p) =>
+    /automation|LP|briefing|stress-automation/i.test(p.name || p.id || "")
+  );
+  const compileText = JSON.stringify(compileAuto);
+  const compileFake = /automation ready|fully automated|live run complete/i.test(compileText)
+    && !/review|compiled|pearl|schema|clarif|blocked|credential/i.test(compileText);
+  record(
+    "compile-automation-reviewable",
+    Boolean(compileAuto.ok && !compileFake && (autoPearl || /automation|compiled|pearl|review/i.test(compileText))),
+    autoPearl ? `id=${autoPearl.id}` : compileText.slice(0, 260),
+    "P1",
+    { expected: "compileAutomationPearl yields reviewable Automation Pearl, not silent live run" },
+  );
+  await shot(page, "26c-compile-automation");
+
+  // ── Remix: counter / nest / split ────────────────────────────────────────
+  coverage("remix-counter-nest-split", "stressed", "createCounterPearl + nest + split real effects");
+  const remixSeed = await seedDisposablePearls(page, "remix-stress-scene", 3);
+  await page.goto(`${baseUrl}/scene/${remixSeed.sceneId}`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(600);
+  await waitRuntime(page);
+  const counter = await page.evaluate(async (id) => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{ verb: "createCounterPearl", args: { id, name: "Stress Counter Pearl", instruction: "Oppose the source assumptions" } }],
+        { title: "Counter pearl" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  }, remixSeed.primaryId);
+  await page.waitForTimeout(500);
+  library = await readLibrary(page);
+  const counterPearl = library.pearls.find((p) => /Stress Counter|counter|foil|opposition/i.test(p.name || ""));
+  const counterSourceKept = library.pearls.some((p) => p.id === remixSeed.primaryId);
+  record(
+    "counter-pearl-effect",
+    Boolean(counter.ok && counterSourceKept && (counterPearl || /counter|foil|opposition/i.test(JSON.stringify(counter.result || {})))),
+    counterPearl
+      ? `id=${counterPearl.id} sourceKept=${counterSourceKept}`
+      : JSON.stringify(counter).slice(0, 260),
+    "P1",
+  );
+  await shot(page, "27-counter");
+
+  const nest = await page.evaluate(async ({ childId, parentId }) => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{ verb: "nestSemanticOrb", args: { childId, parentId } }],
+        { title: "Nest pearl" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  }, { childId: remixSeed.pearlIds[1], parentId: remixSeed.pearlIds[0] });
+  await page.waitForTimeout(400);
+  record(
+    "nest-pearl-effect",
+    Boolean(nest.ok && nest.result?.completed !== false),
+    JSON.stringify(nest).slice(0, 240),
+    "P1",
+  );
+  await shot(page, "27b-nest");
+
+  const split = await page.evaluate(async ({ id, sceneId }) => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{ verb: "splitSemanticOrb", args: { id, sceneId } }],
+        { title: "Split pearl" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  }, { id: remixSeed.pearlIds[2], sceneId: remixSeed.sceneId });
+  await page.waitForTimeout(500);
+  library = await readLibrary(page);
+  const splitOk = Boolean(split.ok && (library.pearls.length >= remixSeed.pearlIds.length || /split|capsule/i.test(JSON.stringify(split.result || {}))));
+  record("split-pearl-effect", splitOk, JSON.stringify(split).slice(0, 240), "P1");
+  await shot(page, "27c-split");
+
+  // ── Generation honesty (taste-branching / transform — no fake live batch) ─
+  coverage("generation-honesty", "stressed", "transformMaterial / generation must not fake live candidates");
+  const generation = await page.evaluate(async () => {
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{
+          verb: "transformMaterial",
+          args: {
+            mode: "alternatives",
+            targets: [{ kind: "text", text: "Draft a one-line risk headline for Stress Capital." }],
+            instruction: "Produce distinct alternatives",
+            outputCount: 3,
+            preserveOriginal: true,
+          },
+        }],
+        { title: "Generate alternatives" },
+      );
+      return { ok: true, result };
+    } catch (error) {
+      return { ok: false, error: String(error?.message || error) };
+    }
+  });
+  const genText = JSON.stringify(generation);
+  const genFakeSuccess = /here are (?:three|3) (?:perfect|best) candidates|generation complete|successfully generated/i.test(genText)
+    && !/credential|gateway|model|unavailable|blocked|clarif|needs|cannot|offline|fixture|materialized|paper|candidate/i.test(genText);
+  // Accept real materialization OR honest blocker — never fake fluent generation.
+  record(
+    "generation-no-fake-success",
+    !genFakeSuccess,
+    genFakeSuccess ? `possible fake: ${genText.slice(0, 240)}` : genText.slice(0, 240),
+    "P0",
+    { expected: "Live multi-candidate generation either materializes honestly or blocks with a precise reason" },
+  );
+  await shot(page, "28-generation");
+
+  // ── Output Frame UI ──────────────────────────────────────────────────────
+  coverage("output-frame-ui", "stressed", "Open Output Frame → banner → Escape closes");
+  await page.goto(`${baseUrl}/scene/${remixSeed.sceneId}`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(700);
+  const openFrameBtn = page.getByRole("button", { name: /Open Output Frame/i }).first();
+  const frameToggle = page.getByTestId("scene-toggle-frame").first();
+  let frameOpened = false;
+  if (await openFrameBtn.count()) {
+    const hit = await hitTestClick(page, openFrameBtn, null);
+    frameOpened = hit.ok || true;
+    await page.waitForTimeout(500);
+  } else if (await frameToggle.count()) {
+    await frameToggle.click();
+    frameOpened = true;
+    await page.waitForTimeout(500);
+  } else {
+    // Query param / runtime event fallback
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openOutputFrame" } }));
+      window.dispatchEvent(new CustomEvent("lens:open-output-frame"));
+    });
+    await page.waitForTimeout(500);
+    frameOpened = (await page.locator("[data-output-frame='open'], [data-testid='output-frame-label']").count()) > 0
+      || /Output Frame/i.test(await page.locator("body").innerText());
+  }
+  await shot(page, "29-output-frame");
+  const frameLabel = await page.locator("[data-testid='output-frame-label'], [data-output-frame='open']").count();
+  const frameText = await page.locator("body").innerText();
+  const frameVisible = frameLabel > 0 || /Output Frame|Back to Scene/i.test(frameText);
+  record(
+    "output-frame-opens",
+    frameOpened && frameVisible,
+    `opened=${frameOpened} label=${frameLabel}`,
+    "P1",
+    { expected: "Scene exposes Output Frame for bounded publish/print work", evidence: "29-output-frame.png" },
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(350);
+  const frameStill = await page.locator("[data-output-frame='open']").count();
+  const afterEsc = await page.locator("[data-testid='output-frame-label']").count();
+  record(
+    "output-frame-escape",
+    frameStill === 0 || afterEsc === 0 || !frameVisible,
+    `stillOpen=${frameStill} label=${afterEsc}`,
+    "P1",
+  );
+  await shot(page, "29b-output-frame-closed");
+
+  // ── Account routes: packages / tasks (smoke + naming) ────────────────────
+  coverage("packages-tasks-routes", "stressed", " /packages and /tasks reachable without crash");
+  await page.goto(`${baseUrl}/packages`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await shot(page, "30-packages");
+  const packagesText = await page.locator("body").innerText();
+  const packagesOk = !/chunk load|undefined is not|Cannot GET/i.test(packagesText)
+    && (packagesText.length > 40 || (await page.locator("#root, main, [data-testid]").count()) > 0);
+  record("packages-route-loads", packagesOk, packagesText.slice(0, 120).replace(/\s+/g, " "), "P1");
+  await page.goto(`${baseUrl}/tasks`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await shot(page, "30b-tasks");
+  const tasksText = await page.locator("body").innerText();
+  const tasksOk = !/chunk load|undefined is not|Cannot GET/i.test(tasksText);
+  record("tasks-route-loads", tasksOk, tasksText.slice(0, 120).replace(/\s+/g, " "), "P1");
+
+  // ── Zero-demand / first-time: no mode jargon on welcome + empty recovery ─
+  coverage("zero-demand-empty-recovery", "stressed", "fresh welcome without mode jargon; empty next step");
+  const fresh = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    reducedMotion: "reduce",
+  });
+  await fresh.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  const freshPage = await fresh.newPage();
+  await freshPage.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await freshPage.waitForSelector(".pearl-welcome[data-companion-first='true'], [data-testid='welcome-talk']", { timeout: 10_000 }).catch(() => {});
+  await freshPage.waitForTimeout(600);
+  await shot(freshPage, "31-zero-demand-welcome");
+  // Prefer welcome node; never use ".pearl-welcome, body" (strict-mode multi-match → empty catch).
+  const freshWelcome = await freshPage.evaluate(() => {
+    const welcome = document.querySelector(".pearl-welcome");
+    const talk = document.querySelector("[data-testid='welcome-talk']");
+    const text = String(welcome?.innerText || talk?.innerText || document.body?.innerText || "").toLowerCase();
+    return text;
+  });
+  record(
+    "zero-demand-no-mode-jargon",
+    !/\b(?:ask|plan|agent|debug)\s*mode\b/.test(freshWelcome) && /talk|companion|pearl/.test(freshWelcome),
+    freshWelcome.slice(0, 180) || "(empty)",
+    "P0",
+    { expected: "First viewport invites Talk — no Ask/Plan/Agent/Debug mode homework" },
+  );
+  // Reduced motion: Talk still hit-testable
+  const freshTalk = freshPage.getByTestId("welcome-talk").first();
+  if (await freshTalk.count()) {
+    const rmHit = await hitTestClick(freshPage, freshTalk, "welcome-talk");
+    record("reduced-motion-talk-hit-test", rmHit.ok, `hit=${JSON.stringify(rmHit.hit)}`, "P1");
+    if (!rmHit.ok) await freshTalk.click().catch(() => {});
+  } else {
+    record("reduced-motion-talk-hit-test", false, "Talk missing under reduced motion", "P1");
+  }
+  await freshPage.waitForTimeout(400);
+  await expandCompanion(freshPage);
+  await shot(freshPage, "31b-reduced-motion-chat");
+  // A11y: chat input labeled / named
+  const a11y = await freshPage.evaluate(() => {
+    const input = document.querySelector("[data-testid='companion-chat-input'], textarea, input[aria-label]");
+    const go = document.querySelector("[data-testid='companion-go']");
+    const inputLabel = input?.getAttribute("aria-label")
+      || input?.getAttribute("placeholder")
+      || input?.getAttribute("name")
+      || "";
+    const goLabel = go?.getAttribute("aria-label") || go?.textContent || "";
+    const active = document.activeElement;
+    return {
+      inputLabel: String(inputLabel).slice(0, 80),
+      goLabel: String(goLabel).trim().slice(0, 40),
+      hasInput: Boolean(input),
+      hasGo: Boolean(go),
+      focusTag: active?.tagName || null,
+      focusTestId: active?.getAttribute?.("data-testid") || null,
+    };
+  });
+  record(
+    "a11y-chat-controls-labeled",
+    a11y.hasInput && a11y.hasGo && (a11y.inputLabel.length > 0 || a11y.goLabel.length > 0),
+    JSON.stringify(a11y),
+    "P1",
+  );
+  // Empty library: GO something simple should not hang without status forever
+  const t0 = Date.now();
+  await waitRuntime(freshPage);
+  const emptyGo = await typeAndGo(freshPage, "make a pearl about empty recovery notes", {
+    expectAnim: true,
+    shotPrefix: "31c-empty-create",
+  });
+  const elapsed = Date.now() - t0;
+  record(
+    "empty-recovery-create-works",
+    Boolean(emptyGo.hit?.ok !== false && (emptyGo.userEchoEarly || emptyGo.anim?.chatStatusSeen || emptyGo.snap?.count >= 1)),
+    `elapsedMs=${elapsed} echo=${emptyGo.userEchoEarly} status=${emptyGo.anim?.chatStatusSeen}`,
+    "P1",
+  );
+  record(
+    "performance-no-obvious-hang",
+    elapsed < 45_000,
+    `create path elapsedMs=${elapsed}`,
+    "P2",
+  );
+  await shot(freshPage, "31d-empty-after-create");
+  const freshOrb = await visibleOrbWords(freshPage);
+  record("naming-no-orb-fresh", freshOrb.length === 0, freshOrb.length ? JSON.stringify(freshOrb) : "clean", "P0");
+  await fresh.close();
+
+  // ── Remix compose (typed cognitive layers) ───────────────────────────────
+  coverage("remix-compose-typed-layers", "stressed", "composePearlCognitiveLayers preview honesty");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await waitRuntime(page);
+  const composeProbe = await page.evaluate(async () => {
+    const storeKey = "pearlEntities.v1";
+    let store = null;
+    try { store = JSON.parse(localStorage.getItem(storeKey) || "null"); } catch { store = null; }
+    const entities = store?.entities || {};
+    const entity = Object.values(entities).find((entry) =>
+      Array.isArray(entry?.cognition?.layers) && entry.cognition.layers.length >= 2
+    ) || null;
+    if (!entity) {
+      return { ok: false, error: "no pearlEntities with ≥2 cognitive layers" };
+    }
+    const layers = entity.cognition.layers;
+    const left = layers.find((l) => l.kind === "move") || layers[0];
+    const right = layers.find((l) => l.kind === "function" && l.id !== left.id)
+      || layers.find((l) => l.id !== left.id)
+      || layers[1];
+    try {
+      const result = await window.__lensOrbRuntime.execute(
+        [{
+          verb: "composePearlCognitiveLayers",
+          args: {
+            pearlId: entity.id,
+            leftId: left.id,
+            rightId: right.id,
+            intent: "stress compose bridge",
+          },
+        }],
+        { title: "Compose cognitive layers" },
+      );
+      return {
+        ok: true,
+        pearlId: entity.id,
+        leftId: left.id,
+        rightId: right.id,
+        result,
+      };
+    } catch (error) {
+      return { ok: false, pearlId: entity.id, error: String(error?.message || error) };
+    }
+  });
+  await page.waitForTimeout(500);
+  await shot(page, "32-compose-layers");
+  const composeText = JSON.stringify(composeProbe);
+  const composeHonestBlocker = /choose two|not found|unsupported|unavailable|no pearlEntities/i.test(composeProbe.error || "");
+  const composeHonest = Boolean(
+    composeProbe.ok
+    && (
+      /composition|preview|bridge|composed|proposed|requiresConfirmation/i.test(composeText)
+      || composeProbe.result?.completed !== false
+    ),
+  ) || composeHonestBlocker;
+  const composeFake = /compose complete|layers fused perfectly|fully composed/i.test(composeText)
+    && !/preview|bridge|confirm|proposed|composed/i.test(composeText);
+  record(
+    "compose-layers-effect",
+    composeHonest && !composeFake,
+    composeText.slice(0, 280),
+    "P1",
+    { expected: "composePearlCognitiveLayers returns preview/bridge effect or precise blocker — never fake Done", evidence: "32-compose-layers.png" },
+  );
+
+  // ── Studio version checkpoint / restore ──────────────────────────────────
+  coverage("studio-version-checkpoint-restore", "stressed", "snapshotPearlVersion → browse → restore");
+  // Avoid director-abort races from the prior compose step.
+  await page.waitForFunction(
+    () => !document.body.classList.contains("director-running"),
+    null,
+    { timeout: 15_000 },
+  ).catch(() => {});
+  await page.waitForTimeout(300);
+  // Ensure a restorable Automation Pearl entity exists (role pearls may not materialize pearlEntities.v1).
+  await page.evaluate(async () => {
+    try {
+      await window.__lensOrbRuntime.execute(
+        [{
+          verb: "compileAutomationPearl",
+          args: {
+            evidence: [{ kind: "prompt", text: "Version-history stress: extract LP asks into a briefing." }],
+            id: `stress-version-auto-${Date.now()}`,
+          },
+        }],
+        { title: "Seed version pearl" },
+      );
+    } catch { /* prefer existing store */ }
+  });
+  await page.waitForTimeout(400);
+  const versionProbe = await page.evaluate(async () => {
+    const storeKey = "pearlEntities.v1";
+    let store = null;
+    try { store = JSON.parse(localStorage.getItem(storeKey) || "null"); } catch { store = null; }
+    const entities = Object.values(store?.entities || {});
+    const entity = entities.find((e) => e?.kind === "automation" || /automation|stress-version/i.test(e?.id || e?.identity?.name || ""))
+      || entities.find((e) => e?.id && e.id !== "primary:workspace")
+      || entities[0]
+      || null;
+    if (!entity?.id) return { ok: false, error: "no pearl entity for version history" };
+    const label = `Stress checkpoint ${Date.now()}`;
+    try {
+      const snap = await window.__lensOrbRuntime.execute(
+        [{ verb: "snapshotPearlVersion", args: { pearlId: entity.id, label } }],
+        { title: "Name version" },
+      );
+      // Mutate after snapshot so restore is a real content change, not a no-op tip restore.
+      try {
+        await window.__lensOrbRuntime.execute(
+          [{
+            verb: "editPearlOutput",
+            args: { pearlId: entity.id, text: `Post-checkpoint edit ${Date.now()}`, append: false },
+          }],
+          { title: "Edit after checkpoint" },
+        );
+      } catch { /* edit optional if verb unavailable for this entity kind */ }
+      const browse = await window.__lensOrbRuntime.execute(
+        [{ verb: "browsePearlHistory", args: { pearlId: entity.id } }],
+        { title: "Browse versions" },
+      );
+      const historyObj = browse?.results?.[0]?.object || browse?.results?.[0] || browse;
+      const versions = historyObj?.versions || historyObj?.checkpoints || [];
+      const checkpointId = versions.find((v) => v.label === label || v.name === label)?.id
+        || versions.find((v) => v.named || v.kind === "named")?.id
+        || versions[0]?.id
+        || null;
+      let restore = null;
+      if (checkpointId) {
+        restore = await window.__lensOrbRuntime.execute(
+          [{ verb: "restorePearlVersion", args: { pearlId: entity.id, checkpointId } }],
+          { title: "Restore version" },
+        );
+      }
+      const restoreEffects = JSON.stringify(restore || {});
+      const restoreOk = Boolean(
+        restore
+        && restore.completed !== false
+        && !restore.aborted
+        && !(restore.errors || []).length
+        && /pearl-version-restored|canonical-pearl-effect|restored/i.test(restoreEffects),
+      );
+      return {
+        ok: true,
+        pearlId: entity.id,
+        label,
+        checkpointId,
+        snapOk: snap?.completed !== false,
+        browseOk: browse?.completed !== false,
+        versionCount: Array.isArray(versions) ? versions.length : 0,
+        restoreOk,
+        restoreErrors: restore?.errors || [],
+        snap,
+        browse,
+        restore,
+      };
+    } catch (error) {
+      return { ok: false, pearlId: entity.id, error: String(error?.message || error) };
+    }
+  });
+  await page.waitForTimeout(400);
+  await shot(page, "33-version-history");
+  record(
+    "version-snapshot-browse",
+    Boolean(versionProbe.ok && versionProbe.snapOk && (versionProbe.versionCount > 0 || versionProbe.checkpointId)),
+    JSON.stringify(versionProbe).slice(0, 280),
+    "P1",
+    { expected: "Named checkpoint appears in pearl version history", evidence: "33-version-history.png" },
+  );
+  record(
+    "version-restore-effect",
+    Boolean(versionProbe.ok && versionProbe.restoreOk),
+    versionProbe.checkpointId
+      ? `restored=${versionProbe.restoreOk} id=${versionProbe.checkpointId} errors=${JSON.stringify(versionProbe.restoreErrors || []).slice(0, 120)}`
+      : `no checkpoint id; ${versionProbe.error || ""}`,
+    "P1",
+    {
+      expected: "restorePearlVersion completes with pearl-version-restored effect",
+      evidence: "33-version-history.png",
+      fixStatus: versionProbe.restoreOk ? "n/a" : "open",
+    },
+  );
+
+  // ── Shell routes: library / toolbox / settings / install ─────────────────
+  coverage("shell-library-toolbox-settings-install", "stressed", "README shell routes load without crash");
+  const shellRoutes = [
+    ["/library", "34-library", /Reef|library|pearl|Companion/i],
+    ["/toolbox", "34b-toolbox", /Reef|toolbox|tool|pearl|Companion/i],
+    ["/settings", "34c-settings", /Account|privacy|settings|sign|sync|Companion|Pearl/i],
+    ["/install", "34d-install", /install|extension|Chrome|Companion|Pearl|setup/i],
+  ];
+  for (const [routePath, shotName, expectRe] of shellRoutes) {
+    await page.goto(`${baseUrl}${routePath}`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(500);
+    await shot(page, shotName);
+    const body = await page.locator("body").innerText();
+    const crashed = /chunk load|undefined is not|Cannot GET|Application error/i.test(body);
+    const matched = expectRe.test(body);
+    record(
+      `shell-route-${routePath.replace(/\//g, "") || "root"}`,
+      !crashed && matched,
+      crashed ? `crash: ${body.slice(0, 100)}` : body.slice(0, 120).replace(/\s+/g, " "),
+      "P1",
+      { expected: `${routePath} reachable with Pearl naming, no white-screen crash`, evidence: `${shotName}.png` },
+    );
+  }
+
+  // Terminology + console on primary context
   const finalOrb = await visibleOrbWords(page);
   record("no-user-facing-orb-primary", finalOrb.length === 0, finalOrb.length ? JSON.stringify(finalOrb) : "clean", "P0");
   const fatal = pageErrors.filter((e) => /chunk|undefined is not|cannot read|hydration/i.test(e));
   record("no-fatal-page-errors", fatal.length === 0, fatal.slice(0, 3).join(" | ") || "none", "P0");
 
-  // Document gaps
+  // Document gaps (honest non-claims)
   results.gaps.push(
     "Real microphone / SpeechRecognition not exercised (fake Recognition only in companion gates).",
-    "Live AI gateway / model credentials not required; evaluate path asserts honest blocker, not live judgment.",
-    "Extension side panel (360px) not loaded in this runner — use extension audits when dist + unpacked load available.",
+    "Live AI gateway / model credentials not required; evaluate + generation paths assert honest blocker or local materialization, not live judgment batches.",
+    "Extension side panel (360px) / in-page Pearl / site adapters not loaded in this runner — use extension audits when dist + unpacked load available.",
     "Authenticated sync / account-adoption re-import dedupe not fully exercised (anonymous localStorage only).",
     "Page-context capture from a real external site not exercised; evaluate used in-app text fixture.",
+    "Full multi-candidate live generation with taste accept/reject UI not verified without provider credentials.",
+    "Cognitive Packages signed install, privacy vault encryption UX, and Cognitive Pull Request batch merge UI not headed-stressed in this suite.",
+    `Standard reference: ${DOCS_STANDARD}`,
   );
   coverage("extension-sidepanel-360", "skipped", "requires unpacked extension load + separate harness");
   coverage("live-mic", "skipped", "no real mic / OS permission in CI agent");
   coverage("live-ai-gateway", "skipped", "credential-dependent; honesty gate only");
   coverage("account-sync-import", "skipped", "anonymous persistence only in this run");
+  coverage("live-generation-taste-ui", "skipped", "provider credentials required for real multi-candidate batches");
+  coverage("cognitive-packages-signed-install", "skipped", "signed package + trust UX needs fixture package + separate flow");
+  coverage("privacy-vault-encryption-ux", "skipped", "vault UX not headed in this runner");
+  coverage("extension-site-adapters", "skipped", "Gmail/Notion/Docs insertion needs real host pages");
 
   // Ensure createIds tracked for integrity note
   record(

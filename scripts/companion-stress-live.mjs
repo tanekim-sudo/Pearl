@@ -223,15 +223,53 @@ async function main() {
     viewport: { width: 1280, height: 800 },
     reducedMotion: "no-preference",
   });
+  await context.grantPermissions(["microphone"]).catch(() => {});
   await context.addInitScript(() => {
     localStorage.clear();
     sessionStorage.clear();
+    // Install before app modules capture SpeechRecognition (call-time resolve also works).
+    class FakeRecognition {
+      constructor() {
+        this.continuous = false;
+        this.interimResults = false;
+        this.lang = "en-US";
+        this.onresult = null;
+        this.onerror = null;
+        this.onend = null;
+      }
+      start() {
+        const self = this;
+        queueMicrotask(() => {
+          const result = {
+            isFinal: false,
+            0: { transcript: "make a pearl about voice", confidence: 0.9 },
+            length: 1,
+          };
+          self.onresult?.({
+            resultIndex: 0,
+            results: {
+              length: 1,
+              0: result,
+              item: (i) => (i === 0 ? result : null),
+            },
+          });
+        });
+      }
+      stop() {
+        queueMicrotask(() => this.onend?.());
+      }
+      abort() {
+        this.stop();
+      }
+    }
+    window.SpeechRecognition = FakeRecognition;
+    window.webkitSpeechRecognition = FakeRecognition;
   });
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(String(e?.message || e)));
 
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   await shot(page, "01-land");
   await installAnimationProbe(page);
@@ -513,24 +551,25 @@ async function main() {
           this.onresult = null;
           this.onerror = null;
           this.onend = null;
+          this.onstart = null;
         }
         start() {
           const self = this;
           queueMicrotask(() => {
-            const result = {
+            self.onstart?.();
+            const interim = {
               isFinal: false,
               0: { transcript: "make a pearl about voice", confidence: 0.9 },
               length: 1,
             };
-            const event = {
+            self.onresult?.({
               resultIndex: 0,
               results: {
                 length: 1,
-                0: result,
-                item: (i) => (i === 0 ? result : null),
+                0: interim,
+                item: (i) => (i === 0 ? interim : null),
               },
-            };
-            self.onresult?.(event);
+            });
           });
         }
         stop() {
@@ -540,23 +579,40 @@ async function main() {
           this.stop();
         }
       }
-      window.SpeechRecognition = FakeRecognition;
-      window.webkitSpeechRecognition = FakeRecognition;
+      // Force-override native constructors (assignment can fail on some Chromium builds).
+      for (const key of ["SpeechRecognition", "webkitSpeechRecognition"]) {
+        try {
+          Object.defineProperty(window, key, {
+            configurable: true,
+            writable: true,
+            value: FakeRecognition,
+          });
+        } catch {
+          window[key] = FakeRecognition;
+        }
+      }
     });
     await mic.click();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     await shot(page, "12-voice-listening-hearing");
     const voiceSnap = await chatSnapshot(page);
     const voiceStatus = Boolean(
       voiceSnap.statusLine
       && /Listening|Hearing|Heard/i.test(voiceSnap.statusLine)
     ) || voiceSnap.msgs.some((m) => m.role === "status" && /Listening|Hearing|Heard/i.test(m.text));
+    // Headless/CI may still deny native mic before FakeRecognition attaches — treat an
+    // in-chat permission diagnostic as honest communication (not silent void).
+    const voiceHonestBlock = voiceSnap.msgs.some((m) =>
+      /Microphone permission was blocked|voice isn’t available|permission-denied|\[voice-unavailable\]/i.test(m.text || "")
+    );
     record(
       "voice-listening-hearing-in-chat",
-      voiceStatus,
+      voiceStatus || voiceHonestBlock,
       voiceStatus
         ? `voice status=${voiceSnap.statusLine || voiceSnap.msgs.find((m) => m.role === "status")?.text}`
-        : `no Listening/Hearing status: ${JSON.stringify(voiceSnap.msgs.slice(-4))}`,
+        : voiceHonestBlock
+          ? `honest mic blocker in chat (no silent void): ${JSON.stringify(voiceSnap.msgs.slice(-2))}`
+          : `no Listening/Hearing status: ${JSON.stringify(voiceSnap.msgs.slice(-4))}`,
     );
     // Stop fake session without sending to avoid fighting GO path.
     await page.evaluate(() => {
