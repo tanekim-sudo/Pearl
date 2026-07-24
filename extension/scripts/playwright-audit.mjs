@@ -56,7 +56,18 @@ try {
   });
 
   let worker = context.serviceWorkers()[0];
-  if (!worker) worker = await context.waitForEvent("serviceworker");
+  if (!worker) {
+    worker = await context.waitForEvent("serviceworker", { timeout: 90_000 }).catch(() => null);
+  }
+  if (!worker) {
+    // MV3 sometimes exposes the worker only after a wake — poke chrome://extensions via a blank page.
+    const wake = await context.newPage();
+    await wake.goto("about:blank");
+    await wake.waitForTimeout(1_000);
+    await wake.close().catch(() => {});
+    worker = context.serviceWorkers()[0]
+      || await context.waitForEvent("serviceworker", { timeout: 60_000 });
+  }
   const extensionId = new URL(worker.url()).host;
   await worker.evaluate(() => chrome.storage.local.set({ onboardingComplete: true, onboardingMode: "local", pearlSyncConsent: "disabled" }));
   await Promise.all(context.pages().map((existing) => existing.close()));
@@ -78,11 +89,12 @@ try {
     if (!["idle", "command"].includes(await panel.locator("main").getAttribute("data-orb-view"))) {
       await panel.getByRole("button", { name: "Collapse view into Pearl" }).click();
     }
-    await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+    const openActions = panel.getByRole("button", { name: /Open (?:Companion|Pearl) actions/i });
+    await openActions.click();
     await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
-    await panel.getByRole("button", { name: /GO/i }).click();
+    await panel.getByRole("button", { name: /GO|run staged/i }).click();
   };
-  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
+  await panel.getByRole("button", { name: /Open (?:Companion|Pearl) actions/i }).waitFor({ timeout: 60_000 });
   await panel.screenshot({ path: path.join(evidence, "01-welcome.png") });
   await openPanelView("Library");
   await panel.screenshot({ path: path.join(evidence, "03-local-library-drop.png") });
@@ -137,7 +149,7 @@ try {
   await panel.screenshot({ path: path.join(evidence, "07-queued-explicit-go.png"), fullPage: true });
 
   panel.once("dialog", (dialog) => dialog.accept());
-  await panel.getByRole("button", { name: "GO", exact: true }).click();
+  await panel.getByRole("button", { name: /GO/i }).click();
   await panel.locator(".orb-panel.active").getByText(/Preview:/).waitFor();
   if (await page.locator("#field").inputValue() !== before) throw new Error("execution mutated page before a result action");
   await panel.screenshot({ path: path.join(evidence, "08-preview-before-insert.png"), fullPage: true });

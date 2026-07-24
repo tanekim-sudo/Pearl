@@ -738,7 +738,7 @@ export default function CompanionChat({
           endVoiceSession({ send: false });
           setMessages((m) => [...m, {
             role: "companion",
-            text: "Microphone permission was blocked. Allow mic for this site in the browser address bar, then tap the mic again — or type and press GO.",
+            text: "Blocked: Microphone permission was denied. Allow mic for this site in the browser address bar, then tap the mic again — or type and press GO. [permission-denied]",
             error: true,
           }]);
         }
@@ -785,7 +785,7 @@ export default function CompanionChat({
     if (!resolveSpeechRecognition()) {
       setMessages((m) => [...m, {
         role: "companion",
-        text: "Voice isn’t available in this browser. Type your goal in the chat and press GO.",
+        text: "Blocked: Voice isn’t available in this browser. Type your goal in the chat and press GO. [voice-unavailable]",
         error: true,
       }]);
       return;
@@ -795,7 +795,7 @@ export default function CompanionChat({
     } catch {
       setMessages((m) => [...m, {
         role: "companion",
-        text: "Could not start the microphone. Check browser permission for this site, then try again — or type and press GO.",
+        text: "Blocked: Could not start the microphone. Check browser permission for this site, then try again — or type and press GO. [permission-denied]",
         error: true,
       }]);
     }
@@ -1159,6 +1159,7 @@ export default function CompanionChat({
         <button
           type="button"
           className={"companion-mic" + (listening ? " listening" : "")}
+          data-testid="companion-mic"
           onClick={toggleMic}
           aria-label={listening ? "Stop listening and send" : "Speak — then press GO"}
           title={listening ? "Stop listening and send" : "Speak your goal (same as typing + GO)"}

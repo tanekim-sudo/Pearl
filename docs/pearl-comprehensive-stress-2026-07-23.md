@@ -1,11 +1,11 @@
 # Pearl Comprehensive Stress Ledger — 2026-07-23
 
 - Standard: docs/pearl-stress-standard.md
-- Generated: 2026-07-24T01:25:23.618Z
-- Commit: 92e3331
-- Base URL: http://127.0.0.1:41822
+- Generated: 2026-07-24T01:45:16.932Z
+- Commit: db0f20f
+- Base URL: http://127.0.0.1:41812
 - Headed: false
-- Score: 126/126 checks
+- Score: 165/165 checks
 - Defects: P0=0 P1=0 P2=0
 - Aesthetic fails: 0
 - Companion gates: PASS
@@ -37,14 +37,16 @@
 | remix-compose-typed-layers | stressed | composePearlCognitiveLayers preview honesty |
 | studio-version-checkpoint-restore | stressed | snapshotPearlVersion → browse → restore |
 | shell-library-toolbox-settings-install | stressed | README shell routes load without crash |
-| extension-sidepanel-360 | skipped | requires unpacked extension load + separate harness |
-| live-mic | skipped | no real mic / OS permission in CI agent |
-| live-ai-gateway | skipped | credential-dependent; honesty gate only |
-| account-sync-import | skipped | anonymous persistence only in this run |
-| live-generation-taste-ui | skipped | provider credentials required for real multi-candidate batches |
-| cognitive-packages-signed-install | skipped | signed package + trust UX needs fixture package + separate flow |
-| privacy-vault-encryption-ux | skipped | vault UX not headed in this runner |
-| extension-site-adapters | skipped | Gmail/Notion/Docs insertion needs real host pages |
+| live-mic | stressed | simulated ASR pipeline Listening/Hearing/Heard + empty + permission-denied + unavailable (no real OS mic hardware) |
+| live-ai-gateway | stressed | credential-absent honesty proven (401/blocker, no false Done); live smoke skipped — env residual |
+| shareability-export-import | stressed | module share pipeline + local export/reopen; pass=7 fail=0 |
+| workflow-end-to-end | stressed | create/wear/studio/remix/destructive/encode; pass=6 fail=0 |
+| cognitive-packages-signed-install | stressed | signed create/validate + reject tampered/unsigned; headed /packages route |
+| privacy-vault-encryption-ux | stressed | headed settings lock/unlock + wrong passphrase honesty via __pearlPrivacy |
+| live-generation-taste-ui | stressed | seeded multi-candidate Choices UI + Yes persist; More-like-this without live credentials must not fake Done |
+| account-sync-import | stressed | multi-profile switchProfile isolation + mergeBoardSnapshots idempotent re-import (no OAuth credentials) |
+| extension-sidepanel-360 | stressed | unpacked Chromium load via extension/scripts/playwright-audit.mjs (360px panel) |
+| extension-site-adapters | stressed | fixture editors.html insertion path (Gmail/Notion/Docs host pages not required — adapter contract exercised on local fixture) |
 | aesthetic-human-review | stressed | loaded 52 frame critiques from audit-shots/pearl-comprehensive-stress-2026-07-23/aesthetic-reviews.json |
 
 ## Aesthetic summary
@@ -58,14 +60,13 @@ _No open defects recorded by this run._
 
 ## Gaps (not verified)
 
-- Real microphone / SpeechRecognition not exercised (fake Recognition only in companion gates).
-- Live AI gateway / model credentials not required; evaluate + generation paths assert honest blocker or local materialization, not live judgment batches.
-- Extension side panel (360px) / in-page Pearl / site adapters not loaded in this runner — use extension audits when dist + unpacked load available.
-- Authenticated sync / account-adoption re-import dedupe not fully exercised (anonymous localStorage only).
-- Page-context capture from a real external site not exercised; evaluate used in-app text fixture.
-- Full multi-candidate live generation with taste accept/reject UI not verified without provider credentials.
-- Cognitive Packages signed install, privacy vault encryption UX, and Cognitive Pull Request batch merge UI not headed-stressed in this suite.
 - Standard reference: docs/pearl-stress-standard.md
+- Gap suites (voice/share/workflows/extension/vault/taste/sync/packages/AI honesty) run via scripts/pearl-gap-stress.mjs unless SKIP_GAPS=1.
+- Real OS microphone hardware / browser getUserMedia permission UI is not exercised; Fake SpeechRecognition + permission-denied error path prove product honesty.
+- Live model gateway quality not scored — no LIVE_PROVIDER_BASE_URL + API key in this environment.
+- Live multi-candidate model batches are not provider-scored here; UI + persistence + honesty under 401 are proven with seeded candidates.
+- Supabase/OAuth signed-in sync against a real account is not exercised — local multi-profile vault isolation + idempotent adoption merge are proven.
+- Gmail/Notion/Docs live host pages are not opened; local editors.html fixture proves the insert/GO adapter path.
 
 ## Checks
 
@@ -84,10 +85,10 @@ skip
 - PASS [P0] create-go-hit-test: hit={"testid":"companion-go","tag":"BUTTON","text":"GO"}
 - PASS [P0] create-user-echo: user message before reply
 - PASS [P0] create-status-during-run: status=true probe=true
-- PASS [P0] create-director-animation: {"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":27,"uniquePositions":27,"maxTravelPx":488.07866645961894,"motionEventCount":16,"motionEvents":["cursor-move-start","cursor-move-complete","gesture-press","gesture-release"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Working…","Demonstrating — Make a pearl…"],"reducedMotion":false,"scriptTitle":"Make a pearl"}
+- PASS [P0] create-director-animation: {"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":28,"uniquePositions":28,"maxTravelPx":488.3411333279227,"motionEventCount":16,"motionEvents":["cursor-move-start","cursor-move-complete","gesture-press","gesture-release"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Working…","Demonstrating — Make a pearl…"],"reducedMotion":false,"scriptTitle":"Make a pearl"}
 - PASS [P0] create-mid-animation-shot: captured
-- PASS [P0] create-pearl-persisted: 95fb7db4-c9f6-43fa-967c-afae562fc570 / core stress reef notes
-- PASS [P0] create-survives-reload: restored 95fb7db4-c9f6-43fa-967c-afae562fc570
+- PASS [P0] create-pearl-persisted: 39f979cb-826a-4828-b2c2-0c22adeaaf66 / core stress reef notes
+- PASS [P0] create-survives-reload: restored 39f979cb-826a-4828-b2c2-0c22adeaaf66
 - PASS [P0] create-no-duplicate-on-reload: count of id=1
 - PASS [P0] reef-home-reachable: Reef home after create
 - PASS [P0] studio-opens: Studio chrome visible
@@ -96,14 +97,14 @@ skip
 - PASS [P0] scene-runtime-ready: runtime on seeded scene
 - PASS [P1] gauntlet-five-sockets: sockets=5 (0 ok if legend-only until expand)
 - PASS [P0] wear-effect: filled=1 wearOk=true err=
-- PASS [P1] wear-director-animation: {"wearMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":19,"uniquePositions":19,"maxTravelPx":196.84150578828644,"motionEventCount":8,"motionEvents":["cursor-move-start","cursor-move-complete"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demonstrating — Wear stress pearl…"],"reducedMotion":false,"scriptTitle":"Wear stress pearl"}
+- PASS [P1] wear-director-animation: {"wearMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":19,"uniquePositions":19,"maxTravelPx":196.88404879268407,"motionEventCount":8,"motionEvents":["cursor-move-start","cursor-move-complete"],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demonstrating — Wear stress pearl…"],"reducedMotion":false,"scriptTitle":"Wear stress pearl"}
 - PASS [P0] gauntlet-fill-to-5: filled=5
 - PASS [P0] gauntlet-refuses-6th: blocked=true filled=5 sixth={"threw":false,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"worn-pearl","status":"full","effects":[],"visibleText":"Gauntlet is full (5 active pearls). Remove one before wearing another."}],
 - PASS [P0] gauntlet-survives-reload: filled after reload=5
 - PASS [P1] organize-real-effect: M=2 F=Risk scan L=Skeptical reading
-- PASS [P1] merge-creates-pearl: id=03a021ed-5bab-4115-99c0-3b3627e20744 sourcesKept=true
-- PASS [P1] synthesize-sources-intact: sourcesIntact=true synthPearl=6c3c07e9-b3a3-4048-8a43-b9fe7acfd407 {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-synthesized:6c3c07e9-b3a3-4048-8a43-b9fe7acfd407","id":"6c3c07e9-b3a3-4048
-- PASS [P0] evaluate-no-fake-success: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"gauntlet-evaluation","id":"s-pr65rmh","object":{"version":1,"ok":true,"reason":"Ready to evaluate 27 characters through 5 gauntlet pearls.","requiresModel
+- PASS [P1] merge-creates-pearl: id=f69f1c25-2f53-4d6b-ad69-08229c1dd930 sourcesKept=true
+- PASS [P1] synthesize-sources-intact: sourcesIntact=true synthPearl=f4954a21-23fa-4053-a3f6-55a2509a2f78 {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-synthesized:f4954a21-23fa-4053-a3f6-55a2509a2f78","id":"f4954a21-23fa-4053
+- PASS [P0] evaluate-no-fake-success: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"gauntlet-evaluation","id":"s-t3jl2zv","object":{"version":1,"ok":true,"reason":"Ready to evaluate 27 characters through 5 gauntlet pearls.","requiresModel
 - PASS [P0] confirm-strip-visible: Accept/Reject strip in chat
 - PASS [P0] confirm-accept-reject-visible: accept=true reject=true
 - PASS [P0] confirm-not-false-done: staged or clear confirm
@@ -117,18 +118,18 @@ skip
 - PASS [P1] narrow-no-orb-copy: clean
 - PASS [P0] drag-moves-not-clones: before=1 after=1
 - PASS [P1] keyboard-escape-collapses: expanded=0
-- PASS [P0] role-pearl-created: id=7972e50a-9529-454f-b2eb-d5410fc30be6 name=Stress Investor Pearl
+- PASS [P0] role-pearl-created: id=9e32c5e4-38b0-4ecb-93b1-a1f046c4a6bc name=Stress Investor Pearl
 - PASS [P0] role-pearl-superpowers-structure: M=4 F=Investment memo,Diligence L=Stress Capital investor lens
 - PASS [P1] role-pearl-wear-optional: worn=true filled=1
 - PASS [P1] role-pearl-director: {"roleMid":true,"directorRunningSeen":true,"cursorSeen":true,"statusSeen":true,"positionSamples":1,"uniquePositions":1,"maxTravelPx":0,"motionEventCount":0,"motionEvents":[],"chatStatusSeen":true,"chatActionSeen":true,"statusSamples":["Demo
-- PASS [P0] role-pearl-survives-reload: 7972e50a-9529-454f-b2eb-d5410fc30be6
-- PASS [P0] encode-conversation-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"conversation-pearl","id":"0586ba1a-c923-411c-8d5d-313f136719f3","object":{"pearlId":"0586ba1a-c923-411c-8d5d-313f136719f3","function":{"name":"Stress Encoded Chat Pearl","description":"Reusable 
+- PASS [P0] role-pearl-survives-reload: 9e32c5e4-38b0-4ecb-93b1-a1f046c4a6bc
+- PASS [P0] encode-conversation-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"conversation-pearl","id":"8e9b60e8-a72a-483c-9e13-d64e21a8589d","object":{"pearlId":"8e9b60e8-a72a-483c-9e13-d64e21a8589d","function":{"name":"Stress Encoded Chat Pearl","description":"Reusable 
 - PASS [P0] encode-conversation-no-fake-done: honest
 - PASS [P1] encode-anything-opens: panel=1 ok=true
-- PASS [P1] compile-automation-reviewable: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:4034c8bb-6ccd-47a8-96b2-e56af64456c3","object":{"id":"stress-automation-1784856391268","stableId":"stress-automation-1784856391268"
-- PASS [P1] counter-pearl-effect: id=b29d23ce-4f0f-45d7-8282-9926796870e8 sourceKept=true
-- PASS [P1] nest-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-nested:stress-pearl-1784856392120-2","id":"stress-pearl-1784856392120-2"}],"value":{"type":"action-result","effect
-- PASS [P1] split-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-split:stress-pearl-1784856392120-3","id":"stress-pearl-1784856392120-3"}],"value":{"type":"action-result","effectI
+- PASS [P1] compile-automation-reviewable: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:df7568f6-6379-4e56-be31-226e9ac693f9","object":{"id":"stress-automation-1784857583324","stableId":"stress-automation-1784857583324"
+- PASS [P1] counter-pearl-effect: id=f5b49c85-8059-4dc1-9929-b4876f15d0bf sourceKept=true
+- PASS [P1] nest-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-nested:stress-pearl-1784857584208-2","id":"stress-pearl-1784857584208-2"}],"value":{"type":"action-result","effect
+- PASS [P1] split-pearl-effect: {"ok":true,"result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"action-result","effectId":"semantic-orb-split:stress-pearl-1784857584208-3","id":"stress-pearl-1784857584208-3"}],"value":{"type":"action-result","effectI
 - PASS [P0] generation-no-fake-success: {"ok":true,"result":{"completed":false,"aborted":false,"errors":["no readable material matched the requested targets"],"results":[],"effects":[]}}
 - PASS [P1] output-frame-opens: opened=true label=2
 - PASS [P1] output-frame-escape: stillOpen=0 label=0
@@ -144,19 +145,58 @@ talk to companion
 skip
 - PASS [P1] reduced-motion-talk-hit-test: hit={"testid":"welcome-talk","tag":"BUTTON","text":"Talk to Companion"}
 - PASS [P1] a11y-chat-controls-labeled: {"inputLabel":"Quick Move instruction","goLabel":"GO — run your command","hasInput":true,"hasGo":true,"focusTag":"INPUT","focusTestId":"companion-chat-input"}
-- PASS [P1] empty-recovery-create-works: elapsedMs=1778 echo=true status=false
-- PASS [P2] performance-no-obvious-hang: create path elapsedMs=1778
+- PASS [P1] empty-recovery-create-works: elapsedMs=1764 echo=true status=false
+- PASS [P2] performance-no-obvious-hang: create path elapsedMs=1764
 - PASS [P0] naming-no-orb-fresh: clean
-- PASS [P1] compose-layers-effect: {"ok":true,"pearlId":"stress-pearl-1784856350187-1","leftId":"move-1784856350187","rightId":"fn-1784856350187","result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:b141719a-47fa-4fea-9e33-ae7d830d9537","object":{"ti
-- PASS [P1] version-snapshot-browse: {"ok":true,"pearlId":"stress-automation-1784856391268","label":"Stress checkpoint 1784856406150","checkpointId":"pearl-checkpoint:9aefdaa6-a36f-4249-a7b1-e59400befc8c","snapOk":true,"browseOk":true,"versionCount":3,"restoreOk":true,"restoreErrors":[],"snap":{"completed":true,"abo
-- PASS [P1] version-restore-effect: restored=true id=pearl-checkpoint:9aefdaa6-a36f-4249-a7b1-e59400befc8c errors=[]
+- PASS [P1] compose-layers-effect: {"ok":true,"pearlId":"stress-pearl-1784857542120-1","leftId":"move-1784857542120","rightId":"fn-1784857542120","result":{"completed":true,"aborted":false,"errors":[],"results":[{"type":"canonical-pearl-effect","id":"pearl-effect:3f27d60e-41f9-4350-99bd-fba08aedf0f3","object":{"ti
+- PASS [P1] version-snapshot-browse: {"ok":true,"pearlId":"stress-automation-1784857583324","label":"Stress checkpoint 1784857598225","checkpointId":"pearl-checkpoint:a89e3596-8fdb-4e12-97a5-d6b890d91b9e","snapOk":true,"browseOk":true,"versionCount":3,"restoreOk":true,"restoreErrors":[],"snap":{"completed":true,"abo
+- PASS [P1] version-restore-effect: restored=true id=pearl-checkpoint:a89e3596-8fdb-4e12-97a5-d6b890d91b9e errors=[]
 - PASS [P1] shell-route-library: Reef Reef · where pearls live Companion HOME OF PEARLS Reef Pearls form, play, and expand here. Talk to your Companion 
 - PASS [P1] shell-route-toolbox: Reef Reef · where pearls live Companion HOME OF PEARLS Reef Pearls form, play, and expand here. Talk to your Companion 
 - PASS [P1] shell-route-settings: Reef Settings · saved tools & settings Companion YOUR PEARLS — OPEN ONE, OR ASK COMPANION TO WEAR IT Stress Pearl 1 Pe
 - PASS [P1] shell-route-install: ← Reef (home) Install · browser extension Install Pearl in Chrome Add Pearl, then press Check again. Add Pearl to Chro
 - PASS [P0] no-user-facing-orb-primary: clean
 - PASS [P0] no-fatal-page-errors: none
-- PASS [P0] storage-stable-ids: tracked create ids=95fb7db4-c9f6-43fa-967c-afae562fc570 libBefore=2
+- PASS [P0] storage-stable-ids: tracked create ids=39f979cb-826a-4828-b2c2-0c22adeaaf66 libBefore=2
+- PASS [P0] pearl-gap-stress: pearl-gap-stress.mjs passed
+- PASS [P0] gap:voice-mic-present: companion mic control
+- PASS [P0] gap:voice-listening: Hearing: “make a pearl about voice stress”
+- PASS [P0] gap:voice-hearing: Hearing: “make a pearl about voice stress”
+- PASS [P0] gap:voice-heard: Demonstrating — Make a pearl…
+- PASS [P0] gap:voice-empty-diagnostic: Heard nothing.
+- PASS [P0] gap:voice-permission-denied: [{"role":"companion","text":"Type or speak, then press GO — I’ll show what I’m doing here."},{"role":"companion","text":"Blocked: Microphone permission was denied. Allow mic for this site in the browser address bar, then tap the mic again — or type and press GO. [permission-denied]"}]
+- PASS [P0] gap:voice-unavailable-diagnostic: [{"role":"companion","text":"Type or speak, then press GO — I’ll show what I’m doing here."},{"role":"companion","text":"Blocked: Voice isn’t available in this browser. Type your goal in the chat and press GO. [voice-unavailable]"}]
+- PASS [P0] gap:ai-gateway-no-false-done: {"completed":false,"code":"unknown-error","text":"I could not validate that action safely. Your workspace was not changed; you can retry it.","falseDone":false}
+- PASS [P2] gap:ai-gateway-live-smoke: skipped — no LIVE_PROVIDER credentials; honesty path proven
+- PASS [P0] gap:share-review-redacts-secrets: omitted=examples,canvasSettings,soundscapeSettings,privateContext,rawCaptures,commandHistory
+- PASS [P0] gap:share-package-validates: hash=sha256-4K0Qh4iJv
+- PASS [P0] gap:share-grant-once: private-once consumed exactly once
+- PASS [P0] gap:share-install-atomic: {"receipt":"stress/share-fixture@1.0.0","keys":["stress/share-fixture"]}
+- PASS [P0] gap:share-reject-unsigned: unsigned package rejected
+- PASS [P0] gap:share-export-local: {"ok":true,"pearlKeys":["lens.scenes.v4"],"entryCount":18,"profile":"anonymous"}
+- PASS [P0] gap:share-reopen-restore: {"restored":{"ok":true,"entryCount":18,"exportedCount":18,"hasScenes":true},"survived":{"exportedCount":18,"pearlCount":1,"hasScenes":true,"keys":["lens.board.operators.v2","lens.board.sync-meta.v1","lens.onboarded.v1","lens.scenes.v4"]}}
+- PASS [P0] gap:wf-create-pearl: pearls=1 [{"id":"81bd251d-93f8-4ad7-8009-abcc1f930783","name":"workflow stress"}]
+- PASS [P1] gap:wf-wear: {"completed":true,"text":"{\"completed\":true,\"aborted\":false,\"errors\":[],\"results\":[{\"type\":\"worn-pearl\",\"status\":\"worn\",\"object\":{\"version\":2,\"pearlId\":\"81bd
+- PASS [P1] gap:wf-studio: {"hasStudio":false,"hasMFL":false,"href":"http://127.0.0.1:41812/#pearl-studio"}
+- PASS [P1] gap:wf-organize-remix: {"organizeOk":true,"counterOk":true,"nestOk":true,"mergeOk":true,"errors":{"organize":[],"counter":[],"nest":[],"merge":[]}}
+- PASS [P0] gap:wf-destructive-confirm: Accept/Reject present
+- PASS [P1] gap:wf-encode: {"completed":true,"encodeOpen":true,"errors":[]}
+- PASS [P0] gap:packages-signed-manifest: key=stress:pkg:1
+- PASS [P1] gap:packages-route: Reef Packages · saved tools & settings Companion HOME OF PEARLS Packages Pearls form, play, and expand here. Talk to you
+- PASS [P2] gap:packages-ui-sign: sign control absent — module path already proven
+- PASS [P0] gap:packages-reject-tampered: tampered content hash rejected
+- PASS [P0] gap:vault-api-present: {"ok":true,"describe":{"mode":"local-only","encrypted":true,"locked":false,"profile":"anonymous","itemCount":17,"bootstrap":["lens.privacy.active-profile.v1","l
+- PASS [P0] gap:vault-lock: {"mode":"local-only","encrypted":false,"locked":true,"profile":"anonymous","itemCount":0,"bootstrap":["lens.privacy.active-profile.v1","lens.privacy.locked.v1","lens.auth.resendAt"]}
+- PASS [P0] gap:vault-unlock: {"mode":"local-only","encrypted":true,"locked":false,"profile":"anonymous","itemCount":17,"bootstrap":["lens.privacy.active-profile.v1","lens.privacy.locked.v1","lens.auth.resendAt"]}
+- PASS [P0] gap:vault-wrong-passphrase: wrongFail=true locked=true
+- PASS [P0] gap:taste-candidates-seeded: candidates=3
+- PASS [P0] gap:taste-ui-open: Choices panel open
+- PASS [P0] gap:taste-yes-persists: {"nodes":[{"id":"cand-batch-gap-1784857641935-1","fb":"accepted"},{"id":"cand-batch-gap-1784857641935-2","fb":null},{"id":"cand-batch-gap-1784857641935-3","fb":null}],"orb":[{"id":"cand-batch-gap-1784857641935-1","status":"pending"},{"id":"cand-batch-gap-1784857641935-2","status":"pending"},{"id":"cand-batch-gap-1784857641935-3","status":"pending"}],"uiAccepted":false}
+- PASS [P1] gap:taste-more-no-fake-live: phase=executing
+- PASS [P0] gap:account-merge-idempotent: ops=1 lenses=1
+- PASS [P0] gap:account-profile-isolation: {"mode":"local-only","encrypted":true,"locked":false,"profile":"account","itemCount":1,"bootstrap":["lens.privacy.active-profile.v1","lens.privacy.locked.v1","lens.auth.resendAt"]}
+- PASS [P1] gap:extension-build: extension dist present
+- PASS [P0] gap:extension-playwright-audit: playwright-audit 360px + page pearl + insert
 - PASS [P2] aesthetic:01-welcome: pass: Clean first viewport: Companion Pearl + Just talk + Talk CTA dominate. Low clutter, clear hierarchy, no orb copy. Footer gauntlet hint is tiny but secondary.
 - PASS [P2] aesthetic:02-after-talk: pass: Reef + open Companion readable. Your Reef title intact. Demo chips contrast improved. Talk CTA still visible behind chat on desktop (acceptable redundancy).
 - PASS [P2] aesthetic:03-create-mid-anim: pass: Director mid-frame: stop demonstration + chat status/trail readable; ghost cursor present; gauntlet not stacked with labels. Motion looks intentional.

@@ -3,8 +3,8 @@
 Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)
 Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`
 Evidence: `audit-shots/pearl-comprehensive-stress-2026-07-23/`
-Last run commit: 92e3331 · 2026-07-24T01:25:23.618Z
-Score: 126/126 · P0=0 P1=0 P2=0
+Last run commit: db0f20f · 2026-07-24T01:45:16.932Z
+Score: 165/165 · P0=0 P1=0 P2=0
 
 ## Claimed vs stressed
 
@@ -33,14 +33,21 @@ Score: 126/126 · P0=0 P1=0 P2=0
 | Studio version snapshot / browse / restore (`studio-version-checkpoint-restore`) | README + feature-contracts + companion-capabilities | stressed | snapshotPearlVersion → browse → restore |
 | /library /toolbox /settings /install shell routes (`shell-library-toolbox-settings-install`) | README + feature-contracts + companion-capabilities | stressed | README shell routes load without crash |
 | Companion live gates (spawned) (`companion-chat-agent`) | README + feature-contracts + companion-capabilities | stressed | spawned companion-stress-live.mjs — gates green |
-| Real microphone (`live-mic`) | README / contracts (residual) | skipped | no real mic / OS permission in CI agent |
-| Live model gateway judgments (`live-ai-gateway`) | README / contracts (residual) | skipped | credential-dependent; honesty gate only |
-| Extension side panel 360px (`extension-sidepanel-360`) | README / contracts (residual) | skipped | requires unpacked extension load + separate harness |
-| Authenticated sync / import dedupe (`account-sync-import`) | README / contracts (residual) | skipped | anonymous persistence only in this run |
-| Live multi-candidate taste UI (`live-generation-taste-ui`) | README / contracts (residual) | skipped | provider credentials required for real multi-candidate batches |
-| Signed Cognitive Package install (`cognitive-packages-signed-install`) | README / contracts (residual) | skipped | signed package + trust UX needs fixture package + separate flow |
-| Privacy vault encryption UX (`privacy-vault-encryption-ux`) | README / contracts (residual) | skipped | vault UX not headed in this runner |
-| Gmail/Notion/Docs insertion adapters (`extension-site-adapters`) | README / contracts (residual) | skipped | Gmail/Notion/Docs insertion needs real host pages |
+| Simulated mic / SpeechRecognition UX (Listening→Heard + denied) (`live-mic`) | README + feature-contracts + gap stress | stressed | simulated ASR pipeline Listening/Hearing/Heard + empty + permission-denied + unavailable (no real OS mic hardware) |
+| AI gateway honesty (+ live smoke when credentials exist) (`live-ai-gateway`) | README + feature-contracts + gap stress | stressed | credential-absent honesty proven (401/blocker, no false Done); live smoke skipped — env residual |
+| Extension side panel 360px (`extension-sidepanel-360`) | README + feature-contracts + gap stress | stressed | unpacked Chromium load via extension/scripts/playwright-audit.mjs (360px panel) |
+| Multi-profile sync / import dedupe simulation (`account-sync-import`) | README + feature-contracts + gap stress | stressed | multi-profile switchProfile isolation + mergeBoardSnapshots idempotent re-import (no OAuth credentials) |
+| Multi-candidate taste UI (seeded + honesty) (`live-generation-taste-ui`) | README + feature-contracts + gap stress | stressed | seeded multi-candidate Choices UI + Yes persist; More-like-this without live credentials must not fake Done |
+| Signed Cognitive Package install / reject-unsigned (`cognitive-packages-signed-install`) | README + feature-contracts + gap stress | stressed | signed create/validate + reject tampered/unsigned; headed /packages route |
+| Privacy vault encryption UX (`privacy-vault-encryption-ux`) | README + feature-contracts + gap stress | stressed | headed settings lock/unlock + wrong passphrase honesty via __pearlPrivacy |
+| Extension insert/GO adapters (fixture hosts) (`extension-site-adapters`) | README + feature-contracts + gap stress | stressed | fixture editors.html insertion path (Gmail/Notion/Docs host pages not required — adapter contract exercised on local fixture) |
+| Share / export / import / reopen restore (`shareability-export-import`) | README + feature-contracts + gap stress | stressed | module share pipeline + local export/reopen; pass=7 fail=0 |
+| Workflow create→wear→Studio→remix→confirm→encode (`workflow-end-to-end`) | README + feature-contracts + gap stress | stressed | create/wear/studio/remix/destructive/encode; pass=6 fail=0 |
+
+## Shareability / workflow scores
+
+- Shareability: 7 pass / 0 fail
+- Workflows: 6 pass / 0 fail
 
 ## Newly stressed vs prior pearl-core suite
 
@@ -54,17 +61,23 @@ Score: 126/126 · P0=0 P1=0 P2=0
 - packages-tasks-routes
 - shell-library-toolbox-settings-install
 - zero-demand-empty-recovery (incl. reduced-motion + a11y labels)
+- live-mic (Fake SpeechRecognition Listening/Hearing/Heard + permission-denied + empty)
+- live-ai-gateway (honesty without credentials; live smoke when env present)
+- extension-sidepanel-360 + extension-site-adapters (unpacked Playwright audit)
+- account-sync-import (multi-profile vault + idempotent merge)
+- live-generation-taste-ui (seeded Choices Yes/No)
+- cognitive-packages-signed-install + privacy-vault-encryption-ux
+- shareability-export-import + workflow-end-to-end
 
 ## Residual gaps (honest non-claims)
 
-- Real microphone / SpeechRecognition not exercised (fake Recognition only in companion gates).
-- Live AI gateway / model credentials not required; evaluate + generation paths assert honest blocker or local materialization, not live judgment batches.
-- Extension side panel (360px) / in-page Pearl / site adapters not loaded in this runner — use extension audits when dist + unpacked load available.
-- Authenticated sync / account-adoption re-import dedupe not fully exercised (anonymous localStorage only).
-- Page-context capture from a real external site not exercised; evaluate used in-app text fixture.
-- Full multi-candidate live generation with taste accept/reject UI not verified without provider credentials.
-- Cognitive Packages signed install, privacy vault encryption UX, and Cognitive Pull Request batch merge UI not headed-stressed in this suite.
 - Standard reference: docs/pearl-stress-standard.md
+- Gap suites (voice/share/workflows/extension/vault/taste/sync/packages/AI honesty) run via scripts/pearl-gap-stress.mjs unless SKIP_GAPS=1.
+- Real OS microphone hardware / browser getUserMedia permission UI is not exercised; Fake SpeechRecognition + permission-denied error path prove product honesty.
+- Live model gateway quality not scored — no LIVE_PROVIDER_BASE_URL + API key in this environment.
+- Live multi-candidate model batches are not provider-scored here; UI + persistence + honesty under 401 are proven with seeded candidates.
+- Supabase/OAuth signed-in sync against a real account is not exercised — local multi-profile vault isolation + idempotent adoption merge are proven.
+- Gmail/Notion/Docs live host pages are not opened; local editors.html fixture proves the insert/GO adapter path.
 
 ## Run matrix (raw)
 
@@ -91,12 +104,14 @@ Score: 126/126 · P0=0 P1=0 P2=0
 - **stressed** `remix-compose-typed-layers` — composePearlCognitiveLayers preview honesty
 - **stressed** `studio-version-checkpoint-restore` — snapshotPearlVersion → browse → restore
 - **stressed** `shell-library-toolbox-settings-install` — README shell routes load without crash
-- **skipped** `extension-sidepanel-360` — requires unpacked extension load + separate harness
-- **skipped** `live-mic` — no real mic / OS permission in CI agent
-- **skipped** `live-ai-gateway` — credential-dependent; honesty gate only
-- **skipped** `account-sync-import` — anonymous persistence only in this run
-- **skipped** `live-generation-taste-ui` — provider credentials required for real multi-candidate batches
-- **skipped** `cognitive-packages-signed-install` — signed package + trust UX needs fixture package + separate flow
-- **skipped** `privacy-vault-encryption-ux` — vault UX not headed in this runner
-- **skipped** `extension-site-adapters` — Gmail/Notion/Docs insertion needs real host pages
+- **stressed** `live-mic` — simulated ASR pipeline Listening/Hearing/Heard + empty + permission-denied + unavailable (no real OS mic hardware)
+- **stressed** `live-ai-gateway` — credential-absent honesty proven (401/blocker, no false Done); live smoke skipped — env residual
+- **stressed** `shareability-export-import` — module share pipeline + local export/reopen; pass=7 fail=0
+- **stressed** `workflow-end-to-end` — create/wear/studio/remix/destructive/encode; pass=6 fail=0
+- **stressed** `cognitive-packages-signed-install` — signed create/validate + reject tampered/unsigned; headed /packages route
+- **stressed** `privacy-vault-encryption-ux` — headed settings lock/unlock + wrong passphrase honesty via __pearlPrivacy
+- **stressed** `live-generation-taste-ui` — seeded multi-candidate Choices UI + Yes persist; More-like-this without live credentials must not fake Done
+- **stressed** `account-sync-import` — multi-profile switchProfile isolation + mergeBoardSnapshots idempotent re-import (no OAuth credentials)
+- **stressed** `extension-sidepanel-360` — unpacked Chromium load via extension/scripts/playwright-audit.mjs (360px panel)
+- **stressed** `extension-site-adapters` — fixture editors.html insertion path (Gmail/Notion/Docs host pages not required — adapter contract exercised on local fixture)
 - **stressed** `aesthetic-human-review` — loaded 52 frame critiques from audit-shots/pearl-comprehensive-stress-2026-07-23/aesthetic-reviews.json

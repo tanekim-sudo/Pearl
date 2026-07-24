@@ -80,11 +80,18 @@ Clear / delete / wipe paths stage confirmation in chat with Accept and Reject hi
 1. Prefer a **production preview** build (or document the exact working build URL).
 2. Spawn companion live gates first (unless `SKIP_COMPANION=1`).
 3. Exercise core journeys with hit-tests, persistence, director probes, and screenshot evidence.
-4. Expand coverage toward claimed capabilities in README + `shared/feature-contracts.js` + companion manifest — especially role/superpower pearls, encode/automation, remix primitives, generation honesty, Output Frame, packages/tasks entry points.
+4. Expand coverage toward claimed capabilities in README + `shared/feature-contracts.js` + companion manifest — especially role/superpower pearls, encode/automation, remix primitives, generation honesty, Output Frame, packages/tasks entry points, **shareability** (review → signed package → grant → consume → install / export → reopen), and **workflow** journeys (create → wear → Studio → remix → destructive confirm → encode).
 5. Write evidence under `audit-shots/` and update tracked ledgers / coverage matrix.
 6. Exit non-zero when P0/P1 defects remain open (including aesthetic hard fails).
+7. Spawn residual gap suites (`npm run stress:gaps` / `scripts/pearl-gap-stress.mjs`) unless `SKIP_GAPS=1` — voice simulation, AI gateway honesty, extension 360, account multi-profile, taste UI, packages, vault.
 
-Skipped paths (mic, live gateway, extension unpack, auth sync) must appear in the coverage matrix with **why**.
+### Shareability dimension
+Prove: privacy review redacts secrets → signed `.pearl` package validates → grant consume is once-safe → install is atomic → unsigned/tampered rejects → local export reopen restores ids without silent dupes/loss.
+
+### Workflow dimension
+Prove headed: first-time Talk → create pearl → wear → Studio (M→F→L when structure exists) → organize/remix → in-thread Accept/Reject for destructive clear → encode entry. Persistence across reload where claimed.
+
+Environmental limits (real OS mic hardware UI, live provider quality without keys, Gmail/Notion live hosts, real OAuth account) must appear once as **residual environment**, not as forever-skipped closable simulations.
 
 ---
 

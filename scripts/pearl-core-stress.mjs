@@ -7,17 +7,20 @@
  *
  * Runs companion-stress-live gates first, then core + comprehensive journeys
  * (role/superpower pearls, encode/automation, remix, generation honesty,
- * Output Frame, packages/tasks, a11y/reduced-motion, empty/recovery) under the
- * Pearl Product Stress Standard lenses: first-time / zero-demand / aesthetics /
- * usability / functionality (hit-test + real effects) / persistence /
- * companion honesty / communication / vision / a11y / error-recovery /
- * performance feel / trust / cross-surface / naming / undo-confirm.
+ * Output Frame, packages/tasks, a11y/reduced-motion, empty/recovery), then
+ * residual gap suites (voice simulation, AI gateway honesty, shareability,
+ * workflows, packages, vault, taste UI, account-sync, extension) under the
+ * Pearl Product Stress Standard lenses.
  *
  * Usage:
  *   npm run stress:pearl
  *   AUDIT_URL=http://127.0.0.1:41812 node scripts/pearl-core-stress.mjs
  *   SKIP_COMPANION=1 AUDIT_URL=... node scripts/pearl-core-stress.mjs
+ *   SKIP_GAPS=1 AUDIT_URL=... node scripts/pearl-core-stress.mjs
  *   SELF_PREVIEW=1 node scripts/pearl-core-stress.mjs   # build already present
+ *
+ * Focused residual suites:
+ *   npm run stress:voice | stress:shareability | stress:workflows | stress:gaps
  */
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -35,6 +38,7 @@ const PORT = Number(process.env.AUDIT_PORT || 41812);
 const baseUrl = process.env.AUDIT_URL || `http://127.0.0.1:${PORT}`;
 const headed = process.env.HEADED === "0" ? false : true;
 const skipCompanion = process.env.SKIP_COMPANION === "1";
+const skipGaps = process.env.SKIP_GAPS === "1";
 const selfPreview = process.env.SELF_PREVIEW === "1" || !process.env.AUDIT_URL;
 const chromePath = process.env.PW_CHROMIUM
   || (fs.existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
@@ -53,10 +57,13 @@ const results = {
   checks: [],
   defects: [],
   companion: null,
+  gapStress: null,
   gaps: [],
   coverage: { stressed: [], skipped: [] },
   aesthetics: [],
   visualHeuristics: [],
+  shareability: null,
+  workflows: null,
 };
 
 async function visualHeuristics(page, frameId) {
@@ -655,6 +662,79 @@ function runCompanionGates(url) {
   return ok;
 }
 
+function mergeGapCoverageFromDisk() {
+  const gapResultsPath = path.join(ROOT, "audit-shots/pearl-gap-stress-2026-07-23/results.json");
+  if (!fs.existsSync(gapResultsPath)) return;
+  try {
+    const gap = JSON.parse(fs.readFileSync(gapResultsPath, "utf8"));
+    results.shareability = gap.shareability || null;
+    results.workflows = gap.workflows || null;
+    for (const row of gap.coverage || []) {
+      // Prefer gap stress status over prior skipped placeholders for the same id.
+      const existing = results.matrix.findIndex((entry) => entry.id === row.id);
+      if (existing >= 0) results.matrix[existing] = row;
+      else results.matrix.push(row);
+      if (row.status === "stressed") {
+        results.coverage.stressed = results.coverage.stressed.filter((e) => e.id !== row.id);
+        results.coverage.stressed.push({ id: row.id, why: row.why });
+        results.coverage.skipped = results.coverage.skipped.filter((e) => e.id !== row.id);
+      } else {
+        results.coverage.skipped = results.coverage.skipped.filter((e) => e.id !== row.id);
+        results.coverage.skipped.push({ id: row.id, why: row.why });
+      }
+    }
+    for (const envGap of gap.residualEnvironment || []) {
+      if (!results.gaps.includes(envGap)) results.gaps.push(envGap);
+    }
+    for (const check of gap.checks || []) {
+      record(
+        `gap:${check.id}`,
+        check.ok,
+        check.detail,
+        check.severity || "P1",
+        { evidence: check.evidence || "audit-shots/pearl-gap-stress-2026-07-23/" },
+      );
+    }
+  } catch (error) {
+    record("gap-coverage-merge", false, String(error?.message || error), "P1");
+  }
+}
+
+function runGapStress(url) {
+  console.log("\n── Residual gap stress ──");
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/pearl-gap-stress.mjs", "--suite=all"],
+    {
+      cwd: ROOT,
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        AUDIT_URL: url,
+        SKIP_PREVIEW: "1",
+        HEADED: headed ? "1" : "0",
+        PW_CHROMIUM: chromePath || process.env.PW_CHROMIUM || "",
+      },
+    },
+  );
+  const ok = result.status === 0;
+  results.gapStress = { ok, status: result.status };
+  record(
+    "pearl-gap-stress",
+    ok,
+    ok ? "pearl-gap-stress.mjs passed" : `pearl-gap-stress exited ${result.status}`,
+    "P0",
+    {
+      repro: "AUDIT_URL=... SKIP_PREVIEW=1 npm run stress:gaps",
+      expected: "Residual voice/share/workflow/extension/vault/taste/sync gaps green or honestly residual",
+      fixStatus: ok ? "n/a" : "open",
+      evidence: "audit-shots/pearl-gap-stress-2026-07-23/",
+    },
+  );
+  mergeGapCoverageFromDisk();
+  return ok;
+}
+
 let aestheticReviewsLoaded = false;
 function loadHumanAestheticReviews() {
   if (aestheticReviewsLoaded) return;
@@ -812,14 +892,16 @@ function writeLedger() {
     ["studio-version-checkpoint-restore", "Studio version snapshot / browse / restore", "stressed"],
     ["shell-library-toolbox-settings-install", "/library /toolbox /settings /install shell routes", "stressed"],
     ["companion-chat-agent", "Companion live gates (spawned)", "stressed"],
-    ["live-mic", "Real microphone", "skipped"],
-    ["live-ai-gateway", "Live model gateway judgments", "skipped"],
-    ["extension-sidepanel-360", "Extension side panel 360px", "skipped"],
-    ["account-sync-import", "Authenticated sync / import dedupe", "skipped"],
-    ["live-generation-taste-ui", "Live multi-candidate taste UI", "skipped"],
-    ["cognitive-packages-signed-install", "Signed Cognitive Package install", "skipped"],
-    ["privacy-vault-encryption-ux", "Privacy vault encryption UX", "skipped"],
-    ["extension-site-adapters", "Gmail/Notion/Docs insertion adapters", "skipped"],
+    ["live-mic", "Simulated mic / SpeechRecognition UX (Listening→Heard + denied)", "stressed"],
+    ["live-ai-gateway", "AI gateway honesty (+ live smoke when credentials exist)", "stressed"],
+    ["extension-sidepanel-360", "Extension side panel 360px", "stressed"],
+    ["account-sync-import", "Multi-profile sync / import dedupe simulation", "stressed"],
+    ["live-generation-taste-ui", "Multi-candidate taste UI (seeded + honesty)", "stressed"],
+    ["cognitive-packages-signed-install", "Signed Cognitive Package install / reject-unsigned", "stressed"],
+    ["privacy-vault-encryption-ux", "Privacy vault encryption UX", "stressed"],
+    ["extension-site-adapters", "Extension insert/GO adapters (fixture hosts)", "stressed"],
+    ["shareability-export-import", "Share / export / import / reopen restore", "stressed"],
+    ["workflow-end-to-end", "Workflow create→wear→Studio→remix→confirm→encode", "stressed"],
   ];
   const statusById = Object.fromEntries(results.matrix.map((row) => [row.id, row]));
   const coverageMd = [
@@ -839,11 +921,16 @@ function writeLedger() {
       const row = statusById[id];
       const status = row?.status || defaultStatus;
       const why = (row?.why || results.gaps.find((g) => g.toLowerCase().includes(id.split("-")[0])) || "").replace(/\|/g, "/");
-      const claimedIn = /extension|mic|gateway|sync|taste|packages-signed|vault|adapters/i.test(id)
-        ? "README / contracts (residual)"
+      const claimedIn = /extension|mic|gateway|sync|taste|packages-signed|vault|adapters|shareability|workflow/i.test(id)
+        ? "README + feature-contracts + gap stress"
         : "README + feature-contracts + companion-capabilities";
       return `| ${label} (\`${id}\`) | ${claimedIn} | ${status} | ${why || (status === "stressed" ? "headed harness" : "see gaps")} |`;
     }),
+    ``,
+    `## Shareability / workflow scores`,
+    ``,
+    `- Shareability: ${results.shareability ? `${results.shareability.pass} pass / ${results.shareability.fail} fail` : "not run (SKIP_GAPS=1)"}`,
+    `- Workflows: ${results.workflows ? `${results.workflows.pass} pass / ${results.workflows.fail} fail` : "not run (SKIP_GAPS=1)"}`,
     ``,
     `## Newly stressed vs prior pearl-core suite`,
     ``,
@@ -857,6 +944,13 @@ function writeLedger() {
     `- packages-tasks-routes`,
     `- shell-library-toolbox-settings-install`,
     `- zero-demand-empty-recovery (incl. reduced-motion + a11y labels)`,
+    `- live-mic (Fake SpeechRecognition Listening/Hearing/Heard + permission-denied + empty)`,
+    `- live-ai-gateway (honesty without credentials; live smoke when env present)`,
+    `- extension-sidepanel-360 + extension-site-adapters (unpacked Playwright audit)`,
+    `- account-sync-import (multi-profile vault + idempotent merge)`,
+    `- live-generation-taste-ui (seeded Choices Yes/No)`,
+    `- cognitive-packages-signed-install + privacy-vault-encryption-ux`,
+    `- shareability-export-import + workflow-end-to-end`,
     ``,
     `## Residual gaps (honest non-claims)`,
     ``,
@@ -2148,25 +2242,12 @@ async function runCoreJourneys(browser) {
   const fatal = pageErrors.filter((e) => /chunk|undefined is not|cannot read|hydration/i.test(e));
   record("no-fatal-page-errors", fatal.length === 0, fatal.slice(0, 3).join(" | ") || "none", "P0");
 
-  // Document gaps (honest non-claims)
+  // Residual environmental limits are filled by pearl-gap-stress (spawned after core).
+  // Do not mark closable simulations as forever-skipped here.
   results.gaps.push(
-    "Real microphone / SpeechRecognition not exercised (fake Recognition only in companion gates).",
-    "Live AI gateway / model credentials not required; evaluate + generation paths assert honest blocker or local materialization, not live judgment batches.",
-    "Extension side panel (360px) / in-page Pearl / site adapters not loaded in this runner — use extension audits when dist + unpacked load available.",
-    "Authenticated sync / account-adoption re-import dedupe not fully exercised (anonymous localStorage only).",
-    "Page-context capture from a real external site not exercised; evaluate used in-app text fixture.",
-    "Full multi-candidate live generation with taste accept/reject UI not verified without provider credentials.",
-    "Cognitive Packages signed install, privacy vault encryption UX, and Cognitive Pull Request batch merge UI not headed-stressed in this suite.",
     `Standard reference: ${DOCS_STANDARD}`,
+    "Gap suites (voice/share/workflows/extension/vault/taste/sync/packages/AI honesty) run via scripts/pearl-gap-stress.mjs unless SKIP_GAPS=1.",
   );
-  coverage("extension-sidepanel-360", "skipped", "requires unpacked extension load + separate harness");
-  coverage("live-mic", "skipped", "no real mic / OS permission in CI agent");
-  coverage("live-ai-gateway", "skipped", "credential-dependent; honesty gate only");
-  coverage("account-sync-import", "skipped", "anonymous persistence only in this run");
-  coverage("live-generation-taste-ui", "skipped", "provider credentials required for real multi-candidate batches");
-  coverage("cognitive-packages-signed-install", "skipped", "signed package + trust UX needs fixture package + separate flow");
-  coverage("privacy-vault-encryption-ux", "skipped", "vault UX not headed in this runner");
-  coverage("extension-site-adapters", "skipped", "Gmail/Notion/Docs insertion needs real host pages");
 
   // Ensure createIds tracked for integrity note
   record(
@@ -2221,6 +2302,25 @@ async function main() {
     } finally {
       await browser.close();
     }
+
+    if (!skipGaps) {
+      const gapOk = runGapStress(baseUrl);
+      if (!gapOk) {
+        console.error("Gap stress failed — ledger will include residual defects");
+      }
+    } else {
+      coverage("live-mic", "skipped", "SKIP_GAPS=1");
+      coverage("live-ai-gateway", "skipped", "SKIP_GAPS=1");
+      coverage("extension-sidepanel-360", "skipped", "SKIP_GAPS=1");
+      coverage("account-sync-import", "skipped", "SKIP_GAPS=1");
+      coverage("live-generation-taste-ui", "skipped", "SKIP_GAPS=1");
+      coverage("cognitive-packages-signed-install", "skipped", "SKIP_GAPS=1");
+      coverage("privacy-vault-encryption-ux", "skipped", "SKIP_GAPS=1");
+      coverage("extension-site-adapters", "skipped", "SKIP_GAPS=1");
+      coverage("shareability-export-import", "skipped", "SKIP_GAPS=1");
+      coverage("workflow-end-to-end", "skipped", "SKIP_GAPS=1");
+      results.gapStress = { ok: null, status: "skipped" };
+    }
   } finally {
     writeLedger();
     if (preview && preview.exitCode == null) {
@@ -2233,7 +2333,14 @@ async function main() {
   const p0p1 = results.defects.filter((d) => d.severity === "P0" || d.severity === "P1").length;
   console.log(`\n${results.checks.filter((c) => c.ok).length}/${results.checks.length} passed`);
   console.log(`P0/P1 open: ${p0p1}`);
+  if (results.shareability) {
+    console.log(`shareability: ${results.shareability.pass} pass / ${results.shareability.fail} fail`);
+  }
+  if (results.workflows) {
+    console.log(`workflows: ${results.workflows.pass} pass / ${results.workflows.fail} fail`);
+  }
   console.log(`evidence: ${OUT}`);
+  console.log(`gap evidence: audit-shots/pearl-gap-stress-2026-07-23/`);
   console.log(`summary: ${DOCS_SUMMARY}`);
   process.exit(failed ? 1 : 0);
 }

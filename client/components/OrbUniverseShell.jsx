@@ -936,6 +936,14 @@ export default function OrbUniverseShell({ StageComponent }) {
   orbRef.current = orb;
 
   const openEmittedView = useCallback((view, meta = null) => {
+    if (view === "taste") {
+      const fromRuntime = typeof window !== "undefined" ? window.__lensOrbRuntime?.candidates?.() : null;
+      const seeded = Array.isArray(meta?.candidates) ? meta.candidates : null;
+      const next = (seeded?.length ? seeded : null) || (fromRuntime?.length ? fromRuntime : null);
+      if (next?.length) {
+        setOrb((value) => createOrbState({ ...value, candidates: next }));
+      }
+    }
     setEmittedView(view);
     if (meta?.panel) setSettingsPanel(meta.panel);
     if (view === "settings" && !meta?.panel) setSettingsPanel("account");
@@ -989,6 +997,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     window.addEventListener("lens:open-pearl-guide", open);
     return () => window.removeEventListener("lens:open-pearl-guide", open);
   }, []);
+
+  useEffect(() => {
+    const openTaste = (event) => {
+      openEmittedView("taste", { candidates: event?.detail?.candidates || null });
+    };
+    window.addEventListener("lens:open-taste-constellation", openTaste);
+    return () => window.removeEventListener("lens:open-taste-constellation", openTaste);
+  }, [openEmittedView]);
 
   useEffect(() => {
     registerDirectorVerbs({
