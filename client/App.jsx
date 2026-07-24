@@ -18192,13 +18192,38 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     };
   }
 
+  // Stable runtime bridge: never re-register on every render (that deleted __lensOrbRuntime
+  // mid-command and made GO/voice look dead). Handlers are read from refs.
+  const companionBridgeRef = useRef({});
+  companionBridgeRef.current = {
+    run: (text, options = {}) => handleCompanionCommand(text, options),
+    execute: (script, options = {}) =>
+      executeCapabilityScriptDirect(script, { signal: options.signal, title: options.title || "Orb gesture" }),
+    undo: () => {
+      undo();
+      return { type: "workspace-undo", persisted: true };
+    },
+    redo: () => {
+      redo();
+      return { type: "workspace-redo", persisted: true };
+    },
+    confirmDestructive: () => {
+      confirmCompanionClear();
+      return { type: "destructive-clear-confirmed", persisted: true };
+    },
+    rejectDestructive: () => {
+      lastCompanionClearRef.current = null;
+      setPendingCompanionClear(null);
+      return { type: "destructive-clear-rejected", persisted: false };
+    },
+  };
   useEffect(() => {
     const bridge = {
       run(text, options = {}) {
-        return handleCompanionCommand(text, options);
+        return companionBridgeRef.current.run(text, options);
       },
       execute(script, options = {}) {
-        return executeCapabilityScriptDirect(script, { signal: options.signal, title: options.title || "Orb gesture" });
+        return companionBridgeRef.current.execute(script, options);
       },
       candidates() {
         return aiNodesRef.current
@@ -18219,25 +18244,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         return { cancelled: true, id };
       },
       undo() {
-        undo();
-        return { type: "workspace-undo", persisted: true };
+        return companionBridgeRef.current.undo();
       },
       redo() {
-        redo();
-        return { type: "workspace-redo", persisted: true };
+        return companionBridgeRef.current.redo();
       },
       pendingDestructive() {
         const pending = lastCompanionClearRef.current;
         return pending?.domains?.length ? { domains: [...pending.domains], counts: { ...pending.counts } } : null;
       },
       confirmDestructive() {
-        confirmCompanionClear();
-        return { type: "destructive-clear-confirmed", persisted: true };
+        return companionBridgeRef.current.confirmDestructive();
       },
       rejectDestructive() {
-        lastCompanionClearRef.current = null;
-        setPendingCompanionClear(null);
-        return { type: "destructive-clear-rejected", persisted: false };
+        return companionBridgeRef.current.rejectDestructive();
       },
     };
     window.__lensOrbRuntime = bridge;
@@ -18245,7 +18265,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return () => {
       if (window.__lensOrbRuntime === bridge) delete window.__lensOrbRuntime;
     };
-  });
+  }, []);
 
   const tourState = useMemo(
     () => ({

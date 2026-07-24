@@ -2046,6 +2046,17 @@ export default function OrbUniverseShell({ StageComponent }) {
       const execution = result?.execution || null;
       const problem = execution
         && (execution.status === "blocked" || execution.status === "failed" || execution.status === "cancelled");
+      const chatText = problem
+        ? (execution
+          ? `${execution.status === "cancelled" ? "Cancelled" : execution.status === "failed" ? "Failed" : "Blocked"}: ${execution.message} [${execution.code}]`
+          : result?.text)
+        : (result?.text || execution?.message || "Done.");
+      if (chatText) {
+        window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+        window.dispatchEvent(new CustomEvent("lens:companion-notice", {
+          detail: { id: `run:${recorded.entry.id}`, text: chatText, transient: false },
+        }));
+      }
       if (result?.visible || problem) {
         if (execution) recordAndLogExecution(execution);
         const boundary = execution
@@ -3364,9 +3375,10 @@ export default function OrbUniverseShell({ StageComponent }) {
           onCandidateTaste={tasteCandidate}
           onOpenStudio={openActivePearlStudio}
         />}
-    {/* Keep App runtime + CompanionChat alive on Reef so GO/voice/director never die. */}
+    {/* Keep ONE stable App + CompanionChat for Reef. Never bind sceneId here — that remounts
+        chat (wiping messages) and fights Scene's runtime over __lensOrbRuntime. */}
     {!showInstall && <div className="orb-runtime-host" data-semantic-anchor="companion-runtime" aria-hidden="true">
-      <StageComponent key="reef-runtime" sceneId={sceneWorkspace.activeSceneId || null} pearlShell />
+      <StageComponent key="reef-companion-runtime" sceneId={null} pearlShell />
     </div>}
     {!cursorMode && <CompanionOrb
       key="universe-orb"

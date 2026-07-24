@@ -39,6 +39,48 @@ const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 const MODE_KEY = "lens.companion.mode.v1";
 const PENDING_PLAN_KEY = "lens.companion.pending-plan.v1";
+const CHAT_MESSAGES_KEY = "lens.companion.chat-messages.v1";
+const MAX_PERSISTED_CHAT = 80;
+
+function loadPersistedChat(pearlShell) {
+  try {
+    const raw = sessionStorage.getItem(CHAT_MESSAGES_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.length) return null;
+    return parsed.slice(-MAX_PERSISTED_CHAT).map((entry) => ({
+      role: entry.role === "user" ? "user" : "companion",
+      text: String(entry.text || "").slice(0, 4000),
+      error: Boolean(entry.error),
+      execution: entry.execution || undefined,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function persistChat(messages) {
+  try {
+    sessionStorage.setItem(
+      CHAT_MESSAGES_KEY,
+      JSON.stringify(
+        (messages || [])
+          .filter((m) => m?.text && m.role !== "status")
+          .slice(-MAX_PERSISTED_CHAT)
+          .map((m) => ({
+            role: m.role,
+            text: String(m.text).slice(0, 4000),
+            error: Boolean(m.error),
+            execution: m.execution
+              ? { status: m.execution.status, code: m.execution.code, message: m.execution.message }
+              : undefined,
+          })),
+      ),
+    );
+  } catch {
+    /* private mode / quota */
+  }
+}
 
 /**
  * Companion — a voice/text helper that answers by DOING: every reply can play
@@ -58,15 +100,17 @@ export default function CompanionChat({
   const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
   const [foreground, setForeground] = useState(false);
-  const [messages, setMessages] = useState(() => [
-    {
-      role: "companion",
-      text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
-        (pearlShell
-          ? "Type what you want, then press GO."
-          : "Type what you want, then press GO."),
-    },
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const persisted = loadPersistedChat(pearlShell);
+    if (persisted?.length) return persisted;
+    return [
+      {
+        role: "companion",
+        text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
+          "Type or speak what you want, then press GO. I’ll reply here with what happened.",
+      },
+    ];
+  });
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState(() => loadExecutionEvents());
@@ -201,6 +245,10 @@ export default function CompanionChat({
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
 
+  useEffect(() => {
+    persistChat(messages);
+  }, [messages]);
+
   function speak(text) {
     if (!voiceOut || typeof speechSynthesis === "undefined" || !text) return;
     try {
@@ -272,7 +320,20 @@ export default function CompanionChat({
       return execution;
     }
     const run = submitGuardRef.current.begin(rawText ?? draft, envelope);
-    if (!run) return;
+    if (!run) {
+      const active = submitGuardRef.current.active?.();
+      const detail = active
+        ? "Still working on your last command — wait for the reply, or press Stop."
+        : "That command was ignored as a duplicate of something you just sent. Change the text or wait a moment, then press GO again.";
+      setMessages((m) => [...m, {
+        role: "companion",
+        text: `Blocked: ${detail} [submit-guard]`,
+        error: true,
+      }]);
+      setOpen(true);
+      setForeground(true);
+      return;
+    }
     const { text } = run;
     if (typeof window !== "undefined" && import.meta.env?.DEV) {
       window.__lensCompanionLastRun = { ...run, controller: undefined, signal: undefined, text, startedAt: run.at };
@@ -369,9 +430,32 @@ export default function CompanionChat({
         }
         return;
       }
+      if (typeof onCommand !== "function") {
+        surfaceExecution({
+          completed: false,
+          visible: true,
+          text: "Blocked: Companion runtime is not connected. Reload the page, then try GO again. [runtime-unavailable]",
+          execution: {
+            status: "blocked",
+            code: "runtime-unavailable",
+            stage: "execute",
+            message: "Companion runtime is not connected. Reload the page, then try GO again.",
+          },
+        });
+        return;
+      }
       const result = await onCommand(text, commandOptions);
       setMemory(rememberCompanionAction(userId, text));
-      surfaceExecution(result);
+      // Always show a chat reply — never complete silently.
+      surfaceExecution(
+        result?.visible || result?.text
+          ? result
+          : {
+              ...result,
+              visible: true,
+              text: result?.text || result?.execution?.message || "Done.",
+            },
+      );
     } catch (err) {
       if (run.signal.aborted || err?.name === "AbortError") {
         surfaceExecution(null, err);
@@ -461,6 +545,7 @@ export default function CompanionChat({
     const said = s.finish({ send: shouldSend });
     recRef.current = null;
     setListening(false);
+    setMessages((m) => m.filter((entry) => entry.role !== "status"));
     if (!shouldSend && said) setDraft(s.text());
   }
 
@@ -480,7 +565,15 @@ export default function CompanionChat({
         setListening(false);
         send(text, envelope);
       },
-      updateDraft: setDraft,
+      updateDraft: (value) => {
+        setDraft(value);
+        const heard = String(value || "").trim();
+        if (!heard) return;
+        setMessages((m) => {
+          const without = m.filter((entry) => entry.role !== "status");
+          return [...without, { role: "status", text: `Hearing: “${heard.slice(0, 160)}${heard.length > 160 ? "…" : ""}”` }];
+        });
+      },
     });
 
     const attach = () => {
@@ -527,6 +620,15 @@ export default function CompanionChat({
 
     voiceSessionRef.current = session;
     setListening(true);
+    setMessages((m) => {
+      const without = m.filter((entry) => entry.role !== "status");
+      return [...without, {
+        role: "status",
+        text: "Listening… speak now. Tap the mic again when you’re done (or pause and I’ll send what I heard).",
+      }];
+    });
+    setOpen(true);
+    setForeground(true);
     try {
       attach();
     } catch {
