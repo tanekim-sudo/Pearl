@@ -44,12 +44,6 @@
 
 ## 14j-nl-reorder-studio
 
-- Verdict: fail
-- Severity: P0
-- Critique: PNG Read: Companion NL reorder did not change a visible Move order in Studio — rearrange via Companion is not world-visible.
-
-## final
-
 - Verdict: pass
 - Severity: P0
-- Critique: PNG Read: final frame shows no Untitled/orb mystery titles; shelf labels stay readable.
+- Critique: PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger → Write recommendation; now Write recommendation → Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger).

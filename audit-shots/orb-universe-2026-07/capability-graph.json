@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-45afcfc2",
+  "fingerprint": "fnv1a-d53a0476",
   "counts": {
-    "nodes": 404,
+    "nodes": 408,
     "edges": 516
   },
   "nodes": [
@@ -21786,6 +21786,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -21830,6 +21833,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -21852,6 +21857,8 @@
       "expectedEffects": [
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -21872,6 +21879,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -21916,6 +21925,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -21962,6 +21974,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -21985,6 +21999,8 @@
         "scene-state-changed",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -22005,6 +22021,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -22050,6 +22068,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -22096,6 +22117,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -22119,6 +22142,8 @@
         "scene-state-changed",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -22139,6 +22164,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -22198,6 +22225,9 @@
         "worker specs are finite and role-bound",
         "parent pearl has workers",
         "Pearl exists in the canonical entity store",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -22248,6 +22278,8 @@
         "scene.semanticOrbs.update",
         "pearlEntities.restoreVersion",
         "pearlStudioSessions.upsert",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -22280,6 +22312,8 @@
         "orb-workers-created",
         "orb-workers-merged",
         "pearl-studio-opening",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -22312,6 +22346,8 @@
         "createWorker",
         "mergeWorkers",
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -22360,6 +22396,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -22408,6 +22447,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -22433,6 +22474,8 @@
         "ai-state-changed",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -22453,6 +22496,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -22499,6 +22544,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -22547,6 +22595,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -22572,6 +22622,8 @@
         "ai-state-changed",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -22592,6 +22644,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -24811,6 +24865,9 @@
         "parent pearl exists",
         "worker specs are finite and role-bound",
         "parent pearl has workers",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -24870,6 +24927,8 @@
         "scene.semanticOrbs.append",
         "scene.semanticOrbs.update",
         "pearlEntities.restoreVersion",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -24913,6 +24972,8 @@
         "pearl-version-restored",
         "orb-workers-created",
         "orb-workers-merged",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -24955,6 +25016,8 @@
         "restorePearlVersion",
         "createWorker",
         "mergeWorkers",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -25007,6 +25070,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -25055,6 +25121,8 @@
         "none",
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -25081,6 +25149,8 @@
         "gauntlet-evaluation-prepared",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -25106,6 +25176,8 @@
         "evaluateWithGauntlet",
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -25119,6 +25191,313 @@
       "idempotency": "idempotency-key",
       "domains": [
         "scene",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.reorderPearlFunctionMoves",
+      "version": 1,
+      "kind": "capability",
+      "name": "reorderPearlFunctionMoves",
+      "purpose": "Reorder Moves inside a pearl Function (same handler as Studio drag)",
+      "examples": [
+        "put the last move first",
+        "move the first move to the end",
+        "reorder the moves — put the recommendation first"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "functionId": "string?",
+          "functionName": "string?",
+          "fromIndex": "number?",
+          "toIndex": "number?",
+          "from": "string?",
+          "to": "string?",
+          "move": "string?",
+          "moveName": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-reorderPearlFunctionMoves",
+        "feature:studio.pearl"
+      ],
+      "featureIds": [
+        "studio.pearl"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "move",
+        "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.decomposePearlFunctionMove",
+      "version": 1,
+      "kind": "capability",
+      "name": "decomposePearlFunctionMove",
+      "purpose": "Decompose one Function Move into smaller ordered Moves (same handler as Studio Decompose)",
+      "examples": [
+        "decompose the first move",
+        "break that step into smaller moves"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "functionId": "string?",
+          "functionName": "string?",
+          "moveIndex": "number?",
+          "move": "string?",
+          "moveName": "string?",
+          "from": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-decomposePearlFunctionMove",
+        "feature:studio.pearl"
+      ],
+      "featureIds": [
+        "studio.pearl"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "function",
+        "move",
         "interface"
       ],
       "platform": "app"
@@ -33017,6 +33396,314 @@
         "move",
         "function",
         "lens"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.reorderExternalPearlFunctionMoves",
+      "version": 1,
+      "kind": "capability",
+      "name": "reorderExternalPearlFunctionMoves",
+      "purpose": "Reorder Moves inside an extension pearl Function through the canonical domain handler",
+      "examples": [
+        "put the last move first in this function"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "functionId": "string?",
+          "functionName": "string?",
+          "fromIndex": "number?",
+          "toIndex": "number?",
+          "from": "string?",
+          "to": "string?",
+          "move": "string?",
+          "moveName": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-reorderExternalPearlFunctionMoves",
+        "feature:studio.pearl"
+      ],
+      "featureIds": [
+        "studio.pearl"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "function",
+        "move",
+        "interface"
+      ],
+      "platform": "extension"
+    },
+    {
+      "id": "companion.capability.extension.decomposeExternalPearlFunctionMove",
+      "version": 1,
+      "kind": "capability",
+      "name": "decomposeExternalPearlFunctionMove",
+      "purpose": "Decompose one extension pearl Function Move into smaller ordered Moves",
+      "examples": [
+        "decompose the first move in this function"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pearlId": "string?",
+          "functionId": "string?",
+          "functionName": "string?",
+          "moveIndex": "number?",
+          "move": "string?",
+          "moveName": "string?",
+          "from": "string?"
+        }
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "Pearl exists in the canonical entity store",
+        "profile is unlocked",
+        "edit is canonical",
+        "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
+        "representation is relevant to this Pearl",
+        "a canonical checkpoint exists",
+        "an undo snapshot exists",
+        "Pearl exists",
+        "label is explicit",
+        "checkpoint exists"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "pearlStudioSessions.upsert",
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
+        "pearlEntities.representation.mode",
+        "pearlEntities.restoreCheckpoint",
+        "pearlEntities.restoreRedo",
+        "none",
+        "pearlEntities.history.checkpoints",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "none",
+        "undo-pearl-entity-edit",
+        "redo-pearl-entity-edit"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "extension",
+        "companion"
+      ],
+      "expectedEffects": [
+        "extension-state-changed",
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed",
+        "pearl-studio-opening",
+        "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
+        "pearl-studio-represented",
+        "pearl-entity-undo",
+        "pearl-entity-redo",
+        "pearl-history-observed",
+        "pearl-version-named",
+        "pearl-version-labeled",
+        "pearl-version-restored"
+      ],
+      "tests": [
+        "capability-decomposeExternalPearlFunctionMove",
+        "feature:studio.pearl"
+      ],
+      "featureIds": [
+        "studio.pearl"
+      ],
+      "canonicalCommands": [
+        "openPearlStudio",
+        "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
+        "setPearlStudioRepresentation",
+        "undoPearlEntityEdit",
+        "redoPearlEntityEdit",
+        "browsePearlHistory",
+        "snapshotPearlVersion",
+        "labelPearlVersion",
+        "restorePearlVersion"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "extension",
+        "scene",
+        "function",
+        "move",
+        "interface"
       ],
       "platform": "extension"
     },
@@ -41861,6 +42548,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -41919,6 +42609,8 @@
         "resultPearls.delete",
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -41971,6 +42663,8 @@
         "result-pearl-deleted",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -42006,6 +42700,8 @@
         "deleteResultPearl",
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -43012,6 +43708,9 @@
         "parent pearl exists",
         "worker specs are finite and role-bound",
         "parent pearl has workers",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -43072,6 +43771,8 @@
         "scene.semanticOrbs.append",
         "scene.semanticOrbs.update",
         "pearlEntities.restoreVersion",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -43115,6 +43816,8 @@
         "pearl-version-restored",
         "orb-workers-created",
         "orb-workers-merged",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -43159,6 +43862,8 @@
         "restorePearlVersion",
         "createWorker",
         "mergeWorkers",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -43206,6 +43911,9 @@
         "profile is unlocked",
         "edit is canonical",
         "expected revision matches",
+        "function has ordered moves",
+        "indices resolve",
+        "target move has decomposable description",
         "representation is relevant to this Pearl",
         "a canonical checkpoint exists",
         "an undo snapshot exists",
@@ -43253,6 +43961,8 @@
       "persistence": [
         "pearlStudioSessions.upsert",
         "pearlEntities.compareAndSwap",
+        "pearlEntities.v1.functions.moves.order",
+        "pearlEntities.v1.functions.moves.decompose",
         "pearlEntities.representation.mode",
         "pearlEntities.restoreCheckpoint",
         "pearlEntities.restoreRedo",
@@ -43276,6 +43986,8 @@
         "scene-state-changed",
         "pearl-studio-opening",
         "pearl-entity-edited",
+        "pearl-function-moves-reordered",
+        "pearl-function-move-decomposed",
         "pearl-studio-represented",
         "pearl-entity-undo",
         "pearl-entity-redo",
@@ -43294,6 +44006,8 @@
       "canonicalCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",

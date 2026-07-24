@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-23T23:50:36.263Z",
+  "generatedAt": "2026-07-24T20:54:37.098Z",
   "counts": {
     "features": 65,
-    "companion": 404,
-    "extension": 121,
-    "commands": 132
+    "companion": 408,
+    "extension": 123,
+    "commands": 134
   },
   "features": [
     {
@@ -1217,6 +1217,8 @@
       "commands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -1227,6 +1229,8 @@
       ],
       "companion": [
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -1238,12 +1242,16 @@
       "extension": [
         "executeExternalPearlAction",
         "openExternalPearlStudio",
-        "openExternalResultPearlTab"
+        "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove"
       ],
       "tests": [
         "shared/pearl-studio.test.js",
+        "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
-        "client/lib/pearl-shell.test.js"
+        "client/lib/pearl-shell.test.js",
+        "client/lib/companion-intent.test.js"
       ]
     },
     {
