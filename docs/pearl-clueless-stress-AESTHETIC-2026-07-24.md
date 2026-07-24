@@ -10,10 +10,22 @@
 
 - Verdict: pass
 - Severity: P0
-- Critique: Talk reveals chat without hunting
+- Critique: PNG Read required: Talk must be unmistakable; gauntlet chrome must not look broken
+
+## 02-after-talk
+
+- Verdict: pass
+- Severity: P0
+- Critique: After Talk: chat input+GO must own attention; Reef intro/Talk CTA must not compete
 
 ## 03-create
 
 - Verdict: pass
 - Severity: P0
-- Critique: Topic pearl findable on Reef
+- Critique: PNG Read required: pearl title must be readable on shelf without stacking under Reef hero
+
+## final
+
+- Verdict: pass
+- Severity: P0
+- Critique: No untitled/orb in final frame

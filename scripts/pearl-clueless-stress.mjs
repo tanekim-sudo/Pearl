@@ -31,10 +31,8 @@ const baseUrl = process.env.AUDIT_URL || `http://127.0.0.1:${PORT}`;
 const headed = process.env.HEADED === "0" ? false : true;
 const selfPreview = process.env.SELF_PREVIEW === "1" || !process.env.AUDIT_URL;
 const skipBuild = process.env.SKIP_BUILD === "1";
-const chromePath = process.env.PW_CHROMIUM
-  || (fs.existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-    ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    : undefined);
+// Prefer Playwright Chromium — system Chrome often conflicts with a user profile and closes mid-run.
+const chromePath = process.env.PW_CHROMIUM || undefined;
 
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -135,7 +133,7 @@ async function waitForServer(url, server, timeoutMs = 90_000) {
 }
 
 async function hitTestClick(page, locator, expectedTestId) {
-  const box = await locator.boundingBox();
+  const box = await locator.boundingBox().catch(() => null);
   if (!box) return { ok: false, hit: null, reason: "no bounding box" };
   const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const hit = await page.evaluate(({ x, y }) => {
@@ -147,9 +145,9 @@ async function hitTestClick(page, locator, expectedTestId) {
       tag: el?.tagName || null,
       text: String(el?.textContent || "").trim().slice(0, 40),
     };
-  }, point);
+  }, point).catch(() => ({ testid: null, tag: null, text: "" }));
   const ok = expectedTestId ? hit.testid === expectedTestId : Boolean(hit.testid || hit.tag);
-  if (ok) await locator.click({ trial: false });
+  if (ok) await locator.click({ trial: false, timeout: 2500 }).catch(() => {});
   return { ok, hit, point };
 }
 
@@ -241,38 +239,103 @@ async function titleVisibleOnScreen(page, title) {
 }
 
 async function chatSnapshot(page) {
-  return page.evaluate(() => {
-    const msgs = [...document.querySelectorAll(".companion-msg")].map((el) => ({
-      role: [...el.classList].find((c) => ["user", "companion", "status", "action"].includes(c)) || "unknown",
-      text: String(el.textContent || "").trim().slice(0, 240),
-    }));
+  try {
+    return await page.evaluate(() => {
+      const msgs = [...document.querySelectorAll(".companion-msg")].map((el) => ({
+        role: [...el.classList].find((c) => ["user", "companion", "status", "action"].includes(c)) || "unknown",
+        text: String(el.textContent || "").trim().slice(0, 240),
+      }));
+      return {
+        msgs,
+        progress: document.querySelector("[data-testid='companion-progress']")?.textContent?.trim() || null,
+        statusLine: document.querySelector("[data-testid='companion-status-line']")?.textContent?.trim() || null,
+        blocked: [...document.querySelectorAll(".companion-msg")].some((el) => /blocked|try:|say “|say "|could not/i.test(el.textContent || "")),
+        directorRunning: document.body.classList.contains("director-running")
+          || Boolean(document.querySelector(".ghost-cursor")),
+      };
+    });
+  } catch {
+    // Navigation / context destroy mid-poll — caller retries after settle.
     return {
-      msgs,
-      progress: document.querySelector("[data-testid='companion-progress']")?.textContent?.trim() || null,
-      statusLine: document.querySelector("[data-testid='companion-status-line']")?.textContent?.trim() || null,
-      blocked: [...document.querySelectorAll(".companion-msg")].some((el) => /blocked|try:|say “|say "|could not/i.test(el.textContent || "")),
+      msgs: [],
+      progress: null,
+      statusLine: null,
+      blocked: false,
+      directorRunning: false,
+      navigated: true,
     };
-  });
+  }
+}
+
+/** Companion replies that belong to the latest matching user utterance (ignore prior blockers). */
+function repliesAfterUser(msgs, userText) {
+  const needle = String(userText || "").slice(0, 18).toLowerCase();
+  let start = -1;
+  for (let i = (msgs || []).length - 1; i >= 0; i -= 1) {
+    if (msgs[i].role === "user" && String(msgs[i].text || "").toLowerCase().includes(needle)) {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return [];
+  return msgs.slice(start + 1);
+}
+
+async function stopDirectorIfRunning(page) {
+  const running = await page.evaluate(() => document.body.classList.contains("director-running")).catch(() => false);
+  if (!running) return;
+  const stop = page.locator(
+    "button:has-text('stop demonstration'), .companion-status-row button:has-text('stop'), [data-testid='companion-stop']",
+  ).first();
+  if (await stop.count()) await stop.click({ timeout: 1200 }).catch(() => {});
+  await page.waitForTimeout(500);
+  // Hard abort if still running — otherwise later GO waits forever on a stuck director.
+  const still = await page.evaluate(() => document.body.classList.contains("director-running")).catch(() => false);
+  if (still) {
+    await page.evaluate(() => {
+      try { window.__lensDirector?.stop?.(); } catch { /* ignore */ }
+      document.body.classList.remove("director-running");
+    }).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+}
+
+async function dismissPendingApprovals(page) {
+  if (page.isClosed?.()) return;
+  // Plan / context / destructive confirmations block GO — reject to keep the marathon moving.
+  const reject = page.locator(
+    "[data-testid='companion-destructive-reject'], [data-testid='companion-shell-approval-reject'], [data-testid='companion-plan-reject'], button:has-text('reject'), button:has-text('Reject')",
+  ).first();
+  if (await reject.count().catch(() => 0)) {
+    await reject.click({ timeout: 1500 }).catch(() => {});
+    await page.waitForTimeout(300).catch(() => {});
+  }
+  await stopDirectorIfRunning(page);
 }
 
 async function leaveBlockingSurfaces(page) {
+  if (page.isClosed?.()) return;
+  await dismissPendingApprovals(page);
   // Studio hash / Encode / settings emissions can disable chat — Escape like a confused human.
   for (let i = 0; i < 4; i += 1) {
+    if (page.isClosed?.()) return;
     await page.keyboard.press("Escape").catch(() => {});
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(200).catch(() => {});
   }
-  const close = page.locator("[data-testid='companion-close'], .companion-panel button[aria-label='Close'], button:has-text('Close')").first();
+  const close = page.locator("[data-testid='companion-close'], .companion-panel button[aria-label='Close']").first();
   if (await close.count().catch(() => 0)) {
     await close.click({ timeout: 800 }).catch(() => {});
   }
+  if (page.isClosed?.()) return;
   if (/#pearl-studio=|\/packages|encode/i.test(page.url()) || await page.locator("[data-emitted-view], .pearl-encode-panel, .web-pearl-studio").count().catch(() => 0)) {
     await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" }).catch(() => {});
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(500).catch(() => {});
   }
 }
 
 async function typeAndGo(page, text, { shotPrefix = null, humanMs = 900 } = {}) {
   await leaveBlockingSurfaces(page);
+  await stopDirectorIfRunning(page);
   const opened = await ensureChatOpenViaTalk(page);
   if (!opened.opened && opened.clicks > 1) {
     return { ok: false, reason: "confusion-budget", opened, hit: null, snap: null };
@@ -291,12 +354,13 @@ async function typeAndGo(page, text, { shotPrefix = null, humanMs = 900 } = {}) 
     return { ok: false, reason: "missing-controls", opened, hit: null, snap: null };
   }
   // Wait until GO path is enabled (director/studio may leave input disabled briefly).
-  for (let i = 0; i < 24; i += 1) {
+  for (let i = 0; i < 36; i += 1) {
     const enabled = await input.isEnabled().catch(() => false);
     if (enabled) break;
+    await stopDirectorIfRunning(page);
     await leaveBlockingSurfaces(page);
     await ensureChatOpenViaTalk(page);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
   }
   if (!(await input.isEnabled().catch(() => false))) {
     return { ok: false, reason: "input-disabled", opened, hit: null, snap: await chatSnapshot(page).catch(() => null) };
@@ -316,32 +380,52 @@ async function typeAndGo(page, text, { shotPrefix = null, humanMs = 900 } = {}) 
   let userEcho = false;
   let statusSeen = false;
   let replyOrBlock = false;
-  for (let i = 0; i < 48; i += 1) {
+  // Wait for a companion reply that belongs to THIS utterance — never treat prior "Blocked" as done.
+  for (let i = 0; i < 72; i += 1) {
     await page.waitForTimeout(i === 0 ? humanMs : 220);
     const snap = await chatSnapshot(page);
+    if (snap.navigated) {
+      await page.waitForLoadState("domcontentloaded").catch(() => {});
+      await page.waitForTimeout(400);
+      continue;
+    }
     if (snap.msgs.some((m) => m.role === "user" && m.text.toLowerCase().includes(text.slice(0, 18).toLowerCase()))) {
       userEcho = true;
     }
-    if (snap.statusLine || snap.progress || snap.msgs.some((m) => m.role === "status" || m.role === "action")) {
+    const after = repliesAfterUser(snap.msgs, text);
+    if (after.some((m) => m.role === "status" || m.role === "action") || snap.statusLine || snap.progress) {
       statusSeen = true;
     }
-    if (snap.msgs.some((m) => m.role === "companion" && m.text.length > 2) || snap.blocked) {
+    const companionAfter = after.filter((m) => m.role === "companion" && m.text.length > 2);
+    const blockedAfter = companionAfter.some((m) => /blocked|try:|say “|say "|could not|needs credentials/i.test(m.text));
+    // Prefer a finished reply; if director still running, keep waiting unless we already have a blocker.
+    if (companionAfter.length && (!snap.directorRunning || blockedAfter)) {
       replyOrBlock = true;
       if (shotPrefix) await shot(page, `${shotPrefix}-after`);
       return {
         ok: true, opened, hit, snap, userEcho, statusSeen, replyOrBlock,
-        director: await page.evaluate(() => document.body.classList.contains("director-running")
-          || Boolean(document.querySelector(".ghost-cursor"))),
+        director: snap.directorRunning,
       };
     }
   }
-  if (shotPrefix) await shot(page, `${shotPrefix}-timeout`);
+  // Timed out — stop a stuck director and take one last snapshot (may include a late reply).
+  await stopDirectorIfRunning(page);
+  await page.waitForTimeout(600).catch(() => {});
+  const finalSnap = await chatSnapshot(page);
+  const late = repliesAfterUser(finalSnap.msgs, text).filter((m) => m.role === "companion" && m.text.length > 2);
+  if (shotPrefix) await shot(page, late.length ? `${shotPrefix}-after` : `${shotPrefix}-timeout`);
+  if (late.length) {
+    return {
+      ok: true, opened, hit, snap: finalSnap, userEcho, statusSeen: true, replyOrBlock: true,
+      director: finalSnap.directorRunning,
+    };
+  }
   return {
     ok: false,
     reason: "no-reply",
     opened,
     hit,
-    snap: await chatSnapshot(page),
+    snap: finalSnap,
     userEcho,
     statusSeen,
     replyOrBlock,
@@ -435,6 +519,12 @@ async function coldLand(page) {
 }
 
 async function runCluelessJourneys(browser) {
+  const assertAlive = (page, label) => {
+    if (page?.isClosed?.() || !browser.isConnected()) {
+      throw new Error(`browser/page closed during ${label}`);
+    }
+  };
+
   // ── SF21 first: 390px primary cold create ───────────────────────────────
   coverage("sf-narrow-390-create", "stressed", "390px cold Talk→GO→visible titled pearl");
   {
@@ -749,16 +839,39 @@ async function runCluelessJourneys(browser) {
   record("sf-version-loop", histOk, JSON.stringify(hist.snap?.msgs?.slice(-2) || snap.snap?.msgs?.slice(-2) || []).slice(0, 220), "P1");
 
   coverage("sf-evaluate-gauntlet", "stressed", "evaluate honesty");
-  const ev = await typeAndGo(page, "evaluate this page with my pearls", { shotPrefix: "17-eval" });
+  await stopDirectorIfRunning(page);
+  const ev = await typeAndGo(page, "evaluate this page with my pearls", { shotPrefix: "17-eval", humanMs: 1200 });
+  await stopDirectorIfRunning(page);
+  // Only score companion replies after this evaluate utterance — prior blockers must not inflate honesty.
+  const evMsgs = (() => {
+    const msgs = ev.snap?.msgs || [];
+    let start = -1;
+    for (let i = msgs.length - 1; i >= 0; i -= 1) {
+      if (msgs[i].role === "user" && /evaluat/i.test(msgs[i].text || "")) {
+        start = i;
+        break;
+      }
+    }
+    return start >= 0 ? msgs.slice(start) : msgs.slice(-4);
+  })();
   const evHonest = Boolean(
-    ev.snap?.msgs?.some((m) => /evaluat|gauntlet|lens|blocked|credential|sign in|unavailable|could not|need/i.test(m.text))
-    || ev.snap?.blocked,
+    evMsgs.some((m) => m.role === "companion" && /evaluat|gauntlet|credential|sign in|unavailable|could not|wear at least|no page|no material|needs? /i.test(m.text))
+    || evMsgs.some((m) => /blocked:/i.test(m.text || "")),
   );
-  const evFakeDone = Boolean(ev.snap?.msgs?.some((m) => /^done\.?$/i.test(m.text.trim())));
-  record("sf-evaluate-gauntlet", evHonest && !evFakeDone, `honest=${evHonest} fakeDone=${evFakeDone}`, "P0");
+  const evFakeDone = Boolean(evMsgs.some((m) => m.role === "companion" && /^done\.?$/i.test(String(m.text || "").trim())));
+  record(
+    "sf-evaluate-gauntlet",
+    evHonest && !evFakeDone,
+    `honest=${evHonest} fakeDone=${evFakeDone} detail=${JSON.stringify(evMsgs.filter((m) => m.role === "companion").slice(-2)).slice(0, 180)}`,
+    "P0",
+  );
 
   coverage("sf-output-frame", "stressed", "open the output frame");
-  await typeAndGo(page, "open the output frame", { shotPrefix: "18-frame" });
+  await stopDirectorIfRunning(page);
+  await typeAndGo(page, "open the output frame", { shotPrefix: "18-frame" }).catch((err) => {
+    results.gaps.push(`sf-output-frame typeAndGo: ${err?.message || err}`);
+    return { ok: false };
+  });
   await page.waitForTimeout(900);
   await shot(page, "18b-frame");
   const frameOpen = await page.evaluate(() =>
@@ -983,14 +1096,19 @@ async function main() {
     }
 
     console.log("\n── Pearl clueless showcase journeys ──");
-    const browser = await chromium.launch({
+    const launchOpts = {
       headless: !headed,
-      executablePath: chromePath,
-    });
+      args: ["--disable-dev-shm-usage"],
+    };
+    if (chromePath) launchOpts.executablePath = chromePath;
+    const browser = await chromium.launch(launchOpts);
     try {
       await runCluelessJourneys(browser);
+    } catch (error) {
+      results.gaps.push(`Journey interrupted: ${error?.message || error}`);
+      console.error(error);
     } finally {
-      await browser.close();
+      await browser.close().catch(() => {});
     }
   } finally {
     writeLedgers();

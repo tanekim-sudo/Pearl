@@ -33,11 +33,10 @@ async function main() {
     env: { ...process.env, VITE_LENS_EXTENSION_ID: "audit-extension-id" },
   });
   await waitServer(baseUrl, preview);
-  const chrome = process.env.PW_CHROMIUM
-    || (fs.existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-      ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-      : undefined);
-  const browser = await chromium.launch({ headless: false, executablePath: chrome });
+  const chrome = process.env.PW_CHROMIUM || undefined;
+  const launchOpts = { headless: false, args: ["--disable-dev-shm-usage"] };
+  if (chrome) launchOpts.executablePath = chrome;
+  const browser = await chromium.launch(launchOpts);
   const fails = [];
   try {
     for (const vp of [{ w: 1280, h: 800, tag: "d" }, { w: 390, h: 844, tag: "m" }]) {
@@ -45,9 +44,11 @@ async function main() {
       await ctx.addInitScript(() => { localStorage.clear(); sessionStorage.clear(); });
       const page = await ctx.newPage();
       await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(900);
       await page.screenshot({ path: path.join(OUT, `vfix-${vp.tag}-01-welcome.png`), timeout: 8000 }).catch(() => {});
-      await page.getByTestId("welcome-talk").click();
+      const talk = page.getByTestId("welcome-talk");
+      await talk.waitFor({ state: "visible", timeout: 12_000 });
+      await talk.click({ timeout: 5000 });
       await page.waitForTimeout(700);
       await page.screenshot({ path: path.join(OUT, `vfix-${vp.tag}-02-chat.png`), timeout: 8000 }).catch(() => {});
       const input = page.locator("[data-testid='companion-chat-input']");
@@ -61,8 +62,8 @@ async function main() {
       await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(800);
       // reopen chat
-      const talk = page.getByTestId("welcome-talk").or(page.getByTestId("reef-talk")).or(page.locator(".companion-orb")).first();
-      if (await talk.count()) await talk.click().catch(() => {});
+      const reopen = page.getByTestId("welcome-talk").or(page.getByTestId("reef-talk")).or(page.locator(".companion-orb")).first();
+      if (await reopen.count()) await reopen.click({ timeout: 3000 }).catch(() => {});
       await page.waitForTimeout(500);
       if (await input.count() && await input.isEnabled().catch(() => false)) {
         await input.fill("change the name to Series A notes");

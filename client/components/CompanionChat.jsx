@@ -1127,9 +1127,9 @@ export default function CompanionChat({
         )}
       </div>
 
-      {!playing && (
-        <div className="companion-demos">
-          {memory.interviewComplete && demos.slice(0, 3).map((d) => (
+      {!playing && memory.interviewComplete && messages.length === 0 && demos.length > 0 && (
+        <div className="companion-demos" aria-label="Suggested demos">
+          {demos.slice(0, 2).map((d) => (
             <button
               key={d.id}
               type="button"

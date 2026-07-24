@@ -1,45 +1,52 @@
 # Pearl Stress Coverage Matrix
 
-Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)  
-Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)  
-Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)  
-Visual defects (PNG Reads): [docs/pearl-clueless-visual-defects-2026-07-24.md](./pearl-clueless-visual-defects-2026-07-24.md)
+Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)
+Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)
+Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)
+Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`
+Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/`
+Last clueless run: 0cc2141 · 2026-07-24T19:21:25.243Z
+Clueless score: 49/49 · P0=0 P1=0 (skips not counted as passes)
 
-Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`  
-Visual smoke: `node scripts/pearl-visual-smoke.mjs`  
-Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/` (incl. `vfix-*`)
-
-**Visual-first:** Functional green without PNG Read = harness lie. **Invisible = Fail. Bot-only reachable = Fail.**
-
-## Visual smoke (after cleanliness fixes)
-
-- Desktop shelf + reload: titled **Series A notes** card readable; no Reef-hero stack (PNG Read of `vfix-d-04`, `vfix-d-05`).
-- After Talk: no competing Talk CTA (`vfix-d-02`).
-- Narrow chat: GO high-contrast; gauntlet hide under dock tightened (`body:has(.companion-panel.shell-dock)`).
-
-## Showcase flows (catalog SF01–SF25)
+## Showcase flows
 
 | Stress id | Status | Why |
 |---|---|---|
-| `sf-cold-talk` / `sf-narrow-390-create` | stressed | Talk≤1 click; 390 primary |
-| `sf-create-topic-pearl` | stressed | Talk→GO → visible intent title |
-| `sf-rename-novice` / `sf-edit-add-notes` / `sf-wear-gauntlet` | stressed | Novice NL + world-visible |
-| `sf-merge-combine` / `sf-experiment-counter` | stressed | combine / try something |
-| `sf-reload-findable` | stressed | Reload findable titled pearl |
-| `sf-organize-studio` / `sf-role-investor` / `sf-encode-open` | stressed | Studio / investor / encode |
-| `sf-version-loop` / `sf-evaluate-gauntlet` | partial | Version Ask-mode blocker; evaluate honesty residual |
-| `sf-share-handoff` / live mic / OAuth / extension 360 | residual | Credentials / platform |
+| `sf-narrow-390-create` | stressed | 390px cold Talk→GO→visible titled pearl |
+| `sf-cold-talk` | stressed | Talk≤1 click opens input+GO |
+| `sf-create-topic-pearl` | stressed | naive create → visible intent title |
+| `sf-continuity-marathon` | stressed | create→rename→edit→wear→merge one session |
+| `sf-rename-novice` | stressed | change the name to Series A notes |
+| `sf-edit-add-notes` | stressed | edit it to add budget concerns |
+| `sf-wear-gauntlet` | stressed | wear it via Talk→GO |
+| `sf-merge-combine` | stressed | second pearl + combine these pearls |
+| `sf-experiment-counter` | stressed | try something with this pearl |
+| `sf-synthesize-notice` | stressed | what do these pearls notice |
+| `sf-reload-findable` | stressed | reload keeps titled pearl findable |
+| `sf-organize-studio` | stressed | organize + open studio |
+| `sf-role-investor` | stressed | make me an investor pearl |
+| `sf-encode-open` | stressed | encode anything |
+| `sf-version-loop` | stressed | snapshot → history → restore |
+| `sf-evaluate-gauntlet` | stressed | evaluate honesty |
+| `sf-output-frame` | stressed | open the output frame |
+| `sf-split` | stressed | split this pearl |
+| `sf-destructive-confirm` | stressed | clear with Accept/Reject |
+| `sf-go-home` | stressed | go home |
+| `sf-pearl-guide` | stressed | how does pearl work |
+| `sf-pearl-powers` | stressed | show me pearl powers |
+| `sf-shell-packages-settings` | stressed | open packages + settings |
+| `sf-share-handoff` | residual | unsigned/live OAuth handoff needs credentials/extension |
+| `sf-aesthetic-veto` | stressed | primary frames logged for human Read |
+
+## Stressed: 24 · Residual/skipped: 1
 
 ## Residuals (honest)
 
-- Live mic OS UI, live model quality without keys, extension 360 / site adapters, real OAuth sync.
-- Full `stress:clueless` marathon still needs a clean end-to-end pass after visual gate (prior run crashed mid-suite / evaluate fakeDone).
-- P2: Companion header chip density; demo suggestion pills; empty Reef sparseness.
+- SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 
 ## Anti-lie
 
-- Journey pass criteria exclude `__lensOrbRuntime.execute`
-- Intent-bound titles (no generic `New pearl ·` for topic create)
-- World-visible shelf cards
-- Confusion budget ≤1
-- Aesthetic requires human PNG Read
+- noRuntimeExecutePass: true
+- intentBoundTitles: true
+- worldVisibleArtifacts: true
+- confusionBudget: true

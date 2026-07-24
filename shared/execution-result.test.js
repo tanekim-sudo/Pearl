@@ -92,6 +92,16 @@ test("normalizeCompanionCommandResult maps silent success, visible blockers, and
   assert.equal(blocked.status, "blocked");
   assert.equal(blocked.code, EXECUTION_CODES.EMPTY_GAUNTLET);
 
+  const evalHonesty = normalizeCompanionCommandResult({
+    visible: true,
+    text: "Ready to evaluate 120 characters through 1 gauntlet pearl. Live model critique needs credentials — this step did not invent AI output.",
+    status: "blocked",
+    code: EXECUTION_CODES.NEEDS_CREDENTIALS,
+  });
+  assert.equal(evalHonesty.status, "blocked");
+  assert.equal(evalHonesty.code, EXECUTION_CODES.NEEDS_CREDENTIALS);
+  assert.doesNotMatch(evalHonesty.message, /^done\.?$/i);
+
   const failed = normalizeCompanionCommandResult(null, new Error("fetch failed"));
   assert.equal(failed.status, "failed");
   assert.equal(failed.code, EXECUTION_CODES.NETWORK_ERROR);

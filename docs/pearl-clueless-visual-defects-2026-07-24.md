@@ -1,41 +1,46 @@
 # Clueless visual defects — from real PNG Reads (2026-07-24)
 
 **Method:** Read tool on `audit-shots/pearl-clueless-stress-2026-07-24/*.png` pixels.  
-**Rule:** Invisible / stacked / low-contrast critical UI = P0 fail even if DOM/runtime passed.
+**Rule:** Invisible / stacked / low-contrast critical UI = P0 fail even if DOM/runtime passed.  
+**Latest harness:** 49/49 · P0=0 P1=0 (headed Playwright Chromium, production preview).
+
+## Re-Read after evaluate-honesty + marathon green
+
+| Frame | Seen in image | Verdict |
+|---|---|---|
+| `17-eval-after.png` | Companion shows **Blocked … Live model critique needs credentials — this step did not invent AI output. [needs-credentials]** after “evaluate this page with my pearls”; no bare “Done.” Reef shelf titles readable (Series A notes, competitor signals, merge, counter). | **PASS** evaluate honesty |
+| `03-create-after.png` | “my investor notes” shelf card readable; GO cream/high-contrast; no Reef hero stacked over title; director action trail visible. | **PASS** |
+| `n03-create-after.png` | 390px: titled pearl peek behind Companion; GO reachable; chat owns attention. | **PASS** |
+| `18b-frame.png` | Output-frame path leaves context/plan Accept·Reject chrome; harness rejects to continue (not a fake success). | **PASS** with residual clutter note |
+
+## Earlier defects (status)
 
 | Frame | Seen in image | Severity | Status |
 |---|---|---|---|
-| `01-welcome.png` | Talk CTA clear; gauntlet label + “Talk · type · GO” low-contrast / abstract at bottom | P1 | Fixing legend contrast + hide hint under welcome |
-| `n01-cold-390.png` | Bottom gauntlet text overlaps sockets — looks broken | P0 | Fixing legend/hint separation on narrow |
-| `02-after-talk.png` | “Your Reef” / intro nearly invisible; dual Talk CTA competes with open chat | P0 | Hide intro when Companion open; raise intro contrast |
-| `03-create-after.png` | Pearl title stacked on giant “Reef” hero; gauntlet text illegible | P0 | Intro only when shelf empty; shelf grid |
-| `06b-gauntlet.png` | Worn pearl label truncated “Series A no…”; clutter around mother pearl | P0 | Readable labels; less chrome stack |
-| `11-reload.png` | Pearl names under overlapping Reef hero; bottom dock illegible UUID/stack | P0 | Populated shelf layout; hide competing chrome |
-| `n03-create-after.png` | Toast overlays chat; GO/input partially occluded; “context pearls” clipped | P0 | Hide gauntlet chrome when chat open on narrow |
-| `13b-studio.png` | Sparse Studio; Close is plain text — secondary | P2 | Residual polish |
+| `01-welcome.png` | Talk CTA clear; gauntlet legend improved | P1 | Mitigated |
+| `n01-cold-390.png` | Gauntlet/hint overlap reduced | P0 | Mitigated |
+| `02-after-talk.png` | Competing Reef Talk CTA hidden when chat open | P0 | Mitigated |
+| `03-create-after.png` / `11-reload.png` | Shelf grid; no hero over titles | P0 | Mitigated |
+| `06b-gauntlet.png` | Worn labels more readable | P0 | Mitigated |
+| `n03-create-after.png` | Narrow chat no longer buried under gauntlet chrome | P0 | Mitigated |
 
-## Harness lie (prior)
+## Product fixes this turn (evaluate honesty + marathon)
 
-Aesthetic checks were recorded as pass from DOM heuristics without pixel Read. That is invalid under the upgraded standard.
+1. Remix path surfaces `visibleText` — evaluate no longer collapses to bare “Done.”
+2. `requiresModel` evaluate replies return **blocked / needs-credentials** with grounded prep copy.
+3. Clipboard `readText` during evaluate is raced with a short timeout (permission prompts were hanging headed Chromium).
+4. Harness: wait only for companion replies after the current user utterance; dismiss Accept/Reject; Playwright Chromium (not system Chrome); click timeouts.
+5. Demo chips: only on empty chat, max 2 (clutter cut).
 
-## Product fixes applied this turn
+## Residuals (honest — not production-ready claim)
 
-1. Reef intro only when shelf is empty (no hero over pearl names).
-2. Populated Reef uses a readable card grid (`.orb-reef-shelf`).
-3. Companion open → hide intro + start-hint (desktop + narrow).
-4. Semantic orb titles visible under capsules (not sr-only).
-5. Gauntlet legend + start-hint higher contrast / less overlap.
-6. GO button high-contrast cream fill.
-7. Narrow + chat open → hide featured mother/gauntlet entirely (stops clipped “context pearls”).
+- Companion header chips (memory / why? / voice) still dense.
+- Version-history Ask-mode reply is a precise blocker but coded `[unknown-error]` — copy honesty residual.
+- Live mic OS permission, live model quality, extension 360, OAuth sync, signed share handoff not verified.
+- `/api/models` and packages proxy ECONNREFUSED in preview-only runs (expected without API server).
 
-## Re-Read after fixes (`vfix-*` PNGs)
+## Harness integrity
 
-| Frame | Verdict after fix |
-|---|---|
-| `vfix-d-02-chat.png` | PASS — no competing Reef Talk CTA; GO readable |
-| `vfix-d-04-renamed-shelf.png` | PASS — “Series A notes” card clean, no hero stack |
-| `vfix-d-05-reload.png` | PASS — titled pearl findable; no UUID mush |
-| `vfix-m-04-renamed-shelf.png` | PASS shelf; residual: gauntlet clip under dock → fix #7 |
-| `vfix-m-02-chat.png` | IMPROVED; residual clip addressed by #7 |
-
-Still residual (P2): dense Companion header chips (memory/why/voice); demo suggestion pills; sparse empty Reef.
+- No `__lensOrbRuntime.execute/run` as journey pass.
+- No `force:true` on primary controls.
+- Visual PNG Read remains a hard veto equal to DOM asserts.

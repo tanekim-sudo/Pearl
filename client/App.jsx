@@ -13711,7 +13711,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             // Screen capture authorization path exists via captureScreenAsEvidence; prefer clipboard/selection here for grounded text.
             await tk.wait(40);
           }
-          try { text = await navigator.clipboard.readText(); } catch { text = ""; }
+          // Clipboard permission prompts can hang headed Chromium — never block evaluate on them.
+          if (navigator.clipboard?.readText) {
+            text = await Promise.race([
+              navigator.clipboard.readText().catch(() => ""),
+              new Promise((resolve) => { window.setTimeout(() => resolve(""), 180); }),
+            ]);
+            text = String(text || "");
+          }
         } catch { text = ""; }
       }
       if (!text) {
@@ -17803,6 +17810,22 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ? { status: "executed", effects: result.effects || ["scene-state-changed"] }
         : { status: "failed", failure: result.errors?.[0] || "Remix failed" });
       if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      const reply = result.value?.visibleText
+        || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
+        || null;
+      // evaluateWithGauntlet (and other prep-only remix verbs) must never collapse to bare "Done."
+      if (reply) {
+        if (result.value?.requiresModel || /needs credentials/i.test(reply)) {
+          return {
+            visible: true,
+            text: reply,
+            status: "blocked",
+            code: EXECUTION_CODES.NEEDS_CREDENTIALS,
+            details: { verb: step.verb, requiresModel: true, effects: result.effects || [] },
+          };
+        }
+        return { visible: true, text: reply, completed: true, effects: result.effects || [] };
+      }
       return null;
     }
 
