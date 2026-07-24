@@ -5722,8 +5722,13 @@ body:has(.fn-editor-fullscreen) .companion-fab {
   white-space: nowrap;
 }
 
-.companion-panel.confirming {
+/* Legacy canvas: yield clicks to the clear modal. Pearl shell keeps chat live —
+   confirmations render inside the dock, so never disable pointer-events there. */
+.companion-panel.confirming:not(.shell-dock) {
   pointer-events: none;
+}
+.companion-panel.shell-dock.confirming {
+  pointer-events: auto !important;
 }
 
 [data-testid="companion-clear-confirmation"] {

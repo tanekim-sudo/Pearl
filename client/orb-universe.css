@@ -1768,8 +1768,40 @@ body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .or
 .companion-panel.shell-dock .companion-head-title {
   letter-spacing: 0.04em;
 }
+.companion-panel.shell-dock .companion-msg {
+  color: rgba(236, 242, 248, 0.92);
+}
 .companion-panel.shell-dock .companion-msg.user {
-  background: rgba(80, 200, 255, 0.14);
+  background: rgba(80, 200, 255, 0.18);
+  color: rgba(220, 245, 255, 0.98);
+}
+.companion-panel.shell-dock .companion-msg.companion {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(236, 242, 248, 0.92);
+}
+.companion-panel.shell-dock .companion-msg.error,
+.companion-panel.shell-dock .companion-msg.exec-blocked,
+.companion-panel.shell-dock .companion-msg.exec-failed {
+  background: rgba(255, 90, 90, 0.14);
+  color: rgba(255, 210, 210, 0.96);
+}
+.companion-panel.shell-dock .companion-plan-strip {
+  border-color: rgba(241, 218, 153, 0.28);
+  background: rgba(241, 218, 153, 0.12);
+  color: rgba(255, 244, 214, 0.96);
+}
+.companion-panel.shell-dock .companion-plan-strip span {
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 244, 214, 0.92);
+}
+.companion-panel.shell-dock .companion-plan-strip button {
+  border: 1px solid rgba(241, 218, 153, 0.35);
+  background: rgba(20, 18, 12, 0.55);
+  color: rgba(255, 244, 214, 0.96);
+}
+.companion-panel.shell-dock .companion-plan-strip button:first-child {
+  border-color: rgba(125, 231, 255, 0.45);
+  color: rgba(200, 245, 255, 0.98);
 }
 .companion-panel.shell-dock .companion-send {
   min-width: 52px;

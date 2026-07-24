@@ -11947,13 +11947,34 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   function stageCompanionClear(domains) {
     const combined = new Set([...(pendingCompanionClear?.domains || []), ...(domains || [])]);
     const normalized = CLEARABLE_DOMAINS.filter((domain) => combined.has(domain));
-    if (!normalized.length) return;
+    if (!normalized.length) return null;
     const pending = {
       domains: normalized,
       counts: companionClearCounts(normalized),
     };
     lastCompanionClearRef.current = { ...pending, at: Date.now() };
     setPendingCompanionClear(pending);
+    try {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+    } catch {
+      /* SSR / private mode */
+    }
+    return pending;
+  }
+
+  function describeCompanionClear(pending) {
+    if (!pending?.domains?.length) return "selected workspace content";
+    return pending.domains
+      .map((domain) => {
+        const count = pending.counts?.[domain] || 0;
+        const label =
+          domain === "paper" ? "whiteboard items"
+            : domain === "ai" ? "AI nodes"
+              : domain === "lenses" ? "user-created lenses"
+                : "generators";
+        return `${count} ${label}`;
+      })
+      .join(" · ");
   }
 
   function confirmCompanionClear() {
@@ -12172,7 +12193,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
   function dispatchOrbSurfaceCommand(eventName, detail, timeoutMs = 3000) {
     return new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => reject(new Error("orb surface did not confirm the command")), timeoutMs);
+      const timeout = window.setTimeout(() => reject(new Error("Pearl surface did not confirm the command")), timeoutMs);
       const finish = (callback) => (value) => {
         window.clearTimeout(timeout);
         callback(value);
@@ -17439,10 +17460,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           [{ verb: "clearWorkspaceDomains", args: { domains: pendingAdministrative.domains } }],
           { title: "Review destructive clear scope" }
         );
+        const pending = lastCompanionClearRef.current;
         updateCommand(commandEntry.id, staged.completed
           ? { status: "awaiting-confirmation", confirmation: { domains: pendingAdministrative.domains }, effects: ["clear-confirmation-staged"] }
           : { status: "failed", failure: staged.errors?.[0] || "Clear confirmation could not be staged" });
-        return null;
+        if (!staged.completed) {
+          return { visible: true, text: staged.errors?.[0] || "Clear confirmation could not be staged.", completed: false };
+        }
+        return {
+          visible: true,
+          text: `Confirm below to clear ${describeCompanionClear(pending)}. Nothing has been deleted yet.`,
+          awaitingConfirmation: true,
+          completed: true,
+        };
       }
       // A new executable request is not an implicit denial of all work. End
       // only the stale confirmation, retain it in the ledger, then continue.
@@ -17790,10 +17820,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         [{ verb: "clearWorkspaceDomains", args: { domains: administrative.domains } }],
         { title: "Review destructive clear scope" }
       );
+      const pending = lastCompanionClearRef.current;
       updateCommand(commandEntry.id, staged.completed
         ? { status: "awaiting-confirmation", confirmation: { domains: administrative.domains }, effects: ["clear-confirmation-staged"] }
         : { status: "failed", failure: staged.errors?.[0] || "Clear confirmation could not be staged" });
-      return null;
+      if (!staged.completed) {
+        return { visible: true, text: staged.errors?.[0] || "Clear confirmation could not be staged.", completed: false };
+      }
+      return {
+        visible: true,
+        text: `Confirm below to clear ${describeCompanionClear(pending)}. Nothing has been deleted yet.`,
+        awaitingConfirmation: true,
+        completed: true,
+      };
     }
 
     const memory = loadCompanionMemory(supaAuth.session?.user?.id);
@@ -18229,7 +18268,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     execute: (script, options = {}) =>
       runDirectorScript(script, {
         signal: options.signal,
-        title: options.title || "Orb gesture",
+        title: options.title || "Companion gesture",
         speed: options.speed ?? 1.35,
       }),
     undo: () => {
@@ -19946,6 +19985,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         userId={supaAuth.session?.user?.id || null}
         notice={companionNotice}
         confirmationOpen={!!pendingCompanionClear}
+        destructiveConfirmation={pendingCompanionClear}
+        onDestructiveConfirm={confirmCompanionClear}
+        onDestructiveCancel={cancelCompanionClear}
         initialOpen={companionAutoOpen}
         pearlShell={pearlShell}
         onOpened={() => {

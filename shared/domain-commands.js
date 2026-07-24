@@ -590,7 +590,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
     persistenceEffect: "scene.semanticOrbs.update",
     observableEffects: ["semantic-orb-hierarchy-changed"],
     execute(state, args, context) {
-      if (args.childId === args.parentId) throw new Error("an orb cannot contain itself");
+      if (args.childId === args.parentId) throw new Error("a pearl cannot contain itself");
       const byId = new Map((state.semanticOrbs || []).map((orb) => [orb.id, orb]));
       const child = byId.get(args.childId);
       const parent = byId.get(args.parentId);
@@ -668,7 +668,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
           merge: {
             mode: "preserve-individuals",
             sourcePearlIds: sourceIds,
-            note: "Source pearls remain independent library pearls; this orb is an additional composition.",
+            note: "Source pearls remain independent library pearls; this pearl is an additional composition.",
           },
         },
       }, { now: context.now });
@@ -700,7 +700,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
         lineage: (args.ids || []).map((orbId, index) => ({ orbId, operation: "compose", order: index })),
         representation: {
           ...execution.result.object.representation,
-          label: args.name || "Composed orb",
+          label: args.name || "Composed pearl",
           composition: { order: [...(args.ids || [])] },
         },
       });

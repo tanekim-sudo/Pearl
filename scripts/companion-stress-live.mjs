@@ -1,8 +1,10 @@
 /**
  * Thorough Companion stress: runtime stability, chat replies, GO execution,
- * and REQUIRED director/ghost-cursor animation evidence.
+ * confirmation-in-chat Accept/Reject, no user-facing "orb" copy, and REQUIRED
+ * director/ghost-cursor animation evidence.
  *
  * Silent state mutation with zero animation = FAIL.
+ * Confirmations that dump into a dead/invisible chat = FAIL.
  *
  * AUDIT_URL=http://127.0.0.1:41802 node scripts/companion-stress-live.mjs
  */
@@ -10,7 +12,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const out = path.join(process.cwd(), "audit-shots/companion-animation-stress-2026-07-23");
+const out = path.join(process.cwd(), "audit-shots/companion-chat-confirm-2026-07-23");
+const animOut = path.join(process.cwd(), "audit-shots/companion-animation-stress-2026-07-23");
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:41802";
 const chromePath = process.env.PW_CHROMIUM
   || (fs.existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
@@ -19,6 +22,7 @@ const chromePath = process.env.PW_CHROMIUM
 const headed = process.env.HEADED === "0" ? false : true;
 
 fs.mkdirSync(out, { recursive: true });
+fs.mkdirSync(animOut, { recursive: true });
 const results = {
   generatedAt: new Date().toISOString(),
   baseUrl,
@@ -28,6 +32,29 @@ const results = {
   defects: [],
   animation: null,
 };
+
+async function visibleOrbWords(page) {
+  return page.evaluate(() => {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    let node = walker.nextNode();
+    while (node) {
+      const text = String(node.textContent || "");
+      if (/\b[Oo]rb\b/.test(text)) {
+        const parent = node.parentElement;
+        const style = parent ? getComputedStyle(parent) : null;
+        const hidden = !parent
+          || style?.display === "none"
+          || style?.visibility === "hidden"
+          || style?.opacity === "0"
+          || parent.closest("[hidden], .sr-only, [aria-hidden='true']");
+        if (!hidden) hits.push(text.trim().slice(0, 120));
+      }
+      node = walker.nextNode();
+    }
+    return [...new Set(hits)].slice(0, 12);
+  });
+}
 
 function record(id, ok, detail) {
   results.checks.push({ id, ok, detail });
@@ -290,6 +317,89 @@ async function main() {
   record("user-message-visible", userMsg || chatText.length >= 2, `msgs=${chatText.length} sample=${JSON.stringify(chatText.slice(-3))}`);
   record("companion-reply-visible", companionReply || chatText.length >= 2, `reply visible among ${chatText.length} messages`);
 
+  // Create-pearl wording: never teach "orb" in visible companion/create UI.
+  const orbAfterCreate = await visibleOrbWords(page);
+  record(
+    "no-user-facing-orb-after-create",
+    orbAfterCreate.length === 0,
+    orbAfterCreate.length ? `visible orb copy: ${JSON.stringify(orbAfterCreate)}` : "no visible Orb/orb wording",
+  );
+  await shot(page, "07-create-pearl-no-orb");
+
+  // Confirmation-in-chat: destructive clear must show Accept/Reject in the dock.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("lens:companion-expand")));
+  await page.waitForTimeout(400);
+  if (await input.count()) {
+    await input.click();
+    await input.fill("clear all functions, drawings, and AI stuff");
+    await go.click();
+    await page.waitForTimeout(1800);
+  }
+  await shot(page, "08-confirmation-in-chat");
+  const confirmStrip = page.locator("[data-testid='companion-destructive-strip'], [data-testid='companion-shell-approval-strip'], [data-testid='companion-plan-strip']").first();
+  const confirmVisible = (await confirmStrip.count()) > 0 && await confirmStrip.isVisible().catch(() => false);
+  const acceptBtn = page.locator("[data-testid='companion-destructive-accept'], [data-testid='companion-shell-approval-accept'], [data-testid='companion-plan-accept']").first();
+  const rejectBtn = page.locator("[data-testid='companion-destructive-reject'], [data-testid='companion-shell-approval-reject'], [data-testid='companion-plan-reject']").first();
+  const acceptVisible = (await acceptBtn.count()) > 0 && await acceptBtn.isVisible().catch(() => false);
+  const rejectVisible = (await rejectBtn.count()) > 0 && await rejectBtn.isVisible().catch(() => false);
+  const chatLive = await page.evaluate(() => {
+    const el = document.querySelector("[data-testid='companion-chat']");
+    if (!el) return { open: false };
+    const style = getComputedStyle(el);
+    return {
+      open: true,
+      pointerEvents: style.pointerEvents,
+      zIndex: style.zIndex,
+      confirming: el.classList.contains("confirming"),
+      shellDock: el.classList.contains("shell-dock"),
+    };
+  });
+  record(
+    "confirmation-strip-visible",
+    confirmVisible,
+    confirmVisible ? "confirmation strip visible in chat dock" : "no Accept/Reject strip in chat",
+  );
+  record(
+    "confirmation-accept-reject-visible",
+    acceptVisible && rejectVisible,
+    `accept=${acceptVisible} reject=${rejectVisible}`,
+  );
+  record(
+    "chat-dock-interactive-during-confirm",
+    chatLive.open
+      && chatLive.pointerEvents !== "none"
+      && Number(chatLive.zIndex) >= 11000,
+    JSON.stringify(chatLive),
+  );
+  const confirmCopy = (await page.locator(".companion-msg").allTextContents()).some((t) =>
+    /Confirm below|Nothing has been deleted|Clear this workspace/i.test(t)
+    || confirmVisible
+  );
+  record("confirmation-message-not-false-done", confirmCopy, "staged clear must not look like silent Done");
+
+  if (acceptVisible) {
+    const box = await acceptBtn.boundingBox();
+    if (box) {
+      const hit = await page.evaluate(({ x, y }) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.getAttribute("data-testid")
+          || el?.closest("[data-testid]")?.getAttribute("data-testid")
+          || el?.tagName;
+      }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+      const actionable = /companion-destructive-accept|companion-shell-approval-accept|companion-plan-accept/i.test(String(hit));
+      record("confirmation-accept-hit-test", actionable, `hit=${hit}`);
+      if (actionable) {
+        await acceptBtn.click();
+        await page.waitForTimeout(800);
+        await shot(page, "09-after-confirm-accept");
+      }
+    } else {
+      record("confirmation-accept-hit-test", false, "accept button has no bounding box");
+    }
+  } else {
+    record("confirmation-accept-hit-test", false, "accept control missing");
+  }
+
   // Remount stress: open scene then home — chat transcript should persist
   await page.evaluate(async () => {
     await window.__lensOrbRuntime.run("open a new scene");
@@ -304,7 +414,7 @@ async function main() {
   await page.waitForTimeout(500);
   const afterNav = await page.locator(".companion-msg").count();
   record("chat-survives-nav", afterNav >= 2, `messages after nav=${afterNav}`);
-  await shot(page, "07-after-nav");
+  await shot(page, "10-after-nav");
 
   // Mic unavailable must talk
   const mic = page.locator("[data-testid='companion-mic'], .companion-mic").first();
@@ -341,6 +451,7 @@ async function main() {
   }
 
   fs.writeFileSync(path.join(out, "audit-results.json"), JSON.stringify(results, null, 2));
+  fs.writeFileSync(path.join(animOut, "audit-results.json"), JSON.stringify(results, null, 2));
   const failed = results.defects.length;
   console.log(`\n${results.checks.length - failed}/${results.checks.length} passed`);
   console.log(`evidence: ${out}`);

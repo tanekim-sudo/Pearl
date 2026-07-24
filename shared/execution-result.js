@@ -272,6 +272,16 @@ export function normalizeCompanionCommandResult(result, error = null) {
       stage: "execute",
     });
   }
+  // Staged confirmation is success of the staging step — never "Blocked"/unknown-error.
+  if (result.awaitingConfirmation) {
+    return createExecutionResult({
+      status: "success",
+      code: result.code || "awaiting-confirmation",
+      message: result.text || "Confirm in chat to continue. Nothing has been changed yet.",
+      stage: result.stage || "approve",
+      details: sanitizeDetails(result.details || { effects: result.effects }),
+    });
+  }
   if (result.completed === false) {
     return createExecutionResult({
       status: result.status === "cancelled" || result.cancelled ? "cancelled" : "failed",

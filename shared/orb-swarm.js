@@ -106,6 +106,6 @@ export function swarmSummary(workers = [], zoom = 1) {
     collapsed: zoom < 0.55 || workers.length > 4,
     total: workers.length,
     counts,
-    accessibleLabel: `${workers.length} worker orbs: ${Object.entries(counts).map(([status, count]) => `${count} ${status}`).join(", ")}`,
+    accessibleLabel: `${workers.length} worker pearls: ${Object.entries(counts).map(([status, count]) => `${count} ${status}`).join(", ")}`,
   };
 }

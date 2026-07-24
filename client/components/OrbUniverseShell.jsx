@@ -1043,7 +1043,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       sceneRoute: route.kind === "stage",
     });
     if (action === "cancelApproval") {
-      decideApprovalRef.current?.(false);
+      decideApprovalRef.current?.("reject");
       return;
     }
     if (action === "collapseCompanion") {
@@ -1768,7 +1768,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         taskId: recorded.entry.id,
         evidence: { title: "Delete this profile’s local Pearl metadata?", preview: true, steps: ["Account data is untouched", "A local deletion receipt is created"] },
       }));
-      setPendingApproval({ title: "Delete this profile’s local Pearl metadata?", steps: ["Account data is untouched", "A local deletion receipt is created"] });
+      publishCompanionApproval({ title: "Delete this profile’s local Pearl metadata?", steps: ["Account data is untouched", "A local deletion receipt is created"] });
       const approval = await new Promise((resolve) => { approvalResolverRef.current = resolve; });
       if (approval?.decision !== "accept") {
         setOrb((value) => createOrbState({ ...value, phase: "paused", effectId: null, commandId: null }));
@@ -1880,7 +1880,7 @@ export default function OrbUniverseShell({ StageComponent }) {
         },
         onPlan(plan) {
           if (!plan) {
-            setPendingApproval(null);
+            publishCompanionApproval(null);
             approvalResolverRef.current = null;
             return null;
           }
@@ -1888,7 +1888,7 @@ export default function OrbUniverseShell({ StageComponent }) {
             taskId: recorded.entry.id,
             evidence: { title: plan.title, preview: true },
           }));
-          setPendingApproval(plan);
+          publishCompanionApproval(plan);
           return new Promise((resolve) => {
             approvalResolverRef.current = resolve;
           });
@@ -1903,7 +1903,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           taskId: recorded.entry.id,
           evidence: { title: "Clear selected workspace domains?", preview: true, steps },
         }));
-        setPendingApproval({ title: "Clear selected workspace domains?", steps });
+        publishCompanionApproval({ title: "Clear selected workspace domains?", steps });
         const approval = await new Promise((resolve) => {
           approvalResolverRef.current = resolve;
         });
@@ -2064,7 +2064,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   function stopOrb() {
     approvalResolverRef.current?.({ decision: "reject" });
     approvalResolverRef.current = null;
-    setPendingApproval(null);
+    publishCompanionApproval(null);
     activeRunAbortRef.current?.abort();
     activeRunAbortRef.current = null;
     setOrb((value) => createOrbState({
@@ -2082,13 +2082,45 @@ export default function OrbUniverseShell({ StageComponent }) {
     }));
   }
 
+  function publishCompanionApproval(plan) {
+    setPendingApproval(plan);
+    try {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      window.dispatchEvent(new CustomEvent("lens:companion-approval", {
+        detail: plan
+          ? {
+              id: plan.id || `approval:${Date.now()}`,
+              title: plan.title || "Confirm this action",
+              steps: Array.isArray(plan.steps) ? plan.steps : [],
+            }
+          : null,
+      }));
+    } catch {
+      /* private mode */
+    }
+  }
+
   function decideApproval(decision) {
     const resolve = approvalResolverRef.current;
     approvalResolverRef.current = null;
     setPendingApproval(null);
+    try {
+      window.dispatchEvent(new CustomEvent("lens:companion-approval", { detail: null }));
+    } catch {
+      /* private mode */
+    }
     resolve?.({ decision });
   }
   decideApprovalRef.current = decideApproval;
+
+  useEffect(() => {
+    function onChatApprovalDecision(event) {
+      const decision = event.detail?.decision === "accept" ? "accept" : "reject";
+      decideApprovalRef.current?.(decision);
+    }
+    window.addEventListener("lens:companion-approval-decision", onChatApprovalDecision);
+    return () => window.removeEventListener("lens:companion-approval-decision", onChatApprovalDecision);
+  }, []);
 
   function renderPearlEmission() {
     if (!emittedView) return null;

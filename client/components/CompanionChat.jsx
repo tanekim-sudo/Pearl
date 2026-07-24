@@ -96,6 +96,9 @@ export default function CompanionChat({
   notice = null,
   confirmationOpen = false,
   pearlShell = false,
+  destructiveConfirmation = null,
+  onDestructiveConfirm = null,
+  onDestructiveCancel = null,
 }) {
   const [memory, setMemory] = useState(() => loadCompanionMemory(userId));
   const [open, setOpen] = useState(initialOpen);
@@ -121,6 +124,7 @@ export default function CompanionChat({
   const [planDraft, setPlanDraft] = useState("");
   const [planEditing, setPlanEditing] = useState(false);
   const [reviewSelections, setReviewSelections] = useState({});
+  const [shellApproval, setShellApproval] = useState(null);
   // Modes (ask/plan/agent/debug) are chosen automatically per utterance — never a user picker.
   const [mode, setMode] = useState(() => {
     const stored = typeof localStorage !== "undefined" ? localStorage.getItem(MODE_KEY) : null;
@@ -233,9 +237,33 @@ export default function CompanionChat({
           : [...current, { role: "companion", text, error: /Blocked:|Failed:/i.test(text) }]
       );
     }
+    function onShellApproval(event) {
+      const detail = event.detail || null;
+      setForeground(true);
+      setOpen(true);
+      if (!detail) {
+        setShellApproval(null);
+        return;
+      }
+      setShellApproval({
+        title: detail.title || "Confirm this action",
+        steps: Array.isArray(detail.steps) ? detail.steps : [],
+        id: detail.id || `shell-approval:${Date.now()}`,
+      });
+    }
     window.addEventListener("lens:companion-notice", onShellNotice);
-    return () => window.removeEventListener("lens:companion-notice", onShellNotice);
+    window.addEventListener("lens:companion-approval", onShellApproval);
+    return () => {
+      window.removeEventListener("lens:companion-notice", onShellNotice);
+      window.removeEventListener("lens:companion-approval", onShellApproval);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!destructiveConfirmation?.domains?.length) return;
+    setForeground(true);
+    setOpen(true);
+  }, [destructiveConfirmation?.domains?.join("|")]);
 
   useEffect(() => {
     if (!confirmationOpen) submitGuardRef.current.resetDedupe();
@@ -536,6 +564,28 @@ export default function CompanionChat({
     if (decision !== "accept") setActivePlan(null);
     setPlanEditing(false);
     setReviewSelections({});
+  }
+
+  function decideShellApproval(decision) {
+    setShellApproval(null);
+    window.dispatchEvent(new CustomEvent("lens:companion-approval-decision", {
+      detail: { decision },
+    }));
+  }
+
+  function formatDestructiveSummary(pending) {
+    if (!pending?.domains?.length) return "selected workspace content";
+    return pending.domains
+      .map((domain) => {
+        const count = pending.counts?.[domain] || 0;
+        const label =
+          domain === "paper" ? "whiteboard items"
+            : domain === "ai" ? "AI nodes"
+              : domain === "lenses" ? "user-created lenses"
+                : "generators";
+        return `${count} ${label}`;
+      })
+      .join(" · ");
   }
 
   function endVoiceSession({ send: shouldSend } = { send: true }) {
@@ -839,6 +889,57 @@ export default function CompanionChat({
       )}
 
       <div className="companion-messages" ref={listRef}>
+        {destructiveConfirmation?.domains?.length > 0 && (
+          <div className="companion-plan-strip" data-testid="companion-destructive-strip" role="alertdialog" aria-label="Confirm destructive clear">
+            <strong>Clear this workspace content?</strong>
+            <div>
+              <span>{formatDestructiveSummary(destructiveConfirmation)}</span>
+              <span>Built-in lens primitives will be kept. Nothing is deleted until you accept.</span>
+            </div>
+            <div className="companion-plan-actions">
+              <button
+                type="button"
+                data-testid="companion-destructive-accept"
+                onClick={() => onDestructiveConfirm?.()}
+              >
+                accept
+              </button>
+              <button
+                type="button"
+                data-testid="companion-destructive-reject"
+                onClick={() => onDestructiveCancel?.()}
+              >
+                reject
+              </button>
+            </div>
+          </div>
+        )}
+        {shellApproval && !destructiveConfirmation?.domains?.length && !activePlan?.preview && (
+          <div className="companion-plan-strip" data-testid="companion-shell-approval-strip" role="alertdialog" aria-label="Confirm Companion action">
+            <strong>{shellApproval.title}</strong>
+            <div>
+              {(shellApproval.steps || []).map((step, index) => (
+                <span key={`${step}-${index}`}>{step}</span>
+              ))}
+            </div>
+            <div className="companion-plan-actions">
+              <button
+                type="button"
+                data-testid="companion-shell-approval-accept"
+                onClick={() => decideShellApproval("accept")}
+              >
+                accept
+              </button>
+              <button
+                type="button"
+                data-testid="companion-shell-approval-reject"
+                onClick={() => decideShellApproval("reject")}
+              >
+                reject
+              </button>
+            </div>
+          </div>
+        )}
         {activePlan?.preview && (
           <div className="companion-plan-strip" data-testid="companion-plan-strip">
             <strong>{activePlan.title}</strong>
