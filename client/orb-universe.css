@@ -1785,6 +1785,23 @@ body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .or
   background: rgba(255, 90, 90, 0.14);
   color: rgba(255, 210, 210, 0.96);
 }
+.companion-panel.shell-dock .companion-msg.status {
+  background: transparent;
+  color: rgba(180, 210, 220, 0.72);
+  font-style: italic;
+}
+.companion-panel.shell-dock .companion-msg.action {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(170, 200, 210, 0.7);
+}
+.companion-panel.shell-dock .companion-progress {
+  background: rgba(125, 231, 255, 0.08);
+  color: rgba(180, 230, 245, 0.88);
+}
+.companion-panel.shell-dock .companion-progress.playing {
+  background: rgba(241, 218, 153, 0.12);
+  color: rgba(255, 244, 214, 0.92);
+}
 .companion-panel.shell-dock .companion-plan-strip {
   border-color: rgba(241, 218, 153, 0.28);
   background: rgba(241, 218, 153, 0.12);

@@ -1,10 +1,13 @@
 /**
- * Thorough Companion stress: runtime stability, chat replies, GO execution,
- * confirmation-in-chat Accept/Reject, no user-facing "orb" copy, and REQUIRED
- * director/ghost-cursor animation evidence.
+ * Companion chat-agent UX stress (production preview).
  *
- * Silent state mutation with zero animation = FAIL.
- * Confirmations that dump into a dead/invisible chat = FAIL.
+ * Proves modern-agent patterns in CompanionChat:
+ * - Immediate user echo on GO
+ * - Live status / action trail during work (no silent voids)
+ * - Companion reply always materializes
+ * - Voice Listening/Hearing/diagnostic in chat
+ * - Confirm Accept/Reject still in-thread
+ * - create-pearl still requires director/ghost-cursor animation
  *
  * AUDIT_URL=http://127.0.0.1:41802 node scripts/companion-stress-live.mjs
  */
@@ -12,8 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const out = path.join(process.cwd(), "audit-shots/companion-chat-confirm-2026-07-23");
-const animOut = path.join(process.cwd(), "audit-shots/companion-animation-stress-2026-07-23");
+const out = path.join(process.cwd(), "audit-shots/companion-chat-agent-ux-2026-07-23");
 const baseUrl = process.env.AUDIT_URL || "http://127.0.0.1:41802";
 const chromePath = process.env.PW_CHROMIUM
   || (fs.existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
@@ -22,7 +24,7 @@ const chromePath = process.env.PW_CHROMIUM
 const headed = process.env.HEADED === "0" ? false : true;
 
 fs.mkdirSync(out, { recursive: true });
-fs.mkdirSync(animOut, { recursive: true });
+
 const results = {
   generatedAt: new Date().toISOString(),
   baseUrl,
@@ -31,6 +33,7 @@ const results = {
   checks: [],
   defects: [],
   animation: null,
+  agentUx: null,
 };
 
 async function visibleOrbWords(page) {
@@ -76,6 +79,10 @@ async function installAnimationProbe(page) {
       eventTypes: [],
       maxTravelPx: 0,
       startedAt: performance.now(),
+      chatStatusSeen: false,
+      chatActionSeen: false,
+      userEchoBeforeReply: false,
+      statusSamples: [],
     };
     window.__lensAnimProbe = probe;
 
@@ -83,6 +90,12 @@ async function installAnimationProbe(page) {
       if (document.body.classList.contains("director-running")) probe.directorRunningSeen = true;
       const status = document.querySelector(".ghost-cursor-effect-status");
       if (status && /Demonstrating/i.test(status.textContent || "")) probe.statusSeen = true;
+      const chatStatus = document.querySelector("[data-testid='companion-status-line'], [data-testid='companion-progress']");
+      if (chatStatus && /Working|Demonstrating|Planning|Listening|Hearing|Heard|Moving|Creating/i.test(chatStatus.textContent || "")) {
+        probe.chatStatusSeen = true;
+        probe.statusSamples.push(String(chatStatus.textContent || "").trim().slice(0, 120));
+      }
+      if (document.querySelector("[data-testid='companion-action-trail']")) probe.chatActionSeen = true;
       const cursor = document.querySelector(".ghost-cursor");
       if (!cursor) return;
       probe.cursorSeen = true;
@@ -126,6 +139,10 @@ async function installAnimationProbe(page) {
       probe.eventTypes = [];
       probe.maxTravelPx = 0;
       probe.startedAt = performance.now();
+      probe.chatStatusSeen = false;
+      probe.chatActionSeen = false;
+      probe.userEchoBeforeReply = false;
+      probe.statusSamples = [];
       window.__lensDirectorProbe?.clearTraces?.();
     };
   });
@@ -157,6 +174,9 @@ async function readAnimationProbe(page) {
       reducedMotion: Boolean(last?.reducedMotion),
       scriptTitle: last?.title || null,
       expectedCapabilities: last?.expectedCapabilities || [],
+      chatStatusSeen: Boolean(probe.chatStatusSeen),
+      chatActionSeen: Boolean(probe.chatActionSeen),
+      statusSamples: [...new Set(probe.statusSamples || [])].slice(0, 8),
     };
   });
 }
@@ -164,17 +184,34 @@ async function readAnimationProbe(page) {
 function animationPassed(anim) {
   if (!anim) return false;
   if (anim.reducedMotion) {
-    // Reduced-motion still must show director activity (jump/press/status), not silent mutation.
     return anim.directorRunningSeen
       && anim.cursorSeen
       && anim.motionEventCount >= 1;
   }
-  // Full motion: cursor must appear, travel, and emit real move/gesture traces.
   const traveled = anim.maxTravelPx >= 24 || anim.uniquePositions >= 3;
   return anim.directorRunningSeen
     && anim.cursorSeen
     && traveled
     && anim.motionEventCount >= 2;
+}
+
+async function chatSnapshot(page) {
+  return page.evaluate(() => {
+    const msgs = [...document.querySelectorAll(".companion-msg")].map((el) => ({
+      role: [...el.classList].find((c) => ["user", "companion", "status", "action"].includes(c)) || "unknown",
+      text: String(el.textContent || "").trim().slice(0, 200),
+      testid: el.getAttribute("data-testid") || null,
+    }));
+    const progress = document.querySelector("[data-testid='companion-progress']");
+    return {
+      msgs,
+      progress: progress ? String(progress.textContent || "").trim().slice(0, 160) : null,
+      statusLine: document.querySelector("[data-testid='companion-status-line']")?.textContent?.trim() || null,
+      actionTrail: [...document.querySelectorAll("[data-testid='companion-action-trail']")].map((el) =>
+        String(el.textContent || "").trim().slice(0, 120)
+      ),
+    };
+  });
 }
 
 async function main() {
@@ -199,7 +236,6 @@ async function main() {
   await shot(page, "01-land");
   await installAnimationProbe(page);
 
-  // Runtime must register and stay registered across React renders.
   const runtimeOk = await page.waitForFunction(
     () => typeof window.__lensOrbRuntime?.run === "function",
     null,
@@ -212,15 +248,17 @@ async function main() {
 
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("lens:companion-expand")));
   await page.waitForTimeout(600);
-  await shot(page, "02-chat");
+  await shot(page, "02-chat-open");
+
+  const starter = await chatSnapshot(page);
+  const hasStarter = starter.msgs.some((m) => m.role === "companion" && m.text.length > 8);
+  record("idle-starter-visible", hasStarter, hasStarter ? starter.msgs[0]?.text?.slice(0, 80) : "chat opened empty");
 
   const stillRuntime = await page.evaluate(() => typeof window.__lensOrbRuntime?.run === "function");
   record("runtime-stable-after-expand", stillRuntime, "runtime still present after expand/renders");
 
-  // Reset probe before the animated create-pearl path.
   await page.evaluate(() => window.__lensAnimProbeReset?.());
 
-  // Direct runtime.run must return a chattable reply AND animate.
   const directPromise = page.evaluate(async () => {
     const result = await window.__lensOrbRuntime.run("make a pearl about live stress test");
     return {
@@ -232,16 +270,15 @@ async function main() {
     };
   });
 
-  // Capture mid-animation while create-pearl director is running.
-  let midAnimShot = false;
-  for (let i = 0; i < 40 && !midAnimShot; i += 1) {
+  let runtimeMidAnimShot = false;
+  for (let i = 0; i < 40 && !runtimeMidAnimShot; i += 1) {
     const running = await page.evaluate(() =>
       document.body.classList.contains("director-running")
       || Boolean(document.querySelector(".ghost-cursor"))
     );
     if (running) {
       await shot(page, "03-mid-animation-runtime-create");
-      midAnimShot = true;
+      runtimeMidAnimShot = true;
       break;
     }
     await page.waitForTimeout(100);
@@ -252,23 +289,24 @@ async function main() {
   const runtimeAnim = await readAnimationProbe(page);
   results.animation = { runtimeCreate: runtimeAnim };
   record("runtime-run-returns", Boolean(direct.hasResult), JSON.stringify(direct));
+  record("runtime-create-animated", animationPassed(runtimeAnim), JSON.stringify(runtimeAnim));
   record(
-    "runtime-create-animated",
-    animationPassed(runtimeAnim),
-    JSON.stringify(runtimeAnim),
+    "runtime-mid-animation-shot",
+    runtimeMidAnimShot,
+    runtimeMidAnimShot ? "captured mid-animation screenshot" : "never saw director-running or ghost-cursor during runtime.create",
   );
-  if (!midAnimShot) {
-    record("runtime-mid-animation-shot", false, "never saw director-running or ghost-cursor during runtime.create");
-  } else {
-    record("runtime-mid-animation-shot", true, "captured mid-animation screenshot");
-  }
 
-  // UI GO path: type + real click (no force) — must also animate.
+  // UI GO path — assert echo + status during work + reply + animation.
   await page.evaluate(() => window.__lensAnimProbeReset?.());
   const input = page.locator("[data-testid='companion-chat-input']").first();
   const go = page.locator("[data-testid='companion-go']").first();
   record("chat-controls", (await input.count()) > 0 && (await go.count()) > 0, "input+GO");
+
   let goAnim = null;
+  let midRunChat = null;
+  let userEchoEarly = false;
+  let statusDuringRun = false;
+  let goMidAnimShot = false;
   if (await input.count()) {
     await input.click();
     await input.fill("make a pearl about companion stress notes");
@@ -281,52 +319,100 @@ async function main() {
       record("go-hit-test", hit === "companion-go", `hit=${hit}`);
       await go.click();
     }
-    midAnimShot = false;
-    for (let i = 0; i < 50 && !midAnimShot; i += 1) {
+
+    // Poll immediately for user echo + live status (before reply).
+    for (let i = 0; i < 50; i += 1) {
+      const snap = await chatSnapshot(page);
+      const hasUser = snap.msgs.some((m) => m.role === "user" && /companion stress notes/i.test(m.text));
+      const hasStatus = Boolean(
+        snap.statusLine
+        || (snap.progress && /Working|Demonstrating|Planning|Creating|Moving/i.test(snap.progress))
+        || snap.msgs.some((m) => m.role === "status" || m.role === "action")
+        || snap.actionTrail.length
+      );
+      const hasReply = snap.msgs.some((m) =>
+        m.role === "companion" && /Done|Opened|pearl|Blocked|Failed|Created|Ran:/i.test(m.text)
+      );
+      if (hasUser && !hasReply) userEchoEarly = true;
+      if (hasStatus) statusDuringRun = true;
+      if (hasUser && hasStatus && !midRunChat) {
+        midRunChat = snap;
+        await shot(page, "05-go-user-echo-and-status");
+      }
       const running = await page.evaluate(() =>
         document.body.classList.contains("director-running")
         || Boolean(document.querySelector(".ghost-cursor"))
       );
-      if (running) {
-        await shot(page, "05-mid-animation-go-create");
-        midAnimShot = true;
-        break;
+      if (running && !goMidAnimShot) {
+        await shot(page, "06-mid-animation-go-create");
+        goMidAnimShot = true;
       }
+      if (hasReply && (userEchoEarly || hasUser) && statusDuringRun && goMidAnimShot) break;
       await page.waitForTimeout(100);
     }
+
     await page.waitForFunction(
       () => !document.body.classList.contains("director-running"),
       null,
       { timeout: 20_000 },
     ).catch(() => {});
     await page.waitForTimeout(500);
-    await shot(page, "06-after-go");
+    await shot(page, "07-after-go");
     goAnim = await readAnimationProbe(page);
     results.animation.goCreate = goAnim;
     record("go-create-animated", animationPassed(goAnim), JSON.stringify(goAnim));
     record(
       "go-mid-animation-shot",
-      midAnimShot,
-      midAnimShot ? "captured mid-animation screenshot" : "never saw director/ghost-cursor during GO create",
+      goMidAnimShot,
+      goMidAnimShot ? "captured mid-animation screenshot" : "never saw director/ghost-cursor during GO create",
     );
   }
 
-  const chatText = await page.locator(".companion-msg").allTextContents();
-  const userMsg = chatText.some((t) => /companion stress|live stress/i.test(t));
-  const companionReply = chatText.some((t) => /Done|Opened|pearl|Blocked|Failed|Created/i.test(t));
-  record("user-message-visible", userMsg || chatText.length >= 2, `msgs=${chatText.length} sample=${JSON.stringify(chatText.slice(-3))}`);
-  record("companion-reply-visible", companionReply || chatText.length >= 2, `reply visible among ${chatText.length} messages`);
+  const afterGo = await chatSnapshot(page);
+  results.agentUx = {
+    midRunChat,
+    afterGo,
+    userEchoEarly,
+    statusDuringRun,
+    goAnimStatus: goAnim?.statusSamples || [],
+    goAnimAction: goAnim?.chatActionSeen || false,
+  };
 
-  // Create-pearl wording: never teach "orb" in visible companion/create UI.
+  const userVisible = afterGo.msgs.some((m) => m.role === "user" && /companion stress|live stress/i.test(m.text));
+  const companionReply = afterGo.msgs.some((m) =>
+    m.role === "companion" && /Done|Opened|pearl|Blocked|Failed|Created|Ran:/i.test(m.text)
+  );
+  record(
+    "user-message-echo",
+    userEchoEarly || userVisible,
+    userEchoEarly
+      ? "user message visible before companion reply"
+      : `userVisible=${userVisible} sample=${JSON.stringify(afterGo.msgs.filter((m) => m.role === "user").slice(-2))}`,
+  );
+  record(
+    "status-or-action-during-run",
+    statusDuringRun || goAnim?.chatStatusSeen || goAnim?.chatActionSeen,
+    statusDuringRun
+      ? `mid-run status/action observed: ${JSON.stringify(midRunChat?.statusLine || midRunChat?.progress || midRunChat?.actionTrail?.slice(0, 3))}`
+      : `probe status=${goAnim?.chatStatusSeen} action=${goAnim?.chatActionSeen} samples=${JSON.stringify(goAnim?.statusSamples || [])}`,
+  );
+  record(
+    "companion-reply-always-present",
+    companionReply,
+    companionReply
+      ? `reply=${afterGo.msgs.filter((m) => m.role === "companion").at(-1)?.text?.slice(0, 100)}`
+      : `no companion reply among ${afterGo.msgs.length} msgs`,
+  );
+
   const orbAfterCreate = await visibleOrbWords(page);
   record(
     "no-user-facing-orb-after-create",
     orbAfterCreate.length === 0,
     orbAfterCreate.length ? `visible orb copy: ${JSON.stringify(orbAfterCreate)}` : "no visible Orb/orb wording",
   );
-  await shot(page, "07-create-pearl-no-orb");
+  await shot(page, "08-create-pearl-no-orb");
 
-  // Confirmation-in-chat: destructive clear must show Accept/Reject in the dock.
+  // Confirmation-in-chat
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("lens:companion-expand")));
   await page.waitForTimeout(400);
   if (await input.count()) {
@@ -335,7 +421,7 @@ async function main() {
     await go.click();
     await page.waitForTimeout(1800);
   }
-  await shot(page, "08-confirmation-in-chat");
+  await shot(page, "09-confirmation-in-chat");
   const confirmStrip = page.locator("[data-testid='companion-destructive-strip'], [data-testid='companion-shell-approval-strip'], [data-testid='companion-plan-strip']").first();
   const confirmVisible = (await confirmStrip.count()) > 0 && await confirmStrip.isVisible().catch(() => false);
   const acceptBtn = page.locator("[data-testid='companion-destructive-accept'], [data-testid='companion-shell-approval-accept'], [data-testid='companion-plan-accept']").first();
@@ -391,7 +477,7 @@ async function main() {
       if (actionable) {
         await acceptBtn.click();
         await page.waitForTimeout(800);
-        await shot(page, "09-after-confirm-accept");
+        await shot(page, "10-after-confirm-accept");
       }
     } else {
       record("confirmation-accept-hit-test", false, "accept button has no bounding box");
@@ -400,7 +486,6 @@ async function main() {
     record("confirmation-accept-hit-test", false, "accept control missing");
   }
 
-  // Remount stress: open scene then home — chat transcript should persist
   await page.evaluate(async () => {
     await window.__lensOrbRuntime.run("open a new scene");
   });
@@ -414,30 +499,94 @@ async function main() {
   await page.waitForTimeout(500);
   const afterNav = await page.locator(".companion-msg").count();
   record("chat-survives-nav", afterNav >= 2, `messages after nav=${afterNav}`);
-  await shot(page, "10-after-nav");
+  await shot(page, "11-after-nav");
 
-  // Mic unavailable must talk
+  // Voice path: simulate Listening/Hearing status + unavailable diagnostic.
   const mic = page.locator("[data-testid='companion-mic'], .companion-mic").first();
   if (await mic.count()) {
+    await page.evaluate(() => {
+      class FakeRecognition {
+        constructor() {
+          this.continuous = false;
+          this.interimResults = false;
+          this.lang = "en-US";
+          this.onresult = null;
+          this.onerror = null;
+          this.onend = null;
+        }
+        start() {
+          const self = this;
+          queueMicrotask(() => {
+            const result = {
+              isFinal: false,
+              0: { transcript: "make a pearl about voice", confidence: 0.9 },
+              length: 1,
+            };
+            const event = {
+              resultIndex: 0,
+              results: {
+                length: 1,
+                0: result,
+                item: (i) => (i === 0 ? result : null),
+              },
+            };
+            self.onresult?.(event);
+          });
+        }
+        stop() {
+          queueMicrotask(() => this.onend?.());
+        }
+        abort() {
+          this.stop();
+        }
+      }
+      window.SpeechRecognition = FakeRecognition;
+      window.webkitSpeechRecognition = FakeRecognition;
+    });
+    await mic.click();
+    await page.waitForTimeout(400);
+    await shot(page, "12-voice-listening-hearing");
+    const voiceSnap = await chatSnapshot(page);
+    const voiceStatus = Boolean(
+      voiceSnap.statusLine
+      && /Listening|Hearing|Heard/i.test(voiceSnap.statusLine)
+    ) || voiceSnap.msgs.some((m) => m.role === "status" && /Listening|Hearing|Heard/i.test(m.text));
+    record(
+      "voice-listening-hearing-in-chat",
+      voiceStatus,
+      voiceStatus
+        ? `voice status=${voiceSnap.statusLine || voiceSnap.msgs.find((m) => m.role === "status")?.text}`
+        : `no Listening/Hearing status: ${JSON.stringify(voiceSnap.msgs.slice(-4))}`,
+    );
+    // Stop fake session without sending to avoid fighting GO path.
     await page.evaluate(() => {
       delete window.SpeechRecognition;
       delete window.webkitSpeechRecognition;
     });
+    await mic.click().catch(() => {});
+    await page.waitForTimeout(200);
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("lens:companion-notice", {
-        detail: { id: "test-mic", text: "Blocked: Voice isn’t available in this browser. Type your goal and press GO. [voice-unavailable]", transient: false },
+        detail: {
+          id: "test-mic",
+          text: "Blocked: Voice isn’t available in this browser. Type your goal and press GO. [voice-unavailable]",
+          transient: false,
+        },
       }));
     });
     await page.waitForTimeout(300);
-    const heard = (await page.locator(".companion-msg").allTextContents()).some((t) => /voice|microphone|Hearing|Listening/i.test(t));
-    record("voice-status-in-chat", heard, "voice diagnostic appears in chat");
+    const heard = (await page.locator(".companion-msg").allTextContents()).some((t) =>
+      /voice|microphone|Hearing|Listening|Heard/i.test(t)
+    );
+    record("voice-diagnostic-in-chat", heard, "voice diagnostic appears in chat");
+    await shot(page, "13-voice-diagnostic");
   } else {
-    record("voice-status-in-chat", false, "mic control missing");
+    record("voice-listening-hearing-in-chat", false, "mic control missing");
+    record("voice-diagnostic-in-chat", false, "mic control missing");
   }
 
   record("no-page-errors", pageErrors.length === 0, pageErrors.slice(0, 3).join(" | ") || "none");
 
-  // Hard gate: if either animated create path was silent, fail the suite.
   const anySilentSuccess = (direct.completed !== false && !animationPassed(runtimeAnim))
     || (goAnim && !animationPassed(goAnim));
   if (anySilentSuccess) {
@@ -450,8 +599,19 @@ async function main() {
     record("no-silent-mutation", true, "demonstrable create-pearl paths showed animation");
   }
 
+  // Hard gate for agent UX: empty chat during work is a failure.
+  const agentUxOk = (userEchoEarly || userVisible)
+    && (statusDuringRun || goAnim?.chatStatusSeen || goAnim?.chatActionSeen)
+    && companionReply;
+  record(
+    "agent-ux-no-silent-void",
+    agentUxOk,
+    agentUxOk
+      ? "user echo + live status/action + companion reply all observed"
+      : `echo=${userEchoEarly || userVisible} status=${statusDuringRun || goAnim?.chatStatusSeen} reply=${companionReply}`,
+  );
+
   fs.writeFileSync(path.join(out, "audit-results.json"), JSON.stringify(results, null, 2));
-  fs.writeFileSync(path.join(animOut, "audit-results.json"), JSON.stringify(results, null, 2));
   const failed = results.defects.length;
   console.log(`\n${results.checks.length - failed}/${results.checks.length} passed`);
   console.log(`evidence: ${out}`);

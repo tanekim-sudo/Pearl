@@ -5976,6 +5976,30 @@ body:has(.fn-editor-fullscreen) .companion-fab {
   color: rgba(140, 42, 32, 0.95);
 }
 
+.companion-msg.status {
+  align-self: stretch;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(50, 45, 32, 0.58);
+  font-size: 12px;
+  font-style: italic;
+  border-bottom-left-radius: 10px;
+}
+
+.companion-msg.action {
+  align-self: flex-start;
+  max-width: 92%;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(50, 45, 32, 0.55);
+  font-size: 11.5px;
+  line-height: 1.35;
+  border-bottom-left-radius: 10px;
+}
+
 .companion-playing,
 .companion-progress {
   display: flex;
@@ -5993,6 +6017,11 @@ body:has(.fn-editor-fullscreen) .companion-fab {
 .companion-progress {
   background: rgba(0, 0, 0, 0.035);
   color: rgba(50, 45, 32, 0.62);
+}
+
+.companion-progress.playing {
+  background: rgba(201, 162, 39, 0.13);
+  color: rgba(90, 70, 20, 0.9);
 }
 
 .companion-plan-strip {

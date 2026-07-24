@@ -449,3 +449,96 @@ export function createVerifiedResearchTool(provider, policy = {}) {
     return { version: 1, question: request.question, sources, provider: provider.name || "configured-provider" };
   };
 }
+
+/** Human chat-status labels — never leave the user staring at a silent void. */
+const PHASE_STATUS_LABELS = Object.freeze({
+  understanding: "Working…",
+  planning: "Planning…",
+  researching: "Researching…",
+  hypothesizing: "Working…",
+  instrumenting: "Working…",
+  reviewing: "Waiting for your choice…",
+  fixing: "Working…",
+  migrating: "Working…",
+  evaluating: "Working…",
+  executing: "Working…",
+  demonstrating: "Demonstrating…",
+  blocked: "Blocked",
+  idle: "Done",
+  done: "Done",
+});
+
+const DIRECTOR_ACTION_LABELS = Object.freeze({
+  createSemanticOrb: "Creating pearl…",
+  createExternalSemanticOrb: "Creating pearl…",
+  wearPearl: "Wearing pearl…",
+  openScene: "Opening scene…",
+  openLibrary: "Opening library…",
+  openPearlStudio: "Opening Studio…",
+  spawnText: "Adding text…",
+  createMove: "Creating move…",
+  createFunction: "Creating function…",
+  createLens: "Creating lens…",
+  applyMove: "Applying move…",
+  applyFunction: "Applying function…",
+  highlight: "Highlighting…",
+  clearHighlight: "Clearing highlight…",
+  switchTool: "Switching tool…",
+  fitPaper: "Fitting view…",
+  zoomPaper: "Zooming…",
+  panPaper: "Panning…",
+  caption: "Explaining…",
+  pause: "Pausing…",
+  clearWorkspaceDomains: "Clearing workspace…",
+});
+
+export function formatCompanionStatusLabel(phase, options = {}) {
+  if (options.listening) return "Listening…";
+  if (options.playing || phase === "demonstrating") {
+    const title = text(options.scriptTitle || "", 80);
+    return title ? `Demonstrating — ${title}…` : "Demonstrating…";
+  }
+  const key = String(phase || "understanding").toLowerCase().trim();
+  if (PHASE_STATUS_LABELS[key]) return PHASE_STATUS_LABELS[key];
+  if (/^blocked/.test(key)) return "Blocked";
+  if (/^done|complete|idle/.test(key)) return "Done";
+  // Freeform phases from App ("discovering operation", "fixing", …)
+  const cleaned = key.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "Working…";
+  return `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}…`;
+}
+
+export function formatDirectorActionTrail(event = {}) {
+  const type = String(event.type || "");
+  const capability = String(event.capability || "").trim();
+  if (type === "run-start") {
+    return event.stepCount > 0 ? "Starting demonstration…" : null;
+  }
+  if (type === "cursor-move" || type === "cursor-move-start") return "Moving cursor…";
+  if (type === "gesture-press") return "Clicking…";
+  if (type === "gesture-release") return null;
+  if (type === "caption" && event.text) {
+    return text(event.text, 160);
+  }
+  if (type === "step-start" && capability) {
+    if (DIRECTOR_ACTION_LABELS[capability]) return DIRECTOR_ACTION_LABELS[capability];
+    const readable = capability
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .toLowerCase();
+    return `${readable.charAt(0).toUpperCase()}${readable.slice(1)}…`;
+  }
+  if (type === "step-complete" && capability) {
+    if (/createSemanticOrb|createExternalSemanticOrb/.test(capability)) {
+      const name = text(event.result?.name || event.args?.name || "", 60);
+      return name ? `Created “${name}”.` : "Created pearl.";
+    }
+    if (capability === "wearPearl") return "Pearl worn.";
+    if (capability === "openScene") return "Scene opened.";
+    return null;
+  }
+  if (type === "step-failed" && event.error) {
+    return `Step skipped — ${text(event.error, 120)}`;
+  }
+  return null;
+}

@@ -35,6 +35,8 @@ audit-shots/*
 !audit-shots/companion-animation-stress-2026-07-23/**
 !audit-shots/companion-chat-confirm-2026-07-23/
 !audit-shots/companion-chat-confirm-2026-07-23/**
+!audit-shots/companion-chat-agent-ux-2026-07-23/
+!audit-shots/companion-chat-agent-ux-2026-07-23/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

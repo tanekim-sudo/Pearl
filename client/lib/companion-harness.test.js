@@ -6,6 +6,8 @@ import {
   compactHarnessContext,
   createRunLedger,
   createVerifiedResearchTool,
+  formatCompanionStatusLabel,
+  formatDirectorActionTrail,
   immutableWorkspaceSnapshot,
   invalidatePlanDescendants,
   modePermission,
@@ -20,6 +22,24 @@ import {
   transitionRun,
   verifyObservedEffects,
 } from "./companion-harness.js";
+
+test("status labels stay human and never blank for live phases", () => {
+  assert.equal(formatCompanionStatusLabel("understanding"), "Working…");
+  assert.equal(formatCompanionStatusLabel("planning"), "Planning…");
+  assert.equal(formatCompanionStatusLabel("demonstrating", { playing: true, scriptTitle: "Create pearl" }), "Demonstrating — Create pearl…");
+  assert.equal(formatCompanionStatusLabel("", { listening: true }), "Listening…");
+  assert.match(formatCompanionStatusLabel("discovering operation"), /Discovering operation/);
+});
+
+test("director action trail maps steps to compact chat lines", () => {
+  assert.equal(formatDirectorActionTrail({ type: "step-start", capability: "createSemanticOrb" }), "Creating pearl…");
+  assert.equal(formatDirectorActionTrail({ type: "cursor-move-start" }), "Moving cursor…");
+  assert.equal(
+    formatDirectorActionTrail({ type: "step-complete", capability: "createSemanticOrb", args: { name: "Notes" } }),
+    "Created “Notes”.",
+  );
+  assert.equal(formatDirectorActionTrail({ type: "gesture-release" }), null);
+});
 
 test("Ask and Plan enforce zero mutation until accepted", () => {
   assert.equal(modePermission("ask", { kind: "action", mutating: true }).allowed, false);

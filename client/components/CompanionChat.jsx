@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { subscribeDirector, stopDirector } from "../lib/director.js";
 import { classifyInterviewInput } from "../lib/companion-intent.js";
 import { createCompanionSubmitGuard } from "../lib/companion-submit.js";
@@ -8,6 +8,8 @@ import { createCompanionVoiceSession } from "../lib/companion-voice.js";
 import {
   COMPANION_MODES,
   createRunLedger,
+  formatCompanionStatusLabel,
+  formatDirectorActionTrail,
   normalizeGoal,
   persistRunLedger,
   recommendCompanionMode,
@@ -65,7 +67,7 @@ function persistChat(messages) {
       CHAT_MESSAGES_KEY,
       JSON.stringify(
         (messages || [])
-          .filter((m) => m?.text && m.role !== "status")
+          .filter((m) => m?.text && m.role !== "status" && m.role !== "action")
           .slice(-MAX_PERSISTED_CHAT)
           .map((m) => ({
             role: m.role,
@@ -110,7 +112,7 @@ export default function CompanionChat({
       {
         role: "companion",
         text: nextInterviewPrompt(loadCompanionMemory(userId)) ||
-          "Type or speak what you want, then press GO. I’ll reply here with what happened.",
+          "Type or speak, then press GO — I’ll show what I’m doing here.",
       },
     ];
   });
@@ -120,6 +122,7 @@ export default function CompanionChat({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState("");
+  const [statusLine, setStatusLine] = useState("");
   const [activePlan, setActivePlan] = useState(null);
   const [planDraft, setPlanDraft] = useState("");
   const [planEditing, setPlanEditing] = useState(false);
@@ -271,11 +274,72 @@ export default function CompanionChat({
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, busy]);
+  }, [
+    messages,
+    busy,
+    statusLine,
+    phase,
+    director?.running,
+    destructiveConfirmation?.domains?.join("|"),
+    shellApproval?.id,
+    activePlan?.preview,
+  ]);
 
   useEffect(() => {
     persistChat(messages);
   }, [messages]);
+
+  // Mirror live status into the transcript so the chat never looks empty mid-run.
+  useEffect(() => {
+    setMessages((current) => {
+      const without = current.filter((entry) => entry.role !== "status");
+      if (!statusLine) return without;
+      const last = without[without.length - 1];
+      if (last?.role === "status" && last.text === statusLine) return current;
+      return [...without, { role: "status", text: statusLine }];
+    });
+  }, [statusLine]);
+
+  // Typed/run phases → human status. Voice owns the line while the mic is open.
+  // Idle clears only non-voice diagnostics; "Heard …" lingers until its own timeout/send.
+  useEffect(() => {
+    if (listening) return;
+    if (busy || director?.running) {
+      setStatusLine(formatCompanionStatusLabel(director?.running ? "demonstrating" : phase, {
+        playing: Boolean(director?.running),
+        scriptTitle: director?.scriptTitle,
+      }));
+      return;
+    }
+    setStatusLine((current) => (/^Heard\b/i.test(current) ? current : ""));
+  }, [phase, busy, listening, director?.running, director?.scriptTitle]);
+
+  // Compact in-thread action trail from director effect events (not a second UI).
+  useEffect(() => {
+    function onTrace(event) {
+      const line = formatDirectorActionTrail(event.detail?.event || {});
+      if (!line) return;
+      setMessages((current) => {
+        const status = current.find((entry) => entry.role === "status");
+        const base = current.filter((entry) => entry.role !== "status");
+        const lastAction = [...base].reverse().find((entry) => entry.role === "action");
+        if (lastAction?.text === line) {
+          return status ? [...base, status] : base;
+        }
+        let next = [...base, { role: "action", text: line }];
+        const actionIndexes = next
+          .map((entry, index) => (entry.role === "action" ? index : -1))
+          .filter((index) => index >= 0);
+        if (actionIndexes.length > 8) {
+          const drop = new Set(actionIndexes.slice(0, actionIndexes.length - 8));
+          next = next.filter((_, index) => !drop.has(index));
+        }
+        return status ? [...next, status] : next;
+      });
+    }
+    window.addEventListener("lens:director-effect-trace", onTrace);
+    return () => window.removeEventListener("lens:director-effect-trace", onTrace);
+  }, []);
 
   function speak(text) {
     if (!voiceOut || typeof speechSynthesis === "undefined" || !text) return;
@@ -342,9 +406,12 @@ export default function CompanionChat({
         stage: "parse",
         message: "Heard nothing clear enough to run. Hold the mic, speak, then release — or type and press GO.",
       };
+      setStatusLine("Heard nothing.");
       surfaceExecution({ execution }, null);
       setBusy(false);
-      setPhase("idle");
+      setPhase("");
+      // Keep the Heard diagnostic visible briefly, then clear the live status row.
+      window.setTimeout(() => setStatusLine((current) => (current === "Heard nothing." ? "" : current)), 1200);
       return execution;
     }
     const run = submitGuardRef.current.begin(rawText ?? draft, envelope);
@@ -367,10 +434,18 @@ export default function CompanionChat({
       window.__lensCompanionLastRun = { ...run, controller: undefined, signal: undefined, text, startedAt: run.at };
       window.dispatchEvent(new CustomEvent("lens:companion-run", { detail: window.__lensCompanionLastRun }));
     }
-    setDraft("");
-    setMessages((m) => [...m, { role: "user", text }]);
-    setBusy(true);
-    setPhase("understanding");
+    // Immediate echo + live status before any await — never a silent void after GO.
+    flushSync(() => {
+      setDraft("");
+      setBusy(true);
+      setPhase("understanding");
+      setStatusLine(formatCompanionStatusLabel("understanding"));
+      setMessages((m) => [
+        ...m.filter((entry) => entry.role !== "status" && entry.role !== "action"),
+        { role: "user", text },
+        { role: "status", text: formatCompanionStatusLabel("understanding") },
+      ]);
+    });
     const goal = normalizeGoal(text);
     const resolvedMode = recommendCompanionMode(goal, {
       autonomy: memory.preferences?.autonomy,
@@ -383,7 +458,9 @@ export default function CompanionChat({
       goal,
       planApproved: envelope.planApproved === true,
       onPhase(nextPhase) {
-        if (!run.signal.aborted) setPhase(nextPhase);
+        if (run.signal.aborted) return;
+        setPhase(nextPhase);
+        setStatusLine(formatCompanionStatusLabel(nextPhase));
       },
       onPlan(plan) {
         if (run.signal.aborted) return Promise.resolve({ decision: "reject", reason: "cancelled" });
@@ -498,6 +575,7 @@ export default function CompanionChat({
       if (isCurrent) {
         setBusy(false);
         setPhase("");
+        setStatusLine("");
         setActivePlan(null);
       }
     }
@@ -510,7 +588,9 @@ export default function CompanionChat({
     if (cancelled) setDraft(cancelled.text);
     setBusy(false);
     setPhase("");
+    setStatusLine("");
     setActivePlan(null);
+    setMessages((m) => m.filter((entry) => entry.role !== "status"));
     stopDirector();
   }
 
@@ -592,10 +672,16 @@ export default function CompanionChat({
     const s = voiceSessionRef.current;
     if (!s) return;
     voiceSessionRef.current = null;
+    const preview = s.text();
+    if (shouldSend && preview) {
+      setStatusLine(`Heard: “${preview.slice(0, 160)}${preview.length > 160 ? "…" : ""}”`);
+    } else if (!shouldSend) {
+      setStatusLine("");
+      setMessages((m) => m.filter((entry) => entry.role !== "status"));
+    }
     const said = s.finish({ send: shouldSend });
     recRef.current = null;
     setListening(false);
-    setMessages((m) => m.filter((entry) => entry.role !== "status"));
     if (!shouldSend && said) setDraft(s.text());
   }
 
@@ -613,16 +699,22 @@ export default function CompanionChat({
         if (voiceSessionRef.current === session) voiceSessionRef.current = null;
         recRef.current = null;
         setListening(false);
+        const heard = String(text || "").trim();
+        if (heard) {
+          setStatusLine(`Heard: “${heard.slice(0, 160)}${heard.length > 160 ? "…" : ""}”`);
+        } else if (envelope?.empty) {
+          setStatusLine("Heard nothing.");
+        }
         send(text, envelope);
       },
       updateDraft: (value) => {
         setDraft(value);
         const heard = String(value || "").trim();
-        if (!heard) return;
-        setMessages((m) => {
-          const without = m.filter((entry) => entry.role !== "status");
-          return [...without, { role: "status", text: `Hearing: “${heard.slice(0, 160)}${heard.length > 160 ? "…" : ""}”` }];
-        });
+        if (!heard) {
+          setStatusLine("Listening…");
+          return;
+        }
+        setStatusLine(`Hearing: “${heard.slice(0, 160)}${heard.length > 160 ? "…" : ""}”`);
       },
     });
 
@@ -670,13 +762,7 @@ export default function CompanionChat({
 
     voiceSessionRef.current = session;
     setListening(true);
-    setMessages((m) => {
-      const without = m.filter((entry) => entry.role !== "status");
-      return [...without, {
-        role: "status",
-        text: "Listening… speak now. Tap the mic again when you’re done (or pause and I’ll send what I heard).",
-      }];
-    });
+    setStatusLine("Listening…");
     setOpen(true);
     setForeground(true);
     try {
@@ -889,6 +975,27 @@ export default function CompanionChat({
       )}
 
       <div className="companion-messages" ref={listRef}>
+        {messages.map((m, i) => (
+          <div
+            key={`${m.role}-${i}-${String(m.text).slice(0, 24)}`}
+            className={"companion-msg " + m.role + (m.error ? " error" : "") + (m.execution ? ` exec-${m.execution.status}` : "")}
+            data-execution-code={m.execution?.code || undefined}
+            data-testid={
+              m.role === "status"
+                ? "companion-status-line"
+                : m.role === "action"
+                  ? "companion-action-trail"
+                  : m.role === "user"
+                    ? "companion-msg-user"
+                    : "companion-msg"
+            }
+            role={m.role === "status" ? "status" : undefined}
+            aria-live={m.role === "status" ? "polite" : undefined}
+          >
+            {m.text}
+          </div>
+        ))}
+        {/* Confirmations sit under the confirm message (in-thread), not above the scroll. */}
         {destructiveConfirmation?.domains?.length > 0 && (
           <div className="companion-plan-strip" data-testid="companion-destructive-strip" role="alertdialog" aria-label="Confirm destructive clear">
             <strong>Clear this workspace content?</strong>
@@ -1003,24 +1110,14 @@ export default function CompanionChat({
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={"companion-msg " + m.role + (m.error ? " error" : "") + (m.execution ? ` exec-${m.execution.status}` : "")}
-            data-execution-code={m.execution?.code || undefined}
-          >
-            {m.text}
-          </div>
-        ))}
-        {busy && (
-          <div className="companion-progress" role="status" aria-live="polite" data-testid="companion-progress">
-            <span>{phase || "understanding"}…</span>
-            <button type="button" onClick={cancelActiveWork}>stop</button>
-          </div>
-        )}
-        {playing && (
-          <div className="companion-playing">
-            <span>demonstrating{director?.scriptTitle ? ` — ${director.scriptTitle}` : ""}…</span>
+        {(busy || playing) && (
+          <div className={"companion-progress" + (playing ? " playing" : "")} role="status" aria-live="polite" data-testid="companion-progress">
+            <span>
+              {formatCompanionStatusLabel(playing ? "demonstrating" : phase, {
+                playing,
+                scriptTitle: director?.scriptTitle,
+              })}
+            </span>
             <button type="button" onClick={cancelActiveWork}>stop</button>
           </div>
         )}
