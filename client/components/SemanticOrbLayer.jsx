@@ -155,7 +155,9 @@ export default function SemanticOrbLayer({
     let gesture = gesturesRef.current.get(orb.id);
     if (!gesture) {
       gesture = createPearlGestureArbiter({
-        onSingle: () => callbacksRef.current.onActivate?.(callbacksRef.current.activeId === orb.id ? null : orb.id),
+        // Single click enters Studio explorer (Functions as ordered Moves).
+        // Triple still opens Studio; activate stays available via keyboard focus path.
+        onSingle: () => callbacksRef.current.onOpenStudio?.(orb),
         onTriple: () => callbacksRef.current.onOpenStudio?.(orb),
       });
       gesturesRef.current.set(orb.id, gesture);
@@ -260,7 +262,7 @@ export default function SemanticOrbLayer({
             <span>{labelFor(orb)}</span>
             {(orb.workingSet?.context?.length || 0) > 0 && <i>{orb.workingSet.context.length}</i>}
           </button>
-          {activeId === orb.id && <aside className="semantic-orb-inspector" aria-label={`${labelFor(orb)} pearl controls`}>
+          {activeId === orb.id && <aside className="semantic-orb-inspector" aria-label={`${labelFor(orb)} pearl controls`} data-testid="pearl-inspector">
             <form onSubmit={(event) => {
               event.preventDefault();
               if (rename.trim() && rename.trim() !== orb.name) onRename?.(orb.id, rename.trim());
@@ -268,20 +270,25 @@ export default function SemanticOrbLayer({
               <input aria-label="Pearl name" value={rename} onChange={(event) => setRename(event.target.value)} />
               <button type="submit">Rename</button>
             </form>
-            <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context · {orb.workingSet?.lenses?.length || 0} Lenses</small>
-            {(orb.workingSet?.context || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Pearl context">
-              {orb.workingSet.context.slice(0, 6).map((item) => <li key={item.id}>
-                <span>{item.label || item.name || item.text || "Context material"}</span>
-                <button type="button" onClick={() => onRemoveContext?.(orb.id, item.id)}>Remove</button>
-              </li>)}
-            </ul>}
-            {(orb.workingSet?.lenses || []).length > 0 && <ul className="semantic-orb-inspector-list" aria-label="Pearl Lenses">
-              {orb.workingSet.lenses.slice(0, 6).map((lens) => <li key={lens.id}>
-                <span>{lens.name || lens.label || "Lens"}</span>
-                <button type="button" onClick={() => onRemoveLens?.(orb.id, lens.id)}>Remove</button>
-              </li>)}
-            </ul>}
+            <p className="semantic-orb-inspector-purpose">
+              {(orb.functions || []).length
+                ? `${(orb.functions || []).map((fn) => fn.name).filter(Boolean).slice(0, 3).join(" · ")} — open to see each Function as ordered Moves`
+                : `${orb.workingSet?.context?.length || 0} context · ${orb.workingSet?.lenses?.length || 0} Lenses`}
+            </p>
+            {(orb.functions || []).slice(0, 2).map((fn) => (
+              <div key={fn.id || fn.name} className="semantic-orb-inspector-fn" data-testid="inspector-function-preview">
+                <b>{fn.name || "Function"}</b>
+                <ol>
+                  {(fn.steps || fn.graph?.nodes || []).slice(0, 5).map((step, index) => (
+                    <li key={step.id || index}>{typeof step === "string" ? step : (step.name || step.label || `Move ${index + 1}`)}</li>
+                  ))}
+                </ol>
+              </div>
+            ))}
             <div className="semantic-orb-inspector-actions">
+              <button type="button" data-testid="inspector-open-studio" className="semantic-orb-inspector-primary" onClick={() => onOpenStudio?.(orb)}>
+                Explore structure
+              </button>
               <button type="button" onClick={() => onDuplicate?.(orb.id)}>Duplicate</button>
               <button type="button" disabled={(orb.sourceIds?.length || orb.representation?.refs?.length || 0) < 2} onClick={() => onSplit?.(orb.id)}>Split</button>
               {orb.parentOrbId && <button type="button" onClick={() => onUnnest?.(orb.id)}>Unnest</button>}

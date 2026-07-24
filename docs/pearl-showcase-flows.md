@@ -104,6 +104,24 @@ If README claims a capability works and the novice path cannot reach it, the str
 | **Surfaces** | Reef + optional Studio + gauntlet |
 | **Success world-state** | Titled investor pearl with memo/diligence structure; findable on Reef |
 | **Stress id** | `sf-role-investor` |
+| **Note** | One example among many — not the sole acceptance criterion |
+
+### SF10b — Click pearl → Studio Function=ordered Moves
+| | |
+|---|---|
+| **Intent phrases** | (UI) click reef pearl after create/role |
+| **Surfaces** | Reef → Pearl Studio |
+| **Success world-state** | Studio shows Functions as numbered ordered Moves; not Scene Rename/Duplicate form; drag reorder available |
+| **Stress id** | `sf-click-studio-function-moves` |
+| **Visual gate** | PNG Read must answer: Do I know what this pearl is? What can I do next? Can I see Functions as move sequences? |
+
+### SF10c — Drag reorder Moves persists
+| | |
+|---|---|
+| **Intent phrases** | (gesture) drag a Move above/below another |
+| **Surfaces** | Pearl Studio |
+| **Success world-state** | Order changes and survives reload |
+| **Stress id** | `sf-studio-reorder-moves` |
 
 ### SF11 — Encode anything
 | | |

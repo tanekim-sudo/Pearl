@@ -54,16 +54,50 @@ function definitionFor(kind, value = {}) {
     atomic: true,
     adapter: value.adapter === true,
   };
-  if (kind === "function") return {
-    graph: clone(value.graph || value.processGraph || {
-      nodes: (value.steps || []).map((ref, index) => ({ id: `step:${index + 1}`, layerId: typeof ref === "string" ? ref : ref.id })),
-      edges: (value.steps || []).slice(1).map((_, index) => ({ from: `step:${index + 1}`, to: `step:${index + 2}`, relation: "then" })),
-    }),
-    branches: clone(value.branches || []),
-    inputSpec: clone(value.inputSpec || { type: "material" }),
-    outputSpecs: clone(value.outputSpecs || (value.outputSpec ? [value.outputSpec] : [])),
-    generationPlan: clone(value.generationPlan || null),
-  };
+  if (kind === "function") {
+    // A Function IS an ordered series of Moves. Preserve human step names when
+    // scaffolding from { name, description } steps — never collapse to bare step:N.
+    const steps = Array.isArray(value.steps) ? value.steps : [];
+    const fromSteps = steps.length ? {
+      nodes: steps.map((ref, index) => {
+        if (typeof ref === "string") {
+          return { id: `step:${index + 1}`, layerId: ref, name: ref, kind: "move" };
+        }
+        const name = bounded(ref?.name || ref?.label || ref?.title || `Move ${index + 1}`, 180);
+        return {
+          id: bounded(ref?.id || `step:${index + 1}`, 220),
+          layerId: ref?.layerId || ref?.id || null,
+          name,
+          description: bounded(ref?.description || ref?.prompt || "", 4_000),
+          kind: ref?.kind || "move",
+          prompt: bounded(ref?.prompt || "", 20_000),
+        };
+      }),
+      edges: steps.slice(1).map((_, index) => ({
+        from: bounded(typeof steps[index] === "object" && steps[index]?.id ? steps[index].id : `step:${index + 1}`, 220),
+        to: bounded(typeof steps[index + 1] === "object" && steps[index + 1]?.id ? steps[index + 1].id : `step:${index + 2}`, 220),
+        relation: "then",
+      })),
+    } : { nodes: [], edges: [] };
+    const graph = clone(value.graph || value.processGraph || fromSteps);
+    // Backfill missing names on pre-existing graphs that only stored step:N ids.
+    if (Array.isArray(graph.nodes) && steps.length) {
+      graph.nodes = graph.nodes.map((node, index) => {
+        const step = steps[index];
+        const stepName = typeof step === "string" ? step : step?.name || step?.label;
+        if (node?.name || !stepName) return node;
+        return { ...node, name: bounded(stepName, 180), description: bounded(typeof step === "object" ? (step.description || step.prompt || "") : "", 4_000), kind: node.kind || "move" };
+      });
+    }
+    return {
+      graph,
+      steps: steps.length ? clone(steps) : clone(value.definition?.steps || []),
+      branches: clone(value.branches || []),
+      inputSpec: clone(value.inputSpec || { type: "material" }),
+      outputSpecs: clone(value.outputSpecs || (value.outputSpec ? [value.outputSpec] : [])),
+      generationPlan: clone(value.generationPlan || null),
+    };
+  }
   return {
     pearlId: String(value.pearlId || value.ref?.id || value.id || ""),
     revision: Math.max(0, Number(value.revision) || 0),

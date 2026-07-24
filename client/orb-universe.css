@@ -1125,6 +1125,15 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 .semantic-orb-inspector-list button { min-height:26px; padding:2px 7px; font-size:9px; }
 .semantic-orb-inspector-actions { flex-wrap:wrap; }
 .semantic-orb-inspector button:disabled { opacity:.35; cursor:not-allowed; }
+.semantic-orb-inspector-purpose { margin:8px 0; color:rgba(255,249,230,.72); font-size:11px; line-height:1.45; }
+.semantic-orb-inspector-fn { margin:8px 0; padding:8px 0; border-top:1px solid rgba(241,218,153,.12); }
+.semantic-orb-inspector-fn b { display:block; margin-bottom:4px; color:#fff9e8; font-size:12px; }
+.semantic-orb-inspector-fn ol { margin:0; padding-left:18px; color:rgba(255,249,230,.68); font-size:11px; line-height:1.45; }
+.semantic-orb-inspector-primary {
+  border-color:rgba(241,218,153,.42) !important;
+  color:#fff9e8 !important;
+  font-weight:550;
+}
 .semantic-orb-delete { width:100%; margin-top:8px; border-color:transparent!important; color:var(--orb-danger)!important; }
 .semantic-orb-delete-confirm { display:grid!important; grid-template-columns:1fr auto auto; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--orb-line); }
 .semantic-orb-delete-confirm span { color:var(--orb-text-2); font-size:9px; line-height:1.35; }

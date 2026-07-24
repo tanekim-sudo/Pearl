@@ -98,7 +98,7 @@ export function buildInvestorRolePearlScaffold(options = {}) {
 
   const lens = {
     id: `${idPrefix}:lens`,
-    name: bounded(`${firm} investor lens`, 72),
+    name: bounded(firm === "investor" ? "Investor lens" : `${firm} investor lens`, 72),
     description: bounded(
       `Judgment frame of ${role}: underwrite with evidence, prioritize asymmetric upside, track disconfirming risk, and stay honest about conviction vs. open diligence.`,
       400,
@@ -198,7 +198,7 @@ export function buildInvestorRolePearlScaffold(options = {}) {
     pearl: {
       name: pearlName,
       description: bounded(
-        `${pearlName}: investment memo + diligence Functions under a ${lens.name}.`,
+        `${pearlName}: investment memo + diligence Functions under ${lens.name}.`,
         280,
       ),
       purpose: "Investor underwriting: memo writing and diligence through a firm-aware lens.",

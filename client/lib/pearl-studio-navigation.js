@@ -41,6 +41,8 @@ export async function openPearlStudioDocument(ref, deps = {}) {
     session = globalThis.sessionStorage,
     locationRef = globalThis.location,
     pearlId = null,
+    // Same-window is the clueless default — popups feel like a lost tab.
+    preferSameWindow = true,
   } = deps;
   await flushPearlPrivacyBeforeStudio(deps);
   const href = buildPearlStudioHref(ref, locationRef);
@@ -50,14 +52,16 @@ export async function openPearlStudioDocument(ref, deps = {}) {
   } catch {
     /* private mode */
   }
-  let opened = null;
-  try {
-    opened = open?.(href, "_blank", "noopener") || null;
-  } catch {
-    opened = null;
-  }
-  if (opened && typeof opened === "object" && opened.closed !== true) {
-    return { mode: "popup", href };
+  if (!preferSameWindow) {
+    let opened = null;
+    try {
+      opened = open?.(href, "_blank", "noopener") || null;
+    } catch {
+      opened = null;
+    }
+    if (opened && typeof opened === "object" && opened.closed !== true) {
+      return { mode: "popup", href };
+    }
   }
   // Hash-only assign never remounts Studio; rewrite then reload the document.
   replaceState?.(null, "", href);

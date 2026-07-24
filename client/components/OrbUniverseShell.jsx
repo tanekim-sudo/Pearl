@@ -541,13 +541,18 @@ function LibraryHome({
             type="button"
             className="reef-pearl"
             data-reef-pearl={pearl.id}
-            onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
-            onDoubleClick={(event) => {
-              event.preventDefault();
+            data-testid="reef-pearl-open"
+            onClick={() => {
+              // Single click enters Studio explorer (Functions as ordered Moves) — not Scene admin form.
               onOpenStudio?.(pearl);
             }}
-            title={`${pearl.name} — open this pearl`}
-            aria-label={`${pearl.name}, pearl`}
+            onContextMenu={(event) => {
+              // Right-click still reaches Scene spatial play when needed.
+              event.preventDefault();
+              if (pearl.sceneId) navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`);
+            }}
+            title={`${pearl.name} — open to explore Functions as ordered Moves`}
+            aria-label={`${pearl.name}, open pearl explorer`}
           >
             <i className="reef-pearl-dot" aria-hidden="true" />
             <b>{pearl.name}</b>
@@ -3181,7 +3186,9 @@ export default function OrbUniverseShell({ StageComponent }) {
 
   async function openActivePearlStudio(selectedPearl = null) {
     const scene = (sceneWorkspace.scenes || []).find((entry) => entry.id === (route.sceneId || sceneWorkspace.activeSceneId));
-    const active = selectedPearl || scene?.semanticOrbs?.find((entry) => entry.id === scene.activeSemanticOrbId)
+    // Reef shelf entries are { id, name, sceneId, orb } — prefer the embedded orb payload.
+    const fromShelf = selectedPearl?.orb && typeof selectedPearl.orb === "object" ? selectedPearl.orb : selectedPearl;
+    const active = fromShelf || scene?.semanticOrbs?.find((entry) => entry.id === scene.activeSemanticOrbId)
       || scene?.semanticOrbs?.[0]
       || {
         id: `primary:${scene?.id || "workspace"}`,

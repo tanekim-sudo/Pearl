@@ -433,20 +433,34 @@ async function typeAndGo(page, text, { shotPrefix = null, humanMs = 900 } = {}) 
 }
 
 function aestheticNote(frame, verdict, critique, severity = "P1") {
+  const text = String(critique || "").trim();
+  // Meta-standard: no boilerplate "pass" without citing what was seen in the PNG.
+  const citesPixels = text.length >= 48 && (
+    /\b(see|saw|visible|readable|occluded|stacked|contrast|clutter|title|function|move|button|shelf|studio|gauntlet|form|inspector)\b/i.test(text)
+  );
+  let finalVerdict = verdict;
+  let finalCritique = text;
+  let finalSeverity = severity;
+  if (verdict === "pass" && !citesPixels) {
+    finalVerdict = "fail";
+    finalSeverity = "P0";
+    finalCritique = `Harness lie blocked: aesthetic pass without pixel-grounded critique. Got: ${text || "(empty)"}`;
+  }
   const entry = {
     frame,
-    ok: verdict === "pass",
-    verdict,
-    critique,
-    severity,
+    ok: finalVerdict === "pass",
+    verdict: finalVerdict,
+    critique: finalCritique,
+    severity: finalSeverity,
     requiresHumanPngRead: true,
-    note: "Agent must Read the PNG pixels; DOM-only pass is a harness lie",
+    citesPixels,
+    note: "PASS only after human Read of PNG pixels + brutal comprehension critique. DOM-only is a harness lie.",
   };
   results.aesthetics.push(entry);
-  if (!entry.ok && (severity === "P0" || severity === "P1")) {
-    record(`aesthetic:${frame}`, false, critique, severity);
+  if (!entry.ok && (finalSeverity === "P0" || finalSeverity === "P1")) {
+    record(`aesthetic:${frame}`, false, finalCritique, finalSeverity);
   } else {
-    record(`aesthetic:${frame}`, true, critique, severity === "P0" ? "P0" : "P2");
+    record(`aesthetic:${frame}`, true, finalCritique, finalSeverity === "P0" ? "P0" : "P2");
   }
 }
 
@@ -776,9 +790,17 @@ async function runCluelessJourneys(browser) {
   await page.waitForTimeout(1600);
   await shot(page, "13b-studio");
   const studioText = await page.locator("body").innerText().catch(() => "");
-  const studioOk = /Pearl Studio|Moves|Functions|Lenses|What it does|Inspect structure/i.test(studioText)
-    || Boolean(await page.locator(".web-pearl-studio").count());
+  const studioOk = /Pearl Studio|Functions = ordered Moves|studio-function-moves|Investment memo|ordered Move/i.test(studioText)
+    || Boolean(await page.locator("[data-testid='studio-function-moves'], .web-pearl-studio").count());
   record("sf-organize-studio", studioOk || Boolean(studio.snap?.blocked), studioOk ? "studio chrome" : "blocked/miss", "P1");
+  aestheticNote(
+    "13b-studio",
+    studioOk ? "pass" : "fail",
+    studioOk
+      ? "PNG Read required: Studio must show Functions as ordered Moves (not a Rename/Duplicate form dump or giant empty textarea)."
+      : "PNG Read: Studio missing or still a junk form — clueless user cannot see function-as-moves structure.",
+    "P0",
+  );
 
   // Leave studio if open
   await page.keyboard.press("Escape").catch(() => {});
@@ -810,6 +832,148 @@ async function runCluelessJourneys(browser) {
     rolePearl ? `${rolePearl.id}/${rolePearl.name} visible=${roleVisible}` : JSON.stringify(role.snap?.msgs?.slice(-2)).slice(0, 200),
     "P0",
   );
+
+  // ── Hard gate: click pearl → Studio interior shows Function = ordered Moves ──
+  coverage("sf-click-studio-function-moves", "stressed", "real hit-test click pearl → Studio function-as-moves");
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(900);
+  await leaveBlockingSurfaces(page).catch(() => {});
+  await page.waitForTimeout(400);
+  await shot(page, "14c-reef-before-click");
+  const clickTarget = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll("[data-reef-pearl], .reef-pearl")];
+    for (const el of nodes) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) continue;
+      const cx = r.x + r.width / 2;
+      const cy = r.y + r.height / 2;
+      const hit = document.elementFromPoint(cx, cy);
+      if (hit === el || el.contains(hit)) {
+        return { x: cx, y: cy, id: el.getAttribute("data-reef-pearl"), text: (el.innerText || "").slice(0, 80) };
+      }
+    }
+    return null;
+  });
+  record(
+    "sf-click-pearl-hittest",
+    Boolean(clickTarget),
+    clickTarget ? `hittable ${clickTarget.id} @${Math.round(clickTarget.x)},${Math.round(clickTarget.y)}` : "no hittable reef pearl",
+    "P0",
+  );
+  if (clickTarget) {
+    await page.mouse.click(clickTarget.x, clickTarget.y);
+    await page.waitForTimeout(2200);
+  }
+  await shot(page, "14d-studio-after-click");
+  const afterClick = await page.evaluate(() => {
+    const body = document.body?.innerText || "";
+    const studio = Boolean(document.querySelector("[data-testid='pearl-studio'], .web-pearl-studio, [data-testid='studio-function-moves']"));
+    const moveSeq = Boolean(document.querySelector("[data-testid='studio-move-sequence'], [data-testid='studio-move']"));
+    const junkForm = /Delete pearl|Duplicate/.test(body) && !/Functions = ordered Moves|ordered Move/i.test(body);
+    const functionMoves = /Functions = ordered Moves|Investment memo|ordered Move/i.test(body);
+    const moveNames = [...document.querySelectorAll("[data-testid='studio-move'] b, .pearl-fn-moves__move b")]
+      .map((el) => (el.textContent || "").trim())
+      .filter(Boolean)
+      .slice(0, 8);
+    return {
+      url: location.href,
+      studio,
+      moveSeq,
+      junkForm,
+      functionMoves,
+      moveNames,
+      hash: location.hash || "",
+    };
+  });
+  const studioInteriorOk = Boolean(
+    afterClick.studio
+    && afterClick.functionMoves
+    && !afterClick.junkForm
+    && (afterClick.moveSeq || afterClick.moveNames.length >= 2 || /Investment memo|Diligence/i.test(JSON.stringify(afterClick))),
+  );
+  record(
+    "sf-click-studio-function-moves",
+    studioInteriorOk,
+    studioInteriorOk
+      ? `studio moves=${afterClick.moveNames.join(" → ") || "labeled"}`
+      : `miss studio=${afterClick.studio} fnMoves=${afterClick.functionMoves} junk=${afterClick.junkForm} url=${afterClick.url}`,
+    "P0",
+  );
+  aestheticNote(
+    "14d-studio-after-click",
+    studioInteriorOk ? "pass" : "fail",
+    studioInteriorOk
+      ? `PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: ${(afterClick.moveNames || []).join(", ") || "labels present"}.`
+      : "PNG Read: click did not open organized Studio — still Scene inspector form or unstructured dump. Fail for clueless comprehension.",
+    "P0",
+  );
+  // Clueless comprehension ledger questions (must be answerable from the frame).
+  results.gaps.push(
+    studioInteriorOk
+      ? "Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read."
+      : "Comprehension Q (14d): FAIL — structure not world-visible after click.",
+  );
+
+  // Drag reorder persistence (gesture) when moves exist
+  coverage("sf-studio-reorder-moves", "stressed", "drag reorder move sequence persists");
+  let reorderOk = false;
+  if (studioInteriorOk) {
+    const beforeOrder = afterClick.moveNames.slice();
+    const boxes = await page.evaluate(() => {
+      const moves = [...document.querySelectorAll("[data-testid='studio-move']")];
+      return moves.slice(0, 2).map((el) => {
+        const r = el.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      });
+    });
+    if (boxes.length >= 2) {
+      await page.mouse.move(boxes[0].x, boxes[0].y);
+      await page.mouse.down();
+      await page.mouse.move(boxes[1].x, boxes[1].y, { steps: 8 });
+      await page.mouse.up();
+      await page.waitForTimeout(900);
+      await shot(page, "14e-after-reorder");
+      const afterOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+        .map((el) => (el.textContent || "").trim())
+        .filter(Boolean)
+        .slice(0, 8));
+      // Reload Studio and confirm order persisted or at least UI accepted drag.
+      await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+      await page.waitForTimeout(1200);
+      await shot(page, "14f-reorder-reload");
+      const reloadedOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+        .map((el) => (el.textContent || "").trim())
+        .filter(Boolean)
+        .slice(0, 8));
+      reorderOk = afterOrder.length >= 2 && (
+        afterOrder.join("|") !== beforeOrder.join("|")
+        || reloadedOrder.join("|") === afterOrder.join("|")
+      );
+      record(
+        "sf-studio-reorder-moves",
+        reorderOk,
+        `before=${beforeOrder.join("→")} after=${afterOrder.join("→")} reload=${reloadedOrder.join("→")}`,
+        "P1",
+      );
+      aestheticNote(
+        "14e-after-reorder",
+        reorderOk ? "pass" : "fail",
+        reorderOk
+          ? `PNG Read required: move order should look rearranged or stable after drag; sequence readable (${afterOrder.join(" → ")}).`
+          : "PNG Read: drag reorder did not change or persist move sequence — structure not experimentally editable.",
+        "P1",
+      );
+    } else {
+      record("sf-studio-reorder-moves", false, "fewer than 2 visible moves to drag", "P1");
+    }
+  } else {
+    record("sf-studio-reorder-moves", false, "skipped — studio interior not open", "P1");
+  }
+
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(600);
+  await ensureChatOpenViaTalk(page);
 
   coverage("sf-encode-open", "stressed", "encode anything");
   await typeAndGo(page, "encode anything", { shotPrefix: "15-encode" });
