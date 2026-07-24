@@ -239,6 +239,50 @@ async function visibleOrbWords(page) {
   });
 }
 
+/** Fail closed on mystery objects: Untitled / Orb labels in primary UI + pearl names. */
+function isMysteryPearlTitle(name) {
+  const value = String(name || "").trim();
+  if (!value) return true;
+  return /untitled|^(?:new\s+)?orb$|\borb\b/i.test(value) && !/^New pearl · /i.test(value);
+}
+
+async function visibleMysteryLabels(page) {
+  return page.evaluate(() => {
+    const elHidden = (el) => {
+      if (!el) return true;
+      const style = getComputedStyle(el);
+      return style.display === "none"
+        || style.visibility === "hidden"
+        || Number(style.opacity || 1) === 0
+        || Boolean(el.closest("[hidden], .sr-only, [aria-hidden='true']"));
+    };
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    let node = walker.nextNode();
+    while (node) {
+      const text = String(node.textContent || "").trim();
+      if (/untitled(?:\s+(?:pearl|orb))?|\bOrb\b|\borb\b/i.test(text)) {
+        if (!elHidden(node.parentElement)) hits.push(text.slice(0, 120));
+      }
+      node = walker.nextNode();
+    }
+    const ariaHits = [...document.querySelectorAll("[aria-label], [title]")]
+      .map((el) => ({ el, text: String(el.getAttribute("aria-label") || el.getAttribute("title") || "").trim() }))
+      .filter(({ el, text }) => /untitled|\borb\b/i.test(text) && !elHidden(el))
+      .map(({ text }) => text.slice(0, 120));
+    return [...new Set([...hits, ...ariaHits])].slice(0, 16);
+  });
+}
+
+function titleMatchesIntent(name, intentPhrase) {
+  const title = String(name || "").toLowerCase();
+  const intent = String(intentPhrase || "").toLowerCase();
+  if (!title || isMysteryPearlTitle(name)) return false;
+  const tokens = intent.split(/\s+/).filter((t) => t.length > 2);
+  if (!tokens.length) return !isMysteryPearlTitle(name);
+  return tokens.some((token) => title.includes(token));
+}
+
 async function installAnimationProbe(page) {
   await page.evaluate(() => {
     const probe = {
@@ -870,11 +914,12 @@ function writeLedger() {
 
   const claimedCatalog = [
     ["welcome-talk", "First-time Talk CTA / Companion-first land", "stressed"],
-    ["create-pearl-go", "Create pearl via GO + director", "stressed"],
+    ["create-pearl-go", "Create pearl via GO + director + titled Reef artifact", "stressed"],
+    ["companion-nl-pearl-ops", "Talk→GO rename/edit/experiment/merge with artifacts", "stressed"],
     ["persistence-reload-create", "Reload survival for created pearls", "stressed"],
     ["reef-and-studio", "Reef + Studio M→F→L", "stressed"],
     ["gauntlet-wear", "Wear gauntlet ≤5 + persist", "stressed"],
-    ["organize-merge-synthesize", "Organize / merge / synthesize", "stressed"],
+    ["organize-merge-synthesize", "Organize / merge / synthesize (runtime probe; NL merge asserted separately)", "stressed"],
     ["evaluate-output", "evaluateWithGauntlet honesty", "stressed"],
     ["destructive-confirm", "In-thread Accept/Reject", "stressed"],
     ["navigation-survival", "Chat + pearls across Reef/Scene/Studio", "stressed"],
@@ -1015,9 +1060,13 @@ async function runCoreJourneys(browser) {
   record("runtime-registered", runtimeOk, "__lensOrbRuntime.run/execute present", "P0");
 
   // ── 2. Create pearl via GO (echo + anim + persistence) ───────────────────
-  coverage("create-pearl-go", "stressed", "GO hit-test + director anim + storage");
+  // Harness integrity: Talk→type→GO only. Never __lensOrbRuntime.run/execute here.
+  // Never accept pearls[0] fallback or Untitled/Orb titles as success.
+  coverage("create-pearl-go", "stressed", "GO hit-test + director anim + titled Reef artifact");
+  const createIntent = "make a pearl about core stress reef notes";
+  const createTitleNeedle = "core stress reef notes";
   await page.evaluate(() => window.__lensAnimProbeReset?.());
-  const create = await typeAndGo(page, "make a pearl about core stress reef notes", {
+  const create = await typeAndGo(page, createIntent, {
     expectAnim: true,
     shotPrefix: "03-create",
   });
@@ -1030,6 +1079,10 @@ async function runCoreJourneys(browser) {
     `status=${create.statusDuringRun} probe=${create.anim?.chatStatusSeen}`,
     "P0",
   );
+  const createReply = create.snap?.msgs?.some((m) =>
+    m.role === "companion" && /Created|pearl/i.test(m.text) && /core stress|reef notes/i.test(m.text)
+  );
+  record("create-companion-reply", Boolean(createReply), JSON.stringify(create.snap?.msgs?.slice(-3) || []).slice(0, 220), "P0");
   record("create-director-animation", animationPassed(create.anim), JSON.stringify(create.anim), "P0", {
     expected: "director-running + ghost-cursor travel + motion events",
     rootCause: animationPassed(create.anim) ? null : "silent mutation or missing director path",
@@ -1037,15 +1090,32 @@ async function runCoreJourneys(browser) {
   record("create-mid-animation-shot", Boolean(create.midAnim), create.midAnim ? "captured" : "never saw director", "P0");
 
   let library = await readLibrary(page);
-  const created = library.pearls.find((p) => /core stress|reef notes/i.test(p.name || ""))
-    || library.pearls.find((p) => /stress/i.test(p.name || ""))
-    || library.pearls[0];
+  // INVALID without title match — pearls[0] fallback previously made this check a liar.
+  const created = library.pearls.find((p) => titleMatchesIntent(p.name, createTitleNeedle));
+  const createTitleOk = Boolean(created?.id && created?.name && !isMysteryPearlTitle(created.name));
   record(
     "create-pearl-persisted",
-    Boolean(created?.id && created?.name),
-    created ? `${created.id} / ${created.name}` : `pearls=${library.pearls.length}`,
+    createTitleOk,
+    created
+      ? `${created.id} / ${created.name}`
+      : `no titled pearl matching intent; pearls=${JSON.stringify(library.pearls.slice(0, 5))}`,
     "P0",
-    { expected: "stable id + title in lens.scenes.v4", evidence: "03-after-create.png" },
+    {
+      expected: "stable id + human title matching intent (not Untitled/Orb, not pearls[0] fallback)",
+      evidence: "03-after-create.png",
+      rootCause: createTitleOk ? null : "GO path did not materialize a named Reef pearl",
+    },
+  );
+  const mysteryAfterCreate = await visibleMysteryLabels(page);
+  const mysteryPearlNames = library.pearls.filter((p) => isMysteryPearlTitle(p.name)).map((p) => p.name);
+  record(
+    "create-no-untitled-or-orb",
+    mysteryPearlNames.length === 0 && mysteryAfterCreate.length === 0,
+    mysteryPearlNames.length || mysteryAfterCreate.length
+      ? JSON.stringify({ names: mysteryPearlNames, ui: mysteryAfterCreate }).slice(0, 280)
+      : "clean",
+    "P0",
+    { expected: "No Untitled / Orb labels in pearl names or primary UI after create" },
   );
   const createIds = new Set(library.pearls.map((p) => p.id));
 
@@ -1068,6 +1138,81 @@ async function runCoreJourneys(browser) {
   );
   const dupes = library.pearls.filter((p) => p.id === created?.id).length;
   record("create-no-duplicate-on-reload", !created || dupes === 1, `count of id=${dupes}`, "P0");
+
+  // ── 2b. Companion NL edit / experiment / merge via Talk→GO (not runtime.execute) ─
+  coverage("companion-nl-pearl-ops", "stressed", "Talk→GO rename/edit/experiment/merge with artifact asserts");
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await waitRuntime(page);
+  await expandCompanion(page);
+  // Seed a second titled pearl via GO so merge has two real artifacts (still UI path).
+  const secondIntent = "make a pearl about companion merge partner";
+  await typeAndGo(page, secondIntent, { expectAnim: true, shotPrefix: "03b-second" });
+  library = await readLibrary(page);
+  const second = library.pearls.find((p) => titleMatchesIntent(p.name, "companion merge partner"));
+  record(
+    "create-second-pearl-for-merge",
+    Boolean(second?.id && !isMysteryPearlTitle(second.name)),
+    second ? `${second.id}/${second.name}` : JSON.stringify(library.pearls.map((p) => p.name)).slice(0, 200),
+    "P0",
+  );
+
+  await typeAndGo(page, "rename this pearl Shelf stress brief", { expectAnim: true, shotPrefix: "03c-rename" });
+  library = await readLibrary(page);
+  const renamed = library.pearls.find((p) => /Shelf stress brief/i.test(p.name || ""));
+  record(
+    "companion-rename-via-go",
+    Boolean(renamed?.id),
+    renamed ? `${renamed.id}/${renamed.name}` : JSON.stringify(library.pearls.map((p) => p.name)).slice(0, 200),
+    "P0",
+    { expected: "Talk→GO rename persists human title on Reef pearl" },
+  );
+
+  await typeAndGo(page, "edit this pearl: annotated notes for stress harness", { expectAnim: false, shotPrefix: "03d-edit" });
+  library = await readLibrary(page);
+  const editedStillNamed = library.pearls.some((p) => p.id === (renamed?.id || created?.id) && !isMysteryPearlTitle(p.name));
+  record(
+    "companion-edit-via-go",
+    editedStillNamed,
+    editedStillNamed ? "edit kept titled pearl" : JSON.stringify(library.pearls.slice(0, 4)),
+    "P0",
+    { expected: "Talk→GO edit updates pearl without Untitled/orb regression" },
+  );
+
+  const beforeExperiment = new Set(library.pearls.map((p) => p.id));
+  await typeAndGo(page, "experiment with this pearl", { expectAnim: true, shotPrefix: "03e-experiment" });
+  library = await readLibrary(page);
+  const experimentPearl = library.pearls.find((p) => !beforeExperiment.has(p.id) && !isMysteryPearlTitle(p.name));
+  record(
+    "companion-experiment-via-go",
+    Boolean(experimentPearl?.id),
+    experimentPearl
+      ? `${experimentPearl.id}/${experimentPearl.name}`
+      : `no new titled pearl; count=${library.pearls.length}`,
+    "P0",
+    { expected: "experiment/remix NL creates a new titled counter/experiment pearl" },
+  );
+
+  const beforeMerge = new Set(library.pearls.map((p) => p.id));
+  await typeAndGo(page, "merge these pearls", { expectAnim: true, shotPrefix: "03f-merge" });
+  library = await readLibrary(page);
+  const mergeViaGo = library.pearls.find((p) => !beforeMerge.has(p.id) && !isMysteryPearlTitle(p.name));
+  const mergeViaGoSourcesKept = [created?.id, second?.id].filter(Boolean).every((id) =>
+    library.pearls.some((p) => p.id === id)
+  );
+  record(
+    "companion-merge-via-go",
+    Boolean(mergeViaGo?.id && mergeViaGoSourcesKept),
+    mergeViaGo
+      ? `${mergeViaGo.id}/${mergeViaGo.name} sourcesKept=${mergeViaGoSourcesKept}`
+      : `no merge pearl; pearls=${JSON.stringify(library.pearls.map((p) => p.name)).slice(0, 200)}`,
+    "P0",
+    {
+      expected: "Talk→GO merge creates new titled pearl; sources remain (not runtime.execute seed)",
+      evidence: "03f-merge.png",
+    },
+  );
+  await shot(page, "03g-after-nl-ops");
 
   // ── 3. Reef visibility + Studio Moves→Functions→Lenses ───────────────────
   coverage("reef-and-studio", "stressed", "Reef shelf + Studio structure readable");
@@ -1265,8 +1410,10 @@ async function runCoreJourneys(browser) {
   );
   await shot(page, "11-gauntlet-after-reload");
 
-  // ── 5. Organize / merge / synthesize (disposable) ────────────────────────
-  coverage("organize-merge-synthesize", "stressed", "disposable pearls via real verbs");
+  // ── 5. Organize / merge / synthesize ─────────────────────────────────────
+  // Privileged runtime.execute probes prove handler wiring only.
+  // Companion UX honesty for merge already asserted via Talk→GO above.
+  coverage("organize-merge-synthesize", "stressed", "runtime probe + NL merge already covered");
   await waitRuntime(page);
   const organize = await page.evaluate(async (id) => {
     try {

@@ -17,6 +17,7 @@ import {
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
+  parsePearlEditCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -34,7 +35,7 @@ import {
 test("pearl creation intent uses the canonical semantic capsule command", () => {
   assert.deepEqual(parsePearlCreationCommand("make a pearl from this"), {
     verb: "createSemanticOrb",
-    args: { sceneId: "" },
+    args: { sceneId: "", name: "" },
   });
   assert.deepEqual(parsePearlCreationCommand("make a pearl from these notes called Evidence"), {
     verb: "createSemanticOrb",
@@ -45,6 +46,38 @@ test("pearl creation intent uses the canonical semantic capsule command", () => 
     args: { sceneId: "", name: "Friday standup", materialText: "Friday standup" },
   });
   assert.equal(parsePearlCreationCommand("make a pearl from this: ship the shelf").args.materialText, "ship the shelf");
+  assert.deepEqual(parsePearlCreationCommand("create pearl"), {
+    verb: "createSemanticOrb",
+    args: { sceneId: "", name: "" },
+  });
+});
+
+test("pearl edit/rename/experiment intents are deterministic without planner credentials", () => {
+  assert.deepEqual(parsePearlEditCommand("rename this pearl Visual grammar"), {
+    verb: "renameSemanticOrb",
+    args: { name: "Visual grammar" },
+  });
+  assert.deepEqual(parsePearlEditCommand("rename Friday standup to Morning notes"), {
+    verb: "renameSemanticOrb",
+    args: { fromName: "Friday standup", name: "Morning notes" },
+  });
+  assert.deepEqual(parsePearlEditCommand("change the pearl title to Shelf brief"), {
+    verb: "renameSemanticOrb",
+    args: { name: "Shelf brief" },
+  });
+  assert.deepEqual(parsePearlEditCommand("edit this pearl: shorter memo for investors"), {
+    verb: "editPearlOutput",
+    args: { text: "shorter memo for investors", append: false },
+  });
+  assert.deepEqual(parsePearlEditCommand("add to this pearl: extra evidence from the call"), {
+    verb: "addSemanticOrbContext",
+    args: { text: "extra evidence from the call" },
+  });
+  assert.equal(parsePearlRemixCommand("experiment with this pearl").verb, "createCounterPearl");
+  assert.equal(parsePearlRemixCommand("remix this pearl").verb, "createCounterPearl");
+  // Characterization: these used to fall through to the planner and fail for humans without credentials.
+  assert.equal(parsePearlEditCommand("edit this pearl"), null);
+  assert.ok(parsePearlEditCommand("rename this pearl Hello"));
 });
 
 test("critique stream and version history intents are deterministic", () => {

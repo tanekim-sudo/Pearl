@@ -2,17 +2,23 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
-import { createSemanticOrb, semanticOrbFromMaterial } from "./semantic-orbs.js";
+import { createSemanticOrb, semanticOrbFromMaterial, sensiblePearlName } from "./semantic-orbs.js";
 import { resolveDropIntent } from "./drop-intent-resolver.js";
 
 const root = path.resolve(import.meta.dirname, "..");
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 
-test("new pearls default to Untitled pearl, never Untitled orb", () => {
-  const blank = createSemanticOrb({ id: "pearl-blank" });
-  assert.equal(blank.name, "Untitled pearl");
-  const fromMaterial = semanticOrbFromMaterial({ id: "mat-1", text: "" }, { id: "pearl-mat" });
-  assert.equal(fromMaterial.name, "Untitled pearl");
+test("new pearls default to a sensible name, never Untitled/orb", () => {
+  const blank = createSemanticOrb({ id: "pearl-blank" }, { now: Date.parse("2026-07-23T12:00:00Z") });
+  assert.match(blank.name, /^New pearl · /);
+  assert.doesNotMatch(blank.name, /untitled|orb/i);
+  const fromMaterial = semanticOrbFromMaterial({ id: "mat-1", text: "" }, {
+    id: "pearl-mat",
+    now: Date.parse("2026-07-23T12:00:00Z"),
+  });
+  assert.match(fromMaterial.name, /^New pearl · /);
+  assert.equal(sensiblePearlName("Friday standup"), "Friday standup");
+  assert.equal(sensiblePearlName("Untitled orb"), sensiblePearlName(""));
 });
 
 test("drop-intent chooser labels teach pearl, not orb", () => {

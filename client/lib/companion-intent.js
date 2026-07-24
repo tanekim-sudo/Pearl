@@ -171,8 +171,72 @@ export function parsePearlCreationCommand(text) {
   if (!match) return null;
   return {
     verb: "createSemanticOrb",
-    args: { sceneId: "", ...(match[1] ? { name: match[1].trim() } : {}) },
+    // Bare "create pearl" is valid — App assigns a sensible human title (never Untitled/orb).
+    args: { sceneId: "", ...(match[1] ? { name: match[1].trim() } : { name: "" }) },
   };
+}
+
+/**
+ * Deterministic edit / rename intents for pearls (no planner/credentials required).
+ * Title edits → renameSemanticOrb. Body/notes edits → addSemanticOrbContext.
+ */
+export function parsePearlEditCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+
+  const renameTo = value.match(
+    /^(?:rename|retitle|call)\s+(?:this |that |the )?(?:pearl\s+)?(?:named |called )?(.+?)\s+to\s+(.+)$/i,
+  );
+  if (renameTo?.[2]?.trim()) {
+    const fromName = renameTo[1].trim().replace(/^["“]|["”]$/g, "");
+    const name = renameTo[2].trim().replace(/^["“]|["”]$/g, "");
+    if (/^(?:this|that|it|the|active|current)$/i.test(fromName)) {
+      return { verb: "renameSemanticOrb", args: { name } };
+    }
+    return { verb: "renameSemanticOrb", args: { fromName, name } };
+  }
+
+  const renameThis = value.match(
+    /^(?:rename|retitle|call)\s+(?:this |that |the )?(?:active |current )?pearl\s+(?:to\s+)?(.+)$/i,
+  );
+  if (renameThis?.[1]?.trim()) {
+    return {
+      verb: "renameSemanticOrb",
+      args: { name: renameThis[1].trim().replace(/^["“]|["”]$/g, "") },
+    };
+  }
+
+  const changeTitle = value.match(
+    /^(?:change|set|update)\s+(?:the\s+)?(?:pearl\s+)?(?:name|title)\s+to\s+(.+)$/i,
+  );
+  if (changeTitle?.[1]?.trim()) {
+    return {
+      verb: "renameSemanticOrb",
+      args: { name: changeTitle[1].trim().replace(/^["“]|["”]$/g, "") },
+    };
+  }
+
+  const editBody = value.match(
+    /^(?:edit|update|revise|change)\s+(?:this |that |the )?(?:pearl(?:\s+output)?|output)\s*(?:to|:)\s*(.+)$/i,
+  );
+  if (editBody?.[1]?.trim()) {
+    return {
+      verb: "editPearlOutput",
+      args: { text: editBody[1].trim(), append: false },
+    };
+  }
+
+  const addNotes = value.match(
+    /^(?:add|append)\s+(?:to\s+)?(?:this |that |the )?pearl\s*(?:to|:)?\s*(.+)$/i,
+  );
+  if (addNotes?.[1]?.trim()) {
+    return {
+      verb: "addSemanticOrbContext",
+      args: { text: addNotes[1].trim() },
+    };
+  }
+
+  return null;
 }
 
 /** Voice-first critique and stream-of-consciousness feedback. */
@@ -313,6 +377,14 @@ export function parsePearlRemixCommand(text) {
   if (/\b(?:exchange insights?|breed|birth (?:a )?third)\b.+\b(?:pearl|orb)s?\b/i.test(value)
     || /\b(?:pearl|orb)s?\b.+\b(?:exchange insights?|breed)\b/i.test(value)) {
     return { verb: "synthesizeSemanticOrbs", args: { ids: [], sceneId: "", mode: "mutual" } };
+  }
+  if (
+    /\bexperiment\b.+\b(?:pearl|orb)\b/i.test(value)
+    || /\b(?:pearl|orb)\b.+\bexperiment\b/i.test(value)
+    || /\bremix\b.+\b(?:this |that |the )?(?:pearl|orb)\b/i.test(value)
+    || /^(?:experiment|remix)(?:\s+with(?:\s+(?:this|that|it))?)?$/i.test(value)
+  ) {
+    return { verb: "createCounterPearl", args: { instruction: value } };
   }
   if (
     /\borganiz(?:e|ing)\b.+\b(?:pearl|orb|dump|mess)\b/i.test(value)

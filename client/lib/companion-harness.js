@@ -471,6 +471,18 @@ const PHASE_STATUS_LABELS = Object.freeze({
 const DIRECTOR_ACTION_LABELS = Object.freeze({
   createSemanticOrb: "Creating pearl…",
   createExternalSemanticOrb: "Creating pearl…",
+  renameSemanticOrb: "Renaming pearl…",
+  addSemanticOrbContext: "Updating pearl…",
+  mergeSemanticOrbs: "Merging pearls…",
+  composeSemanticOrbs: "Composing pearls…",
+  synthesizeSemanticOrbs: "Synthesizing pearls…",
+  organizePearl: "Organizing pearl…",
+  createCounterPearl: "Breeding experiment pearl…",
+  editPearlOutput: "Editing pearl…",
+  nestSemanticOrb: "Nesting pearls…",
+  splitSemanticOrb: "Splitting pearl…",
+  activateSemanticOrb: "Opening pearl…",
+  moveSemanticOrb: "Moving pearl…",
   wearPearl: "Wearing pearl…",
   openScene: "Opening scene…",
   openLibrary: "Opening library…",
@@ -525,6 +537,8 @@ export function formatDirectorActionTrail(event = {}) {
     const readable = capability
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/[_-]+/g, " ")
+      .replace(/\bOrbs?\b/g, "pearl")
+      .replace(/\borbs?\b/g, "pearl")
       .toLowerCase();
     return `${readable.charAt(0).toUpperCase()}${readable.slice(1)}…`;
   }

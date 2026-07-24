@@ -78,7 +78,7 @@ export function buildWorkspaceSnapshot({
       parentId: value.parentOrbId,
       sourceIds: value.representation?.refs || [],
       type: "semantic-orb",
-      summary: `${value.name || "Untitled pearl"} · ${value.representation?.kind || "empty"}`,
+      summary: `${value.name || "New pearl"} · ${value.representation?.kind || "empty"}`,
     }, "semantic-orb")),
   ];
   const edges = nodes.slice(0, MAX_LIMIT).flatMap((node) => [

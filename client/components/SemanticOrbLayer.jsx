@@ -6,7 +6,9 @@ import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js
 const PAYLOAD = "application/x-lens-object";
 
 function labelFor(orb) {
-  return orb.name || orb.representation?.label || "Untitled pearl";
+  const label = orb.name || orb.representation?.label || "";
+  if (label && !/^untitled(?:\s+(?:pearl|orb))?$/i.test(label) && !/^(?:new\s+)?orb$/i.test(label)) return label;
+  return "New pearl";
 }
 
 function OrbGlyph({ active = false, animation = null, variant = "semantic", aesthetic = null }) {

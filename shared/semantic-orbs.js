@@ -24,6 +24,31 @@ const clone = (value) => value == null ? value : structuredClone(value);
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const timeValue = (value) => typeof value === "function" ? value() : Number.isFinite(value) ? value : Date.now();
 
+/** Human pearl title — never "Untitled", never user-facing "orb". */
+export function sensiblePearlName(seed = "", options = {}) {
+  const cleaned = String(seed || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^["“]|["”]$/g, "")
+    .slice(0, 80);
+  if (
+    cleaned
+    && !/^untitled(?:\s+(?:pearl|orb))?$/i.test(cleaned)
+    && !/^(?:new\s+)?orb$/i.test(cleaned)
+    && !/^untitled orb$/i.test(cleaned)
+  ) {
+    return cleaned;
+  }
+  const now = options.now != null ? new Date(timeValue(options.now)) : new Date();
+  const stamp = now.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `New pearl · ${stamp}`;
+}
+
 export function createSemanticOrb(value = {}, options = {}) {
   const id = String(value.id || options.idFactory?.() || "");
   if (!id) throw new Error("SemanticOrb id is required");
@@ -37,7 +62,7 @@ export function createSemanticOrb(value = {}, options = {}) {
     id,
     kind: SEMANTIC_ORB_KIND,
     sceneId: value.sceneId || null,
-    name: String(value.name || representation.label || "Untitled pearl"),
+    name: sensiblePearlName(value.name || representation.label || "", { now: options.now }),
     placement: {
       x: finite(value.placement?.x ?? value.x),
       y: finite(value.placement?.y ?? value.y),
@@ -98,7 +123,10 @@ export function semanticOrbFromMaterial(material, options = {}) {
       : sourceKind.includes("candidate")
         ? "candidate"
         : "material";
-  const label = material.name || material.label || material.text || material.quote || options.name || "Untitled pearl";
+  const label = sensiblePearlName(
+    material.name || material.label || material.text || material.quote || options.name || "",
+    { now: options.now },
+  );
   return createSemanticOrb({
     id: options.id,
     sceneId: options.sceneId || material.sceneId || null,

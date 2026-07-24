@@ -2545,7 +2545,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     let sceneId = requestedSceneId || route.sceneId || workspace.activeSceneId;
     let scene = workspace.scenes?.find((entry) => entry.id === sceneId);
     if (!scene && sceneId) {
-      scene = createScene({ id: sceneId, name: "Untitled workspace", metadata: { createdFrom: "recover-missing-scene" } });
+      scene = createScene({ id: sceneId, name: "Shelf", metadata: { createdFrom: "recover-missing-scene" } });
       workspace = {
         ...workspace,
         scenes: [...(workspace.scenes || []), scene],
@@ -2665,7 +2665,9 @@ export default function OrbUniverseShell({ StageComponent }) {
       sceneId: route.sceneId,
       placement,
       activate: true,
-      ...(material ? { material } : { orb: { name: name || "Untitled pearl" } }),
+      ...(material
+        ? { material: { ...material, label: material.label || material.name || name || undefined } }
+        : { orb: { name: name || `New pearl · ${new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` } }),
     }),
     activate: (id) => applySemanticOrbCommand("activateSemanticOrb", { id }),
     move: (id, placement) => applySemanticOrbCommand("moveSemanticOrb", { id, placement }),

@@ -4,7 +4,7 @@ Human perception gate for every evidence frame under docs/pearl-stress-standard.
 
 - Frames reviewed: 52
 - Aesthetic fails: 0
-- Visual heuristic samples: 52
+- Visual heuristic samples: 58
 
 ## Per-frame critiques
 
@@ -235,6 +235,12 @@ Version snapshot/browse/restore path — no silent history wipe chrome (frame ca
 - 03-create-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
 - 03-after-create: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
 - 04-reload-after-create: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
+- 03b-second-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
+- 03c-rename-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
+- 03d-edit-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
+- 03e-experiment-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
+- 03f-merge-mid-anim: director=true go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
+- 03g-after-nl-ops: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
 - 05-reef: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
 - 06-studio: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
 - 06b-studio-organized: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
@@ -264,9 +270,3 @@ Version snapshot/browse/restore path — no silent history wipe chrome (frame ca
 - 26-encode-conversation: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
 - 26b-encode-anything-ui: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
 - 26c-compile-automation: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=true
-- 27-counter: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
-- 27b-nest: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
-- 27c-split: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
-- 28-generation: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
-- 29-output-frame: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false
-- 29b-output-frame-closed: director=false go∩accept=false inspector@director=false labels=false demoContrastLow=false talk+chat=false

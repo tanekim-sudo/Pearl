@@ -83,7 +83,7 @@ export function buildWornPearlPack(pearl, options = {}) {
   return {
     version: COMPANION_PEARL_WEAR_VERSION,
     pearlId: pearl.id,
-    name: bounded(pearl.name || representation.label || "Untitled pearl", 120),
+    name: bounded(pearl.name || representation.label || "New pearl", 120),
     kind: pearl.kind || representation.kind || "semantic-orb",
     representationKind: representation.kind || "empty",
     wornAt: Number(options.wornAt) || Date.now(),
@@ -161,7 +161,7 @@ export function suggestPearlForConversation(pearls = [], artifact = {}) {
       const score = overlap.length / Math.max(corpus.length, 1);
       return {
         pearlId: pearl.id,
-        name: pearl.name || "Untitled pearl",
+        name: pearl.name || "New pearl",
         score: Math.round(score * 1000) / 1000,
         overlap: overlap.slice(0, 8),
         reason: overlap.length

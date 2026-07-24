@@ -3,19 +3,20 @@
 Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)
 Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`
 Evidence: `audit-shots/pearl-comprehensive-stress-2026-07-23/`
-Last run commit: db0f20f · 2026-07-24T01:45:16.932Z
-Score: 165/165 · P0=0 P1=0 P2=0
+Last run commit: 7a41184 · 2026-07-24T06:28:39.655Z
+Score: 132/132 · P0=0 P1=0 P2=0
 
 ## Claimed vs stressed
 
 | Capability / journey | Claimed in | Status | Why / notes |
 |---|---|---|---|
 | First-time Talk CTA / Companion-first land (`welcome-talk`) | README + feature-contracts + companion-capabilities | stressed | fresh land + Talk hit-test |
-| Create pearl via GO + director (`create-pearl-go`) | README + feature-contracts + companion-capabilities | stressed | GO hit-test + director anim + storage |
+| Create pearl via GO + director + titled Reef artifact (`create-pearl-go`) | README + feature-contracts + companion-capabilities | stressed | GO hit-test + director anim + titled Reef artifact |
+| Talk→GO rename/edit/experiment/merge with artifacts (`companion-nl-pearl-ops`) | README + feature-contracts + companion-capabilities | stressed | Talk→GO rename/edit/experiment/merge with artifact asserts |
 | Reload survival for created pearls (`persistence-reload-create`) | README + feature-contracts + companion-capabilities | stressed | reload restores pearl ids/titles |
 | Reef + Studio M→F→L (`reef-and-studio`) | README + feature-contracts + companion-capabilities | stressed | Reef shelf + Studio structure readable |
 | Wear gauntlet ≤5 + persist (`gauntlet-wear`) | README + feature-contracts + companion-capabilities | stressed | wear via runtime + reload persist + cap |
-| Organize / merge / synthesize (`organize-merge-synthesize`) | README + feature-contracts + companion-capabilities | stressed | disposable pearls via real verbs |
+| Organize / merge / synthesize (runtime probe; NL merge asserted separately) (`organize-merge-synthesize`) | README + feature-contracts + companion-capabilities | stressed | runtime probe + NL merge already covered |
 | evaluateWithGauntlet honesty (`evaluate-output`) | README + feature-contracts + companion-capabilities | stressed | evaluateWithGauntlet must not fake success |
 | In-thread Accept/Reject (`destructive-confirm`) | README + feature-contracts + companion-capabilities | stressed | clear → Accept/Reject hit-test in chat |
 | Chat + pearls across Reef/Scene/Studio (`navigation-survival`) | README + feature-contracts + companion-capabilities | stressed | chat + pearl ids survive nav |
@@ -32,22 +33,22 @@ Score: 165/165 · P0=0 P1=0 P2=0
 | composePearlCognitiveLayers typed remix (`remix-compose-typed-layers`) | README + feature-contracts + companion-capabilities | stressed | composePearlCognitiveLayers preview honesty |
 | Studio version snapshot / browse / restore (`studio-version-checkpoint-restore`) | README + feature-contracts + companion-capabilities | stressed | snapshotPearlVersion → browse → restore |
 | /library /toolbox /settings /install shell routes (`shell-library-toolbox-settings-install`) | README + feature-contracts + companion-capabilities | stressed | README shell routes load without crash |
-| Companion live gates (spawned) (`companion-chat-agent`) | README + feature-contracts + companion-capabilities | stressed | spawned companion-stress-live.mjs — gates green |
-| Simulated mic / SpeechRecognition UX (Listening→Heard + denied) (`live-mic`) | README + feature-contracts + gap stress | stressed | simulated ASR pipeline Listening/Hearing/Heard + empty + permission-denied + unavailable (no real OS mic hardware) |
-| AI gateway honesty (+ live smoke when credentials exist) (`live-ai-gateway`) | README + feature-contracts + gap stress | stressed | credential-absent honesty proven (401/blocker, no false Done); live smoke skipped — env residual |
-| Extension side panel 360px (`extension-sidepanel-360`) | README + feature-contracts + gap stress | stressed | unpacked Chromium load via extension/scripts/playwright-audit.mjs (360px panel) |
-| Multi-profile sync / import dedupe simulation (`account-sync-import`) | README + feature-contracts + gap stress | stressed | multi-profile switchProfile isolation + mergeBoardSnapshots idempotent re-import (no OAuth credentials) |
-| Multi-candidate taste UI (seeded + honesty) (`live-generation-taste-ui`) | README + feature-contracts + gap stress | stressed | seeded multi-candidate Choices UI + Yes persist; More-like-this without live credentials must not fake Done |
-| Signed Cognitive Package install / reject-unsigned (`cognitive-packages-signed-install`) | README + feature-contracts + gap stress | stressed | signed create/validate + reject tampered/unsigned; headed /packages route |
-| Privacy vault encryption UX (`privacy-vault-encryption-ux`) | README + feature-contracts + gap stress | stressed | headed settings lock/unlock + wrong passphrase honesty via __pearlPrivacy |
-| Extension insert/GO adapters (fixture hosts) (`extension-site-adapters`) | README + feature-contracts + gap stress | stressed | fixture editors.html insertion path (Gmail/Notion/Docs host pages not required — adapter contract exercised on local fixture) |
-| Share / export / import / reopen restore (`shareability-export-import`) | README + feature-contracts + gap stress | stressed | module share pipeline + local export/reopen; pass=7 fail=0 |
-| Workflow create→wear→Studio→remix→confirm→encode (`workflow-end-to-end`) | README + feature-contracts + gap stress | stressed | create/wear/studio/remix/destructive/encode; pass=6 fail=0 |
+| Companion live gates (spawned) (`companion-chat-agent`) | README + feature-contracts + companion-capabilities | skipped | SKIP_COMPANION=1 |
+| Simulated mic / SpeechRecognition UX (Listening→Heard + denied) (`live-mic`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| AI gateway honesty (+ live smoke when credentials exist) (`live-ai-gateway`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Extension side panel 360px (`extension-sidepanel-360`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Multi-profile sync / import dedupe simulation (`account-sync-import`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Multi-candidate taste UI (seeded + honesty) (`live-generation-taste-ui`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Signed Cognitive Package install / reject-unsigned (`cognitive-packages-signed-install`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Privacy vault encryption UX (`privacy-vault-encryption-ux`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Extension insert/GO adapters (fixture hosts) (`extension-site-adapters`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Share / export / import / reopen restore (`shareability-export-import`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+| Workflow create→wear→Studio→remix→confirm→encode (`workflow-end-to-end`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
 
 ## Shareability / workflow scores
 
-- Shareability: 7 pass / 0 fail
-- Workflows: 6 pass / 0 fail
+- Shareability: not run (SKIP_GAPS=1)
+- Workflows: not run (SKIP_GAPS=1)
 
 ## Newly stressed vs prior pearl-core suite
 
@@ -73,21 +74,17 @@ Score: 165/165 · P0=0 P1=0 P2=0
 
 - Standard reference: docs/pearl-stress-standard.md
 - Gap suites (voice/share/workflows/extension/vault/taste/sync/packages/AI honesty) run via scripts/pearl-gap-stress.mjs unless SKIP_GAPS=1.
-- Real OS microphone hardware / browser getUserMedia permission UI is not exercised; Fake SpeechRecognition + permission-denied error path prove product honesty.
-- Live model gateway quality not scored — no LIVE_PROVIDER_BASE_URL + API key in this environment.
-- Live multi-candidate model batches are not provider-scored here; UI + persistence + honesty under 401 are proven with seeded candidates.
-- Supabase/OAuth signed-in sync against a real account is not exercised — local multi-profile vault isolation + idempotent adoption merge are proven.
-- Gmail/Notion/Docs live host pages are not opened; local editors.html fixture proves the insert/GO adapter path.
 
 ## Run matrix (raw)
 
-- **stressed** `companion-chat-agent` — spawned companion-stress-live.mjs — gates green
+- **skipped** `companion-chat-agent` — SKIP_COMPANION=1
 - **stressed** `welcome-talk` — fresh land + Talk hit-test
-- **stressed** `create-pearl-go` — GO hit-test + director anim + storage
+- **stressed** `create-pearl-go` — GO hit-test + director anim + titled Reef artifact
 - **stressed** `persistence-reload-create` — reload restores pearl ids/titles
+- **stressed** `companion-nl-pearl-ops` — Talk→GO rename/edit/experiment/merge with artifact asserts
 - **stressed** `reef-and-studio` — Reef shelf + Studio structure readable
 - **stressed** `gauntlet-wear` — wear via runtime + reload persist + cap
-- **stressed** `organize-merge-synthesize` — disposable pearls via real verbs
+- **stressed** `organize-merge-synthesize` — runtime probe + NL merge already covered
 - **stressed** `evaluate-output` — evaluateWithGauntlet must not fake success
 - **stressed** `destructive-confirm` — clear → Accept/Reject hit-test in chat
 - **stressed** `navigation-survival` — chat + pearl ids survive nav
@@ -104,14 +101,14 @@ Score: 165/165 · P0=0 P1=0 P2=0
 - **stressed** `remix-compose-typed-layers` — composePearlCognitiveLayers preview honesty
 - **stressed** `studio-version-checkpoint-restore` — snapshotPearlVersion → browse → restore
 - **stressed** `shell-library-toolbox-settings-install` — README shell routes load without crash
-- **stressed** `live-mic` — simulated ASR pipeline Listening/Hearing/Heard + empty + permission-denied + unavailable (no real OS mic hardware)
-- **stressed** `live-ai-gateway` — credential-absent honesty proven (401/blocker, no false Done); live smoke skipped — env residual
-- **stressed** `shareability-export-import` — module share pipeline + local export/reopen; pass=7 fail=0
-- **stressed** `workflow-end-to-end` — create/wear/studio/remix/destructive/encode; pass=6 fail=0
-- **stressed** `cognitive-packages-signed-install` — signed create/validate + reject tampered/unsigned; headed /packages route
-- **stressed** `privacy-vault-encryption-ux` — headed settings lock/unlock + wrong passphrase honesty via __pearlPrivacy
-- **stressed** `live-generation-taste-ui` — seeded multi-candidate Choices UI + Yes persist; More-like-this without live credentials must not fake Done
-- **stressed** `account-sync-import` — multi-profile switchProfile isolation + mergeBoardSnapshots idempotent re-import (no OAuth credentials)
-- **stressed** `extension-sidepanel-360` — unpacked Chromium load via extension/scripts/playwright-audit.mjs (360px panel)
-- **stressed** `extension-site-adapters` — fixture editors.html insertion path (Gmail/Notion/Docs host pages not required — adapter contract exercised on local fixture)
+- **skipped** `live-mic` — SKIP_GAPS=1
+- **skipped** `live-ai-gateway` — SKIP_GAPS=1
+- **skipped** `extension-sidepanel-360` — SKIP_GAPS=1
+- **skipped** `account-sync-import` — SKIP_GAPS=1
+- **skipped** `live-generation-taste-ui` — SKIP_GAPS=1
+- **skipped** `cognitive-packages-signed-install` — SKIP_GAPS=1
+- **skipped** `privacy-vault-encryption-ux` — SKIP_GAPS=1
+- **skipped** `extension-site-adapters` — SKIP_GAPS=1
+- **skipped** `shareability-export-import` — SKIP_GAPS=1
+- **skipped** `workflow-end-to-end` — SKIP_GAPS=1
 - **stressed** `aesthetic-human-review` — loaded 52 frame critiques from audit-shots/pearl-comprehensive-stress-2026-07-23/aesthetic-reviews.json

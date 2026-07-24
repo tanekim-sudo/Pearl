@@ -1,6 +1,6 @@
-# Pearl Gap Stress — 2026-07-24T01:46:43.684Z
+# Pearl Gap Stress — 2026-07-24T06:26:39.087Z
 
-Commit: db0f20f
+Commit: 7a41184
 Suites: voice, ai-gateway, shareability, workflows, packages, vault, taste, account-sync, extension
 Score: 38/38 · defects=0 · P0=0
 Shareability: 7 pass / 0 fail
@@ -39,14 +39,14 @@ Workflows: 6 pass / 0 fail
 - PASS [P0] ai-gateway-no-false-done — {"completed":false,"code":"unknown-error","text":"I could not validate that action safely. Your workspace was not changed; you can retry it.","falseDone":false}
 - PASS [P2] ai-gateway-live-smoke — skipped — no LIVE_PROVIDER credentials; honesty path proven
 - PASS [P0] share-review-redacts-secrets — omitted=examples,canvasSettings,soundscapeSettings,privateContext,rawCaptures,commandHistory
-- PASS [P0] share-package-validates — hash=sha256-4K0Qh4iJv
+- PASS [P0] share-package-validates — hash=sha256-NtjYM9NqV
 - PASS [P0] share-grant-once — private-once consumed exactly once
 - PASS [P0] share-install-atomic — {"receipt":"stress/share-fixture@1.0.0","keys":["stress/share-fixture"]}
 - PASS [P0] share-reject-unsigned — unsigned package rejected
 - PASS [P0] share-export-local — {"ok":true,"pearlKeys":["lens.scenes.v4"],"entryCount":18,"profile":"anonymous"}
 - PASS [P0] share-reopen-restore — {"restored":{"ok":true,"entryCount":18,"exportedCount":18,"hasScenes":true},"survived":{"exportedCount":18,"pearlCount":1,"hasScenes":true,"keys":["lens.board.operators.v2","lens.board.sync-meta.v1","lens.onboarded.v1","lens.scenes.v4"]}}
-- PASS [P0] wf-create-pearl — pearls=1 [{"id":"81bd251d-93f8-4ad7-8009-abcc1f930783","name":"workflow stress"}]
-- PASS [P1] wf-wear — {"completed":true,"text":"{\"completed\":true,\"aborted\":false,\"errors\":[],\"results\":[{\"type\":\"worn-pearl\",\"status\":\"worn\",\"object\":{\"version\":2,\"pearlId\":\"81bd
+- PASS [P0] wf-create-pearl — pearls=1 titled={"id":"5412f94a-b21c-4389-9d6e-e7a58525adf3","name":"workflow stress"}
+- PASS [P1] wf-wear — {"completed":true,"text":"{\"completed\":true,\"aborted\":false,\"errors\":[],\"results\":[{\"type\":\"worn-pearl\",\"status\":\"worn\",\"object\":{\"version\":2,\"pearlId\":\"5412
 - PASS [P1] wf-studio — {"hasStudio":false,"hasMFL":false,"href":"http://127.0.0.1:41812/#pearl-studio"}
 - PASS [P1] wf-organize-remix — {"organizeOk":true,"counterOk":true,"nestOk":true,"mergeOk":true,"errors":{"organize":[],"counter":[],"nest":[],"merge":[]}}
 - PASS [P0] wf-destructive-confirm — Accept/Reject present
@@ -61,7 +61,7 @@ Workflows: 6 pass / 0 fail
 - PASS [P0] vault-wrong-passphrase — wrongFail=true locked=true
 - PASS [P0] taste-candidates-seeded — candidates=3
 - PASS [P0] taste-ui-open — Choices panel open
-- PASS [P0] taste-yes-persists — {"nodes":[{"id":"cand-batch-gap-1784857641935-1","fb":"accepted"},{"id":"cand-batch-gap-1784857641935-2","fb":null},{"id":"cand-batch-gap-1784857641935-3","fb":null}],"orb":[{"id":"cand-batch-gap-1784857641935-1","status":"pending"},{"id":"cand-batch-gap-1784857641935-2","status":"pending"},{"id":"cand-batch-gap-1784857641935-3","status":"pending"}],"uiAccepted":false}
+- PASS [P0] taste-yes-persists — {"nodes":[{"id":"cand-batch-gap-1784874437293-1","fb":"accepted"},{"id":"cand-batch-gap-1784874437293-2","fb":null},{"id":"cand-batch-gap-1784874437293-3","fb":null}],"orb":[{"id":"cand-batch-gap-1784874437293-1","status":"pending"},{"id":"cand-batch-gap-1784874437293-2","status":"pending"},{"id":"cand-batch-gap-1784874437293-3","status":"pending"}],"uiAccepted":false}
 - PASS [P1] taste-more-no-fake-live — phase=executing
 - PASS [P0] account-merge-idempotent — ops=1 lenses=1
 - PASS [P0] account-profile-isolation — {"mode":"local-only","encrypted":true,"locked":false,"profile":"account","itemCount":1,"bootstrap":["lens.privacy.active-profile.v1","lens.privacy.locked.v1","lens.auth.resendAt"]}

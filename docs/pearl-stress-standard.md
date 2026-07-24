@@ -73,16 +73,44 @@ Clear / delete / wipe paths stage confirmation in chat with Accept and Reject hi
 
 ---
 
+## Harness Integrity (what makes a check invalid)
+
+A green check that a **clueless human cannot reproduce via Talk → type → GO** is a **false green**. Treat the following as invalid evidence of Companion UX:
+
+| Invalid pattern | Why it lies |
+|---|---|
+| Calling `__lensOrbRuntime.run` / `.execute` (or injecting `localStorage` pearls) **instead of** hit-testing GO | Privileged path bypasses chat, parsers, hit targets, and director UX the user depends on |
+| Asserting chat text / “Created…” **without** a Reef/storage pearl with **stable id + human title matching intent** | Companion can narrate success while the artifact is missing, Untitled, or an unrelated `pearls[0]` |
+| Falling back to `library.pearls[0]` when the intent title is absent | Any pre-existing pearl makes create “pass” |
+| Accepting titles matching `/untitled\|\borb\b/i` (or empty) after create | Vision violation: mystery objects / user-facing orb |
+| “No orb” scan that only checks the word `orb` and ignores **Untitled** labels / aria / titles | Misses untitled mystery pearls |
+| Merge / edit / experiment / wear marked stressed while only exercised via `execute([...])` on seeded IDs | Claims Companion can do the op; only proves domain handlers exist |
+| Seed-on-failure that still records the create check as pass | Gap suites used to seed disposable pearls and count that as `wf-create-pearl` |
+| `force: true` clicks, `networkidle` as success, or mocked model replies presented as live AI | Masks hit-test and honesty failures |
+
+### Valid Companion pearl op check (minimum)
+
+1. Fresh land → Talk hit-test → type intent → **GO hit-test** (`elementFromPoint`).
+2. User echo before reply; status/action during work.
+3. Companion reply present.
+4. **DOM/state pearl** with non-empty human title matching intent (not Untitled / Orb / untitled orb).
+5. Reload persistence of that **same id + title**.
+6. For merge / edit / experiment: repeat Talk→GO and assert **artifact effects** (new titled pearl, renamed title, sources kept, etc.). Runtime.execute may exist as a **wiring probe** but must not be the sole pass for Companion UX.
+
+Hard fail the suite when these integrity rules are violated, even if chat text looks green.
+
+---
+
 ## Harness expectations
 
 `npm run stress:pearl` must:
 
 1. Prefer a **production preview** build (or document the exact working build URL).
 2. Spawn companion live gates first (unless `SKIP_COMPANION=1`).
-3. Exercise core journeys with hit-tests, persistence, director probes, and screenshot evidence.
+3. Exercise core journeys with hit-tests, persistence, director probes, and screenshot evidence — under **Harness Integrity** above.
 4. Expand coverage toward claimed capabilities in README + `shared/feature-contracts.js` + companion manifest — especially role/superpower pearls, encode/automation, remix primitives, generation honesty, Output Frame, packages/tasks entry points, **shareability** (review → signed package → grant → consume → install / export → reopen), and **workflow** journeys (create → wear → Studio → remix → destructive confirm → encode).
 5. Write evidence under `audit-shots/` and update tracked ledgers / coverage matrix.
-6. Exit non-zero when P0/P1 defects remain open (including aesthetic hard fails).
+6. Exit non-zero when P0/P1 defects remain open (including aesthetic hard fails and integrity violations).
 7. Spawn residual gap suites (`npm run stress:gaps` / `scripts/pearl-gap-stress.mjs`) unless `SKIP_GAPS=1` — voice simulation, AI gateway honesty, extension 360, account multi-profile, taste UI, packages, vault.
 
 ### Shareability dimension

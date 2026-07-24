@@ -39,6 +39,11 @@ test("director action trail maps steps to compact chat lines", () => {
     "Created “Notes”.",
   );
   assert.equal(formatDirectorActionTrail({ type: "gesture-release" }), null);
+  assert.equal(formatDirectorActionTrail({ type: "step-start", capability: "mergeSemanticOrbs" }), "Merging pearls…");
+  assert.doesNotMatch(
+    formatDirectorActionTrail({ type: "step-start", capability: "synthesizeSemanticOrbs" }) || "",
+    /\borb/i,
+  );
 });
 
 test("Ask and Plan enforce zero mutation until accepted", () => {

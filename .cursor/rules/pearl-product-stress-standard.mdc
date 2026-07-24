@@ -16,3 +16,16 @@ Whenever you audit, stress, review, or claim completion for **any** new or exist
 5. Never claim production-ready / perfect / fully working / state of the art unless evidence supports that exact claim. State credential, mic, extension, and auth gaps explicitly.
 
 Hard fails: navigation traps, inaccessible primary action, fake Done, silent data loss/dupes, companion fake success, white-dot Pearl fallback, user-facing "orb", gauntlet >5, Studio not M→F→L when structure exists.
+
+## Harness integrity (no false green)
+
+Do **not** treat a check as Companion-UX proof if it:
+
+- Calls `__lensOrbRuntime.run` / `.execute` or seeds `localStorage` instead of Talk→type→**GO hit-test**
+- Asserts chat text only without a **named pearl artifact** (stable id + title matching intent)
+- Falls back to `pearls[0]` when the intent title is missing
+- Accepts `Untitled` / `Orb` / `untitled orb` titles or visible labels after create
+- Marks merge/edit/experiment stressed when only privileged runtime verbs on seeded IDs ran
+- Uses seed-on-failure, `force: true`, or mocked model success to flip the create/workflow check green
+
+Minimum valid create path: GO hit-test → user echo → status → companion reply → Reef/storage pearl with human title → reload persistence. See `docs/pearl-stress-standard.md` § Harness Integrity.

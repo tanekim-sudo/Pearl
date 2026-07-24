@@ -620,16 +620,26 @@ async function suiteWorkflows(browser) {
   await expandCompanion(page);
   await shot(page, "wf-01-land");
 
-  // create via GO text path (same as clueless user)
+  // create via GO text path only — never runtime.run fallback, never seed-as-pass.
   await page.locator("[data-testid='companion-chat-input']").fill("make a pearl about workflow stress");
   const go = page.locator("[data-testid='companion-go']").first();
-  if (await go.count()) await go.click();
-  else await page.evaluate(async () => { await window.__lensOrbRuntime.run("make a pearl about workflow stress"); });
-  await page.waitForTimeout(2800);
+  if (!(await go.count())) {
+    record("wf-create-pearl", false, "companion-go missing — cannot cheat via __lensOrbRuntime.run", "P0");
+    tally("workflows", false);
+  } else {
+    await go.click();
+    await page.waitForTimeout(2800);
+  }
   let pearls = await readPearls(page);
-  let createOk = pearls.length > 0;
+  const titledCreate = pearls.find((p) => /workflow stress/i.test(p.name || "") && !/untitled|\borb\b/i.test(p.name || ""));
+  const createOk = Boolean(titledCreate?.id);
+  record("wf-create-pearl", createOk, `pearls=${pearls.length} titled=${JSON.stringify(titledCreate || null)}`, "P0", {
+    evidence: await shot(page, "wf-02-created"),
+    expected: "Talk→GO must persist a titled pearl matching intent — seed fallback is invalid",
+  });
+  tally("workflows", createOk);
+  // Later steps may seed disposable pearls, but that must not flip wf-create-pearl green.
   if (!createOk) {
-    // Seed disposable scene pearls so later workflow steps remain exerciseable.
     await page.evaluate(() => {
       const stamp = Date.now();
       const sceneId = "gap-wf-scene";
@@ -667,12 +677,7 @@ async function suiteWorkflows(browser) {
     await page.goto(`${baseUrl}/scene/gap-wf-scene`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(700);
     pearls = await readPearls(page);
-    createOk = pearls.length > 0;
   }
-  record("wf-create-pearl", createOk, `pearls=${pearls.length} ${JSON.stringify(pearls.slice(0, 3))}`, "P0", {
-    evidence: await shot(page, "wf-02-created"),
-  });
-  tally("workflows", createOk);
 
   const primaryId = pearls[0]?.id;
   if (primaryId) {

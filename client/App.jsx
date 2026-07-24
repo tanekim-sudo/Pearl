@@ -242,6 +242,8 @@ import { matchShellNavigationIntent } from "./lib/shell-navigation.js";
 import { executePearlActionEvent } from "../shared/pearl-action-protocol.js";
 import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entity.js";
 import { listPearlVersions } from "../shared/pearl-version-history.js";
+import { sensiblePearlName } from "../shared/semantic-orbs.js";
+import { collectReefPearls, findWorkspacePearl } from "./lib/reef-home.js";
 import {
   answerClarificationSession,
   clarificationPromptText,
@@ -309,6 +311,7 @@ import {
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
+  parsePearlEditCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -12251,14 +12254,49 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   function resolvePearlByNameOrId(id, name) {
     const scene = currentSemanticScene();
     const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
-    if (id) return orbs.find((entry) => entry.id === id) || null;
+    if (id) {
+      const local = orbs.find((entry) => entry.id === id);
+      if (local) return local;
+    }
     if (name) {
       const needle = String(name).trim().toLowerCase();
-      return orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
-        || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle))
-        || null;
+      const local = orbs.find((entry) => String(entry.name || "").toLowerCase() === needle)
+        || orbs.find((entry) => String(entry.name || "").toLowerCase().includes(needle));
+      if (local) return local;
+    }
+    // Reef / multi-scene: Companion ops must resolve pearls on the shelf, not only the open Scene.
+    try {
+      const workspace = migrateUnifiedWorkspace({ unified: load(UNIFIED_WORKSPACE_KEY, null) || initialUnifiedWorkspace });
+      const scenes = workspace.scenes || [];
+      if (id) {
+        const hit = findWorkspacePearl(scenes, id);
+        if (hit?.orb) return hit.orb;
+      }
+      if (name) {
+        const hit = findWorkspacePearl(scenes, name);
+        if (hit?.orb) return hit.orb;
+      }
+      if (!id && !name) {
+        const activeId = scene?.activeSemanticOrbId || workspace.activeSemanticOrbId;
+        if (activeId) {
+          const hit = findWorkspacePearl(scenes, activeId);
+          if (hit?.orb) return hit.orb;
+        }
+        return collectReefPearls(scenes)[0]?.orb || null;
+      }
+    } catch {
+      /* fall through */
     }
     return null;
+  }
+
+  function reefPearlIds(limit = 4) {
+    try {
+      const workspace = migrateUnifiedWorkspace({ unified: load(UNIFIED_WORKSPACE_KEY, null) || initialUnifiedWorkspace });
+      return collectReefPearls(workspace.scenes || []).slice(0, limit).map((entry) => entry.id);
+    } catch {
+      return [];
+    }
   }
 
   function ensureCanonicalPearlStore(requestedPearlId = null) {
@@ -12892,11 +12930,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
     },
     createSemanticOrb: async (a, tk) => {
-      const pearlName = a.name
+      const pearlName = sensiblePearlName(
+        a.name
         || a.orb?.name
         || a.material?.label
+        || a.material?.text
         || a.organizedOrb?.name
-        || "Untitled pearl";
+        || "",
+      );
       tk?.caption?.(a.caption || `creating pearl “${pearlName}”`);
       const mother = document.querySelector(".companion-orb");
       const reef = document.querySelector("[data-reef-home], .orb-reef, [data-semantic-anchor='scene-stage']");
@@ -12913,16 +12954,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         args: {
           sceneId: a.sceneId || sceneId,
           placement: a.placement,
-          material: a.material,
+          material: a.material
+            ? { ...a.material, label: a.material.label || pearlName, name: a.material.name || pearlName }
+            : a.material,
           orb: organizedOrb
             ? {
               ...organizedOrb,
               id: organizedOrb.id || a.id,
-              name: organizedOrb.name || a.name || organizedOrb.representation?.label || "Untitled pearl",
+              name: sensiblePearlName(
+                organizedOrb.name || a.name || organizedOrb.representation?.label || pearlName,
+              ),
             }
             : a.material
-              ? (a.id ? { id: a.id, name: a.name } : (a.name ? { name: a.name } : undefined))
-              : { id: a.id, name: a.name || "Untitled pearl" },
+              ? (a.id ? { id: a.id, name: pearlName } : { name: pearlName })
+              : { id: a.id, name: pearlName },
           activate: a.activate !== false,
         },
       });
@@ -12937,6 +12982,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         effectId: `semantic-orb-created:${receipt.id}`,
         id: receipt.id,
         object: receipt.object || receipt,
+        name: pearlName,
         effects: ["semantic-orb-created"],
       };
     },
@@ -13461,17 +13507,69 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "moveSemanticOrb", args: a });
       return { effectId: `semantic-orb-moved:${a.id}`, id: a.id };
     },
-    renameSemanticOrb: async (a) => {
-      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "renameSemanticOrb", args: a });
-      return { effectId: `semantic-orb-renamed:${a.id}`, id: a.id };
+    renameSemanticOrb: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.fromName)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to rename.");
+      const nextName = sensiblePearlName(a.name || a.to || a.nextName || "");
+      if (!nextName || /^New pearl · /i.test(nextName) && !(a.name || a.to || a.nextName)) {
+        throw new Error("Tell me the new pearl title (e.g. “rename this pearl Morning notes”).");
+      }
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "renameSemanticOrb",
+        args: { id: pearl.id, name: nextName, sceneId: a.sceneId || pearl.sceneId || sceneId },
+      });
+      await tk?.wait?.(220);
+      return {
+        effectId: `semantic-orb-renamed:${pearl.id}`,
+        id: pearl.id,
+        name: nextName,
+        effects: ["semantic-orb-renamed"],
+        visibleText: `Renamed pearl to “${nextName}”.`,
+      };
     },
     bindSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "bindSemanticOrb", args: a });
       return { effectId: `semantic-orb-bound:${a.id}`, id: a.id };
     },
-    addSemanticOrbContext: async (a) => {
-      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "addSemanticOrbContext", args: a });
-      return { effectId: `semantic-orb-context:${a.id}`, id: a.id };
+    addSemanticOrbContext: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to edit.");
+      const note = String(a.text || a.item?.text || a.items?.[0]?.text || "").trim();
+      const items = Array.isArray(a.items) && a.items.length
+        ? a.items
+        : note
+          ? [{
+            id: `pearl-note:${Date.now()}`,
+            kind: "dump",
+            label: note.slice(0, 48),
+            text: note,
+            provenance: { source: "companion-edit" },
+          }]
+          : [];
+      if (!items.length) throw new Error("Tell me what to add to the pearl.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "addSemanticOrbContext",
+        args: { id: pearl.id, items, sceneId: a.sceneId || pearl.sceneId || sceneId },
+      });
+      await tk?.wait?.(220);
+      return {
+        effectId: `semantic-orb-context:${pearl.id}`,
+        id: pearl.id,
+        effects: ["semantic-orb-updated", "semantic-orb-context"],
+        visibleText: `Updated “${pearl.name || "pearl"}” with new notes.`,
+      };
     },
     removeSemanticOrbContext: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "removeSemanticOrbContext", args: a });
@@ -16193,9 +16291,56 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { ...result, effects: ["pearl-version-restored"] };
     },
     editPearlOutput: async (a, tk) => {
+      const nextText = String(a.text || "").trim();
+      // Prefer semantic Reef/Scene pearls — Companion create path stores those, not only canonical entities.
+      const semantic = resolvePearlByNameOrId(a.pearlId || a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (semantic && nextText) {
+        const host = document.querySelector(`[data-semantic-orb-id="${semantic.id}"]`)
+          || document.querySelector(`[data-reef-pearl="${semantic.id}"]`)
+          || document.querySelector(".companion-orb");
+        if (host && tk?.moveTo) await tk.moveTo(host);
+        const prior = semantic.workingSet?.context || [];
+        const item = {
+          id: `pearl-edit:${Date.now()}`,
+          kind: "dump",
+          label: nextText.slice(0, 48),
+          text: nextText,
+          provenance: { source: "companion-edit" },
+        };
+        await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+          command: "addSemanticOrbContext",
+          args: {
+            id: semantic.id,
+            items: a.append ? [item] : [item],
+            replace: a.append ? false : prior.length === 0,
+            sceneId: a.sceneId || semantic.sceneId || sceneId,
+          },
+        });
+        if (!a.append && (a.name || nextText.length <= 80)) {
+          // Short edits also refresh the human title when it was still a placeholder.
+          if (/^New pearl · /i.test(semantic.name || "") || /^untitled/i.test(semantic.name || "")) {
+            await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+              command: "renameSemanticOrb",
+              args: {
+                id: semantic.id,
+                name: sensiblePearlName(nextText),
+                sceneId: a.sceneId || semantic.sceneId || sceneId,
+              },
+            }).catch(() => {});
+          }
+        }
+        await tk?.wait?.(240);
+        return {
+          id: semantic.id,
+          effects: ["semantic-orb-updated", "pearl-entity-edited"],
+          visibleText: `Updated “${semantic.name || "pearl"}”.`,
+        };
+      }
       const { pearlId, entity } = ensureCanonicalPearlStore(a.pearlId);
-      if (!entity) throw new Error("No canonical Pearl is active.");
-      const nextText = a.append
+      if (!entity) throw new Error("No Pearl is active to edit.");
+      const patchedText = a.append
         ? `${entity.results?.[0]?.text || entity.identity.description || ""}${a.text || ""}`
         : (a.text || "");
       if (a.instruction && !a.text) {
@@ -16207,8 +16352,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ], { title: "Edit pearl from instruction", signal: tk.signal });
       }
       const results = entity.results?.length
-        ? entity.results.map((entry, index) => (index ? entry : { ...entry, text: nextText }))
-        : [{ id: pearlId, status: "ready", text: nextText }];
+        ? entity.results.map((entry, index) => (index ? entry : { ...entry, text: patchedText }))
+        : [{ id: pearlId, status: "ready", text: patchedText }];
       await tk.moveTo(window.innerWidth * 0.5, window.innerHeight * 0.42);
       const result = await runCanonicalPearlAction("editPearlEntity", {
         pearlId,
@@ -17638,34 +17783,57 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (Array.isArray(step.args.ids) && step.args.ids.length === 0) {
         const selectedOrbIds = highlightSelectionRef.current.length ? highlightSelectionRef.current : [];
         const wornIds = loadGauntletState().pearlIds || [];
+        const shelfIds = reefPearlIds(4);
         if (selectedOrbIds.length >= 2) step.args.ids = selectedOrbIds;
         else if (wornIds.length >= 2 && step.verb === "synthesizeSemanticOrbs") step.args.ids = wornIds.slice(0, 4);
-        else if (selectedOrbIds.length) step.args.ids = selectedOrbIds;
+        else if (shelfIds.length >= 2) step.args.ids = shelfIds;
         else if (wornIds.length >= 2) step.args.ids = wornIds.slice(0, 4);
-        else step.args.ids = activeOrbId ? [activeOrbId] : [];
+        else if (selectedOrbIds.length) step.args.ids = selectedOrbIds;
+        else step.args.ids = activeOrbId ? [activeOrbId] : shelfIds.slice(0, 1);
       }
       const result = await executeCompanionScript([step], { title: "Pearl remix" });
       updateCommand(commandEntry.id, result.completed
         ? { status: "executed", effects: result.effects || ["scene-state-changed"] }
         : { status: "failed", failure: result.errors?.[0] || "Remix failed" });
-      return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      return null;
+    }
+
+    const pearlEdit = parsePearlEditCommand(text);
+    if (pearlEdit) {
+      onPhase?.("executing");
+      const step = { ...pearlEdit, args: { ...pearlEdit.args } };
+      if (step.args.sceneId == null || step.args.sceneId === "") {
+        step.args.sceneId = sceneId || undefined;
+      }
+      const result = await executeCompanionScript([step], {
+        title: step.verb === "renameSemanticOrb" ? "Rename pearl" : "Edit pearl",
+      });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["semantic-orb-updated"] }
+        : { status: "failed", failure: result.errors?.[0] || "Pearl edit failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      const reply = result.value?.visibleText
+        || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
+        || (step.verb === "renameSemanticOrb"
+          ? `Renamed pearl to “${step.args.name}”.`
+          : "Updated the pearl.");
+      return { visible: true, text: reply, completed: true };
     }
 
     const pearlCreation = parsePearlCreationCommand(text);
     if (pearlCreation) {
+      onPhase?.("executing");
       const ids = highlightSelectionRef.current.length ? highlightSelectionRef.current : selRef.current;
       const selected = itemsRef.current.filter((item) => ids.includes(item.id));
       const materialText = String(pearlCreation.args.materialText || "").trim();
-      if (!selected.length && !materialText && !pearlCreation.args.name) {
-        const error = "Tell me what the pearl is about (e.g. “make a pearl about Friday standup”), or select material first.";
-        updateCommand(commandEntry.id, { status: "failed", failure: error });
-        return { visible: true, text: error };
-      }
+      const requestedName = String(pearlCreation.args.name || "").trim();
+      const pearlTitle = sensiblePearlName(requestedName || materialText || "");
       const material = selected.length
         ? {
           id: `pearl-selection:${selected.map((item) => item.id).join("+")}`,
           kind: "selection",
-          label: pearlCreation.args.name || selected[0]?.text || "Pearl from selection",
+          label: pearlTitle,
           sourceIds: selected.map((item) => item.id),
           items: selected,
           provenance: { source: "explicit-scene-selection" },
@@ -17673,8 +17841,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         : {
           id: `pearl-text:${Date.now()}`,
           kind: "dump",
-          label: pearlCreation.args.name || materialText.slice(0, 48) || "Context pearl",
-          text: materialText || pearlCreation.args.name || "Context pearl",
+          label: pearlTitle,
+          text: materialText || requestedName || `${pearlTitle} — add notes anytime.`,
           provenance: { source: "companion-create" },
         };
       // sceneId optional — Reef auto-creates a shelf workspace when absent.
@@ -17685,7 +17853,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ...pearlCreation,
         args: {
           ...(resolvedSceneId ? { sceneId: resolvedSceneId } : {}),
-          name: pearlCreation.args.name || material.label,
+          name: pearlTitle,
           material,
           activate: true,
         },
@@ -17697,7 +17865,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
       return {
         visible: true,
-        text: `Created context pearl “${step.args.name || material.label}”. Wear it into the gauntlet when you need it.`,
+        text: `Created context pearl “${pearlTitle}”. Wear it into the gauntlet when you need it.`,
         completed: true,
       };
     }

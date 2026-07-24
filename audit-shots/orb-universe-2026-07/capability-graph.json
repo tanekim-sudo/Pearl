@@ -10,7 +10,7 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-9ffa55ef",
+  "fingerprint": "fnv1a-45afcfc2",
   "counts": {
     "nodes": 404,
     "edges": 516
@@ -9097,8 +9097,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "id": "string",
-          "name": "string"
+          "id": "string?",
+          "fromName": "string?",
+          "name": "string",
+          "sceneId": "string?"
         }
       },
       "outputSchema": {
@@ -9388,8 +9390,11 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "id": "string",
-          "items": "array"
+          "id": "string?",
+          "name": "string?",
+          "items": "array?",
+          "text": "string?",
+          "sceneId": "string?"
         }
       },
       "outputSchema": {
@@ -22337,9 +22342,12 @@
         "additionalProperties": false,
         "properties": {
           "pearlId": "string?",
+          "id": "string?",
+          "name": "string?",
           "text": "string",
           "append": "boolean?",
-          "instruction": "string?"
+          "instruction": "string?",
+          "sceneId": "string?"
         }
       },
       "outputSchema": {
