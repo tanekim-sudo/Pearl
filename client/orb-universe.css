@@ -51,14 +51,19 @@
 }
 .pearl-start-hint {
   position: absolute;
-  left: calc(var(--orb-size) + 10px);
+  left: calc(var(--orb-size) + 12px);
   top: 50%;
   width: max-content;
-  max-width: min(280px, calc(100vw - var(--orb-x) - var(--orb-size) - 24px));
-  color: var(--orb-text-2);
-  font-size: 10px;
-  line-height: 1.4;
+  max-width: min(220px, calc(100vw - var(--orb-x) - var(--orb-size) - 28px));
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(10, 12, 14, .9);
+  color: #ebe6da;
+  font: 500 11px/1.3 Inter, ui-sans-serif, system-ui, sans-serif;
   transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
 }
 
 .companion-orb {
@@ -525,13 +530,74 @@
 .orb-reef-home .orb-home-intro-actions button {
   pointer-events: auto;
 }
-.orb-reef-home .orb-reef-kicker h1 { margin-bottom: 8px; }
-.orb-reef .reef-pearl b { font-weight: 550; color: var(--orb-text-1); }
+.orb-reef-home .orb-reef-kicker h1 { margin-bottom: 8px; color: #f4f1ea; }
+.orb-reef-home .orb-reef-kicker p { color: rgba(232, 226, 214, .82); }
+.orb-reef.orb-reef-populated {
+  position: relative;
+  inset: auto;
+  top: 72px;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  z-index: 2;
+  display: block;
+  padding: 12px clamp(16px, 4vw, 48px) 120px;
+  pointer-events: none;
+}
+.orb-reef-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px 18px;
+  width: min(960px, 100%);
+  pointer-events: auto;
+}
+.orb-reef .reef-pearl {
+  position: relative;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  min-height: 56px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(232, 226, 214, .16);
+  border-radius: 16px;
+  background: rgba(18, 20, 22, .78);
+  color: #f4f1ea;
+  text-align: left;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(12px);
+  font: 13px/1.35 Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.orb-reef .reef-pearl:hover,
+.orb-reef .reef-pearl:focus-visible {
+  border-color: rgba(232, 226, 214, .42);
+  background: rgba(28, 30, 32, .9);
+}
+.orb-reef .reef-pearl b {
+  grid-column: 2;
+  font-weight: 560;
+  color: #f7f3e8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.orb-reef .reef-pearl small {
+  grid-column: 2;
+  color: rgba(232, 226, 214, .72);
+  font-size: 11px;
+}
 .orb-reef .reef-pearl-dot {
-  width: 8px;
-  height: 8px;
+  grid-row: span 2;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff8e8 0 28%, #e8d7b0 40%, #9aa39a 100%);
+  box-shadow: 0 0 10px rgba(232, 215, 176, .35);
 }
 .orb-home-prompt { position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%); color: var(--orb-text-3); font-size: 10px; letter-spacing: .08em; white-space: nowrap; }
 .orb-universe:has(.companion-orb-shell.expanded) .orb-home-prompt { opacity: 0; }
@@ -674,8 +740,8 @@
 .orb-home-plain { margin: 10px auto 0; max-width: 52ch; color: var(--orb-text-3); line-height: 1.55; font-size: 13px; }
 .orb-reef-section-label {
   grid-column: 1 / -1;
-  margin: 0 0 4px;
-  color: var(--orb-text-3);
+  margin: 0 0 12px;
+  color: rgba(232, 226, 214, .82);
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -718,19 +784,20 @@
 .orb-gauntlet-legend {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 14px);
   transform: translateX(-50%);
   width: max-content;
-  max-width: 240px;
-  padding: 4px 8px;
+  max-width: min(260px, 70vw);
+  padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(8, 10, 11, .72);
-  color: var(--orb-text-2);
-  font: 500 10px/1.3 Inter, ui-sans-serif, system-ui, sans-serif;
+  background: rgba(10, 12, 14, .92);
+  color: #ebe6da;
+  font: 500 11px/1.3 Inter, ui-sans-serif, system-ui, sans-serif;
   letter-spacing: .01em;
   pointer-events: none;
   text-align: center;
-  opacity: .88;
+  opacity: 1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
 }
 .companion-orb-shell.expanded .orb-gauntlet-legend,
 .companion-orb-shell:focus-within .orb-gauntlet-legend {
@@ -1010,7 +1077,27 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 .semantic-orb-trace { fill:none; stroke:rgba(209,220,217,.16); stroke-width:.6; stroke-dasharray:1.5 4; }
 .semantic-orb-button[aria-pressed="true"] svg { animation:semantic-orb-breathe 4s ease-in-out infinite; }
 .semantic-orb-button[aria-pressed="true"] .semantic-orb-nucleus { opacity:.78; }
-.semantic-orb-button>span { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+/* Visible pearl title under the capsule — never sr-only mystery dots. */
+.semantic-orb-button>span {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 3;
+  width: max-content;
+  max-width: 120px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(8, 10, 11, .88);
+  color: #f4f1ea;
+  font: 500 11px/1.25 Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+}
 .semantic-orb-button>i { position:absolute; top:1px; right:0; display:grid; width:17px; height:17px; place-items:center; border:1px solid rgba(250,229,168,.28); border-radius:50%; background:#11100d; color:#ead28d; font-size:9px; font-style:normal; }
 .semantic-orb-cluster { z-index:6; }
 .semantic-orb-cluster b { position:absolute; inset:0; display:grid; place-items:center; color:#312913; font-size:12px; }
@@ -1249,13 +1336,18 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
     top: clamp(8px, var(--orb-y), calc(100vh - var(--orb-size) - 8px));
   }
   .pearl-start-hint {
-    left: calc(var(--orb-size) / 2);
+    left: 50%;
     right: auto;
     top: auto;
-    bottom: calc(var(--orb-size) + 8px);
-    max-width: min(260px, 78vw);
+    bottom: calc(var(--orb-size) + 42px);
+    max-width: min(200px, 70vw);
     text-align: center;
     transform: translateX(-50%);
+  }
+  .orb-gauntlet-legend {
+    bottom: calc(100% + 8px);
+    max-width: min(220px, 72vw);
+    font-size: 10px;
   }
   .orb-continuation {
     top: 50%;
@@ -1527,23 +1619,32 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 .orb-reef-home[data-companion-first="true"] .orb-recent-orbit {
   opacity: .92;
 }
-.orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro,
-.orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-recent-orbit {
-  opacity: .28;
+/* Companion open owns attention — never leave a competing Talk CTA / ghost intro. */
+.orb-universe:has(.companion-panel.shell-dock) .orb-reef-home .orb-home-intro,
+.orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro {
+  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
-/* Narrow: Companion open owns the viewport — hide competing Talk CTA / shelf intro. */
+.orb-universe:has(.companion-panel.shell-dock) .pearl-start-hint,
+.orb-universe:has(.companion-orb-shell.expanded) .pearl-start-hint,
+.orb-universe:has(.pearl-welcome) .pearl-start-hint,
+.orb-universe:has(.pearl-welcome) .orb-gauntlet-legend {
+  opacity: 0;
+  visibility: hidden;
+}
 @media (max-width: 480px) {
-  .orb-universe:has(.companion-panel.shell-dock) .orb-reef-home .orb-home-intro,
-  .orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro {
-    opacity: 0;
-    visibility: hidden;
+  /* Chat owns the phone — hide mother/gauntlet so “context pearls” never clips under the dock. */
+  body:has(.companion-panel.shell-dock) .companion-orb-shell,
+  .orb-universe:has(.companion-panel.shell-dock) .companion-orb-shell {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
-  .orb-universe:has(.companion-panel.shell-dock) .companion-orb-shell.featured {
-    opacity: .35;
-  }
-  .orb-universe:has(.companion-panel.shell-dock) .orb-gauntlet-legend {
-    opacity: 0;
+  body:has(.companion-panel.shell-dock) .orb-gauntlet-legend,
+  body:has(.companion-panel.shell-dock) .pearl-start-hint {
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 }
 .pearl-welcome-dismiss {
@@ -1919,6 +2020,13 @@ body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .or
 .companion-panel.shell-dock .companion-plan-strip button:first-child {
   border-color: rgba(125, 231, 255, 0.45);
   color: rgba(200, 245, 255, 0.98);
+}
+.companion-panel.shell-dock .companion-send,
+.companion-panel.shell-dock [data-testid='companion-go'] {
+  color: #121416 !important;
+  background: #f0ebe0 !important;
+  border: 0 !important;
+  font-weight: 650;
 }
 .companion-panel.shell-dock .companion-send {
   min-width: 52px;

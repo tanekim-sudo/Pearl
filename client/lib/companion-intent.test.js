@@ -95,6 +95,20 @@ test("critique stream and version history intents are deterministic", () => {
   assert.equal(parsePearlVersionCommand("restore the Review ready version").verb, "restorePearlVersion");
   assert.equal(parsePearlRemixCommand("merge these orbs").verb, "mergeSemanticOrbs");
   assert.equal(parsePearlRemixCommand("merge these pearls").verb, "mergeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("combine these pearls").verb, "mergeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("put these pearls together").verb, "mergeSemanticOrbs");
+  assert.equal(parsePearlRemixCommand("try something with this pearl").verb, "createCounterPearl");
+  assert.equal(parsePearlRemixCommand("split this pearl").verb, "splitSemanticOrb");
+  assert.equal(parsePearlRemixCommand("open studio for this pearl").verb, "openPearlStudio");
+  assert.deepEqual(parsePearlEditCommand("edit it to add budget concerns"), {
+    verb: "addSemanticOrbContext",
+    args: { text: "budget concerns" },
+  });
+  assert.deepEqual(parsePearlEditCommand("add budget concerns to this pearl"), {
+    verb: "addSemanticOrbContext",
+    args: { text: "budget concerns" },
+  });
+  assert.equal(parsePearlRemixCommand("add budget concerns to this pearl"), null);
   assert.deepEqual(parsePearlRemixCommand("what do these pearls notice about each other"), {
     verb: "synthesizeSemanticOrbs",
     args: { ids: [], sceneId: "", mode: "mutual" },

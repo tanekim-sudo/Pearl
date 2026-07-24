@@ -1,31 +1,73 @@
 ---
-description: Pearl Product Stress Standard — mandatory evaluation bar for any feature or flow
+description: Pearl Product Stress Standard — hyper-clueless first-time bar for any feature or flow
 alwaysApply: true
 ---
 
 # Pearl Product Stress Standard
 
-Canonical detail: `docs/pearl-stress-standard.md`. Coverage ledger: `docs/pearl-stress-coverage.md`. Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`.
+Canonical detail: `docs/pearl-stress-standard.md`. Showcase catalog: `docs/pearl-showcase-flows.md`. Gap audit: `docs/pearl-stress-clueless-gap-audit.md`. Coverage: `docs/pearl-stress-coverage.md`.
+
+**Master harness:** `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs` (hard-fail). Also: `npm run stress:pearl` (core + gaps; must obey the same integrity rules).
 
 Whenever you audit, stress, review, or claim completion for **any** new or existing feature/flow:
 
-1. Run (or extend) the headed Pearl stress harness against this standard — not unit tests alone.
-2. Evaluate from a **first-time / clueless user** with **zero demand**: no required modes, tours, or jargon.
-3. Cover all lenses in the standard doc: aesthetics (Read real PNGs), usability, functionality (real effects + hit-test), persistence, companion/director honesty, communication, vision alignment, accessibility, error/empty/recovery, performance feel, trust, cross-surface, naming consistency, undo/confirm.
+1. Evaluate as the **Clueless First-Time Persona** only — hyper-clueless: no jargon, no “they should know to say merge,” no reading source code, no mode pickers, no tour walls.
+2. Run the headed clueless/showcase harness against this standard — not unit tests alone.
+3. Cover all lenses in the standard doc plus every catalogued showcase flow in `docs/pearl-showcase-flows.md`.
 4. Prefer fixing broken claimed paths over documenting them as acceptable.
 5. Never claim production-ready / perfect / fully working / state of the art unless evidence supports that exact claim. State credential, mic, extension, and auth gaps explicitly.
 
-Hard fails: navigation traps, inaccessible primary action, fake Done, silent data loss/dupes, companion fake success, white-dot Pearl fallback, user-facing "orb", gauntlet >5, Studio not M→F→L when structure exists.
+## Hard fails
 
-## Harness integrity (no false green)
+Navigation traps, inaccessible primary action, fake Done, silent data loss/dupes, companion fake success, white-dot Pearl fallback, user-facing "orb", gauntlet >5 without clear refuse, Studio not M→F→L when structure exists, **confusion budget >1 unexplained click** to start talking, topic-create accepted as generic `New pearl · …`, chat success without **world-visible** titled artifact.
 
-Do **not** treat a check as Companion-UX proof if it:
+## Clueless First-Time Persona (only acceptable UX evaluator)
 
-- Calls `__lensOrbRuntime.run` / `.execute` or seeds `localStorage` instead of Talk→type→**GO hit-test**
-- Asserts chat text only without a **named pearl artifact** (stable id + title matching intent)
-- Falls back to `pearls[0]` when the intent title is missing
-- Accepts `Untitled` / `Orb` / `untitled orb` titles or visible labels after create
-- Marks merge/edit/experiment stressed when only privileged runtime verbs on seeded IDs ran
-- Uses seed-on-failure, `force: true`, or mocked model success to flip the create/workflow check green
+- Lands cold; finds Talk without hunting.
+- Types naive natural language a novice would invent.
+- Must **see** the world change (Reef/gauntlet/Studio label readable in screenshot).
+- Multi-step continuity without harness reset: create → rename → edit → wear → merge.
+- 390px phone-first is a primary journey, not an afterthought.
 
-Minimum valid create path: GO hit-test → user echo → status → companion reply → Reef/storage pearl with human title → reload persistence. See `docs/pearl-stress-standard.md` § Harness Integrity.
+## World-state visibility
+
+Every successful mutation must be findable on screen by a title/label a human can read in the screenshot. Storage/chat alone is insufficient.
+
+## No privileged shortcuts in journeys
+
+`__lensOrbRuntime.run` / `.execute` and `localStorage` seeding are allowed only in **isolated unit tests** — never as the pass criterion for `stress:clueless` / Companion UX journeys.
+
+## Intent binding
+
+Create “about X” must yield a pearl whose visible title clearly relates to X — not generic `New pearl · stamp`, not Untitled, not orb.
+
+## Visual-first gate (equal weight to world-state)
+
+For **every** meaningful state in showcase/clueless flows:
+
+1. Screenshot full viewport (+ chat dock crop when relevant).
+2. **Read the actual PNG** with the image Read tool (look at pixels — not DOM heuristics alone).
+3. Write a human critique: hierarchy, clutter, stacking, invisible controls, contrast, mystery objects, “would a clueless user find the next action in &lt;3 seconds?”
+4. **FAIL** if anything critical is invisible, occluded, low-contrast to unreadability, stacked illegibly, or looks broken — **even if DOM asserts and runtime effects passed**.
+5. Functional-only green without visual pass = **invalid harness lie**.
+
+**Invisible = Fail. Bot-only reachable = Fail.**
+
+## Screenshot veto
+
+Human **Read** of real PNGs **must** fail the suite when the above breaks. Document critiques that reference what was **seen** in images (not boilerplate).
+
+## Anti-lie checklist (every PR / stress run)
+
+- [ ] No runtime.execute/run as journey pass
+- [ ] No force:true on primary controls
+- [ ] No seed-as-pass / pearls[0] fallback for create identity
+- [ ] No Untitled / user-facing orb / topic-create as generic New pearl
+- [ ] Visible Reef/gauntlet title for every successful mutation
+- [ ] Talk→GO only for Companion UX; confusion budget ≤1
+- [ ] Continuity without harness reset for marathon flow
+- [ ] Human Read veto recorded for primary PNGs
+- [ ] Skipped env rows never counted in pass totals
+- [ ] Exact blocker when vague — never dead air
+
+Minimum valid create path: GO hit-test → user echo → status → companion reply → **visible** Reef pearl with intent-related human title → reload findability. See `docs/pearl-stress-standard.md`.

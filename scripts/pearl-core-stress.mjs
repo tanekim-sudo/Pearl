@@ -239,11 +239,12 @@ async function visibleOrbWords(page) {
   });
 }
 
-/** Fail closed on mystery objects: Untitled / Orb labels in primary UI + pearl names. */
+/** Fail closed on mystery objects: Untitled / Orb / generic stamp labels. */
 function isMysteryPearlTitle(name) {
   const value = String(name || "").trim();
   if (!value) return true;
-  return /untitled|^(?:new\s+)?orb$|\borb\b/i.test(value) && !/^New pearl · /i.test(value);
+  if (/^New pearl · /i.test(value)) return true;
+  return /untitled|^(?:new\s+)?orb$|\borb\b/i.test(value);
 }
 
 async function visibleMysteryLabels(page) {
@@ -274,13 +275,21 @@ async function visibleMysteryLabels(page) {
   });
 }
 
+const INTENT_STOPWORDS = new Set([
+  "make", "create", "save", "the", "this", "that", "my", "our", "your",
+  "pearl", "pearls", "about", "called", "named", "titled", "from", "these",
+  "with", "for", "and", "into", "onto", "notes",
+]);
+
 function titleMatchesIntent(name, intentPhrase) {
   const title = String(name || "").toLowerCase();
   const intent = String(intentPhrase || "").toLowerCase();
   if (!title || isMysteryPearlTitle(name)) return false;
-  const tokens = intent.split(/\s+/).filter((t) => t.length > 2);
+  const tokens = intent.split(/\s+/).filter((t) => t.length > 2 && !INTENT_STOPWORDS.has(t));
   if (!tokens.length) return !isMysteryPearlTitle(name);
-  return tokens.some((token) => title.includes(token));
+  const hits = tokens.filter((token) => title.includes(token));
+  if (tokens.some((t) => t.length >= 6 && title.includes(t))) return true;
+  return hits.length >= Math.min(2, tokens.length) || (tokens.length === 1 && hits.length === 1);
 }
 
 async function installAnimationProbe(page) {

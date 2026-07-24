@@ -1,114 +1,45 @@
 # Pearl Stress Coverage Matrix
 
-Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)
-Harness: `npm run stress:pearl` → `scripts/pearl-core-stress.mjs`
-Evidence: `audit-shots/pearl-comprehensive-stress-2026-07-23/`
-Last run commit: 7a41184 · 2026-07-24T06:28:39.655Z
-Score: 132/132 · P0=0 P1=0 P2=0
+Standard: [docs/pearl-stress-standard.md](./pearl-stress-standard.md)  
+Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)  
+Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)  
+Visual defects (PNG Reads): [docs/pearl-clueless-visual-defects-2026-07-24.md](./pearl-clueless-visual-defects-2026-07-24.md)
 
-## Claimed vs stressed
+Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`  
+Visual smoke: `node scripts/pearl-visual-smoke.mjs`  
+Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/` (incl. `vfix-*`)
 
-| Capability / journey | Claimed in | Status | Why / notes |
-|---|---|---|---|
-| First-time Talk CTA / Companion-first land (`welcome-talk`) | README + feature-contracts + companion-capabilities | stressed | fresh land + Talk hit-test |
-| Create pearl via GO + director + titled Reef artifact (`create-pearl-go`) | README + feature-contracts + companion-capabilities | stressed | GO hit-test + director anim + titled Reef artifact |
-| Talk→GO rename/edit/experiment/merge with artifacts (`companion-nl-pearl-ops`) | README + feature-contracts + companion-capabilities | stressed | Talk→GO rename/edit/experiment/merge with artifact asserts |
-| Reload survival for created pearls (`persistence-reload-create`) | README + feature-contracts + companion-capabilities | stressed | reload restores pearl ids/titles |
-| Reef + Studio M→F→L (`reef-and-studio`) | README + feature-contracts + companion-capabilities | stressed | Reef shelf + Studio structure readable |
-| Wear gauntlet ≤5 + persist (`gauntlet-wear`) | README + feature-contracts + companion-capabilities | stressed | wear via runtime + reload persist + cap |
-| Organize / merge / synthesize (runtime probe; NL merge asserted separately) (`organize-merge-synthesize`) | README + feature-contracts + companion-capabilities | stressed | runtime probe + NL merge already covered |
-| evaluateWithGauntlet honesty (`evaluate-output`) | README + feature-contracts + companion-capabilities | stressed | evaluateWithGauntlet must not fake success |
-| In-thread Accept/Reject (`destructive-confirm`) | README + feature-contracts + companion-capabilities | stressed | clear → Accept/Reject hit-test in chat |
-| Chat + pearls across Reef/Scene/Studio (`navigation-survival`) | README + feature-contracts + companion-capabilities | stressed | chat + pearl ids survive nav |
-| 390px primary GO path (`narrow-390`) | README + feature-contracts + companion-capabilities | stressed | GO hit-test + chat visible at 390px |
-| Drag moves without clone (`drag-move`) | README + feature-contracts + companion-capabilities | stressed | pointer drag must not clone pearl |
-| Escape collapse (`keyboard`) | README + feature-contracts + companion-capabilities | stressed | Escape collapse + chat survives |
-| createRolePearl / role scaffold superpowers (`role-pearl-superpowers`) | README + feature-contracts + companion-capabilities | stressed | createRolePearl → M→F→L + optional wear + persist |
-| Encode conversation + Encode anything + compileAutomationPearl (`encode-conversation-automation`) | README + feature-contracts + companion-capabilities | stressed | encodeConversationAsPearl + openEncodeAnything |
-| Counter / nest / split remix primitives (`remix-counter-nest-split`) | README + feature-contracts + companion-capabilities | stressed | createCounterPearl + nest + split real effects |
-| transformMaterial / generation no fake success (`generation-honesty`) | README + feature-contracts + companion-capabilities | stressed | transformMaterial / generation must not fake live candidates |
-| Scene Output Frame open/escape (`output-frame-ui`) | README + feature-contracts + companion-capabilities | stressed | Open Output Frame → banner → Escape closes |
-| /packages + /tasks entry points (`packages-tasks-routes`) | README + feature-contracts + companion-capabilities | stressed |  /packages and /tasks reachable without crash |
-| Zero-demand welcome + empty create + a11y labels + reduced motion (`zero-demand-empty-recovery`) | README + feature-contracts + companion-capabilities | stressed | fresh welcome without mode jargon; empty next step |
-| composePearlCognitiveLayers typed remix (`remix-compose-typed-layers`) | README + feature-contracts + companion-capabilities | stressed | composePearlCognitiveLayers preview honesty |
-| Studio version snapshot / browse / restore (`studio-version-checkpoint-restore`) | README + feature-contracts + companion-capabilities | stressed | snapshotPearlVersion → browse → restore |
-| /library /toolbox /settings /install shell routes (`shell-library-toolbox-settings-install`) | README + feature-contracts + companion-capabilities | stressed | README shell routes load without crash |
-| Companion live gates (spawned) (`companion-chat-agent`) | README + feature-contracts + companion-capabilities | skipped | SKIP_COMPANION=1 |
-| Simulated mic / SpeechRecognition UX (Listening→Heard + denied) (`live-mic`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| AI gateway honesty (+ live smoke when credentials exist) (`live-ai-gateway`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Extension side panel 360px (`extension-sidepanel-360`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Multi-profile sync / import dedupe simulation (`account-sync-import`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Multi-candidate taste UI (seeded + honesty) (`live-generation-taste-ui`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Signed Cognitive Package install / reject-unsigned (`cognitive-packages-signed-install`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Privacy vault encryption UX (`privacy-vault-encryption-ux`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Extension insert/GO adapters (fixture hosts) (`extension-site-adapters`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Share / export / import / reopen restore (`shareability-export-import`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
-| Workflow create→wear→Studio→remix→confirm→encode (`workflow-end-to-end`) | README + feature-contracts + gap stress | skipped | SKIP_GAPS=1 |
+**Visual-first:** Functional green without PNG Read = harness lie. **Invisible = Fail. Bot-only reachable = Fail.**
 
-## Shareability / workflow scores
+## Visual smoke (after cleanliness fixes)
 
-- Shareability: not run (SKIP_GAPS=1)
-- Workflows: not run (SKIP_GAPS=1)
+- Desktop shelf + reload: titled **Series A notes** card readable; no Reef-hero stack (PNG Read of `vfix-d-04`, `vfix-d-05`).
+- After Talk: no competing Talk CTA (`vfix-d-02`).
+- Narrow chat: GO high-contrast; gauntlet hide under dock tightened (`body:has(.companion-panel.shell-dock)`).
 
-## Newly stressed vs prior pearl-core suite
+## Showcase flows (catalog SF01–SF25)
 
-- role-pearl-superpowers
-- encode-conversation-automation (encodeConversationAsPearl, openEncodeAnything, compileAutomationPearl)
-- remix-counter-nest-split
-- remix-compose-typed-layers
-- studio-version-checkpoint-restore
-- generation-honesty
-- output-frame-ui (real Open Output Frame path)
-- packages-tasks-routes
-- shell-library-toolbox-settings-install
-- zero-demand-empty-recovery (incl. reduced-motion + a11y labels)
-- live-mic (Fake SpeechRecognition Listening/Hearing/Heard + permission-denied + empty)
-- live-ai-gateway (honesty without credentials; live smoke when env present)
-- extension-sidepanel-360 + extension-site-adapters (unpacked Playwright audit)
-- account-sync-import (multi-profile vault + idempotent merge)
-- live-generation-taste-ui (seeded Choices Yes/No)
-- cognitive-packages-signed-install + privacy-vault-encryption-ux
-- shareability-export-import + workflow-end-to-end
+| Stress id | Status | Why |
+|---|---|---|
+| `sf-cold-talk` / `sf-narrow-390-create` | stressed | Talk≤1 click; 390 primary |
+| `sf-create-topic-pearl` | stressed | Talk→GO → visible intent title |
+| `sf-rename-novice` / `sf-edit-add-notes` / `sf-wear-gauntlet` | stressed | Novice NL + world-visible |
+| `sf-merge-combine` / `sf-experiment-counter` | stressed | combine / try something |
+| `sf-reload-findable` | stressed | Reload findable titled pearl |
+| `sf-organize-studio` / `sf-role-investor` / `sf-encode-open` | stressed | Studio / investor / encode |
+| `sf-version-loop` / `sf-evaluate-gauntlet` | partial | Version Ask-mode blocker; evaluate honesty residual |
+| `sf-share-handoff` / live mic / OAuth / extension 360 | residual | Credentials / platform |
 
-## Residual gaps (honest non-claims)
+## Residuals (honest)
 
-- Standard reference: docs/pearl-stress-standard.md
-- Gap suites (voice/share/workflows/extension/vault/taste/sync/packages/AI honesty) run via scripts/pearl-gap-stress.mjs unless SKIP_GAPS=1.
+- Live mic OS UI, live model quality without keys, extension 360 / site adapters, real OAuth sync.
+- Full `stress:clueless` marathon still needs a clean end-to-end pass after visual gate (prior run crashed mid-suite / evaluate fakeDone).
+- P2: Companion header chip density; demo suggestion pills; empty Reef sparseness.
 
-## Run matrix (raw)
+## Anti-lie
 
-- **skipped** `companion-chat-agent` — SKIP_COMPANION=1
-- **stressed** `welcome-talk` — fresh land + Talk hit-test
-- **stressed** `create-pearl-go` — GO hit-test + director anim + titled Reef artifact
-- **stressed** `persistence-reload-create` — reload restores pearl ids/titles
-- **stressed** `companion-nl-pearl-ops` — Talk→GO rename/edit/experiment/merge with artifact asserts
-- **stressed** `reef-and-studio` — Reef shelf + Studio structure readable
-- **stressed** `gauntlet-wear` — wear via runtime + reload persist + cap
-- **stressed** `organize-merge-synthesize` — runtime probe + NL merge already covered
-- **stressed** `evaluate-output` — evaluateWithGauntlet must not fake success
-- **stressed** `destructive-confirm` — clear → Accept/Reject hit-test in chat
-- **stressed** `navigation-survival` — chat + pearl ids survive nav
-- **stressed** `narrow-390` — GO hit-test + chat visible at 390px
-- **stressed** `drag-move` — pointer drag must not clone pearl
-- **stressed** `keyboard` — Escape collapse + chat survives
-- **stressed** `role-pearl-superpowers` — createRolePearl → M→F→L + optional wear + persist
-- **stressed** `encode-conversation-automation` — encodeConversationAsPearl + openEncodeAnything
-- **stressed** `remix-counter-nest-split` — createCounterPearl + nest + split real effects
-- **stressed** `generation-honesty` — transformMaterial / generation must not fake live candidates
-- **stressed** `output-frame-ui` — Open Output Frame → banner → Escape closes
-- **stressed** `packages-tasks-routes` —  /packages and /tasks reachable without crash
-- **stressed** `zero-demand-empty-recovery` — fresh welcome without mode jargon; empty next step
-- **stressed** `remix-compose-typed-layers` — composePearlCognitiveLayers preview honesty
-- **stressed** `studio-version-checkpoint-restore` — snapshotPearlVersion → browse → restore
-- **stressed** `shell-library-toolbox-settings-install` — README shell routes load without crash
-- **skipped** `live-mic` — SKIP_GAPS=1
-- **skipped** `live-ai-gateway` — SKIP_GAPS=1
-- **skipped** `extension-sidepanel-360` — SKIP_GAPS=1
-- **skipped** `account-sync-import` — SKIP_GAPS=1
-- **skipped** `live-generation-taste-ui` — SKIP_GAPS=1
-- **skipped** `cognitive-packages-signed-install` — SKIP_GAPS=1
-- **skipped** `privacy-vault-encryption-ux` — SKIP_GAPS=1
-- **skipped** `extension-site-adapters` — SKIP_GAPS=1
-- **skipped** `shareability-export-import` — SKIP_GAPS=1
-- **skipped** `workflow-end-to-end` — SKIP_GAPS=1
-- **stressed** `aesthetic-human-review` — loaded 52 frame critiques from audit-shots/pearl-comprehensive-stress-2026-07-23/aesthetic-reviews.json
+- Journey pass criteria exclude `__lensOrbRuntime.execute`
+- Intent-bound titles (no generic `New pearl ·` for topic create)
+- World-visible shelf cards
+- Confusion budget ≤1
+- Aesthetic requires human PNG Read

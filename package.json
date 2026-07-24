@@ -32,6 +32,7 @@
     "graph:generate": "node scripts/companion-capability-graph-gate.mjs --update",
     "graph:check": "node scripts/companion-capability-graph-gate.mjs",
     "stress:pearl": "node scripts/pearl-core-stress.mjs",
+    "stress:clueless": "node scripts/pearl-clueless-stress.mjs",
     "stress:gaps": "node scripts/pearl-gap-stress.mjs",
     "stress:voice": "node scripts/pearl-gap-stress.mjs --suite=voice",
     "stress:shareability": "node scripts/pearl-gap-stress.mjs --suite=shareability",

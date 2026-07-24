@@ -17,6 +17,8 @@ test("extracts firm and matches the S32 investor utterance", () => {
   assert.equal(extractInvestorFirm(S32), "S32");
   assert.equal(looksLikeInvestorRolePearl(S32), true);
   assert.equal(looksLikeInvestorRolePearl("make a pearl about lunch"), false);
+  assert.equal(looksLikeInvestorRolePearl("make a pearl about my investor notes"), false);
+  assert.equal(looksLikeInvestorRolePearl("make me an investor pearl"), true);
 });
 
 test("deterministic scaffold materializes memo, diligence, investor lens, and moves", () => {

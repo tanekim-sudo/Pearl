@@ -495,7 +495,8 @@ function LibraryHome({
       <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · where pearls live"}</span>
       <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion</button>
     </header>
-    {(firstUse || emptyLibrary || (isRoot && !continuationCount && !route.handoff)) && <section className="orb-home-intro orb-reef-kicker" data-testid="reef-next-step">
+    {/* Intro only when the shelf is empty — never stack a hero “Reef” title over pearl names. */}
+    {(firstUse || emptyLibrary) && !reefPearls.length && <section className="orb-home-intro orb-reef-kicker" data-testid="reef-next-step">
       <div className="orb-kicker">Home of pearls</div>
       <h1>{title}</h1>
       <p>Pearls form, play, and expand here. Talk to your Companion — it does the rest.</p>
@@ -531,43 +532,38 @@ function LibraryHome({
           ? <button className="orb-secondary" type="button" onClick={() => onView("library")}>Open saved library</button>
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
     </section>}
-    <section className="orb-recent-orbit orb-reef" aria-label="Pearl canvas">
+    <section className={`orb-recent-orbit orb-reef${reefPearls.length ? " orb-reef-populated" : ""}`} aria-label="Pearl canvas">
       <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Your pearls — open one, or ask Companion to wear it" : "Empty canvas — ask Companion to make a pearl"}</p>
-      {reefPearls.map((pearl, index) => {
-        // Deterministic grid — do not cycle 6 fixed slots (merge/synth made labels stack).
-        const col = index % 4;
-        const row = Math.floor(index / 4);
-        return <button
-          key={pearl.id}
+      <div className="orb-reef-shelf" data-testid="reef-shelf">
+        {reefPearls.map((pearl) => (
+          <button
+            key={pearl.id}
+            type="button"
+            className="reef-pearl"
+            data-reef-pearl={pearl.id}
+            onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              onOpenStudio?.(pearl);
+            }}
+            title={`${pearl.name} — open this pearl`}
+            aria-label={`${pearl.name}, pearl`}
+          >
+            <i className="reef-pearl-dot" aria-hidden="true" />
+            <b>{pearl.name}</b>
+            <small>Open to explore</small>
+          </button>
+        ))}
+        {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
+          key={scene.id}
           type="button"
-          className="recent-scene reef-pearl"
-          data-reef-pearl={pearl.id}
-          style={{
-            left: `${10 + col * 20}vw`,
-            top: `${16 + row * 14}vh`,
-            right: "auto",
-            bottom: "auto",
-          }}
-          onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
-          onDoubleClick={(event) => {
-            event.preventDefault();
-            onOpenStudio?.(pearl);
-          }}
-          title={`${pearl.name} — open this pearl`}
+          className={`recent-scene scene-${String.fromCharCode(97 + (index % 3))}`}
+          onClick={() => navigate(`/scene/${encodeURIComponent(scene.id)}`)}
         >
-          <i className="reef-pearl-dot" aria-hidden="true" />
-          <b>{pearl.name}</b>
-          <small>Pearl · open to explore</small>
-        </button>;
-      })}
-      {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
-        key={scene.id}
-        className={`recent-scene scene-${String.fromCharCode(97 + (index % 3))}`}
-        onClick={() => navigate(`/scene/${encodeURIComponent(scene.id)}`)}
-      >
-        <i />{scene.name || "Untitled workspace"}
-        <small>Workspace · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items</small>
-      </button>)}
+          <i />{scene.name || "Untitled workspace"}
+          <small>Workspace · {(scene.items?.length || 0) + (scene.nodes?.length || 0)} items</small>
+        </button>)}
+      </div>
     </section>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} from Pearl`}>
       <div>
@@ -1418,16 +1414,34 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openToolbox", effectId: `toolbox:${Date.now()}` }));
       return;
     }
-    if (/^(?:open (?:account|settings|privacy|sync)|show (?:account|settings|privacy))$/i.test(recorded.entry.normalized)) {
+    if (/^(?:open (?:account|settings|privacy|sync)|show (?:account|settings|privacy)|open settings)$/i.test(recorded.entry.normalized)) {
       openEmittedView("settings", { panel: "account" });
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openSettings" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openSettings", effectId: `settings:${Date.now()}` }));
       return;
     }
-    if (/^(?:encode(?: anything)?|make (?:this|it) a pearl|import (?:this |my )?(?:chat|transcript|pdf|docs?|material)|compile (?:this )?(?:automation|prompt))$/i.test(recorded.entry.normalized)) {
+    if (/^(?:open(?: the)? )?encode(?: anything)?$|^(?:make (?:this|it) a pearl|import (?:this |my )?(?:chat|transcript|pdf|docs?|material)|compile (?:this )?(?:automation|prompt))$/i.test(recorded.entry.normalized)) {
       openEmittedView("encode");
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openEncodeAnything" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openEncodeAnything", effectId: `encode:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:open|show)(?: the)? (?:output )?frame$|^(?:open|show)(?: the)? output frame$/i.test(recorded.entry.normalized)) {
+      if (route.kind !== "stage") {
+        const workspace = loadSceneWorkspace();
+        const scene = (workspace.scenes || []).find((entry) => (entry.semanticOrbs || []).some((orb) => !orb.archived))
+          || (workspace.scenes || [])[0];
+        if (scene?.id) navigate(`/scene/${scene.id}`);
+      }
+      setOutputFrameOpen(true);
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openOutputFrame" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openOutputFrame", effectId: `output-frame:${Date.now()}` }));
+      return;
+    }
+    if (/^(?:open|show|browse)(?: the)? packages?$/i.test(recorded.entry.normalized)) {
+      navigate("/packages");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPackageRegistry" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openPackageRegistry", effectId: `packages:${Date.now()}` }));
       return;
     }
     const remixIntent = parsePearlRemixCommand(recorded.entry.raw || recorded.entry.normalized);
@@ -1664,6 +1678,54 @@ export default function OrbUniverseShell({ StageComponent }) {
         setOrb(transitionOrb(next, "blocked", {
           taskId: recorded.entry.id,
           evidence: { boundary: error?.message || "Could not create counter pearl." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "openPearlStudio" && companionSurfaceOk) {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPearlStudio" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = resolveRemixScene(workspace);
+        const pearlId = scene?.activeSemanticOrbId
+          || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id
+          || reefPearlCatalog(workspace)[0]?.id;
+        if (!pearlId) throw new Error("Create a pearl first, then ask to open Studio.");
+        try { await window.__pearlPrivacy?.flush?.(); } catch { /* best effort */ }
+        window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId } }));
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "openPearlStudio",
+          effectId: `studio:${pearlId}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not open Pearl Studio." },
+        }));
+      }
+      return;
+    }
+    if (remixIntent?.verb === "splitSemanticOrb" && companionSurfaceOk) {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "splitSemanticOrb" });
+      setOrb(next);
+      try {
+        const workspace = loadSceneWorkspace();
+        const scene = resolveRemixScene(workspace);
+        const activeId = scene?.activeSemanticOrbId
+          || (scene?.semanticOrbs || []).find((orb) => !orb.archived)?.id;
+        if (!scene || !activeId) throw new Error("Create or select a pearl first, then say “split this pearl”.");
+        await applySemanticOrbCommand("splitSemanticOrb", { id: activeId, sceneId: scene.id });
+        setOrb(transitionOrb(orbRef.current || next, "completed", {
+          taskId: recorded.entry.id,
+          commandId: "splitSemanticOrb",
+          effectId: `split:${activeId}:${Date.now()}`,
+        }));
+      } catch (error) {
+        setOrb(transitionOrb(next, "blocked", {
+          taskId: recorded.entry.id,
+          evidence: { boundary: error?.message || "Could not split the pearl." },
         }));
       }
       return;

@@ -57,12 +57,28 @@ export function looksLikeInvestorRolePearl(text) {
   if (!value) return false;
   const investor = /\binvestor\b/i.test(value) || /\binvest(?:ing|ment)?\b/i.test(value);
   const pearl = /\bpearl\b/i.test(value) || /\bresearch\b/i.test(value);
-  const memo = /\binvestment\s+memo\b/i.test(value) || /\bmemo\s+function\b/i.test(value);
+  const memo = /\binvestment\s+memo\b/i.test(value) || /\bmemo\s+function\b/i.test(value) || /\bmemo\b/i.test(value);
   const diligence = /\bdiligence\b/i.test(value);
   const lens = /\blens\b/i.test(value) || /\bas an investor\b/i.test(value);
   if (investor && pearl && memo && diligence) return true;
   if (investor && pearl && (memo || diligence) && lens) return true;
   if (investor && /\b(?:make|create|build|research)\b/i.test(value) && memo && diligence) return true;
+  // Novice role ask — not "make a pearl about my investor notes" (topic create).
+  if (
+    /\binvestor pearl\b/i.test(value)
+    && /\b(?:make|create|build|want|need|give)\b/i.test(value)
+    && !/\babout\b/i.test(value)
+  ) {
+    return true;
+  }
+  if (
+    /\b(?:make|create|build|give)\s+me\b/i.test(value)
+    && investor
+    && pearl
+    && !/\babout\b/i.test(value)
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -73,7 +89,10 @@ export function buildInvestorRolePearlScaffold(options = {}) {
   const utterance = bounded(options.utterance || options.text || "", 2_000);
   const firm = bounded(options.firm || extractInvestorFirm(utterance) || "investor", 64);
   const role = bounded(options.role || (firm === "investor" ? "investor" : `investor at ${firm}`), 120);
-  const pearlName = bounded(options.name || `${firm} investor pearl`, 80);
+  const pearlName = bounded(
+    options.name || (firm === "investor" ? "Investor pearl" : `${firm} investor pearl`),
+    80,
+  );
   const now = options.now || Date.now();
   const idPrefix = options.idPrefix || `role-pearl:${firm.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 

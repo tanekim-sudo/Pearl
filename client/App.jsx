@@ -17779,7 +17779,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       })();
       const step = { ...remixIntent, args: { ...remixIntent.args } };
       if (step.args.id === "active" && activeOrbId) step.args.id = activeOrbId;
-      if (step.args.sceneId == null || step.args.sceneId === "") step.args.sceneId = sceneId;
+      // Only scene-scoped remix verbs accept sceneId — wear/remove/list/openStudio reject it.
+      const sceneScoped = /^(?:merge|compose|synthesize|split|duplicate|nest|unnest|createCounter|organize|createSemantic|activateSemantic|moveSemantic|renameSemantic)/i.test(step.verb)
+        || /SemanticOrb|organizePearl|createCounterPearl/i.test(step.verb);
+      if (sceneScoped && (step.args.sceneId == null || step.args.sceneId === "")) {
+        step.args.sceneId = sceneId;
+      } else if (!sceneScoped && "sceneId" in step.args) {
+        delete step.args.sceneId;
+      }
       if (Array.isArray(step.args.ids) && step.args.ids.length === 0) {
         const selectedOrbIds = highlightSelectionRef.current.length ? highlightSelectionRef.current : [];
         const wornIds = loadGauntletState().pearlIds || [];

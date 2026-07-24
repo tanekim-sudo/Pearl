@@ -226,8 +226,21 @@ export function parsePearlEditCommand(text) {
     };
   }
 
+  // Novice: "edit it to add budget concerns" / "edit it: add budget concerns"
+  const editItAdd = value.match(
+    /^(?:edit|update|revise|change)\s+(?:it|this|that)\s+(?:to\s+)?(?:add|append|include)\s+(.+)$/i,
+  );
+  if (editItAdd?.[1]?.trim()) {
+    return {
+      verb: "addSemanticOrbContext",
+      args: { text: editItAdd[1].trim() },
+    };
+  }
+
   const addNotes = value.match(
     /^(?:add|append)\s+(?:to\s+)?(?:this |that |the )?pearl\s*(?:to|:)?\s*(.+)$/i,
+  ) || value.match(
+    /^(?:add|append)\s+(.+?)\s+to\s+(?:this |that |the )?(?:active |current )?pearl$/i,
   );
   if (addNotes?.[1]?.trim()) {
     return {
@@ -318,6 +331,9 @@ export function parsePearlRemixCommand(text) {
   if (
     /\bmerge\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+(?:pearls?|orbs?)\b/i.test(value)
     || /^merge (?:them|these|the selected(?: (?:pearls?|orbs?)?)?)$/i.test(value)
+    || /\bcombine\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+(?:pearls?|orbs?)\b/i.test(value)
+    || /^combine (?:them|these|the selected(?: (?:pearls?|orbs?)?)?)$/i.test(value)
+    || /\bput\b(?:\s+these|\s+the)?(?:\s+\w+)?\s+(?:pearls?|orbs?)\s+together\b/i.test(value)
   ) {
     return { verb: "mergeSemanticOrbs", args: { ids: [], sceneId: "" } };
   }
@@ -350,11 +366,17 @@ export function parsePearlRemixCommand(text) {
     return { verb: "createCounterPearl", args: { instruction: value } };
   }
   // "wear Friday standup", "wear the Alpha pearl", "load X into the gauntlet"
-  if ((/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
-    || (/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+  // Do NOT steal "add notes to this pearl" — that is context edit, not wear.
+  const looksLikeAddContext = /^(?:add|append)\b.+\bto\b.+\bpearl\b/i.test(value)
+    || /^(?:add|append)\s+to\s+(?:this|that|the)\s+pearl\b/i.test(value);
+  if (!looksLikeAddContext && (
+    (/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
+    || (/\b(?:wear|put on|use|activate|load)\b/i.test(value) && /\bpearl\b/i.test(value)
       && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
-    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
-    const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+    || (/\badd\b/i.test(value) && /\bpearl\b/i.test(value) && /\b(?:gauntlet|working memory|socket)\b/i.test(value))
+    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))
+  )) {
+    const named = value.match(/\b(?:wear|put on|use|activate|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
       || value.match(/^(?:wear|put on|load)\s+(?:the\s+)?(.+?)(?:\s+into(?:\s+the)?\s+gauntlet)?$/i)
       || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
     const rawName = named?.[1]?.replace(/[.?!"']/g, "").trim();
@@ -383,6 +405,8 @@ export function parsePearlRemixCommand(text) {
     || /\b(?:pearl|orb)\b.+\bexperiment\b/i.test(value)
     || /\bremix\b.+\b(?:this |that |the )?(?:pearl|orb)\b/i.test(value)
     || /^(?:experiment|remix)(?:\s+with(?:\s+(?:this|that|it))?)?$/i.test(value)
+    || /\btry something\b.+\b(?:pearl|orb|this|that|it)\b/i.test(value)
+    || /^(?:try something|try an experiment)(?:\s+with(?:\s+(?:this|that|it))?)?$/i.test(value)
   ) {
     return { verb: "createCounterPearl", args: { instruction: value } };
   }
@@ -437,17 +461,22 @@ export function parsePearlRemixCommand(text) {
   if (/\breorder\b.+\bgauntlet\b/i.test(value)) {
     return { verb: "rearrangeGauntlet", args: { pearlIds: [] } };
   }
-  if (/\bsplit\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value) || /^split (?:this|it)$/i.test(value)) {
+  if (/\bsplit\b(?:\s+(?:this|the|that))?(?:\s+\w+)?\s+(?:pearl|orb)\b/i.test(value) || /^split (?:this|it)$/i.test(value)) {
     return { verb: "splitSemanticOrb", args: { id: "active", sceneId: "" } };
   }
-  if (/\b(?:nest|put)\b.+\binside\b.+\borb\b/i.test(value)) {
+  if (/\b(?:nest|put)\b.+\binside\b.+\b(?:pearl|orb)\b/i.test(value)) {
     return { verb: "nestSemanticOrb", args: { childId: "selection", parentId: "target" } };
   }
   if (/\bunnest\b|\btake .+ (?:back )?out\b/i.test(value)) {
     return { verb: "unnestSemanticOrb", args: { id: "active" } };
   }
-  if (/\bduplicate\b(?:\s+(?:this|the))?(?:\s+\w+)?\s+orb\b/i.test(value)) {
+  if (/\bduplicate\b(?:\s+(?:this|the|that))?(?:\s+\w+)?\s+(?:pearl|orb)\b/i.test(value)) {
     return { verb: "duplicateSemanticOrb", args: { id: "active" } };
+  }
+  if (/\b(?:open|show|inspect)\b.+\b(?:pearl\s+)?studio\b/i.test(value)
+    || /^(?:open|show)\s+studio(?:\s+for(?:\s+(?:this|that|the))?(?:\s+pearl)?)?$/i.test(value)
+    || /^open this pearl in studio$/i.test(value)) {
+    return { verb: "openPearlStudio", args: {} };
   }
   const lens = value.match(/\bapply\b(?:\s+my)?\s+(.+?)\s+lens\b(?:\s+to\b(?:\s+(?:this|the))?(?:\s+(\w+))?\s+orb)?/i);
   if (lens) {
@@ -676,11 +705,17 @@ export function parseTranscriptLearningCommand(text) {
     return { verb: "listWornPearls", args: {} };
   }
   // "wear Friday standup", "wear the Alpha pearl", "load X into the gauntlet"
-  if ((/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
-    || (/\b(?:wear|put on|use|activate|add|load)\b/i.test(value) && /\bpearl\b/i.test(value)
+  // Do NOT steal "add notes to this pearl" — that is context edit, not wear.
+  const looksLikeAddContext = /^(?:add|append)\b.+\bto\b.+\bpearl\b/i.test(value)
+    || /^(?:add|append)\s+to\s+(?:this|that|the)\s+pearl\b/i.test(value);
+  if (!looksLikeAddContext && (
+    (/^(?:wear|put on|load)\b/i.test(value) && !/\b(?:chat|conversation|transcript|function|hat|coat|shoes)\b/i.test(value))
+    || (/\b(?:wear|put on|use|activate|load)\b/i.test(value) && /\bpearl\b/i.test(value)
       && !/\b(?:chat|conversation|transcript|function)\b/i.test(value))
-    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))) {
-    const named = value.match(/\b(?:wear|put on|use|activate|add|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
+    || (/\badd\b/i.test(value) && /\bpearl\b/i.test(value) && /\b(?:gauntlet|working memory|socket)\b/i.test(value))
+    || (/\b(?:load|wear|put)\b/i.test(value) && /\b(?:gauntlet|working memory)\b/i.test(value))
+  )) {
+    const named = value.match(/\b(?:wear|put on|use|activate|load)\s+(?:the\s+)?(.+?)\s+pearl\b/i)
       || value.match(/^(?:wear|put on|load)\s+(?:the\s+)?(.+?)(?:\s+into(?:\s+the)?\s+gauntlet)?$/i)
       || value.match(/\bpearl\s+(?:named|called)\s+(.+)$/i);
     const rawName = named?.[1]?.replace(/[.?!"']/g, "").trim();
