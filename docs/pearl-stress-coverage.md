@@ -5,8 +5,8 @@ Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)
 Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)
 Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`
 Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/`
-Last clueless run: 0cc2141 · 2026-07-24T19:21:25.243Z
-Clueless score: 49/49 · P0=0 P1=0 (skips not counted as passes)
+Last clueless run: 0e2c869 · 2026-07-24T21:16:02.286Z
+Clueless score: 55/57 · P0=2 P1=0 (skips not counted as passes)
 
 ## Showcase flows
 
@@ -25,6 +25,9 @@ Clueless score: 49/49 · P0=0 P1=0 (skips not counted as passes)
 | `sf-reload-findable` | stressed | reload keeps titled pearl findable |
 | `sf-organize-studio` | stressed | organize + open studio |
 | `sf-role-investor` | stressed | make me an investor pearl |
+| `sf-click-studio-function-moves` | stressed | real hit-test click pearl → Studio function-as-moves |
+| `sf-studio-reorder-moves` | stressed | drag reorder move sequence persists |
+| `sf-companion-nl-reorder-moves` | stressed | Talk→GO natural language reorder Function moves |
 | `sf-encode-open` | stressed | encode anything |
 | `sf-version-loop` | stressed | snapshot → history → restore |
 | `sf-evaluate-gauntlet` | stressed | evaluate honesty |
@@ -38,10 +41,11 @@ Clueless score: 49/49 · P0=0 P1=0 (skips not counted as passes)
 | `sf-share-handoff` | residual | unsigned/live OAuth handoff needs credentials/extension |
 | `sf-aesthetic-veto` | stressed | primary frames logged for human Read |
 
-## Stressed: 24 · Residual/skipped: 1
+## Stressed: 27 · Residual/skipped: 1
 
 ## Residuals (honest)
 
+- Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
 - SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 
 ## Anti-lie

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   decomposeFunctionMove,
   orderedMovesFromFunction,
@@ -10,11 +10,19 @@ import {
  * Load-bearing Studio interior: each Function is an ordered list of Moves.
  * Drag to rearrange; decompose expands a compound move into sub-moves.
  */
-export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onStatus }) {
+export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onStatus, onOpenOriginalEditor }) {
   const summaries = useMemo(() => summarizePearlFunctions(entity || {}), [entity]);
   const lenses = entity?.lenses || [];
   const [drag, setDrag] = useState(null);
   const [expandedId, setExpandedId] = useState(() => summaries[0]?.id || null);
+
+  // Entity can hydrate after first paint (Studio remount / Companion flush).
+  useEffect(() => {
+    if (!summaries.length) return;
+    if (!expandedId || !summaries.some((entry) => entry.id === expandedId)) {
+      setExpandedId(summaries[0].id);
+    }
+  }, [summaries, expandedId]);
 
   if (!summaries.length) {
     return (
@@ -37,7 +45,7 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
       onStatus?.(result.reason);
       return;
     }
-    await onPatchFunction?.(fnId, result.function);
+    await onPatchFunction?.(fnId, { operation: "reorder", fromIndex, toIndex, function: result.function });
     onStatus?.(`Reordered moves in “${fn.name || fn.identity?.name || "Function"}”`);
   }
 
@@ -50,17 +58,17 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
       onStatus?.(result.reason);
       return;
     }
-    await onPatchFunction?.(fnId, result.function);
+    await onPatchFunction?.(fnId, { operation: "decompose", moveIndex, function: result.function });
     onStatus?.(`Decomposed into ${result.moves.length} moves`);
   }
 
   return (
     <section className="pearl-fn-moves" data-testid="studio-function-moves" aria-label="Functions as ordered Moves">
       <style>{studioCss}</style>
-      <header className="pearl-fn-moves__guide">
-        <b>Functions = ordered Moves</b>
-        <p>Each Function is a sequence you can drag to rearrange or decompose into smaller Moves. Lenses hold taste/context around that structure.</p>
-      </header>
+        <header className="pearl-fn-moves__guide">
+          <b>Functions = ordered Moves</b>
+          <p>Each Function is a sequence you can drag to rearrange or decompose into smaller Moves. Open the original Function editor for full drag-reorder, nest, and lineage. Lenses hold taste/context around that structure.</p>
+        </header>
 
       {summaries.map((summary) => {
         const open = expandedId === summary.id;
@@ -83,6 +91,16 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
               <strong>{summary.name}</strong>
               <small>{summary.moveCount} ordered Move{summary.moveCount === 1 ? "" : "s"}</small>
             </button>
+            {open && onOpenOriginalEditor && (
+              <button
+                type="button"
+                className="pearl-fn-moves__open-editor"
+                data-testid="studio-open-lens-tree-editor"
+                onClick={() => onOpenOriginalEditor(summary.id)}
+              >
+                Open original Function editor
+              </button>
+            )}
             {open && (
               <ol className="pearl-fn-moves__list" data-testid="studio-move-sequence" aria-label={`${summary.name} moves in order`}>
                 {moves.map((move, index) => (
@@ -151,6 +169,8 @@ const studioCss = `
   .pearl-fn-moves__fn-label{grid-column:1/-1;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
   .pearl-fn-moves__fn-head strong{font:550 18px/1.25 inherit}
   .pearl-fn-moves__fn-head small{opacity:.62;font-size:12px}
+  .pearl-fn-moves__open-editor{margin:10px 0 0;padding:0;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent);background:transparent;color:inherit;font:12px/1.3 inherit;cursor:pointer;opacity:.8;width:fit-content}
+  .pearl-fn-moves__open-editor:hover{opacity:1}
   .pearl-fn-moves__list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
   .pearl-fn-moves__move{display:grid;grid-template-columns:18px 22px minmax(0,1fr) auto;gap:8px;align-items:start;padding:10px 8px;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:10px;background:color-mix(in srgb,Canvas 92%,transparent);cursor:grab}
   .pearl-fn-moves__move:active{cursor:grabbing}

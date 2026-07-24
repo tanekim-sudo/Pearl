@@ -30,9 +30,9 @@
   "counts": {
     "requirements": 29,
     "featureContracts": 65,
-    "domainCommands": 119,
-    "companionCapabilities": 223,
-    "extensionEntries": 89
+    "domainCommands": 121,
+    "companionCapabilities": 227,
+    "extensionEntries": 91
   },
   "requirements": [
     {
@@ -764,6 +764,8 @@
       "domainCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -796,6 +798,7 @@
         "client/lib/secure-local-storage.js",
         "extension/src/platform/secure-storage.js",
         "client/components/PearlStudioView.jsx",
+        "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
         "extension/src/content/result-pearls.js",
@@ -809,6 +812,8 @@
         "unlockLocalPearls",
         "deleteLocalData",
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -829,6 +834,8 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
         "presentExternalResultAsChat",
@@ -850,6 +857,8 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "expandExternalResultPearl",
         "collapseExternalResultPearl",
         "presentExternalResultAsChat",
@@ -867,6 +876,7 @@
         "passphrase-wrapped profile keys",
         "profile-scoped session lifecycle",
         "pearlEntities.v1",
+        "pearlEntities.v1.functions.moves.order",
         "pearlStudioRefs.v1",
         "one-time profile/tab/origin-bound handoffs",
         "resultPearls",
@@ -878,8 +888,10 @@
         "shared/local-privacy-vault.test.js",
         "extension/tests/session-isolation.test.js",
         "shared/pearl-studio.test.js",
+        "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/result-pearls.test.js",
         "shared/secure-handoff.test.js",
         "extension/scripts/orb-audit.mjs",
@@ -1257,6 +1269,8 @@
       "domainCommands": [
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -1280,6 +1294,7 @@
       ],
       "webEntries": [
         "client/components/PearlStudioView.jsx",
+        "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
         "client/components/PhysicalPearl.jsx",
@@ -1290,6 +1305,8 @@
       ],
       "companionCapabilities": [
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -1303,6 +1320,8 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "openExternalArtifact",
         "createExternalSemanticOrb"
       ],
@@ -1310,19 +1329,24 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "openExternalArtifact",
         "createExternalSemanticOrb"
       ],
       "persistenceAndMigrations": [
         "pearlEntities.v1",
+        "pearlEntities.v1.functions.moves.order",
         "pearlStudioRefs.v1",
         "one-time profile/tab/origin-bound handoffs",
         "lens.scenes.v4"
       ],
       "automatedTests": [
         "shared/pearl-studio.test.js",
+        "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/pearl-entity.test.js",
         "shared/orb-universe.test.js",
         "shared/drop-intent-resolver.test.js"
@@ -2175,6 +2199,8 @@
         "cancelPearlCognitivePlayback",
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -2188,6 +2214,7 @@
         "client/components/CognitiveLayerStudio.jsx",
         "client/components/PearlStudioView.jsx",
         "extension/src/result/main.js",
+        "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/LensGrammarPanels.jsx"
       ],
       "companionCapabilities": [
@@ -2202,6 +2229,8 @@
         "stepPearlFunction",
         "cancelPearlFunction",
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -2224,6 +2253,8 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "queueExternalAction"
       ],
       "extensionEntries": [
@@ -2240,11 +2271,14 @@
         "executeExternalPearlAction",
         "openExternalPearlStudio",
         "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove",
         "queueExternalAction"
       ],
       "persistenceAndMigrations": [
         "pearlEntities.v1.cognition",
         "pearlEntities.v1",
+        "pearlEntities.v1.functions.moves.order",
         "pearlStudioRefs.v1",
         "one-time profile/tab/origin-bound handoffs",
         "lens.board.operators.v2",
@@ -2253,8 +2287,10 @@
       "automatedTests": [
         "shared/pearl-cognitive-layers.test.js",
         "shared/pearl-studio.test.js",
+        "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js",
+        "client/lib/companion-intent.test.js",
         "shared/composition-algebra.test.js",
         "shared/material.test.js"
       ],
@@ -2676,6 +2712,8 @@
         "cancelOutputPlacement",
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -2692,6 +2730,7 @@
         "extension/src/sidepanel/main.jsx",
         "client/App.jsx",
         "client/components/PearlStudioView.jsx",
+        "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx"
       ],
       "companionCapabilities": [
@@ -2701,6 +2740,8 @@
         "cancelResultPlacement",
         "indicateOutputWithCursor",
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -2730,7 +2771,9 @@
         "cancelExternalResultPlacement",
         "toggleExternalOrbCursor",
         "executeExternalPearlAction",
-        "openExternalPearlStudio"
+        "openExternalPearlStudio",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove"
       ],
       "extensionEntries": [
         "showExternalLibraryImport",
@@ -2755,7 +2798,9 @@
         "cancelExternalResultPlacement",
         "toggleExternalOrbCursor",
         "executeExternalPearlAction",
-        "openExternalPearlStudio"
+        "openExternalPearlStudio",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove"
       ],
       "persistenceAndMigrations": [
         "pearlPageCanvases",
@@ -2766,6 +2811,7 @@
         "pearlEntities.v1.outputRouting",
         "resultPearls.routing",
         "pearlEntities.v1",
+        "pearlEntities.v1.functions.moves.order",
         "pearlStudioRefs.v1"
       ],
       "automatedTests": [
@@ -2778,6 +2824,7 @@
         "shared/output-routing.test.js",
         "client/lib/companion-intent.test.js",
         "shared/pearl-studio.test.js",
+        "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js"
       ],
@@ -2937,6 +2984,8 @@
         "recordTasteFeedback",
         "openPearlStudio",
         "editPearlEntity",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
         "undoPearlEntityEdit",
         "redoPearlEntityEdit",
@@ -2959,6 +3008,7 @@
         "extension/src/sidepanel/main.jsx:extension-pearl-halo",
         "extension/src/content/bridge.js:Tell Pearl your goal",
         "client/components/PearlStudioView.jsx",
+        "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx"
       ],
       "companionCapabilities": [
@@ -2972,6 +3022,8 @@
         "redoWorkspace",
         "exportWorkspace",
         "openPearlStudio",
+        "reorderPearlFunctionMoves",
+        "decomposePearlFunctionMove",
         "browsePearlHistory",
         "snapshotPearlVersion",
         "labelPearlVersion",
@@ -2988,7 +3040,9 @@
         "browseExternalPackages",
         "openExternalBeforeAfter",
         "openExternalPearlStudio",
-        "openExternalResultPearlTab"
+        "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove"
       ],
       "extensionEntries": [
         "executeExternalPearlAction",
@@ -3001,7 +3055,9 @@
         "browseExternalPackages",
         "openExternalBeforeAfter",
         "openExternalPearlStudio",
-        "openExternalResultPearlTab"
+        "openExternalResultPearlTab",
+        "reorderExternalPearlFunctionMoves",
+        "decomposeExternalPearlFunctionMove"
       ],
       "persistenceAndMigrations": [
         "physicalPearl.renderer.v2",
@@ -3012,6 +3068,7 @@
         "generationPlan",
         "semanticOrbs",
         "pearlEntities.v1",
+        "pearlEntities.v1.functions.moves.order",
         "pearlStudioRefs.v1",
         "one-time profile/tab/origin-bound handoffs"
       ],
@@ -3023,7 +3080,9 @@
         "shared/orb-universe.test.js",
         "extension/tests/core.test.js",
         "shared/pearl-studio.test.js",
-        "shared/pearl-version-history.test.js"
+        "shared/pearl-function-moves.test.js",
+        "shared/pearl-version-history.test.js",
+        "client/lib/companion-intent.test.js"
       ],
       "browserEvidence": [
         "audit-shots/audit-truth-remediation-2026-07/web/web-results.json",
@@ -3038,5 +3097,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-23T23:50:36.724Z"
+  "generatedAt": "2026-07-24T20:54:54.324Z"
 }

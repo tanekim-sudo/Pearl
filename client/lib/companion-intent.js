@@ -325,7 +325,133 @@ export function parseAutomationLoopCommand(text) {
 }
 
 /** High-confidence remix / recombination intents for pearls and orbs. */
+/**
+ * Deterministic Studio Function-move reorder / decompose (no planner).
+ * Same domain handlers as drag + Decompose in Pearl Studio.
+ */
+export function parsePearlFunctionMovesCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+
+  const functionName = (() => {
+    const named = value.match(/\b(?:in|for|inside|within)\s+(?:the\s+)?(.+?)\s+function\b/i)
+      || value.match(/\bfunction\s+(?:called|named)\s+["“]?(.+?)["”]?(?:\s|$)/i);
+    const raw = named?.[1]?.replace(/[.?!"“”']/g, "").trim();
+    if (!raw || /^(?:this|that|the|active|current)$/i.test(raw)) return undefined;
+    return raw;
+  })();
+
+  const decompose = value.match(
+    /^(?:decompose|break\s+(?:down|apart)|expand|split)\s+(?:the\s+)?(.+?)\s+move(?:\s+into\s+(?:smaller\s+)?moves?)?$/i,
+  ) || value.match(
+    /^(?:decompose|break\s+(?:down|apart)|expand)\s+(?:this|that|the)?\s*(?:first|second|third|last|\d+(?:st|nd|rd|th)?)\s+move$/i,
+  ) || value.match(
+    /^(?:break|decompose|expand)\s+(?:this|that|the)?\s*(?:step|move)\s+into\s+(?:smaller\s+)?moves?$/i,
+  ) || (
+    /\b(?:decompose|break\s+(?:down|apart)|break)\b/i.test(value)
+    && /\binto\s+(?:smaller\s+)?moves?\b/i.test(value)
+    && !/\b(?:pearl|gauntlet|orb)\b/i.test(value)
+  );
+  if (decompose) {
+    const target = (typeof decompose === "object" && decompose[1]
+      ? decompose[1]
+      : value.match(/\b(first|second|third|last|\d+(?:st|nd|rd|th)?)\b/i)?.[1]
+        || value.match(/\b(?:move|step)\s+(?:called|named)\s+["“]?(.+?)["”]?\b/i)?.[1]
+        || "first")
+      .replace(/^(?:the\s+)/i, "")
+      .trim();
+    return {
+      verb: "decomposePearlFunctionMove",
+      args: {
+        move: target || "first",
+        ...(functionName ? { functionName } : {}),
+      },
+    };
+  }
+
+  // "put the last move first" / "put recommendation first"
+  const putFirst = value.match(
+    /^(?:put|move|place)\s+(?:the\s+)?(.+?)\s+move\s+(?:to\s+)?(?:the\s+)?(first|start|top|beginning|end|last|bottom)(?:\s+position)?$/i,
+  ) || value.match(
+    /^(?:put|move|place)\s+(?:the\s+)?(.+?)\s+(?:to\s+)?(?:the\s+)?(first|start|top|beginning|end|last|bottom)(?:\s+(?:in\s+(?:the\s+)?(?:move\s+)?(?:list|sequence|order)|position))?$/i,
+  );
+  if (putFirst?.[1] && putFirst?.[2]) {
+    const from = putFirst[1].replace(/^(?:the\s+)/i, "").replace(/\s+move$/i, "").trim();
+    const to = /^(?:first|start|top|beginning)$/i.test(putFirst[2]) ? "first" : "last";
+    if (from && !/\b(?:pearl|gauntlet|orb)\b/i.test(from)) {
+      return {
+        verb: "reorderPearlFunctionMoves",
+        args: { from, to, ...(functionName ? { functionName } : {}) },
+      };
+    }
+  }
+
+  // "move the first move to the end/third/position 3"
+  const moveTo = value.match(
+    /^(?:move|put|place|reorder)\s+(?:the\s+)?(.+?)\s+move\s+to\s+(?:the\s+)?(.+?)$/i,
+  ) || value.match(
+    /^(?:move|put|place)\s+(?:the\s+)?(first|second|third|last|\d+(?:st|nd|rd|th)?)\s+(?:step|move)\s+to\s+(?:the\s+)?(.+)$/i,
+  );
+  if (moveTo?.[1] && moveTo?.[2]) {
+    const from = moveTo[1].replace(/^(?:the\s+)/i, "").replace(/\s+move$/i, "").trim();
+    let to = moveTo[2].replace(/^(?:the\s+)/i, "").replace(/\s+(?:position|spot|place|slot)$/i, "").trim();
+    if (/^(?:end|last|bottom)$/i.test(to)) to = "last";
+    if (/^(?:start|beginning|top)$/i.test(to)) to = "first";
+    if (from && to && !/\b(?:pearl|gauntlet|orb)\b/i.test(from)) {
+      return {
+        verb: "reorderPearlFunctionMoves",
+        args: { from, to, ...(functionName ? { functionName } : {}) },
+      };
+    }
+  }
+
+  // "swap the first and second moves"
+  const swap = value.match(
+    /^(?:swap|switch|exchange)\s+(?:the\s+)?(.+?)\s+(?:and|with)\s+(?:the\s+)?(.+?)\s+moves?$/i,
+  );
+  if (swap?.[1] && swap?.[2]) {
+    return {
+      verb: "reorderPearlFunctionMoves",
+      args: {
+        from: swap[1].replace(/^(?:the\s+)/i, "").trim(),
+        to: swap[2].replace(/^(?:the\s+)/i, "").trim(),
+        ...(functionName ? { functionName } : {}),
+      },
+    };
+  }
+
+  // "reorder the moves — put X first/last"
+  const reorderPut = value.match(
+    /\breorder\b.+\bmoves?\b.+\bput\s+(?:the\s+)?(.+?)\s+(first|last|end|start)\b/i,
+  ) || value.match(
+    /\bput\s+(?:the\s+)?(.+?)\s+(?:move\s+)?(first|last)\b.+\b(?:moves?|function|sequence|order)\b/i,
+  );
+  if (reorderPut?.[1] && reorderPut?.[2]) {
+    const from = reorderPut[1].replace(/^(?:the\s+)/i, "").replace(/\s+move$/i, "").trim();
+    const to = /^(?:first|start)$/i.test(reorderPut[2]) ? "first" : "last";
+    return {
+      verb: "reorderPearlFunctionMoves",
+      args: { from, to, ...(functionName ? { functionName } : {}) },
+    };
+  }
+
+  if (
+    /\breorder\b.+\b(?:moves?|steps?|sequence)\b/i.test(value)
+    || /\b(?:moves?|steps?)\b.+\b(?:reorder|rearrange)\b/i.test(value)
+  ) {
+    // Soft fallback: last → first is the common novice ask when no indices given.
+    return {
+      verb: "reorderPearlFunctionMoves",
+      args: { from: "last", to: "first", ...(functionName ? { functionName } : {}) },
+    };
+  }
+
+  return null;
+}
+
 export function parsePearlRemixCommand(text) {
+  const functionMoves = parsePearlFunctionMovesCommand(text);
+  if (functionMoves) return functionMoves;
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
   if (
@@ -1063,7 +1189,7 @@ Rules:
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
-- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, createCounterPearl for counter/opposition/foil intents, organizePearl for organize-dump / Moves→Functions→Lenses intents, mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, evaluateWithGauntlet for deck/page evaluation through worn lenses, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
+- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, createCounterPearl for counter/opposition/foil intents, organizePearl for organize-dump / Moves→Functions→Lenses intents, reorderPearlFunctionMoves / decomposePearlFunctionMove for rearranging or breaking apart Moves inside a Function (same handlers as Studio drag/Decompose), mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, evaluateWithGauntlet for deck/page evaluation through worn lenses, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.

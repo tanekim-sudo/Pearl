@@ -69,6 +69,8 @@ const COMMAND_ANIMATION = Object.freeze({
   activatePearlPageCanvas: "unfold",
   setPearlCanvasInputMode: "refract",
   openPearlStudio: "unfold",
+  reorderPearlFunctionMoves: "settle",
+  decomposePearlFunctionMove: "split",
   editPearlEntity: "stream",
   browsePearlHistory: "unfold",
   snapshotPearlVersion: "settle",

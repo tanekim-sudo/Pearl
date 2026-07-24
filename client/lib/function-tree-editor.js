@@ -3,10 +3,10 @@
 export const FN_STEP_MIME = "application/lens-fn-step";
 export const FN_PALETTE_MIME = "application/lens-fn-palette";
 
-/** @param {DraftOp[]} draftOps */
-export function buildDraftMap(draftOps) {
-  return Object.fromEntries(draftOps.map((o) => [o.id, o]));
-}
+// Canonical reorder/buildDraftMap live in shared so Pearl Studio can revive
+// the original Function-editor path without a parallel algorithm.
+export { buildDraftMap, reorderStep } from "../../shared/function-step-ops.js";
+import { buildDraftMap } from "../../shared/function-step-ops.js";
 
 /** @param {string} rootId @param {Record<string, DraftOp>} draftMap */
 export function collectSubtreeIds(rootId, draftMap) {
@@ -52,19 +52,6 @@ function insertIntoParentSteps(ops, parentId, stepId, index) {
     steps.splice(at, 0, stepId);
     return { ...o, steps };
   });
-}
-
-/** @param {DraftOp[]} draftOps @param {string} parentId @param {number} fromIndex @param {number} toIndex */
-export function reorderStep(draftOps, parentId, fromIndex, toIndex) {
-  const draftMap = buildDraftMap(draftOps);
-  const parent = draftMap[parentId];
-  if (!parent?.steps) return draftOps;
-  const steps = [...parent.steps];
-  if (fromIndex < 0 || fromIndex >= steps.length || toIndex < 0 || toIndex > steps.length) return draftOps;
-  const [moved] = steps.splice(fromIndex, 1);
-  const target = toIndex > fromIndex ? toIndex - 1 : toIndex;
-  steps.splice(target, 0, moved);
-  return draftOps.map((o) => (o.id === parentId ? { ...o, steps } : o));
 }
 
 /** @param {DraftOp[]} draftOps @param {string} stepId @param {string} newParentId @param {number} index */

@@ -12841,6 +12841,109 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId || null } }));
       return { type: "pearl-studio-open", id: a.pearlId || null, effects: ["pearl-studio-opening"] };
     },
+    reorderPearlFunctionMoves: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.pearlId, a.pearlName || a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
+      let pearlId = pearl?.id || a.pearlId || null;
+      // Prefer the Studio/canonical store pearl (has Function steps) over a bare shelf shell.
+      try {
+        const store = JSON.parse(localStorage.getItem(PEARL_STORE_KEY) || "{}");
+        if (!pearlId) pearlId = store.activePearlId || null;
+        if (pearlId && !store.entities?.[pearlId]?.functions?.length && store.activePearlId) {
+          pearlId = store.activePearlId;
+        }
+      } catch { /* ignore */ }
+      if (!pearlId) pearlId = ensureCanonicalPearlStore().pearlId;
+      const host = document.querySelector(`[data-semantic-orb-id="${pearlId}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId, semantic: "settle", durationMs: 420 },
+      }));
+      // Mutate first — opening Studio remounts the document and would abort this verb.
+      const receipt = await runCanonicalPearlAction("reorderPearlFunctionMoves", {
+        functionId: a.functionId,
+        functionName: a.functionName,
+        fromIndex: a.fromIndex,
+        toIndex: a.toIndex,
+        from: a.from,
+        to: a.to,
+        move: a.move,
+        moveName: a.moveName,
+      }, pearlId);
+      const moves = receipt?.object?.moves || [];
+      const order = moves.map((entry) => entry.name).filter(Boolean);
+      try { await window.__pearlPrivacy?.flush?.(); } catch { /* persist before any Studio remount */ }
+      try {
+        new BroadcastChannel(`pearl-studio:${pearlId}`).postMessage({
+          revision: Date.now(),
+          entityId: pearlId,
+          reason: "reorder-function-moves",
+          reload: true,
+        });
+      } catch { /* private mode */ }
+      window.dispatchEvent(new CustomEvent("lens:pearl-function-moves-changed", {
+        detail: { pearlId, moves: order, operation: "reorder" },
+      }));
+      await tk.wait(360);
+      return {
+        type: "pearl-function-moves",
+        id: pearlId,
+        object: receipt?.object,
+        effects: receipt?.effects || ["pearl-function-moves-reordered"],
+        visibleText: order.length
+          ? `Reordered moves: ${order.join(" → ")}.`
+          : "Reordered Function moves.",
+      };
+    },
+    decomposePearlFunctionMove: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.pearlId, a.pearlName || a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
+      let pearlId = pearl?.id || a.pearlId || null;
+      try {
+        const store = JSON.parse(localStorage.getItem(PEARL_STORE_KEY) || "{}");
+        if (!pearlId) pearlId = store.activePearlId || null;
+      } catch { /* ignore */ }
+      if (!pearlId) pearlId = ensureCanonicalPearlStore().pearlId;
+      const host = document.querySelector(`[data-semantic-orb-id="${pearlId}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId, semantic: "split", durationMs: 480 },
+      }));
+      const receipt = await runCanonicalPearlAction("decomposePearlFunctionMove", {
+        functionId: a.functionId,
+        functionName: a.functionName,
+        moveIndex: a.moveIndex,
+        move: a.move,
+        moveName: a.moveName,
+        from: a.from,
+      }, pearlId);
+      const moves = receipt?.object?.moves || [];
+      const order = moves.map((entry) => entry.name).filter(Boolean);
+      try { await window.__pearlPrivacy?.flush?.(); } catch { /* persist before any Studio remount */ }
+      try {
+        new BroadcastChannel(`pearl-studio:${pearlId}`).postMessage({
+          revision: Date.now(),
+          entityId: pearlId,
+          reason: "decompose-function-move",
+          reload: true,
+        });
+      } catch { /* private mode */ }
+      window.dispatchEvent(new CustomEvent("lens:pearl-function-moves-changed", {
+        detail: { pearlId, moves: order, operation: "decompose" },
+      }));
+      await tk.wait(360);
+      return {
+        type: "pearl-function-moves",
+        id: pearlId,
+        object: receipt?.object,
+        effects: receipt?.effects || ["pearl-function-move-decomposed"],
+        visibleText: order.length
+          ? `Decomposed into ${order.length} moves: ${order.slice(0, 6).join(" → ")}${order.length > 6 ? "…" : ""}.`
+          : "Decomposed the Move into smaller Moves.",
+      };
+    },
     caption: async (a, tk) => {
       tk.caption(a.text || "");
       await tk.wait(a.ms ?? 1600);

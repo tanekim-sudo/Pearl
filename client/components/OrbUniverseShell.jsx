@@ -3198,10 +3198,23 @@ export default function OrbUniverseShell({ StageComponent }) {
         candidates: orb.candidates || [],
         workers: orb.workers || [],
       };
-    const entity = createPearlEntity(active);
+    let entity = createPearlEntity(active);
     let store;
     try { store = JSON.parse(localStorage.getItem(PEARL_STORE_KEY) || "null"); } catch { store = null; }
     store ||= { version: 1, entities: {} };
+    const existing = store.entities?.[entity.id];
+    const existingHasOrderedMoves = (existing?.functions || []).some((fn) => (
+      (fn.steps || fn.graph?.nodes || fn.definition?.steps || []).length > 0
+    )) || (existing?.cognition?.layers || []).some((layer) => (
+      layer.kind === "function"
+      && (layer.definition?.steps || layer.steps || layer.definition?.graph?.nodes || []).length > 0
+    ));
+    // Preserve Companion/Studio Function-move edits when the shelf orb is stale.
+    // Prefer the canonical store entity wholesale — createPearlEntity rebuilds
+    // functions from cognition, so partial merges can drop ordered steps.
+    if (existing && (existingHasOrderedMoves || (existing.revision || 0) > (entity.revision || 0))) {
+      entity = createPearlEntity(existing);
+    }
     localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
       ...store,
       entities: { ...(store.entities || {}), [entity.id]: entity },

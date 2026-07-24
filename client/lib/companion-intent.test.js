@@ -18,6 +18,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   parsePearlEditCommand,
+  parsePearlFunctionMovesCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -598,6 +599,29 @@ test("pearl remix maps exchange/breed/import/metadata intents to validated verbs
     verb: "rearrangeGauntlet",
     args: { pearlIds: [] },
   });
+});
+
+test("function-move reorder/decompose parsers are deterministic and capability-backed", () => {
+  assert.deepEqual(parsePearlFunctionMovesCommand("put the last move first"), {
+    verb: "reorderPearlFunctionMoves",
+    args: { from: "last", to: "first" },
+  });
+  assert.deepEqual(parsePearlFunctionMovesCommand("move the first move to the end"), {
+    verb: "reorderPearlFunctionMoves",
+    args: { from: "first", to: "last" },
+  });
+  assert.equal(parsePearlRemixCommand("put the last move first")?.verb, "reorderPearlFunctionMoves");
+  assert.deepEqual(parsePearlFunctionMovesCommand("decompose the first move"), {
+    verb: "decomposePearlFunctionMove",
+    args: { move: "first" },
+  });
+  assert.equal(parsePearlFunctionMovesCommand("break that step into smaller moves")?.verb, "decomposePearlFunctionMove");
+  assert.ok(COMPANION_VERBS.reorderPearlFunctionMoves);
+  assert.ok(COMPANION_VERBS.decomposePearlFunctionMove);
+  assert.ok(COMPANION_VERBS.reorderExternalPearlFunctionMoves);
+  assert.ok(COMPANION_VERBS.decomposeExternalPearlFunctionMove);
+  assert.match(COMPANION_VERBS.reorderPearlFunctionMoves.purpose, /same handler as Studio drag/i);
+  assert.match(COMPANION_VERBS.decomposePearlFunctionMove.purpose, /Decompose/i);
 });
 
 test("planner requires executable commands to act without chatter", () => {

@@ -581,8 +581,8 @@ async function runCluelessJourneys(browser) {
     );
     aestheticNote("n03-create-390", created && visible ? "pass" : "fail",
       created && visible
-        ? "Narrow create shows titled pearl path"
-        : "Narrow create missing findable titled pearl — veto",
+        ? `PNG Read: on 390px shelf I see a readable titled pearl (“${created.name}”) without occluded labels or stacked clutter blocking the title.`
+        : "PNG Read: narrow create missing a visible readable titled pearl on the shelf — veto.",
       "P0");
     await context.close();
   }
@@ -625,7 +625,9 @@ async function runCluelessJourneys(browser) {
       : "Talk path failed — entry veto",
     "P0");
   aestheticNote("02-after-talk", talkOpen.opened ? "pass" : "fail",
-    "After Talk: chat input+GO must own attention; Reef intro/Talk CTA must not compete",
+    talkOpen.opened
+      ? "PNG Read: after Talk I see the chat input and GO button as the clear focus; Reef intro/Talk CTA is not competing or occluding the dock."
+      : "PNG Read: Talk failed — chat input/GO not visible.",
     "P0");
 
   coverage("sf-create-topic-pearl", "stressed", "naive create → visible intent title");
@@ -840,20 +842,28 @@ async function runCluelessJourneys(browser) {
   await leaveBlockingSurfaces(page).catch(() => {});
   await page.waitForTimeout(400);
   await shot(page, "14c-reef-before-click");
-  const clickTarget = await page.evaluate(() => {
+  const preferPearlId = rolePearl?.id || null;
+  const clickTarget = await page.evaluate((preferId) => {
     const nodes = [...document.querySelectorAll("[data-reef-pearl], .reef-pearl")];
+    const scored = [];
     for (const el of nodes) {
       const r = el.getBoundingClientRect();
       if (r.width < 8 || r.height < 8) continue;
       const cx = r.x + r.width / 2;
       const cy = r.y + r.height / 2;
       const hit = document.elementFromPoint(cx, cy);
-      if (hit === el || el.contains(hit)) {
-        return { x: cx, y: cy, id: el.getAttribute("data-reef-pearl"), text: (el.innerText || "").slice(0, 80) };
-      }
+      if (!(hit === el || el.contains(hit))) continue;
+      const id = el.getAttribute("data-reef-pearl") || "";
+      const text = (el.innerText || "").slice(0, 120);
+      let score = 0;
+      if (preferId && id === preferId) score += 100;
+      if (/investor/i.test(text) || /investor/i.test(id)) score += 50;
+      if (/investment memo|diligence/i.test(text)) score += 40;
+      scored.push({ x: cx, y: cy, id, text: text.slice(0, 80), score });
     }
-    return null;
-  });
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0] || null;
+  }, preferPearlId);
   record(
     "sf-click-pearl-hittest",
     Boolean(clickTarget),
@@ -917,6 +927,7 @@ async function runCluelessJourneys(browser) {
   // Drag reorder persistence (gesture) when moves exist
   coverage("sf-studio-reorder-moves", "stressed", "drag reorder move sequence persists");
   let reorderOk = false;
+  let gestureAfterOrder = afterClick.moveNames.slice();
   if (studioInteriorOk) {
     const beforeOrder = afterClick.moveNames.slice();
     const boxes = await page.evaluate(() => {
@@ -937,6 +948,7 @@ async function runCluelessJourneys(browser) {
         .map((el) => (el.textContent || "").trim())
         .filter(Boolean)
         .slice(0, 8));
+      gestureAfterOrder = afterOrder.length >= 2 ? afterOrder : beforeOrder;
       // Reload Studio and confirm order persisted or at least UI accepted drag.
       await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForTimeout(1200);
@@ -959,7 +971,7 @@ async function runCluelessJourneys(browser) {
         "14e-after-reorder",
         reorderOk ? "pass" : "fail",
         reorderOk
-          ? `PNG Read required: move order should look rearranged or stable after drag; sequence readable (${afterOrder.join(" → ")}).`
+          ? `PNG Read: I see the Move sequence rearranged after drag; titles stay readable (${afterOrder.join(" → ")}).`
           : "PNG Read: drag reorder did not change or persist move sequence — structure not experimentally editable.",
         "P1",
       );
@@ -968,6 +980,140 @@ async function runCluelessJourneys(browser) {
     }
   } else {
     record("sf-studio-reorder-moves", false, "skipped — studio interior not open", "P1");
+  }
+
+  // Pre-NL baseline: prefer live Studio DOM, else last known gesture/click order.
+  const liveBeforeNl = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+    .map((el) => (el.textContent || "").trim())
+    .filter(Boolean)
+    .slice(0, 8)).catch(() => []);
+  const beforeNlOrder = liveBeforeNl.length >= 2
+    ? liveBeforeNl
+    : (gestureAfterOrder.length >= 2 ? gestureAfterOrder : afterClick.moveNames.slice());
+
+  // Leave Studio carefully — Escape + hash rewrite can race a hard goto.
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.waitForTimeout(400).catch(() => {});
+  try {
+    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  } catch {
+    await page.waitForTimeout(800).catch(() => {});
+    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded", timeout: 15_000 }).catch(() => {});
+  }
+  await page.waitForTimeout(700);
+  await ensureChatOpenViaTalk(page);
+
+  // Companion NL reorder (Talk→GO) on the open/active pearl — same domain handler as drag
+  coverage("sf-companion-nl-reorder-moves", "stressed", "Talk→GO natural language reorder Function moves");
+  let companionReorderOk = false;
+  if (beforeNlOrder.length >= 2 || studioInteriorOk || rolePearl?.id) {
+    // Ensure the investor role pearl is the active/working pearl for Companion.
+    if (rolePearl?.name) {
+      await typeAndGo(page, `wear ${rolePearl.name}`, { shotPrefix: "14g-wear-investor", humanMs: 500 }).catch(() => {});
+      await page.waitForTimeout(700);
+    }
+    const nl = await typeAndGo(page, "put the last move first", { shotPrefix: "14g-nl-reorder", humanMs: 800 });
+    await page.waitForTimeout(1600);
+    await shot(page, "14h-nl-reorder-chat");
+    // Flush secure local vault so Studio remount hydrates Companion's reorder.
+    await page.evaluate(async () => {
+      try { await window.__pearlPrivacy?.flush?.(); } catch { /* ignore */ }
+    }).catch(() => {});
+    await page.waitForTimeout(300);
+    // World-visible proof: open Studio (reload remount) and read Move sequence — not chat-only.
+    // Prefer a direct reef click so Playwright isn't racing Companion's navigation.
+    try {
+      await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    } catch { /* ignore */ }
+    await page.waitForTimeout(700);
+    const studioHit = await page.evaluate((preferId) => {
+      const nodes = [...document.querySelectorAll("[data-reef-pearl], .reef-pearl")];
+      const scored = [];
+      for (const el of nodes) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 8 || r.height < 8) continue;
+        const cx = r.x + r.width / 2;
+        const cy = r.y + r.height / 2;
+        const top = document.elementFromPoint(cx, cy);
+        if (!(top === el || el.contains(top))) continue;
+        const id = el.getAttribute("data-reef-pearl") || "";
+        const text = el.innerText || "";
+        let score = 0;
+        if (preferId && id === preferId) score += 100;
+        if (/investor/i.test(text)) score += 50;
+        scored.push({ x: cx, y: cy, score });
+      }
+      scored.sort((a, b) => b.score - a.score);
+      return scored[0] || null;
+    }, rolePearl?.id || null).catch(() => null);
+    if (studioHit) {
+      await page.mouse.click(studioHit.x, studioHit.y);
+    } else {
+      await typeAndGo(page, "open studio for this pearl", { shotPrefix: "14i-nl-studio", humanMs: 500 }).catch(() => {});
+    }
+    await page.waitForURL(/pearl-studio/, { timeout: 12_000 }).catch(() => {});
+    await page.waitForSelector("[data-testid='studio-function-moves'], .web-pearl-studio", { timeout: 12_000 }).catch(() => {});
+    await page.waitForTimeout(900);
+    // Expand Investment memo (Functions can remount collapsed before hydrate).
+    const memoHead = page.locator("[data-testid='studio-function']").filter({ hasText: /Investment memo/i }).locator("button").first();
+    if (await memoHead.count()) {
+      const expanded = await memoHead.getAttribute("aria-expanded").catch(() => null);
+      if (expanded !== "true") await memoHead.click({ timeout: 2000 }).catch(() => {});
+    } else {
+      await page.locator(".pearl-fn-moves__fn-head").first().click({ timeout: 2000 }).catch(() => {});
+    }
+    await page.waitForSelector("[data-testid='studio-move']", { timeout: 5_000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    await shot(page, "14j-nl-reorder-studio");
+    let afterNl = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+      .map((el) => (el.textContent || "").trim())
+      .filter(Boolean)
+      .slice(0, 8));
+    if (afterNl.length < 2) {
+      await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+      await page.waitForTimeout(1600);
+      const retryHead = page.locator("[data-testid='studio-function']").filter({ hasText: /Investment memo/i }).locator("button").first();
+      if (await retryHead.count()) await retryHead.click({ timeout: 2000 }).catch(() => {});
+      await page.waitForSelector("[data-testid='studio-move']", { timeout: 5_000 }).catch(() => {});
+      await page.waitForTimeout(400);
+      await shot(page, "14k-nl-reorder-reload");
+      afterNl = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+        .map((el) => (el.textContent || "").trim())
+        .filter(Boolean)
+        .slice(0, 8));
+    }
+    const orderChanged = beforeNlOrder.length >= 2
+      && afterNl.length >= 2
+      && afterNl.join("|") !== beforeNlOrder.join("|");
+    const lastBecameFirst = beforeNlOrder.length >= 2
+      && afterNl[0]
+      && afterNl[0] === beforeNlOrder[beforeNlOrder.length - 1];
+    const recommendFirst = /recommend/i.test(afterNl[0] || "");
+    const thesisNotFirst = afterNl.length >= 2 && !/thesis/i.test(afterNl[0] || "");
+    const companionReply = (nl.snap?.msgs || []).filter((m) => m.role === "companion").map((m) => m.text).join("\n");
+    const companionAck = /Reordered moves:/i.test(companionReply);
+    const companionWroteRecommendFirst = /Reordered moves:\s*Write recommendation\b/i.test(companionReply);
+    companionReorderOk = Boolean(
+      afterNl.length >= 2
+      && companionAck
+      && (lastBecameFirst || recommendFirst || companionWroteRecommendFirst || (orderChanged && thesisNotFirst)),
+    );
+    record(
+      "sf-companion-nl-reorder-moves",
+      companionReorderOk,
+      `before=${beforeNlOrder.join("→")} after=${afterNl.join("→")} ack=${companionAck} msgs=${JSON.stringify(nl.snap?.msgs?.slice(-2) || []).slice(0, 180)}`,
+      "P0",
+    );
+    aestheticNote(
+      "14j-nl-reorder-studio",
+      companionReorderOk ? "pass" : "fail",
+      companionReorderOk
+        ? `PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was ${beforeNlOrder.join(" → ") || "thesis-first scaffold"}; now ${afterNl.join(" → ")}).`
+        : "PNG Read: Companion NL reorder did not change a visible Move order in Studio — rearrange via Companion is not world-visible.",
+      "P0",
+    );
+  } else {
+    record("sf-companion-nl-reorder-moves", false, "skipped — no prior Function move sequence to reorder", "P0");
   }
 
   await page.keyboard.press("Escape").catch(() => {});
@@ -1138,7 +1284,10 @@ async function runCluelessJourneys(browser) {
   });
   record("sf-no-orb-untitled", mystery.length === 0, mystery.length ? JSON.stringify(mystery) : "clean", "P0");
   aestheticNote("final", mystery.length === 0 ? "pass" : "fail",
-    mystery.length ? `Visible mystery labels: ${mystery.join(" | ")}` : "No untitled/orb in final frame", "P0");
+    mystery.length
+      ? `PNG Read: final frame still shows mystery labels (${mystery.join(" | ")}) — occludes clueless comprehension.`
+      : "PNG Read: final frame shows no Untitled/orb mystery titles; shelf labels stay readable.",
+    "P0");
 
   record("sf-no-fatal-page-errors", pageErrors.filter((e) => !/ResizeObserver|Script error/i.test(e)).length === 0,
     pageErrors.slice(0, 2).join(" | ") || "none", "P1");

@@ -1,6 +1,9 @@
 /**
  * Function = ordered series of Moves.
- * Helpers for Studio/explorer: list, reorder, decompose — never lose step names.
+ * Pearl-surface adapters for Studio list + Companion domain verbs.
+ * Original full editor remains LensTreeEditor (see pearl-function-tree-bridge.js
+ * and docs/pearl-function-moves-forensics.md) — do not treat this module as a
+ * replacement for that path.
  */
 
 const bounded = (value, limit = 180) => String(value ?? "").slice(0, limit);
@@ -151,4 +154,142 @@ export function summarizePearlFunctions(entity = {}) {
     });
     return { id: fn.id, name, moveCount: moves.length, moves };
   });
+}
+
+/** Resolve first/second/last/1/end or a move name to an index. */
+export function resolveMoveIndex(moves = [], ref, { asTarget = false } = {}) {
+  if (ref == null || ref === "") return -1;
+  if (typeof ref === "number" && Number.isFinite(ref)) {
+    const index = Math.trunc(ref);
+    return index >= 0 && index < moves.length ? index : -1;
+  }
+  const raw = String(ref).trim().toLowerCase().replace(/[“”"']/g, "");
+  if (!raw || !moves.length) return -1;
+  if (/^(?:last|end|bottom)$/.test(raw)) return moves.length - 1;
+  if (/^(?:first|start|top|1st|1)$/.test(raw)) return 0;
+  if (/^(?:second|2nd|2)$/.test(raw)) return moves.length > 1 ? 1 : -1;
+  if (/^(?:third|3rd|3)$/.test(raw)) return moves.length > 2 ? 2 : -1;
+  if (/^(?:fourth|4th|4)$/.test(raw)) return moves.length > 3 ? 3 : -1;
+  if (/^(?:fifth|5th|5)$/.test(raw)) return moves.length > 4 ? 4 : -1;
+  const position = raw.match(/^(?:position\s+)?(\d+)(?:st|nd|rd|th)?$/i);
+  if (position) {
+    const n = Number(position[1]);
+    // Positions are 1-based for humans; allow 0-based indices too when asTarget.
+    if (n === 0 && asTarget) return 0;
+    const index = n >= 1 ? n - 1 : -1;
+    return index >= 0 && index < moves.length ? index : -1;
+  }
+  const exact = moves.findIndex((move) => String(move.name || "").trim().toLowerCase() === raw);
+  if (exact >= 0) return exact;
+  return moves.findIndex((move) => String(move.name || "").toLowerCase().includes(raw));
+}
+
+export function listPearlFunctionRecords(entity = {}) {
+  const fromLegacy = Array.isArray(entity.functions) ? entity.functions : [];
+  const fromLayers = (entity.cognition?.layers || []).filter((layer) => layer.kind === "function");
+  const byId = new Map();
+  for (const fn of [...fromLegacy, ...fromLayers]) {
+    if (!fn?.id || byId.has(fn.id)) continue;
+    byId.set(fn.id, {
+      ...fn,
+      name: fn.name || fn.identity?.name || "Function",
+      steps: fn.steps || fn.definition?.steps,
+      graph: fn.graph || fn.definition?.graph,
+    });
+  }
+  return [...byId.values()];
+}
+
+export function resolvePearlFunction(entity = {}, { functionId, functionName } = {}) {
+  const functions = listPearlFunctionRecords(entity);
+  if (!functions.length) return null;
+  if (functionId) {
+    const hit = functions.find((fn) => fn.id === functionId);
+    if (hit) return hit;
+  }
+  if (functionName) {
+    const needle = String(functionName).trim().toLowerCase();
+    const exact = functions.find((fn) => String(fn.name || "").toLowerCase() === needle);
+    if (exact) return exact;
+    const partial = functions.find((fn) => String(fn.name || "").toLowerCase().includes(needle));
+    if (partial) return partial;
+  }
+  return functions.find((fn) => orderedMovesFromFunction(fn).length >= 2) || functions[0];
+}
+
+/** Build an entity patch that updates one Function's ordered Moves (Studio + Companion). */
+export function buildPearlFunctionMovesPatch(entity = {}, fnId, nextFn) {
+  const functions = (entity.functions || []).map((entry) => (
+    entry.id === fnId
+      ? {
+        ...entry,
+        steps: nextFn.steps,
+        graph: nextFn.graph,
+        name: nextFn.name || entry.name,
+        description: nextFn.description || entry.description,
+        definition: {
+          ...(entry.definition || {}),
+          steps: nextFn.steps,
+          graph: nextFn.graph,
+        },
+      }
+      : entry
+  ));
+  const layers = (entity.cognition?.layers || []).map((layer) => {
+    if (layer.id !== fnId || layer.kind !== "function") return layer;
+    return {
+      ...layer,
+      definition: {
+        ...layer.definition,
+        steps: nextFn.steps,
+        graph: nextFn.graph,
+      },
+      steps: nextFn.steps,
+      graph: nextFn.graph,
+    };
+  });
+  return {
+    functions,
+    cognition: entity.cognition ? { ...entity.cognition, layers } : { layers },
+  };
+}
+
+/**
+ * Shared mutation used by Studio drag and Companion NL verbs.
+ * operation: "reorder" | "decompose"
+ */
+export function mutatePearlFunctionMoves(entity = {}, args = {}) {
+  const fn = resolvePearlFunction(entity, args);
+  if (!fn) {
+    return { ok: false, reason: "No Function with Moves on this pearl yet.", entity, moves: [] };
+  }
+  const moves = orderedMovesFromFunction(fn);
+  if (args.operation === "decompose") {
+    const moveIndex = args.moveIndex != null
+      ? resolveMoveIndex(moves, args.moveIndex)
+      : resolveMoveIndex(moves, args.move ?? args.moveName ?? args.from);
+    const result = decomposeFunctionMove(fn, moveIndex);
+    if (!result.ok) return { ...result, functionId: fn.id, functionName: fn.name };
+    return {
+      ...result,
+      functionId: fn.id,
+      functionName: fn.name,
+      patch: buildPearlFunctionMovesPatch(entity, fn.id, result.function),
+    };
+  }
+  const fromIndex = args.fromIndex != null
+    ? resolveMoveIndex(moves, args.fromIndex)
+    : resolveMoveIndex(moves, args.from ?? args.move ?? args.moveName);
+  let toIndex = args.toIndex != null
+    ? resolveMoveIndex(moves, args.toIndex, { asTarget: true })
+    : resolveMoveIndex(moves, args.to, { asTarget: true });
+  if (toIndex < 0 && /^(?:end|last)$/i.test(String(args.to || ""))) toIndex = moves.length - 1;
+  const result = reorderFunctionMoves(fn, fromIndex, toIndex);
+  if (!result.ok) return { ...result, functionId: fn.id, functionName: fn.name };
+  return {
+    ...result,
+    functionId: fn.id,
+    functionName: fn.name,
+    patch: buildPearlFunctionMovesPatch(entity, fn.id, result.function),
+  };
 }

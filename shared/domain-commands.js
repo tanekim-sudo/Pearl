@@ -93,6 +93,7 @@ import {
   normalizePearlAesthetic,
   patchPearlAesthetic,
 } from "./pearl-aesthetic.js";
+import { mutatePearlFunctionMoves } from "./pearl-function-moves.js";
 import { createPearlStudioOpenRequest, createPearlStudioViewModel } from "./pearl-studio.js";
 import {
   labelPearlVersion as labelPearlVersionState,
@@ -2876,6 +2877,119 @@ export const DOMAIN_COMMANDS = Object.freeze({
       return {
         state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } },
         result: result("pearl-entity", changed.entity, ["pearl-entity-edited"]),
+      };
+    },
+  },
+  reorderPearlFunctionMoves: {
+    schema: {
+      pearlId: "string",
+      functionId: "string?",
+      functionName: "string?",
+      fromIndex: "number?",
+      toIndex: "number?",
+      from: "string?",
+      to: "string?",
+      move: "string?",
+      moveName: "string?",
+      expectedRevision: "number?",
+      idempotencyKey: "string?",
+    },
+    preconditions: ["function has ordered moves", "indices resolve"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio", "gesture", "director"],
+    persistenceEffect: "pearlEntities.v1.functions.moves.order",
+    observableEffects: ["pearl-function-moves-reordered", "pearl-entity-edited"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("canonical Pearl not found");
+      const mutated = mutatePearlFunctionMoves(entity, {
+        operation: "reorder",
+        functionId: args.functionId,
+        functionName: args.functionName,
+        fromIndex: args.fromIndex,
+        toIndex: args.toIndex,
+        from: args.from,
+        to: args.to,
+        move: args.move,
+        moveName: args.moveName,
+      });
+      if (!mutated.ok) throw new Error(mutated.reason || "Could not reorder Function moves");
+      const changed = applyPearlEntityPatch(entity, mutated.patch, {
+        expectedRevision: args.expectedRevision ?? entity.revision,
+        idempotencyKey: args.idempotencyKey || `reorder-fn-moves:${args.pearlId}:${Date.now()}`,
+        reason: "reorder-function-moves",
+      });
+      if (changed.conflict) {
+        return {
+          state: { ...state, pearlConflicts: [...(state.pearlConflicts || []), changed.conflict] },
+          result: result("pearl-conflict", changed.conflict, ["pearl-edit-conflict"]),
+        };
+      }
+      return {
+        state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } },
+        result: result("pearl-function-moves", {
+          id: mutated.functionId,
+          pearlId: args.pearlId,
+          functionId: mutated.functionId,
+          functionName: mutated.functionName,
+          moves: mutated.moves,
+          entity: changed.entity,
+        }, ["pearl-function-moves-reordered", "pearl-entity-edited"]),
+      };
+    },
+  },
+  decomposePearlFunctionMove: {
+    schema: {
+      pearlId: "string",
+      functionId: "string?",
+      functionName: "string?",
+      moveIndex: "number?",
+      move: "string?",
+      moveName: "string?",
+      from: "string?",
+      expectedRevision: "number?",
+      idempotencyKey: "string?",
+    },
+    preconditions: ["target move has decomposable description"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio", "director"],
+    persistenceEffect: "pearlEntities.v1.functions.moves.decompose",
+    observableEffects: ["pearl-function-move-decomposed", "pearl-entity-edited"],
+    execute(state, args) {
+      const entity = state.pearlEntities?.[args.pearlId];
+      if (!entity) throw new Error("canonical Pearl not found");
+      const mutated = mutatePearlFunctionMoves(entity, {
+        operation: "decompose",
+        functionId: args.functionId,
+        functionName: args.functionName,
+        moveIndex: args.moveIndex,
+        move: args.move,
+        moveName: args.moveName,
+        from: args.from,
+      });
+      if (!mutated.ok) throw new Error(mutated.reason || "Could not decompose that Move");
+      const changed = applyPearlEntityPatch(entity, mutated.patch, {
+        expectedRevision: args.expectedRevision ?? entity.revision,
+        idempotencyKey: args.idempotencyKey || `decompose-fn-move:${args.pearlId}:${Date.now()}`,
+        reason: "decompose-function-move",
+      });
+      if (changed.conflict) {
+        return {
+          state: { ...state, pearlConflicts: [...(state.pearlConflicts || []), changed.conflict] },
+          result: result("pearl-conflict", changed.conflict, ["pearl-edit-conflict"]),
+        };
+      }
+      return {
+        state: { ...state, pearlEntities: { ...state.pearlEntities, [args.pearlId]: changed.entity } },
+        result: result("pearl-function-moves", {
+          id: mutated.functionId,
+          pearlId: args.pearlId,
+          functionId: mutated.functionId,
+          functionName: mutated.functionName,
+          moves: mutated.moves,
+          decomposedFrom: mutated.decomposedFrom,
+          entity: changed.entity,
+        }, ["pearl-function-move-decomposed", "pearl-entity-edited"]),
       };
     },
   },

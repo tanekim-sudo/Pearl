@@ -3,10 +3,16 @@ import { executePearlActionEvent } from "../../shared/pearl-action-protocol.js";
 import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 import { listPearlVersions } from "../../shared/pearl-version-history.js";
-import { summarizePearlFunctions } from "../../shared/pearl-function-moves.js";
+import { listPearlFunctionRecords, summarizePearlFunctions } from "../../shared/pearl-function-moves.js";
+import {
+  draftOpsToOpMap,
+  editorOpsToPearlFunction,
+  pearlFunctionToEditorSeed,
+} from "../lib/pearl-function-tree-bridge.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import PearlFunctionMovesStudio from "./PearlFunctionMovesStudio.jsx";
 import PearlAestheticPanel from "./PearlAestheticPanel.jsx";
+import LensTreeEditor from "./LensTreeEditor.jsx";
 import { normalizePearlAesthetic } from "../../shared/pearl-aesthetic.js";
 
 const REF_KEY = "pearlStudioRefs.v1";
@@ -63,10 +69,25 @@ export default function PearlStudioView({ localRef }) {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [versionLabel, setVersionLabel] = useState("");
+  const [treeEditor, setTreeEditor] = useState(null);
   const timer = useRef();
   const channel = useMemo(() => entity ? new BroadcastChannel(`pearl-studio:${entity.id}`) : null, [entity?.id]);
   const versions = entity ? listPearlVersions(entity) : null;
   const functionSummary = entity ? summarizePearlFunctions(entity) : [];
+
+  function openOriginalFunctionEditor(fnId) {
+    const fn = listPearlFunctionRecords(entity).find((entry) => entry.id === fnId);
+    if (!fn) {
+      setStatus("No Function to open in the original editor");
+      return;
+    }
+    const seed = pearlFunctionToEditorSeed(fn);
+    setTreeEditor({
+      ...seed.editor,
+      pearlFunctionId: fn.id,
+    });
+    setStatus("Original Function editor · drag steps to reorder");
+  }
 
   useEffect(() => () => channel?.close(), [channel]);
   useEffect(() => {
@@ -79,11 +100,50 @@ export default function PearlStudioView({ localRef }) {
   useEffect(() => {
     if (!channel) return undefined;
     const listener = (event) => {
-      if (event.data?.revision > entity.revision) setStatus("Changed in another tab · reload to review");
+      if (event.data?.reload || (event.data?.revision && event.data.revision > (entity?.revision || 0))) {
+        const next = resolveStudioEntity(localRef);
+        if (next) {
+          const refreshed = createPearlEntity(next);
+          setEntity(refreshed);
+          setName(refreshed.identity?.name || "");
+          setStatus(event.data?.reason === "reorder-function-moves"
+            ? "Companion reordered Moves"
+            : event.data?.reason === "decompose-function-move"
+              ? "Companion decomposed a Move"
+              : "Updated");
+          return;
+        }
+        setStatus("Changed in another tab · reload to review");
+      }
     };
     channel.addEventListener("message", listener);
     return () => channel.removeEventListener("message", listener);
-  }, [channel, entity?.revision]);
+  }, [channel, entity?.revision, localRef]);
+
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key !== PEARL_STORE_KEY || !entity?.id) return;
+      const next = resolveStudioEntity(localRef);
+      if (next && next.revision !== entity.revision) {
+        setEntity(createPearlEntity(next));
+        setStatus("Synced");
+      }
+    };
+    const onMoves = (event) => {
+      if (event.detail?.pearlId && event.detail.pearlId !== entity?.id) return;
+      const next = resolveStudioEntity(localRef);
+      if (next) {
+        setEntity(createPearlEntity(next));
+        setStatus(event.detail?.operation === "decompose" ? "Decomposed Moves" : "Reordered Moves");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("lens:pearl-function-moves-changed", onMoves);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("lens:pearl-function-moves-changed", onMoves);
+    };
+  }, [entity?.id, entity?.revision, localRef]);
 
   async function run(command, args = {}) {
     const store = read(PEARL_STORE_KEY, { version: 1, entities: {} });
@@ -94,7 +154,7 @@ export default function PearlStudioView({ localRef }) {
       event: {
         pearlId: current.id,
         command,
-        args,
+        args: { pearlId: current.id, ...args },
         surface: "studio",
         expectedRevision: current.revision,
         idempotencyKey: crypto.randomUUID(),
@@ -132,7 +192,24 @@ export default function PearlStudioView({ localRef }) {
     }, 350);
   }
 
-  async function patchFunction(fnId, nextFn) {
+  async function patchFunction(fnId, mutation) {
+    if (mutation?.operation === "reorder") {
+      await run("reorderPearlFunctionMoves", {
+        functionId: fnId,
+        fromIndex: mutation.fromIndex,
+        toIndex: mutation.toIndex,
+      });
+      return;
+    }
+    if (mutation?.operation === "decompose") {
+      await run("decomposePearlFunctionMove", {
+        functionId: fnId,
+        moveIndex: mutation.moveIndex,
+      });
+      return;
+    }
+    // Legacy full-function patch path (organize / external).
+    const nextFn = mutation;
     const functions = (entity.functions || []).map((entry) => (
       entry.id === fnId
         ? {
@@ -261,7 +338,39 @@ export default function PearlStudioView({ localRef }) {
       entity={entity}
       onPatchFunction={patchFunction}
       onStatus={setStatus}
+      onOpenOriginalEditor={openOriginalFunctionEditor}
     />
+
+    {treeEditor && (
+      <LensTreeEditor
+        editor={treeEditor}
+        opMap={draftOpsToOpMap(treeEditor.seedOps || [])}
+        operators={treeEditor.seedOps || []}
+        paletteGroups={[]}
+        createFromProse={async () => {
+          throw new Error("AI prose create needs the main workspace — drag Moves to reorder here, then Save.");
+        }}
+        editFromProse={async () => {
+          throw new Error("AI prose revise needs the main workspace — drag Moves to reorder here, then Save.");
+        }}
+        treeToOperators={() => ({ rootId: null, ops: [] })}
+        onClose={() => {
+          setTreeEditor(null);
+          setStatus("Closed Function editor");
+        }}
+        onSaveTree={async (_oldId, ops) => {
+          const rootId = treeEditor.seedRoot?.id || treeEditor.op?.id;
+          const nextFn = editorOpsToPearlFunction(
+            listPearlFunctionRecords(entity).find((entry) => entry.id === treeEditor.pearlFunctionId) || {},
+            ops,
+            rootId,
+          );
+          await patchFunction(treeEditor.pearlFunctionId, nextFn);
+          setTreeEditor(null);
+          setStatus(`Saved ordered Moves in “${nextFn.name || "Function"}” via original editor`);
+        }}
+      />
+    )}
 
     {notesOpen && (
       <div className="web-pearl-studio__notes">
