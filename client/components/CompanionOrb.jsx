@@ -165,18 +165,33 @@ export default function CompanionOrb({
   }, []);
 
   useEffect(() => {
+    function focusChatInput(attempts = 0) {
+      const chatInput = document.querySelector("[data-testid='companion-chat-input'], .companion-panel.shell-dock .companion-input");
+      if (chatInput) {
+        chatInput.focus?.();
+        return;
+      }
+      if (attempts < 12) {
+        window.setTimeout(() => focusChatInput(attempts + 1), 32);
+        return;
+      }
+      // Fallback only when featured chat never mounted.
+      if (!featured) commandInputRef.current?.focus?.();
+    }
     function expandFromOutside() {
       setPowerSearch(false);
       setExpanded(true);
-      requestAnimationFrame(() => commandInputRef.current?.focus());
+      // Chat opens via the same event in CompanionChat; retry focus until portal paints.
+      requestAnimationFrame(() => focusChatInput(0));
     }
     window.addEventListener("lens:companion-expand", expandFromOutside);
     return () => window.removeEventListener("lens:companion-expand", expandFromOutside);
-  }, []);
+  }, [featured]);
 
   useEffect(() => {
     function openActionSearch(event) {
       const typing = event.target?.closest?.("input,textarea,select,[contenteditable='true']");
+      // Zero-demand: ⌘K stays available but is not advertised; keep as advanced escape hatch.
       if (typing || !((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) return;
       event.preventDefault();
       setExpanded(true);
@@ -189,12 +204,20 @@ export default function CompanionOrb({
 
   useEffect(() => {
     if (!expanded) return;
-    // Prefer the restored CompanionChat dock when present; keep local field as fallback.
-    const chatInput = document.querySelector("[data-testid='companion-chat-input'], .companion-panel .companion-input");
-    requestAnimationFrame(() => {
-      if (chatInput) chatInput.focus?.();
-      else (powerSearch ? actionSearchRef.current : commandInputRef.current)?.focus();
-    });
+    // Prefer CompanionChat dock (may portal a frame later); retry then fall back.
+    function focusPreferred(attempts = 0) {
+      const chatInput = document.querySelector("[data-testid='companion-chat-input'], .companion-panel.shell-dock .companion-input");
+      if (chatInput) {
+        chatInput.focus?.();
+        return;
+      }
+      if (attempts < 10) {
+        window.setTimeout(() => focusPreferred(attempts + 1), 32);
+        return;
+      }
+      (powerSearch ? actionSearchRef.current : commandInputRef.current)?.focus?.();
+    }
+    requestAnimationFrame(() => focusPreferred(0));
     function collapse(event) {
       if (event.type === "keydown" && event.key !== "Escape") return;
       if (event.type === "pointerdown") {

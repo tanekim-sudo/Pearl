@@ -5702,11 +5702,12 @@ body:has(.fn-editor-fullscreen) .companion-fab {
   box-shadow: 0 8px 28px rgba(40, 32, 12, 0.2);
 }
 
-.companion-panel.playing .companion-head,
-.companion-panel.playing .companion-input-row,
-.companion-panel.playing .companion-demos,
-.companion-panel.playing .companion-msg,
-.companion-panel.playing .companion-memory {
+/* Shell dock stays fully interactive during director demos (GO must remain clickable). */
+.companion-panel.playing:not(.shell-dock) .companion-head,
+.companion-panel.playing:not(.shell-dock) .companion-input-row,
+.companion-panel.playing:not(.shell-dock) .companion-demos,
+.companion-panel.playing:not(.shell-dock) .companion-msg,
+.companion-panel.playing:not(.shell-dock) .companion-memory {
   display: none;
 }
 

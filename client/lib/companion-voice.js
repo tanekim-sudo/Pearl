@@ -124,6 +124,30 @@ export function createCompanionVoiceSession({
           reason,
         },
       });
+      return true;
+    }
+    // Never silent-fail: callers surface an exact diagnostic when send was requested.
+    if (send && !said && !consumed) {
+      consumed = true;
+      dispatch("", {
+        source: "voice",
+        empty: true,
+        utteranceId,
+        requestId: `request-${utteranceId}`,
+        sessionGeneration: generation,
+        voice: {
+          version: 1,
+          sessionId: sessionId || utteranceId,
+          speakerId,
+          rawText: raw,
+          semantic,
+          segments: [...segments],
+          startedAt,
+          endedAt: now(),
+          reason: reason || "empty",
+          empty: true,
+        },
+      });
     }
     return Boolean(said);
   }

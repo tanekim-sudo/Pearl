@@ -229,19 +229,18 @@ function InstallLanding({ install, onContinue, onRetry, onHome }) {
       <span>Install · browser extension</span>
     </header>
     <section>
-      <div className="orb-kicker">This screen</div>
       <h1>Install Pearl in Chrome</h1>
-      <p><b>Next step:</b> {install.status === "installed"
-        ? "Extension is ready — open your library on the Reef."
-        : "Click the big button to add Pearl, then return here and press “Check again”."}</p>
+      <p>{install.status === "installed"
+        ? "Ready. Open the Reef and talk to your Companion."
+        : "Add Pearl, then press Check again."}</p>
       <div className="orb-actions">
         {install.status === "installed"
-          ? <button className="orb-primary" type="button" onClick={onContinue}>Go to Reef library</button>
+          ? <button className="orb-primary" type="button" onClick={onContinue}>Open Reef</button>
           : <a className="orb-primary" href={installUrl} onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}>
               {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
             </a>}
-        {install.status !== "installed" && <button className="orb-secondary" type="button" onClick={onRetry}>Check again after installing</button>}
-        <button className="orb-secondary" type="button" onClick={onHome}>Cancel — back to Reef</button>
+        {install.status !== "installed" && <button className="orb-secondary" type="button" onClick={onRetry}>Check again</button>}
+        <button className="orb-secondary" type="button" onClick={onHome}>Back to Reef</button>
       </div>
       <p className="orb-status" role="status">
         {install.status === "checking" ? "Checking whether Pearl is installed…"
@@ -374,12 +373,12 @@ const PEARL_NATIVE_ACTIONS = Object.freeze([
   { group: "Preserve", label: "Export markdown", note: "Download selected or visible material", verb: "exportWorkspace", args: { format: "md" } },
   { group: "Preserve", label: "Export text", note: "Download a plain-text copy", verb: "exportWorkspace", args: { format: "txt" } },
   { group: "Preserve", label: "Share", note: "Share the selected journey or workspace", verb: "shareWorkspace", args: {} },
-  { group: "Preserve", label: "Capability tour", note: "See the interaction system in context", verb: "startWorkspaceTour", args: {} },
-  { group: "Preserve", label: "Set up for role", note: "Adapt Pearl to the work you do", verb: "openRoleSetup", args: {} },
+  // Hidden from first-use palette (still available via companion verbs): startWorkspaceTour, openRoleSetup
   { group: "Preserve", label: "Switch material", note: "Toggle the workspace material theme", verb: "toggleWorkspaceTheme", args: {} },
 ]);
 
 function PearlActionPalette({ onRun }) {
+  // Demote dense catalog from novice path — palette still exists for power users who emit it.
   const groups = [...new Set(PEARL_NATIVE_ACTIONS.map((action) => action.group))];
   const [group, setGroup] = useState(groups[0]);
   return <section className="pearl-action-palette" aria-label="Pearl actions">
@@ -406,11 +405,11 @@ function PearlWelcome({ onAsk, onDismiss }) {
     </button>
     <p className="pearl-welcome-kicker">Companion Pearl</p>
     <h1>Just talk.</h1>
-    <p>This is your Companion. Say what you want — it handles the rest.</p>
+    <p>Say what you want. Your Companion does the rest.</p>
     <div className="pearl-welcome-actions">
       <button type="button" className="pearl-welcome-primary" data-testid="welcome-talk" onClick={onAsk}>Talk to Companion</button>
     </div>
-    <button type="button" className="pearl-welcome-dismiss" onClick={onDismiss}>Explore the Reef</button>
+    <button type="button" className="pearl-welcome-dismiss" data-testid="welcome-skip" onClick={onDismiss}>Skip</button>
   </section>;
 }
 
@@ -560,7 +559,7 @@ function LibraryHome({
     </section>
     {activeView && <aside className="orb-emitted-library" aria-label={`${activeView} from Pearl`}>
       <div>
-        <span>{activeView === "library" ? "Library" : activeView}</span>
+        <span>{activeView === "library" ? "Reef" : activeView}</span>
         <button type="button" aria-label="Close emitted view" onClick={() => onView(null)}>×</button>
       </div>
       {activeView === "actions"
@@ -2420,6 +2419,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     if (activeRunAbortRef.current) stopOrb();
     finishVoice({ send: false });
     if (!SpeechRecognitionImpl) {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      window.dispatchEvent(new CustomEvent("lens:companion-notice", {
+        detail: {
+          id: `voice-unavailable:${Date.now()}`,
+          text: "Blocked: Voice isn’t available in this browser. Type your goal and press GO. [voice-unavailable]",
+          transient: false,
+        },
+      }));
       setOrb((value) => createOrbState({
         ...value,
         phase: "blocked",
@@ -2428,7 +2435,7 @@ export default function OrbUniverseShell({ StageComponent }) {
           from: value.phase,
           to: "blocked",
           at: new Date().toISOString(),
-          evidence: { boundary: "Voice input is unavailable in this browser. Type the goal in the orb." },
+          evidence: { boundary: "Voice input is unavailable in this browser. Type the goal and press GO." },
         }],
       }));
       return;
@@ -2441,9 +2448,22 @@ export default function OrbUniverseShell({ StageComponent }) {
     let restarts = 0;
     const session = createCompanionVoiceSession({
       generation,
-      dispatch: (text) => {
+      dispatch: (text, envelope = {}) => {
         if (voiceSessionRef.current === session) voiceSessionRef.current = null;
-        command(text);
+        // Same path as chat mic: open dock + run through companion runtime.
+        window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+        if (envelope.empty || !String(text || "").trim()) {
+          window.dispatchEvent(new CustomEvent("lens:companion-notice", {
+            detail: {
+              id: `empty-voice:${Date.now()}`,
+              text: "Blocked: Heard nothing clear enough to run. Hold to speak, then release — or type and press GO. [empty-voice]",
+              transient: false,
+            },
+          }));
+          setOrb((value) => createOrbState({ ...value, phase: "idle" }));
+          return;
+        }
+        command(text, { source: "voice", ...envelope });
       },
       captureSnapshot: () => [{ route: location.pathname, sceneId: route.sceneId || null }],
     });
@@ -2457,6 +2477,14 @@ export default function OrbUniverseShell({ StageComponent }) {
       recognition.onerror = (event) => {
         if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
           finishVoice({ send: false });
+          window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+          window.dispatchEvent(new CustomEvent("lens:companion-notice", {
+            detail: {
+              id: `voice-denied:${Date.now()}`,
+              text: "Blocked: Microphone permission was denied. Allow mic for this site, then try again — or type and press GO. [permission-denied]",
+              transient: false,
+            },
+          }));
           setOrb((value) => createOrbState({
             ...value,
             phase: "blocked",
@@ -2465,7 +2493,7 @@ export default function OrbUniverseShell({ StageComponent }) {
               from: value.phase,
               to: "blocked",
               at: new Date().toISOString(),
-              evidence: { boundary: "Microphone permission was not granted. Type the goal in the orb." },
+              evidence: { boundary: "Microphone permission was not granted. Type and press GO." },
             }],
           }));
         }

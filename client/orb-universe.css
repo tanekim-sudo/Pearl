@@ -1735,7 +1735,9 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   z-index: -1;
 }
 
-/* Companion chat docked beside Mother Pearl (portaled to body). */
+/* Companion chat docked beside Mother Pearl (portaled to body).
+   Must sit ABOVE Mother Pearl shell (z-index 11000) so GO/mic/input receive clicks.
+   Mother Pearl trigger stays clickable via its own stacking; ledger does not steal dock hits. */
 .companion-panel.shell-dock {
   position: fixed !important;
   right: max(16px, env(safe-area-inset-right, 0px)) !important;
@@ -1743,7 +1745,7 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   left: auto !important;
   top: auto !important;
   transform: none !important;
-  z-index: 5200;
+  z-index: 12050;
   width: min(380px, calc(100vw - 24px));
   max-height: min(560px, calc(100vh - 24px));
   border-radius: 14px;
@@ -1753,6 +1755,15 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   pointer-events: auto !important;
   visibility: visible !important;
   opacity: 1 !important;
+}
+/* When chat is open, expanded featured ledger must not cover the dock. */
+body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .orb-ledger,
+body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .pearl-quick-actions {
+  pointer-events: none;
+}
+body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .companion-orb,
+body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .orb-gauntlet-socket {
+  pointer-events: auto;
 }
 .companion-panel.shell-dock .companion-head-title {
   letter-spacing: 0.04em;

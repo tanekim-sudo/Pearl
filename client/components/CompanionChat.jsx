@@ -147,6 +147,21 @@ export default function CompanionChat({
   }, []);
 
   useEffect(() => {
+    if (!open) return;
+    // Focus after portal paint so Talk → type never lands on a dead field.
+    let attempts = 0;
+    function focusInput() {
+      const input = document.querySelector("[data-testid='companion-chat-input'], .companion-panel.shell-dock .companion-input, .companion-panel .companion-input");
+      if (input) {
+        input.focus?.();
+        return;
+      }
+      if (attempts++ < 12) window.setTimeout(focusInput, 32);
+    }
+    requestAnimationFrame(focusInput);
+  }, [open]);
+
+  useEffect(() => {
     if (!notice?.text) return;
     // A confirmation/cancellation notice marks a completed user interaction,
     // so an immediate intentional retry is distinct from a duplicate event.
@@ -155,10 +170,28 @@ export default function CompanionChat({
     setMessages((current) =>
       current.some((message) => message.role === "companion" && message.text === notice.text)
         ? current
-        : [...current, { role: "companion", text: notice.text }]
+        : [...current, { role: "companion", text: notice.text, error: /Blocked:|Failed:/i.test(notice.text) }]
     );
     speak(notice.text);
   }, [notice?.id]);
+
+  useEffect(() => {
+    function onShellNotice(event) {
+      const detail = event.detail || {};
+      const text = String(detail.text || "").trim();
+      if (!text) return;
+      submitGuardRef.current.resetDedupe();
+      setForeground(true);
+      setOpen(true);
+      setMessages((current) =>
+        current.some((message) => message.role === "companion" && message.text === text)
+          ? current
+          : [...current, { role: "companion", text, error: /Blocked:|Failed:/i.test(text) }]
+      );
+    }
+    window.addEventListener("lens:companion-notice", onShellNotice);
+    return () => window.removeEventListener("lens:companion-notice", onShellNotice);
+  }, []);
 
   useEffect(() => {
     if (!confirmationOpen) submitGuardRef.current.resetDedupe();
@@ -225,6 +258,19 @@ export default function CompanionChat({
   async function send(rawText, sourceOrEnvelope = "unknown") {
     const envelope =
       typeof sourceOrEnvelope === "string" ? { source: sourceOrEnvelope } : sourceOrEnvelope || {};
+    // Empty voice finish: never silent — tell the user exactly why GO did not run.
+    if (envelope.empty || (envelope.source === "voice" && !String(rawText || "").trim())) {
+      const execution = {
+        status: "blocked",
+        code: "empty-voice",
+        stage: "parse",
+        message: "Heard nothing clear enough to run. Hold the mic, speak, then release — or type and press GO.",
+      };
+      surfaceExecution({ execution }, null);
+      setBusy(false);
+      setPhase("idle");
+      return execution;
+    }
     const run = submitGuardRef.current.begin(rawText ?? draft, envelope);
     if (!run) return;
     const { text } = run;
@@ -746,7 +792,10 @@ export default function CompanionChat({
             )}
             <div className="companion-plan-actions">
               <button type="button" data-testid="companion-plan-accept" onClick={() => decidePlan("accept")}>accept</button>
-              <button type="button" data-testid="companion-plan-edit" onClick={() => setPlanEditing((value) => !value)}>{planEditing ? "close edit" : "edit"}</button>
+              {/* JSON plan editor demoted from novice / pearl-shell path; still available outside shell. */}
+              {!pearlShell && (
+                <button type="button" data-testid="companion-plan-edit" onClick={() => setPlanEditing((value) => !value)}>{planEditing ? "close edit" : "edit"}</button>
+              )}
               <button type="button" data-testid="companion-plan-reject" onClick={() => decidePlan("reject")}>reject</button>
             </div>
           </div>

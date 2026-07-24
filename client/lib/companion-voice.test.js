@@ -68,6 +68,19 @@ test("stale sessions are inert and genuine later identical utterances run", () =
   assert.notEqual(runs[0].utteranceId, runs[1].utteranceId);
 });
 
+test("empty explicit finish reports empty envelope instead of silent no-op", () => {
+  const dispatched = [];
+  const session = createCompanionVoiceSession({
+    generation: 9,
+    dispatch: (...args) => dispatched.push(args),
+    makeId: () => "empty",
+  });
+  session.finish({ send: true, reason: "explicit" });
+  assert.equal(dispatched.length, 1);
+  assert.equal(dispatched[0][0], "");
+  assert.equal(dispatched[0][1].empty, true);
+});
+
 test("interim pauses preserve the full multi-phrase utterance until finalization", () => {
   const dispatched = [];
   const session = createCompanionVoiceSession({
