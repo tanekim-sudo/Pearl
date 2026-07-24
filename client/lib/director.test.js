@@ -5,12 +5,32 @@ import {
   DIRECTOR_EFFECT_TRACE_VERSION,
   clearDirectorEffectTraces,
   directorRunning,
+  enrichDirectorArgs,
   executeCapabilityScriptDirect,
   getDirectorEffectTraces,
   registerDirectorVerbs,
   resolveDirectorPoint,
   runDirectorScript,
 } from "./director.js";
+
+test("enrichDirectorArgs injects active sceneId for required merge/synthesize args", () => {
+  const previous = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: () => JSON.stringify({ activeSceneId: "scene-active", scenes: [{ id: "scene-active" }] }),
+    setItem() {},
+    removeItem() {},
+  };
+  try {
+    const merged = enrichDirectorArgs("mergeSemanticOrbs", { ids: ["a", "b"], name: "Merged" });
+    assert.equal(merged.sceneId, "scene-active");
+    const kept = enrichDirectorArgs("mergeSemanticOrbs", { ids: ["a"], sceneId: "explicit", name: "X" });
+    assert.equal(kept.sceneId, "explicit");
+    const optional = enrichDirectorArgs("organizePearl", { id: "p1" });
+    assert.equal(optional.sceneId, undefined);
+  } finally {
+    globalThis.localStorage = previous;
+  }
+});
 
 test("resolveDirectorPoint accepts coordinates, points, and element-like targets", () => {
   assert.deepEqual(resolveDirectorPoint(10, 20), { x: 10, y: 20 });

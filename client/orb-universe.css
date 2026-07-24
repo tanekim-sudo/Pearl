@@ -156,6 +156,41 @@
   white-space: nowrap;
   opacity: .72;
 }
+/* Filled gauntlet labels: hide by default so 5 truncated names + Done never stack. */
+.orb-gauntlet-socket.filled span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.orb-gauntlet-socket.filled:hover span,
+.orb-gauntlet-socket.filled:focus-visible span,
+.orb-gauntlet-socket.filled.active span {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 96px;
+  height: auto;
+  margin: 0;
+  clip: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .9;
+  pointer-events: none;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(8, 10, 11, .88);
+  color: var(--orb-text-2);
+  z-index: 3;
+}
 .orb-gauntlet-socket.empty {
   width: 22px;
   height: 22px;
@@ -613,6 +648,29 @@
   color: var(--orb-text-2);
 }
 .pearl-reef-chrome button:hover { color: var(--orb-text-1); border-bottom-color: var(--orb-focus); }
+@media (max-width: 480px) {
+  .pearl-reef-chrome {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .pearl-reef-chrome span {
+    justify-self: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    font-size: 11px;
+  }
+  .pearl-reef-chrome button {
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+}
 .orb-home-plain { margin: 10px auto 0; max-width: 52ch; color: var(--orb-text-3); line-height: 1.55; font-size: 13px; }
 .orb-reef-section-label {
   grid-column: 1 / -1;
@@ -956,7 +1014,19 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 .semantic-orb-button>i { position:absolute; top:1px; right:0; display:grid; width:17px; height:17px; place-items:center; border:1px solid rgba(250,229,168,.28); border-radius:50%; background:#11100d; color:#ead28d; font-size:9px; font-style:normal; }
 .semantic-orb-cluster { z-index:6; }
 .semantic-orb-cluster b { position:absolute; inset:0; display:grid; place-items:center; color:#312913; font-size:12px; }
-.semantic-orb-inspector { position:absolute; left:64px; top:-24px; width:min(260px,calc(100vw - 110px)); padding:14px; border:1px solid var(--orb-line-strong); border-radius:var(--orb-radius); background:rgba(17,20,21,.86); box-shadow:var(--orb-shadow); backdrop-filter:blur(var(--orb-blur)) saturate(112%); }
+.semantic-orb-inspector {
+  position: absolute;
+  left: 64px;
+  top: -24px;
+  z-index: 20;
+  width: min(260px, calc(100vw - 110px));
+  padding: 14px;
+  border: 1px solid var(--orb-line-strong);
+  border-radius: var(--orb-radius);
+  background: rgba(9, 11, 12, .97);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .04);
+  backdrop-filter: blur(18px) saturate(112%);
+}
 .semantic-orb-inspector form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; }
 .semantic-orb-inspector input { min-width:0; border:1px solid rgba(241,218,153,.14); border-radius:8px; background:rgba(255,255,255,.035); color:#fff9e8; }
 .semantic-orb-inspector small { display:block; margin:9px 0; color:rgba(255,249,230,.52); }
@@ -1057,9 +1127,13 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   padding: var(--pearl-ui-space-4);
   border: 1px solid var(--pearl-ui-line-strong);
   border-radius: var(--pearl-ui-radius);
-  background: rgba(9, 11, 12, .97);
+  background: #090b0c;
   box-shadow: var(--pearl-ui-shadow);
   backdrop-filter: none;
+}
+.semantic-orb-inspector {
+  isolation: isolate;
+  background: #090b0c !important;
 }
 .orb-ledger button,
 .orb-ledger input,
@@ -1455,8 +1529,22 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
 }
 .orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro,
 .orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-recent-orbit {
-  opacity: .42;
+  opacity: .28;
   pointer-events: none;
+}
+/* Narrow: Companion open owns the viewport — hide competing Talk CTA / shelf intro. */
+@media (max-width: 480px) {
+  .orb-universe:has(.companion-panel.shell-dock) .orb-reef-home .orb-home-intro,
+  .orb-universe:has(.companion-orb-shell.expanded) .orb-reef-home .orb-home-intro {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .orb-universe:has(.companion-panel.shell-dock) .companion-orb-shell.featured {
+    opacity: .35;
+  }
+  .orb-universe:has(.companion-panel.shell-dock) .orb-gauntlet-legend {
+    opacity: 0;
+  }
 }
 .pearl-welcome-dismiss {
   min-height: 32px;
@@ -1825,6 +1913,24 @@ body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .or
   font-weight: 650;
   letter-spacing: 0.04em;
 }
+.companion-panel.shell-dock .companion-demos {
+  gap: 8px;
+  padding-bottom: 12px;
+}
+.companion-panel.shell-dock .companion-demo-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(220, 235, 240, 0.9);
+  border: 1px solid rgba(160, 210, 230, 0.22);
+}
+.companion-panel.shell-dock .companion-demo-chip:hover {
+  background: rgba(125, 231, 255, 0.14);
+  color: rgba(235, 250, 255, 0.98);
+}
+.companion-panel.shell-dock .companion-input::placeholder,
+.companion-panel.shell-dock textarea::placeholder,
+.companion-panel.shell-dock input::placeholder {
+  color: rgba(170, 200, 210, 0.55);
+}
 .companion-panel.shell-dock .companion-mic.listening {
   color: #7de7ff;
   box-shadow: 0 0 0 1px rgba(125, 231, 255, 0.45);
@@ -1843,4 +1949,44 @@ body:has(.companion-panel.shell-dock) .companion-orb-shell.expanded.featured .or
 .companion-orb-shell[data-orb-state="executing"] .companion-orb .physical-pearl,
 .companion-orb-shell[data-orb-state="listening"] .companion-orb .physical-pearl {
   filter: drop-shadow(0 0 10px rgba(120, 230, 255, 0.55));
+}
+
+/* Director demo: keep motion readable — hide inspector clutter + dim board noise. */
+body.director-running .semantic-orb-inspector,
+body.director-running .semantic-orb-compose-chooser {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.director-running .board-text,
+body.director-running .board-img,
+body.director-running .board-item,
+body.director-running .paper-item,
+body.director-running [data-item],
+body.director-running [data-item-id],
+body.director-running .scene-board-item {
+  opacity: .16 !important;
+  filter: saturate(.4);
+}
+body.director-running .orb-gauntlet-socket.filled span,
+body.director-running .orb-ledger-howto,
+body.director-running .orb-phase,
+body.director-running .pearl-start-hint {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+body.director-running .companion-orb-shell.featured {
+  z-index: 30;
+}
+body.director-running .ghost-cursor-layer {
+  z-index: 13000;
+}
+/* Featured Mother Pearl with shell chat: never show stale Done / howto over gauntlet. */
+body:has(.companion-panel.shell-dock) .companion-orb-shell.featured .orb-ledger-howto,
+body:has(.companion-panel.shell-dock) .companion-orb-shell.featured .orb-phase:empty {
+  display: none;
+}
+body:has(.companion-panel.shell-dock) .companion-orb-shell.featured[data-orb-state="completed"] .orb-phase,
+body:has(.companion-panel.shell-dock) .companion-orb-shell.featured[data-orb-state="idle"] .orb-ledger-howto {
+  display: none;
 }

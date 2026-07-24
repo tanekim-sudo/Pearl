@@ -349,12 +349,41 @@ const toolkit = {
   },
 };
 
+function resolveActiveSceneId() {
+  try {
+    const parsed = JSON.parse(globalThis.localStorage?.getItem?.("lens.scenes.v4") || "null");
+    return parsed?.activeSceneId || parsed?.scenes?.[0]?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fill required sceneId from the active Scene when planners/UI omit it.
+ * Handlers already default to the live scene; schema validation must not
+ * block that before the verb runs.
+ */
+export function enrichDirectorArgs(verb, suppliedArgs = {}) {
+  const next = { ...(suppliedArgs || {}) };
+  const capability = capabilityByName.get(verb);
+  const schema = capability?.args || {};
+  const sceneRequired = typeof schema.sceneId === "string"
+    && schema.sceneId.startsWith("string")
+    && !schema.sceneId.endsWith("?");
+  if (sceneRequired && (next.sceneId == null || next.sceneId === "")) {
+    const sceneId = resolveActiveSceneId();
+    if (sceneId) next.sceneId = sceneId;
+  }
+  return next;
+}
+
 function validateDirectorArgs(verb, suppliedArgs) {
   const capability = capabilityByName.get(verb);
   if (!capability) return null;
+  const enriched = enrichDirectorArgs(verb, suppliedArgs);
   const capabilityArgs = {};
   const metadataArgs = {};
-  for (const [key, value] of Object.entries(suppliedArgs || {})) {
+  for (const [key, value] of Object.entries(enriched || {})) {
     if (key in COMPANION_DIRECTOR_ARG_METADATA) metadataArgs[key] = value;
     else capabilityArgs[key] = value;
   }
@@ -364,7 +393,7 @@ function validateDirectorArgs(verb, suppliedArgs) {
     metadataArgs,
     `director.${verb}.metadata`
   );
-  return capability;
+  return { capability, args: enriched };
 }
 
 function createDirectToolkit(signal) {
@@ -393,10 +422,12 @@ function createDirectToolkit(signal) {
 export async function executeCapabilityDirect(verb, args = {}, options = {}) {
   const fn = verbs[verb];
   if (typeof fn !== "function") throw new Error(`unavailable capability: ${verb}`);
-  const capability = validateDirectorArgs(verb, args);
+  const validated = validateDirectorArgs(verb, args);
+  const capability = validated?.capability || null;
+  const effectiveArgs = validated?.args || args;
   const startedAt = new Date().toISOString();
   try {
-    const result = await fn(args, createDirectToolkit(options.signal), options.context || { vars: {} });
+    const result = await fn(effectiveArgs, createDirectToolkit(options.signal), options.context || { vars: {} });
     const resultType = capability?.resultType || "action-result";
     const value = result && typeof result === "object" && !Array.isArray(result)
       ? { type: resultType, ...result }
@@ -505,8 +536,9 @@ export async function runDirectorScript(steps, opts = {}) {
         initialCursor: { x: state.cursor.x, y: state.cursor.y },
       });
       try {
-        const suppliedArgs = step.args || {};
-        const capability = validateDirectorArgs(step.verb, suppliedArgs);
+        const validated = validateDirectorArgs(step.verb, step.args || {});
+        const capability = validated?.capability || null;
+        const suppliedArgs = validated?.args || step.args || {};
         const result = await fn(suppliedArgs, toolkit, ctx);
         const resultType = capability?.resultType || "action-result";
         results.push(

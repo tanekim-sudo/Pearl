@@ -13104,6 +13104,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         detail: { pearlId: pearl.id, semantic: "absorb", durationMs: 420 },
       }));
       await tk.wait(420);
+      // Close Scene inspector after wear — gauntlet sockets carry working memory;
+      // leaving the inspector open stacks chrome over dump cards (P0 occlusion).
+      await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "activateSemanticOrb", args: { id: null } }).catch(() => {});
       return {
         type: "worn-pearl",
         status: "worn",
@@ -17631,7 +17634,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       })();
       const step = { ...remixIntent, args: { ...remixIntent.args } };
       if (step.args.id === "active" && activeOrbId) step.args.id = activeOrbId;
-      if (step.args.sceneId === "") step.args.sceneId = sceneId;
+      if (step.args.sceneId == null || step.args.sceneId === "") step.args.sceneId = sceneId;
       if (Array.isArray(step.args.ids) && step.args.ids.length === 0) {
         const selectedOrbIds = highlightSelectionRef.current.length ? highlightSelectionRef.current : [];
         const wornIds = loadGauntletState().pearlIds || [];

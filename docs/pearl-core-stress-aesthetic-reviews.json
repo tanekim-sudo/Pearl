@@ -1,0 +1,186 @@
+[
+  {
+    "frame": "01-welcome",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Clean first viewport: Companion Pearl + Just talk + Talk CTA dominate. Low clutter, clear hierarchy, no orb copy. Footer gauntlet hint is tiny but secondary.",
+    "defects": []
+  },
+  {
+    "frame": "02-after-talk",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Reef + open Companion readable. Your Reef title intact. Demo chips contrast improved. Talk CTA still visible behind chat on desktop (acceptable redundancy).",
+    "defects": ["P2: top EMPTY CANVAS kicker is very low contrast"]
+  },
+  {
+    "frame": "03-create-mid-anim",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Director mid-frame: stop demonstration + chat status/trail readable; ghost cursor present; gauntlet not stacked with labels. Motion looks intentional.",
+    "defects": []
+  },
+  {
+    "frame": "03-after-create",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Created pearl visible on Reef with chat reply. Hierarchy clear (chat + new pearl). No orb wording.",
+    "defects": []
+  },
+  {
+    "frame": "04-reload-after-create",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Reload restores pearl without duplicate chrome. Quiet returning state.",
+    "defects": []
+  },
+  {
+    "frame": "05-reef",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Reef home after create is sparse and readable.",
+    "defects": []
+  },
+  {
+    "frame": "06-studio",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Studio chrome clean; organize path available. Light theme high contrast.",
+    "defects": ["P2: large empty content area can feel sparse before structure organizes"]
+  },
+  {
+    "frame": "06b-studio-organized",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Organize state remains uncluttered.",
+    "defects": []
+  },
+  {
+    "frame": "06c-studio-structured-seed",
+    "verdict": "pass",
+    "severity": "P1",
+    "critique": "Moves→Functions→Lenses readable in What it does. Close Studio clear. No stacking.",
+    "defects": []
+  },
+  {
+    "frame": "08-seeded-scene",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Seeded scene usable; dumps spread to avoid fan stack.",
+    "defects": []
+  },
+  {
+    "frame": "09-wear-mid-anim",
+    "verdict": "pass",
+    "severity": "P1",
+    "critique": "After dimming board-text during director + closing inspector post-wear: mid-anim shows stop + Demonstrating status without inspector chrome. Residual dump cards still present but reduced severity vs prior P0 stack+bleed.",
+    "defects": ["P2: dump cards still compete visually during wear demo when many seeds exist"]
+  },
+  {
+    "frame": "09-after-wear",
+    "verdict": "pass",
+    "severity": "P1",
+    "critique": "Inspector closed after wear (fixed). Chat trail shows Pearl worn. Gauntlet sockets fill without truncated name stack. Remaining dump cards on scene are fixture density, not broken chrome.",
+    "defects": ["P2: scene dump cards can still feel busy after wear on multi-seed scenes"]
+  },
+  {
+    "frame": "10-gauntlet-cap",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Full gauntlet without 6th; sockets charged without label clutter.",
+    "defects": []
+  },
+  {
+    "frame": "11-gauntlet-after-reload",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Gauntlet fill persists visually after reload.",
+    "defects": []
+  },
+  {
+    "frame": "12-organize",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Organize path leaves scene readable.",
+    "defects": []
+  },
+  {
+    "frame": "13-merge",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Merge effect without false chrome success.",
+    "defects": []
+  },
+  {
+    "frame": "14-synthesize",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Synthesize creates new pearl; sources remain.",
+    "defects": []
+  },
+  {
+    "frame": "15-evaluate",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Evaluate prepare/blocker path — no fake judgment UI.",
+    "defects": []
+  },
+  {
+    "frame": "17-confirm-strip",
+    "verdict": "pass",
+    "severity": "P1",
+    "critique": "Accept/Reject confirm in chat is clear and primary. Reef pearl grid placement fixed so merge/synth labels no longer cycle into the same 6 absolute slots.",
+    "defects": [
+      "P2: Talk to Companion still visible while chat already open on desktop"
+    ]
+  },
+  {
+    "frame": "18-after-accept",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Post-accept state recovers without dead confirm strip.",
+    "defects": []
+  },
+  {
+    "frame": "19-nav-reef",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Navigation to Reef keeps Companion usable.",
+    "defects": []
+  },
+  {
+    "frame": "20-nav-scene-return",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Return to Scene preserves pearls without double surfaces.",
+    "defects": []
+  },
+  {
+    "frame": "21-nav-studio",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Studio open from nav path remains clean.",
+    "defects": []
+  },
+  {
+    "frame": "22-narrow-390",
+    "verdict": "pass",
+    "severity": "P1",
+    "critique": "390px: Companion owns viewport; competing Talk CTA hidden; reef chrome grid no longer stacks illegibly. Minor gauntlet peep under chat edge remains.",
+    "defects": ["P2: gauntlet/Mother Pearl slightly peeks under chat bottom edge"]
+  },
+  {
+    "frame": "23-narrow-after-go",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Narrow GO path: user echo + trail + reply readable. Dense status pills are busy but legible.",
+    "defects": ["P2: action-trail pill stack is dense on 390px"]
+  },
+  {
+    "frame": "24-drag",
+    "verdict": "pass",
+    "severity": "P2",
+    "critique": "Drag does not clone; scene remains interpretable.",
+    "defects": []
+  }
+]

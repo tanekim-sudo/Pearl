@@ -531,22 +531,33 @@ function LibraryHome({
     </section>}
     <section className="orb-recent-orbit orb-reef" aria-label="Pearl canvas">
       <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Your pearls — open one, or ask Companion to wear it" : "Empty canvas — ask Companion to make a pearl"}</p>
-      {reefPearls.map((pearl, index) => <button
-        key={pearl.id}
-        type="button"
-        className={`recent-scene reef-pearl scene-${String.fromCharCode(97 + (index % 6))}`}
-        data-reef-pearl={pearl.id}
-        onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
-        onDoubleClick={(event) => {
-          event.preventDefault();
-          onOpenStudio?.(pearl);
-        }}
-        title={`${pearl.name} — open this pearl`}
-      >
-        <i className="reef-pearl-dot" aria-hidden="true" />
-        <b>{pearl.name}</b>
-        <small>Pearl · open to explore</small>
-      </button>)}
+      {reefPearls.map((pearl, index) => {
+        // Deterministic grid — do not cycle 6 fixed slots (merge/synth made labels stack).
+        const col = index % 4;
+        const row = Math.floor(index / 4);
+        return <button
+          key={pearl.id}
+          type="button"
+          className="recent-scene reef-pearl"
+          data-reef-pearl={pearl.id}
+          style={{
+            left: `${10 + col * 20}vw`,
+            top: `${16 + row * 14}vh`,
+            right: "auto",
+            bottom: "auto",
+          }}
+          onClick={() => navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`)}
+          onDoubleClick={(event) => {
+            event.preventDefault();
+            onOpenStudio?.(pearl);
+          }}
+          title={`${pearl.name} — open this pearl`}
+        >
+          <i className="reef-pearl-dot" aria-hidden="true" />
+          <b>{pearl.name}</b>
+          <small>Pearl · open to explore</small>
+        </button>;
+      })}
       {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
         key={scene.id}
         className={`recent-scene scene-${String.fromCharCode(97 + (index % 3))}`}
