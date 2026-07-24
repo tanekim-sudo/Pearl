@@ -570,7 +570,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("studio.pearl", {
     domains: ["semantic-orb", "result", "automation", "canvas", "privacy", "extension", "interface", "function", "move"],
     commands: ["openPearlStudio", "editPearlEntity", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "setPearlStudioRepresentation", "undoPearlEntityEdit", "redoPearlEntityEdit", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion"],
-    ui: ["client/components/PearlStudioView.jsx", "client/components/PearlFunctionMovesStudio.jsx", "client/components/CognitiveLayerStudio.jsx", "extension/src/result/main.js"],
+    ui: ["client/components/PearlStudioView.jsx", "client/components/LensTreeEditor.jsx", "client/components/PearlFunctionMovesStudio.jsx", "client/components/CognitiveLayerStudio.jsx", "extension/src/result/main.js"],
     companion: ["openPearlStudio", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "executeUnifiedPearlAction", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion", "editPearlOutput", "revisePearlFromFeedback"],
     extension: ["executeExternalPearlAction", "openExternalPearlStudio", "openExternalResultPearlTab", "reorderExternalPearlFunctionMoves", "decomposeExternalPearlFunctionMove"],
     persistence: ["pearlEntities.v1", "pearlEntities.v1.functions.moves.order", "pearlStudioRefs.v1", "one-time profile/tab/origin-bound handoffs"],

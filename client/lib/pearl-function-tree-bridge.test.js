@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { reorderStep } from "../../shared/function-step-ops.js";
+import { reorderFunctionMoves } from "../../shared/pearl-function-moves.js";
 import {
   editorOpsToPearlFunction,
   pearlFunctionToEditorSeed,
@@ -38,6 +39,23 @@ describe("pearl-function-tree-bridge", () => {
       "Assess market and moat",
       "Frame the thesis",
       "Write recommendation",
+    ]);
+  });
+
+  it("Companion/domain reorderFunctionMoves shares reorderStep via destination mapping", () => {
+    const lastToFirst = reorderFunctionMoves(fn, 2, 0);
+    assert.equal(lastToFirst.ok, true);
+    assert.deepEqual(lastToFirst.moves.map((step) => step.name), [
+      "Write recommendation",
+      "Frame the thesis",
+      "Assess market and moat",
+    ]);
+    const firstToLast = reorderFunctionMoves(fn, 0, 2);
+    assert.equal(firstToLast.ok, true);
+    assert.deepEqual(firstToLast.moves.map((step) => step.name), [
+      "Assess market and moat",
+      "Write recommendation",
+      "Frame the thesis",
     ]);
   });
 });

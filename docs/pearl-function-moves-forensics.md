@@ -2,9 +2,9 @@
 
 ## Verdict (ruthless)
 
-**Not deleted.** The original Function editor still exists and was **orphaned** from the Pearl Studio / Reef click path. A later agent (**`0e2c869`**) **reinvented** a parallel Studio list (`PearlFunctionMovesStudio` + `shared/pearl-function-moves.js`) instead of restoring the original modules into Studio.
+**Not deleted — previously orphaned; now default-wired.** The original Function editor (`LensTreeEditor.jsx` + `function-tree-editor.js` / `shared/function-step-ops.js` `reorderStep`) still exists. Forensics showed Pearl Studio boot skipped App, so the editor felt deleted. **`21a1f73`** bridged it behind “Open original Function editor” (still a secondary click). **Current HEAD** makes that original editor the **default primary** Function interior when a pearl opens in Studio — no hunting, no buried button.
 
-Answer to “did you delete it?”: **No.** `LensTreeEditor.jsx` + `client/lib/function-tree-editor.js` (`reorderStep`, drag grips, nest/lineage) were never removed. They remain mounted from `App.jsx` when `opEditor` is set. Pearl Studio boots **without App** (`client/main.jsx` early-return on `#pearl-studio`), so the original editor was unreachable from the surface users were testing.
+Answer to “did you delete it?”: **No.** It was orphaned, then briefly demoted behind a click, and is now the default Studio Function view again.
 
 ## Timeline (pickaxe evidence)
 
@@ -18,38 +18,46 @@ Answer to “did you delete it?”: **No.** `LensTreeEditor.jsx` + `client/lib/f
 | 2026-07-21 | `6400d5d` | **Creates** `PearlStudioView.jsx` + `shared/pearl-cognitive-layers.js`. Function graphs scaffolded as bare `step:N` nodes (**name strip bug from day one** of cognition layers). Studio never imported LensTreeEditor. |
 | 2026-07-21 | `d4c7e40` | Claims Moves → Functions → Lenses alignment without wiring the original editor. |
 | 2026-07-24 | `0e2c869` | Fixes click→Scene theft + cognition name strip; **adds new files** `PearlFunctionMovesStudio.jsx`, `shared/pearl-function-moves.js` (git `create mode` — rebuild, not `git restore`). |
+| 2026-07-24 | `21a1f73` | Bridge restore: Studio can mount `LensTreeEditor`, but only after **“Open original Function editor”**. |
+| 2026-07-24 | *(this change)* | **Default wiring:** Studio auto-opens original `LensTreeEditor` as primary Function view; `PearlFunctionMovesStudio` thinned to summary; Companion NL reorder uses canonical `reorderStep`. |
 
 ## What broke the wiring (diff vs last good)
 
 1. **Studio boot orphans App** — `main.jsx` renders only `PearlStudioView` for `#pearl-studio`, so `App.jsx`’s `<LensTreeEditor …>` never mounts.
 2. **Reef click → Scene admin** (pre-`0e2c869`) — single click opened `/scene/…` Rename/Duplicate/Archive form instead of structure explorer.
-3. **`definitionFor("function")` stripped Move titles** (introduced `6400d5d`, fixed in `0e2c869`) — graphs stored `{ id: step:N, layerId }` without `name`, so any interior that read graph nodes could not show ordered Move titles.
-4. **Semantic claim without path** — Studio/Reef talked about Functions/Moves while the load-bearing editor stayed on the classic `opEditor` rail behind OrbUniverse → App.
+3. **`definitionFor("function")` stripped Move titles** (introduced `6400d5d`, fixed in `0e2c869`) — graphs stored `{ id: step:N, layerId }` without `name`.
+4. **Semantic claim without path** — Studio/Reef talked about Functions/Moves while the load-bearing editor stayed on the classic `opEditor` rail.
+5. **`21a1f73` residual** — editor restored but still **hidden behind a secondary click**, so the feature still felt deleted to a clueless user.
 
-`0e2c869` correctly fixed (2) and (3) and restored a usable Studio list. It did **not** revive the original `LensTreeEditor` into Studio.
-
-## What this restore did (beyond `0e2c869`)
+## What default wiring does now
 
 - Extracted canonical `reorderStep` / `buildDraftMap` to `shared/function-step-ops.js`; `function-tree-editor.js` re-exports (single algorithm).
-- Added `client/lib/pearl-function-tree-bridge.js` — pearl Function ↔ LensTreeEditor draft ops; save writes back to the pearl entity (not the classic operators store).
-- Pearl Studio: **“Open original Function editor”** mounts real `LensTreeEditor` with drag-reorder / nest / lineage.
-- Kept the clueless Studio numbered list + domain verbs (`reorderPearlFunctionMoves` / `decomposePearlFunctionMove`) for Companion + stress gates; those are adapters on pearl storage, not a replacement claim for the original editor.
-- Companion NL reorder WIP (sibling) continues to call the same domain handlers — not a second fake path.
+- `shared/pearl-function-moves.js` `reorderFunctionMoves` / `mutatePearlFunctionMoves` route through `reorderStep` (destination-index mapping) — Companion domain verbs and Studio persistence share one path.
+- `client/lib/pearl-function-tree-bridge.js` — pearl Function ↔ LensTreeEditor draft ops; Studio save/autosave writes back to the pearl entity.
+- Pearl Studio: **auto-opens** original `LensTreeEditor` when a Function with Moves exists (primary interior). Thin `PearlFunctionMovesStudio` summary remains for Function switching / labels only — **not** a parallel drag UX.
+- Companion NL `reorderPearlFunctionMoves` / `decomposePearlFunctionMove` stay on the same domain handlers (capability purpose cites `reorderStep` / LensTreeEditor).
 
 ## Original technical note (back)
 
-> A Function **is** an ordered series of Moves. Edit that order in the programmable lens/function tree editor (`LensTreeEditor`) via DnD (`reorderStep`). Pearl Studio must open that editor (bridged to pearl persistence), not only a reinvented list.
+> A Function **is** an ordered series of Moves. Edit that order in the programmable lens/function tree editor (`LensTreeEditor`) via DnD (`reorderStep`). Pearl Studio must open that editor by default (bridged to pearl persistence), not bury it behind a reinvented list click.
 
 ## Proof (headed, PNG Read)
 
 Harness: `node scripts/pearl-function-editor-forensics-proof.mjs`  
 Shots: `audit-shots/pearl-function-moves-forensics-2026-07-24/` (local)
 
-| Frame | Verdict | Seen in PNG |
+| Frame | Verdict | Seen in PNG (human Read) |
 |---|---|---|
-| `f01-studio-moves.png` | PASS | Pearl Studio; “Functions = ordered Moves”; Investment memo with 5 named Moves (Frame the thesis → … → Write recommendation); Diligence; “Open original Function editor”. |
-| `f02-original-lens-tree-editor.png` | PASS | Fullscreen original `LensTreeEditor` (“function”); horizontal flow cards Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger → Write recommendation; grip/drag chrome; Save. |
+| `f01-studio-default-editor.png` | PASS | Original `LensTreeEditor` is the first interior: title “Function”, “5 steps”, flow `Frame the thesis → … → Write recommendation`, cards with **drag grips** and named Moves; no buried “Open original Function editor”. Later steps require horizontal scroll. |
+| `f02-after-canonical-reorder.png` | PASS | After canonical last→first: summary and card 1 are **Write recommendation** → Frame the thesis → Assess market…; grips still visible. Output chrome flipped to “risk ledger” (deriveOutputSpec side-effect — residual). |
 
-Unit: `pearl-function-tree-bridge.test.js` + `function-tree-editor.test.js` — 26/26 pass.
+Unit: `pearl-function-tree-bridge.test.js` + `pearl-function-moves.test.js` + `function-tree-editor.test.js` — pass.
 
-Residual: AI prose revise inside Studio-mounted editor needs main workspace handlers; live memo credentials; mic/OAuth/extension unchanged. Not a production-ready claim.
+## Residuals (honest)
+
+- AI prose revise/create inside Studio-mounted editor still needs main workspace handlers (“apply with AI” can throw in Studio).
+- Horizontal flow clips later Moves until scroll — discoverability friction for clueless users.
+- Reorder can retarget derived output label (Recommendation → Risk Ledger) without an explicit user edit.
+- HTML5 drag in headed Playwright mouse gestures remains imperfect; NL/domain mutate + PNG Read is the proof used here.
+- Live memo credentials; mic/OAuth/extension unchanged.
+- Not a production-ready claim.

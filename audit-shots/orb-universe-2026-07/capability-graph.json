@@ -25200,7 +25200,7 @@
       "version": 1,
       "kind": "capability",
       "name": "reorderPearlFunctionMoves",
-      "purpose": "Reorder Moves inside a pearl Function (same handler as Studio drag)",
+      "purpose": "Reorder Moves inside a pearl Function via canonical reorderStep (same handler as Studio LensTreeEditor drag)",
       "examples": [
         "put the last move first",
         "move the first move to the end",
@@ -25355,7 +25355,7 @@
       "version": 1,
       "kind": "capability",
       "name": "decomposePearlFunctionMove",
-      "purpose": "Decompose one Function Move into smaller ordered Moves (same handler as Studio Decompose)",
+      "purpose": "Decompose one Function Move into smaller ordered Moves (same domain handler as Studio / bridge path)",
       "examples": [
         "decompose the first move",
         "break that step into smaller moves"

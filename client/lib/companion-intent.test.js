@@ -620,7 +620,7 @@ test("function-move reorder/decompose parsers are deterministic and capability-b
   assert.ok(COMPANION_VERBS.decomposePearlFunctionMove);
   assert.ok(COMPANION_VERBS.reorderExternalPearlFunctionMoves);
   assert.ok(COMPANION_VERBS.decomposeExternalPearlFunctionMove);
-  assert.match(COMPANION_VERBS.reorderPearlFunctionMoves.purpose, /same handler as Studio drag/i);
+  assert.match(COMPANION_VERBS.reorderPearlFunctionMoves.purpose, /reorderStep|LensTreeEditor/i);
   assert.match(COMPANION_VERBS.decomposePearlFunctionMove.purpose, /Decompose/i);
 });
 

@@ -798,6 +798,7 @@
         "client/lib/secure-local-storage.js",
         "extension/src/platform/secure-storage.js",
         "client/components/PearlStudioView.jsx",
+        "client/components/LensTreeEditor.jsx",
         "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
@@ -1294,6 +1295,7 @@
       ],
       "webEntries": [
         "client/components/PearlStudioView.jsx",
+        "client/components/LensTreeEditor.jsx",
         "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx",
         "extension/src/result/main.js",
@@ -2214,6 +2216,7 @@
         "client/components/CognitiveLayerStudio.jsx",
         "client/components/PearlStudioView.jsx",
         "extension/src/result/main.js",
+        "client/components/LensTreeEditor.jsx",
         "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/LensGrammarPanels.jsx"
       ],
@@ -2730,6 +2733,7 @@
         "extension/src/sidepanel/main.jsx",
         "client/App.jsx",
         "client/components/PearlStudioView.jsx",
+        "client/components/LensTreeEditor.jsx",
         "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx"
       ],
@@ -3008,6 +3012,7 @@
         "extension/src/sidepanel/main.jsx:extension-pearl-halo",
         "extension/src/content/bridge.js:Tell Pearl your goal",
         "client/components/PearlStudioView.jsx",
+        "client/components/LensTreeEditor.jsx",
         "client/components/PearlFunctionMovesStudio.jsx",
         "client/components/CognitiveLayerStudio.jsx"
       ],
@@ -3097,5 +3102,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-24T20:54:54.324Z"
+  "generatedAt": "2026-07-24T21:29:13.910Z"
 }

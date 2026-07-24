@@ -881,7 +881,7 @@ async function runCluelessJourneys(browser) {
     const moveSeq = Boolean(document.querySelector("[data-testid='studio-move-sequence'], [data-testid='studio-move']"));
     const junkForm = /Delete pearl|Duplicate/.test(body) && !/Functions = ordered Moves|ordered Move/i.test(body);
     const functionMoves = /Functions = ordered Moves|Investment memo|ordered Move/i.test(body);
-    const moveNames = [...document.querySelectorAll("[data-testid='studio-move'] b, .pearl-fn-moves__move b")]
+    const moveNames = [...document.querySelectorAll("[data-testid='studio-move'] b, .pearl-fn-moves__move b, .fn-flow-card-name b, .fn-flow-card-name")]
       .map((el) => (el.textContent || "").trim())
       .filter(Boolean)
       .slice(0, 8);
@@ -931,7 +931,7 @@ async function runCluelessJourneys(browser) {
   if (studioInteriorOk) {
     const beforeOrder = afterClick.moveNames.slice();
     const boxes = await page.evaluate(() => {
-      const moves = [...document.querySelectorAll("[data-testid='studio-move']")];
+      const moves = [...document.querySelectorAll("[data-testid='studio-move'], .fn-flow-card")];
       return moves.slice(0, 2).map((el) => {
         const r = el.getBoundingClientRect();
         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
@@ -944,7 +944,7 @@ async function runCluelessJourneys(browser) {
       await page.mouse.up();
       await page.waitForTimeout(900);
       await shot(page, "14e-after-reorder");
-      const afterOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+      const afterOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b, .fn-flow-card-name b, .fn-flow-card-name")]
         .map((el) => (el.textContent || "").trim())
         .filter(Boolean)
         .slice(0, 8));
@@ -953,7 +953,7 @@ async function runCluelessJourneys(browser) {
       await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForTimeout(1200);
       await shot(page, "14f-reorder-reload");
-      const reloadedOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+      const reloadedOrder = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b, .fn-flow-card-name b, .fn-flow-card-name")]
         .map((el) => (el.textContent || "").trim())
         .filter(Boolean)
         .slice(0, 8));
@@ -983,7 +983,7 @@ async function runCluelessJourneys(browser) {
   }
 
   // Pre-NL baseline: prefer live Studio DOM, else last known gesture/click order.
-  const liveBeforeNl = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b")]
+  const liveBeforeNl = await page.evaluate(() => [...document.querySelectorAll("[data-testid='studio-move'] b, .fn-flow-card-name b, .fn-flow-card-name")]
     .map((el) => (el.textContent || "").trim())
     .filter(Boolean)
     .slice(0, 8)).catch(() => []);

@@ -1,28 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  decomposeFunctionMove,
-  orderedMovesFromFunction,
-  reorderFunctionMoves,
-  summarizePearlFunctions,
-} from "../../shared/pearl-function-moves.js";
+import { summarizePearlFunctions } from "../../shared/pearl-function-moves.js";
 
 /**
- * Load-bearing Studio interior: each Function is an ordered list of Moves.
- * Drag to rearrange; decompose expands a compound move into sub-moves.
+ * Thin Studio summary of Functions as ordered Moves.
+ * Drag / decompose / nest live in the original LensTreeEditor (default primary view).
+ * This list is for switching Functions and clueless world-state labels only.
  */
-export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onStatus, onOpenOriginalEditor }) {
+export default function PearlFunctionMovesStudio({
+  entity,
+  onOpenOriginalEditor,
+  editorOpen = false,
+  activeFunctionId = null,
+}) {
   const summaries = useMemo(() => summarizePearlFunctions(entity || {}), [entity]);
   const lenses = entity?.lenses || [];
-  const [drag, setDrag] = useState(null);
-  const [expandedId, setExpandedId] = useState(() => summaries[0]?.id || null);
+  const [expandedId, setExpandedId] = useState(() => activeFunctionId || summaries[0]?.id || null);
 
-  // Entity can hydrate after first paint (Studio remount / Companion flush).
   useEffect(() => {
+    if (activeFunctionId) {
+      setExpandedId(activeFunctionId);
+      return;
+    }
     if (!summaries.length) return;
     if (!expandedId || !summaries.some((entry) => entry.id === expandedId)) {
       setExpandedId(summaries[0].id);
     }
-  }, [summaries, expandedId]);
+  }, [summaries, expandedId, activeFunctionId]);
 
   if (!summaries.length) {
     return (
@@ -36,47 +39,30 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
     );
   }
 
-  async function applyReorder(fnId, fromIndex, toIndex) {
-    const fn = (entity.functions || []).find((entry) => entry.id === fnId)
-      || entity.cognition?.layers?.find((entry) => entry.id === fnId);
-    if (!fn) return;
-    const result = reorderFunctionMoves(fn, fromIndex, toIndex);
-    if (!result.ok) {
-      onStatus?.(result.reason);
-      return;
-    }
-    await onPatchFunction?.(fnId, { operation: "reorder", fromIndex, toIndex, function: result.function });
-    onStatus?.(`Reordered moves in “${fn.name || fn.identity?.name || "Function"}”`);
-  }
-
-  async function applyDecompose(fnId, moveIndex) {
-    const fn = (entity.functions || []).find((entry) => entry.id === fnId)
-      || entity.cognition?.layers?.find((entry) => entry.id === fnId);
-    if (!fn) return;
-    const result = decomposeFunctionMove(fn, moveIndex);
-    if (!result.ok) {
-      onStatus?.(result.reason);
-      return;
-    }
-    await onPatchFunction?.(fnId, { operation: "decompose", moveIndex, function: result.function });
-    onStatus?.(`Decomposed into ${result.moves.length} moves`);
-  }
-
   return (
-    <section className="pearl-fn-moves" data-testid="studio-function-moves" aria-label="Functions as ordered Moves">
+    <section
+      className={"pearl-fn-moves" + (editorOpen ? " pearl-fn-moves--summary" : "")}
+      data-testid="studio-function-moves"
+      aria-label="Functions as ordered Moves"
+    >
       <style>{studioCss}</style>
-        <header className="pearl-fn-moves__guide">
-          <b>Functions = ordered Moves</b>
-          <p>Each Function is a sequence you can drag to rearrange or decompose into smaller Moves. Open the original Function editor for full drag-reorder, nest, and lineage. Lenses hold taste/context around that structure.</p>
-        </header>
+      <header className="pearl-fn-moves__guide">
+        <b>Functions = ordered Moves</b>
+        <p>
+          {editorOpen
+            ? "Editing in the original Function editor below — drag grips to reorder, nest, or save. Companion NL uses the same reorderStep path."
+            : "Open a Function to edit its ordered Moves in the original Function editor (drag grips, nest, lineage)."}
+        </p>
+      </header>
 
       {summaries.map((summary) => {
         const open = expandedId === summary.id;
         const moves = summary.moves;
+        const active = activeFunctionId === summary.id;
         return (
           <article
             key={summary.id}
-            className="pearl-fn-moves__fn"
+            className={"pearl-fn-moves__fn" + (active ? " is-active" : "")}
             data-testid="studio-function"
             data-function-id={summary.id}
             data-function-name={summary.name}
@@ -85,55 +71,33 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
               type="button"
               className="pearl-fn-moves__fn-head"
               aria-expanded={open}
-              onClick={() => setExpandedId(open ? null : summary.id)}
+              onClick={() => {
+                setExpandedId(open && !editorOpen ? null : summary.id);
+                onOpenOriginalEditor?.(summary.id);
+              }}
             >
               <span className="pearl-fn-moves__fn-label">Function</span>
               <strong>{summary.name}</strong>
               <small>{summary.moveCount} ordered Move{summary.moveCount === 1 ? "" : "s"}</small>
             </button>
-            {open && onOpenOriginalEditor && (
-              <button
-                type="button"
-                className="pearl-fn-moves__open-editor"
-                data-testid="studio-open-lens-tree-editor"
-                onClick={() => onOpenOriginalEditor(summary.id)}
-              >
-                Open original Function editor
-              </button>
-            )}
             {open && (
-              <ol className="pearl-fn-moves__list" data-testid="studio-move-sequence" aria-label={`${summary.name} moves in order`}>
+              <ol
+                className="pearl-fn-moves__list"
+                data-testid={editorOpen ? "studio-move-summary" : "studio-move-sequence"}
+                aria-label={`${summary.name} moves in order`}
+              >
                 {moves.map((move, index) => (
                   <li
                     key={move.id}
                     className="pearl-fn-moves__move"
-                    data-testid="studio-move"
+                    data-testid={editorOpen ? "studio-move-summary-item" : "studio-move"}
                     data-move-index={index}
-                    draggable
-                    onDragStart={() => setDrag({ fnId: summary.id, from: index })}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={async (event) => {
-                      event.preventDefault();
-                      if (!drag || drag.fnId !== summary.id) return;
-                      await applyReorder(summary.id, drag.from, index);
-                      setDrag(null);
-                    }}
-                    onDragEnd={() => setDrag(null)}
                   >
-                    <span className="pearl-fn-moves__grip" aria-hidden="true" title="Drag to reorder">⠿</span>
                     <span className="pearl-fn-moves__index" aria-hidden="true">{index + 1}</span>
                     <div className="pearl-fn-moves__body">
                       <b>{move.name}</b>
-                      {move.description ? <p>{move.description}</p> : null}
+                      {move.description && !editorOpen ? <p>{move.description}</p> : null}
                     </div>
-                    <button
-                      type="button"
-                      className="pearl-fn-moves__decompose"
-                      data-testid="studio-decompose-move"
-                      onClick={() => applyDecompose(summary.id, index)}
-                    >
-                      Decompose
-                    </button>
                   </li>
                 ))}
                 {!moves.length && (
@@ -161,26 +125,23 @@ export default function PearlFunctionMovesStudio({ entity, onPatchFunction, onSt
 
 const studioCss = `
   .pearl-fn-moves{margin:22px 0 28px;padding-top:8px}
+  .pearl-fn-moves--summary{margin-bottom:12px}
   .pearl-fn-moves__guide{display:grid;gap:4px;margin-bottom:16px}
   .pearl-fn-moves__guide b{font:550 13px/1.3 inherit}
   .pearl-fn-moves__guide p{margin:0;font-size:13px;line-height:1.5;opacity:.78;max-width:56ch}
   .pearl-fn-moves__fn{margin:0 0 14px;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);padding-top:12px}
+  .pearl-fn-moves__fn.is-active{opacity:1}
   .pearl-fn-moves__fn-head{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:baseline;width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
   .pearl-fn-moves__fn-label{grid-column:1/-1;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
   .pearl-fn-moves__fn-head strong{font:550 18px/1.25 inherit}
   .pearl-fn-moves__fn-head small{opacity:.62;font-size:12px}
-  .pearl-fn-moves__open-editor{margin:10px 0 0;padding:0;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent);background:transparent;color:inherit;font:12px/1.3 inherit;cursor:pointer;opacity:.8;width:fit-content}
-  .pearl-fn-moves__open-editor:hover{opacity:1}
-  .pearl-fn-moves__list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
-  .pearl-fn-moves__move{display:grid;grid-template-columns:18px 22px minmax(0,1fr) auto;gap:8px;align-items:start;padding:10px 8px;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:10px;background:color-mix(in srgb,Canvas 92%,transparent);cursor:grab}
-  .pearl-fn-moves__move:active{cursor:grabbing}
-  .pearl-fn-moves__grip{opacity:.45;font-size:14px;line-height:1.4}
+  .pearl-fn-moves__list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+  .pearl-fn-moves--summary .pearl-fn-moves__list{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+  .pearl-fn-moves__move{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;padding:8px 6px;border:1px solid color-mix(in srgb,currentColor 10%,transparent);border-radius:8px;background:color-mix(in srgb,Canvas 94%,transparent)}
   .pearl-fn-moves__index{font-size:12px;opacity:.5;padding-top:2px}
   .pearl-fn-moves__body{min-width:0}
-  .pearl-fn-moves__body b{display:block;font:550 14px/1.35 inherit}
+  .pearl-fn-moves__body b{display:block;font:550 13px/1.35 inherit}
   .pearl-fn-moves__body p{margin:4px 0 0;font-size:12px;line-height:1.45;opacity:.72}
-  .pearl-fn-moves__decompose{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent);background:transparent;color:inherit;padding:4px 0;font:12px/1.2 inherit;cursor:pointer;opacity:.78}
-  .pearl-fn-moves__decompose:hover{opacity:1}
   .pearl-fn-moves__empty{opacity:.62;font-size:13px;padding:8px 0}
   .pearl-fn-moves__lenses{margin-top:22px;padding-top:14px;border-top:1px solid color-mix(in srgb,currentColor 10%,transparent)}
   .pearl-fn-moves__lenses span{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55;margin-bottom:8px}

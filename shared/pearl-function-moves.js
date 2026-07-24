@@ -1,12 +1,47 @@
 /**
  * Function = ordered series of Moves.
- * Pearl-surface adapters for Studio list + Companion domain verbs.
- * Original full editor remains LensTreeEditor (see pearl-function-tree-bridge.js
- * and docs/pearl-function-moves-forensics.md) — do not treat this module as a
- * replacement for that path.
+ * Pearl-surface adapters for Studio summary + Companion domain verbs.
+ * Canonical reorder uses shared/function-step-ops.js `reorderStep` (same algorithm
+ * as LensTreeEditor). See pearl-function-tree-bridge.js + forensics doc.
  */
 
+import { reorderStep } from "./function-step-ops.js";
+
 const bounded = (value, limit = 180) => String(value ?? "").slice(0, limit);
+
+/** Build LensTreeEditor-shaped draft ops from a pearl Function (shared with bridge). */
+export function pearlFunctionToDraftOps(fn = {}) {
+  const moves = orderedMovesFromFunction(fn);
+  const rootId = String(fn.id || `fn:${moves.length}`);
+  const stepOps = moves.map((move, index) => ({
+    id: String(move.id || `move:${index + 1}`),
+    kind: "prompt",
+    name: move.name || `Move ${index + 1}`,
+    description: move.description || "",
+    prompt: move.description || `Perform: ${move.name || `Move ${index + 1}`}`,
+    libraryKind: "move",
+  }));
+  const root = {
+    id: rootId,
+    kind: "pipeline",
+    name: fn.name || fn.identity?.name || "Function",
+    description: fn.description || "",
+    steps: stepOps.map((step) => step.id),
+    top: true,
+    libraryKind: "function",
+  };
+  return { seedOps: [root, ...stepOps], rootId, root };
+}
+
+/**
+ * Map destination indices (Companion NL / list semantics) onto reorderStep
+ * drop-slot indices used by LensTreeEditor.
+ */
+export function destinationIndicesToReorderStep(fromIndex, toIndex) {
+  if (fromIndex === toIndex) return null;
+  if (toIndex > fromIndex) return { fromIndex, toIndex: toIndex + 1 };
+  return { fromIndex, toIndex };
+}
 
 /** Extract ordered move/step list from a function layer or legacy function record. */
 export function orderedMovesFromFunction(fn = {}) {
@@ -42,40 +77,71 @@ export function orderedMovesFromFunction(fn = {}) {
   });
 }
 
-/** Reorder moves inside a function; returns patchable function fields. */
+/**
+ * Reorder moves inside a function via canonical reorderStep (LensTreeEditor path).
+ * fromIndex/toIndex are destination indices (where the move should land).
+ */
 export function reorderFunctionMoves(fn = {}, fromIndex, toIndex) {
   const moves = orderedMovesFromFunction(fn);
   if (fromIndex < 0 || fromIndex >= moves.length || toIndex < 0 || toIndex >= moves.length || fromIndex === toIndex) {
     return { ok: false, reason: "invalid move indices", function: fn, moves };
   }
-  const next = [...moves];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  const steps = next.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    description: entry.description,
-    kind: "move",
-    layerId: entry.layerId,
-  }));
+  const mapped = destinationIndicesToReorderStep(fromIndex, toIndex);
+  if (!mapped) {
+    return { ok: false, reason: "invalid move indices", function: fn, moves };
+  }
+  const { seedOps, rootId } = pearlFunctionToDraftOps(fn);
+  const nextOps = reorderStep(seedOps, rootId, mapped.fromIndex, mapped.toIndex);
+  const nextFn = draftOpsToPearlFunctionFields(fn, nextOps, rootId);
+  const nextMoves = orderedMovesFromFunction(nextFn);
+  return {
+    ok: true,
+    moves: nextMoves,
+    function: nextFn,
+  };
+}
+
+/** Convert draft ops back into pearl Function fields (shared with Studio bridge). */
+export function draftOpsToPearlFunctionFields(fn = {}, draftOps = [], rootId) {
+  const map = Object.fromEntries((draftOps || []).map((op) => [op.id, op]));
+  const root = map[rootId] || draftOps.find((op) => op.kind === "pipeline") || null;
+  const stepIds = root?.steps || [];
+  const steps = stepIds.map((id, index) => {
+    const op = map[id] || {};
+    return {
+      id: String(op.id || `step:${index + 1}`),
+      name: op.name || `Move ${index + 1}`,
+      description: op.description || "",
+      prompt: op.prompt || "",
+      kind: "move",
+      layerId: op.layerId || null,
+    };
+  });
   const graph = {
-    nodes: steps.map((step, index) => ({
-      id: step.id || `step:${index + 1}`,
+    nodes: steps.map((step) => ({
+      id: step.id,
       layerId: step.layerId,
       name: step.name,
       description: step.description,
       kind: "move",
     })),
     edges: steps.slice(1).map((_, index) => ({
-      from: steps[index].id || `step:${index + 1}`,
-      to: steps[index + 1].id || `step:${index + 2}`,
+      from: steps[index].id,
+      to: steps[index + 1].id,
       relation: "then",
     })),
   };
   return {
-    ok: true,
-    moves: next.map((entry, index) => ({ ...entry, index })),
-    function: { ...fn, steps, graph, definition: { ...(fn.definition || {}), steps, graph } },
+    ...fn,
+    name: root?.name || fn.name || fn.identity?.name || "Function",
+    description: root?.description || fn.description || "",
+    steps,
+    graph,
+    definition: {
+      ...(fn.definition || {}),
+      steps,
+      graph,
+    },
   };
 }
 

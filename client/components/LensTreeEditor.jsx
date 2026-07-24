@@ -94,6 +94,8 @@ export default function LensTreeEditor({
   createFromProse,
   editFromProse,
   treeToOperators,
+  studioSurface = false,
+  autoPersist = false,
 }) {
   const isCreate = editor.mode === "create";
   const isMoveMode = editor.objectKind === "move";
@@ -162,6 +164,27 @@ export default function LensTreeEditor({
     const t = window.setTimeout(() => setToast(null), 2200);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  const draftOpsRef = useRef(draftOps);
+  draftOpsRef.current = draftOps;
+  const onSaveTreeRef = useRef(onSaveTree);
+  onSaveTreeRef.current = onSaveTree;
+  const persistReadyRef = useRef(false);
+  useEffect(() => {
+    if (!autoPersist || !onSaveTreeRef.current) return undefined;
+    // Skip the initial seed mount so we don't write a no-op revision.
+    if (!persistReadyRef.current) {
+      persistReadyRef.current = true;
+      return undefined;
+    }
+    const t = window.setTimeout(() => {
+      onSaveTreeRef.current?.(editor.mode === "create" ? null : sourceRoot?.id, draftOpsRef.current, {
+        auto: true,
+        commitMessage: "autosave · studio function editor",
+      });
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [draftOps, autoPersist, editor.mode, sourceRoot?.id]);
 
   const showHint = useCallback((msg) => setToast(msg), []);
 
@@ -520,15 +543,19 @@ export default function LensTreeEditor({
     rootDraft?.kind === "pipeline" ? rootDraft.steps?.length || 0 : rootDraft ? 1 : 0;
 
   return (
-    <div className="modal-scrim fn-scrim-full" onClick={onClose}>
+    <div
+      className={"modal-scrim fn-scrim-full" + (studioSurface ? " fn-scrim-studio" : "")}
+      onClick={studioSurface ? undefined : onClose}
+      data-testid={studioSurface ? "studio-lens-tree-editor" : undefined}
+    >
       <div
         ref={editorRef}
-        className={"fn-editor fn-editor-fullscreen fn-editor-programmable fn-editor-flow" + (isMoveMode ? " fn-editor-atomic" : "")}
+        className={"fn-editor fn-editor-fullscreen fn-editor-programmable fn-editor-flow" + (isMoveMode ? " fn-editor-atomic" : "") + (studioSurface ? " fn-editor-studio" : "")}
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
         <div className="fn-head">
-          <h3>{isMoveMode ? "Create Move" : isCreate ? "Create Function" : "Edit Function"}</h3>
+          <h3>{isMoveMode ? "Create Move" : isCreate ? "Create Function" : studioSurface ? "Function" : "Edit Function"}</h3>
           <div className="fn-head-actions">
             {!isMoveMode && <button
               className={"fn-head-btn" + (creationMode === "before-after" ? " active" : "")}
@@ -658,6 +685,7 @@ export default function LensTreeEditor({
                   onUse={useInferredOperator}
                 />
               ) : rootDraft ? (
+                <div data-testid={studioSurface ? "studio-move-sequence" : undefined}>
                 <LensFlowView
                   rootOp={rootDraft}
                   rootId={rootId}
@@ -672,6 +700,7 @@ export default function LensTreeEditor({
                   onStrandDown={beginStrandDrag}
                   opMap={opMap}
                 />
+                </div>
               ) : (
                 <div className="fn-create-panel">
                   <div className="fn-flow-composition-meta">{isMoveMode ? "one action · one model call · no child graph" : "a reusable process"}</div>
@@ -1558,6 +1587,8 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable, onSt
       ref={cardRef}
       className={"fn-flow-card" + (isFocused ? " focused" : "")}
       data-step-id={op.id}
+      data-testid="studio-move"
+      data-move-index={Math.max(0, (stepIndex || 1) - 1)}
       draggable={draggable}
       onDragStart={(e) => {
         if (!draggable) {
@@ -1591,7 +1622,7 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable, onSt
     >
       <div className="fn-flow-card-top">
         {draggable && (
-          <span className="fn-flow-grip" title="Drag to reorder">
+          <span className="fn-flow-grip" title="Drag to reorder" data-testid="studio-move-grip">
             ⠿
           </span>
         )}
@@ -1608,7 +1639,7 @@ function LensFlowCard({ op, stepIndex, rootId, focusId, onFocus, draggable, onSt
           </span>
         )}
       </div>
-      <div className="fn-flow-card-name">{op.name || "unnamed step"}</div>
+      <div className="fn-flow-card-name"><b>{op.name || "unnamed step"}</b></div>
       {op.description && <div className="fn-flow-card-desc">{op.description}</div>}
       {!op.description && op.prompt && (
         <div className="fn-flow-card-desc fn-flow-card-prompt-preview">

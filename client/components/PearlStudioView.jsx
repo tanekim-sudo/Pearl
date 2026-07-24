@@ -3,7 +3,11 @@ import { executePearlActionEvent } from "../../shared/pearl-action-protocol.js";
 import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
 import { listPearlVersions } from "../../shared/pearl-version-history.js";
-import { listPearlFunctionRecords, summarizePearlFunctions } from "../../shared/pearl-function-moves.js";
+import {
+  listPearlFunctionRecords,
+  orderedMovesFromFunction,
+  summarizePearlFunctions,
+} from "../../shared/pearl-function-moves.js";
 import {
   draftOpsToOpMap,
   editorOpsToPearlFunction,
@@ -71,32 +75,59 @@ export default function PearlStudioView({ localRef }) {
   const [versionLabel, setVersionLabel] = useState("");
   const [treeEditor, setTreeEditor] = useState(null);
   const timer = useRef();
+  const autoOpenedRef = useRef(false);
+  const editorSyncRef = useRef(0);
   const channel = useMemo(() => entity ? new BroadcastChannel(`pearl-studio:${entity.id}`) : null, [entity?.id]);
   const versions = entity ? listPearlVersions(entity) : null;
   const functionSummary = entity ? summarizePearlFunctions(entity) : [];
 
-  function openOriginalFunctionEditor(fnId) {
+  function openOriginalFunctionEditor(fnId, { reason } = {}) {
     const fn = listPearlFunctionRecords(entity).find((entry) => entry.id === fnId);
     if (!fn) {
       setStatus("No Function to open in the original editor");
       return;
     }
     const seed = pearlFunctionToEditorSeed(fn);
+    editorSyncRef.current += 1;
     setTreeEditor({
       ...seed.editor,
       pearlFunctionId: fn.id,
+      syncKey: editorSyncRef.current,
     });
-    setStatus("Original Function editor · drag steps to reorder");
+    setStatus(reason || "Function editor · drag grips to reorder Moves");
   }
+
+  // Default primary interior: original LensTreeEditor (not buried behind a button).
+  useEffect(() => {
+    if (!entity || autoOpenedRef.current) return;
+    const fns = listPearlFunctionRecords(entity);
+    const preferred = fns.find((fn) => orderedMovesFromFunction(fn).length >= 1) || fns[0];
+    if (!preferred) return;
+    autoOpenedRef.current = true;
+    const seed = pearlFunctionToEditorSeed(preferred);
+    editorSyncRef.current += 1;
+    setTreeEditor({
+      ...seed.editor,
+      pearlFunctionId: preferred.id,
+      syncKey: editorSyncRef.current,
+    });
+    setStatus("Function editor · ordered Moves");
+  }, [entity?.id]);
 
   useEffect(() => () => channel?.close(), [channel]);
   useEffect(() => {
     const key = (event) => {
-      if (event.key === "Escape") leavePearlStudio();
+      if (event.key !== "Escape") return;
+      if (treeEditor) {
+        setTreeEditor(null);
+        setStatus("Closed Function editor");
+        return;
+      }
+      leavePearlStudio();
     };
     addEventListener("keydown", key);
     return () => removeEventListener("keydown", key);
-  }, []);
+  }, [treeEditor]);
   useEffect(() => {
     if (!channel) return undefined;
     const listener = (event) => {
@@ -106,11 +137,29 @@ export default function PearlStudioView({ localRef }) {
           const refreshed = createPearlEntity(next);
           setEntity(refreshed);
           setName(refreshed.identity?.name || "");
+          const companionTouch = event.data?.reason === "reorder-function-moves"
+            || event.data?.reason === "decompose-function-move";
           setStatus(event.data?.reason === "reorder-function-moves"
             ? "Companion reordered Moves"
             : event.data?.reason === "decompose-function-move"
               ? "Companion decomposed a Move"
               : "Updated");
+          if (companionTouch) {
+            const fnId = treeEditor?.pearlFunctionId
+              || listPearlFunctionRecords(refreshed).find((fn) => orderedMovesFromFunction(fn).length >= 1)?.id;
+            if (fnId) {
+              const fn = listPearlFunctionRecords(refreshed).find((entry) => entry.id === fnId);
+              if (fn) {
+                const seed = pearlFunctionToEditorSeed(fn);
+                editorSyncRef.current += 1;
+                setTreeEditor({
+                  ...seed.editor,
+                  pearlFunctionId: fn.id,
+                  syncKey: editorSyncRef.current,
+                });
+              }
+            }
+          }
           return;
         }
         setStatus("Changed in another tab · reload to review");
@@ -118,7 +167,7 @@ export default function PearlStudioView({ localRef }) {
     };
     channel.addEventListener("message", listener);
     return () => channel.removeEventListener("message", listener);
-  }, [channel, entity?.revision, localRef]);
+  }, [channel, entity?.revision, localRef, treeEditor?.pearlFunctionId]);
 
   useEffect(() => {
     const onStorage = (event) => {
@@ -132,10 +181,22 @@ export default function PearlStudioView({ localRef }) {
     const onMoves = (event) => {
       if (event.detail?.pearlId && event.detail.pearlId !== entity?.id) return;
       const next = resolveStudioEntity(localRef);
-      if (next) {
-        setEntity(createPearlEntity(next));
-        setStatus(event.detail?.operation === "decompose" ? "Decomposed Moves" : "Reordered Moves");
-      }
+      if (!next) return;
+      const refreshed = createPearlEntity(next);
+      setEntity(refreshed);
+      setStatus(event.detail?.operation === "decompose" ? "Decomposed Moves" : "Reordered Moves");
+      const fnId = treeEditor?.pearlFunctionId
+        || listPearlFunctionRecords(refreshed).find((fn) => orderedMovesFromFunction(fn).length >= 1)?.id;
+      if (!fnId) return;
+      const fn = listPearlFunctionRecords(refreshed).find((entry) => entry.id === fnId);
+      if (!fn) return;
+      const seed = pearlFunctionToEditorSeed(fn);
+      editorSyncRef.current += 1;
+      setTreeEditor({
+        ...seed.editor,
+        pearlFunctionId: fn.id,
+        syncKey: editorSyncRef.current,
+      });
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("lens:pearl-function-moves-changed", onMoves);
@@ -143,7 +204,7 @@ export default function PearlStudioView({ localRef }) {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("lens:pearl-function-moves-changed", onMoves);
     };
-  }, [entity?.id, entity?.revision, localRef]);
+  }, [entity?.id, entity?.revision, localRef, treeEditor?.pearlFunctionId]);
 
   async function run(command, args = {}) {
     const store = read(PEARL_STORE_KEY, { version: 1, entities: {} });
@@ -336,17 +397,20 @@ export default function PearlStudioView({ localRef }) {
 
     <PearlFunctionMovesStudio
       entity={entity}
-      onPatchFunction={patchFunction}
-      onStatus={setStatus}
-      onOpenOriginalEditor={openOriginalFunctionEditor}
+      editorOpen={Boolean(treeEditor)}
+      activeFunctionId={treeEditor?.pearlFunctionId || null}
+      onOpenOriginalEditor={(fnId) => openOriginalFunctionEditor(fnId)}
     />
 
     {treeEditor && (
       <LensTreeEditor
+        key={`studio-fn-${treeEditor.pearlFunctionId}-${treeEditor.syncKey || 0}`}
         editor={treeEditor}
         opMap={draftOpsToOpMap(treeEditor.seedOps || [])}
         operators={treeEditor.seedOps || []}
         paletteGroups={[]}
+        studioSurface
+        autoPersist
         createFromProse={async () => {
           throw new Error("AI prose create needs the main workspace — drag Moves to reorder here, then Save.");
         }}
@@ -358,7 +422,7 @@ export default function PearlStudioView({ localRef }) {
           setTreeEditor(null);
           setStatus("Closed Function editor");
         }}
-        onSaveTree={async (_oldId, ops) => {
+        onSaveTree={async (_oldId, ops, meta = {}) => {
           const rootId = treeEditor.seedRoot?.id || treeEditor.op?.id;
           const nextFn = editorOpsToPearlFunction(
             listPearlFunctionRecords(entity).find((entry) => entry.id === treeEditor.pearlFunctionId) || {},
@@ -366,6 +430,10 @@ export default function PearlStudioView({ localRef }) {
             rootId,
           );
           await patchFunction(treeEditor.pearlFunctionId, nextFn);
+          if (meta?.auto) {
+            setStatus(`Autosaved ordered Moves in “${nextFn.name || "Function"}”`);
+            return;
+          }
           setTreeEditor(null);
           setStatus(`Saved ordered Moves in “${nextFn.name || "Function"}” via original editor`);
         }}
