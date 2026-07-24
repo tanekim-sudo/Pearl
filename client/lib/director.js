@@ -283,14 +283,63 @@ export function elementCenter(selector, { scroll = true } = {}) {
   return geometry;
 }
 
+/**
+ * Resolve a director target into client coordinates.
+ * Accepts (x, y), { x, y }, a DOM element, or a selector / anchor: string.
+ */
+export function resolveDirectorPoint(xOrTarget, y) {
+  if (typeof xOrTarget === "number" && typeof y === "number" && Number.isFinite(xOrTarget) && Number.isFinite(y)) {
+    return { x: xOrTarget, y };
+  }
+  if (xOrTarget && typeof xOrTarget === "object") {
+    if (typeof xOrTarget.x === "number" && typeof xOrTarget.y === "number"
+      && Number.isFinite(xOrTarget.x) && Number.isFinite(xOrTarget.y)) {
+      return { x: xOrTarget.x, y: xOrTarget.y };
+    }
+    if (typeof xOrTarget.getBoundingClientRect === "function") {
+      const center = elementCenter(xOrTarget);
+      return center ? { x: center.x, y: center.y } : null;
+    }
+  }
+  if (typeof xOrTarget === "string") {
+    const center = elementCenter(xOrTarget);
+    return center ? { x: center.x, y: center.y } : null;
+  }
+  return null;
+}
+
+function resolveMoveDuration(xOrTarget, y, ms) {
+  if (typeof xOrTarget === "number") return ms;
+  if (typeof y === "number") return y;
+  return ms;
+}
+
+async function toolkitMoveTo(xOrTarget, y, ms) {
+  const point = resolveDirectorPoint(xOrTarget, y);
+  if (!point) return;
+  return cursorMoveTo(point.x, point.y, resolveMoveDuration(xOrTarget, y, ms));
+}
+
+function toolkitJumpTo(xOrTarget, y) {
+  const point = resolveDirectorPoint(xOrTarget, y);
+  if (!point) return;
+  cursorJumpTo(point.x, point.y);
+}
+
+async function toolkitClick(xOrTarget, y, ms) {
+  const point = resolveDirectorPoint(xOrTarget, y);
+  if (!point) return;
+  return cursorClick(point.x, point.y, resolveMoveDuration(xOrTarget, y, ms));
+}
+
 // ---- script runner ----
 
 const toolkit = {
-  moveTo: cursorMoveTo,
-  jumpTo: cursorJumpTo,
+  moveTo: toolkitMoveTo,
+  jumpTo: toolkitJumpTo,
   press: cursorPress,
   release: cursorRelease,
-  click: cursorClick,
+  click: toolkitClick,
   caption: setDirectorCaption,
   wait: directorWait,
   elementCenter,
@@ -402,6 +451,9 @@ export async function runDirectorScript(steps, opts = {}) {
     const error = `unavailable capability: ${resolution.missing.join(", ")}`;
     return { completed: false, error, errors: [error], missing: resolution.missing };
   }
+  if (opts.signal?.aborted) {
+    return { completed: false, aborted: true, error: "Aborted", errors: ["Aborted"] };
+  }
   if (state.running) {
     stopDirector();
     await directorWait(80);
@@ -411,6 +463,8 @@ export async function runDirectorScript(steps, opts = {}) {
   state.running = true;
   state.abortRequested = false;
   activeAbortController = new AbortController();
+  const onExternalAbort = () => stopDirector();
+  opts.signal?.addEventListener?.("abort", onExternalAbort, { once: true });
   const startedAt = new Date().toISOString();
   activeTrace = {
     version: DIRECTOR_EFFECT_TRACE_VERSION,
@@ -440,9 +494,10 @@ export async function runDirectorScript(steps, opts = {}) {
   const errors = [];
   const results = [];
   let consecutiveFailures = 0;
+  let aborted = false;
   try {
     for (const step of steps) {
-      if (state.abortRequested) break;
+      if (state.abortRequested || opts.signal?.aborted) break;
       const fn = verbs[step.verb];
       activeStep = { capability: step.verb, id: step.id || null };
       traceEvent("step-start", {
@@ -486,7 +541,8 @@ export async function runDirectorScript(steps, opts = {}) {
       }
     }
   } finally {
-    const aborted = state.abortRequested;
+    opts.signal?.removeEventListener?.("abort", onExternalAbort);
+    aborted = state.abortRequested || opts.signal?.aborted === true;
     traceEvent("run-complete", {
       status: aborted ? "cancelled" : errors.length ? "failed" : "completed",
       resultTypes: results.map((result) => result.type),
@@ -511,7 +567,14 @@ export async function runDirectorScript(steps, opts = {}) {
     emit();
     opts.onDone?.({ completed: !aborted && !errors.length, aborted, errors });
   }
-  return { completed: !errors.length, errors, results, value: results[results.length - 1] };
+  return {
+    completed: !aborted && !errors.length,
+    aborted,
+    errors,
+    results,
+    value: results[results.length - 1],
+    effects: results.flatMap((result) => (Array.isArray(result?.effects) ? result.effects : [])),
+  };
 }
 
 export function stopDirector() {
@@ -521,15 +584,25 @@ export function stopDirector() {
   emit();
 }
 
-// Dev-only hook so automated audits can exercise director verbs end to end.
-if (typeof window !== "undefined" && import.meta.env?.DEV) {
-  window.__lensDirector = {
-    run: runDirectorScript,
-    stop: stopDirector,
-    verbs: listDirectorVerbs,
+// Production-safe probe for headed audits: prove ghost-cursor motion ran.
+// Full run/stop verb control stays DEV-only so demos cannot be hijacked in prod.
+if (typeof window !== "undefined") {
+  window.__lensDirectorProbe = {
+    running: directorRunning,
+    subscribe: subscribeDirector,
     traces: getDirectorEffectTraces,
     clearTraces: clearDirectorEffectTraces,
-    directEffects: getDirectCapabilityEffects,
-    clearDirectEffects: clearDirectCapabilityEffects,
   };
+  if (import.meta.env?.DEV) {
+    window.__lensDirector = {
+      run: runDirectorScript,
+      stop: stopDirector,
+      verbs: listDirectorVerbs,
+      traces: getDirectorEffectTraces,
+      clearTraces: clearDirectorEffectTraces,
+      directEffects: getDirectCapabilityEffects,
+      clearDirectEffects: clearDirectCapabilityEffects,
+      probe: window.__lensDirectorProbe,
+    };
+  }
 }

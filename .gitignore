@@ -31,6 +31,8 @@ audit-shots/*
 !audit-shots/investor-pearl-e2e-2026-07-23/**
 !audit-shots/zero-demand-2026-07-23/
 !audit-shots/zero-demand-2026-07-23/**
+!audit-shots/companion-animation-stress-2026-07-23/
+!audit-shots/companion-animation-stress-2026-07-23/**
 !audit-shots/audit-truth-remediation-2026-07/
 audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/web/

@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2026-07-24T00:17:35.309Z",
+  "baseUrl": "http://127.0.0.1:41802",
+  "headed": true,
+  "reducedMotion": "no-preference",
+  "checks": [
+    {
+      "id": "runtime-registered",
+      "ok": true,
+      "detail": "__lensOrbRuntime.run present"
+    },
+    {
+      "id": "director-probe-present",
+      "ok": true,
+      "detail": "__lensDirectorProbe.traces present"
+    },
+    {
+      "id": "runtime-stable-after-expand",
+      "ok": true,
+      "detail": "runtime still present after expand/renders"
+    },
+    {
+      "id": "runtime-run-returns",
+      "ok": true,
+      "detail": "{\"hasResult\":true,\"text\":\"Created context pearl “live stress test”. Wear it into the gauntlet when you need it.\",\"completed\":true,\"code\":\"ok\",\"visible\":true}"
+    },
+    {
+      "id": "runtime-create-animated",
+      "ok": true,
+      "detail": "{\"directorRunningSeen\":true,\"cursorSeen\":true,\"statusSeen\":true,\"positionSamples\":24,\"uniquePositions\":23,\"maxTravelPx\":462.23671353106516,\"motionEventCount\":16,\"motionEvents\":[\"cursor-move-start\",\"cursor-move-complete\",\"gesture-press\",\"gesture-release\"],\"eventTypes\":[\"run-start\",\"step-start\",\"caption\",\"target-resolved\",\"cursor-move-start\",\"cursor-move-complete\",\"gesture-press\",\"gesture-release\",\"step-complete\",\"run-complete\"],\"reducedMotion\":false,\"scriptTitle\":\"Make a pearl\",\"expectedCapabilities\":[\"createSemanticOrb\"]}"
+    },
+    {
+      "id": "runtime-mid-animation-shot",
+      "ok": true,
+      "detail": "captured mid-animation screenshot"
+    },
+    {
+      "id": "chat-controls",
+      "ok": true,
+      "detail": "input+GO"
+    },
+    {
+      "id": "go-hit-test",
+      "ok": true,
+      "detail": "hit=companion-go"
+    },
+    {
+      "id": "go-create-animated",
+      "ok": true,
+      "detail": "{\"directorRunningSeen\":true,\"cursorSeen\":true,\"statusSeen\":true,\"positionSamples\":28,\"uniquePositions\":28,\"maxTravelPx\":906.9512177134997,\"motionEventCount\":16,\"motionEvents\":[\"cursor-move-start\",\"cursor-move-complete\",\"gesture-press\",\"gesture-release\"],\"eventTypes\":[\"run-start\",\"step-start\",\"caption\",\"target-resolved\",\"cursor-move-start\",\"cursor-move-complete\",\"gesture-press\",\"gesture-release\",\"step-complete\",\"run-complete\"],\"reducedMotion\":false,\"scriptTitle\":\"Make a pearl\",\"expectedCapabilities\":[\"createSemanticOrb\"]}"
+    },
+    {
+      "id": "go-mid-animation-shot",
+      "ok": true,
+      "detail": "captured mid-animation screenshot"
+    },
+    {
+      "id": "user-message-visible",
+      "ok": true,
+      "detail": "msgs=3 sample=[\"Type or speak what you want, then press GO. I’ll reply here with what happened.\",\"make a pearl about companion stress notes\",\"Created context pearl “companion stress notes”. Wear it into the gauntlet when you need it.\"]"
+    },
+    {
+      "id": "companion-reply-visible",
+      "ok": true,
+      "detail": "reply visible among 3 messages"
+    },
+    {
+      "id": "chat-survives-nav",
+      "ok": true,
+      "detail": "messages after nav=3"
+    },
+    {
+      "id": "voice-status-in-chat",
+      "ok": true,
+      "detail": "voice diagnostic appears in chat"
+    },
+    {
+      "id": "no-page-errors",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "id": "no-silent-mutation",
+      "ok": true,
+      "detail": "demonstrable create-pearl paths showed animation"
+    }
+  ],
+  "defects": [],
+  "animation": {
+    "runtimeCreate": {
+      "directorRunningSeen": true,
+      "cursorSeen": true,
+      "statusSeen": true,
+      "positionSamples": 24,
+      "uniquePositions": 23,
+      "maxTravelPx": 462.23671353106516,
+      "motionEventCount": 16,
+      "motionEvents": [
+        "cursor-move-start",
+        "cursor-move-complete",
+        "gesture-press",
+        "gesture-release"
+      ],
+      "eventTypes": [
+        "run-start",
+        "step-start",
+        "caption",
+        "target-resolved",
+        "cursor-move-start",
+        "cursor-move-complete",
+        "gesture-press",
+        "gesture-release",
+        "step-complete",
+        "run-complete"
+      ],
+      "reducedMotion": false,
+      "scriptTitle": "Make a pearl",
+      "expectedCapabilities": [
+        "createSemanticOrb"
+      ]
+    },
+    "goCreate": {
+      "directorRunningSeen": true,
+      "cursorSeen": true,
+      "statusSeen": true,
+      "positionSamples": 28,
+      "uniquePositions": 28,
+      "maxTravelPx": 906.9512177134997,
+      "motionEventCount": 16,
+      "motionEvents": [
+        "cursor-move-start",
+        "cursor-move-complete",
+        "gesture-press",
+        "gesture-release"
+      ],
+      "eventTypes": [
+        "run-start",
+        "step-start",
+        "caption",
+        "target-resolved",
+        "cursor-move-start",
+        "cursor-move-complete",
+        "gesture-press",
+        "gesture-release",
+        "step-complete",
+        "run-complete"
+      ],
+      "reducedMotion": false,
+      "scriptTitle": "Make a pearl",
+      "expectedCapabilities": [
+        "createSemanticOrb"
+      ]
+    }
+  }
+}

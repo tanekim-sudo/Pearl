@@ -8,8 +8,15 @@ import {
   executeCapabilityScriptDirect,
   getDirectorEffectTraces,
   registerDirectorVerbs,
+  resolveDirectorPoint,
   runDirectorScript,
 } from "./director.js";
+
+test("resolveDirectorPoint accepts coordinates, points, and element-like targets", () => {
+  assert.deepEqual(resolveDirectorPoint(10, 20), { x: 10, y: 20 });
+  assert.deepEqual(resolveDirectorPoint({ x: 3, y: 4 }), { x: 3, y: 4 });
+  assert.equal(resolveDirectorPoint(null), null);
+});
 
 test("direct capability execution mutates without starting demonstration motion", async () => {
   let mutations = 0;

@@ -70,7 +70,6 @@ import {
 import { registerDirectorVerbs } from "../lib/director.js";
 import {
   parseInvestorRolePearlCommand,
-  parsePearlCreationCommand,
   parsePearlRemixCommand,
   parseSafeDemonstrationCommand,
 } from "../lib/companion-intent.js";
@@ -1519,71 +1518,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       }
       return;
     }
-    if (remixIntent?.verb === "wearPearl" && companionSurfaceOk) {
-      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "wearPearl" });
-      setOrb(next);
-      try {
-        const workspace = loadSceneWorkspace();
-        const catalog = reefPearlCatalog(workspace);
-        const needle = String(remixIntent.args?.name || remixIntent.args?.id || "").trim();
-        let match = findWorkspacePearl(workspace.scenes || [], needle);
-        if (!match && route.kind === "stage") {
-          const scene = activeStageScene(workspace);
-          const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
-          const pearl = orbs.find((entry) => entry.id === scene?.activeSemanticOrbId) || orbs[0];
-          if (pearl) match = { id: pearl.id, name: pearl.name, scene, orb: pearl, aesthetic: pearl.aesthetic };
-        }
-        if (!match && catalog[0]) match = catalog[0];
-        if (!match) throw new Error("No matching context pearl to wear. Create one on the shelf, or name the pearl to put on.");
-        if (match.scene?.id) {
-          await applySemanticOrbCommand("activateSemanticOrb", { id: match.id, sceneId: match.scene.id });
-        }
-        wearPearlIdInGauntlet(match.id, {
-          replace: remixIntent.args?.replace === true,
-          slot: Number.isInteger(remixIntent.args?.slot) ? remixIntent.args.slot : undefined,
-        });
-        const gauntlet = loadGauntletState();
-        const orbit = loadWornOrbitState();
-        const byId = new Map(catalog.map((entry) => [entry.id, entry]));
-        const packs = gauntlet.pearlIds.map((id) => {
-          const entry = byId.get(id);
-          return {
-            pearlId: id,
-            id,
-            name: entry?.name || id,
-            aesthetic: entry?.aesthetic || null,
-          };
-        });
-        document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
-          detail: {
-            pearlIds: orbit.pearlIds,
-            primaryPearlId: orbit.primaryPearlId,
-            packs,
-            gauntlet: {
-              slots: gauntlet.slots,
-              activeSlot: gauntlet.activeSlot,
-              filled: gauntlet.filled,
-              capacity: MAX_GAUNTLET_SLOTS,
-            },
-          },
-        }));
-        setOrb(transitionOrb(orbRef.current || next, "completed", {
-          taskId: recorded.entry.id,
-          commandId: "wearPearl",
-          effectId: `wear:${match.id}:${Date.now()}`,
-          evidence: {
-            title: `Loaded ${match.name || "pearl"} into gauntlet`,
-            steps: [`Context pearls in working memory ${gauntlet.filled}/${MAX_GAUNTLET_SLOTS}`],
-          },
-        }));
-      } catch (error) {
-        setOrb(transitionOrb(next, "blocked", {
-          taskId: recorded.entry.id,
-          evidence: { boundary: error?.message || "Could not wear pearl." },
-        }));
-      }
-      return;
-    }
+    // wearPearl must demonstrate via App director (ghost cursor move shelf → gauntlet).
     if (remixIntent?.verb === "removeWornPearl" && companionSurfaceOk) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "removeWornPearl" });
       setOrb(next);
@@ -1776,68 +1711,8 @@ export default function OrbUniverseShell({ StageComponent }) {
       return;
     }
 
-    const pearlCreation = parsePearlCreationCommand(recorded.entry.raw || recorded.entry.normalized);
-    if (pearlCreation && companionSurfaceOk) {
-      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "createSemanticOrb" });
-      setOrb(next);
-      try {
-        const workspace = loadSceneWorkspace();
-        let scene = resolveRemixScene(workspace);
-        if (!scene) {
-          scene = createScene({ id: `scene-${Date.now()}`, name: "Shelf" });
-          persistSceneWorkspace({
-            ...workspace,
-            scenes: [...(workspace.scenes || []), scene],
-            activeSceneId: scene.id,
-          });
-        }
-        const contextDump = (orbRef.current?.context || [])
-          .map((item) => String(item.text || item.label || item.name || "").trim())
-          .filter(Boolean)
-          .join("\n\n");
-        const materialText = String(pearlCreation.args.materialText || contextDump || "").trim();
-        const name = String(pearlCreation.args.name || materialText.slice(0, 48) || "Context pearl").trim();
-        const material = materialText
-          ? {
-            id: `pearl-create:${Date.now()}`,
-            kind: "dump",
-            label: name,
-            text: materialText,
-            provenance: { source: "companion-create" },
-          }
-          : null;
-        const created = await applySemanticOrbCommand("createSemanticOrb", {
-          sceneId: scene.id,
-          activate: true,
-          ...(material
-            ? { material, orb: { name } }
-            : { orb: { name } }),
-          placement: { x: 0, y: -40 },
-        });
-        const createdId = created?.result?.id || created?.id;
-        setOrb(transitionOrb(orbRef.current || next, "completed", {
-          taskId: recorded.entry.id,
-          commandId: "createSemanticOrb",
-          effectId: `create:${createdId || name}:${Date.now()}`,
-          evidence: {
-            title: `Created context pearl “${name}”`,
-            steps: [
-              materialText ? "Material saved into the pearl" : "Empty context pearl placed on the shelf",
-              "Wear it into a gauntlet socket when you need it as working memory",
-            ],
-          },
-        }));
-        if (route.kind !== "stage" && scene?.id) {
-          navigate(`/scene/${encodeURIComponent(scene.id)}`);
-        }
-      } catch (error) {
-        setOrb(transitionOrb(next, "blocked", {
-          taskId: recorded.entry.id,
-          evidence: { boundary: error?.message || "Could not create a context pearl." },
-        }));
-      }
-      return;
-    }
+    // Pearl creation must go through App runtime + director (ghost cursor).
+    // Never silent-mutate here — that taught users nothing and failed stress audits.
     const privacyIntent = recorded.entry.normalized;
     if (/^what(?:'s| is) stored(?: here| locally| on this device)?\??$/i.test(privacyIntent)) {
       const summary = window.__pearlPrivacy?.describe?.() || { locked: true, profile: "unknown", keys: [] };

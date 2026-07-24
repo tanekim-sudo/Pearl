@@ -12870,7 +12870,22 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await dispatchOrbSurfaceCommand("lens:orb-lens-command", { action: "remove", id: a.id });
       return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
     },
-    createSemanticOrb: async (a) => {
+    createSemanticOrb: async (a, tk) => {
+      const pearlName = a.name
+        || a.orb?.name
+        || a.material?.label
+        || a.organizedOrb?.name
+        || "Untitled pearl";
+      tk?.caption?.(a.caption || `creating pearl “${pearlName}”`);
+      const mother = document.querySelector(".companion-orb");
+      const reef = document.querySelector("[data-reef-home], .orb-reef, [data-semantic-anchor='scene-stage']");
+      const stage = mother || reef;
+      if (stage && tk?.moveTo) await tk.moveTo(stage);
+      if (tk?.click && stage) await tk.click(stage);
+      else if (tk?.press) {
+        await tk.press();
+        await tk.release?.();
+      }
       const organizedOrb = a.orb && typeof a.orb === "object" ? a.orb : null;
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
         command: "createSemanticOrb",
@@ -12890,7 +12905,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           activate: a.activate !== false,
         },
       });
-      return { effectId: `semantic-orb-created:${receipt.id}`, id: receipt.id, object: receipt.object || receipt };
+      await tk?.wait?.(280);
+      const createdHost = document.querySelector(
+        `[data-reef-pearl="${receipt.id}"], [data-semantic-orb-id="${receipt.id}"]`
+      ) || mother || reef;
+      if (createdHost && tk?.moveTo) await tk.moveTo(createdHost);
+      tk?.caption?.(a.caption || `created “${pearlName}” — wear it when you need it`);
+      await tk?.wait?.(320);
+      return {
+        effectId: `semantic-orb-created:${receipt.id}`,
+        id: receipt.id,
+        object: receipt.object || receipt,
+        effects: ["semantic-orb-created"],
+      };
     },
     createRolePearl: async (a, tk, ctx) => {
       const { buildInvestorRolePearlScaffold } = await import("../shared/role-pearl-scaffold.js");
@@ -16600,8 +16627,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     planApproved: restoredApproval = false,
   } = {}) {
     let commandText = String(text || "").trim();
+    // Action-first companion commands must demonstrate with the ghost cursor.
+    // Silent executeCapabilityScriptDirect is reserved for nested/internal mutations.
     const executeCompanionScript = (steps, options = {}) =>
-      executeCapabilityScriptDirect(steps, { signal, ...options });
+      runDirectorScript(steps, { signal, speed: options.speed ?? 1.35, ...options });
     let personalVocabulary = [];
     try {
       personalVocabulary = JSON.parse(localStorage.getItem("lens.personal-command-vocabulary.v1") || "[]");
@@ -18198,7 +18227,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
   companionBridgeRef.current = {
     run: (text, options = {}) => handleCompanionCommand(text, options),
     execute: (script, options = {}) =>
-      executeCapabilityScriptDirect(script, { signal: options.signal, title: options.title || "Orb gesture" }),
+      runDirectorScript(script, {
+        signal: options.signal,
+        title: options.title || "Orb gesture",
+        speed: options.speed ?? 1.35,
+      }),
     undo: () => {
       undo();
       return { type: "workspace-undo", persisted: true };
