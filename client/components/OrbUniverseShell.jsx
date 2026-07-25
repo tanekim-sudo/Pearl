@@ -388,7 +388,6 @@ const PEARL_NATIVE_ACTIONS = Object.freeze([
   { group: "Select", label: "Highlighter", note: "Build a persistent cross-domain selection", verb: "switchTool", args: { tool: "highlighter" } },
   { group: "Select", label: "Make one node", note: "Combine highlighted material without running it", verb: "makeHighlightNode", args: {} },
   { group: "Select", label: "Save selection as…", note: "Choose Move, Function, or Lens", verb: "openSaveAsChooser", args: {} },
-  { group: "Learn", label: "Before → after", note: "Infer an editable transformation", verb: "openBeforeAfterCreation", args: {} },
   { group: "Learn", label: "Learn from chat", note: "Extract reusable cognition from a transcript", verb: "openTranscriptLearning", args: {} },
   { group: "Learn", label: "Capture lineage", note: "Save the contributing path as a Function", verb: "captureThreadAsFunction", args: {} },
   { group: "Learn", label: "Save page as Lens", note: "Preserve the page as bounded context", verb: "savePageAsLens", args: {} },
@@ -427,8 +426,15 @@ function PearlActionPalette({ onRun }) {
   </section>;
 }
 
-function PearlWelcome({ onAsk, onDismiss }) {
+function PearlWelcome({ onAsk, onDismiss, onShellNav }) {
   return <section className="pearl-welcome" aria-label="Welcome to Pearl" data-companion-first="true" data-zero-demand="true">
+    {/* Primary shell nav stays hit-testable on first-run — welcome must not orphan Scene/Install. */}
+    <div className="pearl-welcome-shell-nav">
+      <PearlShellNav activeId="reef" onNavigate={(screen) => {
+        onDismiss?.();
+        onShellNav?.(screen);
+      }} />
+    </div>
     <button type="button" className="pearl-welcome-mark" aria-label="Companion Pearl" onClick={onAsk}>
       <PhysicalPearl variant="primary" state="idle" size={46} decorative />
     </button>
@@ -525,6 +531,10 @@ function LibraryHome({
   const handleShellNav = (screen) => {
     if (screen.id === "reef") {
       navigateHome();
+      return;
+    }
+    if (screen.id === "scene") {
+      onCreateScene?.({ source: "shell-nav" });
       return;
     }
     if (screen.id === "install") {
@@ -913,11 +923,9 @@ function SceneStage({
 function PearlSceneChrome({
   sceneName,
   outputFrameOpen,
-  outputToolsOpen,
   selectedCount = 0,
   onHome,
   onToggleFrame,
-  onToggleTools,
   onPlacePearl,
   onDeleteSelection,
   onOpenCompanionHint,
@@ -929,19 +937,22 @@ function PearlSceneChrome({
         <span>{outputFrameOpen ? "Output Frame" : "Playing with pearls"}</span>
         <b>{sceneName || "Untitled workspace"}</b>
         <small>{outputFrameOpen
-          ? "Writing surface — Companion still works. Esc returns."
-          : "Talk to Companion, or open a pearl. Extra tools stay out of the way."}</small>
+          ? "Optional writing surface — Companion still works. Esc returns to pearls."
+          : "Talk to Companion, place a pearl, or open Studio on a pearl."}</small>
       </div>
     </div>
     <div className="pearl-scene-chrome-actions">
       <button type="button" data-testid="scene-ask-pearl" className="pearl-scene-primary-action" onClick={onOpenCompanionHint}>Talk to Companion</button>
       {!outputFrameOpen && <button type="button" data-testid="scene-place-pearl" onClick={onPlacePearl}>New pearl</button>}
-      {outputFrameOpen && <button type="button" data-testid="scene-toggle-frame" className="pearl-scene-secondary-action" aria-pressed={outputFrameOpen} onClick={onToggleFrame}>
-        Back
-      </button>}
-      {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={onToggleTools}>
-        {outputToolsOpen ? "Hide tools" : "Tools"}
-      </button>}
+      <button
+        type="button"
+        data-testid="scene-toggle-frame"
+        className="pearl-scene-secondary-action"
+        aria-pressed={outputFrameOpen}
+        onClick={onToggleFrame}
+      >
+        {outputFrameOpen ? "Back to Scene" : "Output Frame"}
+      </button>
       <button
         type="button"
         className="danger"
@@ -1142,9 +1153,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     });
   }, [openEmittedView]);
 
+  const openSceneRouteRef = useRef(null);
   useEffect(() => {
-    function onOpenScene() {
-      createBlankScene();
+    function onOpenScene(event) {
+      const detail = event?.detail && typeof event.detail === "object" ? event.detail : {};
+      openSceneRouteRef.current?.({
+        withOutputFrame: detail.withOutputFrame === true,
+        source: detail.source || "lens:shell-open-scene",
+      });
     }
     document.addEventListener("lens:shell-open-scene", onOpenScene);
     return () => document.removeEventListener("lens:shell-open-scene", onOpenScene);
@@ -1544,14 +1560,15 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openExtensionDownload", effectId: `install:${Date.now()}` }));
       return;
     }
-    if (/^(?:open|show)(?: the)? (?:output )?frame$|^(?:open|show)(?: the)? output frame$/i.test(recorded.entry.normalized)) {
-      if (route.kind !== "stage") {
-        const workspace = loadSceneWorkspace();
-        const scene = (workspace.scenes || []).find((entry) => (entry.semanticOrbs || []).some((orb) => !orb.archived))
-          || (workspace.scenes || [])[0];
-        if (scene?.id) navigate(`/scene/${scene.id}`);
-      }
-      setOutputFrameOpen(true);
+    if (shellNavIntent === "openScene") {
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openScene" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openScene", effectId: "route:scene" }));
+      openSceneRoute({ withOutputFrame: false, source: "companion-open-scene" });
+      return;
+    }
+    if (shellNavIntent === "openOutputFrame"
+      || /^(?:open|show)(?: the)? (?:output )?frame$|^(?:open|show)(?: the)? output frame$/i.test(recorded.entry.normalized)) {
+      openSceneRoute({ withOutputFrame: true, source: "companion-open-output-frame" });
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openOutputFrame" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openOutputFrame", effectId: `output-frame:${Date.now()}` }));
       return;
@@ -1986,7 +2003,7 @@ export default function OrbUniverseShell({ StageComponent }) {
     if (/\b(?:open|start|new)\b.*\bscene\b/i.test(recorded.entry.normalized)) {
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openScene" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openScene", effectId: "route:scene" }));
-      createBlankScene();
+      openSceneRoute({ withOutputFrame: false, source: "companion-open-scene" });
       return;
     }
     if (/\b(?:install|set up|add)\b.*\b(?:pearl|extension)\b/i.test(recorded.entry.normalized)) {
@@ -2348,9 +2365,6 @@ export default function OrbUniverseShell({ StageComponent }) {
               <button type="button" aria-pressed={outputFrameOpen} onClick={() => setOutputFrameOpen((value) => !value)}>
                 {outputFrameOpen ? "Back to Scene" : "Open Output Frame"}
               </button>
-              {outputFrameOpen && <button type="button" aria-pressed={outputToolsOpen} onClick={() => setOutputToolsOpen((value) => !value)}>
-                {outputToolsOpen ? "Hide editing tools" : "Show editing tools"}
-              </button>}
               {[["Stage", "Space"], ["Gallery", "Grid"], ["Graph", "Connections"], ["Table", "Details"], ["Timeline", "Sequence"]].map(([option, optionLabel]) => <button
                 type="button"
                 key={option}
@@ -3194,24 +3208,67 @@ export default function OrbUniverseShell({ StageComponent }) {
     }
   }
 
-  function createBlankScene() {
-    const id = `scene-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-    const scene = createScene({ id, name: "Untitled Scene", metadata: { createdFrom: "new-scene-control" } });
-    const scenes = [...(sceneWorkspace.scenes || []), scene];
-    const serialized = serializeUnifiedWorkspace({
-      scenes,
-      activeSceneId: scene.id,
-      items: scene.items,
-      nodes: scene.nodes,
-      camera: scene.camera,
-      frames: scene.frames,
-      orbInstances: scene.orbInstances,
-      workingSet: scene.workingSet,
-    });
-    localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
-    setSceneWorkspace(JSON.parse(serialized));
-    navigate(`/scene/${encodeURIComponent(id)}`);
+  /** Open spatial Scene (pearls). Classic App rails/tools stay off — Studio owns Moves→Functions. */
+  function openSceneRoute({
+    withOutputFrame = false,
+    source = "new-scene-control",
+    forceNew = false,
+  } = {}) {
+    const workspace = loadSceneWorkspace();
+    let scene = !forceNew && (
+      (route.kind === "stage" && route.sceneId
+        ? (workspace.scenes || []).find((entry) => entry.id === route.sceneId)
+        : null)
+      || (workspace.activeSceneId
+        ? (workspace.scenes || []).find((entry) => entry.id === workspace.activeSceneId)
+        : null)
+      || (workspace.scenes || [])[0]
+      || null
+    );
+    if (!scene) {
+      const id = `scene-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+      scene = createScene({
+        id,
+        name: "Untitled Scene",
+        metadata: { createdFrom: source || "new-scene-control" },
+      });
+      const scenes = [...(workspace.scenes || []), scene];
+      const serialized = serializeUnifiedWorkspace({
+        scenes,
+        activeSceneId: scene.id,
+        items: scene.items,
+        nodes: scene.nodes,
+        camera: scene.camera,
+        frames: scene.frames,
+        orbInstances: scene.orbInstances,
+        workingSet: scene.workingSet,
+      });
+      localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
+      setSceneWorkspace(JSON.parse(serialized));
+    } else if (workspace.activeSceneId !== scene.id) {
+      const serialized = serializeUnifiedWorkspace({
+        ...workspace,
+        scenes: workspace.scenes || [],
+        activeSceneId: scene.id,
+      });
+      localStorage.setItem(UNIFIED_WORKSPACE_KEY, serialized);
+      setSceneWorkspace(JSON.parse(serialized));
+    }
+    if (route.kind !== "stage" || route.sceneId !== scene.id) {
+      navigate(`/scene/${encodeURIComponent(scene.id)}`);
+    }
+    setOutputFrameOpen(Boolean(withOutputFrame));
+    setOutputToolsOpen(false); // never emit classic App rails in Pearl shell
   }
+
+  function createBlankScene(options = {}) {
+    openSceneRoute({
+      withOutputFrame: options?.withOutputFrame === true,
+      source: options?.source || "new-scene-control",
+      forceNew: options?.forceNew === true || !options?.source,
+    });
+  }
+  openSceneRouteRef.current = openSceneRoute;
 
   async function continueExtensionWork() {
     if (!continuationMaterialCount(extensionHandoff)) {
@@ -3370,13 +3427,11 @@ export default function OrbUniverseShell({ StageComponent }) {
       <PearlSceneChrome
         sceneName={routedScene?.name || routedScene?.id || "Untitled workspace"}
         outputFrameOpen={outputFrameOpen}
-        outputToolsOpen={outputToolsOpen}
         onHome={() => navigateHome()}
         onToggleFrame={() => {
           setOutputFrameOpen((value) => !value);
-          if (outputFrameOpen) setOutputToolsOpen(false);
+          setOutputToolsOpen(false);
         }}
-        onToggleTools={() => setOutputToolsOpen((value) => !value)}
         onPlacePearl={() => {
           try { semanticOrbActions.create({ placement: { x: 0, y: -40 } }); }
           catch (error) { console.error("Create pearl failed", error); }
@@ -3404,9 +3459,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       >
         {/* Always mount App so CompanionChat + director/ghost-cursor runtime stay alive. */}
         <div
-          className={outputFrameOpen
-            ? `orb-output-frame-host ${outputToolsOpen ? "tools-emitted" : ""}`
-            : "orb-runtime-host"}
+          className={outputFrameOpen ? "orb-output-frame-host" : "orb-runtime-host"}
           data-semantic-anchor={outputFrameOpen ? "output-frame" : "companion-runtime"}
           aria-hidden={outputFrameOpen ? undefined : "true"}
         >
@@ -3563,6 +3616,26 @@ export default function OrbUniverseShell({ StageComponent }) {
     {showWelcome && <PearlWelcome
       onAsk={() => { dismissWelcome(); window.dispatchEvent(new CustomEvent("lens:companion-expand")); }}
       onDismiss={dismissWelcome}
+      onShellNav={(screen) => {
+        if (screen.id === "reef") {
+          navigateHome();
+          return;
+        }
+        if (screen.id === "scene") {
+          createBlankScene({ source: "welcome-shell-nav" });
+          return;
+        }
+        if (screen.id === "install") {
+          navigate("/install");
+          return;
+        }
+        if (screen.emit) {
+          openEmittedView(screen.emit, screen.id === "settings" ? { panel: "account" } : undefined);
+          if (screen.path) navigate(screen.path);
+          return;
+        }
+        if (screen.path) navigate(screen.path);
+      }}
     />}
     {guideOpen && <PearlGuidePanel onClose={() => setGuideOpen(false)} onTry={(text) => { setGuideOpen(false); command(text); }} />}
     {cursorMode && <button type="button" className="pearl-cursor-escape" onClick={() => setCursorMode(false, "control")}>Esc</button>}

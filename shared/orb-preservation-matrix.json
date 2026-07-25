@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-25T07:28:58.155Z",
+  "generatedAt": "2026-07-25T17:32:10.199Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -49,7 +49,6 @@
       "status": "preserved",
       "directControl": [
         "client/components/LensTreeEditor.jsx",
-        "client/components/AiNodeCanvas.jsx",
         "extension/src/sidepanel/main.jsx"
       ],
       "orbVoice": [
@@ -150,7 +149,8 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/App.jsx:↦ Moves"
+        "client/components/LensTreeEditor.jsx",
+        "client/components/PearlStudioView.jsx"
       ],
       "orbVoice": [
         "createMove",
@@ -267,7 +267,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/App.jsx:Primitive Moves"
+        "client/components/LensTreeEditor.jsx"
       ],
       "orbVoice": [
         "promotePrimitiveMove",
@@ -297,7 +297,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/components/AiNodeCanvas.jsx:ai-strand-choice-hud"
+        "client/components/AiNodeCanvas.jsx"
       ],
       "orbVoice": [
         "applyFunctionToAiNode"

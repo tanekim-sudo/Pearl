@@ -1,6 +1,23 @@
 export const FEATURE_CONTRACT_VERSION = 1;
 
 const feature = (id, value) => Object.freeze({ id, status: "active", migrationVersion: 2, ...value });
+/** User-approved deletion from Pearl shell (2026-07-25) — keep ID for lineage; skip active wiring checks. */
+const removedFeature = (id, value) => Object.freeze({
+  id,
+  status: "removed",
+  migrationVersion: value.migrationVersion || 5,
+  removedAt: "2026-07-25",
+  removedReason: value.removedReason || "Off Pearl product vision — classic App Stage surface deleted with explicit user approval.",
+  domains: value.domains || [],
+  commands: value.commands || [],
+  ui: value.ui || [],
+  companion: value.companion || [],
+  extension: value.extension || [],
+  persistence: value.persistence || [],
+  tests: value.tests || [],
+  owner: value.owner,
+  successor: value.successor || null,
+});
 
 export const FEATURE_CONTRACTS = Object.freeze([
   feature("observation.workspace", {
@@ -13,7 +30,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("generation.taste-branching", {
     domains: ["move", "function", "ai", "extension"],
     commands: ["setGenerationPlan", "startGenerationBatch", "updateGenerationCandidate", "recordTasteFeedback", "prepareMoreLikeThis"],
-    ui: ["client/components/LensTreeEditor.jsx", "client/components/AiNodeCanvas.jsx", "extension/src/sidepanel/main.jsx"],
+    ui: ["client/components/LensTreeEditor.jsx", "extension/src/sidepanel/main.jsx"],
     companion: ["setGenerationPlan", "tasteCandidate", "moreLikeThis", "keepAllCandidates", "extendSelectedCandidates", "stopGenerationBatch", "retryGenerationCandidate"],
     extension: ["pressExternalGo", "setExternalGenerationBranches", "tasteExternalCandidate"], persistence: ["lens.unified-workspace.v2"],
     tests: ["shared/generation-plan.test.js"], owner: "shared/generation-plan.js",
@@ -25,16 +42,18 @@ export const FEATURE_CONTRACTS = Object.freeze([
     extension: ["saveExternalCaptureAsLens", "setExternalLensContext", "saveExternalTasteTeaching"], persistence: ["lens.lenses.v2"],
     tests: ["shared/lens-perceptual-model.test.js", "shared/taste-lens.test.js"], owner: "shared/lens-perceptual-model.js",
   }),
-  feature("composition.universal", {
+  removedFeature("composition.universal", {
     domains: ["move", "function", "lens"],
     commands: ["composeCanonicalObjects"],
     ui: ["client/components/LensGrammarPanels.jsx"], companion: ["stackFunctions", "saveCompoundFunction"],
     extension: ["queueExternalAction"], persistence: ["lens.board.operators.v2", "lens.lenses.v2"],
     tests: ["shared/composition-algebra.test.js", "shared/material.test.js"], owner: "shared/composition-algebra.js",
+    removedReason: "Classic LensGrammarPanels / composition rail dumps off Pearl vision; composition stays via Studio Functions + domain composeCanonicalObjects.",
+    successor: "studio.pearl",
   }),
   feature("library.move", {
     domains: ["move"], commands: ["createMoveFromContent", "upsertCanonicalObject"],
-    ui: ["client/App.jsx:↦ Moves"], companion: ["createMove", "editMove", "applyMove", "saveCurrentAsMove"],
+    ui: ["client/components/LensTreeEditor.jsx", "client/components/PearlStudioView.jsx"], companion: ["createMove", "editMove", "applyMove", "saveCurrentAsMove"],
     extension: ["saveExternalCaptureAsMove", "queueExternalAction"], persistence: ["lens.board.operators.v2"],
     tests: ["shared/library-objects.test.js", "client/lib/companion-verb-coverage.test.js"], owner: "shared/library-objects.js",
   }),
@@ -58,25 +77,31 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("library.primitive-moves", {
     domains: ["move"], commands: ["setPrimitiveMove", "reorderPrimitiveMove"],
-    ui: ["client/App.jsx:Primitive Moves"], companion: ["promotePrimitiveMove", "demotePrimitiveMove", "reorderPrimitiveMove"],
+    ui: ["client/components/LensTreeEditor.jsx"], companion: ["promotePrimitiveMove", "demotePrimitiveMove", "reorderPrimitiveMove"],
     extension: ["invokeExternalPrimitive", "reorderExternalPrimitive", "armExternalMerge"], persistence: ["lens.primitive-moves.v1"], tests: ["shared/primitive-moves.test.js", "client/lib/companion-geometry.test.js"], owner: "shared/primitive-moves.js",
   }),
-  feature("ai.branch-chooser", {
+  removedFeature("ai.branch-chooser", {
     domains: ["move", "function", "ai"], commands: [],
-    ui: ["client/components/AiNodeCanvas.jsx:ai-strand-choice-hud"], companion: ["applyFunctionToAiNode"],
+    ui: ["client/components/AiNodeCanvas.jsx"], companion: ["applyFunctionToAiNode"],
     extension: [], persistence: ["lens.primitive-moves.v1"], tests: ["client/lib/ai-nodes.test.js"], owner: "client/lib/ai-nodes.js",
+    removedReason: "AiNodeCanvas branch-chooser HUD off Pearl vision; Studio + Companion own Function branching.",
+    successor: "studio.pearl",
   }),
-  feature("execution.lens-context", {
+  removedFeature("execution.lens-context", {
     domains: ["lens", "move", "function"], commands: [],
     ui: ["client/components/HighlightToolbar.jsx"], companion: ["armLensContext", "setBrushLensContext", "pressBrushGo"],
     extension: ["setExternalLensContext", "pressExternalGo"], persistence: ["lens.item.history.v1"],
     tests: ["shared/lens-context.test.js", "shared/library-objects.test.js"], owner: "shared/lens-context.js",
+    removedReason: "HighlightToolbar / canvas highlight chrome deleted from Pearl shell; extension page GO remains for page material.",
+    successor: "extension.pearl-page-canvas",
   }),
-  feature("learning.before-after", {
+  removedFeature("learning.before-after", {
     domains: ["move", "function"], commands: ["upsertCanonicalObject"],
     ui: ["client/components/BeforeAfterLensEditor.jsx"], companion: ["openBeforeAfterCreation", "inferBeforeAfterTransformation", "saveLearnedFunction"],
     extension: ["openExternalBeforeAfter", "inferExternalBeforeAfter"], persistence: ["lens.before-after.draft.v1"],
     tests: ["shared/before-after-examples.test.js"], owner: "shared/before-after-examples.js",
+    removedReason: "BeforeAfter learning rails deleted as classic Scene clutter; Studio LensTreeEditor remains for Functions as ordered Moves.",
+    successor: "studio.pearl",
   }),
   feature("learning.transcript", {
     domains: ["move", "function", "lens"], commands: ["upsertCanonicalObject"],
@@ -168,15 +193,19 @@ export const FEATURE_CONTRACTS = Object.freeze([
     tests: ["shared/pearl-organize.test.js", "shared/lens-runtime.test.js", "client/lib/companion-intent.test.js"],
     owner: "shared/pearl-gauntlet-eval.js",
   }),
-  feature("highlight.explicit-go", {
+  removedFeature("highlight.explicit-go", {
     domains: ["paper", "ai", "move", "function", "lens"], commands: [],
     ui: ["client/components/HighlightToolbar.jsx", "extension/src/sidepanel/main.jsx"], companion: ["pressBrushGo", "cancelPendingBrush"],
     extension: ["pressExternalGo", "previewExternalGo"], persistence: [], tests: ["shared/lens-runtime.test.js"], owner: "shared/lens-runtime.js",
+    removedReason: "Web HighlightToolbar explicit-GO chrome deleted from Pearl; extension pressExternalGo remains for page Companion.",
+    successor: "extension.pearl-page-canvas",
   }),
-  feature("ai.node-gestures", {
+  removedFeature("ai.node-gestures", {
     domains: ["ai"], commands: [], ui: ["client/components/AiNodeCanvas.jsx"],
     companion: ["moveAiNode"], extension: [], persistence: ["lens.ai.nodes.v1"],
     tests: ["client/lib/ai-nodes.test.js", "client/lib/ai-layout.test.js"], owner: "client/lib/ai-nodes.js",
+    removedReason: "AiNodeCanvas gestures deleted from Pearl shell; not part of Companion + Reef + Studio vision.",
+    successor: "studio.pearl",
   }),
   feature("persistence.account-adoption", {
     domains: ["move", "function", "lens", "paper", "ai"], commands: ["upsertCanonicalObject"],

@@ -73,9 +73,14 @@ export const PRIMARY_SHELL_SCREENS = Object.freeze([
     label: "Scene",
     path: null,
     testId: "shell-nav-scene",
-    companionPhrases: Object.freeze(["open a new scene", "show me the scene controls"]),
-    worldVisible: /Scene|Output Frame|New pearl|Talk to Companion/i,
-    via: "companion-or-pearl-context-menu",
+    companionPhrases: Object.freeze([
+      "open a new scene",
+      "open scene",
+      "open the scene",
+      "show me the scene controls",
+      "open output frame",
+    ]),
+    worldVisible: /Scene|Playing with pearls|Output Frame|Talk to Companion|New pearl/i,
   }),
   Object.freeze({
     id: "studio",
@@ -91,6 +96,7 @@ export const PRIMARY_SHELL_SCREENS = Object.freeze([
 /** Screens that must appear as hit-testable controls in default Reef chrome. */
 export const VISIBLE_SHELL_NAV_IDS = Object.freeze([
   "reef",
+  "scene",
   "install",
   "settings",
   "encode",
@@ -98,7 +104,10 @@ export const VISIBLE_SHELL_NAV_IDS = Object.freeze([
 ]);
 
 export function visibleShellNavScreens() {
-  return PRIMARY_SHELL_SCREENS.filter((screen) => VISIBLE_SHELL_NAV_IDS.includes(screen.id));
+  // Preserve VISIBLE_SHELL_NAV_IDS order (Reef → Scene → …) for chrome hit-targets.
+  return VISIBLE_SHELL_NAV_IDS
+    .map((id) => PRIMARY_SHELL_SCREENS.find((screen) => screen.id === id))
+    .filter(Boolean);
 }
 
 export function primaryScreenById(id) {

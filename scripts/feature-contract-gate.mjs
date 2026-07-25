@@ -29,6 +29,13 @@ for (const entry of FEATURE_BASELINE.requiredExports) {
 }
 
 for (const contract of FEATURE_CONTRACTS) {
+  if (contract.status === "removed") {
+    if (!contract.removedReason) errors.push(`${contract.id}: removed feature missing removedReason`);
+    if (!contract.removedAt) errors.push(`${contract.id}: removed feature missing removedAt`);
+    // Lineage only — do not require live UI/companion mounts for user-approved deletions.
+    if (contract.owner && !exists(contract.owner)) errors.push(`${contract.id}: missing owner ${contract.owner}`);
+    continue;
+  }
   for (const command of contract.commands) if (!DOMAIN_COMMANDS[command]) errors.push(`${contract.id}: missing command ${command}`);
   for (const name of contract.companion) {
     if (!companion.has(name)) errors.push(`${contract.id}: missing companion capability ${name}`);
@@ -109,7 +116,15 @@ const matrix = {
   version: 1,
   generatedAt: new Date().toISOString(),
   counts: { features: FEATURE_CONTRACTS.length, companion: COMPANION_CAPABILITIES.length, extension: Object.keys(EXTENSION_VERBS).length, commands: Object.keys(DOMAIN_COMMANDS).length },
-  features: FEATURE_CONTRACTS.map((entry) => ({ id: entry.id, commands: entry.commands, companion: entry.companion, extension: entry.extension, tests: entry.tests })),
+  features: FEATURE_CONTRACTS.map((entry) => ({
+    id: entry.id,
+    status: entry.status || "active",
+    commands: entry.commands,
+    companion: entry.companion,
+    extension: entry.extension,
+    tests: entry.tests,
+    ...(entry.status === "removed" ? { removedReason: entry.removedReason, successor: entry.successor || null } : {}),
+  })),
   checks: { duplicateHandlers, stale, errors },
 };
 const output = path.join(root, "audit-shots/orb-universe-2026-07/feature-matrix.json");

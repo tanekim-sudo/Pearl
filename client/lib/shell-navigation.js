@@ -53,6 +53,12 @@ export function matchShellNavigationIntent(text = "") {
   if (/^(?:install(?: the)?(?: browser)? extension|get(?: the)? extension|add pearl to chrome|open(?: the)? install(?: page)?)$/i.test(normalized)) {
     return "openExtensionDownload";
   }
+  if (/^(?:open|start|new)(?: a)?(?: new)?(?: blank)? scene$|^(?:open|show)(?: the)? scene(?: playground| workspace)?$|^(?:open|start)(?: a)?(?: new)?(?: blank)? workspace$/i.test(normalized)) {
+    return "openScene";
+  }
+  if (/^(?:open|show)(?: the)? (?:output )?frame$|^(?:open|show)(?: the)? output frame$/i.test(normalized)) {
+    return "openOutputFrame";
+  }
   return null;
 }
 

@@ -99,14 +99,12 @@
       "webEntries": [
         "client/lib/companion-observation.js",
         "client/components/LensTreeEditor.jsx",
-        "client/components/AiNodeCanvas.jsx",
         "extension/src/sidepanel/main.jsx",
         "client/components/LensSettingsDialog.jsx",
         "client/components/LensGrammarPanels.jsx",
-        "client/App.jsx:↦ Moves",
+        "client/components/PearlStudioView.jsx",
         "client/App.jsx:library-save-as-drop",
-        "client/App.jsx:Primitive Moves",
-        "client/components/AiNodeCanvas.jsx:ai-strand-choice-hud",
+        "client/components/AiNodeCanvas.jsx",
         "client/components/HighlightToolbar.jsx",
         "client/components/BeforeAfterLensEditor.jsx",
         "client/components/LearnFromChat.jsx",
@@ -116,7 +114,6 @@
         "extension/src/content/bridge.js",
         "shared/companion-pearl-orbit.js",
         "extension/src/sidepanel/sidepanel.css",
-        "client/components/PearlStudioView.jsx",
         "client/components/CompanionChat.jsx",
         "client/components/AuthOverlay.jsx",
         "client/components/ExtensionDownloadModal.jsx",
@@ -2354,7 +2351,6 @@
         "extension/src/result/main.js",
         "extension/src/content/result-pearls.js",
         "client/components/LensTreeEditor.jsx",
-        "client/components/AiNodeCanvas.jsx",
         "extension/src/sidepanel/main.jsx"
       ],
       "companionCapabilities": [
@@ -3102,5 +3098,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-24T21:29:13.910Z"
+  "generatedAt": "2026-07-25T17:32:10.390Z"
 }

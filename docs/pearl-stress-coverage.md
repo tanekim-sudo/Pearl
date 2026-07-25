@@ -57,7 +57,7 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 - SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 - Extension real Chrome microphone / getUserMedia permission UI: Fake SpeechRecognition proves hold-speak wiring in `orb-audit`; live mic remains residual.
 - Playwright HTML5 drag-and-drop onto gauntlet sockets is unreliable; Wear button and web `wearPearl` prove the same shared gauntlet path. Manual Chrome drag remains the headed DnD residual.
-- BeforeAfter / HighlightToolbar / AiNodeCanvas on Reef without Scene: Scene/Output Frame residual (not reinvented).
+- Off-vision classic Stage (Highlight/AiNode/BeforeAfter/Grammar/TopToolbar rails) **deleted** from Pearl shell (user-approved); Scene stays spatial; Studio owns Functions. Clueless `sf-companion-open-scene` asserts no classic clutter.
 
 ## Anti-lie
 

@@ -1,15 +1,16 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-24T21:29:15.037Z",
+  "generatedAt": "2026-07-25T17:32:09.268Z",
   "counts": {
     "features": 65,
-    "companion": 408,
+    "companion": 410,
     "extension": 123,
     "commands": 134
   },
   "features": [
     {
       "id": "observation.workspace",
+      "status": "active",
       "commands": [
         "observeWorkspace",
         "interpretObservationThroughLens"
@@ -30,6 +31,7 @@
     },
     {
       "id": "generation.taste-branching",
+      "status": "active",
       "commands": [
         "setGenerationPlan",
         "startGenerationBatch",
@@ -57,6 +59,7 @@
     },
     {
       "id": "lens.perceptual-encoding",
+      "status": "active",
       "commands": [
         "encodeMaterialAsLens",
         "updateLensPerceptualModel",
@@ -85,6 +88,7 @@
     },
     {
       "id": "composition.universal",
+      "status": "removed",
       "commands": [
         "composeCanonicalObjects"
       ],
@@ -98,10 +102,13 @@
       "tests": [
         "shared/composition-algebra.test.js",
         "shared/material.test.js"
-      ]
+      ],
+      "removedReason": "Classic LensGrammarPanels / composition rail dumps off Pearl vision; composition stays via Studio Functions + domain composeCanonicalObjects.",
+      "successor": "studio.pearl"
     },
     {
       "id": "library.move",
+      "status": "active",
       "commands": [
         "createMoveFromContent",
         "upsertCanonicalObject"
@@ -123,6 +130,7 @@
     },
     {
       "id": "library.function",
+      "status": "active",
       "commands": [
         "captureFunctionFromLineage",
         "upsertCanonicalObject"
@@ -144,6 +152,7 @@
     },
     {
       "id": "library.lens",
+      "status": "active",
       "commands": [
         "collectLensMaterial",
         "upsertCanonicalObject"
@@ -164,6 +173,7 @@
     },
     {
       "id": "library.save-as",
+      "status": "active",
       "commands": [
         "createMoveFromContent",
         "captureFunctionFromLineage",
@@ -182,6 +192,7 @@
     },
     {
       "id": "library.primitive-moves",
+      "status": "active",
       "commands": [
         "setPrimitiveMove",
         "reorderPrimitiveMove"
@@ -203,6 +214,7 @@
     },
     {
       "id": "ai.branch-chooser",
+      "status": "removed",
       "commands": [],
       "companion": [
         "applyFunctionToAiNode"
@@ -210,10 +222,13 @@
       "extension": [],
       "tests": [
         "client/lib/ai-nodes.test.js"
-      ]
+      ],
+      "removedReason": "AiNodeCanvas branch-chooser HUD off Pearl vision; Studio + Companion own Function branching.",
+      "successor": "studio.pearl"
     },
     {
       "id": "execution.lens-context",
+      "status": "removed",
       "commands": [],
       "companion": [
         "armLensContext",
@@ -227,10 +242,13 @@
       "tests": [
         "shared/lens-context.test.js",
         "shared/library-objects.test.js"
-      ]
+      ],
+      "removedReason": "HighlightToolbar / canvas highlight chrome deleted from Pearl shell; extension page GO remains for page material.",
+      "successor": "extension.pearl-page-canvas"
     },
     {
       "id": "learning.before-after",
+      "status": "removed",
       "commands": [
         "upsertCanonicalObject"
       ],
@@ -245,10 +263,13 @@
       ],
       "tests": [
         "shared/before-after-examples.test.js"
-      ]
+      ],
+      "removedReason": "BeforeAfter learning rails deleted as classic Scene clutter; Studio LensTreeEditor remains for Functions as ordered Moves.",
+      "successor": "studio.pearl"
     },
     {
       "id": "learning.transcript",
+      "status": "active",
       "commands": [
         "upsertCanonicalObject"
       ],
@@ -271,6 +292,7 @@
     },
     {
       "id": "learning.forming-pearls",
+      "status": "active",
       "commands": [
         "createSemanticOrb"
       ],
@@ -290,6 +312,7 @@
     },
     {
       "id": "companion.pearl-wear",
+      "status": "active",
       "commands": [
         "activateSemanticOrb",
         "createSemanticOrb",
@@ -318,6 +341,7 @@
     },
     {
       "id": "companion.mother-orbit",
+      "status": "active",
       "commands": [],
       "companion": [
         "wearPearl",
@@ -337,6 +361,7 @@
     },
     {
       "id": "companion.pearl-gauntlet",
+      "status": "active",
       "commands": [
         "activateSemanticOrb",
         "mergeSemanticOrbs",
@@ -378,6 +403,7 @@
     },
     {
       "id": "pearl.organize",
+      "status": "active",
       "commands": [
         "organizePearl"
       ],
@@ -394,6 +420,7 @@
     },
     {
       "id": "pearl.role-scaffold",
+      "status": "active",
       "commands": [
         "createRolePearl",
         "createSemanticOrb",
@@ -419,6 +446,7 @@
     },
     {
       "id": "pearl.counter",
+      "status": "active",
       "commands": [
         "createCounterPearl"
       ],
@@ -436,6 +464,7 @@
     },
     {
       "id": "pearl.gauntlet-evaluation",
+      "status": "active",
       "commands": [
         "evaluateWithGauntlet"
       ],
@@ -458,6 +487,7 @@
     },
     {
       "id": "highlight.explicit-go",
+      "status": "removed",
       "commands": [],
       "companion": [
         "pressBrushGo",
@@ -469,10 +499,13 @@
       ],
       "tests": [
         "shared/lens-runtime.test.js"
-      ]
+      ],
+      "removedReason": "Web HighlightToolbar explicit-GO chrome deleted from Pearl; extension pressExternalGo remains for page Companion.",
+      "successor": "extension.pearl-page-canvas"
     },
     {
       "id": "ai.node-gestures",
+      "status": "removed",
       "commands": [],
       "companion": [
         "moveAiNode"
@@ -481,10 +514,13 @@
       "tests": [
         "client/lib/ai-nodes.test.js",
         "client/lib/ai-layout.test.js"
-      ]
+      ],
+      "removedReason": "AiNodeCanvas gestures deleted from Pearl shell; not part of Companion + Reef + Studio vision.",
+      "successor": "studio.pearl"
     },
     {
       "id": "persistence.account-adoption",
+      "status": "active",
       "commands": [
         "upsertCanonicalObject"
       ],
@@ -499,6 +535,7 @@
     },
     {
       "id": "extension.distribution",
+      "status": "active",
       "commands": [],
       "companion": [
         "openExtensionDownload"
@@ -512,6 +549,7 @@
     },
     {
       "id": "companion.destructive-clear",
+      "status": "active",
       "commands": [],
       "companion": [
         "clearWorkspaceDomains",
@@ -526,6 +564,7 @@
     },
     {
       "id": "companion.effect-trace",
+      "status": "active",
       "commands": [],
       "companion": [],
       "extension": [],
@@ -535,6 +574,7 @@
     },
     {
       "id": "interaction.semantic-transfer",
+      "status": "active",
       "commands": [
         "createMoveFromContent",
         "createFunctionFromContent",
@@ -557,6 +597,7 @@
     },
     {
       "id": "companion.transaction-harness",
+      "status": "active",
       "commands": [],
       "companion": [
         "runFunctionTestBench",
@@ -577,6 +618,7 @@
     },
     {
       "id": "registry.cognitive-packages",
+      "status": "active",
       "commands": [],
       "companion": [
         "openPackageRegistry",
@@ -597,6 +639,7 @@
     },
     {
       "id": "artifacts.higher-order",
+      "status": "active",
       "commands": [],
       "companion": [
         "proposeHigherOrderPatch",
@@ -611,6 +654,7 @@
     },
     {
       "id": "companion.personal-vocabulary",
+      "status": "active",
       "commands": [],
       "companion": [
         "teachPersonalCommand",
@@ -627,6 +671,7 @@
     },
     {
       "id": "extraction.cognitive-pull-request",
+      "status": "active",
       "commands": [],
       "companion": [
         "openCognitivePullRequest",
@@ -646,6 +691,7 @@
     },
     {
       "id": "scene.v4",
+      "status": "active",
       "commands": [
         "materializeOnStage",
         "materializeInOutputFrame"
@@ -660,6 +706,7 @@
     },
     {
       "id": "companion.orb-runtime",
+      "status": "active",
       "commands": [
         "addOrbContext",
         "updateOrbContext",
@@ -692,6 +739,7 @@
     },
     {
       "id": "scene.semantic-orbs",
+      "status": "active",
       "commands": [
         "openOrbCreationPreview",
         "createSemanticOrb",
@@ -760,6 +808,7 @@
     },
     {
       "id": "interaction.orb-gesture",
+      "status": "active",
       "commands": [
         "addOrbContext",
         "addOrbLens",
@@ -788,6 +837,7 @@
     },
     {
       "id": "companion.orb-swarm",
+      "status": "active",
       "commands": [
         "assignWorkerContext"
       ],
@@ -801,6 +851,7 @@
     },
     {
       "id": "shell.extension-first",
+      "status": "active",
       "commands": [
         "createSemanticOrb"
       ],
@@ -824,6 +875,7 @@
     },
     {
       "id": "shell.pearl-progressive",
+      "status": "active",
       "commands": [
         "addOrbContext",
         "addOrbLens",
@@ -858,6 +910,7 @@
     },
     {
       "id": "privacy.local-profile-vault",
+      "status": "active",
       "commands": [],
       "companion": [
         "inspectLocalPrivacy",
@@ -882,6 +935,7 @@
     },
     {
       "id": "extension.pearl-page-canvas",
+      "status": "active",
       "commands": [
         "activatePearlPageCanvas",
         "deactivatePearlPageCanvas",
@@ -913,6 +967,7 @@
     },
     {
       "id": "privacy.bounded-page-observation",
+      "status": "active",
       "commands": [
         "bindPearlCanvasContext"
       ],
@@ -926,6 +981,7 @@
     },
     {
       "id": "semantic-pearl.soundscape",
+      "status": "active",
       "commands": [
         "addPearlSoundscapeTrack",
         "removePearlSoundscapeTrack",
@@ -951,6 +1007,7 @@
     },
     {
       "id": "output.result-pearl",
+      "status": "active",
       "commands": [
         "spawnResultPearl",
         "placeResultPearl",
@@ -988,6 +1045,7 @@
     },
     {
       "id": "runtime.unified-pearl",
+      "status": "active",
       "commands": [
         "editPearlEntity",
         "openPearlStudio",
@@ -1007,6 +1065,7 @@
     },
     {
       "id": "runtime.pearl-action-animation",
+      "status": "active",
       "commands": [
         "editPearlEntity",
         "applyPearlCognitivePatch",
@@ -1046,6 +1105,7 @@
     },
     {
       "id": "runtime.pearl-power-fx",
+      "status": "active",
       "commands": [
         "createWorker",
         "mergeWorkers",
@@ -1075,6 +1135,7 @@
     },
     {
       "id": "privacy.pearl-policy",
+      "status": "active",
       "commands": [
         "ensurePearlPrivacyPolicy",
         "inspectPearlPrivacy",
@@ -1101,6 +1162,7 @@
     },
     {
       "id": "sharing.pearl-package",
+      "status": "active",
       "commands": [
         "preparePearlShare",
         "createPearlShareGrant",
@@ -1125,6 +1187,7 @@
     },
     {
       "id": "automation.pearl-compiler",
+      "status": "active",
       "commands": [
         "compileAutomationPearl",
         "reviseAutomationPearl",
@@ -1155,6 +1218,7 @@
     },
     {
       "id": "companion.clarification-checkin",
+      "status": "active",
       "commands": [
         "createWorker"
       ],
@@ -1176,6 +1240,7 @@
     },
     {
       "id": "companion.execution-diagnostics",
+      "status": "active",
       "commands": [],
       "companion": [],
       "extension": [],
@@ -1186,6 +1251,7 @@
     },
     {
       "id": "output.two-stage-routing",
+      "status": "active",
       "commands": [
         "requestOutputPlacement",
         "interpretOutputPlacement",
@@ -1214,6 +1280,7 @@
     },
     {
       "id": "studio.pearl",
+      "status": "active",
       "commands": [
         "openPearlStudio",
         "editPearlEntity",
@@ -1256,6 +1323,7 @@
     },
     {
       "id": "shell.reef-home",
+      "status": "active",
       "commands": [],
       "companion": [
         "navigateHome",
@@ -1272,6 +1340,7 @@
     },
     {
       "id": "pearl.version-history",
+      "status": "active",
       "commands": [
         "browsePearlHistory",
         "snapshotPearlVersion",
@@ -1294,6 +1363,7 @@
     },
     {
       "id": "companion.critique-edits",
+      "status": "active",
       "commands": [],
       "companion": [
         "startCritiqueSession",
@@ -1315,6 +1385,7 @@
     },
     {
       "id": "sharing.organization-trust",
+      "status": "active",
       "commands": [
         "createPearlShareGrant",
         "consumePearlShareGrant",
@@ -1334,6 +1405,7 @@
     },
     {
       "id": "visual.physical-pearl",
+      "status": "active",
       "commands": [],
       "companion": [
         "executeUnifiedPearlAction"
@@ -1349,6 +1421,7 @@
     },
     {
       "id": "visual.pearl-aesthetic",
+      "status": "active",
       "commands": [
         "setPearlAesthetic",
         "patchSemanticOrbAesthetic"
@@ -1374,6 +1447,7 @@
     },
     {
       "id": "cognition.typed-layers",
+      "status": "active",
       "commands": [
         "addPearlCognitiveLayer",
         "mutatePearlCognitiveLayer",
@@ -1415,6 +1489,7 @@
     },
     {
       "id": "interface.pearl-guide",
+      "status": "active",
       "commands": [],
       "companion": [
         "openPearlGuide"
@@ -1428,6 +1503,7 @@
     },
     {
       "id": "shell.pearl-navigability",
+      "status": "active",
       "commands": [],
       "companion": [
         "openAuth",
@@ -1447,6 +1523,7 @@
     },
     {
       "id": "encode.automation-anything",
+      "status": "active",
       "commands": [
         "compileAutomationPearl"
       ],

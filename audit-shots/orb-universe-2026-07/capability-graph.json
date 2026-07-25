@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-d53a0476",
+  "fingerprint": "fnv1a-c5530125",
   "counts": {
-    "nodes": 408,
+    "nodes": 410,
     "edges": 516
   },
   "nodes": [
@@ -3545,7 +3545,7 @@
       "version": 1,
       "kind": "capability",
       "name": "openBeforeAfterCreation",
-      "purpose": "Open real before-and-after Move/Function learning",
+      "purpose": "Removed from Pearl shell UI — refuses and directs to Studio Function editing",
       "examples": [
         "learn a Move or Function from this before and after"
       ],
@@ -6753,7 +6753,9 @@
       "name": "openExtensionDownload",
       "purpose": "Open Pearl Everywhere download and installation help",
       "examples": [
-        "please open Pearl Everywhere download and installation help"
+        "install the extension",
+        "get the extension",
+        "add pearl to chrome"
       ],
       "inputSchema": {
         "type": "object",
@@ -22671,7 +22673,9 @@
       "name": "openPackageRegistry",
       "purpose": "Open the Cognitive Package registry and trust review",
       "examples": [
-        "please open the Cognitive Package registry and trust review"
+        "open packages",
+        "show the packages",
+        "browse packages"
       ],
       "inputSchema": {
         "type": "object",
@@ -29009,6 +29013,7 @@
       "name": "openSettings",
       "purpose": "Open Account & privacy emitted by Pearl",
       "examples": [
+        "open settings",
         "open account and privacy"
       ],
       "inputSchema": {
@@ -29098,6 +29103,7 @@
       "name": "openEncodeAnything",
       "purpose": "Open Encode anything to compile prompts, emails, PDFs, and Drive material into a Pearl",
       "examples": [
+        "encode anything",
         "encode this email into a pearl"
       ],
       "inputSchema": {
@@ -29190,6 +29196,182 @@
         "scene",
         "function",
         "lens"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.openScene",
+      "version": 1,
+      "kind": "capability",
+      "name": "openScene",
+      "purpose": "Open the spatial Scene where pearls play (Companion + gauntlet; Studio via pearl)",
+      "examples": [
+        "open a new scene",
+        "open scene",
+        "open the scene",
+        "start a new scene"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed"
+      ],
+      "tests": [
+        "capability-openScene"
+      ],
+      "featureIds": [],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.openOutputFrame",
+      "version": 1,
+      "kind": "capability",
+      "name": "openOutputFrame",
+      "purpose": "Open the optional Output Frame writing surface on Scene",
+      "examples": [
+        "open output frame",
+        "show the output frame",
+        "open the frame"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "paper-state-changed"
+      ],
+      "persistence": [],
+      "undo": [
+        "workspace-checkpoint"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "paper-state-changed"
+      ],
+      "tests": [
+        "capability-openOutputFrame"
+      ],
+      "featureIds": [],
+      "canonicalCommands": [],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "interface",
+        "scene",
+        "paper"
       ],
       "platform": "app"
     },

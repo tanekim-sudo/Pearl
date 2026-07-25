@@ -14206,6 +14206,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait?.(160);
       return { effectId: `shell-close:${Date.now()}`, effects: ["surface-closed"] };
     },
+    openScene: async (_a, tk) => {
+      document.dispatchEvent(new CustomEvent("lens:shell-open-scene", {
+        detail: { source: "director-openScene", withOutputFrame: false },
+      }));
+      await tk.wait?.(360);
+      return { effectId: `shell-scene:${Date.now()}`, effects: ["opened-scene"] };
+    },
+    openOutputFrame: async (_a, tk) => {
+      document.dispatchEvent(new CustomEvent("lens:shell-open-scene", {
+        detail: { source: "director-openOutputFrame", withOutputFrame: true },
+      }));
+      await tk.wait?.(360);
+      return { effectId: `shell-output-frame:${Date.now()}`, effects: ["opened-output-frame"] };
+    },
     spawnText: async (a, tk, ctx) => {
       const count = (ctx.vars._spawnCount = (ctx.vars._spawnCount || 0) + 1);
       const center = paperViewportCenterWorld();
@@ -15152,6 +15166,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(500);
     },
     openBeforeAfterCreation: async (a, tk) => {
+      if (pearlShell) {
+        throw new Error("Before→after rails were removed from Pearl. Open a pearl in Studio to edit Functions as ordered Moves.");
+      }
       const button = tk.elementCenter('[data-tour="new-transformation"]') || tk.elementCenter(".fn-head-btn");
       if (button) await tk.click(button.x, button.y);
       openCreateLens("before-after");
@@ -15161,6 +15178,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "before-after-draft", id: "active-before-after-draft" };
     },
     setBeforeAfterText: async (a, tk) => {
+      if (pearlShell) throw new Error("Before→after rails were removed from Pearl. Use Studio.");
       if (!document.querySelector("[data-before-after-editor]")) openCreateLens("before-after");
       await tk.wait(300);
       const selector = `textarea[aria-label="${a.side === "after" ? "After" : "Before"} text"]`;
@@ -15169,6 +15187,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return directBeforeAfter({ type: "set-text", example: a.example, side: a.side, text: a.text });
     },
     attachSelectionToBeforeAfter: async (a, tk, ctx) => {
+      if (pearlShell) throw new Error("Before→after rails were removed from Pearl. Use Studio.");
       const item = directorResolveItem(a.target || "last", ctx);
       const node = directorResolveAiNode(a.target || "last", ctx);
       if (!item && !node) throw new Error("no selected object to attach");
@@ -19040,7 +19059,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           onTogglePaperRecord={togglePaperRecord}
         >
       <div className={"board-main" + (dropReady ? " drop-ready" : "") + (boundaryMagnetActive ? " boundary-magnet" : "") + (transferDragActive ? " transfer-drag" : "") + (editing ? " editing-text" : "") + (dropTargetId ? " drop-has-target" : "")}>
-      <AiNodeCanvas
+      {/* Off-vision classic AI canvas — deleted from Pearl shell (Companion + Reef + Studio). */}
+      {!pearlShell && <AiNodeCanvas
         embedded
         nodes={aiNodes}
         camera={camera}
@@ -19108,7 +19128,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         landingNodeIds={aiLandingNodeIds}
         growingEdgeIds={growingAiEdgeIds}
         operatorDropTargetId={toolboxTargetAiNodeId}
-      />
+      />}
       <div className="page-title-chip" data-tour="page-title" onPointerDown={(e) => e.stopPropagation()}>
         <input
           className="page-title-input"
@@ -20119,7 +20139,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         );
       })()}
 
-      <HighlightToolbar
+      {/* Off-vision classic Stage chrome — deleted from Pearl shell (user-approved 2026-07-25). */}
+      {!pearlShell && <HighlightToolbar
         paperCount={highlightSelectionIds.length}
         aiCount={highlightAiNodeIds.length}
         fragmentCount={highlightFragments.length}
@@ -20175,8 +20196,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           setBrushConfirmCount(null);
         }}
         onApplyArmed={() => pressPendingBrushGo()}
-      />
-      <CompositionPreview
+      />}
+      {!pearlShell && <CompositionPreview
         composition={compositionDraft}
         candidates={operators.filter((op) => op.top || op.move || op.primitive)}
         onChooseSecond={chooseStackTarget}
@@ -20184,8 +20205,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onCancel={() => setCompositionDraft(null)}
         onSave={() => saveComposition(false)}
         onEdit={() => saveComposition(true)}
-      />
-      <GrindWorkspace
+      />}
+      {!pearlShell && <GrindWorkspace
         draft={grindOpen ? grindDraft : null}
         onDraft={setGrindDraft}
         onAddManual={keepGrindExample}
@@ -20197,7 +20218,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onRefine={refineCurrentGrind}
         onShape={shapeForgedLensInEditor}
         onClose={() => setGrindOpen(false)}
-      />
+      />}
       {shellVisible(pearlShell, cognitiveStudioOpen && (
         <CognitiveWorkflowStudio
           initialTab={cognitiveStudioInitialTab}

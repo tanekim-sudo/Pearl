@@ -1255,7 +1255,7 @@ async function runCluelessJourneys(browser) {
   await page.waitForTimeout(500);
   await shot(page, "23c-shell-nav");
   const shellNav = page.locator('[data-testid="pearl-shell-nav"]');
-  const navIds = ["shell-nav-reef", "shell-nav-install", "shell-nav-settings", "shell-nav-encode", "shell-nav-packages"];
+  const navIds = ["shell-nav-reef", "shell-nav-scene", "shell-nav-install", "shell-nav-settings", "shell-nav-encode", "shell-nav-packages"];
   let navHit = 0;
   for (const id of navIds) {
     const btn = page.locator(`[data-testid="${id}"]`).first();
@@ -1264,14 +1264,34 @@ async function runCluelessJourneys(browser) {
       if (box && box.width > 8 && box.height > 8) navHit += 1;
     }
   }
-  const navOk = (await shellNav.count()) > 0 && navHit >= 5;
-  record("sf-shell-nav-primary", navOk, `nav=${await shellNav.count()} hit=${navHit}/5`, "P0");
+  const navOk = (await shellNav.count()) > 0 && navHit >= 6;
+  record("sf-shell-nav-primary", navOk, `nav=${await shellNav.count()} hit=${navHit}/6`, "P0");
   aestheticNote(
     "23c-shell-nav",
     navOk ? "pass" : "fail",
     navOk
-      ? "PNG Read: Reef chrome shows a readable primary nav row (Reef / Install / Settings / Encode / Packages) a novice can find without DevTools."
+      ? "PNG Read: Reef chrome shows a readable primary nav row (Reef / Scene / Install / Settings / Encode / Packages) a novice can find without DevTools."
       : "PNG Read: primary shell nav missing or not hit-testable — orphan risk.",
+    "P0",
+  );
+
+  coverage("sf-companion-open-scene", "stressed", "Companion open scene from Reef");
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await ensureChatOpenViaTalk(page);
+  await typeAndGo(page, "open scene", { shotPrefix: "23c3-open-scene" });
+  await page.waitForTimeout(900);
+  await shot(page, "23c3-open-scene");
+  const companionSceneOk = /\/scene\//.test(page.url())
+    && ((await page.locator('[data-testid="pearl-scene-chrome"]').count()) > 0);
+  const classicClutter = (await page.locator(".omni-highlight-bar, .ai-node-viewport, [data-before-after-editor], [data-lens-rack-toolbar]").count()) > 0;
+  record("sf-companion-open-scene", companionSceneOk && !classicClutter, `url=${page.url()} clutter=${classicClutter}`, "P0");
+  aestheticNote(
+    "23c3-open-scene",
+    companionSceneOk && !classicClutter ? "pass" : "fail",
+    companionSceneOk && !classicClutter
+      ? "PNG Read: Talk→GO “open scene” lands on spatial Scene chrome without classic Highlight/AI/BeforeAfter rails."
+      : "PNG Read: Companion open-scene failed or resurfaced deleted classic Stage chrome.",
     "P0",
   );
 

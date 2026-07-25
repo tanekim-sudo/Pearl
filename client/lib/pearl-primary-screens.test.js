@@ -28,8 +28,10 @@ test("visible shell nav ids are mounted in OrbUniverseShell", () => {
   assert.match(shell, /data-testid=\{screen\.testId\}/);
   assert.deepEqual(
     visibleShellNavScreens().map((s) => s.testId),
-    ["shell-nav-reef", "shell-nav-install", "shell-nav-settings", "shell-nav-encode", "shell-nav-packages"],
+    ["shell-nav-reef", "shell-nav-scene", "shell-nav-install", "shell-nav-settings", "shell-nav-encode", "shell-nav-packages"],
   );
+  assert.match(shell, /shell-nav-scene|onCreateScene/);
+  assert.match(shell, /openSceneRoute|lens:shell-open-scene/);
   assert.match(shell, /data-testid="extension-download-cta"/);
   assert.match(shell, /CognitivePackageRegistry/);
   assert.match(shell, /function PearlShellNav/);

@@ -951,6 +951,15 @@
   --col-left-w:0px!important;
   --col-right-w:0px!important;
 }
+/* Pearl shell: classic App Stage rails/AI canvas/tools stay deleted — never tools-emitted. */
+.orb-output-frame-host .pearl-embedded .functions-column,
+.orb-output-frame-host .pearl-embedded .ai-column,
+.orb-output-frame-host .pearl-embedded .idea-toolbar,
+.orb-output-frame-host .pearl-embedded .interpret-boundary-hit,
+.orb-output-frame-host .pearl-embedded .canvas-edge-top,
+.orb-output-frame-host .pearl-embedded .canvas-edge-bottom,
+.orb-runtime-host .pearl-embedded .functions-column,
+.orb-runtime-host .pearl-embedded .ai-column { display:none!important; }
 .orb-output-frame-host:not(.tools-emitted) .pearl-embedded .functions-column,
 .orb-output-frame-host:not(.tools-emitted) .pearl-embedded .ai-column,
 .orb-output-frame-host:not(.tools-emitted) .pearl-embedded .interpret-boundary-hit,
@@ -1614,6 +1623,33 @@ html[data-lens-orb-cursor-active="true"] :is(input,textarea,select,[contentedita
   overflow: auto;
 }
 .pearl-welcome > * { pointer-events: auto; }
+.pearl-welcome-shell-nav {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+}
+.pearl-welcome-shell-nav .pearl-shell-nav {
+  width: auto;
+  max-width: min(920px, 100%);
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--orb-space-0, #0b0d0e) 72%, transparent);
+  border: 1px solid var(--orb-line);
+  backdrop-filter: blur(12px);
+}
+.pearl-welcome-shell-nav .pearl-shell-nav button {
+  color: var(--orb-text-2);
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
 .pearl-welcome-mark {
   display: grid;
   place-items: center;

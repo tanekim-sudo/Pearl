@@ -1,97 +1,95 @@
 # Pearl orphan audit — 2026-07-25
 
 Inventory of user-facing capabilities vs current Pearl shell (OrbUniverse / Companion / extension).  
-Policy: rewire originals; never delete; never reinvent a third path.
+Policy: rewire vision originals; **delete** off-vision classic App Stage surfaces (explicit user approval 2026-07-25).
 
-**HEAD baseline for this pass:** ~`2f89412` plus this rewire commit.
+**HEAD baseline:** ~`65ae6ec` plus this purity pass.
+
+## Product vision (keep)
+
+- Mother Pearl = Companion (chat, GO, voice, director)
+- Reef pearl home — PhysicalPearl, drag/wear to gauntlet
+- Gauntlet ≤5, auto-update
+- Studio: LensTreeEditor / Functions as ordered Moves
+- Extension: page Companion, hold-speak, Space×3, pearl wear
+- Encode / role pearls / organize / merge / synthesize / output destinations
+- Install/download, settings/privacy
+- Vision-aligned shell modals already portaled (LearnFromChat, Save-as, CognitiveWorkflowStudio, packages)
 
 ## Method
 
-1. `shared/feature-contracts.js` (65 features) × `client/lib/companion-capabilities.js` × `pearl-primary-screens.js`
-2. Mounts: `OrbUniverseShell`, hidden `orb-runtime-host` App, Scene `pearlShell` App, extension sidepanel / content
-3. Git forensics: LensTreeEditor lesson; gauntlet shelf DnD (`de9e5fd`); dead-UI era (`f0b1dda`)
+1. `shared/feature-contracts.js` × companion-capabilities × `pearl-primary-screens.js`
+2. Mounts: OrbUniverseShell, hidden `orb-runtime-host` App, Scene stage, extension
+3. User correction: do **not** resurrect classic Stage rails into Scene
 
 ## Status legend
 
 | Status | Meaning |
 |---|---|
-| **wired** | Visible nav and/or Companion Talk→GO + world-visible effect on current shell |
-| **rewired** | Was orphaned; restored in this pass by remounting the original |
-| **orphaned** | Exists in codebase but not clueless-reachable on current shell |
-| **residual** | Platform/env limit (credentials, OS mic, Playwright HTML5 DnD, etc.) |
-| **deleted?** | Not found as deleted — usually orphaned/unmounted (do not delete) |
+| **wired** | Visible nav and/or Companion Talk→GO + world-visible effect |
+| **rewired** | Was orphaned; restored by remounting the original vision path |
+| **deleted** | Off-vision; user-approved removal from Pearl shell entry points (`status: "removed"` in contracts) |
+| **residual** | Platform/env limit (credentials, OS mic, Playwright DnD) |
 
 ---
 
-## Critical rewires (this pass)
+## Deleted (off-vision) — user-approved 2026-07-25
 
-| Item | Was | Evidence | Action |
-|---|---|---|---|
-| Extension shelf pearls as **blocks** | orphaned aesthetic | `sidepanel.css` list-row tray; tiny `i` dots | **rewired** → capsule shelf + `physicalPearlMarkup`; idle dock when pearls exist |
-| Extension pearl → gauntlet DnD | handlers present, shelf hidden on idle | `main.jsx` DnD + `.orb-panel{display:none}` on idle | **rewired** → idle shelf dock + Wear button (pointer fallback) + socket/Mother drop (original `wearPearlIdInGauntlet`) |
-| Web Reef pearls as **blocks** | orphaned aesthetic | `.reef-pearl` cards + 10px dots; not draggable | **rewired** → `PhysicalPearl` capsules + HTML5 `application/x-lens-pearl` + Wear control |
-| CompanionOrb drop wear | orphaned | `drop()` only added context; ignored pearl MIME | **rewired** → socket/Mother drop → `wearPearl` via `__lensOrbRuntime.execute` / shared gauntlet |
-| LearnFromChat / Save-as / CognitiveWorkflowStudio / App package registry on Reef | orphaned | rendered inside 2px `.orb-runtime-host` (`pointer-events:none`) | **rewired** → `shellVisible()` `createPortal` to `document.body` (same pattern as CompanionChat) |
-| Cognitive workflow open verb | orphaned | clicked `.page-title-cognitive-studio` (classic chrome) | **rewired** → open studio state directly |
-
----
-
-## Feature-contract ledger (condensed)
-
-### Wired / already OK
-
-| ID | Surface | Notes |
+| ID / surface | Why deleted | Successor |
 |---|---|---|
-| `shell.reef-home` | Reef | Primary home |
-| `shell.pearl-navigability` | nav + settings | Install / Settings / Encode / Packages |
-| `companion.orb-runtime` | CompanionOrb | Talk→GO |
-| `companion.pearl-wear` / `companion.pearl-gauntlet` / `companion.mother-orbit` | web + extension | Wear paths restored above |
-| `studio.pearl` | PearlStudio + LensTreeEditor | Default Function editor (prior rewire) |
-| `encode.automation-anything` | Encode panel | Shell nav |
-| `registry.cognitive-packages` | Shell packages + portaled App registry | |
-| `interface.pearl-guide` | Guide panel + extension ? | |
-| `extension.distribution` | Install CTA | |
-| `scene.v4` / `scene.semantic-orbs` | Scene stage | When Scene open |
-| `visual.physical-pearl` / `visual.pearl-aesthetic` | PhysicalPearl | Extension + Reef now use |
-| `learning.transcript` | LearnFromChat | Portaled on Reef |
-| `library.save-as` | Save-as chooser | Portaled on Reef |
-| `artifacts.higher-order` / vocabulary / PR | CognitiveWorkflowStudio | Portaled on Reef |
-| `extension.pearl-page-canvas` / hold-speak / Space×3 | content script | Prior restore `2f89412` |
+| `learning.before-after` / BeforeAfter rails | Classic Scene clutter; not Pearl vision | `studio.pearl` (LensTreeEditor) |
+| `execution.lens-context` / HighlightToolbar | Canvas highlight chrome off vision | `extension.pearl-page-canvas` (page GO) |
+| `highlight.explicit-go` (web HighlightToolbar) | Same | extension pressExternalGo |
+| `ai.node-gestures` / AiNodeCanvas | Classic AI canvas off vision | `studio.pearl` |
+| `ai.branch-chooser` | Strand HUD on AiNodeCanvas | `studio.pearl` |
+| `composition.universal` / LensGrammarPanels rails | Classic rail dump | Studio Functions + `composeCanonicalObjects` |
+| TopToolbar library lists under `pearlShell` | Old App chrome | Studio + Companion verbs |
+| Scene “Tools” / `tools-emitted` App rails | Would reintroduce deleted chrome | Spatial Scene only |
 
-### Residual / Scene-bound (honest)
+**Evidence of deletion from Pearl shell:** `!pearlShell &&` mounts in `App.jsx`; CSS hard-hides functions/ai columns in pearl hosts; Scene chrome has no Tools button; companion Before→after refuses on Pearl shell.
 
-| ID | Status | Why |
-|---|---|---|
-| `learning.before-after` | residual | Editor lives in App rails (`openCreateLens`); needs Scene/Output Frame chrome — not reinvented as a third modal |
-| `execution.lens-context` / `highlight.explicit-go` | residual on Reef | `HighlightToolbar` mounts in App Stage; Scene/Output Frame |
-| `ai.node-gestures` / `ai.branch-chooser` | residual on Reef | `AiNodeCanvas` in Scene workspace |
-| `composition.universal` / `LensGrammarPanels` | residual on Reef | Classic rail composition |
-| `library.move` / `library.primitive-moves` TopToolbar lists | residual | TopToolbar unmounted under `pearlShell`; Companion verbs + Studio still mutate |
-| `sharing.pearl-package` / org trust | residual | Needs live credentials / signed grants |
-| Extension HTML5 DnD in Playwright | residual | Use Wear button + storage asserts; real Chrome drag remains manual/headed |
-| Live OS mic | residual | FakeSpeech in orb-audit only |
-
-### Not deleted
-
-Nothing in this audit was deleted. LensTreeEditor / gauntlet / LearnFromChat / shelf DnD handlers were **orphaned or demoted**, not removed.
+Component files may remain for classic/non-shell paths and unit tests — **no Pearl user-facing entry**.
 
 ---
 
-## Reachability checklist (post-rewire)
+## Rewired (vision) — keep
 
-- [x] Extension pearls look like pearls (capsule + PhysicalPearl SVG)
-- [x] Extension drag MIME + Mother/socket drop (original shared gauntlet)
-- [x] Extension Wear pointer path when drag awkward (360px)
-- [x] Idle shelf dock so drag source is visible without hunting
-- [x] Web Reef drag + Wear → same `wearPearl` verb
-- [x] Reef modals portaled out of runtime host
-- [ ] BeforeAfter / Highlight / AI canvas on Reef without Scene — residual (use Scene)
+| Item | Evidence |
+|---|---|
+| Extension shelf as PhysicalPearl capsules + Wear + DnD MIME | `65ae6ec` |
+| Web Reef PhysicalPearl + Wear → `wearPearl` | `65ae6ec` |
+| CompanionOrb socket/Mother drop wear | `65ae6ec` |
+| LearnFromChat / Save-as / CognitiveWorkflowStudio / packages portaled out of 2px host | `65ae6ec` |
+| Scene in Reef primary nav + Companion `open scene` | spatial Scene only (no classic rails) |
+| Studio LensTreeEditor default Function editor | prior `9bf0639` |
+| Extension page Companion, hold-speak, Space×3 | `2f89412` |
+
+---
+
+## Residual (env / credentials)
+
+| Item | Why |
+|---|---|
+| Live share / OAuth / signed grants | Needs live credentials |
+| Extension HTML5 DnD in Playwright | Wear button + storage asserts; real Chrome drag manual |
+| Live OS mic | FakeSpeech in orb-audit only |
+
+---
+
+## Reachability checklist
+
+- [x] Extension pearls look like pearls + wear path
+- [x] Web Reef drag/Wear → gauntlet
+- [x] Vision modals portaled on Reef
+- [x] Scene nav / Companion open-scene → spatial Scene **without** classic Stage chrome
+- [x] Off-vision Highlight / AiNode / BeforeAfter / Grammar / TopToolbar **not** mounted on Pearl shell
 - [ ] Live share/OAuth — residual
+- [ ] Live OS mic — residual
 
 ---
 
 ## Evidence
 
-- `audit-shots/extension-pearl-dnd-2026-07-25/`
-- Stress: extension wear script + `release:check:fast`
-- Coverage matrix: `docs/pearl-stress-coverage.md`
+- Contracts: `status: "removed"` + `removedReason` / `successor` in `shared/feature-contracts.js`
+- Stress: clueless `sf-companion-open-scene` asserts no classic clutter
+- Coverage: `docs/pearl-stress-coverage.md`
