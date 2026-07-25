@@ -1,0 +1,14 @@
+{
+  "failures": [
+    "COLD_LOAD: page Pearl not mounted without user gesture / host grant",
+    "SIDEPANEL_INJECT_FAILED: {\"ok\":false,\"error\":\"no tab\"}",
+    "AFTER_SIDEPANEL: still no page Pearl",
+    "EXECUTESCRIPT_WITHOUT_HOST: {\"ok\":false,\"error\":\"no tab\"}",
+    "AFTER_EXECUTESCRIPT: Pearl still missing",
+    "BUNDLE: hold-to-talk SpeechRecognition path absent from content.js",
+    "MANIFEST: no content_scripts — Companion never auto-mounts on page load",
+    "INTENT_STORAGE_MISMATCH: SW writes pendingPearlIntent to local; sidepanel reads session"
+  ],
+  "port": 63944,
+  "extensionId": "bikhjndpceimpklflgjbihfiphibodkm"
+}

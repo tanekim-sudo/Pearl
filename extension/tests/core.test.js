@@ -12,6 +12,36 @@ import { createLensLibraryBundle, importLensLibrary, validateLensLibraryBundle }
 import { normalizeOutputSpec, suggestedOutputSpec } from "../../shared/output-specifications.js";
 import { createTripleSpaceRecognizer, orbCursorPresentation } from "../../shared/orb-cursor.js";
 import { ORB_CURSOR_HIDE_CSS, orbCursorTabState } from "../src/core/orb-cursor-contract.js";
+import { originsGrantPageAccess, PAGE_HOST_ORIGINS, pageAccessPermission } from "../src/core/page-access.js";
+
+test("manifest declares content_scripts so the page Companion can auto-mount after site access", () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL("../public/manifest.json", import.meta.url), "utf8"));
+  assert.ok(Array.isArray(manifest.content_scripts) && manifest.content_scripts.length >= 1);
+  assert.deepEqual(manifest.content_scripts[0].matches, ["http://*/*", "https://*/*"]);
+  assert.deepEqual(manifest.content_scripts[0].js, ["assets/content.js"]);
+  assert.ok(manifest.optional_host_permissions.includes("https://*/*"));
+  assert.deepEqual(pageAccessPermission().origins, [...PAGE_HOST_ORIGINS]);
+  assert.equal(originsGrantPageAccess(["http://127.0.0.1/*"]), true);
+  assert.equal(originsGrantPageAccess(["https://*/*"]), true);
+  assert.equal(originsGrantPageAccess([]), false);
+});
+
+test("page intent handoff writes session storage the sidepanel reads", () => {
+  const worker = fs.readFileSync(new URL("../src/background/service-worker.js", import.meta.url), "utf8");
+  const panel = fs.readFileSync(new URL("../src/sidepanel/main.jsx", import.meta.url), "utf8");
+  assert.match(worker, /storage\.set\("session",\s*\{\s*pendingPearlIntent/);
+  assert.doesNotMatch(worker, /storage\.set\("local",\s*\{\s*pendingPearlIntent/);
+  assert.match(panel, /storage\.get\("session",\s*\[[^\]]*pendingPearlIntent/);
+  assert.match(panel, /enablePageCompanion/);
+});
+
+test("page Pearl hold-to-talk uses the shared companion voice session", () => {
+  const bridge = fs.readFileSync(new URL("../src/content/bridge.js", import.meta.url), "utf8");
+  assert.match(bridge, /createCompanionVoiceSession/);
+  assert.match(bridge, /beginHoldVoice/);
+  assert.match(bridge, /SpeechRecognition|webkitSpeechRecognition/);
+  assert.match(bridge, /open-side-panel/);
+});
 
 test("concurrent extension session mutations merge without losing pearl context", async () => {
   const store = {};
@@ -38,6 +68,8 @@ test("concurrent extension session mutations merge without losing pearl context"
 test("strict messages reject spoofed fields and oversized payloads", () => {
   assert.equal(validateMessage(createMessage("go", {})).ok, true);
   assert.equal(validateMessage(createMessage("toggle-orb-cursor", { enabled: true })).ok, true);
+  assert.equal(validateMessage(createMessage("ensure-page-companion", {})).ok, true);
+  assert.equal(validateMessage(createMessage("page-access-status", {})).ok, true);
   assert.equal(validateMessage({ ...createMessage("go", {}), token: "secret" }).ok, false);
   assert.equal(validateMessage(createMessage("go", { text: "x".repeat(513_000) })).ok, false);
   assert.throws(() => assertTrustedSender({ id: "attacker" }, "lens"));

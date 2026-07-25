@@ -22,6 +22,8 @@ export const MESSAGE_TYPES = Object.freeze([
   "orb-cursor-get",
   "orb-cursor-set",
   "open-side-panel",
+  "ensure-page-companion",
+  "page-access-status",
   "get-session",
   "pearl-state-get",
   "session-state",

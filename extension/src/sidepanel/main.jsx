@@ -14,6 +14,7 @@ import { createSemanticOrb, semanticOrbFromMaterial } from "../../../shared/sema
 import { pearlActionPrompt, searchPearlActions } from "../../../client/lib/pearl-shell.js";
 import { guideSectionsFor } from "../../../client/lib/pearl-guide.js";
 import { BrowserPlatform } from "../platform/browser-platform.js";
+import { pageAccessPermission } from "../core/page-access.js";
 import { PHYSICAL_PEARL_CSS, physicalPearlMarkup } from "../../../shared/physical-pearl.js";
 import { createPearlPrivacyPolicy } from "../../../shared/pearl-privacy-policy.js";
 import { createPearlEntity } from "../../../shared/pearl-entity.js";
@@ -222,6 +223,7 @@ function App() {
   const [powerSearch, setPowerSearch] = useState(false);
   const [pearlQuery, setPearlQuery] = useState("");
   const [orbCursorEnabled, setOrbCursorEnabled] = useState(false);
+  const [pageAccessGranted, setPageAccessGranted] = useState(null);
   const [semanticOrbs, setSemanticOrbs] = useState([]);
   const [activeSemanticOrbId, setActiveSemanticOrbId] = useState(null);
   const [pendingPearlIntent, setPendingPearlIntent] = useState(null);
@@ -361,6 +363,7 @@ function App() {
     call("auth-status").then((value) => setAuth(value.authenticated)).catch(() => {});
     call("model-catalog").then((value) => setModelCatalog(value.models || [])).catch(() => {});
     call("orb-cursor-get").then((value) => setOrbCursorEnabled(value.enabled === true)).catch(() => {});
+    call("page-access-status").then((value) => setPageAccessGranted(value.granted === true)).catch(() => setPageAccessGranted(false));
     Promise.all([
       BrowserPlatform.storage.get("local", ["onboardingComplete", "onboardingMode", "generationPlan", "semanticOrbs", "activeSemanticOrbId", "pearlSoundscapes"]),
       BrowserPlatform.storage.get("session", ["pendingPearlIntent"]),
@@ -922,6 +925,27 @@ function App() {
       setError(recoveryMessage(e, type));
       setRetryAction(() => () => action(type, payload));
       return null;
+    }
+  }
+
+  async function enablePageCompanion() {
+    try {
+      // Must run in the sidepanel click stack so Chrome accepts the permission prompt.
+      const granted = await BrowserPlatform.permissions.request(pageAccessPermission());
+      setPageAccessGranted(granted === true);
+      if (!granted) {
+        setError("Pearl needs site access to appear on web pages. Allow access when Chrome asks, then retry.");
+        return;
+      }
+      const mounted = await call("ensure-page-companion", {});
+      if (!mounted?.mounted) {
+        setError(mounted?.error || "Open a normal http(s) page, then allow Pearl site access.");
+        return;
+      }
+      setReadyMessage("Companion is on the page. Hold Pearl to speak · Space×3 toggles cursor.");
+      setError("");
+    } catch (reason) {
+      setError(recoveryMessage(reason, "ensure-page-companion"));
     }
   }
 
@@ -1824,6 +1848,12 @@ function App() {
         <button type="button" onClick={() => { setPrivacyProposal(null); setCompanion(""); }}>Cancel</button>
       </div>}
     </section>}
+    {pageAccessGranted === false && activeView === "idle" && !pearlOpen && (
+      <section className="recovery-alert" role="status" aria-label="Enable page Companion">
+        <span>Pearl isn’t on the page yet. Allow site access so hold-to-talk and Space×3 cursor work.</span>
+        <button type="button" className="gold" onClick={enablePageCompanion}>Allow on web pages</button>
+      </section>
+    )}
     {activeView === "idle" && !pearlOpen && (latestResult || latestFragment) && <section className="pearl-transient-material" aria-label={latestResult ? "Latest result" : "Current material"}>
       <p>{String(latestResult?.text || latestFragment?.quote || latestFragment?.text || "").slice(0, 600)}</p>
       {latestResult && <div>
@@ -2145,6 +2175,16 @@ function App() {
     <section className={`orb-panel ${activeView === "settings" ? "active" : ""} orb-settings`} aria-label="Pearl settings">
       <h2>Settings</h2>
       <p className="muted">Voice stays local until you explicitly run a capability. Page capture always requires your action.</p>
+      {pageAccessGranted === false && (
+        <button type="button" className="gold" onClick={enablePageCompanion}>
+          Allow Pearl on web pages
+        </button>
+      )}
+      <p className="muted">
+        {pageAccessGranted
+          ? "Companion can mount on http(s) pages. Hold Pearl to speak · Space×3 toggles the Pearl cursor."
+          : "Without site access, the page Companion (hold-to-talk, Space×3 cursor) cannot appear."}
+      </p>
       <button type="button" aria-pressed={orbCursorEnabled} onClick={() => toggleOrbCursor()}>
         {orbCursorEnabled ? "Return to native cursor" : "Let Pearl follow my cursor"}
       </button>

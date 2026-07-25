@@ -57,6 +57,7 @@ export const BrowserPlatform = Object.freeze({
   permissions: {
     contains(value) { return callbackPromise(api()?.permissions?.contains.bind(api().permissions), value); },
     request(value) { return callbackPromise(api()?.permissions?.request.bind(api().permissions), value); },
+    getAll() { return callbackPromise(api()?.permissions?.getAll.bind(api().permissions)); },
   },
   identity: {
     launch(url, interactive = true) {

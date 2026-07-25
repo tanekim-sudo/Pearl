@@ -42,13 +42,17 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-shell-packages-settings` | stressed | open packages + settings |
 | `sf-share-handoff` | residual | unsigned/live OAuth handoff needs credentials/extension |
 | `sf-aesthetic-veto` | stressed | primary frames logged for human Read |
+| `sf-extension-cold-mount` | stressed | unpacked MV3 + host access: content_scripts mounts Mother Pearl without privileged toggle (`extension/scripts/orb-audit.mjs`) |
+| `sf-extension-hold-speak` | stressed | hold→Listening→FakeSpeech→session intent / Companion handoff; real OS mic residual |
+| `sf-extension-space-triple` | stressed | Space×3 toggles Pearl cursor vs native; ignored in editable fields |
 
-## Stressed: 29 · Residual/skipped: 1
+## Stressed: 32 · Residual/skipped: 1
 
 ## Residuals (honest)
 
 - Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
 - SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
+- Extension real Chrome microphone / getUserMedia permission UI: Fake SpeechRecognition proves hold-speak wiring in `orb-audit`; live mic remains residual.
 
 ## Anti-lie
 

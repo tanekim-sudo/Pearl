@@ -56,7 +56,10 @@ test("production build emits synchronized safe Chrome archives", async () => {
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.version, pkg.version);
   assert.ok(entries.includes("assets/background.js"));
+  assert.ok(entries.includes("assets/content.js"));
   assert.ok(entries.includes("sidepanel.html"));
+  assert.ok(Array.isArray(manifest.content_scripts) && manifest.content_scripts.length >= 1);
+  assert.deepEqual(manifest.content_scripts[0].js, ["assets/content.js"]);
   assert.equal(entries.some((name) => /(?:^|\/)\.env|\.map$|\.pem$/i.test(name)), false);
 
   const metadata = JSON.parse(fs.readFileSync(path.join(dist, "downloads/release.json"), "utf8"));

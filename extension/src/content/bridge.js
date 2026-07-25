@@ -26,9 +26,19 @@ import { findOnScreenMatching, matchRectsForPowerFx } from "../../../shared/pear
 import { normalizePearlAesthetic, pearlAestheticStyle } from "../../../shared/pearl-aesthetic.js";
 import { MAX_WORN_ORBIT_PEARLS } from "../../../shared/companion-pearl-orbit.js";
 import { gauntletSocketLayout, MAX_GAUNTLET_SLOTS } from "../../../shared/companion-pearl-gauntlet.js";
+import { createCompanionVoiceSession } from "../../../client/lib/companion-voice.js";
+
+if (globalThis.__lensEverywhereBridgeMounted) {
+  // Content scripts + ensureBridge executeScript can both run; stay single-mounted.
+} else {
+globalThis.__lensEverywhereBridgeMounted = true;
 
 const highlighter = createHighlighter();
 const captured = new Map();
+
+function resolveSpeechRecognition() {
+  return globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition || null;
+}
 
 function mountPageOrb() {
   if (document.getElementById("lens-orb-overlay-host") || !document.documentElement) return;
@@ -103,6 +113,9 @@ function mountPageOrb() {
   let moved = false;
   let contextCount = 0;
   let pendingPearlCapture = null;
+  let voiceSession = null;
+  let voiceGeneration = 0;
+  let holdVoiceActive = false;
   const renderCandidates = (outputs = []) => {
     orbit.querySelectorAll(".candidate").forEach((candidate) => candidate.remove());
     outputs.slice(0, 3).forEach((output, index) => {
@@ -294,6 +307,107 @@ function mountPageOrb() {
     if (visual) visual.dataset.pearlState = state === "blocked" ? "blocked" : state === "listening" ? "listening" : ["absorbing", "planning", "branching"].includes(state) ? "executing" : "idle";
     shell.querySelector(".phase").textContent = state === "listening" ? "Listening" : state === "absorbing" ? "Adding context" : state;
   };
+  const finishHoldVoice = ({ send: shouldSend = true } = {}) => {
+    holdVoiceActive = false;
+    if (!voiceSession) {
+      if (shell.dataset.state === "listening") setState("idle");
+      return false;
+    }
+    const session = voiceSession;
+    voiceSession = null;
+    return session.finish({ send: shouldSend, reason: shouldSend ? "explicit" : "cancelled" });
+  };
+  const beginHoldVoice = () => {
+    finishHoldVoice({ send: false });
+    const SpeechRecognitionImpl = resolveSpeechRecognition();
+    if (!SpeechRecognitionImpl) {
+      setState("blocked");
+      shell.querySelector(".phase").textContent = "Voice unavailable — type and press GO";
+      send("open-side-panel", {}).catch(() => {});
+      window.setTimeout(() => {
+        if (shell.dataset.state === "blocked") setState("idle");
+      }, 1800);
+      return;
+    }
+    holdVoiceActive = true;
+    const generation = ++voiceGeneration;
+    const session = createCompanionVoiceSession({
+      generation,
+      // Hold-to-talk commits on release; silence must not auto-fire early.
+      silenceMs: 60_000,
+      dispatch: (text, envelope = {}) => {
+        if (envelope.empty || !String(text || "").trim()) {
+          setState("blocked");
+          shell.querySelector(".phase").textContent = "Heard nothing — hold & speak, or type";
+          window.setTimeout(() => {
+            if (shell.dataset.state === "blocked") setState("idle");
+          }, 1800);
+          return;
+        }
+        setState("planning");
+        shell.querySelector(".phase").textContent = "Sending…";
+        send("open-side-panel", { intent: text }).then((value) => {
+          setState("idle");
+          shell.querySelector(".phase").textContent = value?.opened === false && value?.intentQueued
+            ? "Sent to Companion"
+            : "Listening";
+        }).catch(() => {
+          setState("blocked");
+          shell.querySelector(".phase").textContent = "Could not reach Companion";
+          window.setTimeout(() => {
+            if (shell.dataset.state === "blocked") setState("idle");
+          }, 1800);
+        });
+      },
+      updateDraft: (draft) => {
+        if (!holdVoiceActive) return;
+        if (String(draft || "").trim()) {
+          setState("listening");
+          shell.querySelector(".phase").textContent = "Hearing…";
+        }
+      },
+    });
+    const attach = () => {
+      if (!session.isActive() || generation !== voiceGeneration) return;
+      const recognition = new SpeechRecognitionImpl();
+      recognition.lang = navigator.language || "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = true;
+      recognition.onresult = (event) => session.ingest(event, generation);
+      recognition.onerror = (event) => {
+        if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+          finishHoldVoice({ send: false });
+          setState("blocked");
+          shell.querySelector(".phase").textContent = "Mic denied — type in Companion";
+          send("open-side-panel", {}).catch(() => {});
+          window.setTimeout(() => {
+            if (shell.dataset.state === "blocked") setState("idle");
+          }, 2200);
+        }
+      };
+      recognition.onend = () => {
+        if (!session.isActive() || generation !== voiceGeneration || !holdVoiceActive) return;
+        try {
+          attach();
+        } catch {
+          finishHoldVoice({ send: true });
+        }
+      };
+      session.registerRecognizer(recognition);
+      recognition.start();
+    };
+    voiceSession = session;
+    setState("listening");
+    shell.querySelector(".phase").textContent = "Listening";
+    try {
+      attach();
+    } catch {
+      finishHoldVoice({ send: false });
+      setState("blocked");
+      shell.querySelector(".phase").textContent = "Voice unavailable — type and press GO";
+      send("open-side-panel", {}).catch(() => {});
+    }
+  };
   const toggle = () => {
     const open = !shell.classList.contains("open");
     shell.classList.toggle("open", open);
@@ -355,14 +469,18 @@ function mountPageOrb() {
   };
   orb.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
-    orb.setPointerCapture(event.pointerId);
+    try {
+      orb.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic / non-primary pointers (audit harness) may reject capture.
+    }
     const rect = host.getBoundingClientRect();
     press = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
     moved = false;
     holdTimer = window.setTimeout(() => {
       if (!moved) {
         gesture.hold({ pointerId: event.pointerId });
-        setState("listening");
+        beginHoldVoice();
       }
     }, 420);
   });
@@ -373,22 +491,35 @@ function mountPageOrb() {
     if (Math.hypot(dx, dy) < 4) return;
     moved = true;
     window.clearTimeout(holdTimer);
+    if (holdVoiceActive) finishHoldVoice({ send: false });
     host.style.right = "auto";
     host.style.left = `${Math.max(8, Math.min(innerWidth - shell.offsetWidth - 8, press.left + dx))}px`;
     host.style.top = `${Math.max(8, Math.min(innerHeight - shell.offsetHeight - 8, press.top + dy))}px`;
   });
   orb.addEventListener("pointerup", (event) => {
     window.clearTimeout(holdTimer);
-    if (shell.dataset.state === "listening") {
+    if (holdVoiceActive || shell.dataset.state === "listening" || voiceSession) {
       gesture.reset();
-      setState("idle");
+      finishHoldVoice({ send: true });
+    } else {
+      gesture.release({
+        at: event.timeStamp,
+        x: event.clientX,
+        y: event.clientY,
+        dragged: moved,
+        pointerType: event.pointerType,
+      });
     }
-    else gesture.release({ at: event.timeStamp, x: event.clientX, y: event.clientY, dragged: moved, pointerType: event.pointerType });
     if (moved) {
       const rect = host.getBoundingClientRect();
       if (rect.left > innerWidth / 2) { host.style.left = "auto"; host.style.right = "18px"; shell.classList.remove("dock-left"); }
       else { host.style.left = "18px"; host.style.right = "auto"; shell.classList.add("dock-left"); }
     }
+    press = null;
+  });
+  orb.addEventListener("pointercancel", () => {
+    window.clearTimeout(holdTimer);
+    if (holdVoiceActive || voiceSession) finishHoldVoice({ send: false });
     press = null;
   });
   orb.addEventListener("keydown", (event) => {
@@ -570,6 +701,7 @@ function mountPageOrb() {
     },
     get enabled() { return cursorEnabled; },
     destroy() {
+      finishHoldVoice({ send: false });
       clearSpaceSequence();
       window.clearTimeout(lightTimer);
       cancelAnimationFrame(cursorFrame);
@@ -801,6 +933,7 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
     if (type === "clear-fragments") {
       captured.clear();
       highlighter.clear();
+      highlighter.toggle(false);
       pageOrb?.hydrate({ fragments: [], generator: null, results: [] });
       return { ok: true };
     }
@@ -821,3 +954,4 @@ globalThis.chrome?.runtime?.onMessage.addListener((message, _sender, respond) =>
   }).then(respond, (error) => respond({ ok: false, error: error.message }));
   return true;
 });
+}

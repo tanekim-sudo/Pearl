@@ -44,10 +44,48 @@ import { createPearlEntity } from "../../../shared/pearl-entity.js";
 import { migrateLegacyPearlState, PEARL_STORE_KEY } from "../../../shared/pearl-store.js";
 import { executePearlActionEvent } from "../../../shared/pearl-action-protocol.js";
 import { assertPrivilegedExtensionSurface, assertServerVerifiedPearlCommand } from "../core/security.js";
+import { originsGrantPageAccess, pageAccessPermission } from "../core/page-access.js";
 
 const runs = new Map();
 const handledRequests = new Map();
 let handoffChain = Promise.resolve();
+
+async function hasPageHostAccess(tabUrl = null) {
+  try {
+    if (await BrowserPlatform.permissions.contains(pageAccessPermission())) return true;
+  } catch {
+    // Fall through to concrete host / getAll checks.
+  }
+  if (tabUrl && /^https?:/.test(tabUrl)) {
+    try {
+      const originPattern = `${new URL(tabUrl).origin}/*`;
+      if (await BrowserPlatform.permissions.contains({ origins: [originPattern] })) return true;
+    } catch {
+      // Ignore malformed tab URLs.
+    }
+  }
+  try {
+    const all = await BrowserPlatform.permissions.getAll();
+    return originsGrantPageAccess(all?.origins || []);
+  } catch {
+    return false;
+  }
+}
+
+async function requestPageHostAccess() {
+  if (await hasPageHostAccess()) return true;
+  try {
+    return await BrowserPlatform.permissions.request(pageAccessPermission());
+  } catch {
+    return false;
+  }
+}
+
+async function injectBridge(tabId) {
+  const scripting = (globalThis.browser || globalThis.chrome)?.scripting;
+  if (!scripting) throw new Error("content injection is unavailable");
+  await scripting.executeScript({ target: { tabId, allFrames: false }, files: ["assets/content.js"] });
+}
 const canvasCommands = new Set([
   "activatePearlPageCanvas",
   "deactivatePearlPageCanvas",
@@ -593,12 +631,23 @@ async function activeTab(preferredId) {
 }
 
 async function ensureBridge(tab) {
+  if (!tab?.id || !/^https?:/.test(tab.url || "")) return false;
   try {
     await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("get-session", {}));
+    return true;
   } catch {
-    const scripting = (globalThis.browser || globalThis.chrome)?.scripting;
-    await scripting.executeScript({ target: { tabId: tab.id, allFrames: false }, files: ["assets/content.js"] });
-    await new Promise((resolve) => setTimeout(resolve, 75));
+    try {
+      await injectBridge(tab.id);
+      await new Promise((resolve) => setTimeout(resolve, 75));
+      await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("get-session", {})).catch(() => {});
+      return true;
+    } catch (error) {
+      const message = String(error?.message || error || "content injection failed");
+      if (/Cannot access|host permission|Missing host|The extensions gallery|chrome:\/\//i.test(message)) {
+        throw new Error("Allow Pearl on web pages (extension site access), then open this page again.");
+      }
+      throw error;
+    }
   }
 }
 
@@ -1120,19 +1169,49 @@ async function handle(message, sender = {}) {
     return { enabled: payload.enabled === true, supported: true, tabId };
   }
   if (type === "toggle-orb-cursor") return sendPage(type, payload);
+  if (type === "page-access-status") {
+    const tab = await activeTab(payload.targetTabId).catch(() => null);
+    return { granted: await hasPageHostAccess(tab?.url || null) };
+  }
+  if (type === "ensure-page-companion") {
+    const tab = await activeTab(payload.targetTabId);
+    const granted = await hasPageHostAccess(tab.url);
+    try {
+      await ensureBridge(tab);
+      return { mounted: true, granted, tabId: tab.id };
+    } catch (error) {
+      return {
+        mounted: false,
+        granted,
+        tabId: tab.id,
+        error: granted
+          ? String(error?.message || error || "content injection failed")
+          : "Allow Pearl on web pages so the Companion can appear.",
+      };
+    }
+  }
   if (type === "open-side-panel") {
     const tab = await activeTab(payload.targetTabId);
-    if (String(payload.intent || "").trim()) {
-      await BrowserPlatform.storage.set("local", {
+    const intent = String(payload.intent || "").trim();
+    if (intent) {
+      // Sidepanel reads pendingPearlIntent from session storage (not local).
+      await BrowserPlatform.storage.set("session", {
         pendingPearlIntent: {
-          text: String(payload.intent).trim().slice(0, 4000),
+          text: intent.slice(0, 4000),
           id: `page-intent:${Date.now()}`,
           createdAt: Date.now(),
         },
       });
     }
-    await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
-    return { opened: true, tabId: tab.id };
+    let opened = false;
+    try {
+      await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
+      opened = true;
+    } catch {
+      // Companion may already be open as a tab (Playwright audit) or host may block sidePanel.open.
+      opened = false;
+    }
+    return { opened, tabId: tab.id, intentQueued: Boolean(intent) };
   }
   if (type === "model-catalog") return apiRequest("/api/models", { method: "GET" });
   if (type === "adaptive-companion-plan") {
@@ -1495,13 +1574,15 @@ async function handle(message, sender = {}) {
     for (const run of runs.values()) run.abort();
     runs.clear();
     const profileHash = await BrowserPlatform.storage.profileHash();
-    await clearAllSession();
+    // Stop page capture first so mouseup/highlighter cannot rewrite session after wipe.
     await clearDecryptedPageSurfaces();
+    await clearAllSession();
     const [audioDeleted, imagesDeleted] = await Promise.all([
       deleteProfileAudio(profileHash),
       deleteProfileImages(profileHash),
     ]);
     const receipt = await BrowserPlatform.storage.deleteLocal();
+    await clearAllSession();
     return {
       ...receipt,
       audioDeleted,
@@ -1591,12 +1672,15 @@ globalThis.chrome?.runtime?.onInstalled.addListener(() => {
 
 globalThis.chrome?.action?.onClicked.addListener(async (tab) => {
   if (!tab?.id || !/^https?:/.test(tab.url || "")) return;
-  await ensureBridge(tab);
+  // User gesture: request optional host access so content_scripts + Triple-Space mount.
+  await requestPageHostAccess();
+  await ensureBridge(tab).catch(() => {});
   await globalThis.chrome.sidePanel?.open?.({ windowId: tab.windowId });
 });
 
 globalThis.chrome?.contextMenus?.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== "lens-capture" || !tab?.id) return;
+  await requestPageHostAccess();
   await ensureBridge(tab);
   await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("toggle-highlighter", { enabled: true }));
   await BrowserPlatform.tabs.sendMessage(tab.id, createMessage("capture-selection", {}));
@@ -1605,6 +1689,23 @@ globalThis.chrome?.contextMenus?.onClicked.addListener(async (info, tab) => {
 
 globalThis.chrome?.commands?.onCommand.addListener(async (command) => {
   if (command === "toggle-highlighter") await sendPage("toggle-highlighter");
+});
+
+globalThis.chrome?.permissions?.onAdded?.addListener(async (permission) => {
+  const origins = permission?.origins || [];
+  if (!origins.some((origin) => origin === "<all_urls>" || /^https?:\/\//.test(origin))) return;
+  const tabs = await globalThis.chrome.tabs.query({}).catch(() => []);
+  for (const tab of tabs) {
+    if (!tab?.id || !/^https?:/.test(tab.url || "")) continue;
+    await ensureBridge(tab).catch(() => {});
+  }
+});
+
+globalThis.chrome?.tabs?.onUpdated?.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete") return;
+  if (!tab?.id || !/^https?:/.test(tab.url || "")) return;
+  if (!(await hasPageHostAccess(tab.url))) return;
+  await ensureBridge(tab).catch(() => {});
 });
 
 const PRIVILEGED_EXTENSION_MESSAGE_TYPES = new Set([

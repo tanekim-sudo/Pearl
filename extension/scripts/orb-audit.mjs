@@ -109,13 +109,16 @@ try {
   const fixture = await context.newPage();
   await fixture.setViewportSize({ width: 1280, height: 800 });
   await fixture.goto(`http://127.0.0.1:${server.address().port}`);
+  // With host permission + content_scripts, Mother Pearl must mount without a privileged toggle.
+  await fixture.locator("#lens-orb-overlay-host").waitFor({ timeout: 8_000 });
+  await fixture.screenshot({ path: path.join(evidence, "06-cold-page-companion.png"), fullPage: true });
 
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 360, height: 720 });
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
+  await panel.getByRole("button", { name: /Open Companion actions/ }).waitFor();
   await panel.screenshot({ path: path.join(evidence, "05-extension-idle-pearl-360.png"), fullPage: true });
-  await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+  await panel.getByRole("button", { name: /Open Companion actions/ }).click();
   await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).waitFor();
   if (await panel.getByRole("navigation").count()) throw new Error("Pearl click exposed persistent navigation");
   await panel.keyboard.press("Escape");
@@ -139,20 +142,27 @@ try {
     if (!["idle", "command"].includes(await panel.locator("main").getAttribute("data-orb-view"))) {
       await panel.getByRole("button", { name: "Collapse view into Pearl" }).click();
     }
-    await panel.getByRole("button", { name: /Open Pearl actions/ }).click();
+    await panel.getByRole("button", { name: /Open Companion actions/ }).click();
     if (!requests[name]) return;
     await panel.getByRole("textbox", { name: "Tell Pearl your goal" }).fill(requests[name]);
     await panel.getByRole("button", { name: /GO/i }).click();
   };
-  await panel.evaluate(async () => {
+  // ensure-page-companion must succeed when host access is already granted (no reinvented inject path).
+  const ensured = await panel.evaluate(async () => {
     const tabs = await chrome.tabs.query({});
     const current = await chrome.tabs.getCurrent();
     const targetTabId = tabs.find((tab) => tab.id !== current?.id && tab.url?.startsWith("http://127.0.0.1:"))?.id;
     if (!targetTabId) throw new Error("fixture tab unavailable");
-    const response = await chrome.runtime.sendMessage({ version: 1, type: "toggle-highlighter", requestId: "orb-audit", payload: { enabled: true, targetTabId } });
-    if (!response?.ok) throw new Error(response?.error || "content injection failed");
+    return chrome.runtime.sendMessage({
+      version: 1,
+      type: "ensure-page-companion",
+      requestId: "orb-audit-ensure",
+      payload: { targetTabId },
+    });
   });
-  await fixture.locator("#lens-orb-overlay-host").waitFor();
+  if (!ensured?.ok || ensured.value?.mounted !== true) {
+    throw new Error(`ensure-page-companion failed after cold mount: ${JSON.stringify(ensured)}`);
+  }
   const restingOverlay = await fixture.locator("#lens-orb-overlay-host").evaluate((host) => ({
     hostPointerEvents: getComputedStyle(host).pointerEvents,
     orbPointerEvents: getComputedStyle(host.shadowRoot.querySelector(".orb")).pointerEvents,
@@ -165,6 +175,121 @@ try {
   const pageOrb = fixture.locator("#lens-orb-overlay-host").getByRole("button", { name: /^Pearl\./ });
   const beforeDrag = await pageOrb.boundingBox();
   if (!beforeDrag || beforeDrag.width < 32) throw new Error(`page Pearl is not a compact literal control: ${JSON.stringify(beforeDrag)}`);
+
+  // Hold-to-talk: FakeSpeech must be installed in the content-script ISOLATED world
+  // (page-world window.SpeechRecognition is invisible to the Companion bridge).
+  const holdProof = await panel.evaluate(async () => {
+    const tabs = await chrome.tabs.query({});
+    const current = await chrome.tabs.getCurrent();
+    const targetTabId = tabs.find((tab) => tab.id !== current?.id && tab.url?.startsWith("http://127.0.0.1:"))?.id;
+    if (!targetTabId) throw new Error("fixture tab unavailable for hold-to-talk");
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      world: "ISOLATED",
+      func: async () => {
+        class FakeSpeechRecognition {
+          constructor() {
+            this.continuous = false;
+            this.interimResults = false;
+            this.lang = "en-US";
+            this.onresult = null;
+            this.onerror = null;
+            this.onend = null;
+            FakeSpeechRecognition.instances.push(this);
+          }
+          start() {
+            this._started = true;
+            queueMicrotask(() => {
+              const result = [{ 0: { transcript: "keep this selection", confidence: 0.94 }, isFinal: true, length: 1 }];
+              result.length = 1;
+              this.onresult?.({ resultIndex: 0, results: result });
+            });
+          }
+          stop() {
+            this.onend?.();
+          }
+          abort() {
+            this.onend?.();
+          }
+        }
+        FakeSpeechRecognition.instances = [];
+        globalThis.SpeechRecognition = FakeSpeechRecognition;
+        globalThis.webkitSpeechRecognition = FakeSpeechRecognition;
+
+        const host = document.getElementById("lens-orb-overlay-host");
+        const orb = host?.shadowRoot?.querySelector(".orb");
+        const shell = host?.shadowRoot?.querySelector(".shell");
+        if (!orb || !shell) throw new Error("page Pearl missing for hold-to-talk");
+        const box = orb.getBoundingClientRect();
+        const point = { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+        orb.dispatchEvent(new PointerEvent("pointerdown", {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          button: 0,
+          buttons: 1,
+          pointerId: 77,
+          pointerType: "mouse",
+          ...point,
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 520));
+        const during = {
+          state: shell.dataset.state,
+          phase: host.shadowRoot.querySelector(".phase")?.textContent || "",
+          started: FakeSpeechRecognition.instances.some((entry) => entry._started === true),
+          instances: FakeSpeechRecognition.instances.length,
+        };
+        orb.dispatchEvent(new PointerEvent("pointerup", {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          button: 0,
+          buttons: 0,
+          pointerId: 77,
+          pointerType: "mouse",
+          ...point,
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return {
+          during,
+          after: {
+            state: shell.dataset.state,
+            phase: host.shadowRoot.querySelector(".phase")?.textContent || "",
+          },
+        };
+      },
+    });
+    return result;
+  });
+  if (holdProof.during.state !== "listening" || !holdProof.during.started) {
+    throw new Error(`hold-to-talk did not enter Listening with FakeSpeech: ${JSON.stringify(holdProof)}`);
+  }
+  await fixture.screenshot({ path: path.join(evidence, "06h-extension-hold-listening.png"), fullPage: true });
+  const holdIntent = await panel.evaluate(async () => {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const session = await chrome.storage.session.get("pendingPearlIntent");
+      if (session.pendingPearlIntent?.text) return session.pendingPearlIntent;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  });
+  const companionEcho = await panel.locator('input[aria-label="Tell Pearl your goal"], input[aria-label="Pearl command"]').first()
+    .inputValue()
+    .catch(() => "");
+  if (!/keep this selection/i.test(String(holdIntent?.text || companionEcho || ""))) {
+    throw new Error(`hold-to-talk missing Companion intent handoff: ${JSON.stringify({ holdProof, holdIntent, companionEcho })}`);
+  }
+  await fixture.screenshot({ path: path.join(evidence, "06i-extension-hold-release.png"), fullPage: true });
+  // Reset sidepanel after hold handoff so later capture/GO journey stays on the original path.
+  await panel.evaluate(async () => {
+    await chrome.storage.session.remove(["pendingPearlIntent"]);
+  });
+  await panel.keyboard.press("Escape").catch(() => {});
+  await panel.keyboard.press("Escape").catch(() => {});
+  if (!["idle", "command"].includes(await panel.locator("main").getAttribute("data-orb-view").catch(() => "idle"))) {
+    await panel.getByRole("button", { name: "Collapse view into Pearl" }).click().catch(() => {});
+  }
+
   await panel.evaluate(() => {
     globalThis.__semanticChanges = [];
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -262,8 +387,9 @@ try {
   await panel.locator(".rack button").filter({ hasText: /compress/i }).first().click();
   await panel.waitForFunction(async () => (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession?.queue?.length >= 1);
   await openPanelView("Review");
-  await panel.getByRole("button", { name: "GO", exact: true }).waitFor({ state: "visible" });
-  const goBlocked = await panel.getByRole("button", { name: "GO", exact: true }).isDisabled();
+  const goButton = panel.locator("button.go").filter({ hasText: /GO/i }).first();
+  await goButton.waitFor({ state: "visible" });
+  const goBlocked = await goButton.isDisabled();
   if (goBlocked) {
     const diagnostics = await panel.evaluate(async () => ({
       session: (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession,
@@ -272,7 +398,7 @@ try {
     throw new Error(`GO remained blocked after capture and queue: ${JSON.stringify(diagnostics)}`);
   }
   panel.once("dialog", (dialog) => dialog.accept());
-  await panel.getByRole("button", { name: "GO", exact: true }).click();
+  await goButton.click();
   await panel.waitForTimeout(800);
   const generationState = await panel.evaluate(async () => ({
     session: (await chrome.storage.session.get("lensEverywhereSession")).lensEverywhereSession,
@@ -325,7 +451,7 @@ try {
   });
   await fixture.setViewportSize({ width: 1280, height: 800 });
   await panel.reload();
-  await panel.getByRole("button", { name: /Open Pearl actions/ }).waitFor();
+  await panel.getByRole("button", { name: /Open Companion actions/ }).waitFor();
   await openPanelView("Generate");
   await panel.waitForTimeout(300);
   const postGenerationView = await panel.locator("main").getAttribute("data-orb-view");
@@ -510,7 +636,10 @@ try {
     extensionId,
     viewport: { width: 360, height: 720 },
     checks: [
+      "content_scripts cold-mount Mother Pearl with host permission (no privileged toggle)",
+      "ensure-page-companion remount/status path",
       "literal animated Shadow DOM page-edge orb visible",
+      "hold-to-talk starts SpeechRecognition and hands intent to Companion (FakeSpeech; real mic residual)",
       "page orb emits one command and one contextual action",
       "selection absorption creates visible context orbit",
       "capture queues an action and remains inert until explicit GO",
@@ -532,10 +661,13 @@ try {
       "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
       "MV3 service worker loaded",
     ],
-    passed: 21,
+    passed: 24,
     failed: 0,
+    residuals: [
+      "Real OS microphone / Chrome getUserMedia permission UI is not exercised; Fake SpeechRecognition proves hold→Listening→intent wiring.",
+    ],
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 21 checks, 16 screenshots.");
+  console.log("Orb extension audit passed: 24 checks (hold-speak FakeSpeech + Triple-Space + cold mount).");
 } finally {
   await context.close();
   server.close();
