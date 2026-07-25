@@ -497,6 +497,7 @@ function LibraryHome({
   onLensRemove,
   onCandidateTaste,
   onOpenStudio,
+  onWearPearl,
 }) {
   const [query, setQuery] = useState("");
   const continuationCount = continuationMaterialCount(extensionHandoff);
@@ -582,31 +583,64 @@ function LibraryHome({
           : <a className="orb-continuation-setup" href="/install" onClick={(event) => { event.preventDefault(); navigate("/install"); }}>Extension setup</a>}
     </section>}
     <section className={`orb-recent-orbit orb-reef${reefPearls.length ? " orb-reef-populated" : ""}`} aria-label="Pearl canvas">
-      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Your pearls — open one, or ask Companion to wear it" : "Empty canvas — ask Companion to make a pearl"}</p>
-      <div className="orb-reef-shelf" data-testid="reef-shelf">
+      <p className="orb-reef-section-label">{reefPearls.length || scenes.length ? "Your pearls — drag onto Companion to wear, or open one" : "Empty canvas — ask Companion to make a pearl"}</p>
+      <div className="orb-reef-shelf" data-testid="reef-shelf" data-pearl-shelf="true">
         {reefPearls.map((pearl) => (
-          <button
+          <div
             key={pearl.id}
-            type="button"
             className="reef-pearl"
             data-reef-pearl={pearl.id}
-            data-testid="reef-pearl-open"
-            onClick={() => {
-              // Single click enters Studio explorer (Functions as ordered Moves) — not Scene admin form.
-              onOpenStudio?.(pearl);
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "copyMove";
+              event.dataTransfer.setData(
+                "application/x-lens-pearl",
+                JSON.stringify({ id: pearl.id, name: pearl.name, fromGauntlet: false }),
+              );
+              event.dataTransfer.setData("text/plain", pearl.id);
             }}
             onContextMenu={(event) => {
               // Right-click still reaches Scene spatial play when needed.
               event.preventDefault();
               if (pearl.sceneId) navigate(`/scene/${encodeURIComponent(pearl.sceneId)}`);
             }}
-            title={`${pearl.name} — open to explore Functions as ordered Moves`}
-            aria-label={`${pearl.name}, open pearl explorer`}
+            title={`${pearl.name} — drag onto Companion gauntlet to wear · click opens Studio`}
           >
-            <i className="reef-pearl-dot" aria-hidden="true" />
-            <b>{pearl.name}</b>
-            <small>Open to explore</small>
-          </button>
+            <button
+              type="button"
+              className="reef-pearl-open"
+              data-testid="reef-pearl-open"
+              onClick={() => onOpenStudio?.(pearl)}
+              aria-label={`${pearl.name}, open pearl explorer`}
+            >
+              <PhysicalPearl
+                variant="semantic"
+                state="idle"
+                size={36}
+                aesthetic={pearl.aesthetic || null}
+                decorative
+              />
+              <b>{pearl.name}</b>
+              <small>Drag to wear · open Studio</small>
+            </button>
+            <button
+              type="button"
+              className="reef-pearl-wear"
+              data-testid="reef-pearl-wear"
+              onClick={() => {
+                if (onWearPearl) onWearPearl(pearl);
+                else if (globalThis.__lensOrbRuntime?.execute) {
+                  void globalThis.__lensOrbRuntime.execute(
+                    [{ verb: "wearPearl", args: { id: pearl.id } }],
+                    { title: "Wear" },
+                  );
+                }
+              }}
+              aria-label={`Wear ${pearl.name} on the gauntlet`}
+            >
+              Wear
+            </button>
+          </div>
         ))}
         {!reefPearls.length && scenes.slice(0, 2).map((scene, index) => <button
           key={scene.id}
@@ -3473,6 +3507,14 @@ export default function OrbUniverseShell({ StageComponent }) {
           onLensRemove={removeOrbLens}
           onCandidateTaste={tasteCandidate}
           onOpenStudio={openActivePearlStudio}
+          onWearPearl={(pearl) => {
+            const runtime = globalThis.__lensOrbRuntime;
+            if (typeof runtime?.execute === "function") {
+              void runtime.execute([{ verb: "wearPearl", args: { id: pearl.id } }], { title: "Wear" });
+              return;
+            }
+            void command(`put ${pearl.name || pearl.id} in the gauntlet`);
+          }}
         />}
     {/* Keep ONE stable App + CompanionChat for Reef. Never bind sceneId here — that remounts
         chat (wiping messages) and fights Scene's runtime over __lensOrbRuntime. */}

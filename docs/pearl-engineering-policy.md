@@ -37,7 +37,8 @@ Primary clueless-reachable screens: `client/lib/pearl-primary-screens.js`.
 
 Feature contracts: `shared/feature-contracts.js`.  
 Companion verbs: `client/lib/companion-capabilities.js`.  
-Shell routing: `client/components/OrbUniverseShell.jsx` + `client/lib/shell-navigation.js`.
+Shell routing: `client/components/OrbUniverseShell.jsx` + `client/lib/shell-navigation.js`.  
+Orphan ledger: `docs/pearl-orphan-audit.md` (rewire originals; never invent a third path).
 
 ## Anti-orphan checklist
 

@@ -8,6 +8,7 @@
     "build": "vite build --config vite.config.js && vite build --config vite.content.config.js && node scripts/platform-manifests.mjs",
     "test": "node --test tests/*.test.js",
     "package": "npm run build && node scripts/package.mjs",
-    "audit": "node scripts/playwright-audit.mjs"
+    "audit": "node scripts/playwright-audit.mjs",
+    "audit:pearl-dnd": "node scripts/pearl-dnd-audit.mjs"
   }
 }

@@ -16,6 +16,7 @@
     "test:extension-release": "node --test extension/tests/release.test.js",
     "test:before-after": "node --test shared/before-after-examples.test.js",
     "audit:extension": "npm --prefix extension run audit",
+  "audit:extension-pearl-dnd": "npm --prefix extension run audit:pearl-dnd",
     "contracts:generate": "node scripts/feature-contract-gate.mjs --update",
     "contracts:check": "node scripts/feature-contract-gate.mjs",
     "orb:matrix": "node scripts/generate-orb-preservation-matrix.mjs",

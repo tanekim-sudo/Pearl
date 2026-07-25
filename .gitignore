@@ -46,6 +46,13 @@ audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/audit-truth-remediation-2026-07/live-provider-boundary.json
 !audit-shots/extension-companion-restore-2026-07-25/
 !audit-shots/extension-companion-restore-2026-07-25/**
+!audit-shots/extension-pearl-dnd-2026-07-25/
+!audit-shots/extension-pearl-dnd-2026-07-25/**
 extension/release/*.zip
 client/public/downloads/
 extension/.diag-profile/
+extension/.audit-dnd-profile/
+extension/.audit-dnd-extension/
+extension/.audit-orb-profile/
+extension/.audit-orb-extension/
+extension/.audit-debug-profile/

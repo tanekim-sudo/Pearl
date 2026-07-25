@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { jsonrepair } from "jsonrepair";
 import {
   TRANSFORM_PRIMITIVES,
@@ -2324,6 +2325,13 @@ if (typeof window !== "undefined") {
   } catch {
     /* never block boot on cleanup */
   }
+}
+
+/** Portals App modals out of the clipped 2px orb-runtime-host so Reef Companion can show them. */
+function shellVisible(pearlShell, node) {
+  if (!node) return null;
+  if (pearlShell && typeof document !== "undefined") return createPortal(node, document.body);
+  return node;
 }
 
 export default function App({ sceneId = null, pearlShell = false }) {
@@ -16655,11 +16663,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "package-deprecation-receipt", ...payload };
     },
     openCognitiveWorkflowStudio: async (a, tk) => {
-      const target = tk.elementCenter(".page-title-cognitive-studio");
-      if (target) await tk.click(target.x, target.y);
+      // Do not depend on classic page-title chrome (unmounted in Pearl shell).
       setCognitiveStudioInitialTab(a.tab || "higher-order");
       setCognitiveStudioOpen(true);
-      await tk.wait(300);
+      await tk.wait(120);
+      const target = tk.elementCenter(".cognitive-studio");
+      if (target) await tk.moveTo(target.x, target.y);
       return { type: "cognitive-workflow-studio", tab: a.tab || "higher-order", status: "open" };
     },
     proposeHigherOrderPatch: async (a, tk, ctx) => {
@@ -19732,15 +19741,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
       {toast && <div className="toast">{toast}</div>}
 
-      {learnFromChatOpen && (
+      {shellVisible(pearlShell, learnFromChatOpen && (
         <LearnFromChat
           onClose={() => setLearnFromChatOpen(false)}
           onSaveArtifacts={saveTranscriptArtifacts}
           onEditArtifact={editTranscriptArtifactInCanonicalEditor}
         />
-      )}
+      ))}
 
-      {saveAsChooser && (
+      {shellVisible(pearlShell, saveAsChooser && (
         <div className="modal-scrim" onClick={() => setSaveAsChooser(null)}>
           <div className="modal library-save-as-chooser" role="dialog" aria-modal="true" aria-labelledby="save-as-title" onClick={(event) => event.stopPropagation()}>
             <h3 id="save-as-title">What do you want to make?</h3>
@@ -19766,7 +19775,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             <button type="button" onClick={() => setSaveAsChooser(null)}>Cancel</button>
           </div>
         </div>
-      )}
+      ))}
 
       {freshConfirm && (
         <div className="modal-scrim" onClick={() => setFreshConfirm(false)}>
@@ -20189,7 +20198,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         onShape={shapeForgedLensInEditor}
         onClose={() => setGrindOpen(false)}
       />
-      {cognitiveStudioOpen && (
+      {shellVisible(pearlShell, cognitiveStudioOpen && (
         <CognitiveWorkflowStudio
           initialTab={cognitiveStudioInitialTab}
           artifacts={[
@@ -20250,8 +20259,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           }}
           onClose={() => setCognitiveStudioOpen(false)}
         />
-      )}
-      {packageRegistryOpen && (
+      ))}
+      {shellVisible(pearlShell, packageRegistryOpen && (
         <CognitivePackageRegistry
           artifacts={[
             ...operators.filter((operator) => operator.top).map((operator) => ({
@@ -20282,7 +20291,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           accountId={supaAuth.session?.user?.id || null}
           onClose={() => setPackageRegistryOpen(false)}
         />
-      )}
+      ))}
       <GhostCursor />
       <CompanionChat
         demos={COMPANION_DEMOS}

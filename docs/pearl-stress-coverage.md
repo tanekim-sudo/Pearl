@@ -45,14 +45,19 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-extension-cold-mount` | stressed | unpacked MV3 + host access: content_scripts mounts Mother Pearl without privileged toggle (`extension/scripts/orb-audit.mjs`) |
 | `sf-extension-hold-speak` | stressed | hold→Listening→FakeSpeech→session intent / Companion handoff; real OS mic residual |
 | `sf-extension-space-triple` | stressed | Space×3 toggles Pearl cursor vs native; ignored in editable fields |
+| `sf-extension-pearl-dnd-wear` | stressed | Sidepanel shelf capsules + Wear→gauntlet persist (`extension/scripts/pearl-dnd-audit.mjs`); HTML5 DnD residual in Playwright |
+| `sf-reef-pearl-wear-affordance` | stressed | Reef PhysicalPearl capsules + Wear + drag MIME onto Companion (`wearPearl` original) |
+| `sf-orphan-audit-ledger` | stressed | `docs/pearl-orphan-audit.md` inventory + rewires |
 
-## Stressed: 32 · Residual/skipped: 1
+## Stressed: 35 · Residual/skipped: 1
 
 ## Residuals (honest)
 
 - Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
 - SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 - Extension real Chrome microphone / getUserMedia permission UI: Fake SpeechRecognition proves hold-speak wiring in `orb-audit`; live mic remains residual.
+- Playwright HTML5 drag-and-drop onto gauntlet sockets is unreliable; Wear button and web `wearPearl` prove the same shared gauntlet path. Manual Chrome drag remains the headed DnD residual.
+- BeforeAfter / HighlightToolbar / AiNodeCanvas on Reef without Scene: Scene/Output Frame residual (not reinvented).
 
 ## Anti-lie
 

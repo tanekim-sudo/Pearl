@@ -170,7 +170,6 @@ function ExtensionOrb({
         </button>;
       })}
       <button type="button" className="extension-orb" aria-label={`Open Companion actions, ${phase}`} aria-expanded="false" onClick={onCommandView}>
-        <style>{PHYSICAL_PEARL_CSS}</style>
         <span
           data-pearl-aesthetic={aesthetic?.preset || undefined}
           style={aestheticVars || undefined}
@@ -1781,7 +1780,10 @@ function App() {
       : { label: "Notice selection", run: () => action("capture-selection") };
   const activeSoundscape = pearlSoundscapes[activeSemanticOrbId] || null;
   const activeTrack = activeSoundscape?.tracks?.find((entry) => entry.id === activeSoundscape.activeTrackId) || null;
-  return <main data-orb-view={activeView}>
+  const shelfPearls = semanticOrbs.filter((orb) => !orb.archived);
+  const showPearlShelf = activeView === "orbs" || (activeView === "idle" && shelfPearls.length > 0);
+  return <main data-orb-view={activeView} data-pearl-shelf-open={showPearlShelf ? "true" : "false"}>
+    <style>{PHYSICAL_PEARL_CSS}</style>
     <header>
       <ExtensionOrb
         phase={orbPhase}
@@ -1895,7 +1897,7 @@ function App() {
       </form>}
       {!powerSearch && <div className="pearl-quick-actions" role="group" aria-label="Pearl quick actions">
         <button type="button" onClick={() => { setGuideOpen(true); setPearlOpen(false); }}>How Pearl works</button>
-        <button type="button" onClick={() => { setActiveView("orbs"); setPearlOpen(false); }}>Library</button>
+        <button type="button" onClick={() => { setActiveView("orbs"); setPearlOpen(false); }}>Pearls</button>
         <button type="button" onClick={() => { setActiveView("settings"); setPearlOpen(false); }}>{auth ? "Account" : "Sign in"}</button>
         <button type="button" onClick={() => { setActiveView("context"); setPearlOpen(false); }}>Import / capture</button>
         <button type="button" className="pearl-contextual-action" onClick={() => {
@@ -1913,9 +1915,13 @@ function App() {
       </>}
     </aside>}
     {!["idle", "command"].includes(activeView) && <button className="extension-emission-close" type="button" aria-label="Collapse view into Pearl" onClick={() => setActiveView("idle")}>Collapse into Pearl</button>}
-    <section className={`orb-panel extension-semantic-orbs ${activeView === "orbs" ? "active" : ""}`} aria-label="Pearl tray">
+    <section
+      className={`orb-panel extension-semantic-orbs ${showPearlShelf ? "active" : ""}${activeView === "idle" && shelfPearls.length ? " extension-shelf-dock" : ""}`}
+      aria-label="Pearl tray"
+      data-testid="extension-pearl-shelf"
+    >
       <div className="extension-semantic-orb-head">
-        <div><h2>Pearls</h2><small>Drag a pearl onto the Companion (up to {MAX_GAUNTLET_SLOTS}) when you need it. Not rival companions.</small></div>
+        <div><h2>Pearls</h2><small>Drag onto Companion / a gauntlet socket (up to {MAX_GAUNTLET_SLOTS}). Not rival companions.</small></div>
         <button className="gold" type="button" onClick={() => semanticOrbAction("create", { name: session.fragments.length ? "From capture" : "New pearl", material: session.fragments.at(-1) || null }).catch(() => {})}>
           {session.fragments.length ? "Make a pearl" : "New pearl"}
         </button>
@@ -1948,24 +1954,53 @@ function App() {
           }
         }}
       >
-        {semanticOrbs.filter((orb) => !orb.archived).map((orb) => <button
-          type="button"
+        {shelfPearls.map((orb) => <div
+          className={`extension-shelf-pearl${activeSemanticOrbId === orb.id ? " is-active" : ""}${gauntlet.pearlIds?.includes(orb.id) ? " is-worn" : ""}`}
           key={orb.id}
-          aria-pressed={activeSemanticOrbId === orb.id}
+          data-testid="extension-shelf-pearl"
+          data-pearl-id={orb.id}
           draggable
-          title="On shelf · click to open · drag onto a gauntlet socket to wear"
+          title="On shelf · drag onto Companion or a gauntlet socket to wear · click to open"
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "copyMove";
             event.dataTransfer.setData("application/x-lens-pearl", JSON.stringify({ id: orb.id, name: orb.name, fromGauntlet: false }));
             event.dataTransfer.setData("text/plain", orb.id);
           }}
-          onClick={() => semanticOrbAction("open", { id: orb.id, wear: false })}
         >
-          <span dangerouslySetInnerHTML={{ __html: physicalPearlMarkup({ id: `sidepanel-semantic-${String(orb.id).replace(/[^a-zA-Z0-9_-]/g, "")}`, variant: "semantic", state: activeSemanticOrbId === orb.id ? "listening" : "idle", size: 30, decorative: true }) }} />
-          <b>{orb.name}</b>
-          <small>{orb.representation?.kind || "empty"} · {orb.workingSet?.context?.length || 0} context</small>
-        </button>)}
-        {!semanticOrbs.some((orb) => !orb.archived) && <p>Shelf empty. Select page material, make a context pearl, then drag it into the Companion gauntlet.</p>}
+          <button
+            type="button"
+            className="extension-shelf-pearl-open"
+            aria-pressed={activeSemanticOrbId === orb.id}
+            onClick={() => semanticOrbAction("open", { id: orb.id, wear: false })}
+          >
+            <span
+              className="extension-shelf-pearl-glyph"
+              dangerouslySetInnerHTML={{
+                __html: physicalPearlMarkup({
+                  id: `sidepanel-semantic-${String(orb.id).replace(/[^a-zA-Z0-9_-]/g, "")}`,
+                  variant: "semantic",
+                  state: activeSemanticOrbId === orb.id ? "listening" : "idle",
+                  size: 34,
+                  decorative: true,
+                  aesthetic: orb.aesthetic || null,
+                }),
+              }}
+            />
+            <b>{orb.name}</b>
+            <small>{gauntlet.pearlIds?.includes(orb.id) ? "On gauntlet" : "Drag to wear"}</small>
+          </button>
+          <button
+            type="button"
+            className="extension-shelf-pearl-wear"
+            data-testid="extension-pearl-wear"
+            disabled={gauntlet.pearlIds?.includes(orb.id)}
+            onClick={() => semanticOrbAction("open", { id: orb.id, wear: true }).catch((reason) => setError(reason.message))}
+            aria-label={`Wear ${orb.name} on the gauntlet`}
+          >
+            {gauntlet.pearlIds?.includes(orb.id) ? "Worn" : "Wear"}
+          </button>
+        </div>)}
+        {!shelfPearls.length && <p>Shelf empty. Select page material, make a context pearl, then drag it into the Companion gauntlet.</p>}
       </div>
       {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
         <input
@@ -1977,6 +2012,15 @@ function App() {
             if (name) semanticOrbAction("rename", { id: activeSemanticOrbId, name });
           }}
         />
+        <button
+          type="button"
+          className="gold"
+          data-testid="extension-detail-wear"
+          disabled={gauntlet.pearlIds?.includes(activeSemanticOrbId)}
+          onClick={() => semanticOrbAction("open", { id: activeSemanticOrbId, wear: true }).catch((reason) => setError(reason.message))}
+        >
+          {gauntlet.pearlIds?.includes(activeSemanticOrbId) ? "On gauntlet" : "Wear on gauntlet"}
+        </button>
         <button type="button" disabled={!session.fragments.length} onClick={() => semanticOrbAction("add-context", { id: activeSemanticOrbId, items: session.fragments.slice(-1) })}>Add current capture</button>
         {(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context || []).map((item) => <span key={item.id}>
           {item.label || item.quote || item.text || item.id}

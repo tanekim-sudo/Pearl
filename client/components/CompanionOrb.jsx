@@ -6,7 +6,12 @@ import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js
 import { clampCompanionPlacement, companionViewportSize } from "../lib/companion-safety.js";
 import { defaultPearlAesthetic } from "../../shared/pearl-aesthetic.js";
 import { loadWornOrbitState } from "../../shared/companion-pearl-wear.js";
-import { gauntletSocketLayout, loadGauntletState, MAX_GAUNTLET_SLOTS } from "../../shared/companion-pearl-gauntlet.js";
+import {
+  gauntletSocketLayout,
+  loadGauntletState,
+  MAX_GAUNTLET_SLOTS,
+  wearPearlIdInGauntlet,
+} from "../../shared/companion-pearl-gauntlet.js";
 import { extractTextFromFile } from "../../shared/encode-evidence.js";
 
 export const ORB_PLACEMENT_KEY = "lens.orb.placement.v1";
@@ -330,8 +335,86 @@ export default function CompanionOrb({
     setDraft("");
   }
 
-  async function drop(event) {
+  function readDroppedPearlPayload(event) {
+    try {
+      const raw = event.dataTransfer?.getData("application/x-lens-pearl");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id && parsed.fromGauntlet !== true) {
+          return { id: String(parsed.id), name: parsed.name || parsed.id };
+        }
+      }
+    } catch { /* fall through */ }
+    const text = String(event.dataTransfer?.getData("text/plain") || "").trim();
+    if (/^pearl[-_]|semantic-orb|orb-/i.test(text) || text.startsWith("pearl:")) {
+      return { id: text, name: text };
+    }
+    return null;
+  }
+
+  function wearDroppedPearl(pearl, slot) {
+    if (!pearl?.id) return false;
+    const args = {
+      id: pearl.id,
+      ...(Number.isInteger(slot) ? { slot } : {}),
+    };
+    // Same wearPearl domain verb as Talk→GO / director — do not invent a parallel wear path.
+    const runtime = globalThis.__lensOrbRuntime;
+    if (typeof runtime?.execute === "function") {
+      void runtime.execute([{ verb: "wearPearl", args }], { title: "Wear" }).catch(() => {
+        try {
+          const state = wearPearlIdInGauntlet(pearl.id, args);
+          document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
+            detail: {
+              pearlIds: state.pearlIds,
+              packs: state.pearlIds.map((id) => ({
+                pearlId: id,
+                name: id === pearl.id ? (pearl.name || id) : id,
+              })),
+              gauntlet: {
+                slots: state.slots,
+                activeSlot: state.activeSlot,
+                filled: state.filled,
+                capacity: MAX_GAUNTLET_SLOTS,
+              },
+            },
+          }));
+        } catch {
+          /* full gauntlet — sockets already refuse a sixth */
+        }
+      });
+      return true;
+    }
+    try {
+      const state = wearPearlIdInGauntlet(pearl.id, args);
+      document.dispatchEvent(new CustomEvent("lens:worn-pearls-changed", {
+        detail: {
+          pearlIds: state.pearlIds,
+          packs: state.pearlIds.map((id) => ({
+            pearlId: id,
+            name: id === pearl.id ? (pearl.name || id) : id,
+          })),
+          gauntlet: {
+            slots: state.slots,
+            activeSlot: state.activeSlot,
+            filled: state.filled,
+            capacity: MAX_GAUNTLET_SLOTS,
+          },
+        },
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function drop(event, slot) {
     event.preventDefault();
+    const pearl = readDroppedPearlPayload(event);
+    if (pearl) {
+      wearDroppedPearl(pearl, slot);
+      return;
+    }
     const files = [...(event.dataTransfer?.files || [])];
     if (files.length) {
       for (const file of files) {
@@ -456,11 +539,17 @@ export default function CompanionOrb({
             className={`orb-worn-addon orb-gauntlet-socket${pack ? " filled" : " empty"}${active ? " active" : ""}`}
             key={`gauntlet-${index}-${pearlId || "empty"}`}
             style={layout.css}
-            title={pack ? `${pack.name || "Pearl"} · gauntlet socket ${index + 1}` : `Empty gauntlet socket ${index + 1}`}
+            title={pack ? `${pack.name || "Pearl"} · gauntlet socket ${index + 1}` : `Empty gauntlet socket ${index + 1} — drop a pearl to wear`}
             aria-label={pack
               ? `${pack.name || "Pearl"}, gauntlet working-memory socket ${index + 1}${active ? ", active" : ""}`
-              : `Empty gauntlet working-memory socket ${index + 1} of ${MAX_GAUNTLET_SLOTS}`}
+              : `Empty gauntlet working-memory socket ${index + 1} of ${MAX_GAUNTLET_SLOTS}. Drop a pearl to wear.`}
             onClick={() => pack && onCommand?.(`inspect worn pearl ${pack.name || ""}`.trim())}
+            onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              drop(event, index);
+            }}
           >
             {pack ? <>
               <PhysicalPearl

@@ -472,33 +472,100 @@ button:hover{
   padding:var(--pearl-ui-space-2) var(--pearl-ui-space-2) var(--pearl-ui-space-2) 0;
 }
 .extension-semantic-orb-tray{
-  grid-template-columns:1fr;
-  gap:0;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
+  gap:10px;
+  margin-top:12px;
 }
-.extension-semantic-orb-tray > button{
-  grid-template-columns:36px minmax(0,1fr);
-  justify-items:start;
-  align-items:center;
-  gap:var(--pearl-ui-space-3);
-  min-height:56px;
-  padding:var(--pearl-ui-space-2) 0;
-  border-width:0 0 1px;
-  border-radius:0;
-  text-align:left;
+.extension-shelf-pearl{
+  display:grid;
+  justify-items:center;
+  gap:6px;
+  min-width:0;
+  padding:10px 8px 8px;
+  border:1px solid rgba(235,211,145,.16);
+  border-radius:26px;
+  background:rgba(255,255,255,.03);
+  cursor:grab;
 }
-.extension-semantic-orb-tray b,
-.extension-semantic-orb-tray small{
-  grid-column:2;
+.extension-shelf-pearl:active{cursor:grabbing}
+.extension-shelf-pearl.is-active,
+.extension-shelf-pearl.is-worn{
+  border-color:rgba(180,230,245,.42);
+  box-shadow:0 0 18px rgba(140,200,220,.12);
+}
+.extension-shelf-pearl-open{
+  display:grid;
+  justify-items:center;
+  gap:3px;
+  width:100%;
+  min-height:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:center;
+  cursor:inherit;
+}
+.extension-shelf-pearl-glyph,
+.extension-shelf-pearl-glyph .physical-pearl{
+  width:34px;
+  height:34px;
+  display:block;
+  margin:0 auto;
+}
+.extension-shelf-pearl b,
+.extension-shelf-pearl small{
+  max-width:100%;
   margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-.extension-semantic-orb-tray small{
-  margin-top:-10px;
+.extension-shelf-pearl b{font-size:11px;font-weight:560}
+.extension-shelf-pearl small{color:var(--ex-muted);font-size:9px;letter-spacing:.02em}
+.extension-shelf-pearl-wear{
+  min-height:26px;
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid rgba(235,211,145,.22);
+  background:rgba(255,255,255,.04);
+  color:var(--ex-text);
+  font-size:10px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.extension-shelf-pearl-wear:disabled{
+  opacity:.55;
 }
 .extension-semantic-orb-detail{
   padding:var(--pearl-ui-space-3) 0;
   border-width:1px 0 0;
   border-radius:0;
   background:transparent;
+}
+/* Idle dock: keep pearls as capsules under Mother Pearl so drag→gauntlet stays reachable. */
+main[data-orb-view="idle"] .extension-semantic-orbs.extension-shelf-dock.active{
+  position:fixed;
+  left:50%;
+  bottom:max(12px,env(safe-area-inset-bottom,0px));
+  z-index:6;
+  width:min(340px,calc(100vw - 20px));
+  max-height:min(220px,38vh);
+  overflow:auto;
+  transform:translateX(-50%);
+  padding:10px 12px 12px;
+  border:1px solid rgba(235,211,145,.14);
+  border-radius:22px;
+  background:rgba(9,11,12,.88);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  backdrop-filter:blur(16px);
+}
+main[data-orb-view="idle"] .extension-shelf-dock .extension-semantic-orb-head small{display:none}
+main[data-orb-view="idle"] .extension-shelf-dock .extension-semantic-orb-detail{display:none}
+main[data-orb-view="idle"] .extension-shelf-dock .extension-semantic-orb-tray{
+  grid-template-columns:repeat(auto-fill,minmax(84px,1fr));
+  margin-top:8px;
 }
 .recovery-alert{
   border-radius:var(--pearl-ui-radius);
