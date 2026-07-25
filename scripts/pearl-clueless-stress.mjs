@@ -1250,21 +1250,103 @@ async function runCluelessJourneys(browser) {
   const powersReply = Boolean(powers.snap?.msgs?.some((m) => /pearl|demonstrat|power|fission|blocked/i.test(m.text)));
   record("sf-pearl-powers", directorSeen || powersReply, `director=${directorSeen} reply=${powersReply}`, "P1");
 
+  coverage("sf-shell-nav-primary", "stressed", "visible primary shell nav");
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await shot(page, "23c-shell-nav");
+  const shellNav = page.locator('[data-testid="pearl-shell-nav"]');
+  const navIds = ["shell-nav-reef", "shell-nav-install", "shell-nav-settings", "shell-nav-encode", "shell-nav-packages"];
+  let navHit = 0;
+  for (const id of navIds) {
+    const btn = page.locator(`[data-testid="${id}"]`).first();
+    if (await btn.count()) {
+      const box = await btn.boundingBox().catch(() => null);
+      if (box && box.width > 8 && box.height > 8) navHit += 1;
+    }
+  }
+  const navOk = (await shellNav.count()) > 0 && navHit >= 5;
+  record("sf-shell-nav-primary", navOk, `nav=${await shellNav.count()} hit=${navHit}/5`, "P0");
+  aestheticNote(
+    "23c-shell-nav",
+    navOk ? "pass" : "fail",
+    navOk
+      ? "PNG Read: Reef chrome shows a readable primary nav row (Reef / Install / Settings / Encode / Packages) a novice can find without DevTools."
+      : "PNG Read: primary shell nav missing or not hit-testable — orphan risk.",
+    "P0",
+  );
+
+  coverage("sf-install-download", "stressed", "install download CTA");
+  const installNav = page.locator('[data-testid="shell-nav-install"]').first();
+  if (await installNav.count()) {
+    const box = await installNav.boundingBox();
+    if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  } else {
+    await page.goto(`${baseUrl}/install`, { waitUntil: "domcontentloaded" });
+  }
+  await page.waitForTimeout(700);
+  await shot(page, "23d-install");
+  const downloadCta = page.locator('[data-testid="extension-download-cta"]').first();
+  const ctaHref = (await downloadCta.count()) ? await downloadCta.getAttribute("href") : "";
+  const ctaBox = (await downloadCta.count()) ? await downloadCta.boundingBox().catch(() => null) : null;
+  const installOk = Boolean(
+    ctaBox
+    && ctaHref
+    && (/chrome\.google\.com|\/downloads\/lens-everywhere-chrome/i.test(ctaHref))
+    && !/\/extension\/lens-everywhere-chrome\.zip/i.test(ctaHref),
+  );
+  record("sf-install-download", installOk, `href=${ctaHref || "missing"} box=${Boolean(ctaBox)}`, "P0");
+  aestheticNote(
+    "23d-install",
+    installOk ? "pass" : "fail",
+    installOk
+      ? "PNG Read: Install page shows a visible Add/Download for Chrome CTA with a real /downloads/ (or store) href."
+      : "PNG Read: extension download CTA missing, invisible, or points at a dead /extension/ zip.",
+    "P0",
+  );
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await ensureChatOpenViaTalk(page);
+
   coverage("sf-shell-packages-settings", "stressed", "open packages + settings");
   await typeAndGo(page, "open packages", { shotPrefix: "24-packages" });
   await page.waitForTimeout(700);
   await shot(page, "24b-packages");
-  const packagesOk = /package/i.test(await page.locator("body").innerText().catch(() => ""))
-    || /\/packages/.test(page.url());
-  record("sf-shell-packages", packagesOk, page.url(), "P1");
+  const packagesOk = (await page.locator('[data-testid="cognitive-package-registry"], #package-registry-title').count()) > 0
+    || /Cognitive Packages/i.test(await page.locator("body").innerText().catch(() => ""));
+  record("sf-shell-packages", packagesOk, packagesOk ? "registry visible" : page.url(), "P0");
+  aestheticNote(
+    "24b-packages",
+    packagesOk ? "pass" : "fail",
+    packagesOk
+      ? "PNG Read: after Talk→GO “open packages”, Cognitive Packages registry heading/UI is readable (not a stub paragraph)."
+      : "PNG Read: packages Talk→GO did not surface the real registry.",
+    "P0",
+  );
   await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
   await ensureChatOpenViaTalk(page);
   await typeAndGo(page, "open settings", { shotPrefix: "25-settings" });
   await page.waitForTimeout(700);
   await shot(page, "25b-settings");
-  const settingsOk = /account|privacy|settings|sync/i.test(await page.locator("body").innerText().catch(() => ""));
-  record("sf-shell-settings", settingsOk, settingsOk ? "settings surface" : "missing", "P1");
+  const settingsOk = (await page.locator(".pearl-account-panel").count()) > 0
+    || /Account & privacy|Sign in|account sync|Lock local/i.test(await page.locator("body").innerText().catch(() => ""));
+  record("sf-shell-settings", settingsOk, settingsOk ? "settings surface" : "missing", "P0");
+  aestheticNote(
+    "25b-settings",
+    settingsOk ? "pass" : "fail",
+    settingsOk
+      ? "PNG Read: after Talk→GO “open settings”, Account & privacy controls are visible."
+      : "PNG Read: settings surface missing after Companion command.",
+    "P0",
+  );
+
+  await ensureChatOpenViaTalk(page);
+  await typeAndGo(page, "install the extension", { shotPrefix: "25c-install-cmd" });
+  await page.waitForTimeout(700);
+  await shot(page, "25c-install-cmd");
+  const installCmdOk = /\/install/.test(page.url())
+    || (await page.locator('[data-testid="extension-download-cta"], [data-testid="install-landing"]').count()) > 0;
+  record("sf-install-companion-cmd", installCmdOk, page.url(), "P0");
 
   coverage("sf-share-handoff", "residual", "unsigned/live OAuth handoff needs credentials/extension");
   results.gaps.push("SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.");

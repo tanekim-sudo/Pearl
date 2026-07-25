@@ -6,8 +6,10 @@ import SemanticOrbLayer from "./SemanticOrbLayer.jsx";
 import PearlPowerFxOverlay from "./PearlPowerFxOverlay.jsx";
 import AuthOverlay from "./AuthOverlay.jsx";
 import EncodeAnythingPanel from "./EncodeAnythingPanel.jsx";
+import CognitivePackageRegistry from "./CognitivePackageRegistry.jsx";
 import { createWebPearlStudioReference } from "./PearlStudioView.jsx";
 import SurfaceErrorBoundary from "./SurfaceErrorBoundary.jsx";
+import { visibleShellNavScreens } from "../lib/pearl-primary-screens.js";
 import { openPearlStudioDocument } from "../lib/pearl-studio-navigation.js";
 import { createPearlEntity } from "../../shared/pearl-entity.js";
 import { PEARL_STORE_KEY } from "../../shared/pearl-store.js";
@@ -219,14 +221,16 @@ function loadSceneWorkspace() {
   }
 }
 
+const EXTENSION_DOWNLOAD_FALLBACK = "/downloads/lens-everywhere-chrome-latest.zip";
+
 function InstallLanding({ install, onContinue, onRetry, onHome }) {
   const browser = useMemo(() => detectExtensionBrowser(navigator.userAgent), []);
   const storeUrl = validChromeStoreUrl(import.meta.env.VITE_CHROME_WEB_STORE_URL);
   const release = typeof __LENS_EXTENSION_RELEASE__ === "undefined" ? null : __LENS_EXTENSION_RELEASE__;
-  const installUrl = storeUrl || release?.versionedUrl || "/extension/lens-everywhere-chrome.zip";
+  const installUrl = storeUrl || release?.versionedUrl || release?.latestUrl || EXTENSION_DOWNLOAD_FALLBACK;
   return <main className="orb-install" data-testid="install-landing">
     <header className="pearl-reef-chrome" aria-label="Install page navigation">
-      <button type="button" onClick={onHome}>← Reef (home)</button>
+      <button type="button" data-testid="shell-nav-reef" onClick={onHome}>← Reef (home)</button>
       <span>Install · browser extension</span>
     </header>
     <section>
@@ -237,8 +241,13 @@ function InstallLanding({ install, onContinue, onRetry, onHome }) {
       <div className="orb-actions">
         {install.status === "installed"
           ? <button className="orb-primary" type="button" onClick={onContinue}>Open Reef</button>
-          : <a className="orb-primary" href={installUrl} onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}>
-              {browser.supported ? "Add Pearl to Chrome" : "Get Pearl for desktop Chrome"}
+          : <a
+              className="orb-primary"
+              data-testid="extension-download-cta"
+              href={installUrl}
+              onClick={() => trackExtensionFunnel("install_cta", { surface: "orb-home", mode: storeUrl ? "store" : "download" })}
+            >
+              {browser.supported ? "Add Pearl to Chrome" : "Download for Chrome"}
             </a>}
         {install.status !== "installed" && <button className="orb-secondary" type="button" onClick={onRetry}>Check again</button>}
         <button className="orb-secondary" type="button" onClick={onHome}>Back to Reef</button>
@@ -250,6 +259,25 @@ function InstallLanding({ install, onContinue, onRetry, onHome }) {
       </p>
     </section>
   </main>;
+}
+
+function PearlShellNav({ activeId = "reef", onNavigate }) {
+  const screens = visibleShellNavScreens();
+  return (
+    <nav className="pearl-shell-nav" data-testid="pearl-shell-nav" aria-label="Pearl primary screens">
+      {screens.map((screen) => (
+        <button
+          key={screen.id}
+          type="button"
+          data-testid={screen.testId}
+          aria-current={activeId === screen.id ? "page" : undefined}
+          onClick={() => onNavigate?.(screen)}
+        >
+          {screen.label}
+        </button>
+      ))}
+    </nav>
+  );
 }
 
 function AccountPrivacyPanel({
@@ -489,11 +517,32 @@ function LibraryHome({
   const visibleObjects = libraryObjects.filter(([name, description]) =>
     `${name} ${description}`.toLowerCase().includes(query.trim().toLowerCase())
   );
+  const activeShellNavId = route.section === "packages" ? "packages"
+    : route.section === "settings" ? "settings"
+      : route.path === "/install" ? "install"
+        : "reef";
+  const handleShellNav = (screen) => {
+    if (screen.id === "reef") {
+      navigateHome();
+      return;
+    }
+    if (screen.id === "install") {
+      navigate("/install");
+      return;
+    }
+    if (screen.emit) {
+      onView?.(screen.emit, screen.id === "settings" ? { panel: "account" } : undefined);
+      if (screen.path) navigate(screen.path);
+      return;
+    }
+    if (screen.path) navigate(screen.path);
+  };
   return <main className="orb-library-home orb-reef-home" data-reef-home="true" data-companion-first="true" data-zero-demand="true" aria-label="Reef — home of pearls">
     <header className="pearl-reef-chrome" data-testid="reef-chrome" aria-label="Reef navigation">
       <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef</button>
       <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · where pearls live"}</span>
       <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion</button>
+      <PearlShellNav activeId={activeShellNavId} onNavigate={handleShellNav} />
     </header>
     {/* Intro only when the shelf is empty — never stack a hero “Reef” title over pearl names. */}
     {(firstUse || emptyLibrary) && !reefPearls.length && <section className="orb-home-intro orb-reef-kicker" data-testid="reef-next-step">
@@ -1041,6 +1090,15 @@ export default function OrbUniverseShell({ StageComponent }) {
         openEmittedView("encode");
         return { effectId: `shell-encode:${Date.now()}`, effects: ["encode-opened"] };
       },
+      openPackageRegistry: async () => {
+        navigate("/packages");
+        openEmittedView("packages");
+        return { effectId: `shell-packages:${Date.now()}`, effects: ["packages-opened"] };
+      },
+      openExtensionDownload: async () => {
+        navigate("/install");
+        return { effectId: `shell-install:${Date.now()}`, effects: ["install-opened"] };
+      },
       closeSurface: async () => {
         setEmittedView(null);
         setGuideOpen(false);
@@ -1133,6 +1191,13 @@ export default function OrbUniverseShell({ StageComponent }) {
       if (action === "navigateBack") navigateBackOrHome();
       if (action === "openSettings") openEmittedView("settings", { panel: event.detail?.panel || "account" });
       if (action === "openEncode") openEmittedView("encode");
+      if (action === "openPackages" || action === "openPackageRegistry") {
+        navigate("/packages");
+        openEmittedView("packages");
+      }
+      if (action === "openInstall" || action === "openExtensionDownload") {
+        navigate("/install");
+      }
       if (action === "openOutputFrame" || action === "openPageCanvas") {
         setOutputFrameOpen(true);
       }
@@ -1419,16 +1484,30 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openToolbox", effectId: `toolbox:${Date.now()}` }));
       return;
     }
-    if (/^(?:open (?:account|settings|privacy|sync)|show (?:account|settings|privacy)|open settings)$/i.test(recorded.entry.normalized)) {
+    if (shellNavIntent === "openSettings") {
       openEmittedView("settings", { panel: "account" });
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openSettings" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openSettings", effectId: `settings:${Date.now()}` }));
       return;
     }
-    if (/^(?:open(?: the)? )?encode(?: anything)?$|^(?:make (?:this|it) a pearl|import (?:this |my )?(?:chat|transcript|pdf|docs?|material)|compile (?:this )?(?:automation|prompt))$/i.test(recorded.entry.normalized)) {
+    if (shellNavIntent === "openEncodeAnything"
+      || /^(?:make (?:this|it) a pearl|import (?:this |my )?(?:chat|transcript|pdf|docs?|material)|compile (?:this )?(?:automation|prompt))$/i.test(recorded.entry.normalized)) {
       openEmittedView("encode");
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openEncodeAnything" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openEncodeAnything", effectId: `encode:${Date.now()}` }));
+      return;
+    }
+    if (shellNavIntent === "openPackageRegistry") {
+      navigate("/packages");
+      openEmittedView("packages");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPackageRegistry" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openPackageRegistry", effectId: `packages:${Date.now()}` }));
+      return;
+    }
+    if (shellNavIntent === "openExtensionDownload") {
+      navigate("/install");
+      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openExtensionDownload" });
+      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openExtensionDownload", effectId: `install:${Date.now()}` }));
       return;
     }
     if (/^(?:open|show)(?: the)? (?:output )?frame$|^(?:open|show)(?: the)? output frame$/i.test(recorded.entry.normalized)) {
@@ -1441,12 +1520,6 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOutputFrameOpen(true);
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openOutputFrame" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openOutputFrame", effectId: `output-frame:${Date.now()}` }));
-      return;
-    }
-    if (/^(?:open|show|browse)(?: the)? packages?$/i.test(recorded.entry.normalized)) {
-      navigate("/packages");
-      next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openPackageRegistry" });
-      setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openPackageRegistry", effectId: `packages:${Date.now()}` }));
       return;
     }
     const remixIntent = parsePearlRemixCommand(recorded.entry.raw || recorded.entry.normalized);
@@ -2227,10 +2300,10 @@ export default function OrbUniverseShell({ StageComponent }) {
       : emittedView === "privacy" ? (privacyNotice?.title || "Privacy")
       : emittedView === "settings" ? "Account & privacy"
       : emittedView === "encode" ? "Encode anything"
-      : emittedView === "packages" ? "Shared tools"
+      : emittedView === "packages" ? "Cognitive Packages"
       : emittedView === "tasks" ? "Activity"
       : "Saved work";
-    return <aside className="orb-stage-emission" aria-label={`${emittedView} view from Pearl`}>
+    return <aside className="orb-stage-emission" data-emitted-view={emittedView} aria-label={`${emittedView} view from Pearl`}>
       <button type="button" onClick={() => setEmittedView(null)}>Close</button>
       <b>{title}</b>
       {emittedView === "actions"
@@ -2296,10 +2369,14 @@ export default function OrbUniverseShell({ StageComponent }) {
                   });
                 }
               }} />
-            : emittedView === "packages" || emittedView === "tasks"
-              ? <p role="status">{emittedView === "packages"
-                ? "Open Encode anything or Shared tools from Pearl after you have reviewed a package. Trusted installs stay in your local library."
-                : "Your Reef is home — all pearls spread out for mix, match, and merge. Create a Scene to begin, or continue from the extension."}</p>
+            : emittedView === "packages"
+              ? <CognitivePackageRegistry
+                  embedded
+                  accountId={supaAuth.session?.user?.id || null}
+                  onClose={() => setEmittedView(null)}
+                />
+            : emittedView === "tasks"
+              ? <p role="status">Your Reef is home — all pearls spread out for mix, match, and merge. Create a Scene to begin, or continue from the extension.</p>
             : emittedView === "privacy"
               ? <span>{privacyNotice?.detail}</span>
               : emittedView === "context"

@@ -703,6 +703,29 @@
   border-bottom: 1px solid var(--orb-line);
   backdrop-filter: blur(12px);
 }
+.pearl-shell-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  width: 100%;
+  order: 5;
+  padding-top: 4px;
+}
+.pearl-shell-nav button[aria-current="page"] {
+  color: var(--orb-text-1);
+  border-bottom-color: var(--orb-focus);
+}
+.package-registry-embedded {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--orb-line);
+  background: color-mix(in srgb, var(--orb-space-1, #121516) 92%, transparent);
+}
 .pearl-reef-chrome span,
 .pearl-reef-chrome button { font: 500 12px/1.2 Inter, ui-sans-serif, system-ui, sans-serif; }
 .pearl-reef-chrome button {

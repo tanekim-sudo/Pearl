@@ -22,6 +22,7 @@ export default function CognitivePackageRegistry({
   authHeaders = {},
   accountId = null,
   onClose,
+  embedded = false,
 }) {
   const [query, setQuery] = useState("");
   const [packages, setPackages] = useState([]);
@@ -118,63 +119,76 @@ export default function CognitivePackageRegistry({
     setStatus(`installed atomically: ${receipt.id}`);
   }
 
+  const body = (
+    <section
+      className={embedded ? "package-registry-modal package-registry-embedded" : "modal package-registry-modal"}
+      role="dialog"
+      aria-modal={embedded ? undefined : "true"}
+      aria-labelledby="package-registry-title"
+      data-testid="cognitive-package-registry"
+      onPointerDown={embedded ? undefined : (event) => event.stopPropagation()}
+    >
+      <header>
+        <div>
+          <h2 id="package-registry-title">Cognitive Packages</h2>
+          <p>Declarative, test-backed Moves, Functions, Lenses, and bundles.</p>
+        </div>
+        {onClose ? <button type="button" onClick={onClose} aria-label="Close package registry">×</button> : null}
+      </header>
+      <div className="package-registry-search">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search namespace or package" aria-label="Search cognitive packages" />
+        <button type="button" onClick={() => refresh().catch((error) => setStatus(error.message))}>search</button>
+      </div>
+      <section className="package-draft-card">
+        <h3>Workspace package draft</h3>
+        <p>{selected.length} selected artifact{selected.length === 1 ? "" : "s"} · no remote executable code · private by default</p>
+        <div>
+          <button type="button" onClick={() => buildSignedDraft().catch((error) => setStatus(error.message))}>validate, test & sign</button>
+          <button type="button" disabled={!draft} onClick={exportDraft}>export signed</button>
+          <button type="button" disabled={!draft} onClick={() => publishDraft().catch((error) => setStatus(error.message))}>publish private…</button>
+        </div>
+        {draft && (
+          <details>
+            <summary>trust card · {draft.signature.keyId}</summary>
+            <dl>
+              <dt>content</dt><dd>{draft.contentHash}</dd>
+              <dt>signature</dt><dd>{draft.signature.algorithm} verified on install</dd>
+              <dt>permissions</dt><dd>{draft.permissions.length ? draft.permissions.join(", ") : "none"}</dd>
+              <dt>tests</dt><dd>{draft.tests.map((test) => `${test.id}: ${test.status}`).join(", ")}</dd>
+              <dt>models/cost</dt><dd>{JSON.stringify(draft.requirements)}</dd>
+            </dl>
+          </details>
+        )}
+      </section>
+      <div className="package-registry-results">
+        {packages.map((pkg) => {
+          const key = `${pkg.namespace}/${pkg.name}`;
+          return (
+            <article key={`${key}@${pkg.version}`} className="package-trust-card">
+              <h3>{key} <small>v{pkg.version}</small></h3>
+              <p>{pkg.kinds.join(" · ")} · {pkg.visibility} · {pkg.trust.signature}</p>
+              <small>{pkg.contentHash}</small>
+              <details>
+                <summary>provenance, dependencies, permissions, tests</summary>
+                <pre>{JSON.stringify({ provenance: pkg.provenance, dependencies: pkg.dependencies, permissions: pkg.permissions, tests: pkg.tests }, null, 2)}</pre>
+              </details>
+              <button type="button" onClick={() => install(pkg).catch((error) => setStatus(error.message))}>
+                {installed[key]?.version === pkg.version ? "reinstall safely" : installed[key] ? "update atomically" : "install"}
+              </button>
+            </article>
+          );
+        })}
+        {!packages.length && <p>No visible registry packages match this query.</p>}
+      </div>
+      <footer role="status">{status}</footer>
+    </section>
+  );
+
+  if (embedded) return body;
+
   return (
     <div className="modal-scrim package-registry-scrim" onPointerDown={onClose}>
-      <section className="modal package-registry-modal" role="dialog" aria-modal="true" aria-labelledby="package-registry-title" onPointerDown={(event) => event.stopPropagation()}>
-        <header>
-          <div>
-            <h2 id="package-registry-title">Cognitive Packages</h2>
-            <p>Declarative, test-backed Moves, Functions, Lenses, and bundles.</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close package registry">×</button>
-        </header>
-        <div className="package-registry-search">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search namespace or package" aria-label="Search cognitive packages" />
-          <button type="button" onClick={() => refresh().catch((error) => setStatus(error.message))}>search</button>
-        </div>
-        <section className="package-draft-card">
-          <h3>Workspace package draft</h3>
-          <p>{selected.length} selected artifact{selected.length === 1 ? "" : "s"} · no remote executable code · private by default</p>
-          <div>
-            <button type="button" onClick={() => buildSignedDraft().catch((error) => setStatus(error.message))}>validate, test & sign</button>
-            <button type="button" disabled={!draft} onClick={exportDraft}>export signed</button>
-            <button type="button" disabled={!draft} onClick={() => publishDraft().catch((error) => setStatus(error.message))}>publish private…</button>
-          </div>
-          {draft && (
-            <details>
-              <summary>trust card · {draft.signature.keyId}</summary>
-              <dl>
-                <dt>content</dt><dd>{draft.contentHash}</dd>
-                <dt>signature</dt><dd>{draft.signature.algorithm} verified on install</dd>
-                <dt>permissions</dt><dd>{draft.permissions.length ? draft.permissions.join(", ") : "none"}</dd>
-                <dt>tests</dt><dd>{draft.tests.map((test) => `${test.id}: ${test.status}`).join(", ")}</dd>
-                <dt>models/cost</dt><dd>{JSON.stringify(draft.requirements)}</dd>
-              </dl>
-            </details>
-          )}
-        </section>
-        <div className="package-registry-results">
-          {packages.map((pkg) => {
-            const key = `${pkg.namespace}/${pkg.name}`;
-            return (
-              <article key={`${key}@${pkg.version}`} className="package-trust-card">
-                <h3>{key} <small>v{pkg.version}</small></h3>
-                <p>{pkg.kinds.join(" · ")} · {pkg.visibility} · {pkg.trust.signature}</p>
-                <small>{pkg.contentHash}</small>
-                <details>
-                  <summary>provenance, dependencies, permissions, tests</summary>
-                  <pre>{JSON.stringify({ provenance: pkg.provenance, dependencies: pkg.dependencies, permissions: pkg.permissions, tests: pkg.tests }, null, 2)}</pre>
-                </details>
-                <button type="button" onClick={() => install(pkg).catch((error) => setStatus(error.message))}>
-                  {installed[key]?.version === pkg.version ? "reinstall safely" : installed[key] ? "update atomically" : "install"}
-                </button>
-              </article>
-            );
-          })}
-          {!packages.length && <p>No visible registry packages match this query.</p>}
-        </div>
-        <footer role="status">{status}</footer>
-      </section>
+      {body}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 # Pearl Clueless Stress — 2026-07-24
 
-Commit: 0e2c869
+Commit: 9bf0639
 URL: http://127.0.0.1:41822
-Score: 40/40 · P0=0 P1=0
+Score: 64/64 · P0=0 P1=0
 Persona: hyper-clueless-first-time
 Evidence: audit-shots/pearl-clueless-stress-2026-07-24/
 Catalog: docs/pearl-showcase-flows.md
@@ -10,11 +10,11 @@ Standard: docs/pearl-stress-standard.md
 
 ## Checks
 
-- PASS [P0] `sf-cold-talk-390` — via=welcome-talk clicks=1 hit={"ok":true,"hit":{"testid":"welcome-talk","tag":"BUTTON","text":"Talk to Companion"},"point":{"x":194.9921875,"y":462.1886901855469}}
+- PASS [P0] `sf-cold-talk-390` — via=welcome-talk clicks=1 hit={"ok":true,"hit":{"testid":"welcome-talk","tag":"BUTTON","text":"Talk to Companion"},"point":{"x":194.9921875,"y":461.6534729003906}}
 - PASS [P0] `sf-create-go-390` — go ok
 - PASS [P0] `sf-create-echo-390` — user echo
 - PASS [P0] `sf-create-status-390` — status or reply
-- PASS [P0] `sf-create-topic-pearl-390` — 0bdc484b-5af1-431d-ae67-62712a80fd21/my investor notes visible=true
+- PASS [P0] `sf-create-topic-pearl-390` — d6fcd6ef-51c1-4e20-93b4-c23631fc8b15/my investor notes visible=true
 - PASS [P0] `aesthetic:n03-create-390` — PNG Read: on 390px shelf I see a readable titled pearl (“my investor notes”) without occluded labels or stacked clutter blocking the title.
 - PASS [P0] `sf-welcome-zero-demand` — moves = cognitive transformations (may compose moves).
 functions = composition and ordering of moves/functions.
@@ -27,32 +27,56 @@ lenses = contextual awareness and understanding of the user.
 - PASS [P0] `sf-create-go` — ok
 - PASS [P0] `sf-create-echo` — user echo before reply
 - PASS [P0] `sf-create-feedback` — status/reply
-- PASS [P0] `sf-create-topic-pearl` — b8c02f16-28bf-439d-90cf-8a98779ef7b8/my investor notes visible=true
+- PASS [P0] `sf-create-topic-pearl` — 67d1f645-d9a2-4417-92c1-ab987be50dc2/my investor notes visible=true
 - PASS [P0] `visual-integrity:03-after-create` — shelfTitles=2 chatOpen=true
 - PASS [P0] `aesthetic:03-create` — PNG Read required: pearl title must be readable on shelf without stacking under Reef hero
 - PASS [P0] `sf-rename-go` — ok
-- PASS [P0] `sf-rename-novice` — b8c02f16-28bf-439d-90cf-8a98779ef7b8/Series A notes visible=true
+- PASS [P0] `sf-rename-novice` — 67d1f645-d9a2-4417-92c1-ab987be50dc2/Series A notes visible=true
 - PASS [P0] `sf-edit-go` — ok
 - PASS [P0] `sf-edit-add-notes` — [{"role":"action","text":"Moving cursor…"},{"role":"companion","text":"Updated “Series A notes” with new notes."}]
 - PASS [P0] `sf-wear-go` — ok
 - PASS [P0] `sf-wear-gauntlet` — storage=1 dom=1 reply=true blocked=false labels=["Series A notes"]
 - PASS [P0] `sf-second-create` — ok
-- PASS [P0] `sf-second-topic` — 5047fbbd-d5d2-4ac2-ba2f-cb1758270333/competitor signals
+- PASS [P0] `sf-second-topic` — f1360e67-a435-4928-b8c6-e48e9fc8988f/competitor signals
 - PASS [P0] `sf-merge-go` — ok
-- PASS [P0] `sf-merge-combine` — 1dd22992-08b2-4d53-972e-0b4666bf1be3/Series A notes + competitor signals sourcesKept=true visible=true
-- PASS [P0] `sf-experiment-counter` — 88a02ef1-ef32-416e-b88b-5878eefae2b1/Counter · competitor signals
+- PASS [P0] `sf-merge-combine` — f86c7e30-8660-4503-9e36-03ec1300681b/Series A notes + competitor signals sourcesKept=true visible=true
+- PASS [P0] `sf-experiment-counter` — 6cce6b2a-183a-4428-ad4e-26bfb9a9882b/Counter · competitor signals
 - PASS [P1] `sf-synthesize-notice` — blocker=true
-- PASS [P0] `sf-reload-findable` — b8c02f16-28bf-439d-90cf-8a98779ef7b8/Series A notes visible=true
+- PASS [P0] `sf-reload-findable` — 67d1f645-d9a2-4417-92c1-ab987be50dc2/Series A notes visible=true
 - PASS [P1] `sf-organize-studio` — studio chrome
 - PASS [P0] `aesthetic:13b-studio` — PNG Read required: Studio must show Functions as ordered Moves (not a Rename/Duplicate form dump or giant empty textarea).
-- PASS [P0] `sf-role-investor` — 68e1d5af-054f-49a6-b81c-91af8eb18d02/Investor pearl visible=true
-- PASS [P0] `sf-click-pearl-hittest` — hittable 68e1d5af-054f-49a6-b81c-91af8eb18d02 @969,299
-- PASS [P0] `sf-click-studio-function-moves` — studio moves=Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger → Write recommendation
-- PASS [P0] `aesthetic:14d-studio-after-click` — PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation.
-- PASS [P1] `sf-studio-reorder-moves` — before=Frame the thesis→Assess market and moat→Evaluate team and traction→Build risk ledger→Write recommendation after=Assess market and moat→Frame the thesis→Evaluate team and traction→Build risk ledger→Write recommendation reload=
-- PASS [P2] `aesthetic:14e-after-reorder` — PNG Read: I see the Move sequence rearranged after drag; titles stay readable (Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger → Write recommendation).
-- PASS [P0] `sf-companion-nl-reorder-moves` — before=Assess market and moat→Frame the thesis→Evaluate team and traction→Build risk ledger→Write recommendation after=Write recommendation→Assess market and moat→Frame the thesis→Evaluate team and traction→Build risk ledger ack=true msgs=[{"role":"action","text":"Moving cursor…"},{"role":"companion","text":"Reordered moves: Write recommendation → Assess market and moat → Frame the thesis → Evalua
-- PASS [P0] `aesthetic:14j-nl-reorder-studio` — PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger → Write recommendation; now Write recommendation → Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger).
+- PASS [P0] `sf-role-investor` — f62f444e-cc9b-499a-9d2f-db43e2e10220/Investor pearl visible=true
+- PASS [P0] `sf-click-pearl-hittest` — hittable f62f444e-cc9b-499a-9d2f-db43e2e10220 @969,347
+- PASS [P0] `sf-click-studio-function-moves` — studio moves=Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger → Write recommendation → Frame the thesis → Frame the thesis → Assess market and moat
+- PASS [P0] `aesthetic:14d-studio-after-click` — PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation, Frame the thesis, Frame the thesis, Assess market and moat.
+- PASS [P1] `sf-studio-reorder-moves` — before=Frame the thesis→Assess market and moat→Evaluate team and traction→Build risk ledger→Write recommendation→Frame the thesis→Frame the thesis→Assess market and moat after=Frame the thesis→Frame the thesis→Assess market and moat→Assess market and moat→Evaluate team and traction→Evaluate team and traction→Build risk ledger→Build risk ledger reload=
+- PASS [P2] `aesthetic:14e-after-reorder` — PNG Read: I see the Move sequence rearranged after drag; titles stay readable (Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger).
+- PASS [P0] `sf-companion-nl-reorder-moves` — before=Frame the thesis→Frame the thesis→Assess market and moat→Assess market and moat→Evaluate team and traction→Evaluate team and traction→Build risk ledger→Build risk ledger after=Write recommendation→Frame the thesis→Assess market and moat→Evaluate team and traction→Build risk ledger ack=true msgs=[{"role":"action","text":"Moving cursor…"},{"role":"companion","text":"Reordered moves: Write rec
+- PASS [P0] `aesthetic:14j-nl-reorder-studio` — PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger; now Write recommendation → Frame the thesis → Assess market and moat → Evaluate team and traction → 
+- PASS [P0] `sf-encode-open` — Encode
+- PASS [P1] `sf-version-loop` — [{"role":"user","text":"show version history"},{"role":"companion","text":"Blocked: Ask mode inspected 9 scoped objects without changing the workspace. Relevant stable IDs: 67d1f645-d9a2-4417-92c1-ab987be50dc2, f1360e67-
+- PASS [P0] `sf-evaluate-gauntlet` — honest=true fakeDone=false detail=[{"role":"companion","text":"Blocked: Ready to evaluate 2,231 characters through 2 gauntlet pearls. Grounded query prepared (2,231 chars through 2 pearls). Live model critique need
+- PASS [P1] `sf-output-frame` — frame open
+- PASS [P1] `sf-split` — new=0 block=true
+- PASS [P0] `sf-destructive-confirm` — accept=true reject=true
+- PASS [P0] `sf-go-home` — reef-ish home
+- PASS [P1] `sf-pearl-guide` — guide visible
+- PASS [P1] `sf-pearl-powers` — director=false reply=true
+- PASS [P0] `sf-shell-nav-primary` — nav=1 hit=5/5
+- PASS [P0] `aesthetic:23c-shell-nav` — PNG Read: Reef chrome shows a readable primary nav row (Reef / Install / Settings / Encode / Packages) a novice can find without DevTools.
+- PASS [P0] `sf-install-download` — href=/downloads/lens-everywhere-chrome-v1.0.0.zip box=true
+- PASS [P0] `aesthetic:23d-install` — PNG Read: Install page shows a visible Add/Download for Chrome CTA with a real /downloads/ (or store) href.
+- PASS [P0] `sf-shell-packages` — registry visible
+- PASS [P0] `aesthetic:24b-packages` — PNG Read: after Talk→GO “open packages”, Cognitive Packages registry heading/UI is readable (not a stub paragraph).
+- PASS [P0] `sf-shell-settings` — settings surface
+- PASS [P0] `aesthetic:25b-settings` — PNG Read: after Talk→GO “open settings”, Account & privacy controls are visible.
+- PASS [P0] `sf-install-companion-cmd` — http://127.0.0.1:41822/install
+- PASS [P2] `sf-share-handoff-residual` — packages reachable; full handoff residual
+- PASS [P0] `sf-no-orb-untitled` — clean
+- PASS [P0] `aesthetic:final` — PNG Read: final frame shows no Untitled/orb mystery titles; shelf labels stay readable.
+- PASS [P1] `sf-no-fatal-page-errors` — none
+- PASS [P0] `anti-lie-no-runtime-execute-pass` — journey pass criteria exclude execute
+- PASS [P0] `anti-lie-confusion-budget` — Talk≤1 click enforced
 
 ## Aesthetic notes (human Read may veto)
 
@@ -61,17 +85,19 @@ lenses = contextual awareness and understanding of the user.
 - pass `02-after-talk` (P0): PNG Read: after Talk I see the chat input and GO button as the clear focus; Reef intro/Talk CTA is not competing or occluding the dock.
 - pass `03-create` (P0): PNG Read required: pearl title must be readable on shelf without stacking under Reef hero
 - pass `13b-studio` (P0): PNG Read required: Studio must show Functions as ordered Moves (not a Rename/Duplicate form dump or giant empty textarea).
-- pass `14d-studio-after-click` (P0): PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation.
-- pass `14e-after-reorder` (P1): PNG Read: I see the Move sequence rearranged after drag; titles stay readable (Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger → Write recommendation).
-- pass `14j-nl-reorder-studio` (P0): PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger → Write recommendation; now Write recommendation → Assess market and moat → Frame the thesis → Evaluate team and traction → Build risk ledger).
+- pass `14d-studio-after-click` (P0): PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation, Frame the thesis, Frame the thesis, Assess market and moat.
+- pass `14e-after-reorder` (P1): PNG Read: I see the Move sequence rearranged after drag; titles stay readable (Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger).
+- pass `14j-nl-reorder-studio` (P0): PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger; now Write recommendation → Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger).
+- pass `23c-shell-nav` (P0): PNG Read: Reef chrome shows a readable primary nav row (Reef / Install / Settings / Encode / Packages) a novice can find without DevTools.
+- pass `23d-install` (P0): PNG Read: Install page shows a visible Add/Download for Chrome CTA with a real /downloads/ (or store) href.
+- pass `24b-packages` (P0): PNG Read: after Talk→GO “open packages”, Cognitive Packages registry heading/UI is readable (not a stub paragraph).
+- pass `25b-settings` (P0): PNG Read: after Talk→GO “open settings”, Account & privacy controls are visible.
+- pass `final` (P0): PNG Read: final frame shows no Untitled/orb mystery titles; shelf labels stay readable.
 
 ## Residuals
 
 - Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
-- Journey interrupted: page.goto: Navigation to "http://127.0.0.1:41822/" is interrupted by another navigation to "http://127.0.0.1:41822/"
-Call log:
-  - navigating to "http://127.0.0.1:41822/", waiting until "domcontentloaded"
-
+- SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 
 ## Honesty
 

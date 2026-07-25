@@ -1,0 +1,29 @@
+---
+description: Never delete user-facing capabilities; never reinvent existing modules — restore and rewire
+alwaysApply: true
+---
+
+# No Delete · No Reinvent
+
+Permanent policy for anyone editing or stress-testing this repo.
+
+## Never delete
+
+- Do **not** delete user-facing capabilities, companion verbs, domain commands, feature-contract IDs, or core modules unless the user **explicitly** asks.
+- Prefer **deprecation + migration** + preservation tests over deletion or rename.
+- “Dead UI removed” commits are a known failure mode — verify the capability still mounts somewhere before deleting files.
+
+## Never reinvent
+
+- Before building a parallel editor, panel, or verb: **search the codebase and git history**.
+- Restore/rewire the original (see LensTreeEditor orphan lesson in `docs/pearl-function-moves-forensics.md`).
+- New files that re-implement an existing algorithm are a smell — extract shared ops and mount the original UI.
+
+## Highest-capacity wiring
+
+- Features that exist in `App.jsx`, extension, or `shared/` must be **mounted/used by the current Pearl shell** (OrbUniverse / Companion), not left only on classic chrome or dead `#` routes.
+- If a surface cannot support a capability, document the precise limitation — do not pretend success.
+
+## Canonical policy
+
+Full policy: `docs/pearl-engineering-policy.md`. Stress bar: `docs/pearl-stress-standard.md`.

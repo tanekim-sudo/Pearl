@@ -1,0 +1,34 @@
+---
+description: No orphaning or hiding capabilities — every built feature must be reachable in the current shell
+alwaysApply: true
+---
+
+# No Orphan Capabilities
+
+Every built capability must be reachable by a clueless user in the **current** Pearl shell.
+
+## Hard fails
+
+- Bot-only reachable (only via `__lensOrbRuntime`, CustomEvents, or DevTools)
+- Buried behind forgotten `#` routes, classic TopToolbar, or unmounted App rails
+- Feature-contract `ui` entry that is not mounted by OrbUniverse / Companion / extension
+- Companion verb that narrates success without a world-visible result
+- Install/extension download missing, not hit-testable, or wrong artifact
+
+## Required reachability
+
+For each capability, at least one of:
+
+1. **Visible shell nav** entry (primary screens — see `client/lib/pearl-primary-screens.js`), or
+2. **Companion verb** with Talk→GO path + world-visible titled result
+
+Library/Toolbox aliases, Settings, Encode, Install, Packages, Studio, Scene, Reef must remain findable without reading source.
+
+## Before shipping
+
+1. Inventory affected IDs in feature-contracts + companion-capabilities.
+2. Confirm mount in current shell (not only classic App).
+3. Add/update stress gates in `stress:clueless` / `stress:pearl`.
+4. PNG Read: would a novice find the next action in &lt;3 seconds?
+
+Canonical policy: `docs/pearl-engineering-policy.md`.

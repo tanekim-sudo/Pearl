@@ -41,6 +41,18 @@ export function matchShellNavigationIntent(text = "") {
   if (/^(?:open(?: the)? toolbox|show(?: the)? toolbox|go to(?: the)? toolbox)$/i.test(normalized)) {
     return "openToolbox";
   }
+  if (/^(?:open (?:account(?: and privacy)?|settings|privacy|sync)|show (?:account|settings|privacy)|open settings)$/i.test(normalized)) {
+    return "openSettings";
+  }
+  if (/^(?:open(?: the)? )?encode(?: anything)?$|^(?:make (?:this|it) a pearl)$/i.test(normalized)) {
+    return "openEncodeAnything";
+  }
+  if (/^(?:open|show|browse)(?: the)? packages?$/i.test(normalized)) {
+    return "openPackageRegistry";
+  }
+  if (/^(?:install(?: the)?(?: browser)? extension|get(?: the)? extension|add pearl to chrome|open(?: the)? install(?: page)?)$/i.test(normalized)) {
+    return "openExtensionDownload";
+  }
   return null;
 }
 

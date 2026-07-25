@@ -14744,22 +14744,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk.wait(520);
     },
     openExtensionDownload: async (a, tk) => {
-      const menu = tk.elementCenter('[data-tour="toolbar-menu"] > button');
-      if (menu) await tk.click(menu.x, menu.y);
-      await tk.wait(120);
-      const entry = tk.elementCenter('[data-action="get-extension"]');
-      if (entry) await tk.click(entry.x, entry.y);
-      else setExtensionDownloadOpen(true);
-      await tk.wait(420);
+      // Pearl shell: Install page is the clueless-reachable download path (TopToolbar is unmounted).
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openExtensionDownload" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-install:${Date.now()}`, effects: ["install-opened"] };
     },
     openExtensionLibraryExport: async (a, tk) => {
-      const menu = tk.elementCenter('[data-tour="toolbar-menu"] > button');
-      if (menu) await tk.click(menu.x, menu.y);
-      await tk.wait(120);
-      const entry = tk.elementCenter('[data-action="get-extension"]');
-      if (entry) await tk.click(entry.x, entry.y);
-      else setExtensionDownloadOpen(true);
-      await tk.wait(420);
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openExtensionDownload" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-install-export:${Date.now()}`, effects: ["install-opened"] };
     },
     waitForJobs: async (a, tk) => directorWaitForJobs(tk),
     savePageAsLens: async (a, tk) => {
@@ -16537,10 +16530,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { type: "critique-result", effects: ["critique-edits-applied", "paper-state-changed", "ai-state-changed"] };
     },
     openPackageRegistry: async (_a, tk) => {
-      const target = tk.elementCenter(".page-title-packages");
-      if (target) await tk.click(target.x, target.y);
-      setPackageRegistryOpen(true);
-      return { type: "package-registry", status: "open" };
+      // Pearl shell mounts CognitivePackageRegistry in the emission panel — not the App modal host.
+      window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openPackageRegistry" } }));
+      await tk.wait?.(280);
+      return { effectId: `shell-packages:${Date.now()}`, effects: ["packages-opened"], type: "package-registry", status: "open" };
     },
     createSignedPackage: async (a, tk) => {
       tk.caption(`validate, test, scan, and sign ${a.namespace}/${a.name}@${a.version}`);
@@ -16947,12 +16940,20 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         navigateBack: "Go back",
         openLibrary: "Open library",
         openToolbox: "Open toolbox",
+        openSettings: "Open settings",
+        openEncodeAnything: "Encode anything",
+        openPackageRegistry: "Open packages",
+        openExtensionDownload: "Install extension",
       };
       const effects = {
         navigateHome: "navigated-home",
         navigateBack: "navigated-back",
         openLibrary: "opened-library",
         openToolbox: "opened-toolbox",
+        openSettings: "settings-opened",
+        openEncodeAnything: "encode-opened",
+        openPackageRegistry: "packages-opened",
+        openExtensionDownload: "install-opened",
       };
       await executeCompanionScript([{ verb: shellNav, args: {} }], { title: titles[shellNav] || shellNav });
       const effect = effects[shellNav] || shellNav;

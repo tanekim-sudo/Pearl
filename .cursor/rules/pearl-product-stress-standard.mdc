@@ -16,6 +16,7 @@ Whenever you audit, stress, review, or claim completion for **any** new or exist
 3. Cover all lenses in the standard doc plus every catalogued showcase flow in `docs/pearl-showcase-flows.md`.
 4. Prefer fixing broken claimed paths over documenting them as acceptable.
 5. Never claim production-ready / perfect / fully working / state of the art unless evidence supports that exact claim. State credential, mic, extension, and auth gaps explicitly.
+6. **Stress standards travel with the repo** — use these rules + `docs/pearl-stress-standard.md` (not a private checklist). Include navigability of primary screens (`client/lib/pearl-primary-screens.js`), Install/extension download hit-test + `/downloads/` artifact, and basic Companion Talk→GO commands with world-visible results.
 
 ## Hard fails
 

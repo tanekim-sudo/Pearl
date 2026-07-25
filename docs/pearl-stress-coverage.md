@@ -5,8 +5,8 @@ Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)
 Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)
 Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`
 Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/`
-Last clueless run: 0e2c869 · 2026-07-24T21:20:25.452Z
-Clueless score: 40/40 · P0=0 P1=0 (skips not counted as passes)
+Last clueless run: 9bf0639 · 2026-07-25T07:29:20.487Z
+Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 
 ## Showcase flows
 
@@ -28,16 +28,27 @@ Clueless score: 40/40 · P0=0 P1=0 (skips not counted as passes)
 | `sf-click-studio-function-moves` | stressed | real hit-test click pearl → Studio function-as-moves |
 | `sf-studio-reorder-moves` | stressed | drag reorder move sequence persists |
 | `sf-companion-nl-reorder-moves` | stressed | Talk→GO natural language reorder Function moves |
+| `sf-encode-open` | stressed | encode anything |
+| `sf-version-loop` | stressed | snapshot → history → restore |
+| `sf-evaluate-gauntlet` | stressed | evaluate honesty |
+| `sf-output-frame` | stressed | open the output frame |
+| `sf-split` | stressed | split this pearl |
+| `sf-destructive-confirm` | stressed | clear with Accept/Reject |
+| `sf-go-home` | stressed | go home |
+| `sf-pearl-guide` | stressed | how does pearl work |
+| `sf-pearl-powers` | stressed | show me pearl powers |
+| `sf-shell-nav-primary` | stressed | visible primary shell nav |
+| `sf-install-download` | stressed | install download CTA |
+| `sf-shell-packages-settings` | stressed | open packages + settings |
+| `sf-share-handoff` | residual | unsigned/live OAuth handoff needs credentials/extension |
+| `sf-aesthetic-veto` | stressed | primary frames logged for human Read |
 
-## Stressed: 16 · Residual/skipped: 0
+## Stressed: 29 · Residual/skipped: 1
 
 ## Residuals (honest)
 
 - Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
-- Journey interrupted: page.goto: Navigation to "http://127.0.0.1:41822/" is interrupted by another navigation to "http://127.0.0.1:41822/"
-Call log:
-  - navigating to "http://127.0.0.1:41822/", waiting until "domcontentloaded"
-
+- SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
 
 ## Anti-lie
 

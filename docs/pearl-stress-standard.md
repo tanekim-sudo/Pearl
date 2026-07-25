@@ -8,9 +8,11 @@ Permanent project bar for anyone editing Pearl. Not a one-off audit script.
 - **Showcase catalog:** `docs/pearl-showcase-flows.md`
 - **Gap audit:** `docs/pearl-stress-clueless-gap-audit.md`
 - **Coverage ledger:** `docs/pearl-stress-coverage.md`
-- **Related:** `.cursor/rules/audit-truth-standard.mdc`, companion-capability-parity, cross-surface-release-parity, no-capability-regressions
+- **Related:** `.cursor/rules/audit-truth-standard.mdc`, companion-capability-parity, cross-surface-release-parity, no-capability-regressions, no-delete-no-reinvent, no-orphan-capabilities
+- **Engineering policy:** `docs/pearl-engineering-policy.md` (never delete / never reinvent / no orphans / highest-capacity shell wiring)
+- **Primary screens inventory:** `client/lib/pearl-primary-screens.js`
 
-This standard applies to **any** evaluation of new or existing features and flows — web Reef/Studio/Scene, Companion/director, and extension when loadable.
+This standard applies to **any** evaluation of new or existing features and flows — web Reef/Studio/Scene, Companion/director, and extension when loadable. Anyone stress-testing this repo (human or agent) must use this document and the always-apply Cursor rules — not a private checklist.
 
 ---
 
@@ -55,6 +57,8 @@ Create “about X” must yield a pearl whose **visible title clearly relates to
 
 ### 1. Clueless first-time / zero demand
 No required Ask/Plan/Agent/Debug modes, tours, or jargon. Primary path: talk → GO.
+
+**Navigability (required with every stress):** every primary screen in `pearl-primary-screens.js` is reachable via visible shell nav **or** Companion Talk→GO with a world-visible result. Install must expose a hit-testable download CTA whose href resolves under `/downloads/lens-everywhere-chrome…` (not a missing `/extension/…` zip). Basic Companion commands (`go home`, `open settings`, `encode anything`, `open packages`, `install the extension`, create/rename/edit/wear/merge) must execute for real — narration without a world change fails.
 
 ### 2. Visual-first aesthetics (equal weight to function)
 For every meaningful state: screenshot → **Read the PNG pixels** → written critique → pass/fail.

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-24T21:29:15.763Z",
+  "generatedAt": "2026-07-25T07:28:58.155Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -2175,7 +2175,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "platform": "app",
-      "orbVoice": "please open Pearl Everywhere download and installation help",
+      "orbVoice": "install the extension",
       "gestureOrControl": "Scene orb command ledger",
       "emittedViewOrHandoff": "Scene runtime instrumentation view",
       "canonicalEffect": [],
@@ -3620,7 +3620,7 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "platform": "app",
-      "orbVoice": "please open the Cognitive Package registry and trust review",
+      "orbVoice": "open packages",
       "gestureOrControl": "Scene orb command ledger",
       "emittedViewOrHandoff": "Scene runtime instrumentation view",
       "canonicalEffect": [],
