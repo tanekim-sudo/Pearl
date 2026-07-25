@@ -5,7 +5,7 @@ Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)
 Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)
 Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`
 Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/`
-Last clueless run: 9bf0639 · 2026-07-25T07:29:20.487Z
+Last clueless run: 9bf0639 · 2026-07-25T08:27:47.295Z
 Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 
 ## Showcase flows
