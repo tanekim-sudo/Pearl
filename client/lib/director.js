@@ -475,60 +475,21 @@ export async function executeCapabilityScriptDirect(steps, options = {}) {
   }
 }
 
-export async function runDirectorScript(steps, opts = {}) {
-  if (!Array.isArray(steps) || !steps.length) return { completed: false, error: "empty script" };
-  const resolution = resolveDirectorCapabilities(steps.map((step) => step?.verb));
-  if (resolution.missing.length) {
-    const error = `unavailable capability: ${resolution.missing.join(", ")}`;
-    return { completed: false, error, errors: [error], missing: resolution.missing };
-  }
-  if (opts.signal?.aborted) {
-    return { completed: false, aborted: true, error: "Aborted", errors: ["Aborted"] };
-  }
-  if (state.running) {
-    stopDirector();
-    await directorWait(80);
-  }
-  const previousSpeed = state.speed;
-  state.speed = Math.max(0.25, Math.min(3, opts.speed ?? 1.35));
-  state.running = true;
-  state.abortRequested = false;
-  activeAbortController = new AbortController();
-  const onExternalAbort = () => stopDirector();
-  opts.signal?.addEventListener?.("abort", onExternalAbort, { once: true });
-  const startedAt = new Date().toISOString();
-  activeTrace = {
-    version: DIRECTOR_EFFECT_TRACE_VERSION,
-    id: globalThis.crypto?.randomUUID?.() || `director-${Date.now()}`,
-    title: opts.title || null,
-    status: "running",
-    startedAt,
-    startedAtMonotonic: performance.now(),
-    completedAt: null,
-    reducedMotion: reducedMotionRequested(),
-    viewport: {
-      width: typeof window !== "undefined" ? window.innerWidth : null,
-      height: typeof window !== "undefined" ? window.innerHeight : null,
-    },
-    expectedCapabilities: steps.map((step) => step?.verb).filter(Boolean),
-    events: [],
-  };
-  traceEvent("run-start", { stepCount: steps.length });
-  state.scriptTitle = opts.title || null;
-  state.cursor.visible = true;
-  emit();
-  document.body.classList.add("director-running");
-  // Give the companion panel one short beat to tuck into the corner before
-  // the cursor reaches its first target.
-  await directorWait(320);
-  const ctx = { vars: {} };
+/**
+ * Run sequential director steps against the current cursor/toolkit.
+ * Used by top-level demos and by re-entrant verbs that play a sub-script
+ * (playPearlCapabilityDemo / demonstratePearlPowers) without nesting a second
+ * director session — nesting previously nulled `activeTrace` and crashed with
+ * "Cannot set properties of null (setting 'status')" → [unknown-error].
+ */
+async function executeDirectorStepLoop(steps, { ctx, signal } = {}) {
   const errors = [];
   const results = [];
   let consecutiveFailures = 0;
-  let aborted = false;
+  const parentStep = activeStep;
   try {
     for (const step of steps) {
-      if (state.abortRequested || opts.signal?.aborted) break;
+      if (state.abortRequested || signal?.aborted) break;
       const fn = verbs[step.verb];
       activeStep = { capability: step.verb, id: step.id || null };
       traceEvent("step-start", {
@@ -573,18 +534,105 @@ export async function runDirectorScript(steps, opts = {}) {
       }
     }
   } finally {
+    activeStep = parentStep;
+  }
+  const aborted = state.abortRequested || signal?.aborted === true;
+  return {
+    completed: !aborted && !errors.length,
+    aborted,
+    errors,
+    results,
+    value: results[results.length - 1],
+    effects: results.flatMap((result) => (Array.isArray(result?.effects) ? result.effects : [])),
+  };
+}
+
+export async function runDirectorScript(steps, opts = {}) {
+  if (!Array.isArray(steps) || !steps.length) return { completed: false, error: "empty script" };
+  const resolution = resolveDirectorCapabilities(steps.map((step) => step?.verb));
+  if (resolution.missing.length) {
+    const error = `unavailable capability: ${resolution.missing.join(", ")}`;
+    return { completed: false, error, errors: [error], missing: resolution.missing };
+  }
+  if (opts.signal?.aborted) {
+    return { completed: false, aborted: true, error: "Aborted", errors: ["Aborted"] };
+  }
+  // Re-entrant: a verb mid-demo calls runDirectorScript for a sub-tour.
+  // Inline under the parent session — never stopDirector / replace activeTrace.
+  if (state.running && activeStep && activeTrace) {
+    if (opts.title) state.scriptTitle = opts.title;
+    if (opts.speed != null) state.speed = Math.max(0.25, Math.min(3, opts.speed));
+    const nestedCtx = { vars: { ...(opts.vars || {}) } };
+    return executeDirectorStepLoop(steps, { ctx: nestedCtx, signal: opts.signal });
+  }
+  if (state.running) {
+    stopDirector();
+    await directorWait(80);
+  }
+  const previousSpeed = state.speed;
+  state.speed = Math.max(0.25, Math.min(3, opts.speed ?? 1.35));
+  state.running = true;
+  state.abortRequested = false;
+  activeAbortController = new AbortController();
+  const onExternalAbort = () => stopDirector();
+  opts.signal?.addEventListener?.("abort", onExternalAbort, { once: true });
+  const startedAt = new Date().toISOString();
+  const trace = {
+    version: DIRECTOR_EFFECT_TRACE_VERSION,
+    id: globalThis.crypto?.randomUUID?.() || `director-${Date.now()}`,
+    title: opts.title || null,
+    status: "running",
+    startedAt,
+    startedAtMonotonic: performance.now(),
+    completedAt: null,
+    reducedMotion: reducedMotionRequested(),
+    viewport: {
+      width: typeof window !== "undefined" ? window.innerWidth : null,
+      height: typeof window !== "undefined" ? window.innerHeight : null,
+    },
+    expectedCapabilities: steps.map((step) => step?.verb).filter(Boolean),
+    events: [],
+  };
+  activeTrace = trace;
+  traceEvent("run-start", { stepCount: steps.length });
+  state.scriptTitle = opts.title || null;
+  state.cursor.visible = true;
+  emit();
+  document.body.classList.add("director-running");
+  // Give the companion panel one short beat to tuck into the corner before
+  // the cursor reaches its first target.
+  await directorWait(320);
+  const ctx = { vars: { ...(opts.vars || {}) } };
+  let loopResult = {
+    completed: false,
+    aborted: false,
+    errors: [],
+    results: [],
+    value: undefined,
+    effects: [],
+  };
+  try {
+    loopResult = await executeDirectorStepLoop(steps, { ctx, signal: opts.signal });
+  } finally {
     opts.signal?.removeEventListener?.("abort", onExternalAbort);
-    aborted = state.abortRequested || opts.signal?.aborted === true;
-    traceEvent("run-complete", {
-      status: aborted ? "cancelled" : errors.length ? "failed" : "completed",
-      resultTypes: results.map((result) => result.type),
-      errorCount: errors.length,
-    });
-    activeTrace.status = aborted ? "cancelled" : errors.length ? "failed" : "completed";
-    activeTrace.completedAt = new Date().toISOString();
-    completedTraces.push(activeTrace);
-    if (completedTraces.length > MAX_COMPLETED_TRACES) completedTraces.splice(0, completedTraces.length - MAX_COMPLETED_TRACES);
-    activeTrace = null;
+    const aborted = loopResult.aborted || state.abortRequested || opts.signal?.aborted === true;
+    const errors = loopResult.errors || [];
+    // Capture the trace we own — nested runs must not null it out from under us.
+    const owned = activeTrace === trace ? trace : activeTrace;
+    if (owned) {
+      traceEvent("run-complete", {
+        status: aborted ? "cancelled" : errors.length ? "failed" : "completed",
+        resultTypes: (loopResult.results || []).map((result) => result.type),
+        errorCount: errors.length,
+      });
+      owned.status = aborted ? "cancelled" : errors.length ? "failed" : "completed";
+      owned.completedAt = new Date().toISOString();
+      completedTraces.push(owned);
+      if (completedTraces.length > MAX_COMPLETED_TRACES) {
+        completedTraces.splice(0, completedTraces.length - MAX_COMPLETED_TRACES);
+      }
+    }
+    if (activeTrace === trace || activeTrace === owned) activeTrace = null;
     activeStep = null;
     state.running = false;
     state.scriptTitle = null;
@@ -597,15 +645,25 @@ export async function runDirectorScript(steps, opts = {}) {
     state.speed = previousSpeed;
     document.body.classList.remove("director-running");
     emit();
-    opts.onDone?.({ completed: !aborted && !errors.length, aborted, errors });
+    opts.onDone?.({
+      completed: !aborted && !errors.length,
+      aborted,
+      errors,
+    });
+    loopResult = {
+      ...loopResult,
+      completed: !aborted && !errors.length,
+      aborted,
+      errors,
+    };
   }
   return {
-    completed: !aborted && !errors.length,
-    aborted,
-    errors,
-    results,
-    value: results[results.length - 1],
-    effects: results.flatMap((result) => (Array.isArray(result?.effects) ? result.effects : [])),
+    completed: loopResult.completed,
+    aborted: loopResult.aborted,
+    errors: loopResult.errors,
+    results: loopResult.results,
+    value: loopResult.value,
+    effects: loopResult.effects,
   };
 }
 

@@ -38,6 +38,70 @@ test("resolveDirectorPoint accepts coordinates, points, and element-like targets
   assert.equal(resolveDirectorPoint(null), null);
 });
 
+test("nested runDirectorScript from inside a verb does not crash parent trace", async () => {
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+  const originalMatchMedia = globalThis.matchMedia;
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+  const classes = new Set();
+  globalThis.document = {
+    body: {
+      classList: {
+        add: (name) => classes.add(name),
+        remove: (name) => classes.delete(name),
+      },
+    },
+  };
+  globalThis.window = {
+    innerWidth: 1280,
+    innerHeight: 800,
+    dispatchEvent: () => {},
+  };
+  globalThis.matchMedia = () => ({ matches: true });
+  globalThis.requestAnimationFrame = (callback) => setTimeout(() => callback(performance.now()), 0);
+
+  try {
+    clearDirectorEffectTraces();
+    let nestedRan = 0;
+    registerDirectorVerbs({
+      nestedLeaf: async () => {
+        nestedRan += 1;
+        return { effects: ["nested-leaf"] };
+      },
+      nestedDemoHost: async (_args, _tk, ctx) => {
+        const inner = await runDirectorScript(
+          [{ verb: "nestedLeaf", args: {} }],
+          { title: "inner tour", vars: ctx.vars, speed: 3 },
+        );
+        return {
+          type: "demo",
+          completed: inner.completed !== false,
+          effects: ["nested-demo-host", ...(inner.effects || [])],
+        };
+      },
+    });
+    const execution = await runDirectorScript(
+      [{ verb: "nestedDemoHost", args: {} }],
+      { title: "outer demo", speed: 3 },
+    );
+    assert.equal(execution.completed, true, `expected success, got errors=${JSON.stringify(execution.errors)}`);
+    assert.equal(nestedRan, 1);
+    assert.equal(directorRunning(), false);
+    const { active, completed } = getDirectorEffectTraces();
+    assert.equal(active, null);
+    assert.equal(completed.length, 1);
+    assert.equal(completed[0].status, "completed");
+    assert.ok(completed[0].events.some((event) => event.type === "run-start"));
+    assert.ok(completed[0].events.some((event) => event.capability === "nestedLeaf"));
+    assert.ok(completed[0].events.some((event) => event.type === "run-complete"));
+  } finally {
+    globalThis.document = originalDocument;
+    globalThis.window = originalWindow;
+    globalThis.matchMedia = originalMatchMedia;
+    globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+  }
+});
+
 test("direct capability execution mutates without starting demonstration motion", async () => {
   let mutations = 0;
   registerDirectorVerbs({

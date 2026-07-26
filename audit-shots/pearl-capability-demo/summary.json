@@ -1,6 +1,21 @@
 {
   "ok": true,
+  "startedVia": "talk-go",
   "directorSeen": true,
   "midAnim": true,
+  "noUnknown": true,
+  "successText": true,
+  "failedChat": false,
+  "nestedSmoke": {
+    "ok": true,
+    "errors": [],
+    "threw": false
+  },
+  "msgs": [
+    "Type or speak, then press GO — I’ll show what I’m doing here.",
+    "watch what pearl can do",
+    "Explaining…",
+    "That’s Pearl today — Talk when ready"
+  ],
   "out": "/Users/tanekim/Downloads/lens/audit-shots/pearl-capability-demo"
 }

@@ -181,7 +181,11 @@ export function inferExecutionCode(messageOrError, hint = {}) {
   if (/missing .+ arg|required argument|name this function/.test(blob)) {
     return EXECUTION_CODES.MISSING_ARGS;
   }
-  if (/director|demonstration/.test(blob)) return EXECUTION_CODES.DIRECTOR_FAILED;
+  if (
+    /director|demonstration|cannot set properties of null \(setting 'status'\)|activetrace/i.test(blob)
+  ) {
+    return EXECUTION_CODES.DIRECTOR_FAILED;
+  }
   return EXECUTION_CODES.UNKNOWN_ERROR;
 }
 

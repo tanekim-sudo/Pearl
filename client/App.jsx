@@ -18144,15 +18144,28 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
     const capabilityDemo = parsePearlCapabilityDemoCommand(text);
     if (capabilityDemo) {
-      // Direct outer call — verb itself runs the ghost-cursor director tour (avoid nested abort).
+      // Direct outer call — verb runs the ghost-cursor tour. Director re-entrancy is also
+      // safe if a plan wraps playPearlCapabilityDemo in runDirectorScript.
       const result = await executeCapabilityScriptDirect(
         [{ verb: "playPearlCapabilityDemo", args: {} }],
         { signal },
       );
-      updateCommand(commandEntry.id, result.completed
+      const demoOk = result.completed && result.value?.completed !== false && !result.aborted;
+      const failure = result.errors?.[0]
+        || result.value?.errors?.[0]
+        || (result.aborted || result.value?.aborted ? "Demonstration stopped." : null)
+        || "Capability demo failed";
+      updateCommand(commandEntry.id, demoOk
         ? { status: "executed", effects: result.value?.effects || ["pearl-capability-demo-played"] }
-        : { status: "failed", failure: result.errors?.[0] || "Capability demo failed" });
-      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+        : { status: "failed", failure });
+      if (!demoOk) {
+        return {
+          visible: true,
+          completed: false,
+          text: publicCompanionError(failure),
+          code: /director|demonstrat|status/i.test(String(failure)) ? "director-failed" : undefined,
+        };
+      }
       return {
         visible: true,
         text: result.value?.visibleText || "That’s a tour of Pearl right now — Talk when you’re ready.",
