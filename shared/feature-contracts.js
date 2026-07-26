@@ -516,7 +516,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
     domains: ["interface", "semantic-orb", "extension"],
     commands: ["editPearlEntity", "applyPearlCognitivePatch", "completeOutputPlacement", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "synthesizeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion", "createWorker", "mergeWorkers"],
     ui: ["client/lib/director.js", "shared/physical-pearl.js", "client/components/PearlPowerFxOverlay.jsx"],
-    companion: ["executeUnifiedPearlAction", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "synthesizeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion", "spawnSubAgentPearls", "fuseSubAgentPearls", "demonstratePearlPowers"],
+    companion: ["executeUnifiedPearlAction", "createSemanticOrb", "mergeSemanticOrbs", "composeSemanticOrbs", "synthesizeSemanticOrbs", "nestSemanticOrb", "splitSemanticOrb", "restorePearlVersion", "spawnSubAgentPearls", "fuseSubAgentPearls", "demonstratePearlPowers", "playPearlCapabilityDemo"],
     extension: ["executeExternalPearlAction"],
     persistence: ["pearlEntities.v1.history.events"],
     tests: ["shared/pearl-entity.test.js", "shared/pearl-animation.test.js", "shared/physical-pearl.test.js", "shared/pearl-power-fx.test.js"],

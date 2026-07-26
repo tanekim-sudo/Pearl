@@ -1249,6 +1249,68 @@ async function runCluelessJourneys(browser) {
   );
   const powersReply = Boolean(powers.snap?.msgs?.some((m) => /pearl|demonstrat|power|fission|blocked/i.test(m.text)));
   record("sf-pearl-powers", directorSeen || powersReply, `director=${directorSeen} reply=${powersReply}`, "P1");
+  await stopDirectorIfRunning(page);
+  await leaveBlockingSurfaces(page);
+
+  coverage("sf-pearl-capability-demo", "stressed", "watch what pearl can do");
+  await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.waitForTimeout(200);
+  const playBtn = page.locator('[data-testid="reef-play-demo"], [data-testid="reef-play-demo-intro"], [data-testid="welcome-play-demo"]').first();
+  let demoStarted = false;
+  let demoMidAnim = false;
+  let demoDirectorSeen = false;
+  if (await playBtn.count()) {
+    const box = await playBtn.boundingBox().catch(() => null);
+    if (box && box.width > 8 && box.height > 8) {
+      await playBtn.click();
+      demoStarted = true;
+    }
+  }
+  if (!demoStarted) {
+    const viaChat = await typeAndGo(page, "watch what pearl can do", { shotPrefix: "23d-capability-demo", humanMs: 400 });
+    demoStarted = Boolean(viaChat.ok || viaChat.director);
+  }
+  for (let i = 0; i < 120; i += 1) {
+    const running = await page.evaluate(() =>
+      document.body.classList.contains("director-running") || Boolean(document.querySelector(".ghost-cursor")),
+    ).catch(() => false);
+    if (running) {
+      demoDirectorSeen = true;
+      if (!demoMidAnim) {
+        demoMidAnim = true;
+        await shot(page, "23d-capability-demo-mid-anim");
+      }
+    } else if (demoDirectorSeen) {
+      break;
+    }
+    await page.waitForTimeout(250);
+  }
+  await page.waitForFunction(
+    () => !document.body.classList.contains("director-running"),
+    null,
+    { timeout: 45_000 },
+  ).catch(() => {});
+  await shot(page, "23d-capability-demo-after");
+  const demoReply = /tour|Pearl today|Talk when|demonstrat|Blocked|Failed/i.test(
+    await page.locator("body").innerText().catch(() => ""),
+  );
+  const demoOk = demoDirectorSeen && demoMidAnim;
+  record(
+    "sf-pearl-capability-demo",
+    demoOk,
+    `started=${demoStarted} director=${demoDirectorSeen} midAnim=${demoMidAnim} replyish=${demoReply}`,
+    "P0",
+  );
+  aestheticNote(
+    "23d-capability-demo-mid-anim",
+    demoOk ? "pass" : "fail",
+    demoOk
+      ? "PNG Read required: mid-demo must show ghost-cursor travel and/or director caption while Companion/Reef world changes (create/wear/Studio moves) — not a static flash."
+      : "PNG Read: capability demo never showed director-running + ghost-cursor mid-anim evidence.",
+    "P0",
+  );
 
   coverage("sf-shell-nav-primary", "stressed", "visible primary shell nav");
   await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });

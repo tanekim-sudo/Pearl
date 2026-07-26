@@ -31,7 +31,7 @@
     "requirements": 29,
     "featureContracts": 65,
     "domainCommands": 121,
-    "companionCapabilities": 227,
+    "companionCapabilities": 228,
     "extensionEntries": 91
   },
   "requirements": [
@@ -392,6 +392,7 @@
         "spawnSubAgentPearls",
         "fuseSubAgentPearls",
         "demonstratePearlPowers",
+        "playPearlCapabilityDemo",
         "capturePageSelection",
         "createExternalSemanticOrb",
         "queueExternalAction",
@@ -1872,6 +1873,7 @@
         "spawnSubAgentPearls",
         "fuseSubAgentPearls",
         "demonstratePearlPowers",
+        "playPearlCapabilityDemo",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -1946,6 +1948,7 @@
         "spawnSubAgentPearls",
         "fuseSubAgentPearls",
         "demonstratePearlPowers",
+        "playPearlCapabilityDemo",
         "executeExternalPearlAction"
       ],
       "extensionEntries": [
@@ -3098,5 +3101,5 @@
       "reachable": true
     }
   ],
-  "generatedAt": "2026-07-25T17:32:10.390Z"
+  "generatedAt": "2026-07-26T02:10:18.265Z"
 }

@@ -83,3 +83,19 @@ test("openPearlStudioDocument reloads when popups are blocked", async () => {
   assert.deepEqual(calls[0], ["replace", "/scene/a#pearl-studio=ref-blocked"]);
   assert.equal(calls[1], "reload");
 });
+
+test("openPearlStudioDocument can refuse reload for director-safe tours", async () => {
+  const calls = [];
+  const result = await openPearlStudioDocument("ref-director", {
+    preferSameWindow: false,
+    allowReloadFallback: false,
+    privacy: { async flush() {} },
+    open: () => null,
+    reload: () => calls.push("reload"),
+    replaceState: () => calls.push("replace"),
+    session: { setItem: () => {} },
+    locationRef: { pathname: "/", search: "" },
+  });
+  assert.equal(result.mode, "blocked");
+  assert.equal(calls.includes("reload"), false);
+});

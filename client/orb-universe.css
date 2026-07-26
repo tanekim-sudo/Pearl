@@ -734,6 +734,24 @@
   border-bottom: 1px solid var(--orb-line);
   backdrop-filter: blur(12px);
 }
+.pearl-reef-chrome .pearl-play-demo {
+  margin-left: auto;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--orb-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--orb-text-2);
+  font: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.pearl-reef-chrome .pearl-play-demo:hover,
+.pearl-reef-chrome .pearl-play-demo:focus-visible {
+  color: var(--orb-text-1);
+  border-color: var(--orb-text-2);
+}
 .pearl-shell-nav {
   display: flex;
   flex-wrap: wrap;

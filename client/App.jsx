@@ -317,6 +317,7 @@ import {
   parsePearlVersionCommand,
   parsePearlRemixCommand,
   parseAutomationLoopCommand,
+  parsePearlCapabilityDemoCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTasteNavigationCommand,
@@ -369,6 +370,11 @@ import {
 } from "./lib/companion-harness.js";
 import { createOrbInstance, fuseWorkerProposals, workerProposal } from "../shared/orb-swarm.js";
 import { COMPANION_DEMOS, findDemo } from "./lib/companion-demos.js";
+import {
+  isPearlCapabilityDemoPearl,
+  markPearlCapabilityDemoPlayed,
+  PEARL_CAPABILITY_DEMO_ID,
+} from "./lib/pearl-capability-demo.js";
 import {
   SKETCH_BUNDLE_MIME,
   recordingItemTags,
@@ -12845,9 +12851,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
     },
     cancelResultPlacement: async (a) => runCanonicalPearlAction("cancelOutputPlacement", { resultId: a.pearlId }, a.pearlId),
-    openPearlStudio: async (a) => {
-      window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", { detail: { pearlId: a.pearlId || null } }));
-      return { type: "pearl-studio-open", id: a.pearlId || null, effects: ["pearl-studio-opening"] };
+    openPearlStudio: async (a, tk) => {
+      const preferPopup = a.preferPopup === true;
+      window.dispatchEvent(new CustomEvent("lens:open-pearl-studio", {
+        detail: {
+          pearlId: a.pearlId || null,
+          preferSameWindow: !preferPopup,
+          allowReloadFallback: !preferPopup,
+        },
+      }));
+      await tk?.wait?.(preferPopup ? 420 : 280);
+      return {
+        type: "pearl-studio-open",
+        id: a.pearlId || null,
+        effects: ["pearl-studio-opening"],
+        visibleText: preferPopup
+          ? "Studio opens beside this tour when popups are allowed."
+          : "Opening Pearl Studio.",
+      };
     },
     reorderPearlFunctionMoves: async (a, tk) => {
       const pearl = resolvePearlByNameOrId(a.pearlId, a.pearlName || a.name)
@@ -13177,6 +13198,26 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
         focusRailPane(RAIL_TRANSFORMATIONS);
         pulseFunctionsRail();
+      }
+      if (pearlId) {
+        // Seed canonical store so reorder / Studio moves work without a remount.
+        try {
+          const entity = createPearlEntity({
+            ...(receipt?.object || scaffold.pearl || {}),
+            id: pearlId,
+            name: scaffold.pearl.name,
+          });
+          const store = load(PEARL_STORE_KEY, { version: 1, entities: {}, activePearlId: null });
+          localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+            ...store,
+            version: 1,
+            entities: { ...(store.entities || {}), [pearlId]: entity },
+            activePearlId: pearlId,
+            updatedAt: Date.now(),
+          }));
+        } catch {
+          /* store seed best-effort */
+        }
       }
       if (pearlId && a.wear !== false) {
         try {
@@ -14082,6 +14123,60 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       });
       return { type: "demo", id: "pearl-powers", effects: ["pearl-powers-demonstrated"] };
     },
+    playPearlCapabilityDemo: async (a, tk, ctx) => {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      await tk.wait(280);
+      const listDemoPearls = () => {
+        const byId = new Map();
+        const push = (pearl) => {
+          if (!pearl?.id || !isPearlCapabilityDemoPearl(pearl)) return;
+          byId.set(pearl.id, pearl);
+        };
+        try {
+          const workspace = load(UNIFIED_WORKSPACE_KEY, null) || {};
+          for (const scene of workspace.scenes || []) {
+            for (const orb of scene.semanticOrbs || []) push(orb);
+          }
+          for (const orb of workspace.semanticOrbs || []) push(orb);
+        } catch { /* ignore */ }
+        for (const orb of currentSemanticScene()?.semanticOrbs || []) push(orb);
+        try {
+          const store = load(PEARL_STORE_KEY, { entities: {} });
+          for (const entity of Object.values(store.entities || {})) push(entity);
+        } catch { /* ignore */ }
+        return [...byId.values()];
+      };
+      const cleanupDemoPearls = async () => {
+        for (const pearl of listDemoPearls()) {
+          try { removePearlIdFromGauntlet(pearl.id); } catch { /* ignore */ }
+          try {
+            await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+              command: "archiveSemanticOrb",
+              args: { id: pearl.id, archived: true },
+            });
+          } catch { /* disposable cleanup best-effort */ }
+        }
+        try { publishWornOrbit(); } catch { /* ignore */ }
+      };
+      await cleanupDemoPearls();
+      const demo = findDemo(PEARL_CAPABILITY_DEMO_ID);
+      if (!demo?.steps?.length) throw new Error("pearl-capability-tour demo missing");
+      // Fresh director controller — do not inherit a parent abort signal.
+      const result = await runDirectorScript(demo.steps, {
+        title: demo.title,
+        vars: ctx.vars,
+        speed: a.speed || 1.45,
+      });
+      await cleanupDemoPearls();
+      markPearlCapabilityDemoPlayed();
+      return {
+        type: "demo",
+        id: PEARL_CAPABILITY_DEMO_ID,
+        effects: ["pearl-capability-demo-played", ...(result.effects || [])],
+        visibleText: "That’s a tour of Pearl right now — Talk when you’re ready.",
+        completed: result.completed !== false,
+      };
+    },
     archiveSemanticOrb: async (a) => {
       await dispatchOrbSurfaceCommand("lens:semantic-orb-command", { command: "archiveSemanticOrb", args: a });
       return { effectId: `semantic-orb-archived:${a.id}`, id: a.id };
@@ -14197,8 +14292,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { effectId: `shell-settings:${Date.now()}`, effects: ["settings-opened"] };
     },
     openEncodeAnything: async (_a, tk) => {
+      const target = tk?.elementCenter?.('[data-testid="shell-nav-encode"]');
+      if (target && tk?.moveTo) await tk.moveTo(target);
+      if (target && tk?.click) await tk.click(target.x, target.y);
       window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openEncode" } }));
-      await tk.wait?.(280);
+      await tk.wait?.(360);
       return { effectId: `shell-encode:${Date.now()}`, effects: ["encode-opened"] };
     },
     closeSurface: async (_a, tk) => {
@@ -14767,8 +14865,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     },
     openExtensionDownload: async (a, tk) => {
       // Pearl shell: Install page is the clueless-reachable download path (TopToolbar is unmounted).
+      const target = tk?.elementCenter?.('[data-testid="shell-nav-install"]');
+      if (target && tk?.moveTo) await tk.moveTo(target);
+      if (target && tk?.click) await tk.click(target.x, target.y);
       window.dispatchEvent(new CustomEvent("lens:shell-action", { detail: { action: "openExtensionDownload" } }));
-      await tk.wait?.(280);
+      await tk.wait?.(360);
       return { effectId: `shell-install:${Date.now()}`, effects: ["install-opened"] };
     },
     openExtensionLibraryExport: async (a, tk) => {
@@ -18041,8 +18142,26 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return result.completed ? null : { visible: true, text: publicCompanionError(result.errors?.[0]) };
     }
 
+    const capabilityDemo = parsePearlCapabilityDemoCommand(text);
+    if (capabilityDemo) {
+      // Direct outer call — verb itself runs the ghost-cursor director tour (avoid nested abort).
+      const result = await executeCapabilityScriptDirect(
+        [{ verb: "playPearlCapabilityDemo", args: {} }],
+        { signal },
+      );
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.value?.effects || ["pearl-capability-demo-played"] }
+        : { status: "failed", failure: result.errors?.[0] || "Capability demo failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      return {
+        visible: true,
+        text: result.value?.visibleText || "That’s a tour of Pearl right now — Talk when you’re ready.",
+        completed: true,
+      };
+    }
+
     const safeDemo = parseSafeDemonstrationCommand(text, itemsRef.current.length === 0 && aiNodesRef.current.length === 0);
-    if (safeDemo) {
+    if (safeDemo && safeDemo.verb !== "playPearlCapabilityDemo") {
       const demo = findDemo(safeDemo.demoId);
       const result = await runDirectorScript(demo?.steps || [], { title: demo?.title || "Capability demonstration" });
       updateCommand(commandEntry.id, result.completed

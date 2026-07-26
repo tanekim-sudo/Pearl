@@ -708,8 +708,25 @@ export function parseParallelBranchCommand(text) {
   };
 }
 
+export function parsePearlCapabilityDemoCommand(text) {
+  const value = String(text || "").trim();
+  if (!value) return null;
+  if (
+    /\b(?:watch what pearl can do|show me what pearl can do|what can pearl do)\b/i.test(value)
+    || /^(?:play(?: the)?(?: pearl)? demo|play demo)$/i.test(value)
+    || /\b(?:capability demo|current capability demo)\b/i.test(value)
+  ) {
+    return { verb: "playPearlCapabilityDemo", args: {}, demoId: "pearl-capability-tour" };
+  }
+  return null;
+}
+
 export function parseSafeDemonstrationCommand(text, empty = false) {
   const value = String(text || "").trim();
+  const capabilityDemo = parsePearlCapabilityDemoCommand(value);
+  if (capabilityDemo) {
+    return { demoId: capabilityDemo.demoId, chooser: false, verb: capabilityDemo.verb };
+  }
   if (/\b(?:pearl powers?|what can the pearl|show (?:me )?pearl|fission|sub-?agents?|dragon)\b/i.test(value)) {
     return { demoId: "pearl-powers", chooser: false, verb: "demonstratePearlPowers" };
   }

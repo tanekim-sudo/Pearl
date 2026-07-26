@@ -43,6 +43,8 @@ export async function openPearlStudioDocument(ref, deps = {}) {
     pearlId = null,
     // Same-window is the clueless default — popups feel like a lost tab.
     preferSameWindow = true,
+    // Director tours must not remount the host document mid-script.
+    allowReloadFallback = true,
   } = deps;
   await flushPearlPrivacyBeforeStudio(deps);
   const href = buildPearlStudioHref(ref, locationRef);
@@ -61,6 +63,9 @@ export async function openPearlStudioDocument(ref, deps = {}) {
     }
     if (opened && typeof opened === "object" && opened.closed !== true) {
       return { mode: "popup", href };
+    }
+    if (allowReloadFallback === false) {
+      return { mode: "blocked", href };
     }
   }
   // Hash-only assign never remounts Studio; rewrite then reload the document.

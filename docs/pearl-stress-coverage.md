@@ -37,6 +37,7 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-go-home` | stressed | go home |
 | `sf-pearl-guide` | stressed | how does pearl work |
 | `sf-pearl-powers` | stressed | show me pearl powers |
+| `sf-pearl-capability-demo` | stressed | Watch what Pearl can do — hands-off current capability tour |
 | `sf-shell-nav-primary` | stressed | visible primary shell nav |
 | `sf-install-download` | stressed | install download CTA |
 | `sf-shell-packages-settings` | stressed | open packages + settings |
@@ -49,7 +50,7 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-reef-pearl-wear-affordance` | stressed | Reef PhysicalPearl capsules + Wear + drag MIME onto Companion (`wearPearl` original) |
 | `sf-orphan-audit-ledger` | stressed | `docs/pearl-orphan-audit.md` inventory + rewires |
 
-## Stressed: 35 · Residual/skipped: 1
+## Stressed: 36 · Residual/skipped: 1
 
 ## Residuals (honest)
 

@@ -23,6 +23,7 @@ import {
   parsePearlVersionCommand,
   parsePearlRemixCommand,
   parseAutomationLoopCommand,
+  parsePearlCapabilityDemoCommand,
   parseSafeDemonstrationCommand,
   parseSemanticTransferCommand,
   parseTranscriptLearningCommand,
@@ -340,6 +341,8 @@ test("three named branch perspectives parse exactly and vague safe requests choo
     "inverted opposition perspective",
   ]);
   assert.equal(parseSafeDemonstrationCommand("do anything give me anything show me what you can do", true).demoId, "safe-capability-sample");
+  assert.equal(parsePearlCapabilityDemoCommand("watch what pearl can do")?.verb, "playPearlCapabilityDemo");
+  assert.equal(parseSafeDemonstrationCommand("watch what pearl can do")?.verb, "playPearlCapabilityDemo");
 });
 
 test("universal transfer requests use the shared deterministic capability", () => {

@@ -72,11 +72,13 @@ import {
 import { registerDirectorVerbs } from "../lib/director.js";
 import {
   parseInvestorRolePearlCommand,
+  parsePearlCapabilityDemoCommand,
   parsePearlRemixCommand,
   parseSafeDemonstrationCommand,
 } from "../lib/companion-intent.js";
 import { buildInvestorRolePearlScaffold } from "../../shared/role-pearl-scaffold.js";
 import { findDemo } from "../lib/companion-demos.js";
+import { PEARL_CAPABILITY_DEMO_ID } from "../lib/pearl-capability-demo.js";
 import {
   discoverFormingPearls as discoverFormingPearlsFromImport,
   MAX_FORMING_PEARLS,
@@ -426,7 +428,23 @@ function PearlActionPalette({ onRun }) {
   </section>;
 }
 
-function PearlWelcome({ onAsk, onDismiss, onShellNav }) {
+function startPearlCapabilityDemoFromShell() {
+  window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+  const tryRun = () => {
+    const runtime = window.__lensOrbRuntime;
+    if (!runtime?.run) return false;
+    void runtime.run("watch what pearl can do", { mode: "agent" });
+    return true;
+  };
+  if (tryRun()) return;
+  let attempts = 0;
+  const timer = window.setInterval(() => {
+    attempts += 1;
+    if (tryRun() || attempts > 48) window.clearInterval(timer);
+  }, 100);
+}
+
+function PearlWelcome({ onAsk, onDismiss, onShellNav, onPlayDemo }) {
   return <section className="pearl-welcome" aria-label="Welcome to Pearl" data-companion-first="true" data-zero-demand="true">
     {/* Primary shell nav stays hit-testable on first-run — welcome must not orphan Scene/Install. */}
     <div className="pearl-welcome-shell-nav">
@@ -443,6 +461,10 @@ function PearlWelcome({ onAsk, onDismiss, onShellNav }) {
     <p>Say what you want. Your Companion does the rest.</p>
     <div className="pearl-welcome-actions">
       <button type="button" className="pearl-welcome-primary" data-testid="welcome-talk" onClick={onAsk}>Talk to Companion</button>
+      <button type="button" className="pearl-welcome-secondary" data-testid="welcome-play-demo" onClick={() => {
+        onDismiss?.();
+        (onPlayDemo || startPearlCapabilityDemoFromShell)();
+      }}>Watch what Pearl can do</button>
     </div>
     <button type="button" className="pearl-welcome-dismiss" data-testid="welcome-skip" onClick={onDismiss}>Skip</button>
   </section>;
@@ -553,6 +575,14 @@ function LibraryHome({
       <button type="button" data-testid="reef-home" onClick={() => navigateHome()}>Reef</button>
       <span>{sectionLabel ? `${sectionLabel} · saved tools & settings` : "Reef · where pearls live"}</span>
       <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Companion</button>
+      <button
+        type="button"
+        className="pearl-play-demo"
+        data-testid="reef-play-demo"
+        onClick={startPearlCapabilityDemoFromShell}
+      >
+        Watch what Pearl can do
+      </button>
       <PearlShellNav activeId={activeShellNavId} onNavigate={handleShellNav} />
     </header>
     {/* Intro only when the shelf is empty — never stack a hero “Reef” title over pearl names. */}
@@ -562,6 +592,7 @@ function LibraryHome({
       <p>Pearls form, play, and expand here. Talk to your Companion — it does the rest.</p>
       <div className="orb-home-intro-actions">
         <button type="button" className="orb-primary" data-testid="reef-talk" onClick={() => window.dispatchEvent(new CustomEvent("lens:companion-expand"))}>Talk to Companion</button>
+        <button type="button" className="orb-secondary" data-testid="reef-play-demo-intro" onClick={startPearlCapabilityDemoFromShell}>Watch what Pearl can do</button>
       </div>
     </section>}
     {isRoot && (continuationCount > 0 || route.handoff) && <section className="orb-continuation" aria-label="Continue extension work">
@@ -2030,12 +2061,26 @@ export default function OrbUniverseShell({ StageComponent }) {
       setOrb(transitionOrb(executing, "completed", { taskId: recorded.entry.id, commandId: "inspectScene", effectId: "view:scene" }));
       return;
     }
-    // Director demos need the Output Frame paper surface visible to show the ghost cursor.
-    const demoIntent = parseSafeDemonstrationCommand(
+    // Current Pearl vision tour stays on Reef — do not open classic Output Frame.
+    const capabilityDemoIntent = parsePearlCapabilityDemoCommand(
       recorded.entry.raw || recorded.entry.normalized,
-      ((orbRef.current?.context || []).length === 0),
     );
-    if (demoIntent) {
+    // Legacy Stage demos still need the Output Frame paper surface for ghost cursor targets.
+    const demoIntent = capabilityDemoIntent
+      ? null
+      : parseSafeDemonstrationCommand(
+        recorded.entry.raw || recorded.entry.normalized,
+        ((orbRef.current?.context || []).length === 0),
+      );
+    if (capabilityDemoIntent) {
+      window.dispatchEvent(new CustomEvent("lens:companion-expand"));
+      navigateHome();
+      next = transitionOrb(next, "executing", {
+        taskId: recorded.entry.id,
+        commandId: "playPearlCapabilityDemo",
+        evidence: { title: findDemo(PEARL_CAPABILITY_DEMO_ID)?.title || "Watch what Pearl can do" },
+      });
+    } else if (demoIntent) {
       window.dispatchEvent(new CustomEvent("lens:companion-expand"));
       if (route.kind === "stage") setOutputFrameOpen(true);
       else {
@@ -2071,10 +2116,10 @@ export default function OrbUniverseShell({ StageComponent }) {
     activeRunAbortRef.current = controller;
     try {
       // Give newly navigated Scene a beat to mount App + register __lensOrbRuntime.
-      if (demoIntent) {
+      if (demoIntent || capabilityDemoIntent) {
         await new Promise((resolve) => setTimeout(resolve, 450));
       }
-      const runtime = await waitForOrbRuntime((demoIntent || route.kind === "stage") ? 12_000 : 8_000);
+      const runtime = await waitForOrbRuntime((demoIntent || capabilityDemoIntent || route.kind === "stage") ? 12_000 : 8_000);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const phaseMap = {
         planning: "planning",
@@ -3352,7 +3397,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   // Result-pearl handoff stays on Reef until the user explicitly continues —
   // never auto-materialize a Scene or open Output Frame without intent.
 
-  async function openActivePearlStudio(selectedPearl = null) {
+  async function openActivePearlStudio(selectedPearl = null, studioOptions = {}) {
     const scene = (sceneWorkspace.scenes || []).find((entry) => entry.id === (route.sceneId || sceneWorkspace.activeSceneId));
     // Reef shelf entries are { id, name, sceneId, orb } — prefer the embedded orb payload.
     const fromShelf = selectedPearl?.orb && typeof selectedPearl.orb === "object" ? selectedPearl.orb : selectedPearl;
@@ -3391,7 +3436,11 @@ export default function OrbUniverseShell({ StageComponent }) {
     }));
     const ref = createWebPearlStudioReference(entity.id);
     // Flush vault before popup/reload so Studio remount can read the entity + ref.
-    await openPearlStudioDocument(ref, { pearlId: entity.id });
+    await openPearlStudioDocument(ref, {
+      pearlId: entity.id,
+      preferSameWindow: studioOptions.preferSameWindow !== false,
+      allowReloadFallback: studioOptions.allowReloadFallback !== false,
+    });
   }
 
   useEffect(() => {
@@ -3413,7 +3462,10 @@ export default function OrbUniverseShell({ StageComponent }) {
           selected = null;
         }
       }
-      void openActivePearlStudio(selected);
+      void openActivePearlStudio(selected, {
+        preferSameWindow: event.detail?.preferSameWindow,
+        allowReloadFallback: event.detail?.allowReloadFallback,
+      });
     };
     window.addEventListener("lens:open-pearl-studio", open);
     return () => window.removeEventListener("lens:open-pearl-studio", open);

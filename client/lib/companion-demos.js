@@ -2,9 +2,32 @@
  * Companion demo library — hand-encoded director scripts that demonstrate
  * every layer and feature combination. The companion plays these for
  * "how do I…" questions and for first-run onboarding.
+ *
+ * Current Pearl vision tour: `pearl-capability-tour` (see pearl-capability-demo.js).
+ * Classic Stage demos (three-layers / highlighter / AI canvas) remain for legacy
+ * phrases but are not the primary “Watch what Pearl can do” path.
  */
 
+import {
+  buildPearlCapabilityDemoSteps,
+  PEARL_CAPABILITY_DEMO_ID,
+} from "./pearl-capability-demo.js";
+
 export const COMPANION_DEMOS = [
+  {
+    id: PEARL_CAPABILITY_DEMO_ID,
+    title: "Watch what Pearl can do",
+    blurb: "hands-off tour of Companion, Reef pearl, gauntlet wear, Studio moves, Encode, and Install",
+    keywords: [
+      "watch what pearl can do",
+      "show me what pearl can do",
+      "play demo",
+      "play the demo",
+      "capability demo",
+      "what can pearl do",
+    ],
+    steps: buildPearlCapabilityDemoSteps(),
+  },
   {
     id: "safe-capability-sample",
     title: "A reversible capability sample",

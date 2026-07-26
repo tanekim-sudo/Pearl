@@ -3,7 +3,7 @@
  * Every entry must correspond to a real director verb registered by App.
  */
 const RAW_CAPABILITIES = [
-  ["caption", { text: "string?" }, false, ["interface"], "Explain an action while it happens"],
+  ["caption", { text: "string?", ms: "number?" }, false, ["interface"], "Explain an action while it happens"],
   ["pause", { ms: "number?" }, false, ["interface"], "Pause between visible actions"],
   ["switchTool", { tool: "string" }, false, ["interface", "paper"], "Select a canvas tool"],
   ["fitPaper", {}, false, ["paper", "ai", "interface"], "Fit the paper frame in the unified workspace"],
@@ -14,6 +14,7 @@ const RAW_CAPABILITIES = [
   ["shareWorkspace", {}, false, ["paper", "ai", "path", "interface"], "Share the selected journey or export the current workspace"],
   ["toggleWorkspaceTheme", {}, false, ["interface"], "Toggle the workspace material theme"],
   ["startWorkspaceTour", {}, false, ["interface"], "Start the interactive capability tour"],
+  ["playPearlCapabilityDemo", {}, false, ["scene", "interface", "function", "move"], "Hands-off director tour of current Pearl: Companion, Reef create, wear, Studio moves, Encode, Install"],
   ["openRoleSetup", {}, false, ["interface"], "Open role-based workspace setup"],
   ["openPearlGuide", {}, false, ["interface"], "Open the How Pearl works guide and record the teaching moment"],
   ["spawnText", { text: "string", saveAs: "string?", caption: "string?" }, false, ["paper"], "Create text on paper"],
@@ -240,7 +241,7 @@ const RAW_CAPABILITIES = [
   ["clearWorkspaceDomains", { domains: "array" }, true, ["paper", "ai", "move", "function", "lens"], "Clear chosen domains after confirmation"],
   ["observeUnifiedPearl", { pearlId: "string?" }, false, ["scene", "privacy", "interface"], "Observe every authorized section of the active canonical Pearl and state precise inaccessible boundaries", "app"],
   ["executeUnifiedPearlAction", { pearlId: "string?", command: "string", args: "object?" }, false, ["scene", "privacy", "interface"], "Execute one validated canonical Pearl action with policy, checkpoint, receipt, animation, undo, and idempotency", "app"],
-  ["openPearlStudio", { pearlId: "string?" }, false, ["scene", "interface"], "Open the same canonical Pearl in its secure editable full-tab Studio", "app"],
+  ["openPearlStudio", { pearlId: "string?", preferPopup: "boolean?" }, false, ["scene", "interface"], "Open the same canonical Pearl in its secure editable full-tab Studio", "app"],
   ["reorderPearlFunctionMoves", { pearlId: "string?", functionId: "string?", functionName: "string?", fromIndex: "number?", toIndex: "number?", from: "string?", to: "string?", move: "string?", moveName: "string?" }, false, ["scene", "function", "move", "interface"], "Reorder Moves inside a pearl Function via canonical reorderStep (same handler as Studio LensTreeEditor drag)", "app"],
   ["decomposePearlFunctionMove", { pearlId: "string?", functionId: "string?", functionName: "string?", moveIndex: "number?", move: "string?", moveName: "string?", from: "string?" }, false, ["scene", "function", "move", "interface"], "Decompose one Function Move into smaller ordered Moves (same domain handler as Studio / bridge path)", "app"],
   ["inspectPearlCognition", { pearlId: "string?" }, false, ["scene", "move", "function", "lens"], "Observe typed Primitive, Role, Lens, Move, Function and Pearl layers with uncertainty and source mapping", "app"],
@@ -534,7 +535,13 @@ const INTENT_EXAMPLES = {
   exportWorkspace: ["export this workspace as markdown"],
   shareWorkspace: ["share this journey"],
   toggleWorkspaceTheme: ["switch the workspace theme"],
-  startWorkspaceTour: ["show me what Pearl can do"],
+  startWorkspaceTour: ["start the interactive workspace tour"],
+  playPearlCapabilityDemo: [
+    "watch what pearl can do",
+    "show me what pearl can do",
+    "play the pearl demo",
+    "play demo",
+  ],
   openRoleSetup: ["set Pearl up for my role"],
   openPearlGuide: ["how do I use Pearl?"],
   openAuth: ["sign me in"],

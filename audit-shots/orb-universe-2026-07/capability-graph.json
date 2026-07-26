@@ -10,9 +10,9 @@
     "Function",
     "Lens"
   ],
-  "fingerprint": "fnv1a-c5530125",
+  "fingerprint": "fnv1a-c2f64b3c",
   "counts": {
-    "nodes": 410,
+    "nodes": 411,
     "edges": 516
   },
   "nodes": [
@@ -29,7 +29,8 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "text": "string?"
+          "text": "string?",
+          "ms": "number?"
         }
       },
       "outputSchema": {
@@ -899,7 +900,7 @@
       "name": "startWorkspaceTour",
       "purpose": "Start the interactive capability tour",
       "examples": [
-        "show me what Pearl can do"
+        "start the interactive workspace tour"
       ],
       "inputSchema": {
         "type": "object",
@@ -961,6 +962,152 @@
       "idempotency": "idempotency-key",
       "domains": [
         "interface"
+      ],
+      "platform": "app"
+    },
+    {
+      "id": "companion.capability.app.playPearlCapabilityDemo",
+      "version": 1,
+      "kind": "capability",
+      "name": "playPearlCapabilityDemo",
+      "purpose": "Hands-off director tour of current Pearl: Companion, Reef create, wear, Studio moves, Encode, Install",
+      "examples": [
+        "watch what pearl can do",
+        "show me what pearl can do",
+        "play the pearl demo",
+        "play demo"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "action-result"
+      },
+      "resultType": "action-result",
+      "refArgs": {},
+      "preconditions": [
+        "edit is canonical",
+        "expected revision matches",
+        "profile is unlocked",
+        "proposal revision still matches",
+        "semantic changes are confirmed",
+        "surface adapter completed the exact confirmed PlacementPlan",
+        "Scene is explicit",
+        "source material is preserved",
+        "at least two pearls exist",
+        "composition order is explicit",
+        "both orbs exist",
+        "nesting remains acyclic",
+        "orb exists",
+        "orb has referenced context or child orbs",
+        "checkpoint exists",
+        "parent pearl exists",
+        "worker specs are finite and role-bound",
+        "parent pearl has workers"
+      ],
+      "requiredObservations": [
+        "selection",
+        "objects",
+        "viewport"
+      ],
+      "observerQuery": {
+        "scopes": [
+          "selection",
+          "viewport",
+          "paper",
+          "library"
+        ],
+        "stableIds": true,
+        "refreshAfterMutation": true
+      },
+      "risk": "low",
+      "approval": {
+        "required": false,
+        "scope": "none"
+      },
+      "autonomy": "reversible-default",
+      "costs": {
+        "class": "local",
+        "maxCalls": 0
+      },
+      "timeoutMs": 15000,
+      "modalities": [
+        "text"
+      ],
+      "network": {
+        "required": false,
+        "boundary": "none"
+      },
+      "sideEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed"
+      ],
+      "persistence": [
+        "pearlEntities.compareAndSwap",
+        "pearlEntities.cognition.patch",
+        "resultPearls.routing.complete",
+        "scene.semanticOrbs.append",
+        "scene.semanticOrbs.update",
+        "pearlEntities.restoreVersion"
+      ],
+      "undo": [
+        "undo-pearl-entity-edit",
+        "undo-output-placement",
+        "restore-semantic-orbs"
+      ],
+      "compensation": "restore-workspace-checkpoint",
+      "animation": "director",
+      "surfaces": [
+        "web",
+        "companion",
+        "direct-ui"
+      ],
+      "expectedEffects": [
+        "scene-state-changed",
+        "function-state-changed",
+        "move-state-changed",
+        "pearl-entity-edited",
+        "pearl-cognitive-patch-applied",
+        "output-placement-completed",
+        "semantic-orb-created",
+        "pearl-synthesis-created",
+        "semantic-orb-hierarchy-changed",
+        "pearl-version-restored",
+        "orb-workers-created",
+        "orb-workers-merged"
+      ],
+      "tests": [
+        "capability-playPearlCapabilityDemo",
+        "feature:runtime.pearl-action-animation"
+      ],
+      "featureIds": [
+        "runtime.pearl-action-animation"
+      ],
+      "canonicalCommands": [
+        "editPearlEntity",
+        "applyPearlCognitivePatch",
+        "completeOutputPlacement",
+        "createSemanticOrb",
+        "mergeSemanticOrbs",
+        "composeSemanticOrbs",
+        "synthesizeSemanticOrbs",
+        "nestSemanticOrb",
+        "splitSemanticOrb",
+        "restorePearlVersion",
+        "createWorker",
+        "mergeWorkers"
+      ],
+      "destructive": false,
+      "confirmation": "none",
+      "idempotency": "idempotency-key",
+      "domains": [
+        "scene",
+        "interface",
+        "function",
+        "move"
       ],
       "platform": "app"
     },
@@ -25056,7 +25203,8 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "pearlId": "string?"
+          "pearlId": "string?",
+          "preferPopup": "boolean?"
         }
       },
       "outputSchema": {

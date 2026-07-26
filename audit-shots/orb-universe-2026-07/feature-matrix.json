@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T17:32:09.268Z",
+  "generatedAt": "2026-07-26T02:06:40.331Z",
   "counts": {
     "features": 65,
-    "companion": 410,
+    "companion": 411,
     "extension": 123,
     "commands": 134
   },
@@ -1091,7 +1091,8 @@
         "restorePearlVersion",
         "spawnSubAgentPearls",
         "fuseSubAgentPearls",
-        "demonstratePearlPowers"
+        "demonstratePearlPowers",
+        "playPearlCapabilityDemo"
       ],
       "extension": [
         "executeExternalPearlAction"

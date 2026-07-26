@@ -195,6 +195,15 @@ If README claims a capability works and the novice path cannot reach it, the str
 | **Success world-state** | Director/ghost-cursor activity; not silent teleport |
 | **Stress id** | `sf-pearl-powers` |
 
+### SF19b — Current capability demo (hands-off vision tour)
+| | |
+|---|---|
+| **Intent phrases** | `watch what pearl can do` · `play demo` · Reef **Watch what Pearl can do** |
+| **Surfaces** | Reef + Companion director (no classic Stage) |
+| **Success world-state** | Ghost-cursor tour: Companion → titled Demo pearl → wear/gauntlet → Studio moves reorder → Encode glance → Install glance; disposable Demo · pearls cleaned up |
+| **Stress id** | `sf-pearl-capability-demo` |
+| **Docs** | Current capability demo — animation teaches where Pearl is today |
+
 ### SF20 — Packages / settings entry
 | | |
 |---|---|
