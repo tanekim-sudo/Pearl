@@ -1,7 +1,9 @@
 # README coverage audit
 
 Maps every `shared/feature-contracts.js` ID to the README section that describes it in prose.  
-Generated against HEAD inventory (59 active · 6 removed). Companion verbs (411) and extension capabilities (123) are folded into family sections — not listed verb-by-verb.
+Mechanical proof at last refresh: **59 active + 6 removed = 65/65 contract IDs** present in this table; each active ID has README prose anchors; all 9 primary screens + 17 Companion novice families + extension surface rows checked — **0 gaps**.
+
+Companion verbs (411) and extension capabilities (123) are folded into family sections — not listed verb-by-verb.
 
 **How to re-check:** inventory contracts + `pearl-primary-screens.js` + extension manifest; keyword/prose-diff against `README.md`; update this table when contracts change.
 

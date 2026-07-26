@@ -4,14 +4,14 @@ A New Primitive for Intelligence
 
 Every era of computing has been defined by a new primitive. The graphical user interface gave us the Window. The spreadsheet gave us the Cell. The web gave us the Hyperlink. Git gave us the Commit. Artificial intelligence has transformed what computers can do; it has not yet transformed how humans think with them. Pearl is an attempt to do that: not another chatbot, but the notation layer for ways of seeing on the AI metamedium — native operations on perception the way Git gave code branch, fork, merge, and diff.
 
-This README is both the pitch and a **living inventory of what ships today**. Philosophy explains why. Everything after **What ships today** is verified against:
+This README is both the pitch and a **complete product inventory** of what ships today (docs inventory — not a runtime “production-ready app” claim). Philosophy explains why. Everything after **What ships today** is verified against:
 
 - `shared/feature-contracts.js` (65 contracts: 59 active, 6 removed from Pearl shell)
-- `client/lib/companion-capabilities.js` (Companion director verbs on web + extension)
+- `client/lib/companion-capabilities.js` (Companion director verbs on web + extension; families below, not a 411-verb dump)
 - `client/lib/pearl-primary-screens.js` (clueless-reachable shell screens)
 - OrbUniverse / Companion / Reef / Studio / extension mounts
 
-Nothing below claims “production-ready.” Verify against contracts, stress harnesses, and real surfaces.
+Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-coverage-audit.md). App readiness is separate from this inventory.
 
 ---
 
