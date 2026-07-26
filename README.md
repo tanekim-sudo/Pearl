@@ -99,31 +99,39 @@ Text and voice share one planner/director. High-confidence intents run with ghos
 | **Wear / gauntlet** | wear, remove worn, list/inspect gauntlet, rearrange sockets (≤5; full gauntlet refuses) |
 | **Compose** | merge, compose (ordered), synthesize (“what do these notice about each other”), nest/unnest, split, counter/experiment |
 | **Organize & role** | organize → M→F→L; role pearls (e.g. investor memo + diligence + lens); discover ≤5 forming pearls from chats/docs |
+| **Save & learn** | `save this as…` → Move / Function / Lens chooser; `open Learn from a chat` → extract reusable artifacts; discover forming pearls |
+| **Observe** | bounded workspace / screen observation (“what is visible”); interpret selection through a worn Lens — never silent scrape |
 | **Evaluate** | evaluate page/deck through worn gauntlet lenses (live model needs credentials — honest blocker if missing) |
+| **Critique** | start critique session → ingest spoken/typed critique → apply edits → stop; revise pearl from feedback |
 | **Studio ops** | open Studio; reorder / decompose Function Moves (same `reorderStep` as LensTreeEditor) |
 | **Versions** | name checkpoint, browse history, restore (Docs-style) |
 | **Encode / automation** | open Encode; compile / revise / run Automation Pearl; clarification when vague |
 | **Output routing** | choose destination (new tab, download, text box, cursor point, chat, Studio, keep); confirm placement once |
 | **Demo / guide** | `watch what pearl can do` / `play demo`; How Pearl works; demonstrate pearl powers |
-| **Privacy / share** | inspect/lock/unlock local vault; prepare/share/install Pearl packages; Cognitive Packages |
+| **Privacy / share** | inspect/lock/unlock local vault; per-pearl privacy policy inspect/propose/apply; prepare/share/install Pearl packages; Cognitive Packages |
 | **Appearance** | aesthetic presets / sample from screen (classic, celadon, rose, gold, ink, moonlight, coral, jade…) |
 | **Power FX** | sub-agent fission/fuse, find-on-screen filaments, seek — with specificity check-ins when vague |
 
-Deep Studio / taste / grind / Cognitive Pull Request / personal vocabulary / higher-order patches / Function test bench remain in the capability manifest and shared domain layer. Prefer Companion or Studio entry points; do not assume every deep verb is a first-run novice CTA.
+**Power-user search:** ⌘K / Ctrl+K opens Universal Pearl command search inside Companion (intent → verb), demoted from the cold-land path.
 
-**Honesty rules:** director demonstrates the manual path when it claims to; destructive clears need in-chat Accept/Reject; plans stay cancellable with checkpoints; research must fail closed when verified browsing is unavailable.
+**Deep Cognitive Workflow Studio** (Companion: `open Cognitive Workflow Studio` / vocabulary / pull-request phrases — not a first-run CTA): higher-order patches (propose/apply), personal command vocabulary (teach / disable / forget phrases), Cognitive Pull Request extract→review→merge, Function test bench, grind drafts. Prefer Companion or Studio entry; do not assume every deep verb is on Reef chrome.
+
+**Honesty & diagnostics:** director demonstrates the manual path when it claims to (ghost-cursor **effect status** while acting); destructive clears need in-chat Accept/Reject; plans stay cancellable with checkpoints; research must fail closed when verified browsing is unavailable. Companion exposes an **execution diagnostics** strip for blocked/failed runs this session (exact stage/code — never fake Done).
 
 ### Pearl operations (Reef / Scene / gauntlet)
 
+- **Unified Pearl entity** — one canonical Pearl across web, Companion, and extension (`observeUnifiedPearl` / `executeUnifiedPearlAction`); sections state precise inaccessible boundaries when locked or unauthorized
 - Create titled capsules (topic tokens in the visible title — not Untitled, not “orb”, not generic `New pearl · timestamp` for named topics)
 - Wear via button, drag-to-socket, or Companion
 - Merge / synthesize keep source individuals findable
 - Counter / experiment breeds opposition with lineage
 - Organize multimodal dumps into Moves → Functions → Lenses without flattening richness
 - Role scaffold (investor and similar) materializes real Move/Function/Lens packs
+- Semantic transfer / drop-intent: selection or drag resolves to Move, Function, or Lens without inventing a parallel editor
 - Encode conversation → replayable Function inside a pearl
 - Aesthetic customization on Mother Pearl and shelf pearls
 - PhysicalPearl rendering across Reef, Companion, extension shelf, and result pearls
+- Working **context inspector** (priority of attached material) and **library emission** areas: Actions (Moves), Processes (Functions), Context (Lenses), Shared tools, Saved spaces, Activity, Phrases (personal vocabulary), Connections, Account & privacy
 
 ### Pearl Studio
 
@@ -138,8 +146,9 @@ Deep Studio / taste / grind / Cognitive Pull Request / personal vocabulary / hig
 ### Scene & Output Frame
 
 - Unbounded spatial Scene for arranging pearls (Companion + gauntlet; Studio via pearl — not classic Stage tool rails)
-- Optional **Output Frame** (bounded publish/print surface, e.g. 8.5×11")
-- Paper / drawing layers and companion parity for spatial work remain on the Scene path
+- Scene layout modes (Companion / scene controls): **Space · Grid · Connections · Details · Timeline**
+- Optional **Output Frame** (bounded publish/print surface, e.g. 8.5×11"); Escape closes
+- Paper / drawing layers, material Actions palette (save-as, learn-from-chat, export/share, organize…), and companion parity for spatial work remain on the Scene path — material actions require a continued Scene (Reef alone blocks with an exact boundary)
 - Classic Stage chrome (HighlightToolbar, AiNodeCanvas branch HUD, BeforeAfter rails, LensGrammarPanels) is **not** mounted on the Pearl shell — see [Removed from Pearl shell](#removed-from-pearl-shell)
 
 ### Extension — Pearl Everywhere
@@ -151,33 +160,40 @@ Primary “intelligence travels to the page” surface:
 | **Page Companion** | In-page Pearl + emission (Tell Pearl your goal → GO) |
 | **Hold-to-speak** | Hold Pearl to talk (site access required) |
 | **Space×3** | Triple Space toggles Pearl-as-cursor on supported pages |
-| **Side panel** | Shelf as PhysicalPearl capsules, Wear, library, learning, critique, packages |
+| **Highlighter shortcut** | `Alt+Shift+L` toggles the page highlighter; right-click selection → **Capture selection in Lens** |
+| **Side panel** | Shelf as PhysicalPearl capsules, Wear, library, learning, critique sessions, packages, per-pearl privacy |
 | **Gauntlet** | Same ≤5 sockets; drag MIME + Wear; full gauntlet refuses |
 | **Staged stack** | Queue Moves/Functions/Lenses; **GO** is the only execution boundary |
-| **Capture** | Selection, visible-tab (authorized), save as Move / Function / Lens |
+| **Capture** | Selection, visible-tab (authorized), save as Move / Function / Lens / Save-as chooser |
 | **Page canvas** | Local overlay canvas modes; bind context; undo; PDF export of chosen scope |
 | **Result pearls** | Margin results: expand/collapse, redirect, accept/archive, two-stage placement |
 | **Adapters** | Gmail, Notion, Outlook, Google Docs insertion where verified; else copy |
-| **Soundscape** | Optional lawful audio search/upload/control (autoplay-policy aware) |
+| **Soundscape** | Optional lawful audio search/upload/control (autoplay-policy aware; Archive.org / Jamendo host permissions) |
+| **Options page** | Domain denylist, selection retention (session / navigation), model-data scope, API origin (dev), library import (`.lens-library.json`), delete-all extension data |
+| **Web handoff** | `externally_connectable` to the Vercel app + local Vite; library import / continuation without duplicating pearls |
 | **Install artifact** | `/downloads/lens-everywhere-chrome-v*.zip` and `…-latest.zip` |
 
-Chrome first; platform-neutral core targets Firefox/Safari follow-on. Browser-protected pages, cross-origin frames, and closed shadow roots remain hard limits.
+Chrome first; platform-neutral core targets Firefox/Safari follow-on. Browser-protected pages, cross-origin iframes, and closed shadow roots remain hard limits. Incognito is not allowed.
 
 ### Encode, packages, settings, share
 
 **Encode anything** — prompts, emails, links, PDFs, Drive-ish material, screen evidence → reviewable **Automation Pearl** (verbatim source mapping) before live run. Clarification when instructions are vague. Research patches are bounded, privacy-guarded, and approval-gated.
 
-**Packages** — Cognitive Packages: signed manifest, permissions, test evidence, install/rollback/deprecate. Unsigned install must fail closed.
+**Packages** — Cognitive Packages: signed manifest, permissions, test evidence, install/rollback/deprecate. Unsigned install must fail closed. Registry UI + `/api/cognitive-packages` publish/deprecate path.
 
-**Settings / Account & privacy** — optional Supabase accounts; anonymous local work adopts on sign-in; passphrase lock for local pearls; vault, disclosure receipts, sync toggle, delete-local with confirmation.
+**Settings / Account & privacy** — optional Supabase accounts; anonymous local work adopts on sign-in; passphrase lock for local pearls; vault, disclosure receipts, sync toggle, delete-local with confirmation. Password-recovery overlay when Supabase recovery links land.
 
-**Share** — prepare redaction/uncertainty/provenance review → scoped grant → install verified package. Organization trust envelopes on the server path.
+**Share** — prepare redaction/uncertainty/provenance review → scoped grant (`/api/pearl-shares`) → install verified package; revoke. Organization trust envelopes + key rotation on the server path.
 
-**Learn from chat / forming pearls** — paste transcripts; extract Moves/Functions/Lenses; discover ≤5 already-forming pearls from recurring questions and ops.
+**Learn from chat / forming pearls** — Companion or Learn-from-chat workspace: paste transcripts; extract Moves/Functions/Lenses; discover ≤5 already-forming pearls from recurring questions and ops; redact/exclude messages before save.
 
-**Taste & generation** (Studio / extension candidates) — multi-candidate batches with distinctions (not fake quality scores), accept/reject/undecided, more-like-this, stop/retry; Taste Lenses remain inspectable.
+**Save-as** — selection → chooser (Move / Function / Lens, always that order). Companion `save this as…` or Scene Actions palette; extension `openExternalSaveAs`.
 
-**Privacy by construction** — local until sign-in / export / share / disclosed GO; password & payment fields never captured by default; page text treated as untrusted data (cannot override user intent).
+**Taste & generation** (Studio / extension candidates) — multi-candidate batches with distinctions (not fake quality scores), accept/reject/undecided, more-like-this, stop/retry; Taste Lenses and perceptual encoding remain inspectable (teach / evaluate-through-taste).
+
+**Per-pearl privacy policy** — versioned policy on each Pearl (inspect / propose patch / apply); inherits on derived pearls; distinct from the account vault lock.
+
+**Privacy by construction** — local until sign-in / export / share / disclosed GO; password & payment fields never captured by default; page text treated as untrusted data (cannot override user intent); bounded page observation on the extension.
 
 ### Demo — Watch what Pearl can do
 
@@ -290,7 +306,9 @@ npm run release:check:fast
 | Packages / privacy / share | `cognitive-package.js`, `local-privacy-vault.js`, `pearl-sharing.js` |
 | Accounts | `supabase/`, `client/lib/board-sync.js` |
 
-Infrastructure briefly: model calls via Vercel AI Gateway (or gated fallback); accounts optional via Supabase; REST (`/api/run`, `/api/generate-batch`, `/api/plan`, `/api/share`, extension counterparts) backs web and extension.
+Infrastructure briefly: model calls via Vercel AI Gateway (or gated fallback); accounts optional via Supabase. User-facing REST used by web + extension (not a public SDK promise): `/api/run`, `/api/generate-batch`, `/api/plan`, `/api/phase`, `/api/execute`, `/api/pipeline`, `/api/research`, `/api/lens-encode`, `/api/infer-transformation` (+ transcript/automation rewrites), `/api/share`, `/api/pearl-shares`, `/api/cognitive-packages`, `/api/extension/*` (library, auth exchange, execute, artifacts), `/api/health`, `/api/models`.
+
+Coverage checklist (contract ID → README section): [`docs/readme-coverage-audit.md`](docs/readme-coverage-audit.md).
 
 ---
 
