@@ -2,6 +2,8 @@ export const ORB_CURSOR_VERSION = 1;
 export const ORB_CURSOR_STORAGE_KEY = "lens.orb.cursor.v1";
 export const ORB_CURSOR_EVENT = "lens:orb-cursor-mode";
 export const ORB_CURSOR_SEQUENCE_ATTRIBUTE = "data-lens-orb-space-sequence";
+/** Sliding window for Space×3. Must fit human-paced presses (~300–450ms apart). */
+export const ORB_CURSOR_TRIPLE_SPACE_MS = 1100;
 
 const EDITABLE_SELECTOR = [
   "input",
@@ -59,7 +61,7 @@ export function orbCursorPresentation(target, computedStyle) {
 }
 
 export function createTripleSpaceRecognizer({
-  intervalMs = 650,
+  intervalMs = ORB_CURSOR_TRIPLE_SPACE_MS,
   now = () => Date.now(),
 } = {}) {
   let presses = [];
@@ -68,9 +70,13 @@ export function createTripleSpaceRecognizer({
     presses = [];
   }
 
+  function isSpaceKey(event = {}) {
+    return event.key === " " || event.code === "Space" || event.key === "Spacebar";
+  }
+
   function accept(event = {}) {
     if (
-      event.key !== " " ||
+      !isSpaceKey(event) ||
       event.repeat ||
       event.altKey ||
       event.ctrlKey ||

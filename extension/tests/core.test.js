@@ -77,10 +77,10 @@ test("strict messages reject spoofed fields and oversized payloads", () => {
 
 test("orb cursor contract recognizes Triple-Space safely and leases tab state", () => {
   const target = { closest: () => null };
-  const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
+  const recognizer = createTripleSpaceRecognizer({ intervalMs: 1100 });
   assert.equal(recognizer.accept({ key: " ", timeStamp: 10, target }).matched, false);
-  assert.equal(recognizer.accept({ key: " ", timeStamp: 200, target }).matched, false);
-  assert.equal(recognizer.accept({ key: " ", timeStamp: 620, target }).matched, true);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 360, target }).matched, false);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 720, target }).matched, true);
   assert.match(ORB_CURSOR_HIDE_CSS, /cursor:\s*none\s*!important/);
   assert.deepEqual(orbCursorTabState({}, 42, true)["42"].enabled, true);
   assert.equal("42" in orbCursorTabState({ 42: { enabled: true } }, 42, false), false);

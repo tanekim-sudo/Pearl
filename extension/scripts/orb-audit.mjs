@@ -39,16 +39,19 @@ const server = http.createServer((req, res) => {
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const profile = path.join(extensionRoot, ".audit-orb-profile");
 fs.rmSync(profile, { recursive: true, force: true });
-const systemChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const bundledChrome = chromium.executablePath();
-const localTestingChrome = path.join(
-  extensionRoot,
-  ".playwright-browsers/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-);
+const root = path.resolve(extensionRoot, "..");
+const chromeCandidates = [
+  process.env.PW_CHROMIUM,
+  path.join(root, ".pw-browsers/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+  path.join(extensionRoot, ".playwright-browsers/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+  chromium.executablePath(),
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+].filter(Boolean);
+const executablePath = chromeCandidates.find((candidate) => fs.existsSync(candidate));
+if (!executablePath) throw new Error(`No Chrome binary among ${chromeCandidates.join(" | ")}`);
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
-  executablePath: process.env.PW_CHROMIUM
-    || (fs.existsSync(localTestingChrome) ? localTestingChrome : fs.existsSync(bundledChrome) ? bundledChrome : fs.existsSync(systemChrome) ? systemChrome : undefined),
+  executablePath,
   args: [
     "--disable-gpu",
     "--disable-dev-shm-usage",
@@ -74,16 +77,17 @@ try {
       }),
     });
   });
-  let worker = context.serviceWorkers()[0];
+  let worker = context.serviceWorkers()[0]
+    || await context.waitForEvent("serviceworker", { timeout: 8_000 }).catch(() => null);
   if (!worker) {
     const extensionIdFromPath = crypto.createHash("sha256").update(auditDist).digest("hex").slice(0, 32)
       .replace(/[0-9a-f]/g, (value) => String.fromCharCode(97 + Number.parseInt(value, 16)));
     const bootstrap = await context.newPage();
     await bootstrap.goto(`chrome-extension://${extensionIdFromPath}/sidepanel.html`).catch(() => {});
     await bootstrap.close().catch(() => {});
-    worker = context.serviceWorkers()[0];
+    worker = context.serviceWorkers()[0]
+      || await context.waitForEvent("serviceworker", { timeout: 10_000 });
   }
-  if (!worker) worker = await context.waitForEvent("serviceworker");
   const extensionId = new URL(worker.url()).host;
   await worker.evaluate(async ({ apiOrigin }) => {
     await chrome.storage.local.set({
@@ -537,6 +541,20 @@ try {
   await fixture.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "false");
   const restoredCursor = await fixture.locator("h1").evaluate((node) => getComputedStyle(node).cursor);
   if (restoredCursor === "none") throw new Error("native cursor did not restore after Triple-Space");
+  // Human-paced Space×3 (~350ms gaps) must still toggle — 650ms window was a silent UX fail.
+  await fixture.locator("h1").click();
+  await fixture.keyboard.press("Space");
+  await fixture.waitForTimeout(350);
+  await fixture.keyboard.press("Space");
+  await fixture.waitForTimeout(350);
+  await fixture.keyboard.press("Space");
+  await fixture.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "true", null, { timeout: 2_000 });
+  await fixture.keyboard.press("Space");
+  await fixture.waitForTimeout(80);
+  await fixture.keyboard.press("Space");
+  await fixture.waitForTimeout(80);
+  await fixture.keyboard.press("Space");
+  await fixture.waitForFunction(() => document.documentElement.getAttribute("data-lens-orb-cursor-active") === "false");
   await fixture.locator("#field").focus();
   await fixture.keyboard.press("Space");
   await fixture.keyboard.press("Space");
@@ -650,6 +668,7 @@ try {
       "page orb drag and dock are functional",
       "Triple-Space makes the orb the precise page cursor",
       "Triple-Space restores the native cursor",
+      "human-paced Triple-Space (~350ms gaps) still toggles cursor mode",
       "editable fields exclude the Triple-Space toggle",
       "same orb identity opens one focused field at 360px",
       "idle side panel is Pearl-only and action search discovers the full capability model",
@@ -661,13 +680,13 @@ try {
       "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
       "MV3 service worker loaded",
     ],
-    passed: 24,
+    passed: 25,
     failed: 0,
     residuals: [
       "Real OS microphone / Chrome getUserMedia permission UI is not exercised; Fake SpeechRecognition proves hold→Listening→intent wiring.",
     ],
   }, null, 2)}\n`);
-  console.log("Orb extension audit passed: 24 checks (hold-speak FakeSpeech + Triple-Space + cold mount).");
+  console.log("Orb extension audit passed: 25 checks (hold-speak FakeSpeech + Triple-Space + cold mount).");
 } finally {
   await context.close();
   server.close();

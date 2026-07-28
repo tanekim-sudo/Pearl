@@ -21,6 +21,7 @@ import {
   ORB_CURSOR_EVENT,
   ORB_CURSOR_SEQUENCE_ATTRIBUTE,
   ORB_CURSOR_STORAGE_KEY,
+  ORB_CURSOR_TRIPLE_SPACE_MS,
   createTripleSpaceRecognizer,
   normalizeOrbCursorPreference,
 } from "../../shared/orb-cursor.js";
@@ -1433,7 +1434,7 @@ export default function OrbUniverseShell({ StageComponent }) {
   }, [route.path, setCursorMode]);
 
   useEffect(() => {
-    const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
+    const recognizer = createTripleSpaceRecognizer({ intervalMs: ORB_CURSOR_TRIPLE_SPACE_MS });
     let sequenceTimer = 0;
     let sequenceScroll = null;
     function clearSequence() {
@@ -1451,7 +1452,7 @@ export default function OrbUniverseShell({ StageComponent }) {
       if (result.count === 1) sequenceScroll = { x: window.scrollX, y: window.scrollY };
       document.documentElement.setAttribute(ORB_CURSOR_SEQUENCE_ATTRIBUTE, "true");
       window.clearTimeout(sequenceTimer);
-      sequenceTimer = window.setTimeout(clearSequence, 690);
+      sequenceTimer = window.setTimeout(clearSequence, ORB_CURSOR_TRIPLE_SPACE_MS + 40);
       if (!result.matched) return;
       event.preventDefault();
       event.stopPropagation();

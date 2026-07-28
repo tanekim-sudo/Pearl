@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T02:06:32.046Z",
+  "generatedAt": "2026-07-28T18:17:47.463Z",
   "browser": "149.0.7827.55",
   "extensionId": "mlbamgbcdpbcbiilljlnbhihdighjkaa",
   "viewport": {
@@ -8,7 +8,10 @@
     "height": 720
   },
   "checks": [
+    "content_scripts cold-mount Mother Pearl with host permission (no privileged toggle)",
+    "ensure-page-companion remount/status path",
     "literal animated Shadow DOM page-edge orb visible",
+    "hold-to-talk starts SpeechRecognition and hands intent to Companion (FakeSpeech; real mic residual)",
     "page orb emits one command and one contextual action",
     "selection absorption creates visible context orbit",
     "capture queues an action and remains inert until explicit GO",
@@ -19,6 +22,7 @@
     "page orb drag and dock are functional",
     "Triple-Space makes the orb the precise page cursor",
     "Triple-Space restores the native cursor",
+    "human-paced Triple-Space (~350ms gaps) still toggles cursor mode",
     "editable fields exclude the Triple-Space toggle",
     "same orb identity opens one focused field at 360px",
     "idle side panel is Pearl-only and action search discovers the full capability model",
@@ -30,6 +34,9 @@
     "confirmed deletion clears profile envelope, session, handoffs, canvases, results, and blobs before receipt",
     "MV3 service worker loaded"
   ],
-  "passed": 21,
-  "failed": 0
+  "passed": 25,
+  "failed": 0,
+  "residuals": [
+    "Real OS microphone / Chrome getUserMedia permission UI is not exercised; Fake SpeechRecognition proves hold→Listening→intent wiring."
+  ]
 }

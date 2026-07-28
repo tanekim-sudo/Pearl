@@ -2,6 +2,7 @@ import { createInsertionPlan } from "../../../shared/lens-runtime.js";
 import {
   ORB_CURSOR_EVENT,
   ORB_CURSOR_SEQUENCE_ATTRIBUTE,
+  ORB_CURSOR_TRIPLE_SPACE_MS,
   createTripleSpaceRecognizer,
   orbCursorPresentation,
 } from "../../../shared/orb-cursor.js";
@@ -156,7 +157,7 @@ function mountPageOrb() {
   let lightTimer = 0;
   let sequenceTimer = 0;
   let sequenceScroll = null;
-  const recognizer = createTripleSpaceRecognizer({ intervalMs: 650 });
+  const recognizer = createTripleSpaceRecognizer({ intervalMs: ORB_CURSOR_TRIPLE_SPACE_MS });
   const dockedStyle = () => ({
     left: host.style.left,
     right: host.style.right,
@@ -291,7 +292,7 @@ function mountPageOrb() {
     if (result.count === 1) sequenceScroll = { x: scrollX, y: scrollY };
     document.documentElement.setAttribute(ORB_CURSOR_SEQUENCE_ATTRIBUTE, "true");
     window.clearTimeout(sequenceTimer);
-    sequenceTimer = window.setTimeout(clearSpaceSequence, 690);
+    sequenceTimer = window.setTimeout(clearSpaceSequence, ORB_CURSOR_TRIPLE_SPACE_MS + 40);
     if (!result.matched) return;
     event.preventDefault();
     event.stopPropagation();
@@ -825,9 +826,11 @@ document.addEventListener("keyup", (event) => {
   if (event.key === "Shift" || event.key.startsWith("Arrow")) queueMicrotask(() => capture().catch(() => {}));
 }, true);
 globalThis.addEventListener("scroll", highlighter.rerender, { passive: true });
-globalThis.addEventListener("pagehide", () => {
+globalThis.addEventListener("pagehide", (event) => {
   send("clear-fragments", { navigation: true }).catch(() => {});
   send("orb-cursor-set", { enabled: false, source: "navigation" }).catch(() => {});
+  // Keep Companion mounted across bfcache freezes; destroying here orphans Space×3 on back/forward.
+  if (event.persisted) return;
   pageOrb?.destroy();
   highlighter.destroy();
 });

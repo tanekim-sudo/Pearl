@@ -154,7 +154,7 @@ function target({ matches = [], cursor = "" } = {}) {
 }
 
 test("Triple-Space recognizes one bounded unmodified sequence and excludes editing or controls", () => {
-  const recognizer = createTripleSpaceRecognizer({ intervalMs: 600 });
+  const recognizer = createTripleSpaceRecognizer({ intervalMs: 1100 });
   const page = target();
   assert.deepEqual(recognizer.accept({ key: " ", timeStamp: 100, target: page }), {
     accepted: true,
@@ -167,6 +167,15 @@ test("Triple-Space recognizes one bounded unmodified sequence and excludes editi
   assert.equal(recognizer.accept({ key: " ", timeStamp: 900, target: target({ matches: ["input"] }) }).accepted, false);
   assert.equal(recognizer.accept({ key: " ", timeStamp: 1000, target: target({ matches: ["button"] }) }).accepted, false);
   assert.equal(recognizer.accept({ key: " ", timeStamp: 1100, target: page, metaKey: true }).accepted, false);
+});
+
+test("Triple-Space accepts human-paced presses within the default window", () => {
+  const recognizer = createTripleSpaceRecognizer();
+  const page = target();
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 0, target: page }).count, 1);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 350, target: page }).count, 2);
+  assert.equal(recognizer.accept({ key: " ", timeStamp: 700, target: page }).matched, true);
+  assert.equal(recognizer.accept({ code: "Space", key: "Unidentified", timeStamp: 2000, target: page }).count, 1);
 });
 
 test("orb cursor contracts for text and preserves target affordances", () => {

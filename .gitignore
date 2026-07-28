@@ -48,6 +48,8 @@ audit-shots/audit-truth-remediation-2026-07/*
 !audit-shots/extension-companion-restore-2026-07-25/**
 !audit-shots/extension-pearl-dnd-2026-07-25/
 !audit-shots/extension-pearl-dnd-2026-07-25/**
+!audit-shots/extension-triple-space-repro-2026-07-28/
+!audit-shots/extension-triple-space-repro-2026-07-28/**
 !audit-shots/pearl-capability-demo/
 !audit-shots/pearl-capability-demo/**
 extension/release/*.zip
@@ -58,3 +60,5 @@ extension/.audit-dnd-extension/
 extension/.audit-orb-profile/
 extension/.audit-orb-extension/
 extension/.audit-debug-profile/
+extension/.audit-triple-space/
+extension/.audit-triple-space-profile/

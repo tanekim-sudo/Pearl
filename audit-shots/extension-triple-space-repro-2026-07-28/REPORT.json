@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-07-28T18:15:56.923Z",
+  "extensionId": "pcffgjfnbemiacpaijknmdhiikedhgde",
+  "results": [
+    {
+      "id": "cold-mount",
+      "ok": true,
+      "detail": "Mother Pearl present"
+    },
+    {
+      "id": "space3-heading-fast",
+      "ok": true,
+      "detail": "{\"active\":\"BODY > HTML\",\"tag\":\"BODY\",\"hostFocused\":false,\"cursorAttr\":null,\"sequenceAttr\":null,\"pearlMounted\":true}"
+    },
+    {
+      "id": "space3-pearl-focused",
+      "ok": true,
+      "detail": "focus={\"active\":\"DIV#lens-orb-overlay-host > HTML\",\"tag\":\"DIV\",\"hostFocused\":true,\"cursorAttr\":\"false\",\"sequenceAttr\":null,\"pearlMounted\":true} before=false after=true"
+    },
+    {
+      "id": "space3-slow-350ms",
+      "ok": true,
+      "detail": "{\"active\":\"BODY > HTML\",\"tag\":\"BODY\",\"hostFocused\":false,\"cursorAttr\":\"false\",\"sequenceAttr\":null,\"pearlMounted\":true}"
+    },
+    {
+      "id": "space3-editable-excluded",
+      "ok": true,
+      "detail": "active=false"
+    },
+    {
+      "id": "space3-page-button-excluded",
+      "ok": true,
+      "detail": "{\"active\":\"BUTTON#page-btn > MAIN > BODY > HTML\",\"tag\":\"BUTTON\",\"hostFocused\":false,\"cursorAttr\":\"false\",\"sequenceAttr\":null,\"pearlMounted\":true}"
+    },
+    {
+      "id": "space3-after-pearl-open",
+      "ok": true,
+      "detail": "{\"active\":\"DIV#lens-orb-overlay-host > HTML\",\"tag\":\"DIV\",\"hostFocused\":true,\"cursorAttr\":\"false\",\"sequenceAttr\":null,\"pearlMounted\":true}"
+    }
+  ],
+  "failed": []
+}
