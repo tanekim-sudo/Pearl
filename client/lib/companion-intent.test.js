@@ -17,6 +17,7 @@ import {
   parseLibraryObjectCommand,
   parseParallelBranchCommand,
   parsePearlCreationCommand,
+  titleFromPearlPurpose,
   parsePearlEditCommand,
   parsePearlSystemPromptCommand,
   parsePearlFunctionMovesCommand,
@@ -59,6 +60,28 @@ test("pearl creation intent uses the canonical semantic capsule command", () => 
     verb: "createSemanticOrb",
     args: { sceneId: "", name: "", intent: "create pearl" },
   });
+  assert.deepEqual(parsePearlCreationCommand("make me a pearl"), {
+    verb: "createSemanticOrb",
+    args: { sceneId: "", name: "", intent: "make me a pearl" },
+  });
+});
+
+test("make me a pearl to … purpose intents create titled pearls without planner", () => {
+  const utterance = "make me a pearl to observe and generate inspiration for poetry";
+  assert.equal(titleFromPearlPurpose("observe and generate inspiration for poetry"), "poetry inspiration");
+  const parsed = parsePearlCreationCommand(utterance);
+  assert.equal(parsed?.verb, "createSemanticOrb");
+  assert.equal(parsed.args.name, "poetry inspiration");
+  assert.match(parsed.args.materialText, /inspiration for poetry/i);
+  assert.equal(parsed.args.intent, utterance);
+  assert.equal(parsed.args.systemPromptHint, parsed.args.materialText);
+  assert.equal(parsePearlCreationCommand("make a pearl for morning pages").args.name, "morning pages");
+  assert.equal(
+    parsePearlCreationCommand("create me a pearl that helps me write skeptical investor memos").args.name.slice(0, 40),
+    "helps me write skeptical investor memos".slice(0, 40),
+  );
+  // Must not steal system-prompt edits on an existing pearl.
+  assert.equal(parsePearlCreationCommand("make this pearl about investor memos"), null);
 });
 
 test("pearl system prompt intents are deterministic", () => {
@@ -590,7 +613,9 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
   const adaptive = buildAdaptiveCompanionPrompt({
     wornPearlPack: { name: "LP briefings", pearlId: "p1", functions: [{ name: "Memo" }], lenses: [], context: [{}] },
   });
-  assert.match(adaptive, /Gauntlet working memory: “LP briefings”/);
+  assert.match(adaptive, /Worn pearl: “LP briefings”/);
+  assert.match(adaptive, /System prompt/);
+  assert.doesNotMatch(adaptive, /\(p1\)/);
   assert.ok(COMPANION_VERBS.wearPearl);
   assert.ok(COMPANION_VERBS.removeWornPearl);
   assert.ok(COMPANION_VERBS.encodeConversationAsPearl);

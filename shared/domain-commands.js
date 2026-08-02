@@ -355,6 +355,8 @@ export const DOMAIN_COMMANDS = Object.freeze({
           })
           : null
       );
+      // systemPrompt alone is not "organized" — create always seeds it now.
+      // Treating it as organized skipped the material path and could drop context.
       const hasOrganizedOrb = Boolean(
         args.orb
         && (
@@ -363,7 +365,6 @@ export const DOMAIN_COMMANDS = Object.freeze({
           || args.orb.lenses?.length
           || args.orb.workingSet?.context?.length
           || args.orb.representation
-          || args.orb.systemPrompt
         )
       );
       let orb;

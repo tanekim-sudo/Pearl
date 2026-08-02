@@ -689,7 +689,10 @@ const INTENT_EXAMPLES = {
   addOrbLens: ["apply my concise writing Lens around Pearl at eighty percent"],
   updateOrbLens: ["turn that active Lens down to thirty percent"],
   removeOrbLens: ["remove the concise writing Lens from Pearl"],
-  createSemanticOrb: ["make a pearl from these notes called Picasso studies"],
+  createSemanticOrb: [
+    "make a pearl from these notes called Picasso studies",
+    "make me a pearl to observe and generate inspiration for poetry",
+  ],
   createExternalSemanticOrb: ["make a pearl from this"],
   createRolePearl: [
     "I'm an investor at S32 and I want you to research a pearl and make me a pearl that has an investment memo function and a diligence function that understands my lens as an investor",

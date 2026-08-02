@@ -181,6 +181,33 @@ test("semantic orb capsules preserve sources, activate singly, nest, merge, and 
   assert.equal(countered.state.semanticOrbs.find((orb) => orb.id === "orb-1").name, nested.state.semanticOrbs.find((orb) => orb.id === "orb-1").name);
 });
 
+test("createSemanticOrb with systemPrompt seed still preserves material context", async () => {
+  let nextId = 0;
+  const options = { idFactory: () => `seed-${++nextId}`, now: 100 };
+  const intent = "make me a pearl to observe and generate inspiration for poetry";
+  const created = await executeDomainCommand("createSemanticOrb", { semanticOrbs: [], activeSemanticOrbId: null }, {
+    sceneId: "scene-1",
+    activate: true,
+    systemPrompt: "You are the Pearl poetry inspiration.",
+    intent,
+    // Companion create path always attaches name + systemPrompt on orb.
+    orb: { name: "poetry inspiration", systemPrompt: "You are the Pearl poetry inspiration." },
+    material: {
+      id: "pearl-text:poetry",
+      kind: "dump",
+      label: "poetry inspiration",
+      text: "observe and generate inspiration for poetry",
+    },
+  }, options);
+  const orb = created.state.semanticOrbs[0];
+  assert.equal(orb.name, "poetry inspiration");
+  assert.match(String(orb.systemPrompt || ""), /poetry inspiration/i);
+  assert.ok(
+    (orb.workingSet?.context || []).some((entry) => /inspiration for poetry/i.test(entry.text || "")),
+    "material context must survive systemPrompt seeding",
+  );
+});
+
 test("createSemanticOrb keeps forming-pearl Moves→Functions→Lenses when material is also passed", async () => {
   let nextId = 0;
   const options = { idFactory: () => `form-${++nextId}`, now: 100 };

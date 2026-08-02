@@ -11,6 +11,7 @@ import {
 import { capabilityContextPrompt } from "./companion-capability-graph.js";
 import { parseCompanionPlan } from "./companion-plan.js";
 import { parseRolePearlCommand as parseRolePearlScaffoldCommand } from "../../shared/role-pearl-scaffold.js";
+import { formatPearlCompanionContextForModel } from "../../shared/pearl-companion-context.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
 export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
@@ -127,13 +128,41 @@ export function parseSemanticTransferCommand(text) {
   return null;
 }
 
+/**
+ * Compact human title from a purpose clause ("to observe … for poetry").
+ * Prefer "topic + noun" when present so Reef labels stay intent-bound.
+ */
+export function titleFromPearlPurpose(purpose) {
+  const text = String(purpose || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  const forMatch = text.match(/^(.*)\s+for\s+(.+)$/i);
+  if (forMatch) {
+    const topic = forMatch[2].replace(/^["“]|["”]$/g, "").trim();
+    const lead = forMatch[1];
+    const noun = lead.match(
+      /\b(inspiration|ideas?|notes?|research|memos?|drafts?|poems?|writing|observations?|taste|judgment)\b/i,
+    )?.[1];
+    if (topic && noun) return `${topic} ${noun}`.replace(/\s+/g, " ").trim().slice(0, 80);
+    if (topic && topic.length <= 48) return topic.slice(0, 80);
+  }
+  return text.slice(0, 80);
+}
+
 export function parsePearlCreationCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
 
-  // make a pearl from this: <material body>
+  // Optional "me/us" — novices say "make me a pearl …"
+  const lead = /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl\b/i;
+
+  // Existing-pearl prompt rewrite — never create. Handled by parsePearlSystemPromptCommand.
+  if (/^(?:make|turn)\s+(?:this|that|the)\s+(?:active\s+|current\s+)?pearl\s+about\b/i.test(value)) {
+    return null;
+  }
+
+  // make [me] a pearl from this: <material body>
   const fromBody = value.match(
-    /^(?:make|create|save) (?:a |this )?pearl from this\s*[:\-–]\s*(.+)$/i,
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl from this\s*[:\-–]\s*(.+)$/i,
   );
   if (fromBody?.[1]?.trim()) {
     const body = fromBody[1].trim();
@@ -149,9 +178,9 @@ export function parsePearlCreationCommand(text) {
     };
   }
 
-  // make a pearl about|called|named|titled X (optional : body)
+  // make [me] a pearl about|called|named|titled X (optional : body)
   const about = value.match(
-    /^(?:make|create|save) (?:a |this )?pearl(?:\s+(?:about|called|named|titled)\s+)(.+?)(?:\s*[:\-–]\s*(.+))?$/i,
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a )?pearl(?:\s+(?:about|called|named|titled)\s+)(.+?)(?:\s*[:\-–]\s*(.+))?$/i,
   );
   if (about?.[1]?.trim()) {
     const name = about[1].trim().replace(/^["“]|["”]$/g, "");
@@ -168,11 +197,30 @@ export function parsePearlCreationCommand(text) {
     };
   }
 
-  // make a pearl [from this|the selection|these notes] [called Name]
-  const match = value.match(
-    /^(?:make|create|save) (?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i,
+  // make [me] a pearl to|for|that|which <purpose> — seed systemPrompt from intent
+  const purpose = value.match(
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl\s+(?:to|for|that|which)\s+(.+)$/i,
   );
-  if (!match) return null;
+  if (purpose?.[1]?.trim()) {
+    const body = purpose[1].trim().replace(/^["“]|["”]$/g, "");
+    const name = titleFromPearlPurpose(body) || body.slice(0, 80);
+    return {
+      verb: "createSemanticOrb",
+      args: {
+        sceneId: "",
+        name,
+        materialText: body,
+        intent: value,
+        systemPromptHint: body,
+      },
+    };
+  }
+
+  // make [me] a pearl [from this|the selection|these notes] [called Name]
+  const match = value.match(
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i,
+  );
+  if (!match || !lead.test(value)) return null;
   return {
     verb: "createSemanticOrb",
     // Bare "create pearl" is valid — App assigns a sensible human title (never Untitled/orb).
@@ -1152,12 +1200,35 @@ export function parseBeforeAfterCommand(text) {
   return null;
 }
 
+function wornPearlContextBlock(wornPearlPack) {
+  if (!wornPearlPack) {
+    return "No pearl is worn. Companion still works fully — pearls are optional add-ons. Use wearPearl when the user puts one on.";
+  }
+  if (wornPearlPack.companionContext) {
+    return formatPearlCompanionContextForModel(wornPearlPack.companionContext);
+  }
+  const prompt = wornPearlPack.systemPrompt
+    ? `\nPearl system prompt:\n${String(wornPearlPack.systemPrompt).slice(0, 2400)}`
+    : "";
+  const functions = (wornPearlPack.functions || []).map((fn) => fn.name).filter(Boolean).join(", ") || "none";
+  const lenses = (wornPearlPack.lenses || []).map((lens) => lens.name).filter(Boolean).join(", ") || "none";
+  const privacy = wornPearlPack.privacy?.summary ? `\nPrivacy: ${wornPearlPack.privacy.summary}` : "";
+  const lineage = wornPearlPack.lineage?.versionHint ? `\nLineage: ${wornPearlPack.lineage.versionHint}` : "";
+  return [
+    `Worn pearl: “${wornPearlPack.name}”.`,
+    `System prompt: ${wornPearlPack.systemPrompt ? "set" : "empty"}.`,
+    `Functions: ${functions}. Lenses: ${lenses}. Context items: ${wornPearlPack.context?.length || 0}.`,
+    "Interpret through its system prompt unless the user asks to switch or create another. Do not echo pearl ids or machine metadata to the user unless they ask to show id.",
+    prompt,
+    privacy,
+    lineage,
+  ].filter(Boolean).join(" ");
+}
+
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [], wornPearlPack = null } = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");
-  const wearLine = wornPearlPack
-    ? `Worn pearl: “${wornPearlPack.name}” with system prompt (${wornPearlPack.systemPrompt ? "set" : "empty"}), ${wornPearlPack.functions?.length || 0} bound functions and ${wornPearlPack.context?.length || 0} context items. Interpret through its system prompt unless the user asks to switch or create another.${wornPearlPack.systemPrompt ? `\nPearl system prompt:\n${String(wornPearlPack.systemPrompt).slice(0, 1800)}` : ""}`
-    : "No pearl is worn. Companion still works fully — pearls are optional add-ons. Use wearPearl when the user puts one on.";
+  const wearLine = wornPearlContextBlock(wornPearlPack);
   return `You are the companion — the primary interface of "lens". Pearls are optional capability packs you can wear; they are not required to talk, listen, capture screen context, or help. Home is the Reef: all pearls spread out for mix, match, and merge (touch or companion). Pearl Studio (triple-click a pearl) is a focused single-pearl view whose load-bearing section order is always Moves → Functions → Lenses. MOVES are individual cognitive transformations a pearl can execute or keep in inventory (Moves may compose other Moves); FUNCTIONS are composition and ordering of Moves and other Functions; LENSES are the pearl's contextual awareness and understanding of the user. Primitive Moves appear first in branch selection; Lenses are context and never branch actions. Everything executable is demonstrated live with an animated ghost cursor so the user learns by watching.
 
 ${wearLine}
@@ -1216,9 +1287,9 @@ export function buildAdaptiveCompanionPrompt({
   ].filter(Boolean).join(" ");
   const retrievedCapabilities = capabilityContextPrompt(retrievalQuery, { platform: "app", limit: 24 });
   const wearLine = wornPearlPack
-    ? `Gauntlet working memory: “${wornPearlPack.name}” (${wornPearlPack.pearlId}) — primary field is its system prompt (${wornPearlPack.systemPrompt ? "present" : "empty"}); also ${wornPearlPack.functions?.length || 0} bound functions, ${wornPearlPack.lenses?.length || 0} lenses, ${wornPearlPack.context?.length || 0} context items (${wornPearlPack.orbit?.count || 1}/5 sockets). Interpret through the system prompt first. Switch with wearPearl / removeWornPearl; never silently drop when full.${wornPearlPack.systemPrompt ? `\nActive pearl system prompt:\n${String(wornPearlPack.systemPrompt).slice(0, 1800)}` : ""}`
+    ? `${wornPearlContextBlock(wornPearlPack)}\nSwitch with wearPearl / removeWornPearl; never silently drop when full (${wornPearlPack.orbit?.count || 1}/5 sockets).`
     : "Gauntlet working memory is empty (0/5). Companion still plans and acts fully — pearls are optional. Use wearPearl / encodeConversationAsPearl when the user loads or builds a pearl.";
-  return `You are the action planner inside lens. The companion is always on; pearls are optional capability packs. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions.
+  return `You are the action planner inside lens. The companion is always on; pearls are optional capability packs. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions. Never echo pearl ids, hashes, storage keys, or raw privacy JSON to the user unless they explicitly ask to show id.
 
 ${wearLine}
 
