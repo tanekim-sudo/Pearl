@@ -43,6 +43,11 @@ test("deterministic scaffold materializes memo, diligence, investor lens, and mo
   assert.equal(scaffold.organization.order.join("→"), "moves→weights→lenses");
   assert.ok(Array.isArray(scaffold.organization.weights));
   assert.ok(scaffold.pearl.workingSet.context.some((entry) => /S32/.test(entry.text)));
+  // systemPrompt must not dump raw Companion chat / Source request lines
+  assert.ok(!/Source request:/i.test(scaffold.pearl.systemPrompt));
+  assert.ok(!/Source request:/i.test(
+    scaffold.pearl.workingSet.context.map((c) => c.text).join("\n"),
+  ));
 });
 
 test("parseRolePearlCommand returns createRolePearl with wear + studio", () => {

@@ -16,6 +16,21 @@ import {
   formatPearlCompanionContextForModel,
 } from "../../shared/pearl-companion-context.js";
 import { interpretPearlPromptUtterance } from "../../shared/pearl-prompt-harness.js";
+import {
+  looksLikePearlCompareRequest,
+  looksLikePearlExecutionRequest,
+  looksLikeProduceOutputRequest,
+  extractComparePearlHints,
+} from "../../shared/pearl-compare.js";
+import {
+  classifyPearlCompanionClass,
+  runPearlOperateHarnessOffline,
+} from "../../shared/pearl-operate-harness.js";
+
+export {
+  classifyPearlCompanionClass,
+  runPearlOperateHarnessOffline,
+} from "../../shared/pearl-operate-harness.js";
 import { titleFromStyleAndDomain } from "../../shared/pearl-layer-templates.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
@@ -409,15 +424,100 @@ export function parsePearlSystemPromptCommand(text) {
 }
 
 /**
- * Route any create/edit-prompt utterance through the pearl prompt harness.
- * Parsers are optional fast-path hints; harness handles novel natural language.
- * Returns null when the utterance should pass through to other handlers/planner.
+ * Deterministic compare / PDF-output parse — never routes to systemPrompt edit.
  */
-export function routePearlPromptHarness(text, options = {}) {
+export function parseComparePearlsCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
+  const classification = classifyPearlCompanionClass(value, { hasActivePearl: true });
+  if (classification.class !== "operate") return null;
+  if (
+    classification.intent !== "compare_pearls"
+    && classification.intent !== "produce_output"
+  ) {
+    // summarize / ask-about still operate, but use operatePearl verb below
+    if (!looksLikePearlCompareRequest(value) && !looksLikePearlExecutionRequest(value)) {
+      return null;
+    }
+  }
+  if (!looksLikePearlCompareRequest(value) && !looksLikeProduceOutputRequest(value)) {
+    return null;
+  }
+  const hints = extractComparePearlHints(value);
+  return {
+    verb: "comparePearls",
+    args: {
+      utterance: value,
+      leftName: hints.left || undefined,
+      rightName: hints.right || undefined,
+      produceOutput: looksLikeProduceOutputRequest(value) || classification.intent === "produce_output",
+    },
+    classification,
+  };
+}
+
+/**
+ * Top-level pearl companion router: operate vs mutate_brain.
+ * Operate never becomes interpretPearlPrompt / editPearlSystemPrompt.
+ */
+export function routePearlCompanion(text, options = {}) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  const classification = classifyPearlCompanionClass(value, {
+    hasActivePearl: Boolean(options.hasActivePearl || options.pearl),
+  });
+
+  if (classification.class === "operate") {
+    if (
+      classification.intent === "compare_pearls"
+      || classification.intent === "produce_output"
+      || looksLikePearlCompareRequest(value)
+      || looksLikeProduceOutputRequest(value)
+    ) {
+      const hints = extractComparePearlHints(value);
+      return {
+        class: "operate",
+        verb: "comparePearls",
+        args: {
+          utterance: value,
+          leftName: hints.left || undefined,
+          rightName: hints.right || undefined,
+          produceOutput: Boolean(
+            classification.produceOutput || classification.intent === "produce_output",
+          ),
+          ...(options.sceneId ? { sceneId: options.sceneId } : {}),
+        },
+        classification,
+      };
+    }
+    return {
+      class: "operate",
+      verb: "operatePearl",
+      args: {
+        utterance: value,
+        ...(options.pearlId ? { id: options.pearlId } : {}),
+        ...(options.name ? { name: options.name } : {}),
+        ...(options.sceneId ? { sceneId: options.sceneId } : {}),
+      },
+      classification,
+    };
+  }
+
+  if (classification.class !== "mutate_brain") return null;
+  // Mutate path — never recurse through routePearlCompanion.
+  return routePearlMutateHarness(value, options);
+}
+
+/**
+ * Mutate-brain only (create / edit layers / prompt projection).
+ * Callers that need the full gate should use routePearlCompanion.
+ */
+function routePearlMutateHarness(value, options = {}) {
   const fastPrompt = parsePearlSystemPromptCommand(value);
   if (fastPrompt?.verb === "getPearlSystemPrompt") return fastPrompt;
+  if (fastPrompt && looksLikePearlExecutionRequest(value)) {
+    return parseComparePearlsCommand(value);
+  }
   const fastCreate = parsePearlCreationCommand(value);
   const fastPathHint = fastPrompt || fastCreate || null;
   const interpretation = interpretPearlPromptUtterance(value, {
@@ -425,15 +525,25 @@ export function routePearlPromptHarness(text, options = {}) {
     pearl: options.pearl || null,
     fastPathHint,
   });
-  if (interpretation.intent === "other") return null;
+  if (
+    interpretation.intent === "compare_pearls"
+    || interpretation.intent === "produce_output"
+    || interpretation.verb === "comparePearls"
+  ) {
+    // Belt-and-suspenders: interpret must not leak operate into mutate.
+    return parseComparePearlsCommand(value);
+  }
+  if (interpretation.intent === "other" || interpretation.intent === "ask") return null;
   if (interpretation.intent === "clarify") {
     return {
+      class: "mutate_brain",
       verb: "interpretPearlPrompt",
       args: { utterance: value, apply: true },
       interpretation,
     };
   }
   return {
+    class: "mutate_brain",
     verb: "interpretPearlPrompt",
     args: {
       utterance: value,
@@ -445,6 +555,13 @@ export function routePearlPromptHarness(text, options = {}) {
     interpretation,
     fastPathHint,
   };
+}
+
+/**
+ * Back-compat router used by App — now delegates to operate-vs-mutate gate.
+ */
+export function routePearlPromptHarness(text, options = {}) {
+  return routePearlCompanion(text, options);
 }
 
 /**

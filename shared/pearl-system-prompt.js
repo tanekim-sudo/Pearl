@@ -16,6 +16,44 @@ export function normalizePearlSystemPrompt(value) {
 }
 
 /**
+ * Strip chat / execution-request lines that must never live in the brain.
+ * Removes "Source request:", "User refinement:" (when they look like compare/PDF),
+ * and other companion chat dumps mistaken for taste instructions.
+ */
+export function scrubExecutionRequestsFromSystemPrompt(value) {
+  const text = normalizePearlSystemPrompt(value);
+  if (!text) return "";
+  const executionish = (line) => {
+    const body = line
+      .replace(/^(?:source request|user refinement|formation intent)\s*:\s*/i, "")
+      .trim();
+    if (!body) return true;
+    return (
+      /\b(?:difference|differences|diff|compare|comparison)\b/i.test(body)
+      || /\b(?:pdf|download|export)\b/i.test(body)
+      || /\bgive\s+me\s+a\s+pdf\b/i.test(body)
+      || /\band\s+then\s+give\s+me\b/i.test(body)
+    );
+  };
+  const lines = text.split(/\n/).filter((line) => {
+    const trimmed = line.trim();
+    if (/^source request\s*:/i.test(trimmed) && executionish(trimmed)) return false;
+    if (/^user refinement\s*:/i.test(trimmed) && executionish(trimmed)) return false;
+    if (/^formation intent\s*:/i.test(trimmed) && executionish(trimmed)) return false;
+    // Drop orphan honor-refinement lines left after scrubbing the refinement.
+    if (/^honor the refinement\b/i.test(trimmed)) return false;
+    return true;
+  });
+  // Collapse excess blank lines
+  const cleaned = [];
+  for (const line of lines) {
+    if (line.trim() === "" && cleaned[cleaned.length - 1]?.trim() === "") continue;
+    cleaned.push(line);
+  }
+  return normalizePearlSystemPrompt(cleaned.join("\n"));
+}
+
+/**
  * Read the primary system prompt from a pearl / semantic orb / entity.
  * Falls back through legacy purpose / description / role instructions.
  */
@@ -67,18 +105,23 @@ export function defaultSystemPromptFromIntent(options = {}) {
     /\breflects?\s+(.+?)(?:['’]s)?\s+(?:style|taste|voice|thought\s+process|lens)\b/i,
   );
   const style = bounded(styleMatch?.[1] || "", 400);
+  // Never seed the brain with compare/PDF/execution chat as "formation intent".
+  const intentLooksLikeExecution = (
+    /\b(?:difference|differences|compare|pdf|download)\b/i.test(intent)
+    || /\band\s+then\s+give\s+me\b/i.test(intent)
+  );
   const lines = [
     `You are the Pearl “${about}”.`,
     `Interpret requests through this pearl's taste and instructions.`,
     style
       ? `Adopt the taste, voice, and thought process of: ${style}.`
       : null,
-    intent && intent !== about
+    intent && intent !== about && !intentLooksLikeExecution
       ? `Formation intent: ${intent}`
       : `Help the user think, write, and act about ${about}.`,
     "Prefer concrete, skeptical, useful output over generic praise.",
   ];
-  return normalizePearlSystemPrompt(lines.filter(Boolean).join("\n"));
+  return scrubExecutionRequestsFromSystemPrompt(lines.filter(Boolean).join("\n"));
 }
 
 /**

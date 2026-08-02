@@ -13,7 +13,10 @@ import {
   editorOpsToPearlFunction,
   pearlFunctionToEditorSeed,
 } from "../lib/pearl-function-tree-bridge.js";
-import { readPearlSystemPrompt } from "../../shared/pearl-system-prompt.js";
+import {
+  readPearlSystemPrompt,
+  scrubExecutionRequestsFromSystemPrompt,
+} from "../../shared/pearl-system-prompt.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import PearlFunctionMovesStudio from "./PearlFunctionMovesStudio.jsx";
 import PearlAestheticPanel from "./PearlAestheticPanel.jsx";
@@ -68,7 +71,7 @@ export default function PearlStudioView({ localRef }) {
   const [status, setStatus] = useState(initial ? "Local · encrypted" : "This local Pearl reference is unavailable.");
   const [name, setName] = useState(initial?.identity?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(() => (
-    initial ? readPearlSystemPrompt(initial) : ""
+    initial ? scrubExecutionRequestsFromSystemPrompt(readPearlSystemPrompt(initial)) : ""
   ));
   // Prompt is the readable summary; Moves · Weights · Lenses open when structure exists.
   const [structureOpen, setStructureOpen] = useState(() => {

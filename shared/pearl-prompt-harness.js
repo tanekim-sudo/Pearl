@@ -1,13 +1,11 @@
 /**
- * Pearl prompt harness — thin Observe → Interpret → Propose → Apply → Reveal
- * pipeline for systemPrompt (the pearl's brain).
+ * Pearl companion harness — Cursor-for-pearls execution loop:
+ *   Observe pearl(s) → Interpret any NL request → Propose tool actions → Apply → Reveal
  *
- * Composes existing pieces; does not reinvent Companion planning or metadata harness:
- *   Observe  → pearl-companion-context
- *   Propose  → pearl-system-prompt (offline) + optional /api/run JSON rewrite
- *   Apply    → domain commands setPearlSystemPrompt / createSemanticOrb
- *   Reveal   → Cursor-like trail labels (pairs with companion-harness status)
+ * Tools: create / edit layers (Moves·Weights·Lenses) / compare / produce output / ask.
+ * systemPrompt is a readable projection — never a dump of chat/execution requests.
  *
+ * Composes: pearl-companion-context, pearl-system-prompt, pearl-layer-*, pearl-compare.
  * Parsers in companion-intent remain optional fast-path hints.
  */
 
@@ -21,6 +19,7 @@ import {
   editPearlSystemPrompt,
   normalizePearlSystemPrompt,
   readPearlSystemPrompt,
+  scrubExecutionRequestsFromSystemPrompt,
 } from "./pearl-system-prompt.js";
 import { EXECUTION_CODES } from "./execution-result.js";
 import {
@@ -32,14 +31,24 @@ import {
   titleFromStyleAndDomain,
 } from "./pearl-layer-instructions.js";
 import { readPearlWeights } from "./pearl-weights.js";
+import {
+  looksLikePearlCompareRequest,
+  looksLikePearlExecutionRequest,
+  looksLikeProduceOutputRequest,
+  proposePearlCompare,
+} from "./pearl-compare.js";
 
-export const PEARL_PROMPT_HARNESS_VERSION = 1;
+export const PEARL_PROMPT_HARNESS_VERSION = 2;
 
 /** Structured intents the harness understands. */
 export const PEARL_PROMPT_INTENTS = Object.freeze([
   "create_pearl",
+  "edit_layers",
   "edit_prompt",
   "replace_prompt",
+  "compare_pearls",
+  "produce_output",
+  "ask",
   "clarify",
   "other",
 ]);
@@ -168,9 +177,40 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
   const hasActivePearl = Boolean(options.hasActivePearl || options.pearl);
   const fastPath = options.fastPathHint || null;
 
+  // Compare / produce_output / explain-diff — NEVER edit_prompt / append into systemPrompt.
+  // Must win over soft-adapt ("investor" etc.) and over fast-path prompt edits.
+  if (looksLikePearlCompareRequest(text) || looksLikePearlExecutionRequest(text)) {
+    const wantOutput = looksLikeProduceOutputRequest(text);
+    return {
+      intent: wantOutput ? "produce_output" : "compare_pearls",
+      confidence: 0.95,
+      reason: wantOutput ? "compare+produce-output" : "compare-signal",
+      utterance: text,
+      hint: soft(text, 2_000),
+      titleHint: "",
+      mode: null,
+      compare: true,
+      produceOutput: wantOutput,
+      verb: "comparePearls",
+    };
+  }
+  if (looksLikeProduceOutputRequest(text) && !/^(?:make|create|save|build|forge)\b/i.test(text)) {
+    return {
+      intent: "produce_output",
+      confidence: 0.9,
+      reason: "produce-output-signal",
+      utterance: text,
+      hint: soft(text, 2_000),
+      titleHint: "",
+      mode: null,
+      produceOutput: true,
+      verb: "producePearlOutput",
+    };
+  }
+
   if (fastPath?.verb === "getPearlSystemPrompt") {
     return {
-      intent: "other",
+      intent: "ask",
       confidence: 1,
       reason: "read-prompt",
       utterance: text,
@@ -178,6 +218,20 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
       titleHint: "",
       mode: null,
       verb: "getPearlSystemPrompt",
+    };
+  }
+  if (fastPath?.verb === "comparePearls") {
+    return {
+      intent: looksLikeProduceOutputRequest(text) ? "produce_output" : "compare_pearls",
+      confidence: 0.98,
+      reason: "fast-path-compare",
+      utterance: text,
+      hint: soft(text, 2_000),
+      titleHint: "",
+      mode: null,
+      compare: true,
+      produceOutput: looksLikeProduceOutputRequest(text),
+      verb: "comparePearls",
     };
   }
   if (fastPath?.verb === "createSemanticOrb") {
@@ -192,6 +246,21 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
     };
   }
   if (fastPath?.verb === "editPearlSystemPrompt" || fastPath?.verb === "setPearlSystemPrompt") {
+    // Guard: never honor a fast-path edit when the utterance is an execution request.
+    if (looksLikePearlExecutionRequest(text)) {
+      return {
+        intent: "compare_pearls",
+        confidence: 0.95,
+        reason: "execution-overrides-edit-fast-path",
+        utterance: text,
+        hint: soft(text, 2_000),
+        titleHint: "",
+        mode: null,
+        compare: true,
+        produceOutput: looksLikeProduceOutputRequest(text),
+        verb: "comparePearls",
+      };
+    }
     const mode = String(fastPath.args?.mode || "rewrite").toLowerCase();
     return {
       intent: mode === "append" ? "edit_prompt" : "replace_prompt",
@@ -209,7 +278,7 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
     /^(?:make|create|save|build|spin\s*up|forge)\b/i.test(text)
     && /\bpearl\b/i.test(text)
     && !/^(?:make|turn)\s+(?:this|that|the)\s+/i.test(text)
-    && !/\b(?:rename|delete|remove|wear|merge|open|activate)\b/i.test(text)
+    && !/\b(?:rename|delete|remove|wear|merge|open|activate|compare|difference)\b/i.test(text)
   ) {
     const topic = text.match(
       /(?:make|create|save|build|spin\s*up|forge)(?:\s+(?:me|us))?\s+(?:an?)\s+(.+?)\s+pearl\b/i,
@@ -243,7 +312,26 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
     };
   }
 
+  // Layer-targeted edits (Moves / Weights / Lenses language)
+  if (
+    hasActivePearl
+    && /\b(?:move|moves|weight|weights|lens|lenses)\b/i.test(text)
+    && /\b(?:add|reorder|remove|change|update|edit|prefer|care|weight)\b/i.test(text)
+    && !looksLikePearlExecutionRequest(text)
+  ) {
+    return {
+      intent: "edit_layers",
+      confidence: 0.85,
+      reason: "layer-edit-signal",
+      utterance: text,
+      hint: soft(text, 2_000),
+      titleHint: "",
+      mode: "rewrite",
+    };
+  }
+
   // Soft edit / adapt — natural language refinements when a pearl is in focus
+  // Hard exclude: compare / PDF / download / differences (execution, not taste edit).
   const editSignals = (
     /\b(?:more like|less like|inspired by|in the style of|append|include|prefer|always|never|observe)\b/i.test(text)
     || /\badd\b/i.test(text)
@@ -252,7 +340,11 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
     || (hasActivePearl && /\b(?:prompt|instructions|taste|voice|tone|style)\b/i.test(text)
       && /\b(?:add|make|change|update|rewrite|more|less|like|about)\b/i.test(text))
   );
-  if (editSignals && (hasActivePearl || /\b(?:this|that|the)\s+(?:active\s+|current\s+)?(?:pearl|prompt)\b/i.test(text))) {
+  if (
+    editSignals
+    && !looksLikePearlExecutionRequest(text)
+    && (hasActivePearl || /\b(?:this|that|the)\s+(?:active\s+|current\s+)?(?:pearl|prompt)\b/i.test(text))
+  ) {
     const appendish = /^(?:add|append|include)\b/i.test(text)
       || /\badd (?:that|some|a|skepticism|skeptical)\b/i.test(text);
     return {
@@ -271,8 +363,9 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
     hasActivePearl
     && text.length >= 8
     && text.length <= 280
-    && !/^(?:what|why|how|who|where|when|show|list|open|wear|merge|delete|rename|navigate|go\b)/i.test(text)
-    && !/\b(?:function|move|lens|gauntlet|encode|install|extension|download)\b/i.test(text)
+    && !looksLikePearlExecutionRequest(text)
+    && !/^(?:what|why|how|who|where|when|show|list|open|wear|merge|delete|rename|navigate|go\b|explain)\b/i.test(text)
+    && !/\b(?:function|move|lens|gauntlet|encode|install|extension|download|pdf|difference|differences|compare)\b/i.test(text)
     && /(?:like|about|skeptic|observe|prefer|always|never|voice|tone|style|haiku|memo|poetry|investor)/i.test(text)
   ) {
     return {
@@ -283,6 +376,23 @@ export function interpretPearlPromptUtterance(utterance, options = {}) {
       hint: soft(text, 2_000),
       titleHint: "",
       mode: "rewrite",
+    };
+  }
+
+  // Read-only ask about the active pearl (not an edit)
+  if (
+    hasActivePearl
+    && /^(?:what|why|how|who|where|when|explain|tell\s+me|show)\b/i.test(text)
+    && !looksLikePearlExecutionRequest(text)
+  ) {
+    return {
+      intent: "ask",
+      confidence: 0.5,
+      reason: "ask-signal",
+      utterance: text,
+      hint: soft(text, 2_000),
+      titleHint: "",
+      mode: null,
     };
   }
 
@@ -353,7 +463,61 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
     };
   }
 
-  if (intent === "replace_prompt" || intent === "edit_prompt") {
+  // Compare / produce_output are handled by proposePearlCompare — never mutate prompt here.
+  if (
+    intent === "compare_pearls"
+    || intent === "produce_output"
+    || interpretation?.compare
+    || looksLikePearlExecutionRequest(utterance)
+  ) {
+    return {
+      ok: false,
+      source: "local",
+      intent: intent === "produce_output" ? "produce_output" : "compare_pearls",
+      code: EXECUTION_CODES.OK,
+      summary: "Route to comparePearls — do not edit systemPrompt.",
+      rationale: "Execution request (compare/output), not a prompt edit",
+      title: observation.name || name || null,
+      systemPrompt: prior,
+      mode: null,
+      mutatesSystemPrompt: false,
+      passToCompare: true,
+    };
+  }
+
+  if (intent === "ask") {
+    return {
+      ok: false,
+      source: "local",
+      intent: "ask",
+      code: EXECUTION_CODES.UNKNOWN_INTENT,
+      summary: "Ask routed outside prompt mutation.",
+      rationale: "Read-only ask",
+      title: observation.name || name || null,
+      systemPrompt: prior,
+      mode: null,
+      mutatesSystemPrompt: false,
+      passThrough: true,
+    };
+  }
+
+  if (intent === "replace_prompt" || intent === "edit_prompt" || intent === "edit_layers") {
+    // Hard stop: never treat execution requests as refinements.
+    if (looksLikePearlExecutionRequest(utterance)) {
+      return {
+        ok: false,
+        source: "local",
+        intent: "compare_pearls",
+        code: EXECUTION_CODES.OK,
+        summary: "Blocked prompt mutation — this is a compare/output request.",
+        rationale: "execution-request-guard",
+        title: observation.name || name || null,
+        systemPrompt: prior,
+        mode: null,
+        mutatesSystemPrompt: false,
+        passToCompare: true,
+      };
+    }
     if (!observation.pearlId && !prior && !optionsHasPearl(observation)) {
       return {
         ok: false,
@@ -371,13 +535,28 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
     let nextText;
     if (mode === "append") {
       nextText = extractAppendInstruction(utterance);
+      if (looksLikePearlExecutionRequest(nextText)) {
+        return {
+          ok: false,
+          source: "local",
+          intent: "compare_pearls",
+          code: EXECUTION_CODES.OK,
+          summary: "Blocked append of execution request into systemPrompt.",
+          rationale: "execution-request-guard",
+          title: observation.name || name || null,
+          systemPrompt: prior,
+          mode: null,
+          mutatesSystemPrompt: false,
+          passToCompare: true,
+        };
+      }
       const edited = editPearlSystemPrompt(prior, { mode: "append", text: nextText });
       return {
         ok: edited.ok,
         source: "local",
         intent: "edit_prompt",
         title: observation.name || name || null,
-        systemPrompt: edited.systemPrompt,
+        systemPrompt: scrubExecutionRequestsFromSystemPrompt(edited.systemPrompt),
         prior,
         summary: edited.ok
           ? `Append intent into the system prompt${observation.name ? ` for “${observation.name}”` : ""}.`
@@ -420,9 +599,9 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
     return {
       ok: true,
       source: "local",
-      intent: "edit_prompt",
+      intent: intent === "edit_layers" ? "edit_layers" : "edit_prompt",
       title: observation.name || name || null,
-      systemPrompt: projected,
+      systemPrompt: scrubExecutionRequestsFromSystemPrompt(projected),
       layers: mergedLayers,
       prior,
       summary: `Updated Moves · Weights · Lenses${observation.name ? ` for “${observation.name}”` : ""} from your instruction.`,
@@ -473,17 +652,21 @@ function extractAppendInstruction(utterance) {
  * Local merge: preserve prior taste lines, fold the new instruction in.
  */
 export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
-  const base = normalizePearlSystemPrompt(prior);
+  const base = scrubExecutionRequestsFromSystemPrompt(normalizePearlSystemPrompt(prior));
   const note = soft(instruction, 2_000);
   const name = soft(options.name || "", 120);
   if (!note) return base;
+  // Never fold compare/PDF/execution chat into the brain.
+  if (looksLikePearlExecutionRequest(note)) {
+    return base;
+  }
   if (!base) {
-    return defaultSystemPromptFromIntent({
+    return scrubExecutionRequestsFromSystemPrompt(defaultSystemPromptFromIntent({
       name,
       intent: note,
       systemPromptHint: note,
       topic: name || note.slice(0, 80),
-    });
+    }));
   }
   // Avoid duplicating an identical instruction already present.
   if (base.toLowerCase().includes(note.toLowerCase().slice(0, Math.min(80, note.length)))) {
@@ -494,7 +677,8 @@ export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .filter((line) => !/^user refinement:/i.test(line));
+    .filter((line) => !/^user refinement:/i.test(line))
+    .filter((line) => !/^source request:/i.test(line));
   const lines = [
     ...(header && !preserved.some((line) => /you are the pearl/i.test(line)) ? [header] : []),
     ...preserved,
@@ -502,10 +686,10 @@ export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
     `User refinement: ${note}`,
     "Honor the refinement while preserving prior taste, voice, and constraints unless the user clearly overrides them.",
   ];
-  return normalizePearlSystemPrompt(lines.filter((line, index, all) => {
+  return scrubExecutionRequestsFromSystemPrompt(normalizePearlSystemPrompt(lines.filter((line, index, all) => {
     if (line === "" && all[index - 1] === "") return false;
     return true;
-  }).join("\n"));
+  }).join("\n")));
 }
 
 /**
@@ -691,7 +875,11 @@ export function applyPearlPromptProposal(proposal, options = {}) {
       },
     };
   }
-  if (proposal.intent === "edit_prompt" || proposal.intent === "replace_prompt") {
+  if (
+    proposal.intent === "edit_prompt"
+    || proposal.intent === "replace_prompt"
+    || proposal.intent === "edit_layers"
+  ) {
     const pearlId = options.pearlId || options.observation?.pearlId;
     if (!pearlId && !options.name) {
       return {
@@ -801,6 +989,7 @@ export function runPearlPromptHarnessOffline({
   appState = {},
   fastPathHint = null,
   sceneId = null,
+  pearls = null,
 } = {}) {
   const observation = observePearlPromptContext(pearl, appState);
   const interpretation = interpretPearlPromptUtterance(utterance, {
@@ -817,7 +1006,82 @@ export function runPearlPromptHarnessOffline({
         : "",
     },
   ];
-  if (interpretation.intent === "other" || interpretation.verb === "getPearlSystemPrompt") {
+
+  // Compare + produce_output: Observe → Interpret → Propose compare → Apply download/chat.
+  // Never touches systemPrompt.
+  if (
+    interpretation.intent === "compare_pearls"
+    || interpretation.intent === "produce_output"
+    || interpretation.compare
+    || interpretation.verb === "comparePearls"
+  ) {
+    const catalog = Array.isArray(pearls) && pearls.length
+      ? pearls
+      : [pearl].filter(Boolean);
+    const compareProposal = proposePearlCompare(utterance, catalog, {
+      activePearl: pearl,
+      appState,
+      produceOutput: interpretation.produceOutput || interpretation.intent === "produce_output",
+    });
+    trail.push({
+      stage: "proposed",
+      detail: compareProposal.summary,
+      summary: compareProposal.summary,
+    });
+    if (!compareProposal.ok) {
+      const reveal = buildPearlPromptRevealMessage(
+        { ...compareProposal, ok: false },
+        { ok: false, code: compareProposal.code, message: compareProposal.summary },
+        trail,
+      );
+      return {
+        observation,
+        interpretation,
+        proposal: compareProposal,
+        apply: {
+          ok: false,
+          code: compareProposal.code,
+          message: compareProposal.summary,
+          command: null,
+        },
+        trail,
+        reveal,
+        handled: true,
+        passThrough: false,
+        mutatesSystemPrompt: false,
+      };
+    }
+    return {
+      observation,
+      interpretation,
+      proposal: compareProposal,
+      apply: {
+        ok: true,
+        command: {
+          verb: "comparePearls",
+          args: {
+            utterance,
+            leftId: compareProposal.leftId,
+            rightId: compareProposal.rightId,
+            leftName: compareProposal.leftName,
+            rightName: compareProposal.rightName,
+            produceOutput: compareProposal.produceOutput,
+            sceneId,
+          },
+        },
+      },
+      trail,
+      handled: true,
+      passThrough: false,
+      mutatesSystemPrompt: false,
+    };
+  }
+
+  if (
+    interpretation.intent === "other"
+    || interpretation.intent === "ask"
+    || interpretation.verb === "getPearlSystemPrompt"
+  ) {
     return {
       observation,
       interpretation,
@@ -825,10 +1089,34 @@ export function runPearlPromptHarnessOffline({
       apply: null,
       trail,
       handled: interpretation.verb === "getPearlSystemPrompt",
-      passThrough: interpretation.intent === "other" && !interpretation.verb,
+      passThrough: (interpretation.intent === "other" || interpretation.intent === "ask")
+        && !interpretation.verb,
     };
   }
   const proposal = proposePearlPromptLocal(interpretation, observation);
+  if (proposal?.passToCompare) {
+    trail.push({
+      stage: "proposed",
+      detail: proposal.summary,
+      summary: proposal.summary,
+    });
+    return {
+      observation,
+      interpretation: { ...interpretation, intent: "compare_pearls", verb: "comparePearls" },
+      proposal,
+      apply: {
+        ok: true,
+        command: {
+          verb: "comparePearls",
+          args: { utterance, sceneId },
+        },
+      },
+      trail,
+      handled: true,
+      passThrough: false,
+      mutatesSystemPrompt: false,
+    };
+  }
   trail.push({
     stage: "proposed",
     detail: proposal.summary,

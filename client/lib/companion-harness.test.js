@@ -62,6 +62,13 @@ test("goals are immutable and mode recommendation is evidence-based", () => {
   assert.equal(recommendCompanionMode(goal).mode, "plan");
   assert.equal(recommendCompanionMode("This workflow feels wrong—figure out why and fix it.").mode, "debug");
   assert.equal(recommendCompanionMode("Explain why this branch exists.").mode, "ask");
+  assert.equal(
+    recommendCompanionMode(
+      "explain the differences between my investor pearl and the Warren Buffett investor pearl and then give me a PDF output of the differences",
+    ).mode,
+    "agent",
+    "compare+PDF must not enter Ask-mode short-circuit",
+  );
 });
 
 test("live context index retrieves exact, content, graph, spatial, and stable citations", () => {

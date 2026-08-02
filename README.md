@@ -30,7 +30,16 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **`systemPrompt`** is the **readable projection / summary** of that brain — Companion interprets it when the pearl is worn, and can edit it from natural language. Creating a pearl seeds Moves · Weights · Lenses plus an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
 
-**Cursor-for-pearls** — Companion work on a pearl is an interpretable session, not a black-box chat: **Working → Interpreting → Proposed layer changes → Applied / Blocked** (`shared/pearl-prompt-harness.js` + `companion-harness.js`). Canonical fidelity is **Moves · Weights · Lenses**; `systemPrompt` is the readable projection (templates in `shared/pearl-layer-templates.js`, e.g. Buffett investing). Style/taste/lens creates such as `make me a pearl that reflects Warren Buffett's style and taste and lens of investing` succeed **signed-out** from offline seeds — create never waits on `/api/run` or traps the submit-guard. **AI rewrite** (edits) uses structured JSON via `/api/run` when signed in; otherwise local merge + honest `needs-credentials` notes — never invent live-model quality. Deterministic phrase parsers in `companion-intent` are optional fast-path hints — not a whitelist.
+**Cursor-for-pearls** — Companion is an agent harness for pearls (like Cursor for code), not a chat that rewrites the brain by dumping user tasks into `systemPrompt`.
+
+Two load-bearing classes (`shared/pearl-operate-harness.js` → `classifyPearlCompanionClass`):
+
+| Class | Means | Tools |
+| --- | --- | --- |
+| **mutate_brain** | Change the pearl’s structure | create / edit Moves·Weights·Lenses (`pearl-prompt-harness`) |
+| **operate** | Use pearls without rewriting them | `comparePearls`, summarize layers, produce PDF/md (`pearl-compare`) |
+
+Loop: **Observe → Classify → Propose tool → Apply → Reveal** (`companion-harness` + operate/mutate harnesses). “Differences between X and Y” + “give me a PDF” is **operate** — loads both pearls’ M/W/L, diffs, downloads a plain-text PDF (or Markdown), shows a chat summary. It must never call `editPearlSystemPrompt` / append. Canonical fidelity is **Moves · Weights · Lenses**; `systemPrompt` is only the readable projection (templates in `pearl-layer-templates.js`). Style/taste creates succeed **signed-out** from offline seeds. **AI enrich** is optional when signed in. Try: create Buffett → ask Companion to compare it to your investor pearl and give a PDF.
 
 **Sign-in gate honesty:** local pearl create/edit/organize succeeds without accounts. Live model routes that require auth surface `needs-credentials` (Account & privacy blocker, or API 401/503) — never fake Done on create. Missing Supabase keys → clear “Accounts aren’t set up” next steps; Pearl still works device-local.
 

@@ -155,8 +155,7 @@ export function buildInvestorRolePearlScaffold(options = {}) {
       label: role,
       text: bounded(
         `Role: ${role}. Firm/fund: ${firm === "investor" ? "unspecified" : firm}. `
-        + "This pearl encodes investor judgment for memo and diligence work. "
-        + (utterance ? `Source request: ${utterance}` : ""),
+        + "This pearl encodes investor judgment for memo and diligence work.",
         1_200,
       ),
       pinned: true,
@@ -215,14 +214,14 @@ export function buildInvestorRolePearlScaffold(options = {}) {
         280,
       ),
       purpose: "Investor underwriting: memo writing and diligence through a firm-aware lens.",
+      // systemPrompt is the readable projection — never dump raw Companion chat / goals.
       systemPrompt: [
         `You are the Pearl “${pearlName}”.`,
         `Role: ${role}. Firm/fund: ${firm === "investor" ? "unspecified" : firm}.`,
         "Write investment memos and run diligence with an investor lens.",
         "Be skeptical of hand-wavy TAM, unfalsifiable claims, and missing customer proof.",
         "Always surface risks, open questions, and a clear invest/pass recommendation.",
-        utterance ? `Source request: ${utterance}` : "",
-      ].filter(Boolean).join("\n"),
+      ].join("\n"),
       representation: {
         kind: "function",
         label: pearlName,

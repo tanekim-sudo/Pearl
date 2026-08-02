@@ -50,6 +50,32 @@ test("interpret soft adapt on active pearl — any natural language", () => {
   assert.equal(street.intent, "edit_prompt");
 });
 
+test("compare+PDF with active investor pearl is NOT soft-adapt edit_prompt", () => {
+  const utterance = "explain the differences between my investor pearl and the Warren Buffett investor pearl and then give me a PDF output of the differences";
+  const interpreted = interpretPearlPromptUtterance(utterance, {
+    hasActivePearl: true,
+    pearl: { id: "p1", name: "Investor", systemPrompt: "investor brain" },
+  });
+  assert.notEqual(interpreted.intent, "edit_prompt");
+  assert.ok(interpreted.intent === "compare_pearls" || interpreted.intent === "produce_output");
+
+  const run = runPearlPromptHarnessOffline({
+    utterance,
+    pearl: {
+      id: "p1",
+      name: "Investor",
+      systemPrompt: "You are an investor pearl.",
+    },
+    pearls: [
+      { id: "p1", name: "Investor", systemPrompt: "You are an investor pearl.", moves: [{ name: "Memo" }], weights: [{ name: "Risk", priority: 80 }], lenses: [{ name: "Investor" }] },
+      { id: "p2", name: "Buffett · investing", systemPrompt: "Buffett brain", moves: [{ name: "Filings" }], weights: [{ name: "Moat", priority: 90 }], lenses: [{ name: "Owner" }] },
+    ],
+  });
+  assert.equal(run.apply?.command?.verb, "comparePearls");
+  assert.equal(run.mutatesSystemPrompt, false);
+  assert.ok(!/User refinement:/i.test(run.proposal?.comparison?.left?.systemPrompt || ""));
+});
+
 test("offline propose/apply create seeds non-empty systemPrompt and M/W/L layers", () => {
   const run = runPearlPromptHarnessOffline({
     utterance: "make me a poetry pearl like sylvia plaths thought process",

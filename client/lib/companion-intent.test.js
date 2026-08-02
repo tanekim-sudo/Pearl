@@ -22,7 +22,10 @@ import {
   parsePearlEditCommand,
   parsePearlWeightsCommand,
   parsePearlSystemPromptCommand,
+  parseComparePearlsCommand,
   routePearlPromptHarness,
+  routePearlCompanion,
+  classifyPearlCompanionClass,
   parsePearlFunctionMovesCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
@@ -156,6 +159,26 @@ test("routePearlPromptHarness catches novel create/edit without planner", () => 
   assert.equal(adapt?.interpretation?.intent, "edit_prompt");
 
   assert.equal(routePearlPromptHarness("what's for lunch"), null);
+});
+
+test("compare+PDF routes to comparePearls — never interpretPearlPrompt / edit", () => {
+  const utterance = "explain the differences between my investor pearl and the Warren Buffett investor pearl and then give me a PDF output of the differences";
+  assert.equal(classifyPearlCompanionClass(utterance, { hasActivePearl: true }).class, "operate");
+  const parsed = parseComparePearlsCommand(utterance);
+  assert.equal(parsed?.verb, "comparePearls");
+  assert.equal(parsed?.args?.produceOutput, true);
+
+  const routed = routePearlCompanion(utterance, {
+    hasActivePearl: true,
+    pearl: { id: "p1", name: "Investor", systemPrompt: "investor" },
+  });
+  assert.equal(routed?.class, "operate");
+  assert.equal(routed?.verb, "comparePearls");
+  assert.notEqual(routed?.verb, "interpretPearlPrompt");
+  assert.notEqual(routed?.verb, "editPearlSystemPrompt");
+  assert.equal(routePearlPromptHarness(utterance, { hasActivePearl: true })?.verb, "comparePearls");
+  assert.ok(COMPANION_VERBS.comparePearls);
+  assert.ok(COMPANION_VERBS.operatePearl);
 });
 
 test("pearl weights intents are deterministic without planner", () => {

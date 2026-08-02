@@ -309,6 +309,11 @@ import {
   formatOutputForDownload,
   inferDownloadFormat,
 } from "../shared/output-routing.js";
+import {
+  proposePearlCompare,
+  formatPearlComparisonChatSummary,
+} from "../shared/pearl-compare.js";
+import { runPearlOperateHarnessOffline } from "../shared/pearl-operate-harness.js";
 import { parseTranscript } from "../shared/transcript-learning.js";
 import { compileAutomationPearl } from "../shared/automation-pearl.js";
 import { buildEncodeEvidenceList, classifyDroppedText } from "../shared/encode-evidence.js";
@@ -329,6 +334,8 @@ import {
   parsePearlEditCommand,
   parsePearlWeightsCommand,
   routePearlPromptHarness,
+  routePearlCompanion,
+  parseComparePearlsCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -12300,6 +12307,31 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return pack;
   }
 
+  /** All pearls Companion can operate on (Reef + active Scene + pearl store). */
+  function listCompanionPearls() {
+    const pearls = [];
+    const push = (orb) => {
+      if (!orb?.id || orb.archived) return;
+      if (pearls.some((entry) => entry.id === orb.id)) return;
+      pearls.push(orb);
+    };
+    try {
+      const workspace = migrateUnifiedWorkspace({
+        unified: load(UNIFIED_WORKSPACE_KEY, null) || initialUnifiedWorkspace,
+      });
+      for (const entry of collectReefPearls(workspace.scenes || [])) push(entry.orb);
+      for (const scene of workspace.scenes || []) {
+        for (const orb of scene.semanticOrbs || []) push(orb);
+      }
+    } catch { /* ignore */ }
+    for (const orb of currentSemanticScene()?.semanticOrbs || []) push(orb);
+    try {
+      const store = load(PEARL_STORE_KEY, { entities: {} });
+      for (const entity of Object.values(store.entities || {})) push(entity);
+    } catch { /* ignore */ }
+    return pearls;
+  }
+
   function resolvePearlByNameOrId(id, name) {
     const scene = currentSemanticScene();
     const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
@@ -13954,9 +13986,184 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           : `Updated system prompt for “${pearl.name}”.`,
       };
     },
+    operatePearl: async (a, tk) => {
+      const utterance = String(a.utterance || a.text || "").trim();
+      if (!utterance) throw new Error("Tell me how to operate on a pearl.");
+      // Compare/PDF always prefers the dedicated verb.
+      const compareRoute = parseComparePearlsCommand(utterance);
+      if (compareRoute) {
+        const nested = await executeCapabilityScriptDirect([compareRoute], { title: "Compare pearls" });
+        return nested?.value || nested?.results?.[0] || null;
+      }
+      tk?.caption?.("Observing pearl…");
+      const pearls = listCompanionPearls();
+      const active = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      const run = runPearlOperateHarnessOffline({
+        utterance,
+        pearls,
+        activePearl: active,
+        sceneId: a.sceneId || sceneId,
+      });
+      if (run.apply?.command?.verb === "comparePearls") {
+        const nested = await executeCapabilityScriptDirect([run.apply.command], { title: "Compare pearls" });
+        return nested?.value || nested?.results?.[0] || null;
+      }
+      if (!run.handled || !run.proposal?.ok) {
+        return {
+          type: "pearl-operate",
+          effects: [],
+          status: "blocked",
+          code: run.proposal?.code || run.apply?.code || "blocked",
+          visibleText: run.reveal?.visibleText || run.proposal?.summary || "Could not operate on that pearl.",
+          object: { mutatesSystemPrompt: false },
+        };
+      }
+      return {
+        type: "pearl-operate",
+        effects: ["pearl-operated"],
+        status: "success",
+        code: "ok",
+        visibleText: scrubPearlMetadataFromUserText(
+          run.reveal?.visibleText || run.proposal?.chatSummary || run.proposal?.summary || "",
+          { utterance },
+        ),
+        object: { mutatesSystemPrompt: false, intent: run.classification?.intent },
+      };
+    },
+    comparePearls: async (a, tk) => {
+      const utterance = String(a.utterance || a.text || a.instruction || "").trim()
+        || [
+          a.leftName && a.rightName
+            ? `compare ${a.leftName} and ${a.rightName}`
+            : "",
+          a.produceOutput ? "and give me a PDF" : "",
+        ].filter(Boolean).join(" ");
+      if (!utterance && !(a.leftId || a.leftName) && !(a.rightId || a.rightName)) {
+        throw new Error("Name two pearls to compare.");
+      }
+      tk?.caption?.("Comparing pearls…");
+      const pearls = listCompanionPearls();
+      const push = (orb) => {
+        if (!orb?.id) return;
+        if (pearls.some((entry) => entry.id === orb.id)) return;
+        pearls.push(orb);
+      };
+      if (a.leftId || a.leftName) push(resolvePearlByNameOrId(a.leftId, a.leftName));
+      if (a.rightId || a.rightName) push(resolvePearlByNameOrId(a.rightId, a.rightName));
+
+      const left = resolvePearlByNameOrId(a.leftId, a.leftName)
+        || pearls.find((p) => p.id === a.leftId)
+        || null;
+      const right = resolvePearlByNameOrId(a.rightId, a.rightName)
+        || pearls.find((p) => p.id === a.rightId)
+        || null;
+      const active = resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      const proposal = proposePearlCompare(utterance || "compare these pearls", pearls, {
+        activePearl: active,
+        produceOutput: a.produceOutput !== false && (
+          a.produceOutput === true
+          || /\b(?:pdf|download|export)\b/i.test(utterance)
+        ),
+        // Prefer explicit ids when provided
+        ...(left && right ? {} : {}),
+      });
+      // If propose failed but we have explicit left/right, force compare
+      let finalProposal = proposal;
+      if (!proposal.ok && left && right && left.id !== right.id) {
+        finalProposal = proposePearlCompare(
+          utterance || `compare ${left.name} and ${right.name}`,
+          [left, right, ...pearls],
+          { activePearl: active, produceOutput: Boolean(a.produceOutput), forceCompare: true },
+        );
+      }
+      if (!finalProposal.ok) {
+        return {
+          type: "pearl-compare",
+          effects: [],
+          status: "blocked",
+          code: finalProposal.code || "missing-args",
+          visibleText: finalProposal.summary || "Name two distinct pearls to compare.",
+          object: { mutatesSystemPrompt: false },
+        };
+      }
+      const host = document.querySelector(
+        `[data-semantic-orb-id="${finalProposal.leftId}"]`,
+      ) || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      await tk?.wait?.(180);
+
+      let downloadNote = "";
+      const artifact = finalProposal.artifact;
+      if (finalProposal.produceOutput && artifact?.ok) {
+        try {
+          if (artifact.bytes) {
+            const url = URL.createObjectURL(new Blob([artifact.bytes], { type: artifact.mime }));
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = artifact.fileName || "pearl-compare.pdf";
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1_500);
+          } else if (artifact.body != null) {
+            const url = URL.createObjectURL(new Blob([artifact.body], { type: artifact.mime }));
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = artifact.fileName || "pearl-compare.md";
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1_500);
+          }
+          downloadNote = artifact.note
+            ? ` Downloaded ${artifact.fileName} (${artifact.note}).`
+            : ` Downloaded ${artifact.fileName}.`;
+        } catch (err) {
+          downloadNote = ` Could not trigger download (${err?.message || "error"}) — comparison is in chat.`;
+        }
+      } else if (finalProposal.produceOutput && artifact && !artifact.ok) {
+        downloadNote = ` ${artifact.message || "Download format unavailable."}`;
+      }
+
+      const chat = formatPearlComparisonChatSummary(finalProposal.comparison)
+        || finalProposal.chatSummary
+        || finalProposal.summary;
+      // Include a short markdown excerpt so the user sees the diff without opening Studio.
+      const excerpt = String(finalProposal.markdown || "")
+        .split("\n")
+        .filter((line) => /^(## |### |Shared:|Only in)/.test(line) || /^\*\*/.test(line))
+        .slice(0, 18)
+        .join("\n");
+      return {
+        type: "pearl-compare",
+        id: finalProposal.leftId,
+        effects: ["pearl-compared", ...(finalProposal.produceOutput ? ["pearl-output-downloaded"] : [])],
+        status: "success",
+        code: "ok",
+        visibleText: scrubPearlMetadataFromUserText(
+          [chat, excerpt, downloadNote].filter(Boolean).join("\n\n"),
+          { utterance },
+        ),
+        object: {
+          leftId: finalProposal.leftId,
+          rightId: finalProposal.rightId,
+          leftName: finalProposal.leftName,
+          rightName: finalProposal.rightName,
+          markdown: finalProposal.markdown,
+          produceOutput: finalProposal.produceOutput,
+          mutatesSystemPrompt: false,
+          fileName: artifact?.fileName || null,
+        },
+      };
+    },
     interpretPearlPrompt: async (a, tk) => {
       const utterance = String(a.utterance || a.instruction || a.text || a.systemPrompt || "").trim();
       if (!utterance) throw new Error("Tell me how to create or change the pearl system prompt.");
+      // Hard guard: compare/PDF never mutates systemPrompt via this verb.
+      const compareRoute = parseComparePearlsCommand(utterance);
+      if (compareRoute) {
+        const nested = await executeCapabilityScriptDirect([compareRoute], { title: "Compare pearls" });
+        return nested?.value || nested?.results?.[0] || null;
+      }
       const pearl = resolvePearlByNameOrId(a.id, a.name)
         || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
         || resolvePearlByNameOrId(null, null);
@@ -17774,6 +17981,55 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       updateCommand(commandEntry.id, { status: "executed", effects: ["opened-scene"] });
       return { completed: true, effects: ["opened-scene"], visible: true, text: "Opened a play space." };
     }
+    // Operate-vs-mutate gate BEFORE Ask-mode short-circuit.
+    // Operate (compare/PDF/summarize) never becomes systemPrompt append.
+    {
+      const pearlRoute = routePearlCompanion(text, {
+        hasActivePearl: Boolean(
+          resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+          || resolvePearlByNameOrId(null, null),
+        ),
+        pearl: resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+          || resolvePearlByNameOrId(null, null),
+        sceneId: sceneId || currentSemanticScene()?.id || null,
+      });
+      if (pearlRoute?.class === "operate" || pearlRoute?.verb === "comparePearls" || pearlRoute?.verb === "operatePearl") {
+        onPhase?.("interpreting");
+        const step = { verb: pearlRoute.verb, args: { ...pearlRoute.args } };
+        const result = await executeCompanionScript([step], {
+          title: step.verb === "comparePearls" ? "Compare pearls" : "Operate on pearl",
+        });
+        updateCommand(commandEntry.id, result.completed
+          ? {
+            status: result.value?.status === "blocked" ? "blocked" : "executed",
+            effects: result.effects || result.value?.effects || (
+              step.verb === "comparePearls" ? ["pearl-compared"] : ["pearl-operated"]
+            ),
+          }
+          : { status: "failed", failure: result.errors?.[0] || "Pearl operate failed" });
+        if (!result.completed) {
+          return {
+            visible: true,
+            text: publicCompanionError(result.errors?.[0]),
+            completed: false,
+            status: "blocked",
+            code: inferExecutionCode(result.errors?.[0]),
+          };
+        }
+        const blocked = result.value?.status === "blocked";
+        return {
+          visible: true,
+          text: scrubPearlMetadataFromUserText(
+            result.value?.visibleText
+            || (step.verb === "comparePearls" ? "Compared pearls." : "Done."),
+            { utterance: text },
+          ),
+          completed: !blocked,
+          status: blocked ? "blocked" : "success",
+          code: result.value?.code || (blocked ? undefined : "ok"),
+        };
+      }
+    }
     const goalEnvelope = providedGoal || normalizeGoal(text);
     const recommendedMode = recommendCompanionMode(goalEnvelope, {
       autonomy: loadCompanionMemory(supaAuth.session?.user?.id).preferences?.autonomy,
@@ -18685,8 +18941,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
     }
 
-    // Pearl prompt harness (default): Observe→Interpret→Propose→Apply→Reveal.
-    // Deterministic parsers are optional fast-path hints inside the harness — not a phrase whitelist.
+    // Pearl companion harness (default): Observe→Interpret→Propose→Apply→Reveal.
+    // Compare + produce_output route here too — never as systemPrompt append.
+    // Deterministic parsers are optional fast-path hints — not a phrase whitelist.
     // Runs before critique so "make this pearl about …" never becomes revisePearlFromFeedback.
     {
       const activePearl = resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
@@ -18704,7 +18961,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           verb: harnessRoute.verb,
           args: {
             ...harnessRoute.args,
-            fastPathHint: harnessRoute.fastPathHint || null,
+            ...(harnessRoute.verb === "interpretPearlPrompt"
+              ? { fastPathHint: harnessRoute.fastPathHint || null }
+              : {}),
           },
         };
         const resolvedSceneId = sceneId || currentSemanticScene()?.id || null;
@@ -18713,21 +18972,43 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         } else if (step.args.sceneId == null || step.args.sceneId === "") {
           delete step.args.sceneId;
         }
-        if (step.verb === "interpretPearlPrompt") onPhase?.("proposing");
+        if (
+          step.verb === "interpretPearlPrompt"
+          || step.verb === "comparePearls"
+          || step.verb === "operatePearl"
+        ) {
+          onPhase?.("proposing");
+        }
         const result = await executeCompanionScript([step], {
           title: step.verb === "getPearlSystemPrompt"
             ? "Read system prompt"
-            : step.verb === "interpretPearlPrompt"
-              ? "Pearl Moves · Weights · Lenses"
-              : "Edit system prompt",
+            : step.verb === "comparePearls"
+              ? "Compare pearls"
+              : step.verb === "operatePearl"
+                ? "Operate on pearl"
+                : step.verb === "interpretPearlPrompt"
+                  ? "Pearl Moves · Weights · Lenses"
+                  : "Edit system prompt",
         });
-        if (step.verb === "interpretPearlPrompt" && result.completed) onPhase?.("applying");
+        if (
+          (step.verb === "interpretPearlPrompt"
+            || step.verb === "comparePearls"
+            || step.verb === "operatePearl")
+          && result.completed
+        ) {
+          onPhase?.("applying");
+        }
+        const defaultEffects = step.verb === "comparePearls"
+          ? ["pearl-compared"]
+          : step.verb === "operatePearl"
+            ? ["pearl-operated"]
+            : ["pearl-system-prompt-updated"];
         updateCommand(commandEntry.id, result.completed
           ? {
             status: result.value?.status === "blocked" ? "blocked" : "executed",
-            effects: result.effects || result.value?.effects || ["pearl-system-prompt-updated"],
+            effects: result.effects || result.value?.effects || defaultEffects,
           }
-          : { status: "failed", failure: result.errors?.[0] || "System prompt harness failed" });
+          : { status: "failed", failure: result.errors?.[0] || "Pearl harness failed" });
         if (!result.completed) {
           return {
             visible: true,
@@ -18739,7 +19020,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         }
         const reply = result.value?.visibleText
           || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
-          || "Updated Moves · Weights · Lenses.";
+          || (step.verb === "comparePearls"
+            ? "Compared pearls."
+            : "Updated Moves · Weights · Lenses.");
         const blocked = result.value?.status === "blocked";
         return {
           visible: true,

@@ -49,7 +49,24 @@ export function recommendCompanionMode(goalValue, context = {}) {
   ) {
     return { mode: "plan", reasons: ["consequential scope, cost, or uncertainty requires review"] };
   }
-  if (/^(?:what|why|how|explain|inspect|show|compare)\b/.test(wording) && !/\b(?:create|change|apply|save|run)\b/.test(wording)) {
+  // Pearl compare / PDF / download are agent tools — never Ask-mode short-circuit.
+  // "explain the differences … and give me a PDF" must run comparePearls + produce_output.
+  if (
+    /\b(?:difference|differences|diff|compare|comparison|versus|vs\.?)\b/.test(wording)
+    && (/\bpearl\b/.test(wording) || /\bbetween\b/.test(wording) || /\bbuffett\b/.test(wording))
+  ) {
+    return { mode: "agent", reasons: ["pearl compare / produce-output requires tool execution"] };
+  }
+  if (
+    /\b(?:pdf|download|export)\b/.test(wording)
+    && /\b(?:pearl|difference|differences|compare|output)\b/.test(wording)
+  ) {
+    return { mode: "agent", reasons: ["produce-output requires downloadable artifact execution"] };
+  }
+  if (
+    /^(?:what|why|how|explain|inspect|show|compare)\b/.test(wording)
+    && !/\b(?:create|change|apply|save|run|pdf|download|difference|differences)\b/.test(wording)
+  ) {
     return { mode: "ask", reasons: ["read-only explanation goal"] };
   }
   return { mode: context.autonomy === "always-preview" ? "plan" : "agent", reasons: ["low-risk reversible local work"] };
@@ -479,6 +496,8 @@ const DIRECTOR_ACTION_LABELS = Object.freeze({
   setPearlSystemPrompt: "Updating system prompt…",
   editPearlSystemPrompt: "Editing system prompt…",
   interpretPearlPrompt: "Interpreting Moves · Weights · Lenses…",
+  comparePearls: "Comparing pearls…",
+  operatePearl: "Observing pearl…",
   getPearlWeights: "Reading weights…",
   setPearlWeights: "Setting weights…",
   editPearlWeights: "Updating weights…",
