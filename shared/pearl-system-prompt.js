@@ -55,13 +55,22 @@ export function defaultSystemPromptFromIntent(options = {}) {
   const name = bounded(options.name || "", 180);
   const intent = bounded(options.intent || options.utterance || options.materialText || "", 2_000);
   const topic = bounded(options.topic || name || intent, 180);
-  if (!topic && !intent) {
+  const hint = bounded(options.systemPromptHint || options.materialText || "", 2_000);
+  if (!topic && !intent && !hint) {
     return "You are a focused Pearl companion. Follow the user's instructions carefully and keep outputs clear.";
   }
-  const about = topic || intent;
+  const about = topic || intent || hint;
+  const styleSource = `${hint}\n${intent}`;
+  const styleMatch = styleSource.match(
+    /\b(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+?)(?:\n|$)/i,
+  );
+  const style = bounded(styleMatch?.[1] || "", 400);
   const lines = [
     `You are the Pearl “${about}”.`,
     `Interpret requests through this pearl's taste and instructions.`,
+    style
+      ? `Adopt the taste, voice, and thought process of: ${style}.`
+      : null,
     intent && intent !== about
       ? `Formation intent: ${intent}`
       : `Help the user think, write, and act about ${about}.`,

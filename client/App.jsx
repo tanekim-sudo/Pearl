@@ -18285,6 +18285,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         intent: pearlCreation.args.intent || text,
         materialText: materialText || requestedName || pearlTitle,
         topic: pearlTitle,
+        systemPromptHint: pearlCreation.args.systemPromptHint || materialText || requestedName || pearlTitle,
       });
       const material = selected.length
         ? {

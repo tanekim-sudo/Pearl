@@ -18,6 +18,18 @@ test("defaultSystemPromptFromIntent seeds from topic, not empty junk", () => {
   assert.ok(!/untitled/i.test(prompt));
 });
 
+test("defaultSystemPromptFromIntent captures style-simile taste without API", () => {
+  const prompt = defaultSystemPromptFromIntent({
+    name: "poetry · sylvia plaths",
+    topic: "poetry · sylvia plaths",
+    intent: "make me a poetry pearl like sylvia plaths thought process",
+    systemPromptHint: "poetry — like sylvia plaths thought process",
+  });
+  assert.match(prompt, /poetry/i);
+  assert.match(prompt, /sylvia plaths thought process/i);
+  assert.match(prompt, /taste, voice, and thought process/i);
+});
+
 test("readPearlSystemPrompt prefers systemPrompt over purpose", () => {
   assert.equal(
     readPearlSystemPrompt({ systemPrompt: "Primary", purpose: "Legacy", identity: { purpose: "Id" } }),

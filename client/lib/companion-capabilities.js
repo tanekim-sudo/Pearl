@@ -692,6 +692,7 @@ const INTENT_EXAMPLES = {
   createSemanticOrb: [
     "make a pearl from these notes called Picasso studies",
     "make me a pearl to observe and generate inspiration for poetry",
+    "make me a poetry pearl like sylvia plaths thought process",
   ],
   createExternalSemanticOrb: ["make a pearl from this"],
   createRolePearl: [

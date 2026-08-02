@@ -18,6 +18,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   titleFromPearlPurpose,
+  titleFromPearlStyleSimile,
   parsePearlEditCommand,
   parsePearlSystemPromptCommand,
   parsePearlFunctionMovesCommand,
@@ -82,6 +83,39 @@ test("make me a pearl to … purpose intents create titled pearls without planne
   );
   // Must not steal system-prompt edits on an existing pearl.
   assert.equal(parsePearlCreationCommand("make this pearl about investor memos"), null);
+});
+
+test("make me a {topic} pearl like … style-simile creates without planner", () => {
+  const utterance = "make me a poetry pearl like sylvia plaths thought process";
+  assert.equal(titleFromPearlStyleSimile("poetry", "sylvia plaths thought process"), "poetry · sylvia plaths");
+  const parsed = parsePearlCreationCommand(utterance);
+  assert.equal(parsed?.verb, "createSemanticOrb");
+  assert.equal(parsed.args.name, "poetry · sylvia plaths");
+  assert.match(parsed.args.materialText, /sylvia plaths thought process/i);
+  assert.equal(parsed.args.intent, utterance);
+  assert.match(parsed.args.systemPromptHint, /sylvia plaths/i);
+
+  const anX = parsePearlCreationCommand("make me an inspiration pearl like mary oliver");
+  assert.equal(anX?.verb, "createSemanticOrb");
+  assert.match(anX.args.name, /inspiration/i);
+  assert.match(anX.args.systemPromptHint, /mary oliver/i);
+
+  const likeOnly = parsePearlCreationCommand("make a pearl like Virginia Woolf");
+  assert.equal(likeOnly?.verb, "createSemanticOrb");
+  assert.match(likeOnly.args.name, /Virginia Woolf/i);
+  assert.match(likeOnly.args.systemPromptHint, /Virginia Woolf/i);
+
+  const styleOf = parsePearlCreationCommand("create me a poetry pearl in the style of emily dickinson");
+  assert.equal(styleOf?.verb, "createSemanticOrb");
+  assert.match(styleOf.args.name, /poetry/i);
+  assert.match(styleOf.args.systemPromptHint, /emily dickinson/i);
+
+  const topicOnly = parsePearlCreationCommand("make me a poetry pearl");
+  assert.equal(topicOnly?.verb, "createSemanticOrb");
+  assert.equal(topicOnly.args.name, "poetry");
+
+  // Filler "new" is not a topic — still creates offline, no planner.
+  assert.equal(parsePearlCreationCommand("make me a new pearl")?.verb, "createSemanticOrb");
 });
 
 test("pearl system prompt intents are deterministic", () => {
@@ -432,6 +466,12 @@ test("raw planner, schema, gateway, and ReferenceError details never become user
     const copy = publicCompanionError(error);
     assert.doesNotMatch(copy, /plan\.root|supported workspace query|y is not defined|fetch failed/);
   }
+});
+
+test("user-safe create failures surface instead of generic unknown-error copy", () => {
+  const copy = publicCompanionError(new Error("Pearl creation failed — scene could not be opened."));
+  assert.match(copy, /Pearl creation failed/i);
+  assert.doesNotMatch(copy, /could not be completed safely/i);
 });
 
 test("empty gauntlet and credential blockers map to stable execution codes in chat copy", async () => {

@@ -237,17 +237,18 @@ export function mapErrorToExecutionResult(error, {
   });
 }
 
+function looksLikeInternalErrorMessage(message) {
+  return /plan\.|supported workspace query|referenceerror|is not defined|fetch failed|econnrefused|stack|at\s+\S+\s+\(|typeerror|cannot read propert|null is not an object|undefined is not|gateway.?unconfigured|model_gateway/i
+    .test(String(message || ""));
+}
+
 function publicSafeMessage(error, code) {
-  const message = String(error?.message || error || "");
+  const message = String(error?.message || error || "").replace(/\s+/g, " ").trim();
   if (error?.name === "AbortError") return CODE_MESSAGES[EXECUTION_CODES.ABORTED];
   if (code && code !== EXECUTION_CODES.UNKNOWN_ERROR && CODE_MESSAGES[code]) {
     // Prefer exact product copy when the raw message is already user-safe.
-    if (
-      message
-      && message.length < 400
-      && !/plan\.|supported workspace query|referenceerror|is not defined|fetch failed|econnrefused|stack|at\s+\S+\s+\(/i.test(message)
-    ) {
-      return message.replace(/\s+/g, " ").trim();
+    if (message && message.length < 400 && !looksLikeInternalErrorMessage(message)) {
+      return message.slice(0, 800);
     }
     return CODE_MESSAGES[code];
   }
@@ -256,6 +257,10 @@ function publicSafeMessage(error, code) {
   }
   if (/plan\.|schema|supported workspace query|is not accepted|must be|unknown capability|invalid companion plan|referenceerror|is not defined/i.test(message)) {
     return CODE_MESSAGES[EXECUTION_CODES.VALIDATION_ERROR];
+  }
+  // Surface short, user-safe create/execute failures instead of swallowing as unknown-error.
+  if (message && message.length < 400 && !looksLikeInternalErrorMessage(message)) {
+    return message.slice(0, 800);
   }
   return CODE_MESSAGES[EXECUTION_CODES.UNKNOWN_ERROR];
 }

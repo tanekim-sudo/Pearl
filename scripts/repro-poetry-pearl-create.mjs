@@ -1,5 +1,5 @@
 /**
- * Focused headed repro: Talk→GO "make me a pearl to observe…"
+ * Focused headed repro: Talk→GO style-simile / purpose poetry creates.
  * Usage: node scripts/repro-poetry-pearl-create.mjs
  */
 import { spawn } from "node:child_process";
@@ -11,7 +11,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.AUDIT_PORT || 41833);
 const baseUrl = process.env.AUDIT_URL || `http://127.0.0.1:${PORT}`;
-const utterance = "make me a pearl to observe and generate inspiration for poetry";
+const utterance = process.env.REPRO_UTTERANCE
+  || "make me a poetry pearl like sylvia plaths thought process";
 
 async function waitForServer(url, server, timeoutMs = 90_000) {
   const start = Date.now();
@@ -64,30 +65,42 @@ try {
   const bodyText = await page.locator("body").innerText();
   const failed = /unknown-error|could not be completed safely/i.test(chatText)
     || /\[unknown-error\]/i.test(bodyText);
-  const created = /Created pearl|poetry inspiration/i.test(chatText) || /poetry inspiration/i.test(bodyText);
-  const reefHit = await page.locator("[data-reef-pearl], [data-semantic-orb-id]").filter({ hasText: /poetry|inspiration/i }).count();
+  const created = /Created pearl|poetry/i.test(chatText) || /poetry|sylvia|plath/i.test(bodyText);
+  const reefHit = await page.locator("[data-reef-pearl], [data-semantic-orb-id]")
+    .filter({ hasText: /poetry|sylvia|plath|inspiration/i })
+    .count();
   const storage = await page.evaluate(() => {
     try {
       const raw = localStorage.getItem("lens.scenes.v4") || localStorage.getItem("lens.unified-workspace.v1");
       const parsed = raw ? JSON.parse(raw) : null;
       const scenes = parsed?.scenes || [];
       const orbs = scenes.flatMap((s) => s.semanticOrbs || []);
-      return orbs.map((o) => ({ id: o.id, name: o.name, systemPrompt: String(o.systemPrompt || "").slice(0, 120) }));
+      return orbs.map((o) => ({
+        id: o.id,
+        name: o.name,
+        systemPrompt: String(o.systemPrompt || "").slice(0, 200),
+      }));
     } catch {
       return [];
     }
   });
+  const stored = storage.some((o) => (
+    /poetry|sylvia|plath|inspiration/i.test(o.name)
+    || /sylvia|plath|poetry/i.test(o.systemPrompt)
+  ));
 
   console.log(JSON.stringify({
+    utterance,
     failed,
     created,
     reefHit,
+    stored,
     storage,
     chatSnippet: chatText.slice(0, 700),
     pageErrors: errors.slice(0, 5),
   }, null, 2));
 
-  if (failed || !created && !storage.some((o) => /poetry|inspiration/i.test(o.name))) {
+  if (failed || (!created && !stored)) {
     process.exitCode = 1;
   }
 } finally {

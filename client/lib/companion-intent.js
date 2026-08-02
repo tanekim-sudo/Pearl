@@ -151,12 +151,50 @@ export function titleFromPearlPurpose(purpose) {
   return text.slice(0, 80);
 }
 
+/** Filler words that are not a real topic before "pearl" ("make me a new pearl"). */
+const PEARL_TOPIC_STOPWORDS = /^(?:this|that|the|a|an|new|another|my|our|active|current|fresh|blank|empty|simple|basic|quick)$/i;
+
+/**
+ * Title for "make me a {topic} pearl like {style}" / "make a pearl like {style}".
+ * Keeps Reef labels intent-bound (topic + short style lead when useful).
+ */
+export function titleFromPearlStyleSimile(topic, style) {
+  const t = String(topic || "").replace(/\s+/g, " ").trim().replace(/^["“]|["”]$/g, "");
+  const s = String(style || "").replace(/\s+/g, " ").trim().replace(/^["“]|["”]$/g, "");
+  if (!t && !s) return "";
+  if (!s) return t.slice(0, 80);
+  const styleLead = (
+    s.match(/^(.+?)(?:\s+(?:['’]?s)?\s*(?:thought\s+process|style|voice|manner|way|writing|process|mind|sensibility))\s*$/i)?.[1]
+    || s.split(/\s+/).slice(0, 3).join(" ")
+  ).trim();
+  if (!t) return (styleLead || s).slice(0, 80);
+  if (styleLead && styleLead.length <= 36 && !/^like\b/i.test(styleLead)) {
+    return `${t} · ${styleLead}`.replace(/\s+/g, " ").trim().slice(0, 80);
+  }
+  return t.slice(0, 80);
+}
+
+function pearlCreateArgs({ name, materialText, intent, systemPromptHint }) {
+  const hint = String(systemPromptHint || materialText || name || intent || "").trim();
+  return {
+    verb: "createSemanticOrb",
+    args: {
+      sceneId: "",
+      name: String(name || "").trim().slice(0, 80),
+      ...(materialText ? { materialText: String(materialText).trim() } : {}),
+      intent: String(intent || "").trim(),
+      ...(hint ? { systemPromptHint: hint } : {}),
+    },
+  };
+}
+
 export function parsePearlCreationCommand(text) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
 
   // Optional "me/us" — novices say "make me a pearl …"
   const lead = /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl\b/i;
+  const createLead = /^(?:make|create|save)(?:\s+(?:me|us))?\b/i;
 
   // Existing-pearl prompt rewrite — never create. Handled by parsePearlSystemPromptCommand.
   if (/^(?:make|turn)\s+(?:this|that|the)\s+(?:active\s+|current\s+)?pearl\s+about\b/i.test(value)) {
@@ -169,16 +207,12 @@ export function parsePearlCreationCommand(text) {
   );
   if (fromBody?.[1]?.trim()) {
     const body = fromBody[1].trim();
-    return {
-      verb: "createSemanticOrb",
-      args: {
-        sceneId: "",
-        name: body.slice(0, 48),
-        materialText: body,
-        intent: value,
-        systemPromptHint: body,
-      },
-    };
+    return pearlCreateArgs({
+      name: body.slice(0, 48),
+      materialText: body,
+      intent: value,
+      systemPromptHint: body,
+    });
   }
 
   // make [me] a pearl about|called|named|titled X (optional : body)
@@ -188,16 +222,45 @@ export function parsePearlCreationCommand(text) {
   if (about?.[1]?.trim()) {
     const name = about[1].trim().replace(/^["“]|["”]$/g, "");
     const body = (about[2] || name).trim();
-    return {
-      verb: "createSemanticOrb",
-      args: {
-        sceneId: "",
-        name: name.slice(0, 80),
-        ...(body ? { materialText: body } : {}),
-        intent: value,
-        systemPromptHint: body || name,
-      },
-    };
+    return pearlCreateArgs({
+      name: name.slice(0, 80),
+      materialText: body,
+      intent: value,
+      systemPromptHint: body || name,
+    });
+  }
+
+  // make [me] a[n] {topic} pearl like|in the style of|inspired by {style}
+  // e.g. "make me a poetry pearl like sylvia plaths thought process"
+  const topicLike = value.match(
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:an?)\s+(.+?)\s+pearl\s+(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+)$/i,
+  );
+  if (topicLike?.[1]?.trim() && topicLike?.[2]?.trim() && !PEARL_TOPIC_STOPWORDS.test(topicLike[1].trim())) {
+    const topic = topicLike[1].trim().replace(/^["“]|["”]$/g, "");
+    const style = topicLike[2].trim().replace(/^["“]|["”]$/g, "");
+    const name = titleFromPearlStyleSimile(topic, style);
+    const hint = `${topic} — like ${style}`;
+    return pearlCreateArgs({
+      name,
+      materialText: hint,
+      intent: value,
+      systemPromptHint: hint,
+    });
+  }
+
+  // make [me] a pearl like|in the style of {style}
+  const pearlLike = value.match(
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl\s+(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+)$/i,
+  );
+  if (pearlLike?.[1]?.trim()) {
+    const style = pearlLike[1].trim().replace(/^["“]|["”]$/g, "");
+    const name = titleFromPearlStyleSimile("", style);
+    return pearlCreateArgs({
+      name,
+      materialText: style,
+      intent: value,
+      systemPromptHint: style,
+    });
   }
 
   // make [me] a pearl to|for|that|which <purpose> — seed systemPrompt from intent
@@ -207,32 +270,75 @@ export function parsePearlCreationCommand(text) {
   if (purpose?.[1]?.trim()) {
     const body = purpose[1].trim().replace(/^["“]|["”]$/g, "");
     const name = titleFromPearlPurpose(body) || body.slice(0, 80);
-    return {
-      verb: "createSemanticOrb",
-      args: {
-        sceneId: "",
-        name,
-        materialText: body,
-        intent: value,
-        systemPromptHint: body,
-      },
-    };
+    return pearlCreateArgs({
+      name,
+      materialText: body,
+      intent: value,
+      systemPromptHint: body,
+    });
+  }
+
+  // make [me] a[n] {topic} pearl [to|for|that|which|with|about …]
+  // e.g. "make me a poetry pearl" / "create me an inspiration pearl for morning pages"
+  const topicPearl = value.match(
+    /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:an?)\s+(.+?)\s+pearl(?:\s+(?:to|for|that|which|with|about)\s+(.+))?$/i,
+  );
+  if (topicPearl?.[1]?.trim() && !PEARL_TOPIC_STOPWORDS.test(topicPearl[1].trim())) {
+    const topic = topicPearl[1].trim().replace(/^["“]|["”]$/g, "");
+    const tail = String(topicPearl[2] || "").trim().replace(/^["“]|["”]$/g, "");
+    const name = tail
+      ? (titleFromPearlPurpose(tail) || `${topic} · ${tail}`.slice(0, 80))
+      : topic.slice(0, 80);
+    const hint = tail ? `${topic} — ${tail}` : topic;
+    return pearlCreateArgs({
+      name,
+      materialText: hint,
+      intent: value,
+      systemPromptHint: hint,
+    });
   }
 
   // make [me] a pearl [from this|the selection|these notes] [called Name]
   const match = value.match(
     /^(?:make|create|save)(?:\s+(?:me|us))?\s+(?:a |this )?pearl(?: from (?:this|the selection|these notes))?(?: called (.+))?$/i,
   );
-  if (!match || !lead.test(value)) return null;
-  return {
-    verb: "createSemanticOrb",
-    // Bare "create pearl" is valid — App assigns a sensible human title (never Untitled/orb).
-    args: {
-      sceneId: "",
-      ...(match[1] ? { name: match[1].trim() } : { name: "" }),
+  if (match && lead.test(value)) {
+    return {
+      verb: "createSemanticOrb",
+      // Bare "create pearl" is valid — App assigns a sensible human title (never Untitled/orb).
+      args: {
+        sceneId: "",
+        ...(match[1] ? { name: match[1].trim() } : { name: "" }),
+        intent: value,
+      },
+    };
+  }
+
+  // Safety net: any novice "make/create … pearl …" create phrasing stays offline.
+  // Never fall through to planner-only for basic pearl creates.
+  if (
+    createLead.test(value)
+    && /\bpearl\b/i.test(value)
+    && !/^(?:make|turn)\s+(?:this|that|the)\s+/i.test(value)
+    && !/\b(?:rename|delete|remove|wear|merge|open|activate)\b/i.test(value)
+  ) {
+    const looseTopic = value.match(
+      /(?:make|create|save)(?:\s+(?:me|us))?\s+(?:an?)\s+(.+?)\s+pearl\b/i,
+    )?.[1]?.trim();
+    const looseStyle = value.match(/\b(?:like|in the style of|inspired by)\s+(.+)$/i)?.[1]?.trim();
+    const name = titleFromPearlStyleSimile(
+      looseTopic && !PEARL_TOPIC_STOPWORDS.test(looseTopic) ? looseTopic : "",
+      looseStyle || "",
+    ) || (looseTopic && !PEARL_TOPIC_STOPWORDS.test(looseTopic) ? looseTopic.slice(0, 80) : "");
+    return pearlCreateArgs({
+      name,
+      materialText: looseStyle || looseTopic || value,
       intent: value,
-    },
-  };
+      systemPromptHint: looseStyle || looseTopic || value,
+    });
+  }
+
+  return null;
 }
 
 /**
