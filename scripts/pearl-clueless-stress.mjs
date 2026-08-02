@@ -179,11 +179,12 @@ async function readLibrary(page) {
     const mapPearl = (p) => ({
       id: p.id,
       name: p.name || p.title || p.label || "",
+      systemPrompt: String(p.systemPrompt || p.identity?.systemPrompt || p.purpose || "").trim(),
       archived: Boolean(p.archived),
     });
     const byId = new Map();
-    const out = { pearls: [], gauntletFilled: 0, gauntletSlots: [] };
-    for (const key of ["lens.scenes.v4", "lens.unified-workspace.v2", "lens.companion.gauntlet.v1", "lens.companion.worn-pearl.v1"]) {
+    const out = { pearls: [], gauntletFilled: 0, gauntletSlots: [], entities: {} };
+    for (const key of ["lens.scenes.v4", "lens.unified-workspace.v2", "lens.companion.gauntlet.v1", "lens.companion.worn-pearl.v1", "pearlEntities.v1"]) {
       const raw = localStorage.getItem(key);
       if (!raw) continue;
       try {
@@ -196,6 +197,14 @@ async function readLibrary(page) {
         if (key === "lens.unified-workspace.v2") {
           for (const bag of [parsed.semanticOrbs, parsed.pearls, parsed.library?.semanticOrbs, parsed.library?.pearls].filter(Boolean)) {
             for (const p of bag) if (p?.id) byId.set(p.id, { ...(byId.get(p.id) || {}), ...mapPearl(p) });
+          }
+        }
+        if (key === "pearlEntities.v1") {
+          out.entities = parsed.entities || {};
+          for (const p of Object.values(parsed.entities || {})) {
+            if (!p?.id) continue;
+            const mapped = mapPearl(p);
+            byId.set(p.id, { ...(byId.get(p.id) || {}), ...mapped, systemPrompt: mapped.systemPrompt || byId.get(p.id)?.systemPrompt || "" });
           }
         }
         if (key === "lens.companion.gauntlet.v1" || key === "lens.companion.worn-pearl.v1") {
@@ -656,6 +665,61 @@ async function runCluelessJourneys(browser) {
       ? "PNG Read required: pearl title must be readable on shelf without stacking under Reef hero"
       : "Create world-state missing/illegible on screen",
     "P0");
+
+  coverage("sf-system-prompt-create", "stressed", "create seeds systemPrompt from intent");
+  const createPromptOk = Boolean(
+    created?.systemPrompt
+    && /investor notes/i.test(created.systemPrompt)
+    && !/untitled/i.test(created.systemPrompt),
+  );
+  record(
+    "sf-system-prompt-create",
+    createPromptOk,
+    created ? `prompt=${String(created.systemPrompt).slice(0, 160)}` : "no pearl",
+    "P0",
+  );
+
+  coverage("sf-system-prompt-edit", "stressed", "Companion edits system prompt");
+  const promptEdit = await typeAndGo(
+    page,
+    "make this pearl about investor memos that are skeptical of TAM",
+    { shotPrefix: "03c-prompt-edit" },
+  );
+  record("sf-system-prompt-edit-go", Boolean(promptEdit.ok && promptEdit.hit?.ok), promptEdit.reason || "ok", "P0");
+  await page.waitForTimeout(900);
+  library = await readLibrary(page);
+  created = library.pearls.find((p) => p.id === created?.id) || library.pearls.find((p) => titleMatchesIntent(p.name, "investor notes"));
+  const promptReplyOk = Boolean(promptEdit.snap?.msgs?.some((m) => /system prompt|updated|skeptical|investor memos/i.test(m.text)));
+  const promptEditedOk = Boolean(
+    created?.systemPrompt
+    && /skeptical of TAM|investor memos/i.test(created.systemPrompt),
+  );
+  record(
+    "sf-system-prompt-edit",
+    promptEditedOk,
+    created
+      ? `prompt=${String(created.systemPrompt).slice(0, 200)} reply=${promptReplyOk} msgs=${JSON.stringify(promptEdit.snap?.msgs?.slice(-2) || []).slice(0, 180)}`
+      : "missing pearl after edit",
+    "P0",
+  );
+
+  coverage("sf-system-prompt-reload", "stressed", "reload persists systemPrompt");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1400);
+  library = await readLibrary(page);
+  const reloaded = library.pearls.find((p) => p.id === created?.id)
+    || library.pearls.find((p) => /skeptical of TAM|investor memos|investor notes/i.test(p.systemPrompt || ""));
+  const reloadPromptOk = Boolean(
+    reloaded?.systemPrompt
+    && /skeptical of TAM|investor memos/i.test(reloaded.systemPrompt),
+  );
+  record(
+    "sf-system-prompt-reload",
+    reloadPromptOk,
+    reloaded ? `id=${reloaded.id} prompt=${String(reloaded.systemPrompt).slice(0, 160)}` : "prompt lost on reload",
+    "P0",
+  );
+  if (reloaded) created = reloaded;
 
   coverage("sf-rename-novice", "stressed", "change the name to Series A notes");
   const rename = await typeAndGo(page, "change the name to Series A notes", { shotPrefix: "04-rename" });

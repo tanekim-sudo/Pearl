@@ -27,6 +27,12 @@ import {
   placeSemanticOrb,
   semanticOrbFromMaterial,
 } from "./semantic-orbs.js";
+import {
+  defaultSystemPromptFromIntent,
+  editPearlSystemPrompt as applySystemPromptEdit,
+  normalizePearlSystemPrompt,
+  readPearlSystemPrompt,
+} from "./pearl-system-prompt.js";
 import { applyOrganizeToPearl, organizePearlContents } from "./pearl-organize.js";
 import { materializeCounterPearl } from "./pearl-counter.js";
 import { buildGauntletEvaluationQuery } from "./pearl-gauntlet-eval.js";
@@ -312,7 +318,15 @@ export const DOMAIN_COMMANDS = Object.freeze({
     },
   },
   createSemanticOrb: {
-    schema: { sceneId: "string", orb: "object?", material: "object?", placement: "object?", activate: "boolean?" },
+    schema: {
+      sceneId: "string",
+      orb: "object?",
+      material: "object?",
+      placement: "object?",
+      activate: "boolean?",
+      systemPrompt: "string?",
+      intent: "string?",
+    },
     preconditions: ["Scene is explicit", "source material is preserved"],
     risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
     surfaces: ["web", "companion", "extension"],
@@ -324,6 +338,23 @@ export const DOMAIN_COMMANDS = Object.freeze({
         return { state, result: { type: "idempotent-replay", id, effects: [] } };
       }
       const placement = placeSemanticOrb(state.semanticOrbs, args.placement || args.orb?.placement || {});
+      const intentSeed = String(
+        args.systemPrompt
+        || args.intent
+        || args.orb?.systemPrompt
+        || args.material?.text
+        || args.orb?.name
+        || "",
+      ).trim();
+      const seededPrompt = args.systemPrompt || args.orb?.systemPrompt || (
+        intentSeed
+          ? defaultSystemPromptFromIntent({
+            name: args.orb?.name || args.material?.label || args.material?.name || "",
+            intent: intentSeed,
+            materialText: args.material?.text || intentSeed,
+          })
+          : null
+      );
       const hasOrganizedOrb = Boolean(
         args.orb
         && (
@@ -332,26 +363,47 @@ export const DOMAIN_COMMANDS = Object.freeze({
           || args.orb.lenses?.length
           || args.orb.workingSet?.context?.length
           || args.orb.representation
+          || args.orb.systemPrompt
         )
       );
       let orb;
       if (hasOrganizedOrb) {
         // Prefer explicit orb payload (forming pearls / encode) so Moves→Functions→Lenses survive.
-        orb = createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+        orb = createSemanticOrb({
+          ...(args.orb || {}),
+          id,
+          sceneId: args.sceneId,
+          placement,
+          ...(seededPrompt ? { systemPrompt: seededPrompt } : {}),
+        }, { now: context.now });
         if (args.material && !(orb.workingSet?.context || []).length) {
           const seeded = semanticOrbFromMaterial(args.material, {
-            id, sceneId: args.sceneId, placement, now: context.now,
+            id, sceneId: args.sceneId, placement, now: context.now, systemPrompt: seededPrompt,
           });
           orb = createSemanticOrb({
             ...orb,
+            systemPrompt: orb.systemPrompt || seeded.systemPrompt,
             workingSet: { ...orb.workingSet, context: seeded.workingSet.context },
             provenance: { ...(seeded.provenance || {}), ...(orb.provenance || {}) },
           }, { now: context.now });
         }
       } else if (args.material) {
-        orb = semanticOrbFromMaterial(args.material, { id, sceneId: args.sceneId, placement, now: context.now });
+        orb = semanticOrbFromMaterial(args.material, {
+          id,
+          sceneId: args.sceneId,
+          placement,
+          now: context.now,
+          systemPrompt: seededPrompt,
+          intent: intentSeed,
+        });
       } else {
-        orb = createSemanticOrb({ ...(args.orb || {}), id, sceneId: args.sceneId, placement }, { now: context.now });
+        orb = createSemanticOrb({
+          ...(args.orb || {}),
+          id,
+          sceneId: args.sceneId,
+          placement,
+          ...(seededPrompt ? { systemPrompt: seededPrompt } : {}),
+        }, { now: context.now });
       }
       return {
         state: {
@@ -471,6 +523,123 @@ export const DOMAIN_COMMANDS = Object.freeze({
         updatedAt: new Date(context.now).toISOString(),
       }));
       return { state: next, result: { type: "semantic-orb-updated", id: args.id, effects: ["semantic-orb-updated"] } };
+    },
+  },
+  getPearlSystemPrompt: {
+    schema: { id: "string?", name: "string?" },
+    preconditions: ["pearl exists or is resolvable"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "none",
+    observableEffects: ["pearl-system-prompt-read"],
+    execute(state, args) {
+      const orb = (state.semanticOrbs || []).find((entry) => entry.id === args.id)
+        || (args.name
+          ? (state.semanticOrbs || []).find((entry) => String(entry.name || "").toLowerCase() === String(args.name).toLowerCase())
+          : null)
+        || (state.semanticOrbs || []).find((entry) => entry.id === state.activeSemanticOrbId)
+        || null;
+      const entity = args.id ? state.pearlEntities?.[args.id] : null;
+      const pearl = orb || entity;
+      if (!pearl) throw new Error("pearl not found");
+      const systemPrompt = readPearlSystemPrompt(pearl);
+      return {
+        state,
+        result: {
+          type: "pearl-system-prompt",
+          id: pearl.id,
+          object: { id: pearl.id, name: pearl.name || pearl.identity?.name || "", systemPrompt },
+          effects: ["pearl-system-prompt-read"],
+        },
+      };
+    },
+  },
+  setPearlSystemPrompt: {
+    schema: { id: "string", systemPrompt: "string", mode: "replace|append|rewrite?" },
+    preconditions: ["orb exists", "system prompt text is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.systemPrompt",
+    observableEffects: ["pearl-system-prompt-updated", "semantic-orb-updated"],
+    execute(state, args, context) {
+      const mode = String(args.mode || "replace").toLowerCase();
+      let nextState = state;
+      const edited = applySystemPromptEdit(
+        readPearlSystemPrompt((state.semanticOrbs || []).find((entry) => entry.id === args.id) || {}),
+        { mode, text: args.systemPrompt },
+      );
+      if (!edited.ok) throw new Error(edited.reason || "system prompt edit failed");
+      const systemPrompt = normalizePearlSystemPrompt(edited.systemPrompt);
+      if ((state.semanticOrbs || []).some((orb) => orb.id === args.id)) {
+        nextState = updateSemanticOrb(nextState, args.id, (orb) => ({
+          ...orb,
+          systemPrompt,
+          purpose: systemPrompt.slice(0, 1_000) || orb.purpose,
+          updatedAt: new Date(context.now).toISOString(),
+        }));
+      } else {
+        throw new Error("pearl not found");
+      }
+      if (nextState.pearlEntities?.[args.id]) {
+        const entity = nextState.pearlEntities[args.id];
+        const changed = applyPearlEntityPatch(entity, {
+          systemPrompt,
+          identity: { ...entity.identity, purpose: systemPrompt.slice(0, 1_000) },
+        }, {
+          expectedRevision: entity.revision,
+          idempotencyKey: `system-prompt:${args.id}:${context.now}`,
+          reason: "set-system-prompt",
+        });
+        if (!changed.conflict) {
+          nextState = {
+            ...nextState,
+            pearlEntities: { ...nextState.pearlEntities, [args.id]: changed.entity },
+          };
+        }
+      }
+      return {
+        state: nextState,
+        result: {
+          type: "pearl-system-prompt",
+          id: args.id,
+          object: { id: args.id, systemPrompt, mode: edited.mode },
+          effects: ["pearl-system-prompt-updated", "semantic-orb-updated"],
+        },
+      };
+    },
+  },
+  editPearlSystemPrompt: {
+    schema: {
+      id: "string?",
+      name: "string?",
+      text: "string?",
+      systemPrompt: "string?",
+      instruction: "string?",
+      mode: "replace|append|rewrite?",
+    },
+    preconditions: ["pearl exists", "edit text is explicit"],
+    risk: "low", confirmation: "none", undo: "restore-semantic-orbs",
+    surfaces: ["web", "companion", "extension"],
+    persistenceEffect: "scene.semanticOrbs.systemPrompt",
+    observableEffects: ["pearl-system-prompt-updated", "semantic-orb-updated"],
+    execute(state, args, context) {
+      const orb = (state.semanticOrbs || []).find((entry) => entry.id === args.id)
+        || (args.name
+          ? (state.semanticOrbs || []).find((entry) => {
+            const needle = String(args.name).trim().toLowerCase();
+            const name = String(entry.name || "").toLowerCase();
+            return name === needle || name.includes(needle);
+          })
+          : null)
+        || (state.semanticOrbs || []).find((entry) => entry.id === state.activeSemanticOrbId)
+        || null;
+      if (!orb) throw new Error("pearl not found");
+      const text = String(args.systemPrompt || args.text || args.instruction || "").trim();
+      return DOMAIN_COMMANDS.setPearlSystemPrompt.execute(state, {
+        id: orb.id,
+        systemPrompt: text,
+        mode: args.mode || "replace",
+      }, context);
     },
   },
   patchSemanticOrbAesthetic: {

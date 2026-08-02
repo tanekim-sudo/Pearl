@@ -130,6 +130,11 @@ export function mergeWornPearlPacks(packs = []) {
     }
     boundRefs.push(...(pack.boundRefs || []));
   }
+  const systemPrompt = list
+    .map((pack) => pack.systemPrompt)
+    .filter(Boolean)
+    .join("\n---\n")
+    .slice(0, 12_000);
   return {
     version: list[0].version,
     pearlId: list[0].pearlId,
@@ -137,16 +142,18 @@ export function mergeWornPearlPacks(packs = []) {
     kind: "orbit-pack",
     representationKind: "composed",
     wornAt: Math.min(...list.map((pack) => pack.wornAt || Date.now())),
+    systemPrompt,
     context: context.slice(0, 80),
     lenses: lenses.slice(0, 40),
     functions: functions.slice(0, 48),
     boundRefs: [...new Set(boundRefs)].slice(0, 80),
     packs: list,
-    summary: `${list.length} orbiting pearls · ${context.length} context · ${lenses.length} lenses · ${functions.length} functions`,
+    summary: `${list.length} orbiting pearls · system prompts · ${context.length} context · ${lenses.length} lenses · ${functions.length} functions`,
     capabilities: {
       canExecuteBoundFunctions: functions.length > 0,
       canApplyLenses: lenses.length > 0,
-      hasContext: context.length > 0,
+      hasContext: context.length > 0 || Boolean(systemPrompt),
+      hasSystemPrompt: Boolean(systemPrompt),
       multiWear: true,
     },
     orbit: {

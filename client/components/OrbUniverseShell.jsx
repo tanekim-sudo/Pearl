@@ -3426,8 +3426,13 @@ export default function OrbUniverseShell({ StageComponent }) {
     // Preserve Companion/Studio Function-move edits when the shelf orb is stale.
     // Prefer the canonical store entity wholesale — createPearlEntity rebuilds
     // functions from cognition, so partial merges can drop ordered steps.
+    // Always prefer a non-empty shelf systemPrompt when the store entity lacks one.
     if (existing && (existingHasOrderedMoves || (existing.revision || 0) > (entity.revision || 0))) {
-      entity = createPearlEntity(existing);
+      const shelfPrompt = active?.systemPrompt || entity.systemPrompt;
+      entity = createPearlEntity({
+        ...existing,
+        systemPrompt: existing.systemPrompt || shelfPrompt || entity.systemPrompt,
+      });
     }
     localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
       ...store,

@@ -5,8 +5,8 @@ Showcase: [docs/pearl-showcase-flows.md](./pearl-showcase-flows.md)
 Gap audit: [docs/pearl-stress-clueless-gap-audit.md](./pearl-stress-clueless-gap-audit.md)
 Master harness: `npm run stress:clueless` → `scripts/pearl-clueless-stress.mjs`
 Evidence: `audit-shots/pearl-clueless-stress-2026-07-24/`
-Last clueless run: 9bf0639 · 2026-07-25T08:27:47.295Z
-Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
+Last clueless run: 9a372ea · 2026-08-02T00:29:46.144Z
+Clueless score: 41/44 · P0=1 P1=2 (skips not counted as passes)
 
 ## Showcase flows
 
@@ -16,6 +16,9 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-cold-talk` | stressed | Talk≤1 click opens input+GO |
 | `sf-create-topic-pearl` | stressed | naive create → visible intent title |
 | `sf-continuity-marathon` | stressed | create→rename→edit→wear→merge one session |
+| `sf-system-prompt-create` | stressed | create seeds systemPrompt from intent |
+| `sf-system-prompt-edit` | stressed | Companion edits system prompt |
+| `sf-system-prompt-reload` | stressed | reload persists systemPrompt |
 | `sf-rename-novice` | stressed | change the name to Series A notes |
 | `sf-edit-add-notes` | stressed | edit it to add budget concerns |
 | `sf-wear-gauntlet` | stressed | wear it via Talk→GO |
@@ -28,37 +31,16 @@ Clueless score: 64/64 · P0=0 P1=0 (skips not counted as passes)
 | `sf-click-studio-function-moves` | stressed | real hit-test click pearl → Studio function-as-moves |
 | `sf-studio-reorder-moves` | stressed | drag reorder move sequence persists |
 | `sf-companion-nl-reorder-moves` | stressed | Talk→GO natural language reorder Function moves |
-| `sf-encode-open` | stressed | encode anything |
-| `sf-version-loop` | stressed | snapshot → history → restore |
-| `sf-evaluate-gauntlet` | stressed | evaluate honesty |
-| `sf-output-frame` | stressed | open the output frame |
-| `sf-split` | stressed | split this pearl |
-| `sf-destructive-confirm` | stressed | clear with Accept/Reject |
-| `sf-go-home` | stressed | go home |
-| `sf-pearl-guide` | stressed | how does pearl work |
-| `sf-pearl-powers` | stressed | show me pearl powers |
-| `sf-pearl-capability-demo` | stressed | Watch what Pearl can do — hands-off current capability tour |
-| `sf-shell-nav-primary` | stressed | visible primary shell nav |
-| `sf-install-download` | stressed | install download CTA |
-| `sf-shell-packages-settings` | stressed | open packages + settings |
-| `sf-share-handoff` | residual | unsigned/live OAuth handoff needs credentials/extension |
-| `sf-aesthetic-veto` | stressed | primary frames logged for human Read |
-| `sf-extension-cold-mount` | stressed | unpacked MV3 + host access: content_scripts mounts Mother Pearl without privileged toggle (`extension/scripts/orb-audit.mjs`) |
-| `sf-extension-hold-speak` | stressed | hold→Listening→FakeSpeech→session intent / Companion handoff; real OS mic residual |
-| `sf-extension-space-triple` | stressed | Space×3 toggles Pearl cursor vs native; ignored in editable fields |
-| `sf-extension-pearl-dnd-wear` | stressed | Sidepanel shelf capsules + Wear→gauntlet persist (`extension/scripts/pearl-dnd-audit.mjs`); HTML5 DnD residual in Playwright |
-| `sf-reef-pearl-wear-affordance` | stressed | Reef PhysicalPearl capsules + Wear + drag MIME onto Companion (`wearPearl` original) |
-| `sf-orphan-audit-ledger` | stressed | `docs/pearl-orphan-audit.md` inventory + rewires |
 
-## Stressed: 36 · Residual/skipped: 1
+## Stressed: 19 · Residual/skipped: 0
 
 ## Residuals (honest)
 
 - Comprehension Q (14d): Do I know what this pearl is? What can I do next? Can I see Functions as ordered Moves? — harness asserts structure present; agent must confirm via PNG Read.
-- SF23 share/handoff: packages surface stressed; signed grant + second-session restore residual without live share credentials.
-- Extension real Chrome microphone / getUserMedia permission UI: Fake SpeechRecognition proves hold-speak wiring in `orb-audit`; live mic remains residual.
-- Playwright HTML5 drag-and-drop onto gauntlet sockets is unreliable; Wear button and web `wearPearl` prove the same shared gauntlet path. Manual Chrome drag remains the headed DnD residual.
-- Off-vision classic Stage (Highlight/AiNode/BeforeAfter/Grammar/TopToolbar rails) **deleted** from Pearl shell (user-approved); Scene stays spatial; Studio owns Functions. Clueless `sf-companion-open-scene` asserts no classic clutter.
+- Journey interrupted: page.goto: Navigation to "http://127.0.0.1:41822/" is interrupted by another navigation to "http://127.0.0.1:41822/"
+Call log:
+  - navigating to "http://127.0.0.1:41822/", waiting until "domcontentloaded"
+
 
 ## Anti-lie
 

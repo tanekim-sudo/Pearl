@@ -244,6 +244,7 @@ import { executePearlActionEvent } from "../shared/pearl-action-protocol.js";
 import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entity.js";
 import { listPearlVersions } from "../shared/pearl-version-history.js";
 import { sensiblePearlName } from "../shared/semantic-orbs.js";
+import { defaultSystemPromptFromIntent, readPearlSystemPrompt } from "../shared/pearl-system-prompt.js";
 import { collectReefPearls, findWorkspacePearl } from "./lib/reef-home.js";
 import {
   answerClarificationSession,
@@ -313,6 +314,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   parsePearlEditCommand,
+  parsePearlSystemPromptCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -13070,6 +13072,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         || a.organizedOrb?.name
         || "",
       );
+      const systemPrompt = a.systemPrompt
+        || a.orb?.systemPrompt
+        || defaultSystemPromptFromIntent({
+          name: pearlName,
+          intent: a.intent || a.systemPromptHint || a.material?.text || pearlName,
+          materialText: a.material?.text || a.systemPromptHint || "",
+        });
       tk?.caption?.(a.caption || `creating pearl “${pearlName}”`);
       const mother = document.querySelector(".companion-orb");
       const reef = document.querySelector("[data-reef-home], .orb-reef, [data-semantic-anchor='scene-stage']");
@@ -13086,6 +13095,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         args: {
           sceneId: a.sceneId || sceneId,
           placement: a.placement,
+          systemPrompt,
+          intent: a.intent || a.systemPromptHint || pearlName,
           material: a.material
             ? { ...a.material, label: a.material.label || pearlName, name: a.material.name || pearlName }
             : a.material,
@@ -13096,10 +13107,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
               name: sensiblePearlName(
                 organizedOrb.name || a.name || organizedOrb.representation?.label || pearlName,
               ),
+              systemPrompt: organizedOrb.systemPrompt || systemPrompt,
             }
             : a.material
-              ? (a.id ? { id: a.id, name: pearlName } : { name: pearlName })
-              : { id: a.id, name: pearlName },
+              ? (a.id ? { id: a.id, name: pearlName, systemPrompt } : { name: pearlName, systemPrompt })
+              : { id: a.id, name: pearlName, systemPrompt },
           activate: a.activate !== false,
         },
       });
@@ -13683,6 +13695,128 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         name: nextName,
         effects: ["semantic-orb-renamed"],
         visibleText: `Renamed pearl to “${nextName}”.`,
+      };
+    },
+    getPearlSystemPrompt: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to inspect its system prompt.");
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "getPearlSystemPrompt",
+        args: { id: pearl.id, name: pearl.name },
+      }).catch(() => null);
+      const systemPrompt = receipt?.object?.systemPrompt || readPearlSystemPrompt(pearl);
+      await tk?.wait?.(80);
+      return {
+        type: "pearl-system-prompt",
+        id: pearl.id,
+        object: { id: pearl.id, name: pearl.name, systemPrompt },
+        effects: ["pearl-system-prompt-read"],
+        visibleText: systemPrompt
+          ? `System prompt for “${pearl.name}”:\n${systemPrompt}`
+          : `“${pearl.name}” has no system prompt yet.`,
+      };
+    },
+    setPearlSystemPrompt: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to set its system prompt.");
+      const text = String(a.systemPrompt || a.text || a.instruction || "").trim();
+      if (!text) throw new Error("Tell me the system prompt text to set.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "setPearlSystemPrompt",
+        args: {
+          id: pearl.id,
+          systemPrompt: text,
+          mode: a.mode || "replace",
+          sceneId: a.sceneId || pearl.sceneId || sceneId,
+        },
+      });
+      // Keep Studio entity store in sync when present.
+      try {
+        const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+        if (store.entities?.[pearl.id]) {
+          const entity = createPearlEntity({
+            ...store.entities[pearl.id],
+            systemPrompt: receipt?.object?.systemPrompt || text,
+            revision: (store.entities[pearl.id].revision || 0) + 1,
+          });
+          localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+            ...store,
+            entities: { ...store.entities, [pearl.id]: entity },
+            activePearlId: pearl.id,
+            updatedAt: Date.now(),
+          }));
+        }
+      } catch { /* best-effort */ }
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "charge", durationMs: 280 },
+      }));
+      await tk?.wait?.(220);
+      const nextPrompt = receipt?.object?.systemPrompt || text;
+      return {
+        type: "pearl-system-prompt",
+        id: pearl.id,
+        object: { id: pearl.id, systemPrompt: nextPrompt },
+        effects: ["pearl-system-prompt-updated", "semantic-orb-updated"],
+        visibleText: `Updated system prompt for “${pearl.name}”.`,
+      };
+    },
+    editPearlSystemPrompt: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to edit its system prompt.");
+      const text = String(a.systemPrompt || a.text || a.instruction || "").trim();
+      if (!text) throw new Error("Tell me how to change the system prompt.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "editPearlSystemPrompt",
+        args: {
+          id: pearl.id,
+          name: pearl.name,
+          text,
+          mode: a.mode || "replace",
+          sceneId: a.sceneId || pearl.sceneId || sceneId,
+        },
+      });
+      try {
+        const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+        if (store.entities?.[pearl.id]) {
+          const entity = createPearlEntity({
+            ...store.entities[pearl.id],
+            systemPrompt: receipt?.object?.systemPrompt || text,
+            revision: (store.entities[pearl.id].revision || 0) + 1,
+          });
+          localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+            ...store,
+            entities: { ...store.entities, [pearl.id]: entity },
+            activePearlId: pearl.id,
+            updatedAt: Date.now(),
+          }));
+        }
+      } catch { /* best-effort */ }
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "charge", durationMs: 280 },
+      }));
+      await tk?.wait?.(220);
+      return {
+        type: "pearl-system-prompt",
+        id: pearl.id,
+        object: { id: pearl.id, systemPrompt: receipt?.object?.systemPrompt || text },
+        effects: ["pearl-system-prompt-updated", "semantic-orb-updated"],
+        visibleText: a.mode === "append"
+          ? `Added to the system prompt for “${pearl.name}”.`
+          : `Updated system prompt for “${pearl.name}”.`,
       };
     },
     bindSemanticOrb: async (a) => {
@@ -17973,6 +18107,30 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
 
+    // System-prompt edits before critique — "make this pearl about …" must not become revisePearlFromFeedback.
+    const pearlSystemPromptEarly = parsePearlSystemPromptCommand(text);
+    if (pearlSystemPromptEarly) {
+      onPhase?.("executing");
+      const step = { ...pearlSystemPromptEarly, args: { ...pearlSystemPromptEarly.args } };
+      const resolvedSceneId = sceneId || currentSemanticScene()?.id || null;
+      if (resolvedSceneId && (step.args.sceneId == null || step.args.sceneId === "")) {
+        step.args.sceneId = resolvedSceneId;
+      } else if (step.args.sceneId == null || step.args.sceneId === "") {
+        delete step.args.sceneId;
+      }
+      const result = await executeCompanionScript([step], {
+        title: step.verb === "getPearlSystemPrompt" ? "Read system prompt" : "Edit system prompt",
+      });
+      updateCommand(commandEntry.id, result.completed
+        ? { status: "executed", effects: result.effects || ["pearl-system-prompt-updated"] }
+        : { status: "failed", failure: result.errors?.[0] || "System prompt edit failed" });
+      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      const reply = result.value?.visibleText
+        || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
+        || "Updated the pearl system prompt.";
+      return { visible: true, text: reply, completed: true };
+    }
+
     const critiqueIntent = parseCritiqueCommand(text, { sessionActive: Boolean(critiqueSessionRef.current) });
     if (critiqueIntent) {
       onPhase?.("executing");
@@ -18092,6 +18250,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const materialText = String(pearlCreation.args.materialText || "").trim();
       const requestedName = String(pearlCreation.args.name || "").trim();
       const pearlTitle = sensiblePearlName(requestedName || materialText || "");
+      const systemPrompt = defaultSystemPromptFromIntent({
+        name: pearlTitle,
+        intent: pearlCreation.args.intent || text,
+        materialText: materialText || requestedName || pearlTitle,
+        topic: pearlTitle,
+      });
       const material = selected.length
         ? {
           id: `pearl-selection:${selected.map((item) => item.id).join("+")}`,
@@ -18118,6 +18282,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           ...(resolvedSceneId ? { sceneId: resolvedSceneId } : {}),
           name: pearlTitle,
           material,
+          systemPrompt,
+          intent: pearlCreation.args.intent || text,
           activate: true,
         },
       };
@@ -18128,7 +18294,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
       return {
         visible: true,
-        text: `Created context pearl “${pearlTitle}”. Wear it into the gauntlet when you need it.`,
+        text: `Created pearl “${pearlTitle}” with a system prompt. Wear it into the gauntlet when you need it.`,
         completed: true,
       };
     }

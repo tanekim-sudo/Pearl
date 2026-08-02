@@ -1,6 +1,11 @@
 import { createPearlPrivacyPolicy, effectivePearlPrivacyPolicy } from "./pearl-privacy-policy.js";
 import { createPearlCognition } from "./pearl-cognitive-layers.js";
 import { normalizePearlAesthetic } from "./pearl-aesthetic.js";
+import {
+  defaultSystemPromptFromIntent,
+  migratePearlSystemPrompt,
+  normalizePearlSystemPrompt,
+} from "./pearl-system-prompt.js";
 
 export const PEARL_ENTITY_VERSION = 1;
 export const PEARL_ENTITY_KINDS = Object.freeze(["primary", "semantic", "result", "automation", "page-canvas", "shared", "studio"]);
@@ -94,12 +99,27 @@ export function createPearlEntity(value = {}) {
     uncertainty: clone(layer.uncertainty),
     provenance: clone(layer.provenance),
   });
+  const identity = canonicalIdentity(value, pearlId);
+  const hasExplicitPrompt = Object.prototype.hasOwnProperty.call(value, "systemPrompt")
+    || Object.prototype.hasOwnProperty.call(value.identity || {}, "systemPrompt");
+  const migratedPrompt = migratePearlSystemPrompt({
+    ...value,
+    name: identity.name,
+    identity,
+    systemPrompt: value.systemPrompt ?? value.identity?.systemPrompt,
+  });
+  const systemPrompt = hasExplicitPrompt
+    ? normalizePearlSystemPrompt(value.systemPrompt ?? value.identity?.systemPrompt)
+    : normalizePearlSystemPrompt(
+      migratedPrompt.systemPrompt || defaultSystemPromptFromIntent({ name: identity.name, topic: identity.name }),
+    );
   return {
     schemaVersion: PEARL_ENTITY_VERSION,
     id: pearlId,
     kind,
     revision,
-    identity: canonicalIdentity(value, pearlId),
+    systemPrompt,
+    identity,
     representation: canonicalRepresentation(value, kind),
     workingSet: canonicalWorkingSet(value),
     lenses: cognition.layers.filter((entry) => entry.kind === "lens").map(legacyView),
@@ -213,6 +233,7 @@ export function checkpointPearlEntity(entityInput, reason, metadata = {}) {
     revision: entity.revision,
     reason: bounded(reason, 180),
     snapshot: {
+      systemPrompt: entity.systemPrompt,
       identity: clone(entity.identity),
       representation: clone(entity.representation),
       workingSet: clone(entity.workingSet),
@@ -273,7 +294,7 @@ export function applyPearlEntityPatch(entityInput, patch, options = {}) {
 export function pearlEntityObservation(entityInput, options = {}) {
   const entity = createPearlEntity(entityInput);
   const authorized = options.authorizedSections || [
-    "identity", "representation", "workingSet", "lenses", "moves", "functions", "cognition", "automation", "generation",
+    "systemPrompt", "identity", "representation", "workingSet", "lenses", "moves", "functions", "cognition", "automation", "generation",
     "results", "canvas", "soundscape", "aesthetic", "privacy", "sharing", "lineage", "relationships", "permissions", "tasks", "outputRouting", "runtime",
   ];
   return {

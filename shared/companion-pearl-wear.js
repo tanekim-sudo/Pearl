@@ -1,7 +1,7 @@
 /**
  * Companion is the app. Pearls are optional capability packs the companion can wear.
  * The mother companion stays default white; worn pearls orbit it as add-ons.
- * Wearing injects working set, lenses, and bound functions into companion context.
+ * Wearing injects the pearl's system prompt plus working set / lenses / functions.
  */
 
 import {
@@ -14,6 +14,7 @@ import {
   reorderOrbitPearls,
   wornPearlOrbitSlots,
 } from "./companion-pearl-orbit.js";
+import { normalizePearlSystemPrompt, readPearlSystemPrompt } from "./pearl-system-prompt.js";
 
 export const COMPANION_PEARL_WEAR_VERSION = 2;
 export const WORN_PEARL_STORAGE_KEY = "lens.companion.worn-pearl.v1";
@@ -80,6 +81,7 @@ export function buildWornPearlPack(pearl, options = {}) {
     name: bounded(move.name || "Move", 80),
     description: bounded(move.description || move.transformation || "", 180),
   }));
+  const systemPrompt = normalizePearlSystemPrompt(readPearlSystemPrompt(pearl));
   return {
     version: COMPANION_PEARL_WEAR_VERSION,
     pearlId: pearl.id,
@@ -88,6 +90,7 @@ export function buildWornPearlPack(pearl, options = {}) {
     representationKind: representation.kind || "empty",
     wornAt: Number(options.wornAt) || Date.now(),
     aesthetic: pearl.aesthetic || null,
+    systemPrompt,
     context,
     lenses,
     moves,
@@ -95,14 +98,17 @@ export function buildWornPearlPack(pearl, options = {}) {
     boundRefs,
     summary: bounded(
       options.summary
-        || `${pearl.name || "Pearl"} · ${context.length} context · ${moves.length} moves · ${lenses.length} lenses · ${functions.length} functions`,
+        || (systemPrompt
+          ? `${pearl.name || "Pearl"} · system prompt · ${context.length} context · ${functions.length} functions`
+          : `${pearl.name || "Pearl"} · ${context.length} context · ${moves.length} moves · ${lenses.length} lenses · ${functions.length} functions`),
       220,
     ),
     capabilities: {
       canExecuteBoundFunctions: functions.length > 0,
       canApplyLenses: lenses.length > 0,
-      hasContext: context.length > 0,
-      canEvaluate: lenses.length > 0 || context.length > 0 || moves.length > 0,
+      hasContext: context.length > 0 || Boolean(systemPrompt),
+      canEvaluate: lenses.length > 0 || context.length > 0 || moves.length > 0 || Boolean(systemPrompt),
+      hasSystemPrompt: Boolean(systemPrompt),
     },
   };
 }
@@ -119,17 +125,27 @@ export function companionWearPrompt(pack) {
   const orbitCount = pack.orbit?.count || pack.packs?.length || 1;
   if (orbitCount > 1) {
     const names = (pack.packs || []).map((entry) => entry.name).join(", ");
+    const prompts = (pack.packs || [])
+      .map((entry) => entry.systemPrompt)
+      .filter(Boolean)
+      .map((prompt) => bounded(prompt, 400))
+      .join("\n---\n");
     return [
       `Gauntlet working memory holds ${orbitCount} of 5 active pearls: ${names}.`,
+      prompts ? `Merged system prompts:\n${prompts}` : "",
       `Merged context: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
-      "Prefer bound functions and context from the loaded packs. Mother pearl appearance stays classic white.",
+      "Interpret through these system prompts first. Prefer bound functions and context from the loaded packs.",
       "The user can load more sockets (up to 5), activate one, or remove any.",
-    ].join(" ");
+    ].filter(Boolean).join(" ");
   }
+  const promptLine = pack.systemPrompt
+    ? `System prompt:\n${bounded(pack.systemPrompt, 1_800)}`
+    : "This pearl has no system prompt yet — ask the user to set one, or infer carefully from context.";
   return [
     `Pearl “${pack.name}” (${pack.pearlId}) is loaded in the gauntlet working memory.`,
+    promptLine,
     `Context items: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
-    "Interpret and execute through this pearl’s lens. Prefer its bound functions and context before inventing new ones.",
+    "Interpret and execute through this pearl's system prompt. Prefer its bound functions and context before inventing new ones.",
     "The user can still load another pearl into an open socket (5 max) or clear this one.",
   ].join(" ");
 }

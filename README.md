@@ -19,11 +19,13 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **Mother Pearl = Companion.** Talk → type (or hold-to-speak) → **GO**. No mode picker. No tour wall. No user-facing “orb.” Confusion budget: ≤1 unexplained click to usable Talk + GO.
 
+**A Pearl stores a system prompt** — the taste, instructions, and capability it carries. Companion **interprets** that prompt when the pearl is worn, and can **edit** it from natural language (“make this pearl about…”, “add that I always want a risks section”, “rewrite the system prompt to…”). Creating a pearl seeds an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
+
 **Reef** is home — all your pearls, spread out as physical capsules you can see, drag, wear, and open.
 
 **Gauntlet ≤5** — up to five worn pearls as active working memory (Infinity-stone sockets). A sixth drop refuses clearly; it never silently bumps another out.
 
-**Studio** — open a pearl to inspect and edit structure. Reading order when structure exists: **Moves → Functions → Lenses**. A Function **is** an ordered series of Moves (`LensTreeEditor` DnD / Companion reorder — one algorithm).
+**Studio** — open a pearl to read and edit its **system prompt** as the hero field. Moves → Functions → Lenses remain available as secondary/advanced structure when present.
 
 **Extension** — Pearl Everywhere is the page Companion: in-page Pearl, side panel, hold-to-speak, Space×3 cursor toggle, wear/DnD to gauntlet, staged stack + explicit GO, install download under `/downloads/`.
 
@@ -35,10 +37,11 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 ### Pearl
 
-A Pearl is a persistent, executable unit of cultivated understanding — not a note, chat, document, or folder. It unifies:
+A Pearl is a persistent unit whose **primary field is `systemPrompt`** — the instructions Companion uses when wearing it. Around that prompt it can also carry context, optional Moves→Functions→Lenses structure, and provenance.
 
 | Property | Meaning |
 | --- | --- |
+| **System prompt** | Primary: taste / instructions / capability the pearl carries |
 | **Memory** | Cumulative formation: conversations, sources, refinements |
 | **Perspective** | Compiled way of seeing — judgment, not raw dump |
 | **Capability** | Emergent ability to act (critique, underwrite, rewrite…) |

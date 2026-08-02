@@ -13,6 +13,7 @@ import {
   editorOpsToPearlFunction,
   pearlFunctionToEditorSeed,
 } from "../lib/pearl-function-tree-bridge.js";
+import { readPearlSystemPrompt } from "../../shared/pearl-system-prompt.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import PearlFunctionMovesStudio from "./PearlFunctionMovesStudio.jsx";
 import PearlAestheticPanel from "./PearlAestheticPanel.jsx";
@@ -66,9 +67,15 @@ export default function PearlStudioView({ localRef }) {
   const [entity, setEntity] = useState(() => initial && createPearlEntity(initial));
   const [status, setStatus] = useState(initial ? "Local · encrypted" : "This local Pearl reference is unavailable.");
   const [name, setName] = useState(initial?.identity?.name || "");
-  const [purpose, setPurpose] = useState(
-    initial?.identity?.description || initial?.purpose || initial?.results?.[0]?.text || "",
-  );
+  const [systemPrompt, setSystemPrompt] = useState(() => (
+    initial ? readPearlSystemPrompt(initial) : ""
+  ));
+  // Prompt is always the hero. When Functions/Moves already exist, surface them
+  // below the prompt (not instead of it) so role pearls stay navigable.
+  const [structureOpen, setStructureOpen] = useState(() => {
+    if (!initial) return false;
+    return listPearlFunctionRecords(initial).some((fn) => orderedMovesFromFunction(fn).length >= 1);
+  });
   const [notesOpen, setNotesOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -94,16 +101,19 @@ export default function PearlStudioView({ localRef }) {
       pearlFunctionId: fn.id,
       syncKey: editorSyncRef.current,
     });
+    setStructureOpen(true);
     setStatus(reason || "Function editor · drag grips to reorder Moves");
   }
 
-  // Default primary interior: original LensTreeEditor (not buried behind a button).
+  // Secondary: when structure exists, open Function editor below the prompt hero
+  // (never instead of the system prompt).
   useEffect(() => {
     if (!entity || autoOpenedRef.current) return;
     const fns = listPearlFunctionRecords(entity);
-    const preferred = fns.find((fn) => orderedMovesFromFunction(fn).length >= 1) || fns[0];
+    const preferred = fns.find((fn) => orderedMovesFromFunction(fn).length >= 1) || null;
     if (!preferred) return;
     autoOpenedRef.current = true;
+    setStructureOpen(true);
     const seed = pearlFunctionToEditorSeed(preferred);
     editorSyncRef.current += 1;
     setTreeEditor({
@@ -111,7 +121,7 @@ export default function PearlStudioView({ localRef }) {
       pearlFunctionId: preferred.id,
       syncKey: editorSyncRef.current,
     });
-    setStatus("Function editor · ordered Moves");
+    setStatus("System prompt above · Function editor below");
   }, [entity?.id]);
 
   useEffect(() => () => channel?.close(), [channel]);
@@ -137,14 +147,18 @@ export default function PearlStudioView({ localRef }) {
           const refreshed = createPearlEntity(next);
           setEntity(refreshed);
           setName(refreshed.identity?.name || "");
+          setSystemPrompt(readPearlSystemPrompt(refreshed));
           const companionTouch = event.data?.reason === "reorder-function-moves"
-            || event.data?.reason === "decompose-function-move";
+            || event.data?.reason === "decompose-function-move"
+            || event.data?.reason === "system-prompt";
           setStatus(event.data?.reason === "reorder-function-moves"
             ? "Companion reordered Moves"
             : event.data?.reason === "decompose-function-move"
               ? "Companion decomposed a Move"
-              : "Updated");
-          if (companionTouch) {
+              : event.data?.reason === "system-prompt"
+                ? "Companion updated system prompt"
+                : "Updated");
+          if (companionTouch && event.data?.reason !== "system-prompt") {
             const fnId = treeEditor?.pearlFunctionId
               || listPearlFunctionRecords(refreshed).find((fn) => orderedMovesFromFunction(fn).length >= 1)?.id;
             if (fnId) {
@@ -157,6 +171,7 @@ export default function PearlStudioView({ localRef }) {
                   pearlFunctionId: fn.id,
                   syncKey: editorSyncRef.current,
                 });
+                setStructureOpen(true);
               }
             }
           }
@@ -174,7 +189,9 @@ export default function PearlStudioView({ localRef }) {
       if (event.key !== PEARL_STORE_KEY || !entity?.id) return;
       const next = resolveStudioEntity(localRef);
       if (next && next.revision !== entity.revision) {
-        setEntity(createPearlEntity(next));
+        const refreshed = createPearlEntity(next);
+        setEntity(refreshed);
+        setSystemPrompt(readPearlSystemPrompt(refreshed));
         setStatus("Synced");
       }
     };
@@ -197,6 +214,7 @@ export default function PearlStudioView({ localRef }) {
         pearlFunctionId: fn.id,
         syncKey: editorSyncRef.current,
       });
+      setStructureOpen(true);
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("lens:pearl-function-moves-changed", onMoves);
@@ -229,23 +247,41 @@ export default function PearlStudioView({ localRef }) {
     return executed.domainResult;
   }
 
-  function scheduleSave(nextName, nextPurpose) {
+  function scheduleSave(nextName, nextPrompt) {
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       setStatus("Saving…");
       try {
-        const results = entity.results.length
-          ? entity.results.map((entry, index) => (index ? entry : { ...entry, text: nextPurpose }))
-          : [{ id: entity.id, status: "ready", text: nextPurpose }];
         await run("editPearlEntity", {
           pearlId: entity.id,
           expectedRevision: entity.revision,
           idempotencyKey: crypto.randomUUID(),
           patch: {
-            identity: { ...entity.identity, name: nextName, description: nextPurpose },
-            results,
+            systemPrompt: nextPrompt,
+            identity: {
+              ...entity.identity,
+              name: nextName,
+              purpose: String(nextPrompt || "").slice(0, 1_000),
+              description: String(nextPrompt || "").slice(0, 2_000),
+            },
           },
         });
+        // Mirror onto shelf pearl when present so Companion wear/reload sees the prompt.
+        try {
+          const scenesRaw = localStorage.getItem("lens.scenes.v4");
+          if (scenesRaw) {
+            const scenes = JSON.parse(scenesRaw);
+            let changed = false;
+            for (const scene of scenes.scenes || []) {
+              scene.semanticOrbs = (scene.semanticOrbs || []).map((orb) => {
+                if (orb.id !== entity.id) return orb;
+                changed = true;
+                return { ...orb, systemPrompt: nextPrompt, name: nextName || orb.name };
+              });
+            }
+            if (changed) localStorage.setItem("lens.scenes.v4", JSON.stringify(scenes));
+          }
+        } catch { /* shelf mirror best-effort */ }
         setStatus("Saved locally");
       } catch (error) {
         setStatus(error.message);
@@ -269,7 +305,6 @@ export default function PearlStudioView({ localRef }) {
       });
       return;
     }
-    // Legacy full-function patch path (organize / external).
     const nextFn = mutation;
     const functions = (entity.functions || []).map((entry) => (
       entry.id === fnId
@@ -312,12 +347,6 @@ export default function PearlStudioView({ localRef }) {
     </main>;
   }
 
-  const purposeLine = entity.identity?.description
-    || entity.purpose
-    || (functionSummary.length
-      ? `Holds ${functionSummary.map((fn) => fn.name).join(" · ")} — each as ordered Moves.`
-      : "Open structure below, or ask Companion to organize this pearl.");
-
   return <main className="web-pearl-studio" data-testid="pearl-studio">
     <style>{`
       .web-pearl-studio{box-sizing:border-box;width:min(760px,calc(100vw - 40px));margin:clamp(48px,10vh,120px) auto 80px;color:var(--orb-text,#232825)}
@@ -325,13 +354,16 @@ export default function PearlStudioView({ localRef }) {
       .web-pearl-studio__banner span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.62;margin-bottom:6px}
       .web-pearl-studio__pearl{display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap}
       .web-pearl-studio__title{box-sizing:border-box;width:100%;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;outline:none;padding:0 0 12px;font:500 clamp(26px,4vw,40px)/1.15 inherit}
-      .web-pearl-studio__purpose{margin:0 0 8px;font-size:15px;line-height:1.55;opacity:.88;max-width:58ch}
+      .web-pearl-studio__prompt-label{margin:18px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.62}
+      .web-pearl-studio__prompt{box-sizing:border-box;width:100%;min-height:32vh;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;resize:vertical;font:400 16px/1.65 inherit;padding:8px 0;outline:none}
+      .web-pearl-studio__hint{margin:8px 0 18px;font-size:13px;line-height:1.5;opacity:.72;max-width:58ch}
       .web-pearl-studio__status{margin:0 0 18px;font-size:12px;opacity:.58}
       .web-pearl-studio__actions{display:flex;gap:14px;align-items:center;margin:8px 0 4px;flex-wrap:wrap}
       .web-pearl-studio button{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:0;background:transparent;color:inherit;padding:7px 0;cursor:pointer;font:inherit}
       .web-pearl-studio__close{margin-left:auto;opacity:.72}
+      .web-pearl-studio__structure{margin-top:28px;padding-top:18px;border-top:1px solid color-mix(in srgb,currentColor 10%,transparent)}
       .web-pearl-studio__notes{margin-top:10px}
-      .web-pearl-studio__notes textarea{box-sizing:border-box;width:100%;min-height:18vh;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent);background:transparent;color:inherit;resize:vertical;font:400 14px/1.65 inherit;padding:10px 0}
+      .web-pearl-studio__notes textarea{box-sizing:border-box;width:100%;min-height:14vh;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent);background:transparent;color:inherit;resize:vertical;font:400 14px/1.65 inherit;padding:10px 0}
       .web-pearl-studio__history{margin-top:28px;padding-top:14px;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}
       .web-pearl-studio__history h2{margin:0 0 10px;font:500 13px/1.3 inherit}
       .web-pearl-studio__version{display:grid;gap:4px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,currentColor 8%,transparent)}
@@ -353,33 +385,14 @@ export default function PearlStudioView({ localRef }) {
         aesthetic={entity.aesthetic}
         animation={status === "Restored" ? "recover" : status === "Saving…" ? "stream" : null}
       />
-      <button type="button" className="web-pearl-studio__trigger" data-testid="pearl-organize" onClick={async () => {
-        setStatus("Organizing…");
-        try {
-          const { organizePearlContents, applyOrganizeToPearl } = await import("../../shared/pearl-organize.js");
-          const organized = organizePearlContents(entity, { extraText: purpose });
-          if (!organized.ok) {
-            setStatus(organized.reason);
-            return;
-          }
-          const next = applyOrganizeToPearl(entity, organized);
-          await run("editPearlEntity", {
-            pearlId: entity.id,
-            expectedRevision: entity.revision,
-            idempotencyKey: crypto.randomUUID(),
-            patch: {
-              moves: next.moves,
-              functions: next.functions,
-              lenses: next.lenses,
-              workingSet: next.workingSet,
-              provenance: next.provenance,
-            },
-          });
-          setStatus(`Organized · ${organized.organization.moves.length}M · ${organized.organization.functions.length}F · ${organized.organization.lenses.length}L`);
-        } catch (error) {
-          setStatus(error.message);
-        }
-      }}>Organize</button>
+      <button
+        type="button"
+        aria-expanded={structureOpen}
+        data-testid="studio-structure-toggle"
+        onClick={() => setStructureOpen((v) => !v)}
+      >
+        {structureOpen ? "Hide structure" : "Structure (advanced)"}
+      </button>
       <button type="button" aria-expanded={notesOpen} onClick={() => setNotesOpen((v) => !v)}>Notes</button>
       <button type="button" aria-expanded={appearanceOpen} onClick={() => setAppearanceOpen((v) => !v)}>Appearance</button>
       <button type="button" aria-expanded={historyOpen} data-testid="pearl-version-history" onClick={() => setHistoryOpen((v) => !v)}>History</button>
@@ -390,63 +403,110 @@ export default function PearlStudioView({ localRef }) {
       aria-label="Pearl name"
       data-testid="studio-pearl-name"
       value={name}
-      onChange={(event) => { setName(event.target.value); scheduleSave(event.target.value, purpose); }}
+      onChange={(event) => { setName(event.target.value); scheduleSave(event.target.value, systemPrompt); }}
     />
-    <p className="web-pearl-studio__purpose" data-testid="studio-purpose">{purposeLine}</p>
+    <p className="web-pearl-studio__prompt-label" id="studio-system-prompt-label">System prompt</p>
+    <textarea
+      className="web-pearl-studio__prompt"
+      aria-labelledby="studio-system-prompt-label"
+      data-testid="studio-system-prompt"
+      value={systemPrompt}
+      onChange={(event) => {
+        setSystemPrompt(event.target.value);
+        scheduleSave(name, event.target.value);
+      }}
+      placeholder="Taste, instructions, and capability this pearl carries — Companion reads this when worn."
+    />
+    <p className="web-pearl-studio__hint" data-testid="studio-purpose">
+      This is the main thing. Ask Companion to rewrite or append (e.g. “add that I always want a risks section”).
+      {functionSummary.length
+        ? ` Advanced structure available: ${functionSummary.map((fn) => fn.name).join(" · ")}.`
+        : ""}
+    </p>
     <p className="web-pearl-studio__status" aria-live="polite">{status}</p>
 
-    <PearlFunctionMovesStudio
-      entity={entity}
-      editorOpen={Boolean(treeEditor)}
-      activeFunctionId={treeEditor?.pearlFunctionId || null}
-      onOpenOriginalEditor={(fnId) => openOriginalFunctionEditor(fnId)}
-    />
-
-    {treeEditor && (
-      <LensTreeEditor
-        key={`studio-fn-${treeEditor.pearlFunctionId}-${treeEditor.syncKey || 0}`}
-        editor={treeEditor}
-        opMap={draftOpsToOpMap(treeEditor.seedOps || [])}
-        operators={treeEditor.seedOps || []}
-        paletteGroups={[]}
-        studioSurface
-        autoPersist
-        createFromProse={async () => {
-          throw new Error("AI prose create needs the main workspace — drag Moves to reorder here, then Save.");
-        }}
-        editFromProse={async () => {
-          throw new Error("AI prose revise needs the main workspace — drag Moves to reorder here, then Save.");
-        }}
-        treeToOperators={() => ({ rootId: null, ops: [] })}
-        onClose={() => {
-          setTreeEditor(null);
-          setStatus("Closed Function editor");
-        }}
-        onSaveTree={async (_oldId, ops, meta = {}) => {
-          const rootId = treeEditor.seedRoot?.id || treeEditor.op?.id;
-          const nextFn = editorOpsToPearlFunction(
-            listPearlFunctionRecords(entity).find((entry) => entry.id === treeEditor.pearlFunctionId) || {},
-            ops,
-            rootId,
-          );
-          await patchFunction(treeEditor.pearlFunctionId, nextFn);
-          if (meta?.auto) {
-            setStatus(`Autosaved ordered Moves in “${nextFn.name || "Function"}”`);
-            return;
+    {structureOpen && (
+      <section className="web-pearl-studio__structure" data-testid="studio-structure">
+        <button type="button" data-testid="pearl-organize" onClick={async () => {
+          setStatus("Organizing…");
+          try {
+            const { organizePearlContents, applyOrganizeToPearl } = await import("../../shared/pearl-organize.js");
+            const organized = organizePearlContents(entity, { extraText: systemPrompt });
+            if (!organized.ok) {
+              setStatus(organized.reason);
+              return;
+            }
+            const next = applyOrganizeToPearl(entity, organized);
+            await run("editPearlEntity", {
+              pearlId: entity.id,
+              expectedRevision: entity.revision,
+              idempotencyKey: crypto.randomUUID(),
+              patch: {
+                moves: next.moves,
+                functions: next.functions,
+                lenses: next.lenses,
+                workingSet: next.workingSet,
+                provenance: next.provenance,
+              },
+            });
+            setStatus(`Organized · ${organized.organization.moves.length}M · ${organized.organization.functions.length}F · ${organized.organization.lenses.length}L`);
+          } catch (error) {
+            setStatus(error.message);
           }
-          setTreeEditor(null);
-          setStatus(`Saved ordered Moves in “${nextFn.name || "Function"}” via original editor`);
-        }}
-      />
+        }}>Organize into Moves → Functions → Lenses</button>
+        <PearlFunctionMovesStudio
+          entity={entity}
+          editorOpen={Boolean(treeEditor)}
+          activeFunctionId={treeEditor?.pearlFunctionId || null}
+          onOpenOriginalEditor={(fnId) => openOriginalFunctionEditor(fnId)}
+        />
+        {treeEditor && (
+          <LensTreeEditor
+            key={`studio-fn-${treeEditor.pearlFunctionId}-${treeEditor.syncKey || 0}`}
+            editor={treeEditor}
+            opMap={draftOpsToOpMap(treeEditor.seedOps || [])}
+            operators={treeEditor.seedOps || []}
+            paletteGroups={[]}
+            studioSurface
+            autoPersist
+            createFromProse={async () => {
+              throw new Error("AI prose create needs the main workspace — drag Moves to reorder here, then Save.");
+            }}
+            editFromProse={async () => {
+              throw new Error("AI prose revise needs the main workspace — drag Moves to reorder here, then Save.");
+            }}
+            treeToOperators={() => ({ rootId: null, ops: [] })}
+            onClose={() => {
+              setTreeEditor(null);
+              setStatus("Closed Function editor");
+            }}
+            onSaveTree={async (_oldId, ops, meta = {}) => {
+              const rootId = treeEditor.seedRoot?.id || treeEditor.op?.id;
+              const nextFn = editorOpsToPearlFunction(
+                listPearlFunctionRecords(entity).find((entry) => entry.id === treeEditor.pearlFunctionId) || {},
+                ops,
+                rootId,
+              );
+              await patchFunction(treeEditor.pearlFunctionId, nextFn);
+              if (meta?.auto) {
+                setStatus(`Autosaved ordered Moves in “${nextFn.name || "Function"}”`);
+                return;
+              }
+              setTreeEditor(null);
+              setStatus(`Saved ordered Moves in “${nextFn.name || "Function"}” via original editor`);
+            }}
+          />
+        )}
+      </section>
     )}
 
     {notesOpen && (
       <div className="web-pearl-studio__notes">
         <textarea
           aria-label="Pearl notes"
-          value={purpose}
-          onChange={(event) => { setPurpose(event.target.value); scheduleSave(name, event.target.value); }}
-          placeholder="What this pearl is about — free notes"
+          value={systemPrompt}
+          onChange={(event) => { setSystemPrompt(event.target.value); scheduleSave(name, event.target.value); }}
+          placeholder="Same as system prompt — free notes alias"
         />
       </div>
     )}
@@ -502,7 +562,7 @@ export default function PearlStudioView({ localRef }) {
               const next = createPearlEntity(read(PEARL_STORE_KEY, { entities: {} }).entities?.[entity.id]);
               setEntity(next);
               setName(next.identity.name || "");
-              setPurpose(next.results?.[0]?.text || next.identity.description || "");
+              setSystemPrompt(readPearlSystemPrompt(next));
               setStatus("Restored");
             }}>Restore</button>
           </div>

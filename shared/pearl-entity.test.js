@@ -10,11 +10,12 @@ import { createSemanticOrb } from "./semantic-orbs.js";
 test("one canonical entity contains every Pearl capability section", () => {
   const entity = createPearlEntity({ id: "p1", name: "Unified Pearl" });
   const required = [
-    "identity", "representation", "workingSet", "lenses", "moves", "functions", "automation", "generation",
+    "systemPrompt", "identity", "representation", "workingSet", "lenses", "moves", "functions", "automation", "generation",
     "results", "canvas", "soundscape", "privacy", "sharing", "provenance", "lineage", "relationships", "history",
     "permissions", "tasks", "outputRouting", "runtime",
   ];
   for (const section of required) assert.ok(section in entity, section);
+  assert.ok(String(entity.systemPrompt || "").length > 0, "migrates a default systemPrompt");
   assert.equal(entity.privacy.policy.pearlId, "p1");
   assert.equal(entity.privacy.effectivePolicy.effective, true);
 });

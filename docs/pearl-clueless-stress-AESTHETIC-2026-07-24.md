@@ -34,46 +34,16 @@
 
 - Verdict: pass
 - Severity: P0
-- Critique: PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation, Frame the thesis, Frame the thesis, Assess market and moat.
+- Critique: PNG Read required: after click, Studio must show readable Function titles and numbered Move sequence (saw structure path). Moves visible: Frame the thesis, Assess market and moat, Evaluate team and traction, Build risk ledger, Write recommendation.
 
 ## 14e-after-reorder
 
-- Verdict: pass
+- Verdict: fail
 - Severity: P1
-- Critique: PNG Read: I see the Move sequence rearranged after drag; titles stay readable (Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger).
+- Critique: PNG Read: drag reorder did not change or persist move sequence — structure not experimentally editable.
 
 ## 14j-nl-reorder-studio
 
 - Verdict: pass
 - Severity: P0
-- Critique: PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Frame the thesis → Frame the thesis → Assess market and moat → Assess market and moat → Evaluate team and traction → Evaluate team and traction → Build risk ledger → Build risk ledger; now Write recommendation → Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger).
-
-## 23c-shell-nav
-
-- Verdict: pass
-- Severity: P0
-- Critique: PNG Read: Reef chrome shows a readable primary nav row (Reef / Install / Settings / Encode / Packages) a novice can find without DevTools.
-
-## 23d-install
-
-- Verdict: pass
-- Severity: P0
-- Critique: PNG Read: Install page shows a visible Add/Download for Chrome CTA with a real /downloads/ (or store) href.
-
-## 24b-packages
-
-- Verdict: pass
-- Severity: P0
-- Critique: PNG Read: after Talk→GO “open packages”, Cognitive Packages registry heading/UI is readable (not a stub paragraph).
-
-## 25b-settings
-
-- Verdict: pass
-- Severity: P0
-- Critique: PNG Read: after Talk→GO “open settings”, Account & privacy controls are visible.
-
-## final
-
-- Verdict: pass
-- Severity: P0
-- Critique: PNG Read: final frame shows no Untitled/orb mystery titles; shelf labels stay readable.
+- Critique: PNG Read: after Talk→GO “put the last move first”, I see a readable Studio Move sequence that visibly changed (was Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger → Write recommendation; now Write recommendation → Frame the thesis → Assess market and moat → Evaluate team and traction → Build risk ledger).

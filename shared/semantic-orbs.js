@@ -1,3 +1,9 @@
+import {
+  defaultSystemPromptFromIntent,
+  migratePearlSystemPrompt,
+  normalizePearlSystemPrompt,
+} from "./pearl-system-prompt.js";
+
 export const SEMANTIC_ORB_VERSION = 1;
 export const SEMANTIC_ORB_KIND = "semantic-orb";
 export const SEMANTIC_ORB_RADIUS = 24;
@@ -56,13 +62,26 @@ export function createSemanticOrb(value = {}, options = {}) {
   const representationKind = SEMANTIC_ORB_REPRESENTATION_KINDS.includes(representation.kind)
     ? representation.kind
     : "empty";
+  const name = sensiblePearlName(value.name || representation.label || "", { now: options.now });
+  const hasExplicitPrompt = Object.prototype.hasOwnProperty.call(value, "systemPrompt");
+  const migratedPrompt = migratePearlSystemPrompt({
+    ...value,
+    name,
+    systemPrompt: value.systemPrompt,
+  });
+  const systemPrompt = hasExplicitPrompt
+    ? normalizePearlSystemPrompt(value.systemPrompt)
+    : normalizePearlSystemPrompt(
+      migratedPrompt.systemPrompt || defaultSystemPromptFromIntent({ name, topic: name }),
+    );
   return {
     ...clone(value),
     version: SEMANTIC_ORB_VERSION,
     id,
     kind: SEMANTIC_ORB_KIND,
     sceneId: value.sceneId || null,
-    name: sensiblePearlName(value.name || representation.label || "", { now: options.now }),
+    name,
+    systemPrompt,
     placement: {
       x: finite(value.placement?.x ?? value.x),
       y: finite(value.placement?.y ?? value.y),
@@ -127,10 +146,23 @@ export function semanticOrbFromMaterial(material, options = {}) {
     material.name || material.label || material.text || material.quote || options.name || "",
     { now: options.now },
   );
+  const intentText = String(
+    options.systemPrompt
+    || options.intent
+    || material.text
+    || material.quote
+    || label
+    || "",
+  ).trim();
   return createSemanticOrb({
     id: options.id,
     sceneId: options.sceneId || material.sceneId || null,
     name: String(label).slice(0, 80),
+    systemPrompt: options.systemPrompt || defaultSystemPromptFromIntent({
+      name: label,
+      intent: intentText,
+      materialText: intentText,
+    }),
     placement: options.placement,
     representation: {
       kind: representationKind,

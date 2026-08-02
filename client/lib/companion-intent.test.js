@@ -18,6 +18,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   parsePearlEditCommand,
+  parsePearlSystemPromptCommand,
   parsePearlFunctionMovesCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
@@ -37,21 +38,43 @@ import {
 test("pearl creation intent uses the canonical semantic capsule command", () => {
   assert.deepEqual(parsePearlCreationCommand("make a pearl from this"), {
     verb: "createSemanticOrb",
-    args: { sceneId: "", name: "" },
+    args: { sceneId: "", name: "", intent: "make a pearl from this" },
   });
   assert.deepEqual(parsePearlCreationCommand("make a pearl from these notes called Evidence"), {
     verb: "createSemanticOrb",
-    args: { sceneId: "", name: "Evidence" },
+    args: { sceneId: "", name: "Evidence", intent: "make a pearl from these notes called Evidence" },
   });
   assert.deepEqual(parsePearlCreationCommand("make a pearl about Friday standup"), {
     verb: "createSemanticOrb",
-    args: { sceneId: "", name: "Friday standup", materialText: "Friday standup" },
+    args: {
+      sceneId: "",
+      name: "Friday standup",
+      materialText: "Friday standup",
+      intent: "make a pearl about Friday standup",
+      systemPromptHint: "Friday standup",
+    },
   });
   assert.equal(parsePearlCreationCommand("make a pearl from this: ship the shelf").args.materialText, "ship the shelf");
   assert.deepEqual(parsePearlCreationCommand("create pearl"), {
     verb: "createSemanticOrb",
-    args: { sceneId: "", name: "" },
+    args: { sceneId: "", name: "", intent: "create pearl" },
   });
+});
+
+test("pearl system prompt intents are deterministic", () => {
+  assert.equal(parsePearlSystemPromptCommand("make this pearl about investor memos that are skeptical of TAM").verb, "editPearlSystemPrompt");
+  assert.equal(parsePearlSystemPromptCommand("make this pearl about investor memos that are skeptical of TAM").args.mode, "rewrite");
+  assert.match(
+    parsePearlSystemPromptCommand("make this pearl about investor memos that are skeptical of TAM").args.text,
+    /skeptical of TAM/i,
+  );
+  assert.deepEqual(parsePearlSystemPromptCommand("add that I always want a risks section"), {
+    verb: "editPearlSystemPrompt",
+    args: { mode: "append", text: "I always want a risks section" },
+  });
+  assert.equal(parsePearlSystemPromptCommand("rewrite the system prompt to critique hand-wavy market sizing").verb, "editPearlSystemPrompt");
+  assert.equal(parsePearlSystemPromptCommand("what's the system prompt for this pearl").verb, "getPearlSystemPrompt");
+  assert.equal(parsePearlSystemPromptCommand("add budget concerns to this pearl"), null);
 });
 
 test("pearl edit/rename/experiment intents are deterministic without planner credentials", () => {
@@ -89,6 +112,7 @@ test("critique stream and version history intents are deterministic", () => {
     args: { text: "make the opening warmer", autoApply: true },
   });
   assert.equal(parseCritiqueCommand("make this output warmer").verb, "revisePearlFromFeedback");
+  assert.equal(parseCritiqueCommand("make this pearl about investor memos that are skeptical of TAM"), null);
   assert.equal(parsePearlVersionCommand("show version history").verb, "browsePearlHistory");
   assert.deepEqual(parsePearlVersionCommand("name this version Review ready"), {
     verb: "snapshotPearlVersion",
