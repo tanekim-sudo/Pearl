@@ -23,6 +23,10 @@ import { buildPearlLayerPack } from "./pearl-layer-instructions.js";
 import { buildPearlCompanionContext } from "./pearl-companion-context.js";
 import { scrubPearlMetadataFromUserText } from "./pearl-companion-context.js";
 import { readPearlSystemPrompt } from "./pearl-system-prompt.js";
+import {
+  buildCompanionAppSnapshot,
+  buildCompanionGrounding,
+} from "./companion-pearl-job.js";
 
 export const PEARL_OPERATE_HARNESS_VERSION = 1;
 
@@ -139,13 +143,30 @@ export function classifyPearlCompanionClass(utterance = "", options = {}) {
  */
 export function observeOperateContext(pearls = [], options = {}) {
   const list = (Array.isArray(pearls) ? pearls : []).filter(Boolean);
+  const appState = options.appState || {};
+  const appSnapshot = appState.appSnapshot
+    || options.appSnapshot
+    || buildCompanionAppSnapshot({
+      ...appState,
+      pearls: list,
+      reefPearlNames: list.map((pearl) => pearl.name || pearl.identity?.name).filter(Boolean),
+      activePearl: options.activePearl || null,
+      openPearl: options.activePearl
+        ? { name: options.activePearl.name, id: options.activePearl.id }
+        : null,
+    });
+  const grounding = buildCompanionGrounding({
+    pearl: options.activePearl || list[0] || null,
+    appState: { ...appState, appSnapshot },
+    appSnapshot,
+  });
   return {
     version: PEARL_OPERATE_HARNESS_VERSION,
     stage: "working",
     count: list.length,
     pearls: list.map((pearl) => {
       const pack = buildPearlLayerPack(pearl) || {};
-      const ctx = buildPearlCompanionContext(pearl, options.appState || {});
+      const ctx = buildPearlCompanionContext(pearl, appState);
       return {
         id: pearl.id,
         name: pearl.name || pearl.identity?.name || "Pearl",
@@ -157,6 +178,8 @@ export function observeOperateContext(pearls = [], options = {}) {
       };
     }),
     activePearlId: options.activePearl?.id || null,
+    grounding,
+    appSnapshot,
   };
 }
 

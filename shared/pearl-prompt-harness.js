@@ -15,6 +15,11 @@ import {
   scrubPearlMetadataFromUserText,
 } from "./pearl-companion-context.js";
 import {
+  buildCompanionGrounding,
+  formatCompanionGroundingForModel,
+  formatCompanionPearlJobForModel,
+} from "./companion-pearl-job.js";
+import {
   defaultSystemPromptFromIntent,
   editPearlSystemPrompt,
   normalizePearlSystemPrompt,
@@ -135,6 +140,12 @@ export function observePearlPromptContext(pearl, appState = {}) {
     pearl: pearl || null,
     includeExamples: false,
   });
+  const grounding = buildCompanionGrounding({
+    pearl,
+    pearlContext: companionContext,
+    appState,
+    appSnapshot: appState.appSnapshot || null,
+  });
   return {
     version: PEARL_PROMPT_HARNESS_VERSION,
     stage: "working",
@@ -145,13 +156,17 @@ export function observePearlPromptContext(pearl, appState = {}) {
     layers,
     layerInstructions,
     companionContext,
+    grounding,
+    appSnapshot: grounding.appSnapshot,
     modelContext: [
-      companionContext
-        ? formatPearlCompanionContextForModel(companionContext, { promptLimit: 2_400 })
-        : "No active pearl.",
+      formatCompanionGroundingForModel(grounding, {
+        includePearlContext: Boolean(companionContext),
+        promptLimit: 2_400,
+      }),
+      companionContext ? null : "No active pearl.",
       "",
       layerInstructions,
-    ].join("\n"),
+    ].filter((line) => line != null).join("\n"),
   };
 }
 
@@ -697,11 +712,15 @@ export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
  */
 export function buildPearlPromptRewriteRequest(observation, interpretation) {
   const system = [
+    formatCompanionPearlJobForModel({
+      extra: "This turn is mutate_brain only — rewrite Moves·Weights·Lenses. If the utterance is compare/PDF/export, refuse and leave systemPrompt unchanged.",
+    }),
     "You rewrite Pearl brains with full intelligence: Moves, Weights, Lenses, and a projected systemPrompt.",
     "Canonical fidelity is Moves (how work is done) + Weights (what is valued) + Lenses (how to see). systemPrompt is the readable projection of those layers — not a flat-only brain.",
     "Always return structured moves[], weights[], and lenses[] when creating or materially editing a pearl. Keep them non-empty for create.",
     "Preserve the user's taste and prior constraints; merge edits rather than discarding history unless they ask to replace everything.",
     "Never expose internal ids, hashes, storage keys, revisions, or raw metadata in title/summary/rationale/systemPrompt.",
+    "Never paste the user's task/request into systemPrompt as Source request / User refinement when it is an operate request.",
     "Return only structured JSON matching the schema.",
     "systemPrompt must be a complete, usable prompt that includes ## Moves, ## Weights, and ## Lenses sections mirroring the arrays.",
     "summary: one short human sentence of what changed (for Companion chat).",

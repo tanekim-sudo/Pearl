@@ -26,12 +26,45 @@ import {
   classifyPearlCompanionClass,
   runPearlOperateHarnessOffline,
 } from "../../shared/pearl-operate-harness.js";
+import {
+  attachCompanionGrounding,
+  buildCompanionAppSnapshot,
+  buildCompanionGrounding,
+  buildPearlAppSnapshot,
+  companionPearlJobSummary,
+  formatCompanionAppSnapshotForModel,
+  formatCompanionPearlJobPack,
+} from "../../shared/companion-pearl-job.js";
+import {
+  buildCursorForPearlsSystemPrefix,
+  runPearlCursorHarnessOffline,
+  observePearlCursorContext,
+} from "../../shared/pearl-cursor-harness.js";
 
 export {
   classifyPearlCompanionClass,
   runPearlOperateHarnessOffline,
 } from "../../shared/pearl-operate-harness.js";
+export {
+  COMPANION_PEARL_JOB_PACK,
+  attachCompanionGrounding,
+  buildCompanionAppSnapshot,
+  buildCompanionGrounding,
+  buildPearlAppSnapshot,
+  companionPearlJobSummary,
+  formatCompanionAppSnapshotForModel,
+  formatCompanionGroundingForModel,
+  formatCompanionPearlJobForModel,
+  formatCompanionPearlJobPack,
+  formatPearlAppSnapshotForModel,
+} from "../../shared/companion-pearl-job.js";
+export {
+  buildCursorForPearlsSystemPrefix,
+  runPearlCursorHarnessOffline,
+  observePearlCursorContext,
+} from "../../shared/pearl-cursor-harness.js";
 import { titleFromStyleAndDomain } from "../../shared/pearl-layer-templates.js";
+
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
 export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
@@ -459,12 +492,34 @@ export function parseComparePearlsCommand(text) {
 /**
  * Top-level pearl companion router: operate vs mutate_brain.
  * Operate never becomes interpretPearlPrompt / editPearlSystemPrompt.
+ * Every GO route attaches job pack + app snapshot grounding.
  */
 export function routePearlCompanion(text, options = {}) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
   if (!value) return null;
   const classification = classifyPearlCompanionClass(value, {
     hasActivePearl: Boolean(options.hasActivePearl || options.pearl),
+  });
+  const appSnapshot = options.appSnapshot
+    || buildCompanionAppSnapshot({
+      ...(options.appState || {}),
+      activePearl: options.pearl || null,
+      openPearl: options.pearl
+        ? { name: options.pearl.name, id: options.pearl.id }
+        : options.openPearl || null,
+      path: options.path,
+      hash: options.hash,
+      studioOpen: options.studioOpen,
+      gauntletTitles: options.gauntletTitles,
+      reefPearlNames: options.reefPearlNames,
+      sceneName: options.sceneName,
+      sceneId: options.sceneId,
+    });
+  const grounding = buildCompanionGrounding({
+    appSnapshot,
+    pearl: options.pearl || null,
+    pearlContext: options.pearlContext || null,
+    appState: options.appState || {},
   });
 
   if (classification.class === "operate") {
@@ -475,7 +530,7 @@ export function routePearlCompanion(text, options = {}) {
       || looksLikeProduceOutputRequest(value)
     ) {
       const hints = extractComparePearlHints(value);
-      return {
+      return attachCompanionGrounding({
         class: "operate",
         verb: "comparePearls",
         args: {
@@ -488,9 +543,9 @@ export function routePearlCompanion(text, options = {}) {
           ...(options.sceneId ? { sceneId: options.sceneId } : {}),
         },
         classification,
-      };
+      }, grounding);
     }
-    return {
+    return attachCompanionGrounding({
       class: "operate",
       verb: "operatePearl",
       args: {
@@ -500,12 +555,12 @@ export function routePearlCompanion(text, options = {}) {
         ...(options.sceneId ? { sceneId: options.sceneId } : {}),
       },
       classification,
-    };
+    }, grounding);
   }
 
   if (classification.class !== "mutate_brain") return null;
   // Mutate path — never recurse through routePearlCompanion.
-  return routePearlMutateHarness(value, options);
+  return attachCompanionGrounding(routePearlMutateHarness(value, options), grounding);
 }
 
 /**
@@ -1569,15 +1624,29 @@ function wornPearlContextBlock(wornPearlPack) {
   return formatPearlCompanionContextForModel(rebuilt);
 }
 
-export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [], wornPearlPack = null } = {}) {
+export function buildCompanionSystemPrompt({
+  demos = [],
+  functionNames = [],
+  itemPreviews = [],
+  wornPearlPack = null,
+  appSnapshot = null,
+} = {}) {
   const verbDoc = capabilityPrompt();
   const demoDoc = demos.map((d) => `- id "${d.id}": ${d.title} — ${d.blurb}`).join("\n");
   const wearLine = wornPearlContextBlock(wornPearlPack);
-  return `You are the companion — the primary interface of "lens". Pearls are optional capability packs you can wear; they are not required to talk, listen, capture screen context, or help. Home is the Reef: all pearls spread out for mix, match, and merge (touch or companion). Pearl Studio (triple-click a pearl) is a focused single-pearl view whose load-bearing section order is always Moves → Functions → Lenses. MOVES are individual cognitive transformations a pearl can execute or keep in inventory (Moves may compose other Moves); FUNCTIONS are composition and ordering of Moves and other Functions; LENSES are the pearl's contextual awareness and understanding of the user. Primitive Moves appear first in branch selection; Lenses are context and never branch actions. Everything executable is demonstrated live with an animated ghost cursor so the user learns by watching.
+  const jobPack = formatCompanionPearlJobPack();
+  const worldPack = appSnapshot
+    ? formatCompanionAppSnapshotForModel(appSnapshot)
+    : `Pearl app world: ${companionPearlJobSummary()}`;
+  return `${jobPack}
+
+${worldPack}
+
+You are Companion — Cursor for pearls inside the Pearl app. Pearls are optional structured brains (Moves · Weights · Lenses); you are always available. Home is the Reef. Pearl Studio opens a single pearl — load-bearing order is always Moves → Weights → Lenses (systemPrompt is the readable projection only). Everything executable is demonstrated live with an animated ghost cursor.
 
 ${wearLine}
 
-You translate the user's request into a JSON script of director verbs. Available verbs:
+You translate the user's request into a JSON script of director verbs (tools). Available verbs:
 ${verbDoc}
 
 Existing Moves and Functions on the user's rail: ${functionNames.length ? functionNames.join(", ") : "(none yet)"}
@@ -1591,11 +1660,12 @@ Reply with ONLY a JSON object, no prose, no code fences:
 
 Rules:
 - Action-first: for every executable request, set "say" to "" and emit the steps immediately. Do not acknowledge, praise, summarize, or announce what you will do.
+- Cursor-for-pearls: classify mutate_brain vs operate before acting. compare/PDF/export/summarize → comparePearls / operatePearl — NEVER editPearlSystemPrompt or append the user task into systemPrompt.
 - Cursor-style check-ins: when instructions, Automation Pearls, or IR workflows are vague, missing format/source/audience specifics, or destructive, call inspectInstructionSpecificity or requestClarification BEFORE compile/run/edit. Put the clarifying question in "say" and emit no mutating steps until answered. After the user answers, call answerClarification or continue with encodeAutomationFromInstruction / runAutomationPearl.
 - Pearl power check-ins: before spawnSubAgentPearls / fission when count or roles are vague, or before findOnScreenMatching when the match condition is vague, call inspectPearlPowerSpecificity or let those verbs requestClarification. Do not invent sub-agent roles.
 - Pearl powers: prefer spawnSubAgentPearls, fuseSubAgentPearls, findOnScreenMatching, beamPearlToTargets, seekPearlToTarget, and demonstratePearlPowers so optical power FX (charge, echo, fission, filament, seek) demonstrate every move.
 - Screen context: if the user is showing a tab/format example, call captureScreenAsEvidence (or captureExternalVisibleTab in extension) and fold it into encodeAutomationFromInstruction before executing.
-- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. synthesizeSemanticOrbs mutual-applies selected/worn pearls into a new observation pearl (sources stay intact); use mode directed to apply A onto B. createCounterPearl breeds a deliberate opposition/foil pearl with lineage. organizePearl turns multimodal dump into Moves → Functions → Lenses without summarizing away richness. evaluateWithGauntlet grounds page/deck material in the active gauntlet lenses (capture when needed); live model output needs credentials — never fake success. For freeform “do X with these pearls,” observe pearl metadata then map to validated verbs (create/edit/organize/merge/compose/synthesize/counter/wear/encode/evaluate) — never invent success. Pearls never replace the mother.
+- Companion vs pearls: you are the gauntlet (mother pearl, default white) with 5 active working-memory sockets. wearPearl loads a pearl into a socket; full gauntlet (5) must clarify/remove before adding another — never silently drop. removeWornPearl clears one or all; listWornPearls inspects sockets. Merging pearls creates a new pearl and keeps source individuals. synthesizeSemanticOrbs mutual-applies selected/worn pearls into a new observation pearl (sources stay intact); use mode directed to apply A onto B. createCounterPearl breeds a deliberate opposition/foil pearl with lineage. organizePearl turns multimodal dump into Moves → Weights → Lenses without summarizing away richness. evaluateWithGauntlet grounds page/deck material in the active gauntlet lenses (capture when needed); live model output needs credentials — never fake success. For freeform “do X with these pearls,” observe pearl metadata then map to validated verbs (create/edit/organize/merge/compose/synthesize/counter/wear/encode/evaluate/compare) — never invent success. Pearls never replace the mother.
 - Output destinations: when the user says where output should go, call chooseResultDestination with their wording (new tab, download as md/html/json/csv/pdf/txt, drag/create text box, point with cursor / mother pearl, caret insert, copy, Studio). Then confirmResultPlacement after they confirm. Use indicateOutputWithCursor when they want to point with the mother pearl.
 - When the user says a conversation should become a replayable function/pearl, call encodeConversationAsPearl (suggest existing pearls when themes match; create a new pearl when not).
 - Pearl appearance: users can fully customize color/material at every level. Prefer applyPearlAestheticPreset for named looks (classic, celadon, rose, gold, ink, moonlight, coral, jade), setPearlAesthetic for layer colors/material sliders/light, samplePearlAestheticFromScreen for eyedropper/hex samples, resetPearlAesthetic to restore classic, inspectPearlAesthetic to report the current look.
@@ -1620,6 +1690,7 @@ export function buildAdaptiveCompanionPrompt({
   mode = "agent",
   goal = null,
   wornPearlPack = null,
+  appSnapshot = null,
 } = {}) {
   const retrievalQuery = [
     goal?.rawWording,
@@ -1633,7 +1704,10 @@ export function buildAdaptiveCompanionPrompt({
   const wearLine = wornPearlPack
     ? `${wornPearlContextBlock(wornPearlPack)}\nSwitch with wearPearl / removeWornPearl; never silently drop when full (${wornPearlPack.orbit?.count || 1}/5 sockets).`
     : "Gauntlet working memory is empty (0/5). Companion still plans and acts fully — pearls are optional. Use wearPearl / encodeConversationAsPearl when the user loads or builds a pearl.";
-  return `You are the action planner inside lens. The companion is always on; pearls are optional capability packs. Plan against the live authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions. Never echo pearl ids, hashes, storage keys, or raw privacy JSON to the user unless they explicitly ask to show id.
+  const cursorPrefix = buildCursorForPearlsSystemPrefix({ snapshot: appSnapshot });
+  return `${cursorPrefix}
+
+You are the action planner inside Pearl (Cursor for pearls). Companion is always on; pearls are optional structured brains (Moves · Weights · Lenses). Plan against the live Pearl app world + authorized workspace index and canonical capabilities below. Never invent IDs, capabilities, sources, or completed actions. Never echo pearl ids, hashes, storage keys, or raw privacy JSON to the user unless they explicitly ask to show id. Never append user task text into systemPrompt — use comparePearls / operatePearl / interpretPearlPrompt tools correctly.
 
 ${wearLine}
 

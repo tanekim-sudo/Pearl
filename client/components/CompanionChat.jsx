@@ -37,6 +37,10 @@ import {
   recordAndLogExecution,
 } from "../../shared/execution-result.js";
 import { scrubPearlMetadataFromUserText } from "../../shared/pearl-companion-context.js";
+import {
+  companionPearlJobSummary,
+  formatCompanionPearlJobPack,
+} from "../../shared/companion-pearl-job.js";
 
 function resolveSpeechRecognition() {
   if (typeof window === "undefined") return null;
@@ -459,11 +463,18 @@ export default function CompanionChat({
     }).mode;
     setMode(resolvedMode);
     try { localStorage.setItem(MODE_KEY, resolvedMode); } catch { /* private mode / quota */ }
+    // Durable Cursor-for-pearls identity is always in scope for GO; App builds the live snapshot.
+    if (typeof window !== "undefined" && import.meta.env?.DEV) {
+      window.__lensCompanionJobPack = formatCompanionPearlJobPack();
+      window.__lensCompanionJobSummary = companionPearlJobSummary();
+    }
     const commandOptions = {
       signal: run.signal,
       mode: resolvedMode,
       goal,
       planApproved: envelope.planApproved === true,
+      // App merges this with buildLiveCompanionAppSnapshot on every GO.
+      companionJob: companionPearlJobSummary(),
       onPhase(nextPhase) {
         if (run.signal.aborted) return;
         setPhase(nextPhase);

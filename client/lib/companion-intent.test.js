@@ -161,6 +161,27 @@ test("routePearlPromptHarness catches novel create/edit without planner", () => 
   assert.equal(routePearlPromptHarness("what's for lunch"), null);
 });
 
+test("Companion system prompt injects Cursor-for-pearls job pack", () => {
+  const prompt = buildCompanionSystemPrompt();
+  assert.match(prompt, /Cursor for pearls/i);
+  assert.match(prompt, /Never append/i);
+  assert.match(prompt, /Moves/);
+  assert.match(prompt, /comparePearls/);
+  const adaptive = buildAdaptiveCompanionPrompt({
+    appSnapshot: {
+      version: 1,
+      job: "Cursor for pearls",
+      shell: { screen: "reef", studioOpen: false, sceneName: null },
+      activePearl: { name: "Buffett · investing", moves: 6, weights: 7, lenses: 4, hasSystemPrompt: true },
+      gauntlet: { capacity: 5, filled: 0, sockets: [] },
+      reef: { count: 1, pearls: [{ name: "Buffett · investing", moves: 6, weights: 7, lenses: 4 }] },
+    },
+  });
+  assert.match(adaptive, /Cursor for pearls/i);
+  assert.match(adaptive, /Pearl app world/i);
+  assert.match(adaptive, /Buffett/);
+});
+
 test("compare+PDF routes to comparePearls — never interpretPearlPrompt / edit", () => {
   const utterance = "explain the differences between my investor pearl and the Warren Buffett investor pearl and then give me a PDF output of the differences";
   assert.equal(classifyPearlCompanionClass(utterance, { hasActivePearl: true }).class, "operate");

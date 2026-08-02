@@ -336,6 +336,8 @@ import {
   routePearlPromptHarness,
   routePearlCompanion,
   parseComparePearlsCommand,
+  buildCompanionAppSnapshot,
+  buildPearlAppSnapshot,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -14000,11 +14002,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const active = resolvePearlByNameOrId(a.id, a.name)
         || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
         || resolvePearlByNameOrId(null, null);
+      const operateSnapshot = buildLiveCompanionAppSnapshot();
       const run = runPearlOperateHarnessOffline({
         utterance,
         pearls,
         activePearl: active,
         sceneId: a.sceneId || sceneId,
+        appState: { appSnapshot: operateSnapshot },
       });
       if (run.apply?.command?.verb === "comparePearls") {
         const nested = await executeCapabilityScriptDirect([run.apply.command], { title: "Compare pearls" });
@@ -14168,6 +14172,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
         || resolvePearlByNameOrId(null, null);
       const worn = loadGauntletState() || {};
+      const mutateSnapshot = buildLiveCompanionAppSnapshot();
       const observation = observePearlPromptContext(pearl, {
         wornPearlIds: worn.pearlIds || [],
         primaryPearlId: worn.primaryPearlId || null,
@@ -14176,6 +14181,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         gauntletFilled: (worn.pearlIds || []).length,
         gauntletCapacity: 5,
         worn: Boolean(pearl && (worn.pearlIds || []).includes(pearl.id)),
+        appSnapshot: mutateSnapshot,
       });
       tk?.caption?.("Interpreting…");
       await tk?.wait?.(60);
@@ -14189,6 +14195,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           primaryPearlId: worn.primaryPearlId || null,
           sceneId: a.sceneId || sceneId,
           sceneName: currentSemanticScene()?.name || "",
+          appSnapshot: mutateSnapshot,
         },
         fastPathHint: a.fastPathHint || null,
         sceneId: a.sceneId || sceneId,
@@ -17880,6 +17887,45 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     return ensureExecutionOnReply(result);
   }
 
+  /** Per-turn Pearl-world snapshot for Cursor-for-pearls grounding. */
+  function buildLiveCompanionAppSnapshot() {
+    const active = resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+      || resolvePearlByNameOrId(null, null);
+    const gauntlet = loadGauntletState() || {};
+    const reefPearls = listCompanionPearls();
+    let studioOpen = false;
+    try {
+      studioOpen = Boolean(
+        document.querySelector("[data-testid='pearl-studio']")
+        || String(location.hash || "").includes("pearl-studio"),
+      );
+    } catch { /* ignore */ }
+    let screen = "reef";
+    try {
+      const hash = String(location.hash || "");
+      const path = String(location.pathname || "/");
+      if (studioOpen || hash.includes("pearl-studio")) screen = "studio";
+      else if (path.includes("install") || hash.includes("install")) screen = "install";
+      else if (path.includes("settings") || hash.includes("settings")) screen = "settings";
+      else if (path.includes("packages") || hash.includes("packages")) screen = "packages";
+      else if (document.querySelector("[data-testid='shell-nav-scene'][aria-current='page']")) screen = "scene";
+    } catch { /* ignore */ }
+    return buildPearlAppSnapshot({
+      screen,
+      path: typeof location !== "undefined" ? location.pathname : "/",
+      hash: typeof location !== "undefined" ? location.hash : "",
+      studioOpen,
+      sceneName: currentSemanticScene()?.name || null,
+      sceneId: sceneId || currentSemanticScene()?.id || null,
+      activePearl: active,
+      gauntletPearls: (gauntlet.pearlIds || [])
+        .map((id) => resolvePearlByNameOrId(id))
+        .filter(Boolean),
+      primaryPearlId: gauntlet.primaryPearlId || null,
+      reefPearls,
+    });
+  }
+
   async function handleCompanionCommand(text, {
     signal,
     onPhase,
@@ -17888,6 +17934,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     mode = "agent",
     goal: providedGoal = null,
     planApproved: restoredApproval = false,
+    appSnapshot: providedAppSnapshot = null,
   } = {}) {
     try {
       return finalizeCompanionReply(await runCompanionCommand(text, {
@@ -17898,6 +17945,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         mode,
         goal: providedGoal,
         planApproved: restoredApproval,
+        appSnapshot: providedAppSnapshot,
       }));
     } catch (error) {
       return companionCommandReply(mapErrorToExecutionResult(error, { stage: "execute" }));
@@ -17912,6 +17960,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     mode = "agent",
     goal: providedGoal = null,
     planApproved: restoredApproval = false,
+    appSnapshot: providedAppSnapshot = null,
   } = {}) {
     let commandText = String(text || "").trim();
     // Action-first companion commands must demonstrate with the ghost cursor.
@@ -17983,6 +18032,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     }
     // Operate-vs-mutate gate BEFORE Ask-mode short-circuit.
     // Operate (compare/PDF/summarize) never becomes systemPrompt append.
+    // Every GO includes job pack + app understanding snapshot grounding.
+    const companionAppSnapshot = providedAppSnapshot || buildLiveCompanionAppSnapshot();
     {
       const pearlRoute = routePearlCompanion(text, {
         hasActivePearl: Boolean(
@@ -17992,6 +18043,12 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         pearl: resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
           || resolvePearlByNameOrId(null, null),
         sceneId: sceneId || currentSemanticScene()?.id || null,
+        appSnapshot: companionAppSnapshot,
+        sceneName: currentSemanticScene()?.name || null,
+        gauntletTitles: companionAppSnapshot.gauntletTitles,
+        reefPearlNames: companionAppSnapshot.reefPearlNames,
+        studioOpen: companionAppSnapshot.studioOpen,
+        path: companionAppSnapshot.shell?.screen === "reef" ? "/" : undefined,
       });
       if (pearlRoute?.class === "operate" || pearlRoute?.verb === "comparePearls" || pearlRoute?.verb === "operatePearl") {
         onPhase?.("interpreting");
@@ -18954,6 +19011,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         pearlId: activePearl?.id,
         name: activePearl?.name,
         sceneId: sceneId || currentSemanticScene()?.id || null,
+        appSnapshot: companionAppSnapshot,
+        sceneName: currentSemanticScene()?.name || null,
+        gauntletTitles: companionAppSnapshot.gauntletTitles,
+        reefPearlNames: companionAppSnapshot.reefPearlNames,
+        studioOpen: companionAppSnapshot.studioOpen,
       });
       if (harnessRoute) {
         onPhase?.("interpreting");
@@ -19451,6 +19513,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     updateCommand(commandEntry.id, { disclosureReceipt: disclosure.receipt });
     onPhase?.("planning");
     const wornPearlPackForPlan = resolveWornPearlPack();
+    const pearlAppSnapshotForPlan = companionAppSnapshot || buildLiveCompanionAppSnapshot();
     const raw = await runClaude("Create the validated action plan for this request.", text, {
       system: buildAdaptiveCompanionPrompt({
         workspaceContext: JSON.stringify(disclosure.bundle),
@@ -19458,6 +19521,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         mode,
         goal: goalEnvelope,
         wornPearlPack: wornPearlPackForPlan,
+        appSnapshot: pearlAppSnapshotForPlan,
       }),
       maxTokens: 3200,
       timeoutMs: PHASE_TIMEOUT.synthesizeComposite,

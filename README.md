@@ -9,7 +9,7 @@ This README is both the pitch and a **complete product inventory** of what ships
 - `shared/feature-contracts.js` (65 contracts: 59 active, 6 removed from Pearl shell)
 - `client/lib/companion-capabilities.js` (Companion director verbs on web + extension; ~418 capability rows / families below — not a verb-by-verb dump)
 - `client/lib/pearl-primary-screens.js` (clueless-reachable shell screens)
-- Pearl brain modules: `shared/pearl-layer-instructions.js`, `shared/pearl-weights.js`, `shared/pearl-prompt-harness.js`, `shared/pearl-system-prompt.js`
+- Pearl brain modules: `shared/pearl-layer-instructions.js`, `shared/pearl-weights.js`, `shared/pearl-prompt-harness.js`, `shared/pearl-operate-harness.js`, `shared/companion-pearl-job.js`, `shared/pearl-system-prompt.js`
 - OrbUniverse / Companion / Reef / Studio / extension mounts
 
 Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-coverage-audit.md). App readiness is separate from this inventory.
@@ -30,16 +30,24 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **`systemPrompt`** is the **readable projection / summary** of that brain — Companion interprets it when the pearl is worn, and can edit it from natural language. Creating a pearl seeds Moves · Weights · Lenses plus an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
 
-**Cursor-for-pearls** — Companion is an agent harness for pearls (like Cursor for code), not a chat that rewrites the brain by dumping user tasks into `systemPrompt`.
+**Cursor-for-pearls** — Companion is an agent harness for pearls (peer metaphor to Cursor for codebases), not a chat that rewrites the brain by dumping user tasks into `systemPrompt`.
 
-Two load-bearing classes (`shared/pearl-operate-harness.js` → `classifyPearlCompanionClass`):
+| Cursor (code) | Pearl Companion |
+| --- | --- |
+| Understands repo / open files | Understands app world: Reef · Scene · Studio · gauntlet · pearl titles (`pearl-app-snapshot.js`) |
+| Job: change/run code safely | Job pack: create/edit/wear/compare/produce (`companion-pearl-job.js`) |
+| Tools: read/edit/run/search | Tools: observe, edit M/W/L, create, wear, compare, PDF/md, navigate |
+| Interpretable trail | Working → Interpreting → Proposed → Applied/Blocked |
+| Never pastes tasks into source | Never pastes tasks into `systemPrompt` |
+
+Two load-bearing classes (`pearl-operate-harness` / `pearl-cursor-harness`):
 
 | Class | Means | Tools |
 | --- | --- | --- |
 | **mutate_brain** | Change the pearl’s structure | create / edit Moves·Weights·Lenses (`pearl-prompt-harness`) |
 | **operate** | Use pearls without rewriting them | `comparePearls`, summarize layers, produce PDF/md (`pearl-compare`) |
 
-Loop: **Observe → Classify → Propose tool → Apply → Reveal** (`companion-harness` + operate/mutate harnesses). “Differences between X and Y” + “give me a PDF” is **operate** — loads both pearls’ M/W/L, diffs, downloads a plain-text PDF (or Markdown), shows a chat summary. It must never call `editPearlSystemPrompt` / append. Canonical fidelity is **Moves · Weights · Lenses**; `systemPrompt` is only the readable projection (templates in `pearl-layer-templates.js`). Style/taste creates succeed **signed-out** from offline seeds. **AI enrich** is optional when signed in. Try: create Buffett → ask Companion to compare it to your investor pearl and give a PDF.
+Every planner/system turn injects the **job pack** + **app snapshot**. Loop: **Observe → Classify → Propose tool → Apply → Reveal**. “Differences between X and Y” + “give me a PDF” is **operate**. Canonical fidelity is **Moves · Weights · Lenses**; `systemPrompt` is only the projection. Style/taste creates succeed **signed-out**. Try: create Buffett → compare to your investor pearl → PDF.
 
 **Sign-in gate honesty:** local pearl create/edit/organize succeeds without accounts. Live model routes that require auth surface `needs-credentials` (Account & privacy blocker, or API 401/503) — never fake Done on create. Missing Supabase keys → clear “Accounts aren’t set up” next steps; Pearl still works device-local.
 
@@ -347,6 +355,9 @@ npm run release:check:fast
 | Weights | `shared/pearl-weights.js` |
 | System prompt projection | `shared/pearl-system-prompt.js` |
 | Prompt harness (Observe→…→Reveal) | `shared/pearl-prompt-harness.js` |
+| Operate harness (compare/PDF; never mutates prompt) | `shared/pearl-operate-harness.js` |
+| Companion job pack + app snapshot (Cursor-for-pearls identity) | `shared/companion-pearl-job.js` |
+| Cursor turn harness (observe→classify→tools) | `shared/pearl-cursor-harness.js` |
 | Companion internal context / metadata scrub | `shared/pearl-companion-context.js` |
 | Move / Function / Lens library objects | `shared/library-objects.js` |
 | Function step reorder (single algorithm) | `shared/function-step-ops.js` + `LensTreeEditor.jsx` |
