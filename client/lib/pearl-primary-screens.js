@@ -48,7 +48,7 @@ export const PRIMARY_SHELL_SCREENS = Object.freeze([
     testId: "shell-nav-settings",
     emit: "settings",
     companionPhrases: Object.freeze(["open settings", "open account and privacy"]),
-    worldVisible: /Account & privacy|Sign in|account sync|Lock local/i,
+    worldVisible: /Account & privacy|Working locally|Accounts aren.t set up|Sign in|account sync|Lock local/i,
   }),
   Object.freeze({
     id: "encode",

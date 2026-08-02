@@ -186,7 +186,7 @@ Chrome first; platform-neutral core targets Firefox/Safari follow-on. Browser-pr
 
 **Packages** — Cognitive Packages: signed manifest, permissions, test evidence, install/rollback/deprecate. Unsigned install must fail closed. Registry UI + `/api/cognitive-packages` publish/deprecate path.
 
-**Settings / Account & privacy** — optional Supabase accounts; anonymous local work adopts on sign-in; passphrase lock for local pearls; vault, disclosure receipts, sync toggle, delete-local with confirmation. Password-recovery overlay when Supabase recovery links land.
+**Settings / Account & privacy** — optional Supabase accounts (`VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`). Without those keys the panel shows an honest blocker with exact next steps; Pearl still works locally. With keys: sign-in / sign-up / reset, anonymous local work adopts on sign-in, sync only after sign-in, passphrase lock, vault, delete-local with confirmation. Password-recovery overlay when Supabase recovery links land.
 
 **Share** — prepare redaction/uncertainty/provenance review → scoped grant (`/api/pearl-shares`) → install verified package; revoke. Organization trust envelopes + key rotation on the server path.
 
@@ -267,8 +267,8 @@ Making a change: own feature contract → characterization test → shared comma
 | Variable | Required for | Notes |
 | --- | --- | --- |
 | `AI_GATEWAY_API_KEY` | Live organize / evaluate / synthesize / planning | Without a key, mutations must surface a precise blocker — never fake success. Vercel may use OIDC instead. |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` | Optional accounts | Unset = anonymous-local; sign-in later adopts |
-| `SUPABASE_URL` + `SUPABASE_SECRET_KEY` | Server JWT / plans | Never in `VITE_*` |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` | Optional accounts | Unset = anonymous-local + clear Account blocker; set both to enable Sign in |
+| `SUPABASE_URL` + `SUPABASE_SECRET_KEY` | Server JWT / plans / extension OAuth exchange | Never in `VITE_*` |
 | `VITE_LENS_EXTENSION_ID` | Web↔extension handoff | 32-char id; local `release:check` may default a placeholder |
 | `VITE_CHROME_WEB_STORE_URL` | Store install CTA | Until set, `/install` shows Download + load-unpacked |
 
@@ -283,7 +283,7 @@ npm run release:check:fast
 
 - Live model quality and organize/evaluate/synthesize need Gateway (or OIDC) credentials
 - Live OS microphone / voice — platform permission UI; harnesses may use FakeSpeech
-- OAuth / multi-account adopt / signed share grants — need live credentials
+- Live sign-in / OAuth / multi-account adopt / signed share grants — need a real Supabase project (`VITE_SUPABASE_*` + server `SUPABASE_*`); without keys the UI blocks clearly and stays local-only
 - Chrome Web Store listing URL and production extension id in the Vercel build
 - Extension HTML5 DnD under Playwright is imperfect; Wear + storage asserts cover CI; real Chrome drag is manual
 - Browser-protected pages, cross-origin iframes, closed shadow roots

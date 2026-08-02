@@ -20,7 +20,12 @@ export function useSupabaseSession() {
     whenSupabaseReady().then(() => {
       if (cancelled) return;
       const client = getSupabase();
-      if (!client) return;
+      if (!client) {
+        // Config missing, SDK failed, or client init failed — never leave the
+        // shell stuck on an unresolved session spinner.
+        setSessionResolved(true);
+        return;
+      }
       // Subscribed synchronously in the same tick the client is first
       // constructed: PASSWORD_RECOVERY from a recovery-link hash must never be
       // emitted before a listener exists. Callback stays synchronous — awaiting
@@ -34,6 +39,8 @@ export function useSupabaseSession() {
         if (cancelled) return;
         setSession((s) => s ?? current?.session ?? null);
         setSessionResolved(true);
+      }).catch(() => {
+        if (!cancelled) setSessionResolved(true);
       });
     });
 

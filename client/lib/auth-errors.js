@@ -47,6 +47,19 @@ export function describeAuthError(code, type) {
         message: "The new password must be different from the current one.",
         action: null,
       };
+    case "not_configured":
+    case "needs-credentials":
+      return {
+        message:
+          "Accounts aren’t set up for this build. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY, then restart — or keep working locally.",
+        action: null,
+      };
+    case "service_unreachable":
+      return {
+        message:
+          "Couldn’t reach the account service. Check your network and that VITE_SUPABASE_URL points at your Supabase project.",
+        action: null,
+      };
     default:
       return { message: GENERIC_MESSAGE, action: null };
   }

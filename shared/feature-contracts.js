@@ -121,12 +121,12 @@ export const FEATURE_CONTRACTS = Object.freeze([
   feature("companion.pearl-wear", {
     domains: ["scene", "interface", "function"],
     commands: ["activateSemanticOrb", "createSemanticOrb", "bindSemanticOrb", "addSemanticOrbContext"],
-    ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx", "client/orb-universe.css"],
+    ui: ["client/components/CompanionOrb.jsx", "client/components/OrbUniverseShell.jsx", "client/orb-universe.css", "client/components/CompanionChat.jsx"],
     companion: ["wearPearl", "removeWornPearl", "listWornPearls", "inspectWornPearl", "encodeConversationAsPearl", "suggestPearlForConversation"],
     extension: ["wearExternalPearl", "removeExternalWornPearl", "encodeExternalConversationAsPearl"],
-    persistence: ["lens.companion.worn-pearl.v1", "lens.companion.gauntlet.v1"],
-    tests: ["shared/companion-pearl-wear.test.js", "shared/companion-pearl-orbit.test.js", "shared/companion-pearl-gauntlet.test.js", "client/lib/companion-intent.test.js"],
-    owner: "shared/companion-pearl-wear.js",
+    persistence: ["lens.companion.worn-pearl.v1", "lens.companion.gauntlet.v1", "pearlEntities.v1", "scene.semanticOrbs"],
+    tests: ["shared/companion-pearl-wear.test.js", "shared/pearl-companion-context.test.js", "shared/companion-pearl-orbit.test.js", "shared/companion-pearl-gauntlet.test.js", "client/lib/companion-intent.test.js", "shared/pearl-presentation-clean.test.js"],
+    owner: "shared/pearl-companion-context.js",
   }),
   feature("companion.mother-orbit", {
     domains: ["scene", "interface"],
@@ -209,9 +209,9 @@ export const FEATURE_CONTRACTS = Object.freeze([
   }),
   feature("persistence.account-adoption", {
     domains: ["move", "function", "lens", "paper", "ai"], commands: ["upsertCanonicalObject"],
-    ui: ["client/components/AuthOverlay.jsx"], companion: [], extension: ["showExternalLibraryImport"],
+    ui: ["client/components/AuthOverlay.jsx", "client/components/OrbUniverseShell.jsx:AccountPrivacyPanel"], companion: ["openAuth", "signOut", "openSettings"], extension: ["showExternalLibraryImport"],
     persistence: ["lens.board.items.v1", "lens.board.operators.v2", "lens.lenses.v2"],
-    tests: ["client/lib/board-sync.test.js", "shared/lens-library.test.js"], owner: "client/lib/board-sync.js",
+    tests: ["client/lib/board-sync.test.js", "shared/lens-library.test.js", "client/lib/account-setup.test.js", "client/lib/auth-errors.test.js"], owner: "client/lib/board-sync.js",
   }),
   feature("extension.distribution", {
     domains: ["extension"], commands: [], ui: ["client/components/ExtensionDownloadModal.jsx"],
@@ -605,7 +605,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
     companion: ["openPearlStudio", "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "executeUnifiedPearlAction", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion", "editPearlOutput", "revisePearlFromFeedback"],
     extension: ["executeExternalPearlAction", "openExternalPearlStudio", "openExternalResultPearlTab", "reorderExternalPearlFunctionMoves", "decomposeExternalPearlFunctionMove"],
     persistence: ["pearlEntities.v1", "pearlEntities.v1.systemPrompt", "scene.semanticOrbs.systemPrompt", "pearlEntities.v1.functions.moves.order", "pearlStudioRefs.v1", "one-time profile/tab/origin-bound handoffs"],
-    tests: ["shared/pearl-studio.test.js", "shared/pearl-system-prompt.test.js", "shared/pearl-function-moves.test.js", "shared/pearl-version-history.test.js", "client/lib/pearl-shell.test.js", "client/lib/companion-intent.test.js"],
+    tests: ["shared/pearl-studio.test.js", "shared/pearl-system-prompt.test.js", "shared/pearl-companion-context.test.js", "shared/pearl-function-moves.test.js", "shared/pearl-version-history.test.js", "client/lib/pearl-shell.test.js", "client/lib/companion-intent.test.js", "shared/pearl-presentation-clean.test.js"],
     owner: "shared/pearl-system-prompt.js",
   }),
   feature("shell.reef-home", {
@@ -701,7 +701,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
     companion: ["openAuth", "signOut", "navigateHome", "navigateBack", "openLibrary", "openToolbox", "openSettings", "closeSurface"],
     extension: [],
     persistence: [],
-    tests: ["client/lib/shell-navigation.test.js", "client/lib/pearl-studio-navigation.test.js"],
+    tests: ["client/lib/shell-navigation.test.js", "client/lib/pearl-studio-navigation.test.js", "client/lib/account-setup.test.js"],
     owner: "client/lib/shell-navigation.js",
   }),
   feature("encode.automation-anything", {

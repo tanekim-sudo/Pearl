@@ -41,7 +41,9 @@ export async function requireExtensionUser(req, res) {
     return local;
   }
   res.status(isServerSupabaseConfigured() ? 401 : 503).json({
-    error: isServerSupabaseConfigured() ? "Sign in required for extension APIs." : "Authentication service is not configured.",
+    error: isServerSupabaseConfigured()
+      ? "Sign in required for extension APIs."
+      : "Accounts aren’t set up for this build. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server — or keep working locally.",
   });
   return null;
 }

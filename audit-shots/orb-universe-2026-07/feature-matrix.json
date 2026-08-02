@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-26T02:06:40.331Z",
+  "generatedAt": "2026-08-02T00:48:34.411Z",
   "counts": {
     "features": 65,
-    "companion": 411,
+    "companion": 414,
     "extension": 123,
-    "commands": 134
+    "commands": 137
   },
   "features": [
     {
@@ -334,9 +334,11 @@
       ],
       "tests": [
         "shared/companion-pearl-wear.test.js",
+        "shared/pearl-companion-context.test.js",
         "shared/companion-pearl-orbit.test.js",
         "shared/companion-pearl-gauntlet.test.js",
-        "client/lib/companion-intent.test.js"
+        "client/lib/companion-intent.test.js",
+        "shared/pearl-presentation-clean.test.js"
       ]
     },
     {
@@ -524,13 +526,19 @@
       "commands": [
         "upsertCanonicalObject"
       ],
-      "companion": [],
+      "companion": [
+        "openAuth",
+        "signOut",
+        "openSettings"
+      ],
       "extension": [
         "showExternalLibraryImport"
       ],
       "tests": [
         "client/lib/board-sync.test.js",
-        "shared/lens-library.test.js"
+        "shared/lens-library.test.js",
+        "client/lib/account-setup.test.js",
+        "client/lib/auth-errors.test.js"
       ]
     },
     {
@@ -746,6 +754,9 @@
         "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
+        "getPearlSystemPrompt",
+        "setPearlSystemPrompt",
+        "editPearlSystemPrompt",
         "bindSemanticOrb",
         "addSemanticOrbContext",
         "removeSemanticOrbContext",
@@ -766,6 +777,9 @@
         "activateSemanticOrb",
         "moveSemanticOrb",
         "renameSemanticOrb",
+        "getPearlSystemPrompt",
+        "setPearlSystemPrompt",
+        "editPearlSystemPrompt",
         "bindSemanticOrb",
         "addSemanticOrbContext",
         "removeSemanticOrbContext",
@@ -802,6 +816,7 @@
         "shared/orb-universe.test.js",
         "shared/domain-commands.test.js",
         "shared/semantic-orbs.test.js",
+        "shared/pearl-system-prompt.test.js",
         "client/lib/unified-workspace.test.js",
         "extension/tests/core.test.js"
       ]
@@ -1285,6 +1300,9 @@
       "commands": [
         "openPearlStudio",
         "editPearlEntity",
+        "getPearlSystemPrompt",
+        "setPearlSystemPrompt",
+        "editPearlSystemPrompt",
         "reorderPearlFunctionMoves",
         "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
@@ -1297,6 +1315,9 @@
       ],
       "companion": [
         "openPearlStudio",
+        "getPearlSystemPrompt",
+        "setPearlSystemPrompt",
+        "editPearlSystemPrompt",
         "reorderPearlFunctionMoves",
         "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
@@ -1316,10 +1337,13 @@
       ],
       "tests": [
         "shared/pearl-studio.test.js",
+        "shared/pearl-system-prompt.test.js",
+        "shared/pearl-companion-context.test.js",
         "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js",
-        "client/lib/companion-intent.test.js"
+        "client/lib/companion-intent.test.js",
+        "shared/pearl-presentation-clean.test.js"
       ]
     },
     {
@@ -1519,7 +1543,8 @@
       "extension": [],
       "tests": [
         "client/lib/shell-navigation.test.js",
-        "client/lib/pearl-studio-navigation.test.js"
+        "client/lib/pearl-studio-navigation.test.js",
+        "client/lib/account-setup.test.js"
       ]
     },
     {

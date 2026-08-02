@@ -1474,15 +1474,32 @@ async function runCluelessJourneys(browser) {
   await typeAndGo(page, "open settings", { shotPrefix: "25-settings" });
   await page.waitForTimeout(700);
   await shot(page, "25b-settings");
-  const settingsOk = (await page.locator(".pearl-account-panel").count()) > 0
-    || /Account & privacy|Sign in|account sync|Lock local/i.test(await page.locator("body").innerText().catch(() => ""));
+  const accountPanel = page.locator('[data-testid="pearl-account-panel"], .pearl-account-panel');
+  const settingsOk = (await accountPanel.count()) > 0
+    || /Account & privacy|Working locally|Accounts aren.t set up|Sign in|account sync|Lock local/i.test(await page.locator("body").innerText().catch(() => ""));
+  const accountStatusText = await page.locator('[data-testid="pearl-account-status"]').innerText().catch(() => "");
+  const accountMode = await accountPanel.first().getAttribute("data-account-mode").catch(() => null);
+  const gracefulAccount = settingsOk && (
+    accountMode === "unavailable"
+      ? (await page.locator('[data-testid="pearl-account-blocker"]').count()) > 0
+        && /VITE_SUPABASE_URL|VITE_SUPABASE_PUBLISHABLE_KEY/i.test(await page.locator("body").innerText().catch(() => ""))
+      : /Working locally|Signed in|Checking account/i.test(accountStatusText || (await page.locator("body").innerText().catch(() => "")))
+  );
   record("sf-shell-settings", settingsOk, settingsOk ? "settings surface" : "missing", "P0");
+  record(
+    "sf-shell-account-clarity",
+    gracefulAccount,
+    gracefulAccount
+      ? `account mode=${accountMode || "legacy"} status readable`
+      : "account panel missing clear local/blocker status",
+    "P1",
+  );
   aestheticNote(
     "25b-settings",
-    settingsOk ? "pass" : "fail",
-    settingsOk
-      ? "PNG Read: after Talk→GO “open settings”, Account & privacy controls are visible."
-      : "PNG Read: settings surface missing after Companion command.",
+    settingsOk && gracefulAccount ? "pass" : "fail",
+    settingsOk && gracefulAccount
+      ? "PNG Read: after Talk→GO “open settings”, Account & privacy shows grouped Account / Sync / This device (or an honest credentials blocker)."
+      : "PNG Read: settings surface missing or still a confusing flat control wall without clear status.",
     "P0",
   );
 

@@ -1,11 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { getSupabase } from "../lib/supabase.js";
+import { getSupabase, isSupabaseConfigured } from "../lib/supabase.js";
 import {
   describeAuthError,
   resendCooldownRemaining,
   AUTH_MIN_PASSWORD_LENGTH,
   RESEND_AT_KEY,
 } from "../lib/auth-errors.js";
+import {
+  describeAccountsUnavailable,
+  describeAuthFailure,
+} from "../lib/account-setup.js";
 
 function readResendAt() {
   try {
@@ -56,6 +60,32 @@ function initialStateFromBootError(bootError) {
   return { view: "login", notice: "That link didn't work. Sign in below, or request a new email." };
 }
 
+function mapSubmitError(err) {
+  const fromFailure = describeAuthFailure(err, { configured: isSupabaseConfigured() });
+  if (fromFailure) return fromFailure;
+  return describeAuthError(err?.code);
+}
+
+function AccountsBlocker({ onClose }) {
+  const blocker = describeAccountsUnavailable();
+  return (
+    <div className="auth-blocker" data-testid="auth-accounts-blocker">
+      <h3>{blocker.title}</h3>
+      <p className="auth-note">{blocker.message}</p>
+      <ol className="auth-blocker-steps">
+        {blocker.nextSteps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+      <div className="modal-foot">
+        <button type="button" className="primary" onClick={onClose}>
+          Keep working locally
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthOverlay({
   forced,
   accountEmail,
@@ -63,6 +93,7 @@ export default function AuthOverlay({
   onClose,
   onPasswordUpdated,
 }) {
+  const accountsReady = isSupabaseConfigured();
   const boot = useRef(initialStateFromBootError(bootError)).current;
   const [view, setView] = useState(forced ? "updatePassword" : boot.view);
   const [email, setEmail] = useState("");
@@ -112,21 +143,37 @@ export default function AuthOverlay({
     }
   }
 
+  function requireClient() {
+    const supabase = getSupabase();
+    if (!supabase?.auth) {
+      setError(describeAuthError("not_configured"));
+      return null;
+    }
+    return supabase;
+  }
+
   async function submitLogin(e) {
     e.preventDefault();
     if (busy) return;
+    const supabase = requireClient();
+    if (!supabase) return;
     setBusy(true);
     setError(null);
-    const { error: err } = await getSupabase().auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (!err) return; // App closes the overlay when the session lands
-    if (err.code === "email_not_confirmed") {
-      setCheckEmailInfo({ email, kind: "signup" });
-      setNotice(describeAuthError(err.code).message);
-      switchView("checkEmail");
-      return;
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (!err) return; // App closes the overlay when the session lands
+      if (err.code === "email_not_confirmed") {
+        setCheckEmailInfo({ email, kind: "signup" });
+        setNotice(describeAuthError(err.code).message);
+        switchView("checkEmail");
+        return;
+      }
+      setError(mapSubmitError(err));
+    } catch (err) {
+      setError(mapSubmitError(err) || describeAuthError(null));
+    } finally {
+      setBusy(false);
     }
-    setError(describeAuthError(err.code));
   }
 
   async function submitSignup(e) {
@@ -136,65 +183,93 @@ export default function AuthOverlay({
       setError(describeAuthError("weak_password"));
       return;
     }
+    const supabase = requireClient();
+    if (!supabase) return;
     setBusy(true);
     setError(null);
-    const { error: err } = await getSupabase().auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    setBusy(false);
-    if (err) {
-      setError(describeAuthError(err.code));
-      return;
+    try {
+      const { error: err } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (err) {
+        setError(mapSubmitError(err));
+        return;
+      }
+      // Identical state whether or not the address was already registered —
+      // Supabase returns an obfuscated user either way; never branch on it.
+      startCooldown();
+      setNotice(null);
+      setCheckEmailInfo({ email, kind: "signup" });
+      switchView("checkEmail");
+    } catch (err) {
+      setError(mapSubmitError(err) || describeAuthError(null));
+    } finally {
+      setBusy(false);
     }
-    // Identical state whether or not the address was already registered —
-    // Supabase returns an obfuscated user either way; never branch on it.
-    startCooldown();
-    setNotice(null);
-    setCheckEmailInfo({ email, kind: "signup" });
-    switchView("checkEmail");
   }
 
   async function submitResetRequest(e) {
     e.preventDefault();
     if (busy) return;
+    const supabase = requireClient();
+    if (!supabase) return;
     setBusy(true);
     setError(null);
-    const { error: err } = await getSupabase().auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    });
-    setBusy(false);
-    if (err) {
-      setError(describeAuthError(err.code));
-      return;
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (err) {
+        setError(mapSubmitError(err));
+        return;
+      }
+      startCooldown();
+      setNotice(null);
+      setCheckEmailInfo({ email, kind: "reset" });
+      switchView("checkEmail");
+    } catch (err) {
+      setError(mapSubmitError(err) || describeAuthError(null));
+    } finally {
+      setBusy(false);
     }
-    startCooldown();
-    setNotice(null);
-    setCheckEmailInfo({ email, kind: "reset" });
-    switchView("checkEmail");
   }
 
   // Sends (or re-sends) the email for a check-email context. Returns true
   // when the send went through (or was silently absorbed — uniform states
   // stay enumeration-safe); false only on rate-limit, which gets shown.
   async function sendEmailFor(kind, targetEmail) {
+    const supabase = requireClient();
+    if (!supabase) return false;
     setBusy(true);
     setError(null);
-    const supabase = getSupabase();
-    const { error: err } =
-      kind === "reset"
-        ? await supabase.auth.resetPasswordForEmail(targetEmail, {
-            redirectTo: window.location.origin,
-          })
-        : await supabase.auth.resend({ type: "signup", email: targetEmail });
-    setBusy(false);
-    if (err && err.code === "over_email_send_rate_limit") {
-      setError(describeAuthError(err.code));
+    try {
+      const { error: err } =
+        kind === "reset"
+          ? await supabase.auth.resetPasswordForEmail(targetEmail, {
+              redirectTo: window.location.origin,
+            })
+          : await supabase.auth.resend({ type: "signup", email: targetEmail });
+      if (err && err.code === "over_email_send_rate_limit") {
+        setError(describeAuthError(err.code));
+        return false;
+      }
+      if (err) {
+        const mapped = mapSubmitError(err);
+        if (mapped?.code === "service_unreachable" || mapped?.code === "needs-credentials") {
+          setError(mapped);
+          return false;
+        }
+      }
+      startCooldown();
+      return true;
+    } catch (err) {
+      setError(mapSubmitError(err) || describeAuthError(null));
       return false;
+    } finally {
+      setBusy(false);
     }
-    startCooldown();
-    return true;
   }
 
   async function resendEmail() {
@@ -219,24 +294,29 @@ export default function AuthOverlay({
       setError(describeAuthError("weak_password"));
       return;
     }
+    const supabase = requireClient();
+    if (!supabase) return;
     setBusy(true);
     setError(null);
-    const supabase = getSupabase();
-    const { error: err } = await supabase.auth.updateUser({ password });
-    if (err) {
-      setBusy(false);
-      setError(describeAuthError(err.code));
-      return;
-    }
-    // Other sessions lose their refresh tokens now; already-issued access
-    // tokens last until expiry (jwt_expiry bounds the window).
     try {
-      await supabase.auth.signOut({ scope: "others" });
-    } catch {
-      /* the password change itself succeeded */
+      const { error: err } = await supabase.auth.updateUser({ password });
+      if (err) {
+        setError(mapSubmitError(err));
+        return;
+      }
+      // Other sessions lose their refresh tokens now; already-issued access
+      // tokens last until expiry (jwt_expiry bounds the window).
+      try {
+        await supabase.auth.signOut({ scope: "others" });
+      } catch {
+        /* the password change itself succeeded */
+      }
+      onPasswordUpdated();
+    } catch (err) {
+      setError(mapSubmitError(err) || describeAuthError(null));
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    onPasswordUpdated();
   }
 
   const cooldownSecs = Math.ceil(cooldownMs / 1000);
@@ -285,145 +365,164 @@ export default function AuthOverlay({
       role="dialog"
       aria-modal="true"
       aria-label="Account"
+      data-testid="auth-overlay"
     >
       <div className="modal auth-modal" onClick={(e) => e.stopPropagation()}>
-        {notice && view !== "checkEmail" && <div className="auth-notice">{notice}</div>}
+        {!accountsReady ? (
+          <AccountsBlocker
+            onClose={() => {
+              // Never trap behind a forced recovery shell when accounts are off.
+              onClose();
+            }}
+          />
+        ) : (
+          <>
+            {notice && view !== "checkEmail" && <div className="auth-notice">{notice}</div>}
 
-        {view === "login" && (
-          <form onSubmit={submitLogin}>
-            <h3>Sign in</h3>
-            {emailField(true)}
-            {passwordField("Password", "current-password")}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? "Signing in…" : "Sign in"}
-              </button>
-            </div>
-            <div className="auth-links">
-              <button type="button" onClick={() => switchView("signup")}>
-                Create an account
-              </button>
-              <button type="button" onClick={() => switchView("resetRequest")}>
-                Forgot password?
-              </button>
-              {boot.offerResend && (
-                <button type="button" onClick={() => switchView("resendConfirm")}>
-                  Resend confirmation
-                </button>
-              )}
-            </div>
-          </form>
-        )}
+            {view === "login" && (
+              <form onSubmit={submitLogin}>
+                <h3>Sign in</h3>
+                <p className="auth-note">Optional account for sync. Pearls stay on this device by default.</p>
+                {emailField(true)}
+                {passwordField("Password", "current-password")}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="submit" className="primary" disabled={busy}>
+                    {busy ? "Signing in…" : "Sign in"}
+                  </button>
+                </div>
+                <div className="auth-links">
+                  <button type="button" onClick={() => switchView("signup")}>
+                    Create an account
+                  </button>
+                  <button type="button" onClick={() => switchView("resetRequest")}>
+                    Forgot password?
+                  </button>
+                  {boot.offerResend && (
+                    <button type="button" onClick={() => switchView("resendConfirm")}>
+                      Resend confirmation
+                    </button>
+                  )}
+                  {!forced && (
+                    <button type="button" onClick={onClose}>
+                      Keep working locally
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
 
-        {view === "signup" && (
-          <form onSubmit={submitSignup}>
-            <h3>Create account</h3>
-            {emailField(true)}
-            {passwordField(`Password (min ${AUTH_MIN_PASSWORD_LENGTH} characters)`, "new-password")}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? "Creating…" : "Sign up"}
-              </button>
-            </div>
-            <div className="auth-links">
-              <button type="button" onClick={() => switchView("login")}>
-                Already have an account? Sign in
-              </button>
-            </div>
-          </form>
-        )}
+            {view === "signup" && (
+              <form onSubmit={submitSignup}>
+                <h3>Create account</h3>
+                <p className="auth-note">Creates an optional sync account. Local Pearls are unchanged until you enable sync.</p>
+                {emailField(true)}
+                {passwordField(`Password (min ${AUTH_MIN_PASSWORD_LENGTH} characters)`, "new-password")}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="submit" className="primary" disabled={busy}>
+                    {busy ? "Creating…" : "Sign up"}
+                  </button>
+                </div>
+                <div className="auth-links">
+                  <button type="button" onClick={() => switchView("login")}>
+                    Already have an account? Sign in
+                  </button>
+                </div>
+              </form>
+            )}
 
-        {view === "resetRequest" && (
-          <form onSubmit={submitResetRequest}>
-            <h3>Reset password</h3>
-            <p className="auth-note">We'll email you a link to set a new password.</p>
-            {emailField(true)}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? "Sending…" : "Send reset link"}
-              </button>
-            </div>
-            <div className="auth-links">
-              <button type="button" onClick={() => switchView("login")}>
-                Back to sign in
-              </button>
-            </div>
-          </form>
-        )}
+            {view === "resetRequest" && (
+              <form onSubmit={submitResetRequest}>
+                <h3>Reset password</h3>
+                <p className="auth-note">We'll email you a link to set a new password.</p>
+                {emailField(true)}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="submit" className="primary" disabled={busy}>
+                    {busy ? "Sending…" : "Send reset link"}
+                  </button>
+                </div>
+                <div className="auth-links">
+                  <button type="button" onClick={() => switchView("login")}>
+                    Back to sign in
+                  </button>
+                </div>
+              </form>
+            )}
 
-        {view === "resendConfirm" && (
-          <form onSubmit={submitResendConfirm}>
-            <h3>Resend confirmation</h3>
-            <p className="auth-note">We'll send a fresh confirmation link.</p>
-            {emailField(true)}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="submit" className="primary" disabled={busy || cooldownMs > 0}>
-                {cooldownMs > 0 ? `Resend in ${cooldownSecs}s` : busy ? "Sending…" : "Send"}
-              </button>
-            </div>
-            <div className="auth-links">
-              <button type="button" onClick={() => switchView("login")}>
-                Back to sign in
-              </button>
-            </div>
-          </form>
-        )}
+            {view === "resendConfirm" && (
+              <form onSubmit={submitResendConfirm}>
+                <h3>Resend confirmation</h3>
+                <p className="auth-note">We'll send a fresh confirmation link.</p>
+                {emailField(true)}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="submit" className="primary" disabled={busy || cooldownMs > 0}>
+                    {cooldownMs > 0 ? `Resend in ${cooldownSecs}s` : busy ? "Sending…" : "Send"}
+                  </button>
+                </div>
+                <div className="auth-links">
+                  <button type="button" onClick={() => switchView("login")}>
+                    Back to sign in
+                  </button>
+                </div>
+              </form>
+            )}
 
-        {view === "checkEmail" && checkEmailInfo && (
-          <div>
-            <h3>Check your email</h3>
-            <p className="auth-note">
-              {checkEmailInfo.kind === "reset" ? (
-                <>
-                  If an account exists for <strong>{checkEmailInfo.email}</strong>, a reset link
-                  is on its way.
-                </>
-              ) : (
-                <>
-                  We sent a confirmation link to <strong>{checkEmailInfo.email}</strong>. Open it
-                  to finish signing up.
-                </>
-              )}
-            </p>
-            {notice && <div className="auth-notice">{notice}</div>}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="button" onClick={resendEmail} disabled={busy || cooldownMs > 0}>
-                {cooldownMs > 0 ? `Resend in ${cooldownSecs}s` : "Resend email"}
-              </button>
-            </div>
-            <div className="auth-links">
-              <button type="button" onClick={() => switchView("login")}>
-                Already confirmed? Sign in
-              </button>
-            </div>
-          </div>
-        )}
+            {view === "checkEmail" && checkEmailInfo && (
+              <div>
+                <h3>Check your email</h3>
+                <p className="auth-note">
+                  {checkEmailInfo.kind === "reset" ? (
+                    <>
+                      If an account exists for <strong>{checkEmailInfo.email}</strong>, a reset link
+                      is on its way.
+                    </>
+                  ) : (
+                    <>
+                      We sent a confirmation link to <strong>{checkEmailInfo.email}</strong>. Open it
+                      to finish signing up.
+                    </>
+                  )}
+                </p>
+                {notice && <div className="auth-notice">{notice}</div>}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="button" onClick={resendEmail} disabled={busy || cooldownMs > 0}>
+                    {cooldownMs > 0 ? `Resend in ${cooldownSecs}s` : "Resend email"}
+                  </button>
+                </div>
+                <div className="auth-links">
+                  <button type="button" onClick={() => switchView("login")}>
+                    Already confirmed? Sign in
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {view === "updatePassword" && (
-          <form onSubmit={submitUpdatePassword}>
-            <h3>Set a new password</h3>
-            <p className="auth-note">
-              {accountEmail ? (
-                <>
-                  Updating the password for <strong>{accountEmail}</strong>.
-                </>
-              ) : (
-                "Choose a new password for your account."
-              )}
-            </p>
-            {passwordField(`New password (min ${AUTH_MIN_PASSWORD_LENGTH} characters)`, "new-password", true)}
-            {error && <p className="auth-error">{error.message}</p>}
-            <div className="modal-foot">
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? "Saving…" : "Save password"}
-              </button>
-            </div>
-          </form>
+            {view === "updatePassword" && (
+              <form onSubmit={submitUpdatePassword}>
+                <h3>Set a new password</h3>
+                <p className="auth-note">
+                  {accountEmail ? (
+                    <>
+                      Updating the password for <strong>{accountEmail}</strong>.
+                    </>
+                  ) : (
+                    "Choose a new password for your account."
+                  )}
+                </p>
+                {passwordField(`New password (min ${AUTH_MIN_PASSWORD_LENGTH} characters)`, "new-password", true)}
+                {error && <p className="auth-error" role="alert">{error.message}</p>}
+                <div className="modal-foot">
+                  <button type="submit" className="primary" disabled={busy}>
+                    {busy ? "Saving…" : "Save password"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>

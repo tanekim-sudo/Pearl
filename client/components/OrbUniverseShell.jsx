@@ -56,6 +56,7 @@ import {
 } from "../lib/unified-workspace.js";
 import { useSupabaseSession } from "../lib/auth-session.js";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase.js";
+import { describeAccountPanel, describeAccountsUnavailable } from "../lib/account-setup.js";
 import {
   SHELL_ACTION_EVENT,
   matchShellNavigationIntent,
@@ -285,6 +286,8 @@ function PearlShellNav({ activeId = "reef", onNavigate }) {
 
 function AccountPrivacyPanel({
   session,
+  sessionResolved = true,
+  accountsConfigured,
   syncEnabled,
   onSignIn,
   onSignOut,
@@ -292,27 +295,65 @@ function AccountPrivacyPanel({
   onLock,
   onUnlock,
   onDeleteLocal,
-  onOpenEncode,
 }) {
   const email = session?.user?.email || null;
-  return <section className="pearl-account-panel" aria-label="Account and privacy">
-    <p className="pearl-account-status">
-      {email
-        ? <>Signed in as <b>{email}</b>. Pearls stay on this device unless you enable sync.</>
-        : <>Working locally. Sign in only if you want optional account sync — Pearls remain device-first.</>}
-    </p>
-    <div className="pearl-account-actions">
-      {email
-        ? <button type="button" onClick={onSignOut}>Sign out</button>
-        : <button type="button" onClick={onSignIn}>Sign in</button>}
-      <button type="button" aria-pressed={syncEnabled} onClick={() => onToggleSync(!syncEnabled)}>
-        {syncEnabled ? "Disable account sync" : "Enable account sync"}
-      </button>
-      <button type="button" onClick={onLock}>Lock local Pearls</button>
-      <button type="button" onClick={onUnlock}>Unlock local Pearls</button>
-      <button type="button" onClick={onDeleteLocal}>Delete local Pearl data</button>
-      <button type="button" onClick={onOpenEncode}>Encode anything into a Pearl</button>
-    </div>
+  const panel = describeAccountPanel({
+    accountsConfigured,
+    email,
+    syncEnabled,
+    sessionResolved,
+  });
+  return <section className="pearl-account-panel" aria-label="Account and privacy" data-testid="pearl-account-panel" data-account-mode={panel.mode}>
+    <header className="pearl-account-section">
+      <p className="pearl-account-kicker">Account</p>
+      <p className="pearl-account-status" data-testid="pearl-account-status">{panel.status}</p>
+      {panel.mode === "unavailable" && (
+        <div className="pearl-account-blocker" data-testid="pearl-account-blocker" role="status">
+          <b>{panel.title}</b>
+          <ol>
+            {panel.nextSteps.map((step) => <li key={step}>{step}</li>)}
+          </ol>
+        </div>
+      )}
+      <div className="pearl-account-actions pearl-account-primary">
+        {panel.canSignOut
+          ? <button type="button" className="pearl-account-primary-btn" data-testid="pearl-account-sign-out" onClick={onSignOut}>Sign out</button>
+          : panel.canSignIn
+            ? <button type="button" className="pearl-account-primary-btn" data-testid="pearl-account-sign-in" onClick={onSignIn}>Sign in</button>
+            : null}
+      </div>
+    </header>
+
+    <section className="pearl-account-section" aria-label="Account sync">
+      <p className="pearl-account-kicker">Sync</p>
+      <p className="pearl-account-note">{panel.syncHint}</p>
+      <div className="pearl-account-actions">
+        <button
+          type="button"
+          aria-pressed={syncEnabled}
+          disabled={!panel.canToggleSync}
+          data-testid="pearl-account-sync"
+          onClick={() => onToggleSync(!syncEnabled)}
+        >
+          {syncEnabled ? "Disable account sync" : "Enable account sync"}
+        </button>
+      </div>
+    </section>
+
+    {panel.showLocalPrivacy && (
+      <section className="pearl-account-section" aria-label="This device">
+        <p className="pearl-account-kicker">This device</p>
+        <p className="pearl-account-note">
+          Lock, unlock, or wipe only this browser profile. Passphrase lock is local — it is not account recovery.
+        </p>
+        <div className="pearl-account-actions">
+          <button type="button" data-testid="pearl-account-lock" onClick={onLock}>Lock local Pearls</button>
+          <button type="button" data-testid="pearl-account-unlock" onClick={onUnlock}>Unlock local Pearls</button>
+          <button type="button" data-testid="pearl-account-delete-local" onClick={onDeleteLocal}>Delete local Pearl data</button>
+        </div>
+      </section>
+    )}
+
     <p className="pearl-account-note">
       Account sync is opt-in and is not end-to-end vault encryption. Firm material defaults to local-only until you explicitly approve model, research, or share.
     </p>
@@ -1136,10 +1177,31 @@ export default function OrbUniverseShell({ StageComponent }) {
   useEffect(() => {
     registerDirectorVerbs({
       openAuth: async () => {
+        if (!isSupabaseConfigured()) {
+          const blocker = describeAccountsUnavailable();
+          openEmittedView("settings", { panel: "account" });
+          setPrivacyNotice({ title: blocker.title, detail: blocker.message });
+          return {
+            effectId: `shell-auth-blocker:${Date.now()}`,
+            effects: ["auth-blocker"],
+            executionCode: "needs-credentials",
+            message: blocker.message,
+          };
+        }
         setAuthOpen(true);
         return { effectId: `shell-auth-open:${Date.now()}`, effects: ["auth-opened"] };
       },
       signOut: async () => {
+        if (!isSupabaseConfigured()) {
+          const blocker = describeAccountsUnavailable();
+          openEmittedView("settings", { panel: "account" });
+          return {
+            effectId: `shell-sign-out-blocker:${Date.now()}`,
+            effects: ["auth-blocker"],
+            executionCode: "needs-credentials",
+            message: blocker.message,
+          };
+        }
         await getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
         return { effectId: `shell-sign-out:${Date.now()}`, effects: ["signed-out"] };
       },
@@ -1264,7 +1326,15 @@ export default function OrbUniverseShell({ StageComponent }) {
   useEffect(() => {
     const onShellAction = (event) => {
       const action = event.detail?.action;
-      if (action === "openAuth") setAuthOpen(true);
+      if (action === "openAuth") {
+        if (!isSupabaseConfigured()) {
+          const blocker = describeAccountsUnavailable();
+          openEmittedView("settings", { panel: "account" });
+          setPrivacyNotice({ title: blocker.title, detail: blocker.message });
+        } else {
+          setAuthOpen(true);
+        }
+      }
       if (action === "signOut") {
         getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {});
         setAuthOpen(false);
@@ -1530,7 +1600,13 @@ export default function OrbUniverseShell({ StageComponent }) {
       return;
     }
     if (/^(?:sign(?: me)? in|log(?: me)? in|open (?:sign[- ]?in|account))$/i.test(recorded.entry.normalized)) {
-      setAuthOpen(true);
+      if (!isSupabaseConfigured()) {
+        const blocker = describeAccountsUnavailable();
+        openEmittedView("settings", { panel: "account" });
+        setPrivacyNotice({ title: blocker.title, detail: blocker.message });
+      } else {
+        setAuthOpen(true);
+      }
       next = transitionOrb(next, "executing", { taskId: recorded.entry.id, commandId: "openAuth" });
       setOrb(transitionOrb(next, "completed", { taskId: recorded.entry.id, commandId: "openAuth", effectId: `auth:${Date.now()}` }));
       return;
@@ -2421,10 +2497,26 @@ export default function OrbUniverseShell({ StageComponent }) {
           : emittedView === "settings"
             ? <AccountPrivacyPanel
                 session={supaAuth.session}
+                sessionResolved={supaAuth.sessionResolved}
+                accountsConfigured={isSupabaseConfigured()}
                 syncEnabled={syncEnabled}
-                onSignIn={() => setAuthOpen(true)}
+                onSignIn={() => {
+                  if (!isSupabaseConfigured()) {
+                    const blocker = describeAccountsUnavailable();
+                    setPrivacyNotice({ title: blocker.title, detail: blocker.message });
+                    return;
+                  }
+                  setAuthOpen(true);
+                }}
                 onSignOut={() => getSupabase()?.auth.signOut({ scope: "local" }).catch(() => {})}
                 onToggleSync={(enabled) => {
+                  if (enabled && !supaAuth.session?.user) {
+                    setPrivacyNotice({
+                      title: "Sign in required for sync",
+                      detail: "Account sync needs a signed-in session. Sign in first, then enable sync.",
+                    });
+                    return;
+                  }
                   setBoardSyncEnabled(enabled);
                   setSyncEnabled(enabled);
                   window.dispatchEvent(new CustomEvent("pearl-board-sync-consent", { detail: { enabled } }));
@@ -2438,7 +2530,6 @@ export default function OrbUniverseShell({ StageComponent }) {
                 onLock={() => command("lock my pearls")}
                 onUnlock={() => command("unlock my pearls")}
                 onDeleteLocal={() => command("delete my local pearl data")}
-                onOpenEncode={() => openEmittedView("encode")}
               />
             : emittedView === "encode"
               ? <EncodeAnythingPanel embedded onClose={() => setEmittedView(null)} onCompiled={({ pearl, entity }) => {
@@ -3574,10 +3665,14 @@ export default function OrbUniverseShell({ StageComponent }) {
       <span className="sr-only" role="status" aria-live="polite">{cursorMode ? "Pearl cursor on" : "Pearl cursor off"}</span>
       {renderPearlEmission()}
       {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
-        forced={supaAuth.passwordRecovery}
+        forced={supaAuth.passwordRecovery && isSupabaseConfigured()}
         accountEmail={supaAuth.session?.user?.email || null}
         bootError={authBootError}
-        onClose={() => { setAuthOpen(false); setAuthBootError(null); }}
+        onClose={() => {
+          setAuthOpen(false);
+          setAuthBootError(null);
+          if (supaAuth.passwordRecovery) supaAuth.clearPasswordRecovery();
+        }}
         onPasswordUpdated={() => {
           supaAuth.clearPasswordRecovery();
           setAuthOpen(false);
@@ -3700,10 +3795,14 @@ export default function OrbUniverseShell({ StageComponent }) {
     <PearlPowerFxOverlay />
     {renderPearlEmission()}
     {(authOpen || supaAuth.passwordRecovery) && <AuthOverlay
-      forced={supaAuth.passwordRecovery}
+      forced={supaAuth.passwordRecovery && isSupabaseConfigured()}
       accountEmail={supaAuth.session?.user?.email || null}
       bootError={authBootError}
-      onClose={() => { setAuthOpen(false); setAuthBootError(null); }}
+      onClose={() => {
+        setAuthOpen(false);
+        setAuthBootError(null);
+        if (supaAuth.passwordRecovery) supaAuth.clearPasswordRecovery();
+      }}
       onPasswordUpdated={() => {
         supaAuth.clearPasswordRecovery();
         setAuthOpen(false);

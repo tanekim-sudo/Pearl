@@ -42,7 +42,15 @@ export async function login() {
   configUrl.searchParams.set("code_challenge", challenge);
   const configResponse = await fetch(configUrl, { credentials: "omit" });
   const config = await configResponse.json().catch(() => ({}));
-  if (!configResponse.ok || !config.authorizeUrl) throw new Error("hosted login is unavailable");
+  if (!configResponse.ok || !config.authorizeUrl) {
+    const detail = String(config.error || config.message || "").trim();
+    throw new Error(
+      detail
+      || (configResponse.status === 503
+        ? "Accounts aren’t set up for this build. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the host, then retry — or keep working locally."
+        : "Hosted login is unavailable. Check the web app origin and account service, or keep working locally."),
+    );
+  }
   const callback = await BrowserPlatform.identity.launch(config.authorizeUrl, true);
   const url = new URL(callback);
   const code = url.searchParams.get("code");

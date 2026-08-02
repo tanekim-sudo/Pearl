@@ -6,6 +6,7 @@ import {
   planBadgeLabel,
   formatPlanPrice,
 } from "../lib/plans.js";
+import { describeAccountsUnavailable } from "../lib/account-setup.js";
 
 export default function PlansOverlay({ session, onClose }) {
   const [plans, setPlans] = useState([]);
@@ -17,7 +18,7 @@ export default function PlansOverlay({ session, onClose }) {
   const load = useCallback(async () => {
     const supabase = getSupabase();
     if (!supabase) {
-      setError("Accounts are not configured.");
+      setError(describeAccountsUnavailable().message);
       setLoading(false);
       return;
     }

@@ -20224,12 +20224,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
 
       {(authOpen || supaAuth.passwordRecovery) && (
         <AuthOverlay
-          forced={supaAuth.passwordRecovery}
+          forced={supaAuth.passwordRecovery && isSupabaseConfigured()}
           accountEmail={supaAuth.session?.user?.email || null}
           bootError={authBootError}
           onClose={() => {
             setAuthOpen(false);
             setAuthBootError(null);
+            if (supaAuth.passwordRecovery) supaAuth.clearPasswordRecovery();
           }}
           onPasswordUpdated={() => {
             supaAuth.clearPasswordRecovery();

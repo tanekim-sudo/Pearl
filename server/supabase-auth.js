@@ -112,7 +112,12 @@ export function requireLensUser(req, res, next) {
 
 export async function exchangeExtensionAuthorizationCode({ code, verifier, redirectUri }) {
   const config = readServerSupabaseConfig();
-  if (!config) throw Object.assign(new Error("account service unavailable"), { status: 503 });
+  if (!config) {
+    throw Object.assign(
+      new Error("Accounts aren’t set up for this build. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server, then retry — or keep working locally."),
+      { status: 503, code: "needs-credentials" },
+    );
+  }
   if (!/^[A-Za-z0-9_-]{20,512}$/.test(String(code || ""))) throw Object.assign(new Error("invalid authorization code"), { status: 400 });
   if (!/^[a-f0-9]{64}$/i.test(String(verifier || ""))) throw Object.assign(new Error("invalid authorization verifier"), { status: 400 });
   const redirect = new URL(String(redirectUri || ""));
@@ -131,7 +136,12 @@ export async function exchangeExtensionAuthorizationCode({ code, verifier, redir
 
 export function extensionAuthorizationUrl({ redirectUri, state, codeChallenge }) {
   const config = readServerSupabaseConfig();
-  if (!config) throw Object.assign(new Error("account service unavailable"), { status: 503 });
+  if (!config) {
+    throw Object.assign(
+      new Error("Accounts aren’t set up for this build. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server, then retry — or keep working locally."),
+      { status: 503, code: "needs-credentials" },
+    );
+  }
   const redirect = new URL(String(redirectUri || ""));
   if (redirect.protocol !== "https:" || !/\.chromiumapp\.org$/i.test(redirect.hostname) || redirect.pathname !== "/auth") {
     throw Object.assign(new Error("invalid extension redirect"), { status: 400 });

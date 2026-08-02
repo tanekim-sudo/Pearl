@@ -5717,7 +5717,36 @@ body {
   z-index: 90;
 }
 .auth-modal {
-  width: 400px;
+  width: min(400px, calc(100vw - 32px));
+}
+.orb-universe .auth-modal {
+  background: color-mix(in srgb, var(--orb-surface, #161616) 92%, #000);
+  color: var(--orb-text-1, #f4f1ea);
+  border: 1px solid var(--orb-line-strong, rgba(255,255,255,.16));
+  box-shadow: 0 24px 64px rgba(0,0,0,.45);
+}
+.orb-universe .auth-modal h3 {
+  color: var(--orb-text-1, #f4f1ea);
+}
+.orb-universe .auth-modal label {
+  color: var(--orb-text-3, #9a958c);
+}
+.orb-universe .auth-modal input {
+  background: rgba(255,255,255,.06);
+  color: var(--orb-text-1, #f4f1ea);
+  border: 1px solid var(--orb-line-strong, rgba(255,255,255,.18));
+}
+.orb-universe .auth-note,
+.orb-universe .auth-links button {
+  color: var(--orb-text-3, #9a958c);
+}
+.orb-universe .auth-links button:hover {
+  color: var(--orb-text-1, #f4f1ea);
+}
+.orb-universe .auth-notice {
+  color: var(--orb-text-1, #f4f1ea);
+  background: rgba(255,255,255,.04);
+  border-color: var(--orb-line-strong, rgba(255,255,255,.18));
 }
 .auth-note {
   font-size: 13.5px;
@@ -5745,6 +5774,20 @@ body {
   line-height: 1.45;
   color: var(--danger, #b3402a);
   margin: 10px 0 0;
+}
+.auth-blocker {
+  display: grid;
+  gap: 10px;
+}
+.auth-blocker-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+.orb-universe .auth-blocker-steps {
+  color: var(--orb-text-3, #9a958c);
 }
 .auth-links {
   display: flex;

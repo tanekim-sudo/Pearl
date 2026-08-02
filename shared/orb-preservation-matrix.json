@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-25T17:32:10.199Z",
+  "generatedAt": "2026-08-02T00:48:37.629Z",
   "contract": "pre-orb-baseline-to-real-orb-effect",
   "preOrbBaseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
   "counts": {
@@ -445,9 +445,14 @@
       "baseline": "297478585f636be7620e09b4377df36b9f7e9d5e",
       "status": "preserved",
       "directControl": [
-        "client/components/AuthOverlay.jsx"
+        "client/components/AuthOverlay.jsx",
+        "client/components/OrbUniverseShell.jsx:AccountPrivacyPanel"
       ],
-      "orbVoice": [],
+      "orbVoice": [
+        "openAuth",
+        "signOut",
+        "openSettings"
+      ],
       "extension": [
         "showExternalLibraryImport"
       ],
@@ -461,7 +466,9 @@
       ],
       "appTests": [
         "client/lib/board-sync.test.js",
-        "shared/lens-library.test.js"
+        "shared/lens-library.test.js",
+        "client/lib/account-setup.test.js",
+        "client/lib/auth-errors.test.js"
       ]
     },
     {

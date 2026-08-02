@@ -48,6 +48,20 @@ describe("describeAuthError", () => {
     assert.equal(unknown.message, missing.message);
     assert.equal(unknown.action, null);
   });
+
+  it("names exact env setup for not_configured / needs-credentials", () => {
+    for (const code of ["not_configured", "needs-credentials"]) {
+      const d = describeAuthError(code);
+      assert.match(d.message, /VITE_SUPABASE_URL/);
+      assert.match(d.message, /VITE_SUPABASE_PUBLISHABLE_KEY/);
+      assert.doesNotMatch(d.message, /unknown error|state of the art/i);
+    }
+  });
+
+  it("points at the project URL when the account service is unreachable", () => {
+    const d = describeAuthError("service_unreachable");
+    assert.match(d.message, /VITE_SUPABASE_URL|network/i);
+  });
 });
 
 describe("resendCooldownRemaining", () => {
