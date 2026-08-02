@@ -9,7 +9,7 @@ This README is both the pitch and a **complete product inventory** of what ships
 - `shared/feature-contracts.js` (65 contracts: 59 active, 6 removed from Pearl shell)
 - `client/lib/companion-capabilities.js` (Companion director verbs on web + extension; ~418 capability rows / families below — not a verb-by-verb dump)
 - `client/lib/pearl-primary-screens.js` (clueless-reachable shell screens)
-- Pearl brain modules: `shared/pearl-layer-instructions.js`, `shared/pearl-weights.js`, `shared/pearl-prompt-harness.js`, `shared/pearl-operate-harness.js`, `shared/companion-pearl-job.js`, `shared/pearl-system-prompt.js`
+- Pearl brain / Cursor-for-pearls modules: `shared/companion-pearl-job.js`, `shared/pearl-app-snapshot.js`, `shared/pearl-cursor-harness.js`, `shared/pearl-operate-harness.js`, `shared/pearl-prompt-harness.js`, `shared/pearl-layer-templates.js`, `shared/pearl-layer-instructions.js`, `shared/pearl-weights.js`, `shared/pearl-system-prompt.js`
 - OrbUniverse / Companion / Reef / Studio / extension mounts
 
 Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-coverage-audit.md). App readiness is separate from this inventory.
@@ -34,26 +34,26 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 | Cursor (code) | Pearl Companion |
 | --- | --- |
-| Understands repo / open files | Understands app world: Reef · Scene · Studio · gauntlet · pearl titles (`pearl-app-snapshot.js`) |
-| Job: change/run code safely | Job pack: create/edit/wear/compare/produce (`companion-pearl-job.js`) |
+| Understands repo / open files | Per-turn **app snapshot**: Reef · Scene · Studio · gauntlet · pearl titles (`pearl-app-snapshot.js` → `companion-pearl-job.js`) |
+| Job: change/run code safely | Durable **job pack**: create/edit/wear/compare/produce (`companion-pearl-job.js`) |
 | Tools: read/edit/run/search | Tools: observe, edit M/W/L, create, wear, compare, PDF/md, navigate |
 | Interpretable trail | Working → Interpreting → Proposed → Applied/Blocked |
 | Never pastes tasks into source | Never pastes tasks into `systemPrompt` |
 
-Two load-bearing classes (`pearl-operate-harness` / `pearl-cursor-harness`):
+Turn harness (`pearl-cursor-harness.js`): **Observe → Classify → Propose tool → Apply → Reveal**. Every planner / GO turn injects the **job pack** + **app snapshot** (+ pearl companion context when a pearl is active).
 
-| Class | Means | Tools |
+| Class | Means | Tools / owner |
 | --- | --- | --- |
-| **mutate_brain** | Change the pearl’s structure | create / edit Moves·Weights·Lenses (`pearl-prompt-harness`) |
-| **operate** | Use pearls without rewriting them | `comparePearls`, summarize layers, produce PDF/md (`pearl-compare`) |
+| **mutate_brain** | Change the pearl’s structure | create / edit Moves·Weights·Lenses → project `systemPrompt` (`pearl-prompt-harness`) |
+| **operate** | Use pearls **without** rewriting them | `comparePearls`, `operatePearl` (summarize layers, ask-about), produce PDF/md (`pearl-operate-harness` + `pearl-compare`) |
 
-Every planner/system turn injects the **job pack** + **app snapshot**. Loop: **Observe → Classify → Propose tool → Apply → Reveal**. “Differences between X and Y” + “give me a PDF” is **operate**. Canonical fidelity is **Moves · Weights · Lenses**; `systemPrompt` is only the projection. Style/taste creates succeed **signed-out**. Try: create Buffett → compare to your investor pearl → PDF.
+**Hard rule:** compare / differences / PDF / export / summarize-without-edit → **operate**. Those paths never call `editPearlSystemPrompt` and never append user task text (“Source request”, chat dumps) into `systemPrompt`. Mutate edits layers first, then projects the readable prompt.
 
 **Sign-in gate honesty:** local pearl create/edit/organize succeeds without accounts. Live model routes that require auth surface `needs-credentials` (Account & privacy blocker, or API 401/503) — never fake Done on create. Missing Supabase keys → clear “Accounts aren’t set up” next steps; Pearl still works device-local.
 
 **Companion sees full pearl context** (internal): system prompt, title, purpose, Moves / Weights / Lenses summaries, gauntlet slot, scene, privacy summary, lineage/version hints, and wear state — built by `shared/pearl-companion-context.js` and injected into planner/runtime. **Users see the prompt and layers, not the metadata soup** — Studio, Reef inspector, chat, and the extension shelf hide ids, hashes, raw JSON, contract ids, storage keys, and machine privacy blobs (optional “show id” power path). Storage is unchanged.
 
-**Create parsers / style-simile:** Talk→GO accepts novice phrasing such as `make me a pearl to…`, `make me a poetry pearl like Sylvia Plath’s thought process`, `create a pearl in the style of…`, `make a pearl about…`, and `make me a pearl that reflects Warren Buffett's style and taste and lens of investing` — intent-bound titles (e.g. Buffett · investing), offline-capable high-fidelity layer templates, no planner / sign-in required for the common path.
+**Create parsers / style-taste:** Talk→GO accepts novice phrasing such as `make me a pearl to…`, `make me a poetry pearl like Sylvia Plath’s thought process`, `create a pearl in the style of…`, `make a pearl about…`, and `make me a pearl that reflects Warren Buffett's style and taste and lens of investing`. Intent-bound titles (e.g. **Buffett · investing**). Offline signed-out creates seed high-fidelity **Moves · Weights · Lenses** from layered templates in `pearl-layer-templates.js` (Buffett, investor, Plath / Oliver / Dickinson / Woolf / poetry, generic style) via `seedPearlLayersFromIntent` — no planner / sign-in required for the common path; AI may refine later when signed in. Try: create Buffett → compare to your investor pearl → PDF.
 
 **Reef** is home — all your pearls, spread out as physical capsules you can see, drag, wear, and open.
 
@@ -132,20 +132,23 @@ Also reachable via Companion phrases such as `go home`, `open settings`, `encode
 
 Text and voice share one planner/director. High-confidence intents run with ghost-cursor demonstration. Ambiguous or destructive work gets an exact check-in / Accept·Reject — never fake Done. Executable commands are action-first: no praise narration as the product.
 
-**Prompt harness & create path** (any language the intent layer can map):
+**Cursor-for-pearls harness** (planner / GO grounding):
 
-- Verbs: `interpretPearlPrompt`, `editPearlSystemPrompt`, `setPearlSystemPrompt`, `getPearlSystemPrompt`, Weights trio (`getPearlWeights` / `setPearlWeights` / `editPearlWeights`), plus `createSemanticOrb`
-- Trail: Observe → Interpret → Propose → Apply → Reveal
-- Offline signed-out create/edit merges locally; richer AI rewrite when signed in + credentials; otherwise exact `needs-credentials` when a live model step was required
-- Fast-path parsers: `make me a pearl to…`, topic + style-simile (`like` / `in the style of` / `inspired by`), `about` / `called` / `named`
+- Job pack + per-turn app snapshot every turn (`companion-pearl-job.js`, `pearl-app-snapshot.js`)
+- Turn loop (`pearl-cursor-harness.js`): Observe → Classify (**mutate_brain** vs **operate**) → Propose tool → Apply → Reveal
+- **Operate** verbs: `comparePearls`, `operatePearl` — compare / summarize / ask-about / PDF·md; **never** append into `systemPrompt` (`pearl-operate-harness.js`)
+- **Mutate** verbs: `interpretPearlPrompt`, `editPearlSystemPrompt`, `setPearlSystemPrompt`, `getPearlSystemPrompt`, Weights trio (`getPearlWeights` / `setPearlWeights` / `editPearlWeights`), plus `createSemanticOrb` — edit Moves·Weights·Lenses then project (`pearl-prompt-harness.js`: Observe → Interpret → Propose → Apply → Reveal)
+- Offline signed-out create/edit merges locally with layered templates; richer AI rewrite when signed in + credentials; otherwise exact `needs-credentials` when a live model step was required
+- Fast-path parsers: `make me a pearl to…`, topic + style-taste (`like` / `in the style of` / `inspired by` / `reflects … style and taste`), `about` / `called` / `named`
 
 **Novice verb families** (Talk → GO; world-visible results):
 
 | Family | Examples |
 | --- | --- |
 | **Navigate** | go home / open Reef, Library, Toolbox, Settings, Encode, Packages, Scene, Output Frame, Studio, Install, auth |
-| **Create & cultivate** | create pearl (intent-bound title, style-simile, “make me a pearl to…”), rename, edit / add notes, duplicate, archive, delete (confirmed) |
-| **Prompt & layers** | read/edit system prompt; edit Weights (care/prefer/weight-over); organize → Moves · Weights · Lenses; interpret any-language prompt change |
+| **Create & cultivate** | create pearl (intent-bound title, Buffett / style-taste templates, “make me a pearl to…”), rename, edit / add notes, duplicate, archive, delete (confirmed) |
+| **Prompt & layers** | read/edit system prompt projection; edit Weights (care/prefer/weight-over); organize → Moves · Weights · Lenses; interpret any-language prompt change |
+| **Operate / compare** | differences between X and Y; summarize Moves/Weights/Lenses; ask about a pearl; produce PDF/md of the comparison — never mutates the brain |
 | **Wear / gauntlet** | wear, remove worn, list/inspect gauntlet, rearrange sockets (≤5; full gauntlet refuses) |
 | **Compose** | merge, compose (ordered), synthesize (“what do these notice about each other”), nest/unnest, split, counter/experiment |
 | **Organize & role** | organize → Moves · Weights · Lenses; role pearls (e.g. investor memo + diligence + lens); discover ≤5 forming pearls from chats/docs |
@@ -306,7 +309,7 @@ Load `extension/dist/chrome` unpacked for local extension testing.
 
 Showcase flows SF01–SF25: `docs/pearl-showcase-flows.md`. Engineering policy: `docs/pearl-engineering-policy.md`. Orphan / deletion ledger: `docs/pearl-orphan-audit.md`. Function=Moves forensics: `docs/pearl-function-moves-forensics.md`. Stress standard: `docs/pearl-stress-standard.md`.
 
-Making a change: own feature contract → characterization test → shared command first → surface adapters → update companion manifest/graph → focused stress → `release:check`. Never delete or rename a capability without explicit approval, migration, and preservation tests. Pearl brain edits go through Moves · Weights · Lenses + prompt harness — do not reinvent a parallel “Functions brain.”
+Making a change: own feature contract → characterization test → shared command first → surface adapters → update companion manifest/graph → focused stress → `release:check`. Never delete or rename a capability without explicit approval, migration, and preservation tests. Pearl brain edits go through Moves · Weights · Lenses + prompt/cursor harness — do not reinvent a parallel “Functions brain,” and do not append operate tasks into `systemPrompt`.
 
 ---
 
@@ -354,10 +357,13 @@ npm run release:check:fast
 | Pearl brain layers (Moves · Weights · Lenses) | `shared/pearl-layer-instructions.js` |
 | Weights | `shared/pearl-weights.js` |
 | System prompt projection | `shared/pearl-system-prompt.js` |
-| Prompt harness (Observe→…→Reveal) | `shared/pearl-prompt-harness.js` |
-| Operate harness (compare/PDF; never mutates prompt) | `shared/pearl-operate-harness.js` |
-| Companion job pack + app snapshot (Cursor-for-pearls identity) | `shared/companion-pearl-job.js` |
-| Cursor turn harness (observe→classify→tools) | `shared/pearl-cursor-harness.js` |
+| Companion job pack + app snapshot builders | `shared/companion-pearl-job.js` |
+| App snapshot re-export (per-turn grounding) | `shared/pearl-app-snapshot.js` |
+| Cursor turn harness (Observe→Classify→Propose→Apply→Reveal) | `shared/pearl-cursor-harness.js` |
+| Operate harness (compare/PDF/summarize; never mutates prompt) | `shared/pearl-operate-harness.js` |
+| Prompt / mutate harness (edit M·W·L → project systemPrompt) | `shared/pearl-prompt-harness.js` |
+| Offline style-taste layer templates (Buffett, poetry…) | `shared/pearl-layer-templates.js` |
+| Pearl compare / produce-output helpers | `shared/pearl-compare.js` |
 | Companion internal context / metadata scrub | `shared/pearl-companion-context.js` |
 | Move / Function / Lens library objects | `shared/library-objects.js` |
 | Function step reorder (single algorithm) | `shared/function-step-ops.js` + `LensTreeEditor.jsx` |
@@ -396,7 +402,7 @@ Reality first · Understanding over information · Cultivation over generation �
 
 ### Long-term direction (not a ship promise)
 
-Compare Lenses side by side; meaning-aware undo; Function test benches with fixtures; shared review of candidate branches; local-model routing for sensitive work; IDE and calendar bridges; federated registries; E2E encrypted vaults with user-held keys; marketplace of cultivated understanding. None of that changes the core contract above until it is wired and stress-proven.
+Richer side-by-side Lens diff UX beyond today’s `comparePearls` chat/PDF path; meaning-aware undo; Function test benches with fixtures; shared review of candidate branches; local-model routing for sensitive work; IDE and calendar bridges; federated registries; E2E encrypted vaults with user-held keys; marketplace of cultivated understanding. None of that changes the core contract above until it is wired and stress-proven.
 
 ---
 
