@@ -36,6 +36,7 @@ import {
   normalizeCompanionCommandResult,
   recordAndLogExecution,
 } from "../../shared/execution-result.js";
+import { scrubPearlMetadataFromUserText } from "../../shared/pearl-companion-context.js";
 
 function resolveSpeechRecognition() {
   if (typeof window === "undefined") return null;
@@ -360,7 +361,7 @@ export default function CompanionChat({
     setDiagnostics(loadExecutionEvents());
   }
 
-  function surfaceExecution(result, error = null) {
+  function surfaceExecution(result, error = null, utterance = "") {
     const execution = result?.execution || normalizeCompanionCommandResult(result, error);
     const problem = execution.status === "blocked"
       || execution.status === "failed"
@@ -375,8 +376,11 @@ export default function CompanionChat({
         window.__lensCompanionLastError = problem ? execution : null;
       }
     }
+    const lastUser = utterance
+      || [...messages].reverse().find((entry) => entry.role === "user")?.text
+      || "";
     if (problem) {
-      const text = formatExecutionChatMessage(execution);
+      const text = scrubPearlMetadataFromUserText(formatExecutionChatMessage(execution), { utterance: lastUser });
       setMessages((m) => [...m, {
         role: "companion",
         text,
@@ -387,13 +391,14 @@ export default function CompanionChat({
       return execution;
     }
     // Brief success confirmation so GO never feels silent.
-    const text = result?.visible && result?.text
+    const rawText = result?.visible && result?.text
       ? result.text
       : (execution.message && execution.message !== "Done."
         ? execution.message
         : "Done.");
+    const text = scrubPearlMetadataFromUserText(rawText, { utterance: lastUser });
     setMessages((m) => [...m, { role: "companion", text, execution }]);
-    if (result?.visible && result?.text) speak(result.text);
+    if (result?.visible && result?.text) speak(text);
     return execution;
   }
 
@@ -562,14 +567,16 @@ export default function CompanionChat({
               visible: true,
               text: result?.text || result?.execution?.message || "Done.",
             },
+        null,
+        text,
       );
     } catch (err) {
       if (run.signal.aborted || err?.name === "AbortError") {
-        surfaceExecution(null, err);
+        surfaceExecution(null, err, text);
         setDraft(text);
         return;
       }
-      surfaceExecution({ completed: false, text: publicCompanionError(err) }, err);
+      surfaceExecution({ completed: false, text: publicCompanionError(err) }, err, text);
       setDraft(text);
     } finally {
       const isCurrent = submitGuardRef.current.active()?.id === run.id;

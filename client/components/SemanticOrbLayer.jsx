@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { clusterSemanticOrbs } from "../../shared/semantic-orbs.js";
 import PhysicalPearl from "./PhysicalPearl.jsx";
 import { createPearlGestureArbiter } from "../../shared/pearl-gesture-arbiter.js";
+import { readPearlSystemPrompt } from "../../shared/pearl-system-prompt.js";
 
 const PAYLOAD = "application/x-lens-object";
 
@@ -270,24 +271,16 @@ export default function SemanticOrbLayer({
               <input aria-label="Pearl name" value={rename} onChange={(event) => setRename(event.target.value)} />
               <button type="submit">Rename</button>
             </form>
-            <p className="semantic-orb-inspector-purpose">
-              {(orb.functions || []).length
-                ? `${(orb.functions || []).map((fn) => fn.name).filter(Boolean).slice(0, 3).join(" · ")} — open to see each Function as ordered Moves`
-                : `${orb.workingSet?.context?.length || 0} context · ${orb.workingSet?.lenses?.length || 0} Lenses`}
+            <p className="semantic-orb-inspector-purpose" data-testid="inspector-system-prompt">
+              {(() => {
+                const prompt = readPearlSystemPrompt(orb);
+                if (!prompt) return "No system prompt yet — open Studio to write one.";
+                return prompt.length > 220 ? `${prompt.slice(0, 220).trim()}…` : prompt;
+              })()}
             </p>
-            {(orb.functions || []).slice(0, 2).map((fn) => (
-              <div key={fn.id || fn.name} className="semantic-orb-inspector-fn" data-testid="inspector-function-preview">
-                <b>{fn.name || "Function"}</b>
-                <ol>
-                  {(fn.steps || fn.graph?.nodes || []).slice(0, 5).map((step, index) => (
-                    <li key={step.id || index}>{typeof step === "string" ? step : (step.name || step.label || `Move ${index + 1}`)}</li>
-                  ))}
-                </ol>
-              </div>
-            ))}
             <div className="semantic-orb-inspector-actions">
               <button type="button" data-testid="inspector-open-studio" className="semantic-orb-inspector-primary" onClick={() => onOpenStudio?.(orb)}>
-                Explore structure
+                Open Studio
               </button>
               <button type="button" onClick={() => onDuplicate?.(orb.id)}>Duplicate</button>
               <button type="button" disabled={(orb.sourceIds?.length || orb.representation?.refs?.length || 0) < 2} onClick={() => onSplit?.(orb.id)}>Split</button>

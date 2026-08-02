@@ -550,12 +550,12 @@ export default function PearlStudioView({ localRef }) {
       </div>
       <div className="web-pearl-studio__version">
         <strong>{versions.current.label} · current</strong>
-        <small>rev {versions.current.revision} · {versions.current.preview.textPreview || "Empty"}</small>
+        <small>{versions.current.preview.textPreview || "Empty"}</small>
       </div>
       {versions.versions.map((entry) => (
         <div key={entry.id} className="web-pearl-studio__version">
           <strong>{entry.label}{entry.named ? " · named" : ""}</strong>
-          <small>rev {entry.revision} · {new Date(entry.at).toLocaleString()} · {entry.preview.textPreview || "Empty"}</small>
+          <small>{new Date(entry.at).toLocaleString()} · {entry.preview.textPreview || "Empty"}</small>
           <div className="web-pearl-studio__version-actions">
             <button type="button" onClick={async () => {
               await run("restorePearlVersion", { pearlId: entity.id, checkpointId: entry.id, confirmed: true });

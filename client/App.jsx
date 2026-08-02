@@ -262,12 +262,14 @@ import {
   buildMergedWornPearlPack,
   buildWornPearlPack,
   companionWearPrompt,
+  companionWearUserMessage,
   compressConversationToPearlSpec,
   loadWornOrbitState,
   loadWornPearlId,
   loadWornPearlIds,
   suggestPearlForConversation,
 } from "../shared/companion-pearl-wear.js";
+import { scrubPearlMetadataFromUserText } from "../shared/pearl-companion-context.js";
 import {
   MAX_GAUNTLET_SLOTS,
   loadGauntletState,
@@ -12237,13 +12239,23 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
     const orbs = (scene?.semanticOrbs || []).filter((entry) => !entry.archived);
     const functions = (operatorsRef.current || []).filter((entry) => entry.kind === "function" || entry.processGraph);
     const orbit = loadWornOrbitState();
+    const gauntlet = loadGauntletState();
     const ids = preferredId
       ? [preferredId]
       : (orbit.pearlIds.length ? orbit.pearlIds : (scene?.activeSemanticOrbId ? [scene.activeSemanticOrbId] : []));
     const pearls = ids.map((id) => orbs.find((entry) => entry.id === id)).filter(Boolean);
     if (!pearls.length) return null;
-    if (pearls.length === 1) return buildWornPearlPack(pearls[0], { functions });
-    return buildMergedWornPearlPack(pearls, { functions });
+    const packOptions = {
+      functions,
+      wornPearlIds: orbit.pearlIds.length ? orbit.pearlIds : ids,
+      primaryPearlId: orbit.primaryPearlId || ids[0],
+      gauntletFilled: gauntlet.filled,
+      gauntletCapacity: MAX_GAUNTLET_SLOTS,
+      sceneId: scene?.id || sceneId,
+      sceneName: scene?.name || null,
+    };
+    if (pearls.length === 1) return buildWornPearlPack(pearls[0], packOptions);
+    return buildMergedWornPearlPack(pearls, packOptions);
   }
 
   function publishWornOrbit() {
@@ -13322,7 +13334,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         status: "worn",
         object: pack,
         effects: ["pearl-worn", "pearl-orbit-updated", "gauntlet-updated"],
-        visibleText: companionWearPrompt(pack),
+        // User chat: short title message. Full context stays on pack for Companion/planner.
+        visibleText: companionWearUserMessage(pack),
+        companionContextText: companionWearPrompt(pack),
       };
     },
     removeWornPearl: async (a, tk) => {
@@ -13353,7 +13367,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         status: pack ? "worn" : "bare",
         object: pack,
         effects: ["pearl-removed", "pearl-orbit-updated", "gauntlet-updated"],
-        visibleText: companionWearPrompt(pack),
+        visibleText: companionWearUserMessage(pack),
+        companionContextText: companionWearPrompt(pack),
       };
     },
     listWornPearls: async (a, tk) => {
@@ -13387,7 +13402,8 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         status: pack ? "worn" : "bare",
         object: pack,
         effects: ["worn-pearl-inspected"],
-        visibleText: companionWearPrompt(pack),
+        visibleText: companionWearUserMessage(pack),
+        companionContextText: companionWearPrompt(pack),
       };
     },
     indicateOutputWithCursor: async (a, tk) => {
@@ -13645,12 +13661,24 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId);
       if (!pearl) throw new Error("No pearl selected to inspect.");
       const harness = pearlMetadataHarness(pearl);
+      const pack = buildWornPearlPack(pearl, {
+        functions: (operatorsRef.current || []).filter((entry) => entry.kind === "function" || entry.processGraph),
+        sceneId: pearl.sceneId || sceneId,
+      });
       await tk.wait(80);
+      const moveCount = harness.organization.moves.length;
+      const fnCount = harness.organization.functions.length;
+      const lensCount = harness.organization.lenses.length;
       return {
         type: "pearl-metadata",
-        object: harness,
+        object: { ...harness, companionContext: pack?.companionContext || null },
         effects: ["pearl-metadata-inspected"],
-        visibleText: `${harness.name}: Moves ${harness.organization.moves.length} · Functions ${harness.organization.functions.length} · Lenses ${harness.organization.lenses.length}. Deterministic ops: ${harness.bounds.deterministicOps.join(", ")}. Open rewrite needs model credentials.`,
+        // Human summary only — full harness stays on object for Companion internals.
+        visibleText: scrubPearlMetadataFromUserText(
+          `“${harness.name}”: ${moveCount} Moves · ${fnCount} Functions · ${lensCount} Lenses.`
+          + (pack?.systemPrompt ? " System prompt is set — open Studio to edit it." : " No system prompt yet — open Studio to write one."),
+        ),
+        companionContextText: companionWearPrompt(pack),
       };
     },
     rearrangeGauntlet: async (a, tk) => {
@@ -18103,7 +18131,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ? { status: "executed", effects: result.effects || ["automation-pearl-compiled"] }
         : { status: "failed", failure: result.errors?.[0] || "Automation command failed" });
       if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
-      if (result.value?.visibleText) return { visible: true, text: result.value.visibleText };
+      if (result.value?.visibleText) {
+        return { visible: true, text: scrubPearlMetadataFromUserText(result.value.visibleText, { utterance: text }) };
+      }
       return null;
     }
 

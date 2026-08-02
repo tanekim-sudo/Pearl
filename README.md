@@ -21,6 +21,8 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **A Pearl stores a system prompt** — the taste, instructions, and capability it carries. Companion **interprets** that prompt when the pearl is worn, and can **edit** it from natural language (“make this pearl about…”, “add that I always want a risks section”, “rewrite the system prompt to…”). Creating a pearl seeds an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
 
+**Companion sees full pearl context** (internal): system prompt, title, purpose, Functions/Moves summary, lenses/taste, gauntlet slot, scene, privacy summary, lineage/version hints, and wear state — built by `shared/pearl-companion-context.js` and injected into planner/runtime. **Users see the prompt, not the metadata** — Studio, Reef inspector, chat, and the extension shelf hide ids, hashes, raw JSON, contract ids, storage keys, and machine privacy blobs (optional “show id” power path). Storage is unchanged.
+
 **Reef** is home — all your pearls, spread out as physical capsules you can see, drag, wear, and open.
 
 **Gauntlet ≤5** — up to five worn pearls as active working memory (Infinity-stone sockets). A sixth drop refuses clearly; it never silently bumps another out.
@@ -37,15 +39,15 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 ### Pearl
 
-A Pearl is a persistent unit whose **primary field is `systemPrompt`** — the instructions Companion uses when wearing it. Around that prompt it can also carry context, optional Moves→Functions→Lenses structure, and provenance.
+A Pearl is a persistent unit whose **primary field is `systemPrompt`** — the instructions Companion uses when wearing it. Around that prompt it can also carry context, optional Moves→Functions→Lenses structure, and provenance. Companion receives that full internal context; the UI surfaces title + system prompt + actions.
 
 | Property | Meaning |
 | --- | --- |
-| **System prompt** | Primary: taste / instructions / capability the pearl carries |
+| **System prompt** | Primary: taste / instructions / capability the pearl carries (user-editable; Companion-interpreted) |
 | **Memory** | Cumulative formation: conversations, sources, refinements |
 | **Perspective** | Compiled way of seeing — judgment, not raw dump |
 | **Capability** | Emergent ability to act (critique, underwrite, rewrite…) |
-| **Provenance** | Inspectable history of how understanding formed |
+| **Provenance** | Kept in storage for Companion / recovery — not shown as a metadata form in Studio |
 
 Pearls are formed, not merely generated. They live on the **Reef**, load into the **Gauntlet**, and open in **Studio**.
 

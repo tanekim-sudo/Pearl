@@ -11,7 +11,10 @@ import {
 import { capabilityContextPrompt } from "./companion-capability-graph.js";
 import { parseCompanionPlan } from "./companion-plan.js";
 import { parseRolePearlCommand as parseRolePearlScaffoldCommand } from "../../shared/role-pearl-scaffold.js";
-import { formatPearlCompanionContextForModel } from "../../shared/pearl-companion-context.js";
+import {
+  buildPearlCompanionContext,
+  formatPearlCompanionContextForModel,
+} from "../../shared/pearl-companion-context.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
 export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
@@ -1202,27 +1205,33 @@ export function parseBeforeAfterCommand(text) {
 
 function wornPearlContextBlock(wornPearlPack) {
   if (!wornPearlPack) {
-    return "No pearl is worn. Companion still works fully — pearls are optional add-ons. Use wearPearl when the user puts one on.";
+    return formatPearlCompanionContextForModel(null);
   }
   if (wornPearlPack.companionContext) {
     return formatPearlCompanionContextForModel(wornPearlPack.companionContext);
   }
-  const prompt = wornPearlPack.systemPrompt
-    ? `\nPearl system prompt:\n${String(wornPearlPack.systemPrompt).slice(0, 2400)}`
-    : "";
-  const functions = (wornPearlPack.functions || []).map((fn) => fn.name).filter(Boolean).join(", ") || "none";
-  const lenses = (wornPearlPack.lenses || []).map((lens) => lens.name).filter(Boolean).join(", ") || "none";
-  const privacy = wornPearlPack.privacy?.summary ? `\nPrivacy: ${wornPearlPack.privacy.summary}` : "";
-  const lineage = wornPearlPack.lineage?.versionHint ? `\nLineage: ${wornPearlPack.lineage.versionHint}` : "";
-  return [
-    `Worn pearl: “${wornPearlPack.name}”.`,
-    `System prompt: ${wornPearlPack.systemPrompt ? "set" : "empty"}.`,
-    `Functions: ${functions}. Lenses: ${lenses}. Context items: ${wornPearlPack.context?.length || 0}.`,
-    "Interpret through its system prompt unless the user asks to switch or create another. Do not echo pearl ids or machine metadata to the user unless they ask to show id.",
-    prompt,
-    privacy,
-    lineage,
-  ].filter(Boolean).join(" ");
+  // Rebuild full model context from pack fields when companionContext was not attached.
+  const rebuilt = buildPearlCompanionContext({
+    id: wornPearlPack.pearlId,
+    name: wornPearlPack.name,
+    systemPrompt: wornPearlPack.systemPrompt,
+    purpose: wornPearlPack.purpose,
+    functions: wornPearlPack.functions,
+    moves: wornPearlPack.moves,
+    lenses: wornPearlPack.lenses,
+    workingSet: { context: wornPearlPack.context, lenses: wornPearlPack.lenses },
+    privacy: wornPearlPack.privacy,
+    privacyPolicy: wornPearlPack.privacy,
+    aesthetic: wornPearlPack.aesthetic,
+  }, {
+    worn: true,
+    wornPearlIds: (wornPearlPack.packs || []).map((entry) => entry.pearlId).filter(Boolean)
+      .concat(wornPearlPack.pearlId ? [wornPearlPack.pearlId] : []),
+    primaryPearlId: wornPearlPack.pearlId,
+    sceneId: wornPearlPack.scene?.id,
+    sceneName: wornPearlPack.scene?.name,
+  });
+  return formatPearlCompanionContextForModel(rebuilt);
 }
 
 export function buildCompanionSystemPrompt({ demos = [], functionNames = [], itemPreviews = [], wornPearlPack = null } = {}) {

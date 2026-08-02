@@ -613,8 +613,9 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
   const adaptive = buildAdaptiveCompanionPrompt({
     wornPearlPack: { name: "LP briefings", pearlId: "p1", functions: [{ name: "Memo" }], lenses: [], context: [{}] },
   });
-  assert.match(adaptive, /Worn pearl: “LP briefings”/);
+  assert.match(adaptive, /Active pearl context|Title: “LP briefings”/);
   assert.match(adaptive, /System prompt/);
+  assert.match(adaptive, /Functions: Memo/);
   assert.doesNotMatch(adaptive, /\(p1\)/);
   assert.ok(COMPANION_VERBS.wearPearl);
   assert.ok(COMPANION_VERBS.removeWornPearl);
@@ -687,7 +688,9 @@ test("planner requires executable commands to act without chatter", () => {
   const worn = buildCompanionSystemPrompt({
     wornPearlPack: { name: "LP briefings", functions: [{ name: "Memo" }], context: [{}] },
   });
-  assert.match(worn, /Worn pearl: “LP briefings”/);
+  assert.match(worn, /Active pearl context|Title: “LP briefings”/);
+  assert.match(worn, /Functions:/);
+  assert.doesNotMatch(worn, /schemaVersion|storageKey/);
 });
 
 test("adaptive planner documents framework metadata outside capability args", () => {

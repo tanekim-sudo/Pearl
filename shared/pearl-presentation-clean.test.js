@@ -88,3 +88,17 @@ test("companion capability purposes and examples present pearls, not orbs", () =
   assert.match(caps, /Picasso studies pearl/);
   assert.match(caps, /Open a saved pearl on the Pearl shelf/);
 });
+
+test("Studio and chat scrub metadata; Companion gets full pearl context helper", () => {
+  const studio = read("client/components/PearlStudioView.jsx");
+  const chat = read("client/components/CompanionChat.jsx");
+  const wear = read("shared/companion-pearl-wear.js");
+  const helper = read("shared/pearl-companion-context.js");
+  assert.match(studio, /studio-system-prompt/);
+  assert.doesNotMatch(studio, /rev \{versions\.current\.revision\}/);
+  assert.match(chat, /scrubPearlMetadataFromUserText/);
+  assert.match(wear, /companionContext/);
+  assert.match(wear, /companionWearUserMessage/);
+  assert.match(helper, /buildPearlCompanionContext/);
+  assert.match(helper, /formatPearlCompanionContextForModel/);
+});

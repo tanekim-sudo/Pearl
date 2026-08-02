@@ -35,6 +35,10 @@ import {
   MAX_FORMING_PEARLS,
   pearlMetadataHarness,
 } from "../../../shared/forming-pearls.js";
+import {
+  applySystemPromptToPearl,
+  readPearlSystemPrompt,
+} from "../../../shared/pearl-system-prompt.js";
 import "../../../shared/pearl-interface-tokens.css";
 import "./sidepanel.css";
 
@@ -853,6 +857,12 @@ function App() {
         ...orb,
         workingSet: { ...orb.workingSet, lenses: (orb.workingSet.lenses || []).filter((lens) => lens.id !== args.lensId) },
       }));
+    } else if (name === "set-system-prompt") {
+      const next = createSemanticOrb(applySystemPromptToPearl(orb, args.systemPrompt || args.text || ""));
+      byId.set(next.id, next);
+      await persistSemanticOrbs([...byId.values()], next.id);
+      setReadyMessage(`Updated system prompt for “${next.name}”.`);
+      return { type: "external-semantic-orb", id: next.id, orb: next, effects: ["pearl-system-prompt-updated"] };
     } else if (name === "rename") {
       byId.set(orb.id, createSemanticOrb({ ...orb, name: String(args.name || "Untitled pearl").slice(0, 80) }));
     } else if (name === "duplicate") {
@@ -2002,45 +2012,73 @@ function App() {
         </div>)}
         {!shelfPearls.length && <p>Shelf empty. Select page material, make a context pearl, then drag it into the Companion gauntlet.</p>}
       </div>
-      {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && <div className="extension-semantic-orb-detail">
-        <input
-          aria-label="Pearl name"
-          key={`${activeSemanticOrbId}:${semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}`}
-          defaultValue={semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).name}
-          onBlur={(event) => {
-            const name = event.currentTarget.value.trim();
-            if (name) semanticOrbAction("rename", { id: activeSemanticOrbId, name });
-          }}
-        />
-        <button
-          type="button"
-          className="gold"
-          data-testid="extension-detail-wear"
-          disabled={gauntlet.pearlIds?.includes(activeSemanticOrbId)}
-          onClick={() => semanticOrbAction("open", { id: activeSemanticOrbId, wear: true }).catch((reason) => setError(reason.message))}
-        >
-          {gauntlet.pearlIds?.includes(activeSemanticOrbId) ? "On gauntlet" : "Wear on gauntlet"}
-        </button>
-        <button type="button" disabled={!session.fragments.length} onClick={() => semanticOrbAction("add-context", { id: activeSemanticOrbId, items: session.fragments.slice(-1) })}>Add current capture</button>
-        {(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context || []).map((item) => <span key={item.id}>
-          {item.label || item.quote || item.text || item.id}
-          <button type="button" aria-label={`Remove ${item.label || item.id} context`} onClick={() => semanticOrbAction("remove-context", { id: activeSemanticOrbId, contextId: item.id })}>×</button>
-        </span>)}
-        {(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.lenses || []).map((lens) => <span key={lens.id}>
-          {lens.name || lens.label || lens.id}
-          <button type="button" aria-label={`Remove ${lens.name || lens.id} Lens`} onClick={() => semanticOrbAction("remove-lens", { id: activeSemanticOrbId, lensId: lens.id })}>×</button>
-        </span>)}
-        <button type="button" onClick={() => semanticOrbAction("organize", { id: activeSemanticOrbId })}>Organize</button>
-        <button type="button" onClick={() => semanticOrbAction("counter", { id: activeSemanticOrbId })}>Counter pearl</button>
-        <button type="button" onClick={() => semanticOrbAction("duplicate", { id: activeSemanticOrbId })}>Duplicate</button>
-        <button type="button" disabled={!(semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).workingSet?.context?.length || semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).childOrbIds?.length)} onClick={() => semanticOrbAction("split", { id: activeSemanticOrbId })}>Split</button>
-        {semanticOrbs.find((orb) => orb.id === activeSemanticOrbId).parentOrbId && <button type="button" onClick={() => semanticOrbAction("unnest", { id: activeSemanticOrbId })}>Unnest</button>}
-        <button type="button" onClick={() => action("open-web-handoff", { surface: "semantic-orb-scene", orbId: activeSemanticOrbId, preservePayload: true })}>Arrange in full Scene</button>
-        <button type="button" onClick={() => semanticOrbAction("archive", { id: activeSemanticOrbId, archived: true })}>Archive</button>
-        <button type="button" onClick={() => {
-          if (confirm("Delete this pearl? Its source material and library objects will remain.")) semanticOrbAction("delete", { id: activeSemanticOrbId });
-        }}>Delete</button>
-      </div>}
+      {activeSemanticOrbId && semanticOrbs.find((orb) => orb.id === activeSemanticOrbId) && (() => {
+        const detailOrb = semanticOrbs.find((orb) => orb.id === activeSemanticOrbId);
+        const prompt = readPearlSystemPrompt(detailOrb);
+        return <div className="extension-semantic-orb-detail" data-testid="extension-pearl-detail">
+          <input
+            aria-label="Pearl name"
+            key={`${activeSemanticOrbId}:${detailOrb.name}`}
+            defaultValue={detailOrb.name}
+            onBlur={(event) => {
+              const name = event.currentTarget.value.trim();
+              if (name) semanticOrbAction("rename", { id: activeSemanticOrbId, name });
+            }}
+          />
+          <label className="extension-pearl-prompt-label">
+            System prompt
+            <textarea
+              aria-label="Pearl system prompt"
+              data-testid="extension-pearl-system-prompt"
+              key={`${activeSemanticOrbId}:prompt:${prompt.slice(0, 24)}`}
+              defaultValue={prompt}
+              rows={5}
+              placeholder="Taste and instructions Companion uses when this pearl is worn."
+              onBlur={(event) => {
+                const next = event.currentTarget.value;
+                if (next.trim() !== prompt.trim()) {
+                  semanticOrbAction("set-system-prompt", { id: activeSemanticOrbId, systemPrompt: next })
+                    .catch((reason) => setError(reason.message));
+                }
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="gold"
+            data-testid="extension-detail-wear"
+            disabled={gauntlet.pearlIds?.includes(activeSemanticOrbId)}
+            onClick={() => semanticOrbAction("open", { id: activeSemanticOrbId, wear: true }).catch((reason) => setError(reason.message))}
+          >
+            {gauntlet.pearlIds?.includes(activeSemanticOrbId) ? "On gauntlet" : "Wear on gauntlet"}
+          </button>
+          <button type="button" disabled={!session.fragments.length} onClick={() => semanticOrbAction("add-context", { id: activeSemanticOrbId, items: session.fragments.slice(-1) })}>Add current capture</button>
+          {(detailOrb.workingSet?.context || []).map((item) => {
+            const label = item.label || item.quote || item.text || "Capture";
+            return <span key={item.id}>
+              {label}
+              <button type="button" aria-label={`Remove ${label} context`} onClick={() => semanticOrbAction("remove-context", { id: activeSemanticOrbId, contextId: item.id })}>×</button>
+            </span>;
+          })}
+          {(detailOrb.workingSet?.lenses || []).map((lens) => {
+            const label = lens.name || lens.label || "Lens";
+            return <span key={lens.id}>
+              {label}
+              <button type="button" aria-label={`Remove ${label} Lens`} onClick={() => semanticOrbAction("remove-lens", { id: activeSemanticOrbId, lensId: lens.id })}>×</button>
+            </span>;
+          })}
+          <button type="button" onClick={() => semanticOrbAction("organize", { id: activeSemanticOrbId })}>Organize</button>
+          <button type="button" onClick={() => semanticOrbAction("counter", { id: activeSemanticOrbId })}>Counter pearl</button>
+          <button type="button" onClick={() => semanticOrbAction("duplicate", { id: activeSemanticOrbId })}>Duplicate</button>
+          <button type="button" disabled={!(detailOrb.workingSet?.context?.length || detailOrb.childOrbIds?.length)} onClick={() => semanticOrbAction("split", { id: activeSemanticOrbId })}>Split</button>
+          {detailOrb.parentOrbId && <button type="button" onClick={() => semanticOrbAction("unnest", { id: activeSemanticOrbId })}>Unnest</button>}
+          <button type="button" onClick={() => action("open-web-handoff", { surface: "semantic-orb-scene", orbId: activeSemanticOrbId, preservePayload: true })}>Arrange in full Scene</button>
+          <button type="button" onClick={() => semanticOrbAction("archive", { id: activeSemanticOrbId, archived: true })}>Archive</button>
+          <button type="button" onClick={() => {
+            if (confirm("Delete this pearl? Its source material and library objects will remain.")) semanticOrbAction("delete", { id: activeSemanticOrbId });
+          }}>Delete</button>
+        </div>;
+      })()}
     </section>
     {packagesOpen && <section className={`orb-panel ${activeView === "library" ? "active" : ""} extension-packages`} aria-label="Cognitive Packages">
       <div><b>Cognitive Packages</b><button type="button" onClick={() => setPackagesOpen(false)}>×</button></div>

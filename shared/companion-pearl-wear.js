@@ -14,6 +14,11 @@ import {
   reorderOrbitPearls,
   wornPearlOrbitSlots,
 } from "./companion-pearl-orbit.js";
+import {
+  buildPearlCompanionContext,
+  formatPearlCompanionContextForModel,
+  userFacingPearlWearMessage,
+} from "./pearl-companion-context.js";
 import { normalizePearlSystemPrompt, readPearlSystemPrompt } from "./pearl-system-prompt.js";
 
 export const COMPANION_PEARL_WEAR_VERSION = 2;
@@ -82,15 +87,62 @@ export function buildWornPearlPack(pearl, options = {}) {
     description: bounded(move.description || move.transformation || "", 180),
   }));
   const systemPrompt = normalizePearlSystemPrompt(readPearlSystemPrompt(pearl));
+  const companionContext = buildPearlCompanionContext(pearl, {
+    worn: true,
+    wornPearlIds: options.wornPearlIds || [pearl.id],
+    primaryPearlId: options.primaryPearlId || pearl.id,
+    gauntletFilled: options.gauntletFilled,
+    gauntletCapacity: options.gauntletCapacity,
+    sceneId: options.sceneId || pearl.sceneId,
+    sceneName: options.sceneName,
+    slot: options.slot,
+    // Bound library functions are part of Companion's working context for this pearl.
+    extraFunctions: functions,
+  });
+  if (companionContext) {
+    if (functions.length) {
+      companionContext.functions = functions.map((fn) => ({
+        name: fn.name,
+        description: fn.description || "",
+        moveCount: fn.stepCount || 0,
+      }));
+    }
+    if (lenses.length) {
+      companionContext.lenses = lenses.map((lens) => ({
+        name: lens.name,
+        description: lens.description || lens.judgment || "",
+        strength: lens.strength,
+      }));
+    }
+    if (context.length) {
+      companionContext.context = context.map((entry) => ({
+        kind: entry.kind,
+        label: entry.label,
+        summary: entry.summary,
+      }));
+    }
+    if (moves.length && !companionContext.moves?.length) {
+      companionContext.moves = moves.map((move) => ({
+        name: move.name,
+        description: move.description || "",
+      }));
+    }
+  }
   return {
     version: COMPANION_PEARL_WEAR_VERSION,
     pearlId: pearl.id,
     name: bounded(pearl.name || representation.label || "New pearl", 120),
-    kind: pearl.kind || representation.kind || "semantic-orb",
+    kind: pearl.kind || representation.kind || "pearl",
     representationKind: representation.kind || "empty",
     wornAt: Number(options.wornAt) || Date.now(),
     aesthetic: pearl.aesthetic || null,
     systemPrompt,
+    purpose: companionContext?.purpose || null,
+    taste: companionContext?.taste || null,
+    privacy: companionContext?.privacy || null,
+    lineage: companionContext?.lineage || null,
+    scene: companionContext?.scene || null,
+    companionContext,
     context,
     lenses,
     moves,
@@ -98,6 +150,7 @@ export function buildWornPearlPack(pearl, options = {}) {
     boundRefs,
     summary: bounded(
       options.summary
+        || companionContext?.summary
         || (systemPrompt
           ? `${pearl.name || "Pearl"} · system prompt · ${context.length} context · ${functions.length} functions`
           : `${pearl.name || "Pearl"} · ${context.length} context · ${moves.length} moves · ${lenses.length} lenses · ${functions.length} functions`),
@@ -113,41 +166,69 @@ export function buildWornPearlPack(pearl, options = {}) {
   };
 }
 
+/**
+ * Model-facing wear prompt (full pearl context). Prefer formatPearlCompanionContextForModel.
+ */
 export function companionWearPrompt(pack) {
   if (!pack) {
-    return [
-      "Companion is the gauntlet (mother pearl) with five empty working-memory sockets.",
-      "Selected pearls load into those sockets — they do not replace the mother.",
-      "Use wearPearl to load a socket; removeWornPearl to clear one or all. Full gauntlet (5) requires removing a pearl first.",
-      "When no pearl is loaded, still help with screen context, capture, learning, and creating new pearls.",
-    ].join(" ");
+    return formatPearlCompanionContextForModel(null);
   }
   const orbitCount = pack.orbit?.count || pack.packs?.length || 1;
   if (orbitCount > 1) {
-    const names = (pack.packs || []).map((entry) => entry.name).join(", ");
-    const prompts = (pack.packs || [])
-      .map((entry) => entry.systemPrompt)
-      .filter(Boolean)
-      .map((prompt) => bounded(prompt, 400))
-      .join("\n---\n");
+    const sections = (pack.packs || []).map((entry) => {
+      const ctx = entry.companionContext
+        || buildPearlCompanionContext({
+          id: entry.pearlId,
+          name: entry.name,
+          systemPrompt: entry.systemPrompt,
+          functions: entry.functions,
+          moves: entry.moves,
+          lenses: entry.lenses,
+          workingSet: { context: entry.context, lenses: entry.lenses },
+        }, { worn: true, wornPearlIds: (pack.packs || []).map((p) => p.pearlId) });
+      return formatPearlCompanionContextForModel(ctx, { promptLimit: 900 });
+    });
     return [
-      `Gauntlet working memory holds ${orbitCount} of 5 active pearls: ${names}.`,
-      prompts ? `Merged system prompts:\n${prompts}` : "",
-      `Merged context: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
+      `Gauntlet working memory holds ${orbitCount} of 5 active pearls.`,
+      ...sections,
       "Interpret through these system prompts first. Prefer bound functions and context from the loaded packs.",
-      "The user can load more sockets (up to 5), activate one, or remove any.",
-    ].filter(Boolean).join(" ");
+    ].join("\n\n");
   }
-  const promptLine = pack.systemPrompt
-    ? `System prompt:\n${bounded(pack.systemPrompt, 1_800)}`
-    : "This pearl has no system prompt yet — ask the user to set one, or infer carefully from context.";
-  return [
-    `Pearl “${pack.name}” (${pack.pearlId}) is loaded in the gauntlet working memory.`,
-    promptLine,
-    `Context items: ${pack.context.length}. Lenses: ${pack.lenses.length}. Bound functions: ${pack.functions.map((fn) => fn.name).join(", ") || "none"}.`,
-    "Interpret and execute through this pearl's system prompt. Prefer its bound functions and context before inventing new ones.",
-    "The user can still load another pearl into an open socket (5 max) or clear this one.",
-  ].join(" ");
+  const ctx = pack.companionContext
+    || buildPearlCompanionContext({
+      id: pack.pearlId,
+      name: pack.name,
+      systemPrompt: pack.systemPrompt,
+      functions: pack.functions,
+      moves: pack.moves,
+      lenses: pack.lenses,
+      workingSet: { context: pack.context, lenses: pack.lenses },
+      purpose: pack.purpose,
+      privacy: pack.privacy,
+      privacyPolicy: pack.privacy,
+    }, {
+      worn: true,
+      wornPearlIds: [pack.pearlId].filter(Boolean),
+      primaryPearlId: pack.pearlId,
+    });
+  return formatPearlCompanionContextForModel(ctx);
+}
+
+/** Short chat copy for wear / inspect — no ids or machine metadata. */
+export function companionWearUserMessage(pack) {
+  if (!pack) return userFacingPearlWearMessage(null);
+  if ((pack.orbit?.count || pack.packs?.length || 1) > 1) {
+    const names = (pack.packs || []).map((entry) => entry.name).filter(Boolean);
+    return names.length
+      ? `Wearing ${names.length} pearls: ${names.join(", ")}. Companion will follow their system prompts.`
+      : `Wearing ${pack.orbit?.count || pack.packs?.length} pearls on the gauntlet.`;
+  }
+  const ctx = pack.companionContext || {
+    name: pack.name,
+    systemPrompt: pack.systemPrompt,
+    gauntlet: { worn: true },
+  };
+  return userFacingPearlWearMessage({ ...ctx, gauntlet: { ...(ctx.gauntlet || {}), worn: true } });
 }
 
 /**
