@@ -7,8 +7,9 @@ Every era of computing has been defined by a new primitive. The graphical user i
 This README is both the pitch and a **complete product inventory** of what ships today (docs inventory — not a runtime “production-ready app” claim). Philosophy explains why. Everything after **What ships today** is verified against:
 
 - `shared/feature-contracts.js` (65 contracts: 59 active, 6 removed from Pearl shell)
-- `client/lib/companion-capabilities.js` (Companion director verbs on web + extension; families below, not a 411-verb dump)
+- `client/lib/companion-capabilities.js` (Companion director verbs on web + extension; ~418 capability rows / families below — not a verb-by-verb dump)
 - `client/lib/pearl-primary-screens.js` (clueless-reachable shell screens)
+- Pearl brain modules: `shared/pearl-layer-instructions.js`, `shared/pearl-weights.js`, `shared/pearl-prompt-harness.js`, `shared/pearl-system-prompt.js`
 - OrbUniverse / Companion / Reef / Studio / extension mounts
 
 Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-coverage-audit.md). App readiness is separate from this inventory.
@@ -19,19 +20,31 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **Mother Pearl = Companion.** Talk → type (or hold-to-speak) → **GO**. No mode picker. No tour wall. No user-facing “orb.” Confusion budget: ≤1 unexplained click to usable Talk + GO.
 
-**A Pearl stores a system prompt** — the taste, instructions, and capability it carries. Companion **interprets** that prompt when the pearl is worn, and can **edit** it from natural language (“make this pearl about…”, “more like Plath”, “add skepticism about TAM”). Creating a pearl seeds an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
+**Pearl brain = Moves · Weights · Lenses.** Canonical fidelity is those three layers — not a flat prompt-only object, and not “Functions” as the middle brain layer:
 
-**Pearl brain harness** (`shared/pearl-prompt-harness.js`): Companion treats `systemPrompt` as the pearl’s brain. Any create/edit instruction goes through Observe → Interpret → Propose → Apply → Reveal (a Cursor-like trail in chat: Working → Interpreting → Proposed change → Applied / Blocked). Offline, edits merge locally so the path never dies as unknown-error; with model credentials, the same pipeline can rewrite the full prompt via structured JSON. Deterministic phrase parsers are optional fast-path hints — not a whitelist.
+| Layer | Role |
+| --- | --- |
+| **Moves** | Procedural — how work is done (ordered steps / procedures; old Moves + function-of-moves storage presented as Moves) |
+| **Weights** | Evaluative — preferences, judgements, valued factors, tradeoffs |
+| **Lenses** | Perspective — bounded ways of seeing / frames |
 
-**Companion sees full pearl context** (internal): system prompt, title, purpose, Functions/Moves summary, lenses/taste, gauntlet slot, scene, privacy summary, lineage/version hints, and wear state — built by `shared/pearl-companion-context.js` and injected into planner/runtime. **Users see the prompt, not the metadata** — Studio, Reef inspector, chat, and the extension shelf hide ids, hashes, raw JSON, contract ids, storage keys, and machine privacy blobs (optional “show id” power path). Storage is unchanged.
+**`systemPrompt`** is the **readable projection / summary** of that brain — Companion interprets it when the pearl is worn, and can edit it from natural language. Creating a pearl seeds Moves · Weights · Lenses plus an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
+
+**Companion prompt harness** (`shared/pearl-prompt-harness.js`): any create/edit instruction goes through **Observe → Interpret → Propose → Apply → Reveal** (Cursor-like trail in chat: Working → Interpreting → Proposed change → Applied / Blocked). Works in any natural language the parsers/heuristics can map. **Offline / signed-out:** local merge + layer seed so the path never dies as unknown-error. **AI rewrite:** structured JSON via `/api/run` when the user is signed in and credentials are present; otherwise honest `needs-credentials` (or local success without inventing live-model quality). Deterministic phrase parsers in `companion-intent` are optional fast-path hints — not a whitelist.
+
+**Sign-in gate honesty:** local pearl create/edit/organize succeeds without accounts. Live model routes that require auth surface `needs-credentials` (Account & privacy blocker, or API 401/503) — never fake Done. Missing Supabase keys → clear “Accounts aren’t set up” next steps; Pearl still works device-local.
+
+**Companion sees full pearl context** (internal): system prompt, title, purpose, Moves / Weights / Lenses summaries, gauntlet slot, scene, privacy summary, lineage/version hints, and wear state — built by `shared/pearl-companion-context.js` and injected into planner/runtime. **Users see the prompt and layers, not the metadata soup** — Studio, Reef inspector, chat, and the extension shelf hide ids, hashes, raw JSON, contract ids, storage keys, and machine privacy blobs (optional “show id” power path). Storage is unchanged.
+
+**Create parsers / style-simile:** Talk→GO accepts novice phrasing such as `make me a pearl to…`, `make me a poetry pearl like Sylvia Plath’s thought process`, `create a pearl in the style of…`, `make a pearl about…` — intent-bound titles (topic · style when useful), offline-capable, no planner required for the common path.
 
 **Reef** is home — all your pearls, spread out as physical capsules you can see, drag, wear, and open.
 
 **Gauntlet ≤5** — up to five worn pearls as active working memory (Infinity-stone sockets). A sixth drop refuses clearly; it never silently bumps another out.
 
-**Studio** — open a pearl to read and edit its **system prompt** as the hero field. Moves → Functions → Lenses remain available as secondary/advanced structure when present.
+**Studio** — open a pearl to read and edit its **system prompt** as the hero field. **Moves · Weights · Lenses** open as structure when present (toggle: “Moves · Weights · Lenses”). Ordered-move groups may still use Function editor storage underneath — presented and edited as **Moves**, not a separate Functions brain.
 
-**Extension** — Pearl Everywhere is the page Companion: in-page Pearl, side panel, hold-to-speak, Space×3 cursor toggle, wear/DnD to gauntlet, staged stack + explicit GO, install download under `/downloads/`.
+**Extension** — Pearl Everywhere is the page Companion: content scripts, in-page Pearl, side panel, hold-to-speak, Space×3 cursor toggle (human-paced window ~1100ms), wear/DnD to gauntlet, PhysicalPearl shelf capsules, staged stack + explicit GO, install download under `/downloads/`.
 
 **Zero-demand.** Primary path is natural language a novice would invent (“make a pearl about my investor notes”, “wear it”, “combine these pearls”). Every successful mutation must leave a **world-visible titled artifact** on Reef, gauntlet, Studio, Encode, or Install — chat narration alone is not success.
 
@@ -41,28 +54,33 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 ### Pearl
 
-A Pearl is a persistent unit whose **readable projection is `systemPrompt`** — Companion uses it when wearing the pearl. Canonical fidelity is **Moves → Weights → Lenses** (how work is done, what is valued, how to see), plus context and provenance. Companion receives that full internal context; the UI surfaces title + system prompt + the three layers.
+A Pearl is a persistent unit whose **readable projection is `systemPrompt`**. Canonical fidelity is **Moves · Weights · Lenses** (how work is done, what is valued, how to see), plus context and provenance. Companion receives that full internal context; the UI surfaces title + system prompt + the three layers.
 
 | Property | Meaning |
 | --- | --- |
-| **System prompt** | Primary: taste / instructions / capability the pearl carries (user-editable; Companion-interpreted) |
+| **System prompt** | Readable summary of taste / instructions / capability (user-editable; Companion-interpreted) |
+| **Moves** | Procedural layer — ordered steps this pearl can run |
+| **Weights** | Evaluative layer — preferences, judgements, valued factors |
+| **Lenses** | Perspective layer — frames for seeing |
 | **Memory** | Cumulative formation: conversations, sources, refinements |
-| **Perspective** | Compiled way of seeing — judgment, not raw dump |
 | **Capability** | Emergent ability to act (critique, underwrite, rewrite…) |
 | **Provenance** | Kept in storage for Companion / recovery — not shown as a metadata form in Studio |
 
 Pearls are formed, not merely generated. They live on the **Reef**, load into the **Gauntlet**, and open in **Studio**.
 
-### Move · Function · Lens · Material
+### Material · Move · Function storage · Lens · Weight
+
+Library / composition objects still exist; **Weights** is the load-bearing middle brain layer (not Function):
 
 | Object | Role |
 | --- | --- |
 | **Material** | Universal envelope for text, tables, images, links, drawings, JSON — with deterministic bridges and explicit model steps when conversion needs AI |
 | **Move** | One atomic action (input → output). Never contains its own step graph. Five editable **Primitive Moves** ship as a starter shelf: Branch, Merge, Deepen, Challenge, Embody |
-| **Function** | Ordered (possibly branching) graph of Moves / Functions — **Functions = ordered Moves**. Checkpoint after each completed step; versions keep outputs linked to the exact Function version |
-| **Lens** | Bounded way of seeing (context, priorities, perceptual model). Applied to Moves/Functions or layered; empty Lens resets prior context |
+| **Function (storage)** | Ordered (possibly branching) graph of Moves — **Functions = ordered Moves under the hood**. Presented in Studio / Companion as the **Moves** layer. Checkpoint after each completed step; versions keep outputs linked to the exact Function version |
+| **Weight** | A valued factor with priority / note — preferences and tradeoffs (`shared/pearl-weights.js`). Edited via `getPearlWeights` / `setPearlWeights` / `editPearlWeights` or natural language (“I care more about honesty than polish”) |
+| **Lens** | Bounded way of seeing (context, priorities, perceptual model). Applied to Moves or layered; empty Lens resets prior context |
 
-Composition algebra (preview before save): Move×Move → Function; Move/Function×Lens → Function with bound context; Lens×Lens → layered Lens. Composition stages; **GO** runs.
+Composition algebra (preview before save): Move×Move → ordered Moves (Function storage); Move×Lens → Moves with bound context; Lens×Lens → layered Lens; preference language → Weights. Composition stages; **GO** runs.
 
 > Older “Generator” objects are gone. Behavior lives in Lens material, encoding, and application. Old data migrates; the name does not resurface in UI.
 
@@ -83,9 +101,9 @@ Primary screens from `pearl-primary-screens.js`. Visible Reef chrome (hit-testab
 | --- | --- | --- |
 | **Reef** | `/` | Pearl home, Talk, Watch what Pearl can do, wear/drag, create |
 | **Library** | `/library` | Reef alias — saved pearls & material |
-| **Toolbox** | `/toolbox` | Reef alias — Moves / Functions / Lenses framing |
+| **Toolbox** | `/toolbox` | Reef alias — Moves / Weights / Lenses framing |
 | **Scene** | Companion / nav | Spatial Scene (“Playing with pearls”); Output Frame optional |
-| **Studio** | Click pearl / `open studio` | Single-pearl interior: M→F→L, LensTreeEditor, version history |
+| **Studio** | Click pearl / `open studio` | Single-pearl interior: system prompt hero + Moves · Weights · Lenses; LensTreeEditor for ordered Moves; version history |
 | **Install** | `/install` | Extension download CTA → `/downloads/lens-everywhere-chrome…` |
 | **Settings** | `/settings` (emit) | Account & privacy, sign-in, sync, lock local |
 | **Encode** | nav emit | Encode anything → Automation Pearl |
@@ -97,20 +115,28 @@ Also reachable via Companion phrases such as `go home`, `open settings`, `encode
 
 Text and voice share one planner/director. High-confidence intents run with ghost-cursor demonstration. Ambiguous or destructive work gets an exact check-in / Accept·Reject — never fake Done. Executable commands are action-first: no praise narration as the product.
 
+**Prompt harness & create path** (any language the intent layer can map):
+
+- Verbs: `interpretPearlPrompt`, `editPearlSystemPrompt`, `setPearlSystemPrompt`, `getPearlSystemPrompt`, Weights trio (`getPearlWeights` / `setPearlWeights` / `editPearlWeights`), plus `createSemanticOrb`
+- Trail: Observe → Interpret → Propose → Apply → Reveal
+- Offline signed-out create/edit merges locally; richer AI rewrite when signed in + credentials; otherwise exact `needs-credentials` when a live model step was required
+- Fast-path parsers: `make me a pearl to…`, topic + style-simile (`like` / `in the style of` / `inspired by`), `about` / `called` / `named`
+
 **Novice verb families** (Talk → GO; world-visible results):
 
 | Family | Examples |
 | --- | --- |
 | **Navigate** | go home / open Reef, Library, Toolbox, Settings, Encode, Packages, Scene, Output Frame, Studio, Install, auth |
-| **Create & cultivate** | create pearl (intent-bound title), rename, edit / add notes, duplicate, archive, delete (confirmed) |
+| **Create & cultivate** | create pearl (intent-bound title, style-simile, “make me a pearl to…”), rename, edit / add notes, duplicate, archive, delete (confirmed) |
+| **Prompt & layers** | read/edit system prompt; edit Weights (care/prefer/weight-over); organize → Moves · Weights · Lenses; interpret any-language prompt change |
 | **Wear / gauntlet** | wear, remove worn, list/inspect gauntlet, rearrange sockets (≤5; full gauntlet refuses) |
 | **Compose** | merge, compose (ordered), synthesize (“what do these notice about each other”), nest/unnest, split, counter/experiment |
-| **Organize & role** | organize → M→F→L; role pearls (e.g. investor memo + diligence + lens); discover ≤5 forming pearls from chats/docs |
-| **Save & learn** | `save this as…` → Move / Function / Lens chooser; `open Learn from a chat` → extract reusable artifacts; discover forming pearls |
+| **Organize & role** | organize → Moves · Weights · Lenses; role pearls (e.g. investor memo + diligence + lens); discover ≤5 forming pearls from chats/docs |
+| **Save & learn** | `save this as…` → Move / Function / Lens chooser (library objects); `open Learn from a chat` → extract reusable artifacts; discover forming pearls |
 | **Observe** | bounded workspace / screen observation (“what is visible”); interpret selection through a worn Lens — never silent scrape |
 | **Evaluate** | evaluate page/deck through worn gauntlet lenses (live model needs credentials — honest blocker if missing) |
 | **Critique** | start critique session → ingest spoken/typed critique → apply edits → stop; revise pearl from feedback |
-| **Studio ops** | open Studio; reorder / decompose Function Moves (same `reorderStep` as LensTreeEditor) |
+| **Studio ops** | open Studio; reorder / decompose Moves (same `reorderStep` as LensTreeEditor; Function storage under the hood) |
 | **Versions** | name checkpoint, browse history, restore (Docs-style) |
 | **Encode / automation** | open Encode; compile / revise / run Automation Pearl; clarification when vague |
 | **Output routing** | choose destination (new tab, download, text box, cursor point, chat, Studio, keep); confirm placement once |
@@ -123,32 +149,34 @@ Text and voice share one planner/director. High-confidence intents run with ghos
 
 **Deep Cognitive Workflow Studio** (Companion: `open Cognitive Workflow Studio` / vocabulary / pull-request phrases — not a first-run CTA): higher-order patches (propose/apply), personal command vocabulary (teach / disable / forget phrases), Cognitive Pull Request extract→review→merge, Function test bench, grind drafts. Prefer Companion or Studio entry; do not assume every deep verb is on Reef chrome.
 
-**Honesty & diagnostics:** director demonstrates the manual path when it claims to (ghost-cursor **effect status** while acting); destructive clears need in-chat Accept/Reject; plans stay cancellable with checkpoints; research must fail closed when verified browsing is unavailable. Companion exposes an **execution diagnostics** strip for blocked/failed runs this session (exact stage/code — never fake Done).
+**Honesty & diagnostics:** director demonstrates the manual path when it claims to (ghost-cursor **effect status** while acting); destructive clears need in-chat Accept/Reject; plans stay cancellable with checkpoints; research must fail closed when verified browsing is unavailable. Companion exposes an **execution diagnostics** strip for blocked/failed runs this session (exact stage/code — including `needs-credentials` — never fake Done).
 
 ### Pearl operations (Reef / Scene / gauntlet)
 
 - **Unified Pearl entity** — one canonical Pearl across web, Companion, and extension (`observeUnifiedPearl` / `executeUnifiedPearlAction`); sections state precise inaccessible boundaries when locked or unauthorized
-- Create titled capsules (topic tokens in the visible title — not Untitled, not “orb”, not generic `New pearl · timestamp` for named topics)
+- Create titled capsules (topic tokens in the visible title — not Untitled, not “orb”, not generic `New pearl · timestamp` for named topics; style-simile titles keep topic · style)
 - Wear via button, drag-to-socket, or Companion
 - Merge / synthesize keep source individuals findable
 - Counter / experiment breeds opposition with lineage
-- Organize multimodal dumps into Moves → Functions → Lenses without flattening richness
-- Role scaffold (investor and similar) materializes real Move/Function/Lens packs
+- Organize multimodal dumps into **Moves · Weights · Lenses** without flattening richness
+- Role scaffold (investor and similar) materializes real Move / Weight / Lens packs (ordered Moves may use Function storage)
 - Semantic transfer / drop-intent: selection or drag resolves to Move, Function, or Lens without inventing a parallel editor
-- Encode conversation → replayable Function inside a pearl
+- Encode conversation → replayable ordered Moves inside a pearl
 - Aesthetic customization on Mother Pearl and shelf pearls
 - PhysicalPearl rendering across Reef, Companion, extension shelf, and result pearls
-- Working **context inspector** (priority of attached material) and **library emission** areas: Actions (Moves), Processes (Functions), Context (Lenses), Shared tools, Saved spaces, Activity, Phrases (personal vocabulary), Connections, Account & privacy
+- Working **context inspector** (priority of attached material) and **library emission** areas: Actions (Moves), Processes (ordered-Move / Function storage), Context (Lenses), Weights where present, Shared tools, Saved spaces, Activity, Phrases (personal vocabulary), Connections, Account & privacy
 
 ### Pearl Studio
 
 - Opens on pearl click or Companion (`open studio` / `organize this pearl`)
-- Fixed reading order: **Moves → Functions → Lenses** when structure exists
-- **Default Function editor = original `LensTreeEditor`**: numbered ordered Moves, drag grips, reorder persists (Companion NL reorder shares `shared/function-step-ops.js`)
-- Freeform dump + Organize into structure
+- Hero field: **system prompt** (readable projection)
+- Fixed reading order when structure exists: **Moves → Weights → Lenses**
+- **Default ordered-Moves editor = original `LensTreeEditor`** (via `PearlFunctionMovesStudio`): numbered ordered Moves, drag grips, reorder persists (Companion NL reorder shares `shared/function-step-ops.js`)
+- Weights section for valued factors / tradeoffs
+- Freeform dump + Organize into Moves → Weights → Lenses
 - Version history: name → browse → restore
 - Typed cognitive layers (inspect / propose / apply / compose) when present
-- Play / step / cancel Function playback with Result Pearls and checkpoints
+- Play / step / cancel Function playback with Result Pearls and checkpoints (playback of ordered Moves)
 
 ### Scene & Output Frame
 
@@ -164,13 +192,14 @@ Primary “intelligence travels to the page” surface:
 
 | Capability | Behavior |
 | --- | --- |
-| **Page Companion** | In-page Pearl + emission (Tell Pearl your goal → GO) |
+| **Content scripts** | In-page Pearl bridge on authorized hosts; emission form (Tell Pearl your goal → GO) |
 | **Hold-to-speak** | Hold Pearl to talk (site access required) |
-| **Space×3** | Triple Space toggles Pearl-as-cursor on supported pages |
+| **Space×3** | Triple Space toggles Pearl-as-cursor; recognizer window ~1100ms so human-paced presses still count |
 | **Highlighter shortcut** | `Alt+Shift+L` toggles the page highlighter; right-click selection → **Capture selection in Lens** |
 | **Side panel** | Shelf as PhysicalPearl capsules, Wear, library, learning, critique sessions, packages, per-pearl privacy |
 | **Gauntlet** | Same ≤5 sockets; drag MIME + Wear; full gauntlet refuses |
-| **Staged stack** | Queue Moves/Functions/Lenses; **GO** is the only execution boundary |
+| **Pearl wear / PhysicalPearl** | Wear into gauntlet; shelf and results render as PhysicalPearl capsules |
+| **Staged stack** | Queue Moves / Lenses / library objects; **GO** is the only execution boundary |
 | **Capture** | Selection, visible-tab (authorized), save as Move / Function / Lens / Save-as chooser |
 | **Page canvas** | Local overlay canvas modes; bind context; undo; PDF export of chosen scope |
 | **Result pearls** | Margin results: expand/collapse, redirect, accept/archive, two-stage placement |
@@ -188,13 +217,13 @@ Chrome first; platform-neutral core targets Firefox/Safari follow-on. Browser-pr
 
 **Packages** — Cognitive Packages: signed manifest, permissions, test evidence, install/rollback/deprecate. Unsigned install must fail closed. Registry UI + `/api/cognitive-packages` publish/deprecate path.
 
-**Settings / Account & privacy** — optional Supabase accounts (`VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`). Without those keys the panel shows an honest blocker with exact next steps; Pearl still works locally. With keys: sign-in / sign-up / reset, anonymous local work adopts on sign-in, sync only after sign-in, passphrase lock, vault, delete-local with confirmation. Password-recovery overlay when Supabase recovery links land.
+**Settings / Account & privacy** — optional Supabase accounts (`VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`). Without those keys the panel shows an honest **`needs-credentials`** blocker with exact next steps (also set server `SUPABASE_URL` + `SUPABASE_SECRET_KEY` for JWT / extension OAuth — never as `VITE_*`); Pearl still works locally. With keys: sign-in / sign-up / reset, anonymous local work adopts on sign-in, sync only after sign-in, passphrase lock, vault, delete-local with confirmation. Password-recovery overlay when Supabase recovery links land. Production AI routes may require sign-in; unsigned-out / missing server keys return clear blockers — local mutations that do not need the model still succeed.
 
 **Share** — prepare redaction/uncertainty/provenance review → scoped grant (`/api/pearl-shares`) → install verified package; revoke. Organization trust envelopes + key rotation on the server path.
 
-**Learn from chat / forming pearls** — Companion or Learn-from-chat workspace: paste transcripts; extract Moves/Functions/Lenses; discover ≤5 already-forming pearls from recurring questions and ops; redact/exclude messages before save.
+**Learn from chat / forming pearls** — Companion or Learn-from-chat workspace: paste transcripts; extract Moves / Weights / Lenses (and library Function storage where needed); discover ≤5 already-forming pearls from recurring questions and ops; redact/exclude messages before save.
 
-**Save-as** — selection → chooser (Move / Function / Lens, always that order). Companion `save this as…` or Scene Actions palette; extension `openExternalSaveAs`.
+**Save-as** — selection → chooser (Move / Function / Lens, always that order for library objects). Companion `save this as…` or Scene Actions palette; extension `openExternalSaveAs`.
 
 **Taste & generation** (Studio / extension candidates) — multi-candidate batches with distinctions (not fake quality scores), accept/reject/undecided, more-like-this, stop/retry; Taste Lenses and perceptual encoding remain inspectable (teach / evaluate-through-taste).
 
@@ -221,9 +250,9 @@ User-approved deletion from Pearl entry points (2026-07-25). Contract IDs kept f
 | Removed surface | Successor |
 | --- | --- |
 | HighlightToolbar / web highlight GO chrome | Extension page GO / page canvas |
-| AiNodeCanvas + branch-chooser HUD | Studio + Companion Function branching |
-| BeforeAfter learning rails | Studio LensTreeEditor / Function editing |
-| LensGrammarPanels composition rails | Studio Functions + shared compose |
+| AiNodeCanvas + branch-chooser HUD | Studio + Companion ordered-Moves / Function branching |
+| BeforeAfter learning rails | Studio LensTreeEditor / Moves editing |
+| LensGrammarPanels composition rails | Studio Moves + shared compose |
 | Classic TopToolbar library lists under pearl shell | Studio + Companion |
 | Scene “Tools” reintroducing Stage rails | Spatial Scene only |
 
@@ -258,9 +287,9 @@ Load `extension/dist/chrome` unpacked for local extension testing.
 | `npm run test:extension-release` | Extension package + download artifact |
 | `npm run orb:matrix:check` | Preservation matrix |
 
-Showcase flows SF01–SF25: `docs/pearl-showcase-flows.md`. Engineering policy: `docs/pearl-engineering-policy.md`. Orphan / deletion ledger: `docs/pearl-orphan-audit.md`. Function=Moves forensics: `docs/pearl-function-moves-forensics.md`.
+Showcase flows SF01–SF25: `docs/pearl-showcase-flows.md`. Engineering policy: `docs/pearl-engineering-policy.md`. Orphan / deletion ledger: `docs/pearl-orphan-audit.md`. Function=Moves forensics: `docs/pearl-function-moves-forensics.md`. Stress standard: `docs/pearl-stress-standard.md`.
 
-Making a change: own feature contract → characterization test → shared command first → surface adapters → update companion manifest/graph → focused stress → `release:check`. Never delete or rename a capability without explicit approval, migration, and preservation tests.
+Making a change: own feature contract → characterization test → shared command first → surface adapters → update companion manifest/graph → focused stress → `release:check`. Never delete or rename a capability without explicit approval, migration, and preservation tests. Pearl brain edits go through Moves · Weights · Lenses + prompt harness — do not reinvent a parallel “Functions brain.”
 
 ---
 
@@ -268,9 +297,9 @@ Making a change: own feature contract → characterization test → shared comma
 
 | Variable | Required for | Notes |
 | --- | --- | --- |
-| `AI_GATEWAY_API_KEY` | Live organize / evaluate / synthesize / planning | Without a key, mutations must surface a precise blocker — never fake success. Vercel may use OIDC instead. |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` | Optional accounts | Unset = anonymous-local + clear Account blocker; set both to enable Sign in |
-| `SUPABASE_URL` + `SUPABASE_SECRET_KEY` | Server JWT / plans / extension OAuth exchange | Never in `VITE_*` |
+| `AI_GATEWAY_API_KEY` | Live organize / evaluate / synthesize / planning / AI prompt rewrite | Without a key, mutations that need the model surface a precise blocker — never fake success. Offline local create/edit still works. Vercel may use OIDC instead. |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` | Optional accounts | Unset = anonymous-local + clear Account `needs-credentials` blocker; set both to enable Sign in |
+| `SUPABASE_URL` + `SUPABASE_SECRET_KEY` | Server JWT / plans / extension OAuth exchange / production AI gate | Never in `VITE_*`. Missing in prod → API `needs-credentials` 503 |
 | `VITE_LENS_EXTENSION_ID` | Web↔extension handoff | 32-char id; local `release:check` may default a placeholder |
 | `VITE_CHROME_WEB_STORE_URL` | Store install CTA | Until set, `/install` shows Download + load-unpacked |
 
@@ -283,9 +312,10 @@ npm run release:check:fast
 
 ## Limitations (honest residuals)
 
-- Live model quality and organize/evaluate/synthesize need Gateway (or OIDC) credentials
+- Live model quality and organize/evaluate/synthesize / intelligent prompt rewrite need Gateway (or OIDC) credentials — and may need sign-in when the server AI gate is on
+- Offline signed-out create/edit uses local merge (good enough path); richer rewrite is credential-dependent
 - Live OS microphone / voice — platform permission UI; harnesses may use FakeSpeech
-- Live sign-in / OAuth / multi-account adopt / signed share grants — need a real Supabase project (`VITE_SUPABASE_*` + server `SUPABASE_*`); without keys the UI blocks clearly and stays local-only
+- Live sign-in / OAuth / multi-account adopt / signed share grants — need a real Supabase project (`VITE_SUPABASE_*` + server `SUPABASE_*`); without keys the UI blocks clearly (`needs-credentials`) and stays local-only
 - Chrome Web Store listing URL and production extension id in the Vercel build
 - Extension HTML5 DnD under Playwright is imperfect; Wear + storage asserts cover CI; real Chrome drag is manual
 - Browser-protected pages, cross-origin iframes, closed shadow roots
@@ -301,14 +331,21 @@ npm run release:check:fast
 | --- | --- |
 | Feature ownership / release baseline | `shared/feature-contracts.js` |
 | Companion manifest | `client/lib/companion-capabilities.js` |
+| Create / style-simile parsers | `client/lib/companion-intent.js` |
 | Primary screens | `client/lib/pearl-primary-screens.js` |
 | Domain mutations / undo | `shared/domain-commands.js` |
-| Move / Function / Lens model | `shared/library-objects.js` |
+| Pearl brain layers (Moves · Weights · Lenses) | `shared/pearl-layer-instructions.js` |
+| Weights | `shared/pearl-weights.js` |
+| System prompt projection | `shared/pearl-system-prompt.js` |
+| Prompt harness (Observe→…→Reveal) | `shared/pearl-prompt-harness.js` |
+| Companion internal context / metadata scrub | `shared/pearl-companion-context.js` |
+| Move / Function / Lens library objects | `shared/library-objects.js` |
 | Function step reorder (single algorithm) | `shared/function-step-ops.js` + `LensTreeEditor.jsx` |
 | Gauntlet / wear / organize / counter / eval | `shared/companion-pearl-gauntlet.js`, `pearl-organize.js`, `pearl-counter.js`, `pearl-gauntlet-eval.js` |
 | Web shell, Reef, demo | `client/components/OrbUniverseShell.jsx`, `client/lib/reef-home.js`, `pearl-capability-demo.js` |
-| Studio | `PearlStudioView.jsx`, `LensTreeEditor.jsx` |
+| Studio | `PearlStudioView.jsx`, `PearlFunctionMovesStudio.jsx`, `LensTreeEditor.jsx` |
 | Extension | `extension/` (content bridge, sidepanel, page-canvas, package scripts) |
+| Account / `needs-credentials` copy | `client/lib/account-setup.js`, `server/api-guard.js` |
 | Encode / automation | `EncodeAnythingPanel.jsx`, `shared/automation-pearl.js`, `encode-evidence.js` |
 | Packages / privacy / share | `cognitive-package.js`, `local-privacy-vault.js`, `pearl-sharing.js` |
 | Accounts | `supabase/`, `client/lib/board-sync.js` |
@@ -331,7 +368,7 @@ Not merely faster essays — the **transformation**: compress, expand, invert, t
 
 ### Three layers should separate
 
-**Reality** (docs, code, sites) · **Tools** (portable ways of seeing — Moves, Functions, Lenses) · **Understanding** (the Pearl). Reality stays where it belongs; tools become portable; understanding becomes persistent, composable, and executable across surfaces.
+**Reality** (docs, code, sites) · **Tools** (portable ways of seeing — Moves, Weights, Lenses) · **Understanding** (the Pearl, whose `systemPrompt` projects those layers). Reality stays where it belongs; tools become portable; understanding becomes persistent, composable, and executable across surfaces.
 
 ### Design principles
 

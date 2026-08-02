@@ -1,11 +1,11 @@
 # README coverage audit
 
 Maps every `shared/feature-contracts.js` ID to the README section that describes it in prose.  
-Mechanical proof at last refresh: **59 active + 6 removed = 65/65 contract IDs** present in this table; each active ID has README prose anchors; all 9 primary screens + 17 Companion novice families + extension surface rows checked — **0 gaps**.
+Mechanical proof at last refresh: **59 active + 6 removed = 65/65 contract IDs** present in this table; each active ID has README prose anchors; all 9 primary screens + Companion novice families (incl. Prompt & layers / Weights) + extension surface rows checked — **0 gaps**.
 
-Companion verbs (411) and extension capabilities (123) are folded into family sections — not listed verb-by-verb.
+Companion verbs (~418 capability rows; ~295 app + ~123 extension) are folded into family sections — not listed verb-by-verb. **Weights / prompt-harness verbs** are mapped explicitly below.
 
-**How to re-check:** inventory contracts + `pearl-primary-screens.js` + extension manifest; keyword/prose-diff against `README.md`; update this table when contracts change.
+**How to re-check:** inventory contracts + `pearl-primary-screens.js` + `pearl-layer-instructions.js` + Weights verbs in `companion-capabilities.js` + extension manifest; keyword/prose-diff against `README.md`; update this table when contracts change.
 
 | Contract ID | Status | README section / note |
 | --- | --- | --- |
@@ -13,20 +13,20 @@ Companion verbs (411) and extension capabilities (123) are folded into family se
 | `generation.taste-branching` | active | Encode… → Taste & generation |
 | `lens.perceptual-encoding` | active | Core model (Lens) + Taste & generation (taste teach / evaluate) |
 | `library.move` | active | Core model · Studio · Library emission “Actions” |
-| `library.function` | active | Core model · Studio · Library emission “Processes” |
+| `library.function` | active | Core model (Function storage = ordered Moves) · Studio · Library “Processes” |
 | `library.lens` | active | Core model · Studio · Library emission “Context” |
 | `library.save-as` | active | Encode… → Save-as · Companion Save & learn |
 | `library.primitive-moves` | active | Core model (Primitive Moves) · Studio |
 | `learning.transcript` | active | Encode… → Learn from chat · Companion Save & learn |
 | `learning.forming-pearls` | active | Encode… → Learn from chat / forming pearls |
-| `companion.pearl-wear` | active | Vision · Wear / gauntlet · Pearl operations |
+| `companion.pearl-wear` | active | Vision · Wear / gauntlet · Pearl operations · Extension wear/PhysicalPearl |
 | `companion.mother-orbit` | active | Vision (Mother Pearl) · Companion |
 | `companion.pearl-gauntlet` | active | Vision (Gauntlet ≤5) · Wear / gauntlet |
-| `pearl.organize` | active | Companion Organize · Studio · Pearl operations |
+| `pearl.organize` | active | Companion Organize · Prompt & layers · Studio (Moves · Weights · Lenses) |
 | `pearl.role-scaffold` | active | Companion Organize & role · Pearl operations |
 | `pearl.counter` | active | Companion Compose · Pearl operations |
 | `pearl.gauntlet-evaluation` | active | Companion Evaluate |
-| `persistence.account-adoption` | active | Settings / Account & privacy |
+| `persistence.account-adoption` | active | Settings / Account & privacy · Sign-in gate honesty |
 | `extension.distribution` | active | Surfaces Install · Extension Install artifact · Dev commands |
 | `companion.destructive-clear` | active | Companion Honesty · Limitations (SF16 pattern) |
 | `companion.effect-trace` | active | Companion Honesty & diagnostics (ghost-cursor effect status) |
@@ -38,8 +38,8 @@ Companion verbs (411) and extension capabilities (123) are folded into family se
 | `extraction.cognitive-pull-request` | active | Deep Cognitive Workflow Studio |
 | `scene.v4` | active | Scene & Output Frame · Surfaces Scene |
 | `companion.orb-runtime` | active | Companion (director / Mother Pearl runtime) |
-| `scene.semantic-orbs` | active | Pearl operations · Core model |
-| `interaction.orb-gesture` | active | Pearl operations (wear / drag-to-socket) |
+| `scene.semantic-orbs` | active | Pearl operations · Core model · Vision (create parsers / style-simile) |
+| `interaction.orb-gesture` | active | Pearl operations (wear / drag-to-socket) · Extension hold-speak / Space×3 |
 | `companion.orb-swarm` | active | Companion Power FX |
 | `shell.extension-first` | active | Extension · Install |
 | `shell.pearl-progressive` | active | Vision (zero-demand / confusion budget) · Power-user search demoted |
@@ -55,16 +55,16 @@ Companion verbs (411) and extension capabilities (123) are folded into family se
 | `sharing.pearl-package` | active | Share · Packages |
 | `automation.pearl-compiler` | active | Encode / automation · Encode anything |
 | `companion.clarification-checkin` | active | Companion honesty · Encode clarification |
-| `companion.execution-diagnostics` | active | Companion Honesty & diagnostics |
+| `companion.execution-diagnostics` | active | Companion Honesty & diagnostics (`needs-credentials` called out) |
 | `output.two-stage-routing` | active | Companion Output routing · Extension Result pearls |
-| `studio.pearl` | active | Pearl Studio · Surfaces Studio |
+| `studio.pearl` | active | Pearl Studio · Surfaces Studio · Vision (Moves · Weights · Lenses) |
 | `shell.reef-home` | active | Surfaces Reef · Vision Reef |
 | `pearl.version-history` | active | Companion Versions · Studio |
 | `companion.critique-edits` | active | Companion Critique · Extension Side panel |
 | `sharing.organization-trust` | active | Share (org trust envelopes) |
-| `visual.physical-pearl` | active | Pearl operations · Extension Side panel |
+| `visual.physical-pearl` | active | Pearl operations · Extension Side panel / wear · PhysicalPearl |
 | `visual.pearl-aesthetic` | active | Companion Appearance |
-| `cognition.typed-layers` | active | Pearl Studio (typed cognitive layers) |
+| `cognition.typed-layers` | active | Pearl Studio (typed cognitive layers) · Core model Weights |
 | `interface.pearl-guide` | active | Companion Demo / guide · How Pearl works |
 | `shell.pearl-navigability` | active | Surfaces table · Companion Navigate |
 | `encode.automation-anything` | active | Encode anything · Surfaces Encode |
@@ -75,25 +75,56 @@ Companion verbs (411) and extension capabilities (123) are folded into family se
 | `highlight.explicit-go` | removed | Removed from Pearl shell |
 | `ai.node-gestures` | removed | Removed from Pearl shell |
 
+## Weights + prompt-harness verbs ↔ README
+
+No separate feature-contract IDs yet for Weights; they ship under Studio / organize / semantic-orb surfaces. Map companion verbs → README prose:
+
+| Verb | README section / note |
+| --- | --- |
+| `interpretPearlPrompt` | Vision → Companion prompt harness (Observe→Interpret→Propose→Apply→Reveal) · Companion Prompt & layers |
+| `editPearlSystemPrompt` | Vision (systemPrompt projection) · Companion Prompt & layers · offline vs AI rewrite |
+| `setPearlSystemPrompt` | Companion Prompt & layers · Core model System prompt |
+| `getPearlSystemPrompt` | Companion Prompt & layers |
+| `getPearlWeights` | Core model Weight · Companion Prompt & layers · Studio Weights |
+| `setPearlWeights` | Core model Weight · Companion Prompt & layers |
+| `editPearlWeights` | Core model Weight · Companion Prompt & layers (care/prefer/weight-over) |
+| `createSemanticOrb` | Vision create parsers / style-simile · Companion Create & cultivate |
+| `organizePearl` | Companion Organize & role · Pearl operations (Moves · Weights · Lenses) |
+| `reorderPearlFunctionMoves` / `decomposePearlFunctionMove` | Studio ops · Function storage presented as Moves |
+| `inspectPearlMetadata` | Vision (full context internal; metadata hidden from users) |
+
 ## Correctly omitted from README marketing
 
 | Item | Why |
 | --- | --- |
-| Full 411 Companion verb dump | Folded into families; graph gate owns parity |
+| Full ~418 Companion verb dump | Folded into families; graph gate owns parity |
 | Classic App Stage rails / HighlightToolbar GO chrome | Removed; successor paths documented |
 | Internal harness / ledger persistence keys | Not user-facing product copy |
 | Bot-only `__lensOrbRuntime` journeys | Stress anti-pattern; not a product surface |
 | Exhaustive `/api/*` SDK docs | Brief inventory only — not a public API promise |
 | Generator object name | Migrated away; explicitly retired in Core model |
+| “Functions” as middle brain layer | Superseded by Weights; Function remains ordered-Moves storage only |
 
 ## Primary screens ↔ README
 
 | Screen ID | README |
 | --- | --- |
-| `reef` / `library` / `toolbox` | Surfaces table |
+| `reef` / `library` / `toolbox` | Surfaces table (Toolbox = Moves / Weights / Lenses framing) |
 | `scene` | Surfaces + Scene & Output Frame |
-| `studio` | Surfaces + Pearl Studio |
+| `studio` | Surfaces + Pearl Studio (Moves → Weights → Lenses) |
 | `install` | Surfaces + Extension |
-| `settings` | Surfaces + Settings |
+| `settings` | Surfaces + Settings / Account & privacy (`needs-credentials`) |
 | `encode` | Surfaces + Encode |
 | `packages` | Surfaces + Packages |
+
+## Pearl brain modules ↔ README
+
+| Module | README |
+| --- | --- |
+| `shared/pearl-layer-instructions.js` | Vision Pearl brain · Core model · Where to look |
+| `shared/pearl-weights.js` | Core model Weight · Companion Prompt & layers |
+| `shared/pearl-system-prompt.js` | Vision systemPrompt · Core model |
+| `shared/pearl-prompt-harness.js` | Vision Companion prompt harness · offline / AI rewrite |
+| `shared/pearl-companion-context.js` | Vision full context internal / metadata hidden |
+| `client/lib/companion-intent.js` | Vision create parsers / style-simile |
+| `client/lib/account-setup.js` + `server/api-guard.js` | Sign-in gate honesty · Account & privacy |
