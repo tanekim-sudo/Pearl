@@ -179,6 +179,29 @@ header{height:96px}
 .orb-panel.active{max-height:calc(100vh - 146px)}
 .extension-semantic-orb-detail{align-items:stretch}
 .extension-semantic-orb-detail>input{flex:1 0 100%;min-width:0}
+.extension-pearl-prompt-label{
+  display:grid;
+  flex:1 0 100%;
+  gap:6px;
+  color:var(--ex-muted);
+  font-size:10px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.extension-pearl-prompt-label textarea{
+  width:100%;
+  min-height:120px;
+  resize:vertical;
+  color:var(--ex-text);
+  font-size:12px;
+  line-height:1.55;
+  letter-spacing:normal;
+  text-transform:none;
+  border:0;
+  border-bottom:1px solid var(--ex-line);
+  border-radius:0;
+  background:transparent;
+}
 .extension-semantic-orb-detail>span{display:flex;flex:1 0 100%;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border-left:1px solid var(--ex-line);color:var(--ex-muted);font-size:10px}
 .extension-semantic-orb-detail>span button{min-height:24px;padding:1px 6px}
 @media(max-width:380px){header{height:90px}.extension-orb{width:32px;height:32px;min-height:32px}.extension-orb svg{width:32px;height:32px}.extension-orb-label{left:86px;top:20px}.orb-view-tabs{top:0}.orb-panel.active{max-height:calc(100vh - 150px)}}

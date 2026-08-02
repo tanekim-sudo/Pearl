@@ -26,7 +26,10 @@ import { EXECUTION_CODES } from "./execution-result.js";
 import {
   buildPearlLayerPack,
   formatPearlLayerInstructionsForCompanion,
+  projectSystemPromptFromLayers,
   seedPearlLayersFromIntent,
+  syncLayersFromSystemPrompt,
+  titleFromStyleAndDomain,
 } from "./pearl-layer-instructions.js";
 import { readPearlWeights } from "./pearl-weights.js";
 
@@ -50,7 +53,7 @@ export const PEARL_PROMPT_TRAIL_STAGES = Object.freeze([
   "blocked",
 ]);
 
-/** JSON schema for intelligent prompt rewrite via /api/run. */
+/** JSON schema for intelligent layer + prompt rewrite via /api/run. */
 export const PEARL_PROMPT_REWRITE_SCHEMA = Object.freeze({
   name: "pearl_prompt_rewrite",
   schema: {
@@ -66,6 +69,44 @@ export const PEARL_PROMPT_REWRITE_SCHEMA = Object.freeze({
       systemPrompt: { type: "string" },
       summary: { type: "string" },
       rationale: { type: "string" },
+      moves: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "description"],
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+          },
+        },
+      },
+      weights: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "priority"],
+          properties: {
+            name: { type: "string" },
+            priority: { type: "number" },
+            note: { type: "string" },
+          },
+        },
+      },
+      lenses: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "description"],
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+            strength: { type: "number" },
+          },
+        },
+      },
     },
   },
 });
@@ -280,24 +321,35 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
   }
 
   if (intent === "create_pearl") {
-    const title = name || titleFromUtterance(utterance) || "New pearl";
+    const title = name
+      || titleFromStyleAndDomain(utterance)
+      || titleFromUtterance(utterance)
+      || "New pearl";
     const layers = seedPearlLayersFromIntent({
       name: title,
       intent: utterance,
       systemPromptHint: interpretation?.hint || utterance,
       materialText: utterance,
+      titleHint: name,
     });
+    const layerSummary = [
+      layers.moves?.length ? `${layers.moves.length} Moves` : null,
+      layers.weights?.length ? `${layers.weights.length} Weights` : null,
+      layers.lenses?.length ? `${layers.lenses.length} Lenses` : null,
+    ].filter(Boolean).join(" · ");
     return {
       ok: true,
       source: "local",
       intent,
-      title,
+      title: layers.title || title,
       systemPrompt: layers.systemPrompt,
       layers,
-      summary: `Seed Moves · Weights · Lenses for “${title}” from your request.`,
-      rationale: "Offline layer seed (richer rewrite when AI is connected).",
+      summary: `Seed ${layerSummary || "Moves · Weights · Lenses"} for “${layers.title || title}”.`,
+      rationale: "Offline layer seed (AI can refine when signed in — never required for create).",
       mode: "seed",
-      needsRicherRewrite: true,
+      // Create succeeds offline; AI enrich is optional post-step, not a blocker.
+      needsRicherRewrite: false,
+      aiEnrichOptional: true,
     };
   }
 
@@ -336,21 +388,48 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
         code: edited.ok ? EXECUTION_CODES.OK : EXECUTION_CODES.VALIDATION_ERROR,
       };
     }
-    // Intelligent-looking local rewrite: merge instruction into a full prompt body.
+    // Intelligent-looking local rewrite: merge instruction into a full prompt body,
+    // then re-seed / sync structured layers so fidelity stays in Moves · Weights · Lenses.
     nextText = mergeInstructionIntoPrompt(prior, utterance, {
       name: observation.name || name,
+    });
+    const layerSeed = seedPearlLayersFromIntent({
+      name: observation.name || name || "Pearl",
+      intent: utterance,
+      systemPrompt: nextText,
+      systemPromptHint: utterance,
+    });
+    const synced = syncLayersFromSystemPrompt(nextText, {
+      moves: observation.layers?.moves?.length ? observation.layers.moves : layerSeed.moves,
+      weights: observation.weights?.length ? observation.weights : layerSeed.weights,
+      lenses: observation.layers?.lenses?.length ? observation.layers.lenses : layerSeed.lenses,
+    });
+    // Prefer newly seeded factors from the utterance when prior layers are empty.
+    const mergedLayers = {
+      ...layerSeed,
+      moves: synced.moves?.length ? synced.moves : layerSeed.moves,
+      weights: synced.weights?.length ? synced.weights : layerSeed.weights,
+      lenses: synced.lenses?.length ? synced.lenses : layerSeed.lenses,
+    };
+    const projected = projectSystemPromptFromLayers(mergedLayers, {
+      name: observation.name || name,
+      intent: utterance,
+      basePrompt: nextText,
+      voice: mergedLayers.voice,
     });
     return {
       ok: true,
       source: "local",
       intent: "edit_prompt",
       title: observation.name || name || null,
-      systemPrompt: nextText,
+      systemPrompt: projected,
+      layers: mergedLayers,
       prior,
-      summary: `Updated system prompt${observation.name ? ` for “${observation.name}”` : ""} from your instruction.`,
-      rationale: "Offline merge rewrite. Connect AI for a deeper taste-preserving rewrite.",
+      summary: `Updated Moves · Weights · Lenses${observation.name ? ` for “${observation.name}”` : ""} from your instruction.`,
+      rationale: "Offline structured merge. Connect AI for a deeper taste-preserving rewrite.",
       mode: "rewrite",
       needsRicherRewrite: true,
+      aiEnrichOptional: true,
     };
   }
 
@@ -372,6 +451,8 @@ function optionsHasPearl(observation) {
 }
 
 function titleFromUtterance(utterance) {
+  const styled = titleFromStyleAndDomain(utterance);
+  if (styled) return soft(styled, 80);
   const about = compact(utterance).match(/\b(?:about|called|named|titled)\s+(.+)$/i)?.[1];
   if (about) return soft(about.replace(/^["“]|["”]$/g, ""), 80);
   const topic = compact(utterance).match(
@@ -432,12 +513,13 @@ export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
  */
 export function buildPearlPromptRewriteRequest(observation, interpretation) {
   const system = [
-    "You rewrite Pearl system prompts with full intelligence.",
+    "You rewrite Pearl brains with full intelligence: Moves, Weights, Lenses, and a projected systemPrompt.",
     "Canonical fidelity is Moves (how work is done) + Weights (what is valued) + Lenses (how to see). systemPrompt is the readable projection of those layers — not a flat-only brain.",
+    "Always return structured moves[], weights[], and lenses[] when creating or materially editing a pearl. Keep them non-empty for create.",
     "Preserve the user's taste and prior constraints; merge edits rather than discarding history unless they ask to replace everything.",
     "Never expose internal ids, hashes, storage keys, revisions, or raw metadata in title/summary/rationale/systemPrompt.",
     "Return only structured JSON matching the schema.",
-    "systemPrompt must be a complete, usable prompt (not a diff patch) that summarizes Moves, Weights, and Lenses when relevant.",
+    "systemPrompt must be a complete, usable prompt that includes ## Moves, ## Weights, and ## Lenses sections mirroring the arrays.",
     "summary: one short human sentence of what changed (for Companion chat).",
     "rationale: one short internal why (also user-safe).",
     observation.layerInstructions || "",
@@ -452,7 +534,14 @@ export function buildPearlPromptRewriteRequest(observation, interpretation) {
       ? `Current system prompt:\n${soft(observation.systemPrompt, 4_000)}`
       : "Current system prompt: (empty)",
     observation.name ? `Pearl title: ${observation.name}` : null,
-    "Produce the next systemPrompt.",
+    observation.layers
+      ? `Current layers JSON:\n${soft(JSON.stringify({
+        moves: observation.layers.moves,
+        weights: observation.layers.weights,
+        lenses: observation.layers.lenses,
+      }), 3_000)}`
+      : null,
+    "Produce the next moves, weights, lenses, and projected systemPrompt.",
   ].filter(Boolean).join("\n\n");
 
   return {
@@ -502,15 +591,55 @@ export function normalizePearlPromptProposal(raw, interpretation, observation) {
       mode: null,
     };
   }
+  const modelLayers = {
+    moves: Array.isArray(parsed.moves)
+      ? parsed.moves.map((move, index) => ({
+        id: `move:model:${index + 1}`,
+        name: soft(move?.name || `Move ${index + 1}`, 80),
+        description: soft(move?.description || "", 400),
+        kind: "move",
+      })).filter((entry) => entry.name)
+      : null,
+    weights: Array.isArray(parsed.weights) ? parsed.weights : null,
+    lenses: Array.isArray(parsed.lenses)
+      ? parsed.lenses.map((lens, index) => ({
+        id: `lens:model:${index + 1}`,
+        name: soft(lens?.name || `Lens ${index + 1}`, 64),
+        description: soft(lens?.description || "", 400),
+        kind: "lens",
+        strength: Number.isFinite(lens?.strength) ? lens.strength : 0.75,
+      })).filter((entry) => entry.name)
+      : null,
+  };
+  const fallbackLayers = local.layers || seedPearlLayersFromIntent({
+    name: soft(parsed.title || interpretation.titleHint || observation.name || "", 80),
+    intent: interpretation.utterance || "",
+    systemPrompt,
+  });
+  const layers = {
+    ...fallbackLayers,
+    moves: modelLayers.moves?.length ? modelLayers.moves : fallbackLayers.moves,
+    weights: modelLayers.weights?.length
+      ? modelLayers.weights
+      : fallbackLayers.weights,
+    lenses: modelLayers.lenses?.length ? modelLayers.lenses : fallbackLayers.lenses,
+  };
+  const projected = projectSystemPromptFromLayers(layers, {
+    name: soft(parsed.title || interpretation.titleHint || observation.name || "", 80),
+    intent: interpretation.utterance || "",
+    basePrompt: systemPrompt,
+    voice: layers.voice,
+  });
   return {
     ok: true,
     source: "model",
     intent,
     title: soft(parsed.title || interpretation.titleHint || observation.name || "", 80) || null,
-    systemPrompt,
+    systemPrompt: projected,
+    layers,
     prior: observation.systemPrompt || "",
     summary: scrubPearlMetadataFromUserText(
-      parsed.summary || "Updated the system prompt.",
+      parsed.summary || "Updated Moves · Weights · Lenses.",
       { utterance: interpretation.utterance },
     ),
     rationale: scrubPearlMetadataFromUserText(parsed.rationale || "", {
@@ -601,7 +730,7 @@ export function formatPearlPromptTrail(steps = []) {
   const labels = {
     working: "Working…",
     interpreting: "Interpreting…",
-    proposed: "Proposed change",
+    proposed: "Proposed layer changes",
     applied: "Applied",
     blocked: "Blocked",
   };

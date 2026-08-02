@@ -15,11 +15,22 @@ import {
   summarizeWeightsForPrompt,
 } from "./pearl-weights.js";
 import { defaultSystemPromptFromIntent, normalizePearlSystemPrompt } from "./pearl-system-prompt.js";
+import {
+  extractStyleAndDomain,
+  resolvePearlLayerTemplate,
+  titleFromStyleAndDomain,
+} from "./pearl-layer-templates.js";
 
 export const PEARL_LAYER_INSTRUCTIONS_VERSION = 1;
 
 /** Canonical user/Companion order — Moves → Weights → Lenses. */
 export const PEARL_LAYER_ORDER = PEARL_STUDIO_COGNITIVE_SECTION_ORDER;
+
+export {
+  extractStyleAndDomain,
+  resolvePearlLayerTemplate,
+  titleFromStyleAndDomain,
+};
 
 export const PEARL_LAYER_DEFINITIONS = Object.freeze({
   moves: {
@@ -107,11 +118,115 @@ export function classifyUtteranceLayer(utterance = "") {
   if (/\b(?:system\s+)?prompt|instructions|taste|voice|style|like\b/i.test(text)) {
     scores.prompt += 1;
   }
+  // Style+taste+lens creates are mixed layer materialization, not prompt-only.
+  if (/\bstyle\b.+\btaste\b.+\blens\b/i.test(text) || /\breflects?\b.+\bstyle\b/i.test(text)) {
+    return "mixed";
+  }
 
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   if (ranked[0][1] <= 0) return null;
   if (ranked[1][1] >= ranked[0][1] && ranked[0][1] >= 2) return "mixed";
   return ranked[0][0];
+}
+
+/**
+ * Project Moves · Weights · Lenses into a readable systemPrompt (one direction).
+ */
+export function projectSystemPromptFromLayers(layers = {}, options = {}) {
+  const name = String(options.name || layers.name || "Pearl").trim() || "Pearl";
+  const voice = String(options.voice || layers.voice || "").trim();
+  const intent = String(options.intent || layers.intent || "").trim();
+  const moves = Array.isArray(layers.moves) ? layers.moves : [];
+  const weights = normalizePearlWeights(layers.weights || []);
+  const lenses = Array.isArray(layers.lenses) ? layers.lenses : [];
+  const weightBlock = summarizeWeightsForPrompt(weights);
+  const base = normalizePearlSystemPrompt(
+    options.basePrompt
+    || defaultSystemPromptFromIntent({
+      name,
+      intent: intent || name,
+      materialText: intent,
+      topic: name,
+      systemPromptHint: voice ? `${name} — like ${voice}` : intent || name,
+    }),
+  );
+  // Strip prior projection sections so re-projection stays idempotent.
+  const head = base
+    .split(/\n## (?:Moves|Weights|Lenses)\b/)[0]
+    .trim();
+  return normalizePearlSystemPrompt([
+    head,
+    voice && !head.toLowerCase().includes(voice.toLowerCase().slice(0, 24))
+      ? `\nAdopt the taste, voice, and thought process of: ${voice}.`
+      : "",
+    "",
+    "## Moves (how work is done)",
+    ...(moves.length
+      ? moves.map((move, index) => `${index + 1}. ${move.name} — ${move.description || ""}`.trim())
+      : ["- (none yet — ask how work should be done)"]),
+    "",
+    "## Weights (what is valued)",
+    weightBlock || "- (none yet — ask what factors matter)",
+    "",
+    "## Lenses (how to see)",
+    ...(lenses.length
+      ? lenses.map((lens) => `- ${lens.name}: ${lens.description || ""}`.trim())
+      : ["- (none yet — ask which perspective to wear)"]),
+  ].filter((line, index, all) => !(line === "" && all[index - 1] === "")).join("\n"));
+}
+
+/**
+ * When Companion edits systemPrompt prose, pull structured layer hints back out
+ * (best-effort) and merge onto existing layers — sync both ways.
+ */
+export function syncLayersFromSystemPrompt(systemPrompt = "", priorLayers = {}) {
+  const text = String(systemPrompt || "");
+  const section = (label) => {
+    const match = text.match(
+      new RegExp(`##\\s*${label}\\b[^\\n]*\\n([\\s\\S]*?)(?=\\n##\\s|$)`, "i"),
+    );
+    return match?.[1]?.trim() || "";
+  };
+  const moveBlock = section("Moves");
+  const weightBlock = section("Weights");
+  const lensBlock = section("Lenses");
+
+  const movesFromPrompt = [...moveBlock.matchAll(/^\s*(?:\d+\.|[-*])\s*(.+?)(?:\s*[—–-]\s*(.+))?$/gm)]
+    .map((match, index) => ({
+      id: priorLayers.moves?.[index]?.id || `move:sync:${index + 1}`,
+      name: String(match[1] || "").replace(/\s+/g, " ").trim().slice(0, 80) || `Move ${index + 1}`,
+      description: String(match[2] || "").replace(/\s+/g, " ").trim().slice(0, 400),
+      kind: "move",
+    }))
+    .filter((entry) => entry.name);
+
+  const weightsFromPrompt = [...weightBlock.matchAll(/^\s*[-*]\s*(.+?)(?:\s*\((\d+)%\))?(?::\s*(.+))?$/gm)]
+    .map((match, index) => ({
+      id: priorLayers.weights?.[index]?.id || `weight:sync:${index + 1}`,
+      name: String(match[1] || "").replace(/\s+/g, " ").trim().slice(0, 80),
+      priority: match[2] ? Number(match[2]) / 100 : (priorLayers.weights?.[index]?.priority ?? 0.7),
+      note: String(match[3] || "").replace(/\s+/g, " ").trim().slice(0, 400),
+      kind: "weight",
+    }))
+    .filter((entry) => entry.name);
+
+  const lensesFromPrompt = [...lensBlock.matchAll(/^\s*[-*]\s*(.+?)(?::\s*(.+))?$/gm)]
+    .map((match, index) => ({
+      id: priorLayers.lenses?.[index]?.id || `lens:sync:${index + 1}`,
+      name: String(match[1] || "").replace(/\s+/g, " ").trim().slice(0, 64),
+      description: String(match[2] || "").replace(/\s+/g, " ").trim().slice(0, 400),
+      kind: "lens",
+      strength: priorLayers.lenses?.[index]?.strength ?? 0.7,
+    }))
+    .filter((entry) => entry.name);
+
+  return {
+    moves: movesFromPrompt.length ? movesFromPrompt : (priorLayers.moves || []),
+    weights: normalizePearlWeights(
+      weightsFromPrompt.length ? weightsFromPrompt : (priorLayers.weights || []),
+    ),
+    lenses: lensesFromPrompt.length ? lensesFromPrompt : (priorLayers.lenses || []),
+  };
 }
 
 /**
@@ -121,42 +236,100 @@ export function classifyUtteranceLayer(utterance = "") {
  */
 export function seedPearlLayersFromIntent(options = {}) {
   const utterance = String(options.intent || options.utterance || options.materialText || "").trim();
-  const name = String(options.name || options.topic || "").trim() || "Pearl";
-  const systemPrompt = normalizePearlSystemPrompt(
-    options.systemPrompt
-    || defaultSystemPromptFromIntent({
-      name,
-      intent: utterance,
-      materialText: utterance,
-      topic: name,
-      systemPromptHint: options.systemPromptHint || utterance,
-    }),
-  );
+  const extracted = extractStyleAndDomain(utterance);
+  const template = resolvePearlLayerTemplate(utterance, {
+    style: extracted.style,
+    domain: extracted.domain,
+    personaKey: extracted.personaKey,
+  });
+  const name = String(
+    options.name
+    || options.topic
+    || titleFromStyleAndDomain(utterance, { name: options.titleHint || "" })
+    || "Pearl",
+  ).trim() || "Pearl";
 
-  const style = utterance.match(
-    /\b(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+?)(?:\n|$)/i,
-  )?.[1]?.trim();
-  const topic = name.replace(/\s*[·|-].*$/, "").trim() || name;
+  let moveSteps = [];
+  let weights = [];
+  let lenses = [];
+  let voice = template?.voice || extracted.style || "";
 
-  const moveSteps = [];
-  if (style || /\b(?:poetry|poem|haiku|verse|thought process)\b/i.test(utterance)) {
-    moveSteps.push(
-      { name: "Notice", description: "Attend to concrete sensory detail before interpreting." },
-      { name: "Compress", description: "Cut to the charged image or line; drop filler." },
-      { name: "Voice check", description: style ? `Re-read in the thought process of ${style}.` : "Check emotional honesty over polish." },
-    );
-  } else if (/\b(?:investor|memo|diligence|startup)\b/i.test(utterance)) {
-    moveSteps.push(
-      { name: "Frame the ask", description: "State what decision this memo supports." },
-      { name: "Evidence pass", description: "List claims with sources; flag gaps." },
-      { name: "Risks & upside", description: "Weight downside clarity before narrative upside." },
-    );
-  } else if (utterance) {
-    moveSteps.push(
-      { name: "Gather", description: `Collect material relevant to ${topic}.` },
-      { name: "Shape", description: "Turn material into a clear draft or next action." },
-      { name: "Refine", description: "Tighten against this pearl's weights and lenses." },
-    );
+  if (template) {
+    moveSteps = template.moves.map((step) => ({
+      name: step.name,
+      description: step.description,
+    }));
+    weights = normalizePearlWeights(template.weights);
+    lenses = template.lenses.map((lens, index) => ({
+      id: `lens:seed:${index + 1}`,
+      name: lens.name,
+      description: lens.description,
+      kind: "lens",
+      strength: lens.strength ?? 0.75,
+    }));
+  } else {
+    const topic = name.replace(/\s*[·|-].*$/, "").trim() || name;
+    if (/\b(?:poetry|poem|haiku|verse|thought process)\b/i.test(utterance) || extracted.style) {
+      moveSteps = [
+        { name: "Notice", description: "Attend to concrete sensory detail before interpreting." },
+        { name: "Compress", description: "Cut to the charged image or line; drop filler." },
+        {
+          name: "Voice check",
+          description: extracted.style
+            ? `Re-read in the thought process of ${extracted.style}.`
+            : "Check emotional honesty over polish.",
+        },
+      ];
+    } else if (/\b(?:investor|investing|memo|diligence|startup|underwrit)\b/i.test(utterance)) {
+      moveSteps = [
+        { name: "Frame the ask", description: "State what decision this memo supports." },
+        { name: "Evidence pass", description: "List claims with sources; flag gaps." },
+        { name: "Risks & upside", description: "Weight downside clarity before narrative upside." },
+      ];
+    } else if (utterance) {
+      moveSteps = [
+        { name: "Gather", description: `Collect material relevant to ${topic}.` },
+        { name: "Shape", description: "Turn material into a clear draft or next action." },
+        { name: "Refine", description: "Tighten against this pearl's weights and lenses." },
+      ];
+    }
+    weights = seedWeightsFromIntent(utterance, { limit: 10 });
+    if (extracted.style) {
+      lenses.push({
+        id: "lens:seed:style",
+        name: `${extracted.style} awareness`.slice(0, 64),
+        description: `See through the thought process and taste of ${extracted.style}.`,
+        kind: "lens",
+        strength: 0.75,
+      });
+    } else if (/\b(?:skeptic|investor|investing|poetry|poet)\b/i.test(utterance)) {
+      const lensName = /\binvest/i.test(utterance)
+        ? "Investor awareness"
+        : /\bpoet|poetry\b/i.test(utterance)
+          ? "Poetic awareness"
+          : "Skeptical awareness";
+      lenses.push({
+        id: "lens:seed:topic",
+        name: lensName,
+        description: `Primary seeing-frame for ${topic}.`,
+        kind: "lens",
+        strength: 0.7,
+      });
+    } else if (utterance) {
+      lenses.push({
+        id: "lens:seed:default",
+        name: `${topic} awareness`.slice(0, 64),
+        description: "How this pearl sees the user and the problem space.",
+        kind: "lens",
+        strength: 0.65,
+      });
+    }
+  }
+
+  // Merge any explicit care/weight language onto template weights.
+  const spokenWeights = seedWeightsFromIntent(utterance, { limit: 6 });
+  if (spokenWeights.length) {
+    weights = normalizePearlWeights([...weights, ...spokenWeights]);
   }
 
   const moves = moveSteps.map((step, index) => ({
@@ -170,7 +343,7 @@ export function seedPearlLayersFromIntent(options = {}) {
   const functions = moves.length
     ? [{
       id: `function:moves:${Date.now().toString(36)}`,
-      name: `${topic} process`,
+      name: `${name.replace(/\s*[·|-].*$/, "").trim() || name} process`,
       description: "Ordered Moves for this pearl (Companion presents these as Moves).",
       kind: "function",
       steps: moveSteps.map((step) => ({
@@ -180,70 +353,40 @@ export function seedPearlLayersFromIntent(options = {}) {
     }]
     : [];
 
-  const weights = seedWeightsFromIntent(utterance, { limit: 10 });
-
-  const lenses = [];
-  if (style) {
-    lenses.push({
-      id: "lens:seed:style",
-      name: `${style} awareness`.slice(0, 64),
-      description: `See through the thought process and taste of ${style}.`,
-      kind: "lens",
-      strength: 0.75,
-    });
-  } else if (/\b(?:skeptic|investor|poetry|poet)\b/i.test(utterance)) {
-    const lensName = /\binvestor\b/i.test(utterance)
-      ? "Investor awareness"
-      : /\bpoet|poetry\b/i.test(utterance)
-        ? "Poetic awareness"
-        : "Skeptical awareness";
-    lenses.push({
-      id: "lens:seed:topic",
-      name: lensName,
-      description: `Primary seeing-frame for ${topic}.`,
-      kind: "lens",
-      strength: 0.7,
-    });
-  } else if (utterance) {
-    lenses.push({
-      id: "lens:seed:default",
-      name: `${topic} awareness`.slice(0, 64),
-      description: "How this pearl sees the user and the problem space.",
-      kind: "lens",
-      strength: 0.65,
-    });
-  }
-
-  const weightBlock = summarizeWeightsForPrompt(weights);
-  const projectedPrompt = normalizePearlSystemPrompt([
-    systemPrompt,
-    "",
-    "## Moves (how work is done)",
-    ...moves.map((move, index) => `${index + 1}. ${move.name} — ${move.description}`),
-    "",
-    "## Weights (what is valued)",
-    weightBlock || "- (none yet — ask what factors matter)",
-    "",
-    "## Lenses (how to see)",
-    ...lenses.map((lens) => `- ${lens.name}: ${lens.description}`),
-  ].join("\n"));
-
-  return {
-    version: PEARL_LAYER_INSTRUCTIONS_VERSION,
+  const organization = {
     order: [...PEARL_LAYER_ORDER],
     moves,
     weights: normalizePearlWeights(weights),
     lenses,
     functions,
+  };
+
+  const projectedPrompt = projectSystemPromptFromLayers({
+    moves,
+    weights: organization.weights,
+    lenses,
+    voice,
+    intent: utterance,
+    name,
+  }, {
+    name,
+    voice,
+    intent: utterance,
+    basePrompt: options.systemPrompt || null,
+  });
+
+  return {
+    version: PEARL_LAYER_INSTRUCTIONS_VERSION,
+    order: [...PEARL_LAYER_ORDER],
+    moves,
+    weights: organization.weights,
+    lenses,
+    functions,
+    voice,
+    title: name,
+    personaKey: extracted.personaKey || template?.id || null,
     systemPrompt: projectedPrompt,
-    organization: {
-      order: [...PEARL_LAYER_ORDER],
-      moves,
-      weights: normalizePearlWeights(weights),
-      lenses,
-      // Legacy key kept for readers that still look for functions under organization.
-      functions,
-    },
+    organization,
   };
 }
 
@@ -298,7 +441,8 @@ export function formatPearlLayerInstructionsForCompanion(options = {}) {
     "2) Weights — evaluative preferences: factors the user values, judgements, tradeoffs, priorities. Update via getPearlWeights / setPearlWeights / editPearlWeights when they say care/weight/prefer/always/never tradeoff language.",
     "3) Lenses — perspectives/frames for seeing. Apply/remove/wear via applySemanticOrbLens, wearPearl, evaluateWithGauntlet.",
     "Routing: process/how-to → Moves; value/tradeoff → Weights; perspective/wear → Lenses; taste voice that spans all three → interpretPearlPrompt (update layers + project systemPrompt).",
-    "Never expose internal ids, hashes, or storage keys in chat. Offline local create/edit must succeed without sign-in; AI enrich is optional.",
+    "Cursor-for-pearls: trail Working → Interpreting → Proposed layer changes → Applied / Blocked. Offline structured merge always; AI enrich optional when signed in. Never abort local create for needs-credentials.",
+    "Never expose internal ids, hashes, or storage keys in chat.",
   ];
   if (pack) {
     lines.push(

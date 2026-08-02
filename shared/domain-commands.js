@@ -40,6 +40,7 @@ import {
   readPearlWeights,
   seedWeightsFromIntent,
 } from "./pearl-weights.js";
+import { seedPearlLayersFromIntent } from "./pearl-layer-instructions.js";
 import { materializeCounterPearl } from "./pearl-counter.js";
 import { buildGauntletEvaluationQuery } from "./pearl-gauntlet-eval.js";
 import { buildInvestorRolePearlScaffold } from "./role-pearl-scaffold.js";
@@ -352,7 +353,29 @@ export const DOMAIN_COMMANDS = Object.freeze({
         || args.orb?.name
         || "",
       ).trim();
-      const seededPrompt = args.systemPrompt || args.orb?.systemPrompt || (
+      // systemPrompt alone is not "organized" — create always seeds it now.
+      // Treating it as organized skipped the material path and could drop context.
+      const hasOrganizedOrb = Boolean(
+        args.orb
+        && (
+          args.orb.moves?.length
+          || args.orb.functions?.length
+          || args.orb.weights?.length
+          || args.orb.organization?.weights?.length
+          || args.orb.lenses?.length
+          || args.orb.workingSet?.context?.length
+          || args.orb.representation
+        )
+      );
+      const layerSeed = !hasOrganizedOrb && intentSeed
+        ? seedPearlLayersFromIntent({
+          name: args.orb?.name || args.material?.label || args.material?.name || "",
+          intent: String(args.intent || intentSeed),
+          systemPrompt: args.systemPrompt || args.orb?.systemPrompt,
+          systemPromptHint: intentSeed,
+        })
+        : null;
+      const seededPrompt = args.systemPrompt || args.orb?.systemPrompt || layerSeed?.systemPrompt || (
         intentSeed
           ? defaultSystemPromptFromIntent({
             name: args.orb?.name || args.material?.label || args.material?.name || "",
@@ -361,18 +384,15 @@ export const DOMAIN_COMMANDS = Object.freeze({
           })
           : null
       );
-      // systemPrompt alone is not "organized" — create always seeds it now.
-      // Treating it as organized skipped the material path and could drop context.
-      const hasOrganizedOrb = Boolean(
-        args.orb
-        && (
-          args.orb.moves?.length
-          || args.orb.functions?.length
-          || args.orb.lenses?.length
-          || args.orb.workingSet?.context?.length
-          || args.orb.representation
-        )
-      );
+      const layerFields = layerSeed
+        ? {
+          moves: layerSeed.moves,
+          functions: layerSeed.functions,
+          weights: layerSeed.weights,
+          lenses: layerSeed.lenses,
+          organization: layerSeed.organization,
+        }
+        : {};
       let orb;
       if (hasOrganizedOrb) {
         // Prefer explicit orb payload (forming pearls / encode) so Moves→Weights→Lenses survive.
@@ -403,9 +423,17 @@ export const DOMAIN_COMMANDS = Object.freeze({
           systemPrompt: seededPrompt,
           intent: intentSeed,
         });
+        if (layerSeed) {
+          orb = createSemanticOrb({
+            ...orb,
+            ...layerFields,
+            systemPrompt: seededPrompt || orb.systemPrompt,
+          }, { now: context.now });
+        }
       } else {
         orb = createSemanticOrb({
           ...(args.orb || {}),
+          ...layerFields,
           id,
           sceneId: args.sceneId,
           placement,

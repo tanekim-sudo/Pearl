@@ -153,19 +153,26 @@ export function seedWeightsFromIntent(utterance = "", options = {}) {
   const never = [...text.matchAll(/\bnever\s+(?:want|include|use|accept)\s+(.+?)(?:[.!?;,]|$)/gi)];
   for (const match of never) push(`Avoid: ${match[1]}`, 0.75, "Never");
 
-  // Style / taste cues become soft evaluative weights when nothing explicit matched.
+  // Style / taste / investing cues become soft evaluative weights when nothing explicit matched.
   if (!found.length) {
     const style = text.match(
       /\b(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+?)(?:\n|$)/i,
-    )?.[1];
-    if (style) {
+    )?.[1]
+      || text.match(/\breflects?\s+(.+?)(?:['’]s)?\s+(?:style|taste|voice)\b/i)?.[1];
+    if (/\bbuffett\b|\bmargin of safety\b|\bcircle of competence\b|\bvalue invest/i.test(text)) {
+      push("Moat durability", 0.92, "Prefer widening economic moats");
+      push("Management integrity", 0.9, "Capital allocation honesty");
+      push("Margin of safety", 0.88, "Price versus conservative value");
+      push("Owner mindset", 0.85, "Business owner, not trader");
+      push("Long time horizon", 0.84, "Years over quarters");
+    } else if (style) {
       push(`Voice fidelity · ${bounded(style, 60)}`, 0.8, "Honor the referenced thought process");
       push("Concrete imagery over polish", 0.7, "Prefer lived specificity");
       push("Emotional honesty", 0.75, "Judgement: honesty over neatness");
     } else if (/\b(?:poetry|poem|haiku|verse)\b/i.test(text)) {
       push("Concrete imagery", 0.75, "Prefer images over abstraction");
       push("Compression", 0.65, "Fewer words, sharper edge");
-    } else if (/\b(?:investor|memo|diligence|startup|tam)\b/i.test(text)) {
+    } else if (/\b(?:investor|investing|memo|diligence|startup|tam)\b/i.test(text)) {
       push("Evidence over narrative", 0.85, "Skeptical underwriting");
       push("Risk clarity", 0.8, "Surface downside early");
       push("Traction specificity", 0.7, "Numbers over adjectives");

@@ -16,6 +16,7 @@ import {
   formatPearlCompanionContextForModel,
 } from "../../shared/pearl-companion-context.js";
 import { interpretPearlPromptUtterance } from "../../shared/pearl-prompt-harness.js";
+import { titleFromStyleAndDomain } from "../../shared/pearl-layer-templates.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
 export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
@@ -139,6 +140,11 @@ export function parseSemanticTransferCommand(text) {
 export function titleFromPearlPurpose(purpose) {
   const text = String(purpose || "").replace(/\s+/g, " ").trim();
   if (!text) return "";
+  // Style / taste / lens creates — only when the purpose actually names a style/taste.
+  if (/\breflects?\b|\bstyle\b|\btaste\b|\bthought\s+process\b|\blike\b|\bin the style of\b/i.test(text)) {
+    const styled = titleFromStyleAndDomain(text);
+    if (styled) return styled;
+  }
   const forMatch = text.match(/^(.*)\s+for\s+(.+)$/i);
   if (forMatch) {
     const topic = forMatch[2].replace(/^["“]|["”]$/g, "").trim();

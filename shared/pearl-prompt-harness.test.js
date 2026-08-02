@@ -67,6 +67,23 @@ test("offline propose/apply create seeds non-empty systemPrompt and M/W/L layers
   assert.ok(run.apply.command.args.orb?.weights?.length >= 1);
 });
 
+test("Buffett style+taste+lens create is offline, titled, and does not need AI", () => {
+  const utterance = "make me a pearl that reflects Warren Buffett's style and taste and lens of investing";
+  const run = runPearlPromptHarnessOffline({ utterance });
+  assert.equal(run.handled, true);
+  assert.equal(run.proposal.ok, true);
+  assert.equal(run.proposal.needsRicherRewrite, false);
+  assert.equal(run.proposal.aiEnrichOptional, true);
+  assert.match(run.proposal.title, /Buffett/i);
+  assert.ok(run.proposal.layers?.moves?.length >= 5);
+  assert.ok(run.proposal.layers?.weights?.length >= 5);
+  assert.ok(run.proposal.layers?.lenses?.length >= 3);
+  assert.match(run.proposal.systemPrompt, /## Moves/i);
+  assert.match(formatPearlPromptTrail(run.trail || [{ stage: "proposed" }]).join("\n"), /Proposed layer changes/i);
+  assert.equal(run.apply.command.verb, "createSemanticOrb");
+  assert.ok(run.apply.command.args.orb?.moves?.length >= 5);
+});
+
 test("offline propose/apply edit merges instruction into prompt", () => {
   const pearl = {
     id: "pearl:edit-1",
@@ -159,7 +176,7 @@ test("trail formatting is Cursor-like and metadata-free", () => {
   ]);
   assert.deepEqual(lines[0], "Working…");
   assert.match(lines[1], /Interpreting/);
-  assert.match(lines[2], /Proposed change:/);
+  assert.match(lines[2], /Proposed layer changes:/);
   assert.match(lines[3], /Applied:/);
 });
 

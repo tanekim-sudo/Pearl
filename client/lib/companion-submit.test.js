@@ -83,4 +83,17 @@ describe("companion submit guard", () => {
       "a new user utterance remains executable"
     );
   });
+
+  it("release clears active lock and dedupe so blocker retries work", () => {
+    const guard = createCompanionSubmitGuard();
+    const first = guard.begin("make me a pearl that reflects Warren Buffett's style");
+    assert.ok(first);
+    assert.equal(guard.begin("make me a pearl that reflects Warren Buffett's style"), null);
+    guard.release(first.id);
+    assert.equal(guard.active(), null);
+    assert.ok(
+      guard.begin("make me a pearl that reflects Warren Buffett's style"),
+      "same utterance retries after blocker release",
+    );
+  });
 });

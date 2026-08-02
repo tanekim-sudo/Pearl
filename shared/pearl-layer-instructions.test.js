@@ -30,6 +30,22 @@ test("seedPearlLayersFromIntent seeds M/W/L for poetry style simile", () => {
   assert.deepEqual(seeded.organization.order, ["moves", "weights", "lenses"]);
 });
 
+test("Buffett style+taste+lens create seeds high-fidelity offline layers", () => {
+  const utterance = "make me a pearl that reflects Warren Buffett's style and taste and lens of investing";
+  const seeded = seedPearlLayersFromIntent({ intent: utterance });
+  assert.equal(seeded.title, "Buffett · investing");
+  assert.equal(seeded.personaKey, "buffett");
+  assert.ok(seeded.moves.length >= 5, "Buffett template moves");
+  assert.ok(seeded.weights.length >= 5, "Buffett template weights");
+  assert.ok(seeded.lenses.length >= 3, "Buffett template lenses");
+  assert.match(seeded.systemPrompt, /## Moves/i);
+  assert.match(seeded.systemPrompt, /## Weights/i);
+  assert.match(seeded.systemPrompt, /## Lenses/i);
+  assert.match(seeded.systemPrompt, /moat|margin of safety|circle of competence/i);
+  assert.ok(seeded.moves.some((m) => /filings|moat|margin/i.test(m.name)));
+  assert.equal(classifyUtteranceLayer(utterance), "mixed");
+});
+
 test("companion layer instructions mention all three layers and verbs", () => {
   const text = formatPearlLayerInstructionsForCompanion({ includeExamples: true });
   assert.match(text, /Moves/);
@@ -37,5 +53,6 @@ test("companion layer instructions mention all three layers and verbs", () => {
   assert.match(text, /Lenses/);
   assert.match(text, /editPearlWeights/);
   assert.match(text, /reorderPearlFunctionMoves/);
+  assert.match(text, /Cursor-for-pearls/i);
   assert.doesNotMatch(text, /Moves→Functions→Lenses/);
 });

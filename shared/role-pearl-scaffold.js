@@ -56,6 +56,15 @@ export function extractInvestorFirm(text) {
 export function looksLikeInvestorRolePearl(text) {
   const value = String(text || "").replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
   if (!value) return false;
+  // Style/taste/lens persona creates (Buffett, Plath, …) are prompt-harness seeds —
+  // not the memo+diligence investor role scaffold.
+  if (
+    /\breflects?\b.+\b(?:style|taste|voice|thought\s+process)\b/i.test(value)
+    || /\b(?:like|in the style of|inspired by)\b.+/i.test(value)
+    || /\bstyle\b.+\btaste\b.+\blens\b/i.test(value)
+  ) {
+    return false;
+  }
   const investor = /\binvestor\b/i.test(value) || /\binvest(?:ing|ment)?\b/i.test(value);
   const pearl = /\bpearl\b/i.test(value) || /\bresearch\b/i.test(value);
   const memo = /\binvestment\s+memo\b/i.test(value) || /\bmemo\s+function\b/i.test(value) || /\bmemo\b/i.test(value);

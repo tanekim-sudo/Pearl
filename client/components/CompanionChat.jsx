@@ -495,6 +495,7 @@ export default function CompanionChat({
         });
       },
     };
+    let releaseGuard = false;
     try {
       if (/^(?:continue|resume|finish)\s+(?:my\s+)?(?:setup|onboarding|profile)$/i.test(text)) {
         const resumed = resumeCompanionInterview(userId);
@@ -521,14 +522,16 @@ export default function CompanionChat({
           setMemory(next);
           const commandReply = await onCommand(route.command, commandOptions);
           setMemory(rememberCompanionAction(userId, route.command));
-          surfaceExecution(commandReply);
+          const execution = surfaceExecution(commandReply);
+          if (execution?.status === "blocked" || execution?.status === "failed") releaseGuard = true;
           return;
         }
         if (route.kind === "command") {
           setMemory(pauseCompanionInterview(userId));
           const commandReply = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
-          surfaceExecution(commandReply);
+          const execution = surfaceExecution(commandReply);
+          if (execution?.status === "blocked" || execution?.status === "failed") releaseGuard = true;
           return;
         }
         const next = saveCompanionMemory(userId, applyInterviewAnswer(memory, text));
@@ -538,7 +541,8 @@ export default function CompanionChat({
         if (field === "goal") {
           const result = await onCommand(text, commandOptions);
           setMemory(rememberCompanionAction(userId, text));
-          surfaceExecution(result);
+          const execution = surfaceExecution(result);
+          if (execution?.status === "blocked" || execution?.status === "failed") releaseGuard = true;
         }
         return;
       }
@@ -554,12 +558,13 @@ export default function CompanionChat({
             message: "Companion runtime is not connected. Reload the page, then try GO again.",
           },
         });
+        releaseGuard = true;
         return;
       }
       const result = await onCommand(text, commandOptions);
       setMemory(rememberCompanionAction(userId, text));
       // Always show a chat reply — never complete silently.
-      surfaceExecution(
+      const execution = surfaceExecution(
         result?.visible || result?.text
           ? result
           : {
@@ -570,7 +575,16 @@ export default function CompanionChat({
         null,
         text,
       );
+      if (
+        execution?.status === "blocked"
+        || execution?.status === "failed"
+        || result?.status === "blocked"
+        || result?.completed === false
+      ) {
+        releaseGuard = true;
+      }
     } catch (err) {
+      releaseGuard = true;
       if (run.signal.aborted || err?.name === "AbortError") {
         surfaceExecution(null, err, text);
         setDraft(text);
@@ -580,8 +594,14 @@ export default function CompanionChat({
       setDraft(text);
     } finally {
       const isCurrent = submitGuardRef.current.active()?.id === run.id;
-      submitGuardRef.current.finish(run.id);
-      if (isCurrent) {
+      // Blockers / failures must not leave a stuck "Still working…" lock or
+      // 15s semantic dedupe trap — clear so the user can press GO again.
+      if (releaseGuard && typeof submitGuardRef.current.release === "function") {
+        submitGuardRef.current.release(run.id);
+      } else {
+        submitGuardRef.current.finish(run.id);
+      }
+      if (isCurrent || releaseGuard) {
         setBusy(false);
         setPhase("");
         setStatusLine("");

@@ -85,6 +85,15 @@ test("make me a pearl to … purpose intents create titled pearls without planne
   );
   // Must not steal system-prompt edits on an existing pearl.
   assert.equal(parsePearlCreationCommand("make this pearl about investor memos"), null);
+
+  const buffett = "make me a pearl that reflects Warren Buffett's style and taste and lens of investing";
+  assert.equal(titleFromPearlPurpose("reflects Warren Buffett's style and taste and lens of investing"), "Buffett · investing");
+  const buffettParsed = parsePearlCreationCommand(buffett);
+  assert.equal(buffettParsed?.verb, "createSemanticOrb");
+  assert.equal(buffettParsed.args.name, "Buffett · investing");
+  const harness = routePearlPromptHarness(buffett);
+  assert.equal(harness?.verb, "interpretPearlPrompt");
+  assert.equal(harness?.interpretation?.intent, "create_pearl");
 });
 
 test("make me a {topic} pearl like … style-simile creates without planner", () => {

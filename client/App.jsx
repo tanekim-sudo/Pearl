@@ -13097,6 +13097,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return { effectId: `orb-lens-removed:${a.id}`, id: a.id };
     },
     createSemanticOrb: async (a, tk) => {
+      const intentText = String(a.intent || a.systemPromptHint || a.material?.text || "").trim();
       const pearlName = sensiblePearlName(
         a.name
         || a.orb?.name
@@ -13105,11 +13106,27 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         || a.organizedOrb?.name
         || "",
       );
+      const hasLayerPayload = Boolean(
+        a.orb?.moves?.length
+        || a.orb?.weights?.length
+        || a.orb?.lenses?.length
+        || a.orb?.organization?.weights?.length
+        || a.orb?.functions?.length,
+      );
+      const layers = hasLayerPayload
+        ? null
+        : seedPearlLayersFromIntent({
+          name: pearlName,
+          intent: intentText || pearlName,
+          systemPrompt: a.systemPrompt || a.orb?.systemPrompt,
+          systemPromptHint: a.systemPromptHint || intentText,
+        });
       const systemPrompt = a.systemPrompt
         || a.orb?.systemPrompt
+        || layers?.systemPrompt
         || defaultSystemPromptFromIntent({
           name: pearlName,
-          intent: a.intent || a.systemPromptHint || a.material?.text || pearlName,
+          intent: intentText || pearlName,
           materialText: a.material?.text || a.systemPromptHint || "",
         });
       tk?.caption?.(a.caption || `creating pearl “${pearlName}”`);
@@ -13123,36 +13140,87 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         await tk.release?.();
       }
       const organizedOrb = a.orb && typeof a.orb === "object" ? a.orb : null;
+      const orbPayload = organizedOrb
+        ? {
+          ...organizedOrb,
+          id: organizedOrb.id || a.id,
+          name: sensiblePearlName(
+            organizedOrb.name || a.name || organizedOrb.representation?.label || pearlName,
+          ),
+          systemPrompt: organizedOrb.systemPrompt || systemPrompt,
+          ...(layers && !hasLayerPayload
+            ? {
+              moves: layers.moves,
+              functions: layers.functions,
+              weights: layers.weights,
+              lenses: layers.lenses,
+              organization: layers.organization,
+            }
+            : {}),
+        }
+        : {
+          id: a.id,
+          name: pearlName,
+          systemPrompt,
+          ...(layers
+            ? {
+              moves: layers.moves,
+              functions: layers.functions,
+              weights: layers.weights,
+              lenses: layers.lenses,
+              organization: layers.organization,
+            }
+            : {}),
+        };
       const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
         command: "createSemanticOrb",
         args: {
           sceneId: a.sceneId || sceneId,
           placement: a.placement,
           systemPrompt,
-          intent: a.intent || a.systemPromptHint || pearlName,
+          intent: intentText || pearlName,
           material: a.material
             ? { ...a.material, label: a.material.label || pearlName, name: a.material.name || pearlName }
             : a.material,
-          orb: organizedOrb
-            ? {
-              ...organizedOrb,
-              id: organizedOrb.id || a.id,
-              name: sensiblePearlName(
-                organizedOrb.name || a.name || organizedOrb.representation?.label || pearlName,
-              ),
-              systemPrompt: organizedOrb.systemPrompt || systemPrompt,
-            }
-            : a.material
-              ? (a.id ? { id: a.id, name: pearlName, systemPrompt } : { name: pearlName, systemPrompt })
-              : { id: a.id, name: pearlName, systemPrompt },
+          orb: orbPayload,
           activate: a.activate !== false,
         },
       });
+      // Persist structured layers onto the pearl entity store when seeded.
+      try {
+        const createdId = receipt?.id;
+        if (createdId && layers) {
+          const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+          const prior = store.entities?.[createdId] || { id: createdId, name: pearlName };
+          const entity = createPearlEntity({
+            ...prior,
+            systemPrompt,
+            moves: layers.moves,
+            functions: layers.functions,
+            weights: layers.weights,
+            lenses: layers.lenses,
+            revision: (prior.revision || 0) + 1,
+          });
+          localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+            ...store,
+            entities: { ...store.entities, [createdId]: entity },
+            activePearlId: createdId,
+            updatedAt: Date.now(),
+          }));
+        }
+      } catch { /* best-effort */ }
       await tk?.wait?.(280);
       const createdHost = document.querySelector(
         `[data-reef-pearl="${receipt.id}"], [data-semantic-orb-id="${receipt.id}"]`
       ) || mother || reef;
       if (createdHost && tk?.moveTo) await tk.moveTo(createdHost);
+      const layerSummary = layers
+        ? [
+          layers.moves?.length ? `${layers.moves.length} Moves` : null,
+          layers.weights?.length ? `${layers.weights.length} Weights` : null,
+          layers.lenses?.length ? `${layers.lenses.length} Lenses` : null,
+        ].filter(Boolean).join(" · ")
+        : "";
       tk?.caption?.(a.caption || `created “${pearlName}” — wear it when you need it`);
       await tk?.wait?.(320);
       return {
@@ -13161,6 +13229,9 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         object: receipt.object || receipt,
         name: pearlName,
         effects: ["semantic-orb-created"],
+        visibleText: layerSummary
+          ? `Created pearl “${pearlName}” with Moves · Weights · Lenses (${layerSummary}).`
+          : `Created pearl “${pearlName}”. Wear it when you need it.`,
       };
     },
     createRolePearl: async (a, tk, ctx) => {
@@ -13929,16 +14000,19 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       let proposal = run.proposal;
       let aiNote = null;
       // Intelligent rewrite only when signed in; always keep local fallback.
-      // Never fail the turn with Sign-in / unknown-error — offline propose/apply wins.
+      // Create always materializes offline from templates/layers — never block on
+      // needs-credentials or hang the submit-guard waiting on /api/run.
+      const isCreate = run.interpretation?.intent === "create_pearl";
       const canCallAi = hasApiAccessToken();
       if (
         canCallAi
+        && !isCreate
         && proposal?.ok
         && (run.interpretation?.intent === "edit_prompt"
-          || run.interpretation?.intent === "replace_prompt"
-          || run.interpretation?.intent === "create_pearl")
+          || run.interpretation?.intent === "replace_prompt")
       ) {
         try {
+          tk?.caption?.("Proposed layer changes…");
           const req = buildPearlPromptRewriteRequest(observation, run.interpretation);
           const raw = await runClaude(req.prompt, utterance, {
             system: req.system,
@@ -13958,8 +14032,10 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           }
           proposal = proposal || proposePearlPromptLocal(run.interpretation, observation);
         }
-      } else if (!canCallAi && proposal?.needsRicherRewrite) {
+      } else if (!canCallAi && proposal?.needsRicherRewrite && !isCreate) {
         aiNote = "Local merge — richer rewrite when signed in for AI.";
+      } else if (isCreate) {
+        tk?.caption?.("Proposed layer changes…");
       }
       if (!proposal) {
         proposal = proposePearlPromptLocal(run.interpretation, observation);
@@ -14043,6 +14119,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         };
       }
 
+      tk?.caption?.("Applying…");
       const host = pearl
         ? (document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
           || document.querySelector(`[data-reef-pearl="${pearl.id}"]`))
@@ -18636,29 +18713,41 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         } else if (step.args.sceneId == null || step.args.sceneId === "") {
           delete step.args.sceneId;
         }
+        if (step.verb === "interpretPearlPrompt") onPhase?.("proposing");
         const result = await executeCompanionScript([step], {
           title: step.verb === "getPearlSystemPrompt"
             ? "Read system prompt"
             : step.verb === "interpretPearlPrompt"
-              ? "Pearl prompt harness"
+              ? "Pearl Moves · Weights · Lenses"
               : "Edit system prompt",
         });
+        if (step.verb === "interpretPearlPrompt" && result.completed) onPhase?.("applying");
         updateCommand(commandEntry.id, result.completed
           ? {
             status: result.value?.status === "blocked" ? "blocked" : "executed",
             effects: result.effects || result.value?.effects || ["pearl-system-prompt-updated"],
           }
           : { status: "failed", failure: result.errors?.[0] || "System prompt harness failed" });
-        if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+        if (!result.completed) {
+          return {
+            visible: true,
+            text: publicCompanionError(result.errors?.[0]),
+            completed: false,
+            status: "blocked",
+            code: inferExecutionCode(result.errors?.[0]),
+          };
+        }
         const reply = result.value?.visibleText
           || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
-          || "Updated the pearl system prompt.";
+          || "Updated Moves · Weights · Lenses.";
+        const blocked = result.value?.status === "blocked";
         return {
           visible: true,
           text: scrubPearlMetadataFromUserText(reply, { utterance: text }),
-          completed: result.value?.status !== "blocked",
-          status: result.value?.status,
-          code: result.value?.code,
+          completed: !blocked,
+          // Must be an EXECUTION_STATUSES value ("success"|"blocked"|…) — not "completed".
+          status: blocked ? "blocked" : "success",
+          code: result.value?.code || (blocked ? undefined : "ok"),
         };
       }
     }
@@ -18782,7 +18871,13 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       const materialText = String(pearlCreation.args.materialText || "").trim();
       const requestedName = String(pearlCreation.args.name || "").trim();
       const pearlTitle = sensiblePearlName(requestedName || materialText || "");
-      const systemPrompt = defaultSystemPromptFromIntent({
+      const layers = seedPearlLayersFromIntent({
+        name: pearlTitle,
+        intent: pearlCreation.args.intent || text,
+        systemPromptHint: pearlCreation.args.systemPromptHint || materialText || requestedName || pearlTitle,
+        materialText: materialText || requestedName || pearlTitle,
+      });
+      const systemPrompt = layers.systemPrompt || defaultSystemPromptFromIntent({
         name: pearlTitle,
         intent: pearlCreation.args.intent || text,
         materialText: materialText || requestedName || pearlTitle,
@@ -18818,6 +18913,15 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           systemPrompt,
           intent: pearlCreation.args.intent || text,
           activate: true,
+          orb: {
+            name: pearlTitle,
+            systemPrompt,
+            moves: layers.moves,
+            functions: layers.functions,
+            weights: layers.weights,
+            lenses: layers.lenses,
+            organization: layers.organization,
+          },
         },
       };
       const result = await executeCompanionScript([step], { title: "Make a pearl" });
@@ -18825,9 +18929,14 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         ? { status: "executed", effects: result.effects || ["semantic-orb-created"] }
         : { status: "failed", failure: result.errors?.[0] || "Pearl creation failed" });
       if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+      const layerSummary = [
+        layers.moves?.length ? `${layers.moves.length} Moves` : null,
+        layers.weights?.length ? `${layers.weights.length} Weights` : null,
+        layers.lenses?.length ? `${layers.lenses.length} Lenses` : null,
+      ].filter(Boolean).join(" · ");
       return {
         visible: true,
-        text: `Created pearl “${pearlTitle}” with a system prompt. Wear it into the gauntlet when you need it.`,
+        text: `Created pearl “${pearlTitle}” with Moves · Weights · Lenses${layerSummary ? ` (${layerSummary})` : ""}. Wear it into the gauntlet when you need it.`,
         completed: true,
       };
     }

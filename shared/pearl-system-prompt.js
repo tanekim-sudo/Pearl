@@ -63,6 +63,8 @@ export function defaultSystemPromptFromIntent(options = {}) {
   const styleSource = `${hint}\n${intent}`;
   const styleMatch = styleSource.match(
     /\b(?:like|in the style of|inspired by|as if(?:\s+by)?)\s+(.+?)(?:\n|$)/i,
+  ) || styleSource.match(
+    /\breflects?\s+(.+?)(?:['’]s)?\s+(?:style|taste|voice|thought\s+process|lens)\b/i,
   );
   const style = bounded(styleMatch?.[1] || "", 400);
   const lines = [

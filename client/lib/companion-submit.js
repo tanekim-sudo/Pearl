@@ -67,6 +67,20 @@ export function createCompanionSubmitGuard({ dedupeMs = DEFAULT_DEDUPE_MS, now =
     finish(id) {
       if (active?.id === id) active = null;
     },
+    /**
+     * Clear the active lock and release this run's dedupe keys so the user can
+     * immediately retry after a blocker / failure (e.g. needs-credentials hang).
+     */
+    release(id = active?.id) {
+      const run = active?.id === id ? active : null;
+      if (!run) {
+        if (active?.id === id) active = null;
+        return null;
+      }
+      active = null;
+      for (const key of run.consumedKeys || []) consumed.delete(key);
+      return run;
+    },
     resetDedupe() {
       // Kept for API compatibility. Consumed event envelopes must not be
       // cleared by focus/change/confirmation effects.

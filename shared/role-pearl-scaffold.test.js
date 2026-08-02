@@ -19,6 +19,13 @@ test("extracts firm and matches the S32 investor utterance", () => {
   assert.equal(looksLikeInvestorRolePearl("make a pearl about lunch"), false);
   assert.equal(looksLikeInvestorRolePearl("make a pearl about my investor notes"), false);
   assert.equal(looksLikeInvestorRolePearl("make me an investor pearl"), true);
+  assert.equal(
+    looksLikeInvestorRolePearl(
+      "make me a pearl that reflects Warren Buffett's style and taste and lens of investing",
+    ),
+    false,
+    "Buffett style+taste+lens create is harness seed, not investor role scaffold",
+  );
 });
 
 test("deterministic scaffold materializes memo, diligence, investor lens, and moves", () => {
