@@ -5,6 +5,11 @@ export function setApiAccessTokenGetter(getter) {
   accessTokenGetter = getter;
 }
 
+/** True when a bearer token is available for AI routes that require sign-in. */
+export function hasApiAccessToken() {
+  return Boolean(String(accessTokenGetter() || "").trim());
+}
+
 /**
  * @param {Record<string, string>} [extra]
  * @returns {Record<string, string>}

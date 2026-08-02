@@ -52,6 +52,14 @@ test("inferExecutionCode maps empty gauntlet, credentials, handoff, and network"
     inferExecutionCode(new Error("Live model critique needs credentials")),
     EXECUTION_CODES.NEEDS_CREDENTIALS,
   );
+  assert.equal(
+    inferExecutionCode(new Error("Sign in required to use AI features.")),
+    EXECUTION_CODES.NEEDS_CREDENTIALS,
+  );
+  assert.equal(
+    inferExecutionCode(Object.assign(new Error("Sign in required to use AI features."), { code: "needs-credentials" })),
+    EXECUTION_CODES.NEEDS_CREDENTIALS,
+  );
   assert.equal(inferExecutionCode(null, { reason: "missing-extension-id" }), EXECUTION_CODES.MISSING_EXTENSION_ID);
   assert.equal(inferExecutionCode(new Error("fetch failed")), EXECUTION_CODES.NETWORK_ERROR);
   assert.equal(inferExecutionCode(new Error("plan.root.steps[0].query: unsupported")), EXECUTION_CODES.VALIDATION_ERROR);

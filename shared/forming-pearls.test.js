@@ -32,11 +32,12 @@ test("discoverFormingPearls caps at five organized pearls with studio order", ()
   assert.equal(result.version, 1);
   assert.ok(result.pearls.length >= 1);
   assert.ok(result.pearls.length <= MAX_FORMING_PEARLS);
-  assert.deepEqual(result.organizationOrder, ["moves", "functions", "lenses"]);
+  assert.deepEqual(result.organizationOrder, ["moves", "weights", "lenses"]);
   for (const pearl of result.pearls) {
-    assert.deepEqual(pearl.organization.order, ["moves", "functions", "lenses"]);
+    assert.deepEqual(pearl.organization.order, ["moves", "weights", "lenses"]);
     assert.ok(pearl.organization.moves.length >= 1);
     assert.ok(pearl.organization.lenses.length >= 1);
+    assert.ok(Array.isArray(pearl.organization.weights));
     assert.ok(pearl.discovery.signals.length >= 1);
   }
 });
@@ -55,6 +56,7 @@ test("pearlMetadataHarness exposes editable organization and honest bounds", () 
   const harness = pearlMetadataHarness(discovered.pearls[0]);
   assert.equal(harness.organization.order[0], "moves");
   assert.ok(harness.editablePaths.includes("organization.lenses"));
+  assert.ok(harness.editablePaths.includes("organization.weights"));
   assert.equal(harness.bounds.modelRequiredForOpenRewrite, true);
   assert.ok(harness.bounds.deterministicOps.includes("synthesize"));
 });

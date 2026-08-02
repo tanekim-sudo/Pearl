@@ -61,7 +61,8 @@ test("formatPearlCompanionContextForModel is model-facing and complete", () => {
   const text = formatPearlCompanionContextForModel(ctx);
   assert.match(text, /System prompt/);
   assert.match(text, /Be skeptical/);
-  assert.match(text, /Functions:/);
+  assert.match(text, /Moves:/);
+  assert.match(text, /Weights:/);
   assert.match(text, /Lenses/);
   assert.match(text, /Privacy:/);
   assert.match(text, /do not echo ids/i);

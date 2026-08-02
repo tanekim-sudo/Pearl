@@ -6,6 +6,7 @@ import {
   migratePearlSystemPrompt,
   normalizePearlSystemPrompt,
 } from "./pearl-system-prompt.js";
+import { normalizePearlWeights, readPearlWeights } from "./pearl-weights.js";
 
 export const PEARL_ENTITY_VERSION = 1;
 export const PEARL_ENTITY_KINDS = Object.freeze(["primary", "semantic", "result", "automation", "page-canvas", "shared", "studio"]);
@@ -125,6 +126,11 @@ export function createPearlEntity(value = {}) {
     lenses: cognition.layers.filter((entry) => entry.kind === "lens").map(legacyView),
     moves: cognition.layers.filter((entry) => entry.kind === "move").map(legacyView),
     functions: cognition.layers.filter((entry) => entry.kind === "function").map(legacyView),
+    weights: normalizePearlWeights(
+      value.weights
+      || value.organization?.weights
+      || readPearlWeights(value),
+    ),
     cognition,
     automation: clone(value.automation || (kind === "automation" ? {
       contextSchema: value.contextSchema,
@@ -240,6 +246,7 @@ export function checkpointPearlEntity(entityInput, reason, metadata = {}) {
       lenses: clone(entity.lenses),
       moves: clone(entity.moves),
       functions: clone(entity.functions),
+      weights: clone(entity.weights),
       cognition: clone(entity.cognition),
       automation: clone(entity.automation),
       generation: clone(entity.generation),

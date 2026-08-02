@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-02T01:01:58.223Z",
+  "generatedAt": "2026-08-02T01:27:25.674Z",
   "counts": {
     "features": 65,
-    "companion": 415,
+    "companion": 418,
     "extension": 123,
-    "commands": 137
+    "commands": 140
   },
   "features": [
     {
@@ -1304,6 +1304,9 @@
         "getPearlSystemPrompt",
         "setPearlSystemPrompt",
         "editPearlSystemPrompt",
+        "getPearlWeights",
+        "setPearlWeights",
+        "editPearlWeights",
         "reorderPearlFunctionMoves",
         "decomposePearlFunctionMove",
         "setPearlStudioRepresentation",
@@ -1320,6 +1323,9 @@
         "setPearlSystemPrompt",
         "editPearlSystemPrompt",
         "interpretPearlPrompt",
+        "getPearlWeights",
+        "setPearlWeights",
+        "editPearlWeights",
         "reorderPearlFunctionMoves",
         "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
@@ -1341,12 +1347,15 @@
         "shared/pearl-studio.test.js",
         "shared/pearl-system-prompt.test.js",
         "shared/pearl-prompt-harness.test.js",
+        "shared/pearl-weights.test.js",
+        "shared/pearl-layer-instructions.test.js",
         "shared/pearl-companion-context.test.js",
         "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",
         "client/lib/pearl-shell.test.js",
         "client/lib/companion-intent.test.js",
-        "shared/pearl-presentation-clean.test.js"
+        "shared/pearl-presentation-clean.test.js",
+        "shared/execution-result.test.js"
       ]
     },
     {

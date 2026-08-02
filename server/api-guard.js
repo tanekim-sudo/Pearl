@@ -23,7 +23,10 @@ export async function guardAiRequest(req, res) {
   }
   const verified = await verifyRequestUser(req);
   if (!verified) {
-    res.status(401).json({ error: "Sign in required to use AI features." });
+    res.status(401).json({
+      error: "Sign in required to use AI features.",
+      code: "needs-credentials",
+    });
     return false;
   }
   req.lensUser = verified;

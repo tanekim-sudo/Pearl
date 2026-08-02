@@ -70,11 +70,14 @@ export default function PearlStudioView({ localRef }) {
   const [systemPrompt, setSystemPrompt] = useState(() => (
     initial ? readPearlSystemPrompt(initial) : ""
   ));
-  // Prompt is always the hero. When Functions/Moves already exist, surface them
-  // below the prompt (not instead of it) so role pearls stay navigable.
+  // Prompt is the readable summary; Moves · Weights · Lenses open when structure exists.
   const [structureOpen, setStructureOpen] = useState(() => {
     if (!initial) return false;
-    return listPearlFunctionRecords(initial).some((fn) => orderedMovesFromFunction(fn).length >= 1);
+    const hasMoves = listPearlFunctionRecords(initial).some((fn) => orderedMovesFromFunction(fn).length >= 1)
+      || (initial.moves || []).length > 0;
+    const hasWeights = (initial.weights || []).length > 0;
+    const hasLenses = (initial.lenses || []).length > 0;
+    return hasMoves || hasWeights || hasLenses;
   });
   const [notesOpen, setNotesOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
@@ -391,7 +394,7 @@ export default function PearlStudioView({ localRef }) {
         data-testid="studio-structure-toggle"
         onClick={() => setStructureOpen((v) => !v)}
       >
-        {structureOpen ? "Hide structure" : "Structure (advanced)"}
+        {structureOpen ? "Hide structure" : "Moves · Weights · Lenses"}
       </button>
       <button type="button" aria-expanded={notesOpen} onClick={() => setNotesOpen((v) => !v)}>Notes</button>
       <button type="button" aria-expanded={appearanceOpen} onClick={() => setAppearanceOpen((v) => !v)}>Appearance</button>
@@ -418,9 +421,9 @@ export default function PearlStudioView({ localRef }) {
       placeholder="Taste, instructions, and capability this pearl carries — Companion reads this when worn."
     />
     <p className="web-pearl-studio__hint" data-testid="studio-purpose">
-      Companion can edit this from chat.
+      Companion reads this summary; edit Moves · Weights · Lenses below for fidelity.
       {functionSummary.length
-        ? ` Advanced structure: ${functionSummary.map((fn) => fn.name).join(" · ")}.`
+        ? ` Moves groups: ${functionSummary.map((fn) => fn.name).join(" · ")}.`
         : ""}
     </p>
     <p className="web-pearl-studio__status" aria-live="polite">{status}</p>
@@ -444,16 +447,17 @@ export default function PearlStudioView({ localRef }) {
               patch: {
                 moves: next.moves,
                 functions: next.functions,
+                weights: next.weights,
                 lenses: next.lenses,
                 workingSet: next.workingSet,
                 provenance: next.provenance,
               },
             });
-            setStatus(`Organized · ${organized.organization.moves.length}M · ${organized.organization.functions.length}F · ${organized.organization.lenses.length}L`);
+            setStatus(`Organized · ${organized.organization.moves.length}M · ${(organized.organization.weights || []).length}W · ${organized.organization.lenses.length}L`);
           } catch (error) {
             setStatus(error.message);
           }
-        }}>Organize into Moves → Functions → Lenses</button>
+        }}>Organize into Moves → Weights → Lenses</button>
         <PearlFunctionMovesStudio
           entity={entity}
           editorOpen={Boolean(treeEditor)}

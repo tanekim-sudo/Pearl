@@ -6,13 +6,15 @@ import {
 
 const KIND_TO_SECTION = Object.freeze({
   move: "moves",
-  function: "functions",
+  // Function-of-moves storage is presented under Moves (not a middle brain layer).
+  function: "moves",
+  weight: "weights",
   lens: "lenses",
 });
 
 const SECTION_META = Object.freeze({
   moves: { kind: "move", title: "Moves", help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.moves },
-  functions: { kind: "function", title: "Functions", help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.functions },
+  weights: { kind: "weight", title: "Weights", help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.weights },
   lenses: { kind: "lens", title: "Lenses", help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.lenses },
 });
 
@@ -22,7 +24,7 @@ function orderedStudioLayers(cognition) {
   const semantic = (cognition?.semanticOrder || []).map((id) => byId.get(id)).filter(Boolean);
   const remainder = layers.filter((entry) => !semantic.includes(entry));
   const pool = [...semantic, ...remainder];
-  const buckets = { moves: [], functions: [], lenses: [], other: [] };
+  const buckets = { moves: [], weights: [], lenses: [], other: [] };
   for (const layer of pool) {
     const section = KIND_TO_SECTION[layer.kind];
     if (section) buckets[section].push(layer);
@@ -94,12 +96,13 @@ export default function CognitiveLayerStudio({ cognition, onCommand }) {
       @media(prefers-reduced-motion:reduce){.cognitive-layer-studio *{transition:none!important;animation:none!important}}
     `}</style>
     <div className="cognitive-layer-guide" aria-label="Studio section order">
-      <b>Moves → Functions → Lenses</b>
-      <span>Moves transform. Functions compose. Lenses hold context and understanding.</span>
+      <b>Moves → Weights → Lenses</b>
+      <span>Moves = how work is done. Weights = what is valued. Lenses = how to see.</span>
     </div>
     {PEARL_STUDIO_COGNITIVE_SECTION_ORDER.map((sectionId) => {
       const meta = SECTION_META[sectionId];
-      const layers = buckets[sectionId];
+      if (!meta) return null;
+      const layers = buckets[sectionId] || [];
       if (!layers.length) return null;
       return <div className="cognitive-layer-section" key={sectionId} data-studio-section={sectionId}>
         <header>

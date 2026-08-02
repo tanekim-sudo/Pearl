@@ -152,7 +152,7 @@ export function inferExecutionCode(messageOrError, hint = {}) {
     return EXECUTION_CODES.NO_MATERIAL;
   }
   if (
-    /needs credentials|model_gateway_unconfigured|gateway.?unconfigured|live model|requiresmodel|provider.*not configured|api key/i.test(blob)
+    /needs credentials|needs-credentials|sign in required|auth_required|auth_expired|model_gateway_unconfigured|gateway.?unconfigured|live model|requiresmodel|provider.*not configured|api key/i.test(blob)
   ) {
     return EXECUTION_CODES.NEEDS_CREDENTIALS;
   }

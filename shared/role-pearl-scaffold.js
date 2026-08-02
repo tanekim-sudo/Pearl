@@ -5,6 +5,7 @@
  */
 
 import { PEARL_STUDIO_COGNITIVE_SECTION_ORDER } from "./pearl-studio.js";
+import { seedWeightsFromIntent } from "./pearl-weights.js";
 
 export const ROLE_PEARL_SCAFFOLD_VERSION = 1;
 
@@ -192,8 +193,11 @@ export function buildInvestorRolePearlScaffold(options = {}) {
     organization: {
       order: [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
       moves,
-      functions,
+      weights: seedWeightsFromIntent(
+        `${utterance || ""}\ninvestor memo diligence risk evidence over narrative`,
+      ),
       lenses,
+      functions,
     },
     pearl: {
       name: pearlName,
@@ -226,6 +230,9 @@ export function buildInvestorRolePearlScaffold(options = {}) {
       },
       moves,
       functions,
+      weights: seedWeightsFromIntent(
+        `${utterance || ""}\ninvestor memo diligence risk evidence over narrative`,
+      ),
       lenses,
       provenance: {
         rolePearlScaffold: {

@@ -1,9 +1,11 @@
 /**
- * Organize a pearl's multimodal dump into Moves → Functions → Lenses.
+ * Organize a pearl's multimodal dump into Moves → Weights → Lenses.
  * Organize-only: preserve verbatim evidence, remove redundant structure, do not summarize away richness.
+ * Ordered-move groups may still be stored as functions under the hood; Companion presents them as Moves.
  */
 
 import { PEARL_STUDIO_COGNITIVE_SECTION_ORDER } from "./pearl-studio.js";
+import { normalizePearlWeights, readPearlWeights, seedWeightsFromIntent } from "./pearl-weights.js";
 
 export const PEARL_ORGANIZE_VERSION = 1;
 
@@ -190,8 +192,9 @@ export function organizePearlContents(pearl = {}, options = {}) {
       organization: {
         order: [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
         moves: [],
-        functions: [],
+        weights: [],
         lenses: [],
+        functions: [],
       },
       preservedEvidence: [],
       removedRedundantCount: 0,
@@ -309,15 +312,23 @@ export function organizePearlContents(pearl = {}, options = {}) {
     (beforeMoveCount - moves.length) + (beforeLensCount - lenses.length),
   );
 
+  const dumpText = dumpUnits.map((unit) => unit.text).join("\n");
+  const weights = normalizePearlWeights([
+    ...readPearlWeights(pearl),
+    ...seedWeightsFromIntent(`${dumpText}\n${options.extraText || ""}`),
+  ]);
+
   return {
     version: PEARL_ORGANIZE_VERSION,
     ok: true,
-    reason: `Organized into ${moves.length} Moves · ${functions.length} Functions · ${lenses.length} Lenses. Preserved ${preservedEvidence.length} evidence unit${preservedEvidence.length === 1 ? "" : "s"}; removed ${removedRedundantCount} redundant structure.`,
+    reason: `Organized into ${moves.length} Moves · ${weights.length} Weights · ${lenses.length} Lenses. Preserved ${preservedEvidence.length} evidence unit${preservedEvidence.length === 1 ? "" : "s"}; removed ${removedRedundantCount} redundant structure.`,
     organization: {
       order: [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
       moves,
-      functions,
+      weights,
       lenses,
+      // Legacy ordered-move groups for LensTreeEditor — presented as Moves.
+      functions,
     },
     preservedEvidence,
     removedRedundantCount,
@@ -337,6 +348,7 @@ export function applyOrganizeToPearl(pearl, organized) {
     ...pearl,
     moves: organized.organization.moves,
     functions: organized.organization.functions,
+    weights: organized.organization.weights || [],
     lenses: organized.organization.lenses,
     workingSet: {
       ...(pearl.workingSet || {}),
@@ -355,7 +367,7 @@ export function applyOrganizeToPearl(pearl, organized) {
         at: new Date().toISOString(),
         removedRedundantCount: organized.removedRedundantCount,
         evidenceCount: organized.preservedEvidence.length,
-        note: "Organize-only: richness preserved as evidence; structure deduped into Moves → Functions → Lenses.",
+        note: "Organize-only: richness preserved as evidence; structure deduped into Moves → Weights → Lenses.",
       },
     },
   };

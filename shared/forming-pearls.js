@@ -6,6 +6,7 @@
 
 import { parseTranscript } from "./transcript-learning.js";
 import { PEARL_STUDIO_COGNITIVE_SECTION_ORDER } from "./pearl-studio.js";
+import { seedWeightsFromIntent } from "./pearl-weights.js";
 
 export const FORMING_PEARLS_VERSION = 1;
 export const MAX_FORMING_PEARLS = 5;
@@ -240,13 +241,16 @@ function organizePearl(cluster, index) {
     organization: {
       order: [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
       moves,
-      functions,
+      weights: seedWeightsFromIntent(
+        [name, ...evidence.map((entry) => entry.text)].join("\n"),
+      ),
       lenses,
+      functions,
     },
     pearl: {
       name,
       representation: {
-        kind: functions.length ? "function" : "grouped-context",
+        kind: functions.length || moves.length ? "process" : "grouped-context",
         label: name,
         discovery: "forming-pearls",
       },
@@ -256,6 +260,9 @@ function organizePearl(cluster, index) {
       },
       moves,
       functions,
+      weights: seedWeightsFromIntent(
+        [name, ...evidence.map((entry) => entry.text)].join("\n"),
+      ),
       lenses,
       provenance: {
         formingPearls: {
@@ -333,6 +340,7 @@ export function pearlMetadataHarness(pearl = {}) {
   const organization = pearl.organization || {
     order: [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
     moves: pearl.moves || [],
+    weights: pearl.weights || [],
     functions: pearl.functions || [],
     lenses: pearl.lenses || pearl.workingSet?.lenses || [],
   };
@@ -346,10 +354,13 @@ export function pearlMetadataHarness(pearl = {}) {
       representationKind: pearl.representation?.kind || pearl.pearl?.representation?.kind || "empty",
     },
     organization: {
-      order: organization.order || [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
+      order: organization.order?.includes?.("weights")
+        ? organization.order
+        : [...PEARL_STUDIO_COGNITIVE_SECTION_ORDER],
       moves: organization.moves || [],
-      functions: organization.functions || [],
+      weights: organization.weights || pearl.weights || [],
       lenses: organization.lenses || [],
+      functions: organization.functions || [],
     },
     workingSet: {
       contextCount: (pearl.workingSet?.context || pearl.pearl?.workingSet?.context || []).length,
@@ -360,7 +371,7 @@ export function pearlMetadataHarness(pearl = {}) {
       "identity.name",
       "identity.description",
       "organization.moves",
-      "organization.functions",
+      "organization.weights",
       "organization.lenses",
       "workingSet.context",
       "provenance.notes",

@@ -34,6 +34,12 @@ import {
   readPearlSystemPrompt,
 } from "./pearl-system-prompt.js";
 import { applyOrganizeToPearl, organizePearlContents } from "./pearl-organize.js";
+import {
+  editPearlWeights,
+  normalizePearlWeights,
+  readPearlWeights,
+  seedWeightsFromIntent,
+} from "./pearl-weights.js";
 import { materializeCounterPearl } from "./pearl-counter.js";
 import { buildGauntletEvaluationQuery } from "./pearl-gauntlet-eval.js";
 import { buildInvestorRolePearlScaffold } from "./role-pearl-scaffold.js";
@@ -369,7 +375,7 @@ export const DOMAIN_COMMANDS = Object.freeze({
       );
       let orb;
       if (hasOrganizedOrb) {
-        // Prefer explicit orb payload (forming pearls / encode) so Moves→Functions→Lenses survive.
+        // Prefer explicit orb payload (forming pearls / encode) so Moves→Weights→Lenses survive.
         orb = createSemanticOrb({
           ...(args.orb || {}),
           id,
@@ -641,6 +647,147 @@ export const DOMAIN_COMMANDS = Object.freeze({
         systemPrompt: text,
         mode: args.mode || "replace",
       }, context);
+    },
+  },
+  getPearlWeights: {
+    schema: { id: "string?", name: "string?", pearlId: "string?" },
+    preconditions: ["pearl exists"],
+    risk: "low", confirmation: "none", undo: "none",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "none",
+    observableEffects: ["pearl-weights-read"],
+    execute(state, args) {
+      const pearlId = args.pearlId || args.id;
+      const orb = (state.semanticOrbs || []).find((entry) => entry.id === pearlId)
+        || (args.name
+          ? (state.semanticOrbs || []).find((entry) => {
+            const needle = String(args.name).trim().toLowerCase();
+            const name = String(entry.name || "").toLowerCase();
+            return name === needle || name.includes(needle);
+          })
+          : null)
+        || (state.semanticOrbs || []).find((entry) => entry.id === state.activeSemanticOrbId)
+        || null;
+      const entity = state.pearlEntities?.[orb?.id || pearlId] || null;
+      const source = entity || orb;
+      if (!source) throw new Error("pearl not found");
+      const weights = readPearlWeights(source);
+      return {
+        state,
+        result: {
+          type: "pearl-weights",
+          id: source.id || orb?.id,
+          object: {
+            id: source.id || orb?.id,
+            name: source.name || source.identity?.name || "",
+            weights,
+          },
+          effects: ["pearl-weights-read"],
+        },
+      };
+    },
+  },
+  setPearlWeights: {
+    schema: {
+      id: "string?",
+      name: "string?",
+      pearlId: "string?",
+      weights: "array?",
+      mode: "replace|set|append?",
+    },
+    preconditions: ["pearl exists", "weights are explicit"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio"],
+    persistenceEffect: "pearlEntities.v1.weights",
+    observableEffects: ["pearl-weights-updated", "pearl-entity-edited"],
+    execute(state, args, context) {
+      return DOMAIN_COMMANDS.editPearlWeights.execute(state, {
+        ...args,
+        mode: args.mode || "replace",
+        weights: args.weights,
+      }, context);
+    },
+  },
+  editPearlWeights: {
+    schema: {
+      id: "string?",
+      name: "string?",
+      pearlId: "string?",
+      mode: "replace|set|append|update|remove|clear?",
+      weights: "array?",
+      weight: "object?",
+      text: "string?",
+      note: "string?",
+      priority: "number?",
+      value: "number?",
+      nextName: "string?",
+      expectedRevision: "number?",
+      idempotencyKey: "string?",
+    },
+    preconditions: ["pearl exists"],
+    risk: "low", confirmation: "none", undo: "undo-pearl-entity-edit",
+    surfaces: ["web", "companion", "extension", "studio", "director"],
+    persistenceEffect: "pearlEntities.v1.weights",
+    observableEffects: ["pearl-weights-updated", "pearl-entity-edited"],
+    execute(state, args) {
+      const pearlId = args.pearlId || args.id;
+      const orb = (state.semanticOrbs || []).find((entry) => entry.id === pearlId)
+        || (args.name
+          ? (state.semanticOrbs || []).find((entry) => {
+            const needle = String(args.name).trim().toLowerCase();
+            const name = String(entry.name || "").toLowerCase();
+            return name === needle || name.includes(needle);
+          })
+          : null)
+        || (state.semanticOrbs || []).find((entry) => entry.id === state.activeSemanticOrbId)
+        || null;
+      const resolvedId = orb?.id || pearlId;
+      if (!resolvedId) throw new Error("pearl not found");
+      const entity = state.pearlEntities?.[resolvedId]
+        || (orb ? createPearlEntity({ ...orb, id: resolvedId }) : null);
+      if (!entity) throw new Error("pearl not found");
+      const prior = readPearlWeights(entity);
+      const edited = args.text && !args.weights && !args.weight && !args.name
+        ? editPearlWeights(prior, {
+          mode: args.mode || "append",
+          weights: seedWeightsFromIntent(args.text),
+        })
+        : editPearlWeights(prior, args);
+      if (!edited.ok) throw new Error(edited.reason || "Could not edit weights");
+      const weights = normalizePearlWeights(edited.weights);
+      const changed = applyPearlEntityPatch(entity, { weights }, {
+        expectedRevision: args.expectedRevision ?? entity.revision,
+        idempotencyKey: args.idempotencyKey || `weights:${resolvedId}:${weights.length}`,
+        reason: "edit-pearl-weights",
+      });
+      let nextState = {
+        ...state,
+        pearlEntities: {
+          ...(state.pearlEntities || {}),
+          [resolvedId]: changed.entity,
+        },
+      };
+      if (orb) {
+        nextState = updateSemanticOrb(nextState, resolvedId, (current) => ({
+          ...current,
+          weights,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
+      return {
+        state: nextState,
+        result: {
+          type: "pearl-weights",
+          id: resolvedId,
+          object: {
+            id: resolvedId,
+            name: entity.identity?.name || orb?.name || "",
+            weights,
+            mode: edited.mode,
+          },
+          effects: ["pearl-weights-updated", "pearl-entity-edited"],
+        },
+      };
     },
   },
   patchSemanticOrbAesthetic: {

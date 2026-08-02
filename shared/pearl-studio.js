@@ -4,12 +4,14 @@ import { listPearlVersions } from "./pearl-version-history.js";
 export const PEARL_STUDIO_VERSION = 1;
 export const PEARL_STUDIO_REPRESENTATIONS = Object.freeze(["document", "gallery", "spatial", "lineage", "branch-comparison", "process"]);
 
-/** Load-bearing Studio / library order: Moves → Functions → Lenses. */
-export const PEARL_STUDIO_COGNITIVE_SECTION_ORDER = Object.freeze(["moves", "functions", "lenses"]);
+/** Load-bearing Studio / library order: Moves → Weights → Lenses. */
+export const PEARL_STUDIO_COGNITIVE_SECTION_ORDER = Object.freeze(["moves", "weights", "lenses"]);
 export const PEARL_STUDIO_COGNITIVE_SECTION_HELP = Object.freeze({
-  moves: "Individual cognitive transformations this pearl can execute or keep in inventory. Moves may compose other moves.",
-  functions: "Composition and ordering of moves (and other functions). Functions may compose functions and moves.",
-  lenses: "Contextual awareness of the pearl and its understanding of the user.",
+  moves: "How work is done — ordered steps and procedures. (Function-of-moves storage is presented here as Moves.)",
+  weights: "What is valued — preferences, judgements, tradeoffs, and taste priorities.",
+  lenses: "Perspectives and contextual frames for seeing the user and the problem space.",
+  // Legacy help retained for any remaining Function editor chrome (not a load-bearing brain layer).
+  functions: "Ordered Moves editor storage — present to users as Moves, not as a middle brain layer.",
 });
 
 const clone = (value) => value == null ? value : structuredClone(value);
@@ -37,7 +39,9 @@ export function pearlStudioRepresentations(entityInput) {
   if (entity.cognition.layers.length || entity.canvas?.artifacts?.length || hasImages(entity) && hasText(entity)) available.push("spatial");
   if (entity.lineage.length || entity.history.events.length || Object.keys(entity.provenance || {}).length) available.push("lineage");
   if (entity.generation.candidates.length > 1 || entity.results.length > 1) available.push("branch-comparison");
-  if (entity.functions.length || entity.moves.length || entity.automation) available.push("process");
+  if (entity.functions.length || entity.moves.length || entity.weights?.length || entity.automation) {
+    available.push("process");
+  }
   if (!available.length) available.push("document");
   return available;
 }
@@ -60,22 +64,26 @@ export function createPearlStudioViewModel(entityInput, options = {}) {
   const moveLayers = cognitionLayersOfKind(entity, "move");
   const functionLayers = cognitionLayersOfKind(entity, "function");
   const lensLayers = cognitionLayersOfKind(entity, "lens");
+  const weights = Array.isArray(entity.weights) ? entity.weights : [];
   const otherLayers = (entity.cognition.layers || []).filter((entry) => !["move", "function", "lens"].includes(entry.kind));
   const sections = [
     studioSection("identity", "Identity", entity.identity),
     entity.representation.material && studioSection("material", "Material", entity.representation.material),
     entity.workingSet.context.length && studioSection("context", "Context", entity.workingSet.context),
-    // Load-bearing order: Moves → Functions → Lenses
-    (entity.moves.length || moveLayers.length) && studioSection("moves", "Moves", {
-      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.moves,
-      items: entity.moves,
-      layers: moveLayers,
-    }),
-    (entity.functions.length || functionLayers.length || entity.automation) && studioSection("functions", "Functions", {
-      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.functions,
-      items: entity.functions,
-      layers: functionLayers,
-      automation: entity.automation || null,
+    // Load-bearing order: Moves → Weights → Lenses
+    (entity.moves.length || moveLayers.length || functionLayers.length || entity.functions.length || entity.automation)
+      && studioSection("moves", "Moves", {
+        help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.moves,
+        items: entity.moves,
+        layers: moveLayers,
+        // Ordered-move groups (legacy function storage) — still edited as Moves.
+        orderedGroups: entity.functions,
+        functionLayers,
+        automation: entity.automation || null,
+      }),
+    studioSection("weights", "Weights", {
+      help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.weights,
+      items: weights,
     }),
     (entity.lenses.length || lensLayers.length) && studioSection("lenses", "Lenses", {
       help: PEARL_STUDIO_COGNITIVE_SECTION_HELP.lenses,
@@ -147,10 +155,12 @@ function sourceSections(source = {}, extras = {}) {
     context: clone(workingSet.context || source.context || []),
     moves: clone(source.moves || source.process?.moves || []),
     functions: clone(source.functions || source.process?.functions || []),
+    weights: clone(source.weights || source.organization?.weights || source.process?.weights || []),
     lenses: clone(workingSet.lenses || source.lenses || []),
     process: clone(source.process || {
       moves: source.moves || [],
       functions: source.functions || [],
+      weights: source.weights || [],
       branches: workingSet.branches || source.branches || [],
       outputSpec: source.outputSpec || null,
     }),

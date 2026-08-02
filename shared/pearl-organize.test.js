@@ -27,7 +27,7 @@ test("organizePearlContents maps multimodal dump into Moves → Functions → Le
   };
   const organized = organizePearlContents(pearl);
   assert.equal(organized.ok, true);
-  assert.deepEqual(organized.organization.order, ["moves", "functions", "lenses"]);
+  assert.deepEqual(organized.organization.order, ["moves", "weights", "lenses"]);
   assert.ok(organized.organization.moves.length >= 2);
   assert.ok(organized.organization.lenses.length >= 1);
   assert.equal(organized.preservedEvidence.length, 4, "all dump units preserved including near-duplicate");

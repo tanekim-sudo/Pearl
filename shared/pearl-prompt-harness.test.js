@@ -50,17 +50,21 @@ test("interpret soft adapt on active pearl — any natural language", () => {
   assert.equal(street.intent, "edit_prompt");
 });
 
-test("offline propose/apply create seeds non-empty systemPrompt", () => {
+test("offline propose/apply create seeds non-empty systemPrompt and M/W/L layers", () => {
   const run = runPearlPromptHarnessOffline({
-    utterance: "build a pearl for skeptical investor memos",
+    utterance: "make me a poetry pearl like sylvia plaths thought process",
   });
   assert.equal(run.handled, true);
   assert.equal(run.proposal.ok, true);
   assert.ok(run.proposal.systemPrompt.length > 20);
-  assert.match(run.proposal.systemPrompt, /skeptical|investor|memo/i);
+  assert.match(run.proposal.systemPrompt, /poetry|plath|Moves|Weights|Lenses/i);
+  assert.ok(run.proposal.layers?.moves?.length >= 1);
+  assert.ok(run.proposal.layers?.weights?.length >= 1);
+  assert.ok(run.proposal.layers?.lenses?.length >= 1);
   assert.equal(run.apply.ok, true);
   assert.equal(run.apply.command.verb, "createSemanticOrb");
   assert.ok(run.apply.command.args.systemPrompt);
+  assert.ok(run.apply.command.args.orb?.weights?.length >= 1);
 });
 
 test("offline propose/apply edit merges instruction into prompt", () => {

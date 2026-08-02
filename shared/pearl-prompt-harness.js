@@ -23,6 +23,12 @@ import {
   readPearlSystemPrompt,
 } from "./pearl-system-prompt.js";
 import { EXECUTION_CODES } from "./execution-result.js";
+import {
+  buildPearlLayerPack,
+  formatPearlLayerInstructionsForCompanion,
+  seedPearlLayersFromIntent,
+} from "./pearl-layer-instructions.js";
+import { readPearlWeights } from "./pearl-weights.js";
 
 export const PEARL_PROMPT_HARNESS_VERSION = 1;
 
@@ -74,16 +80,28 @@ export function observePearlPromptContext(pearl, appState = {}) {
   const companionContext = pearl
     ? buildPearlCompanionContext(pearl, appState)
     : null;
+  const layers = pearl ? buildPearlLayerPack(pearl) : null;
+  const layerInstructions = formatPearlLayerInstructionsForCompanion({
+    pearl: pearl || null,
+    includeExamples: false,
+  });
   return {
     version: PEARL_PROMPT_HARNESS_VERSION,
     stage: "working",
     pearlId: companionContext?.pearlId || null,
     name: companionContext?.name || null,
     systemPrompt: companionContext?.systemPrompt || (pearl ? readPearlSystemPrompt(pearl) : ""),
+    weights: pearl ? readPearlWeights(pearl) : [],
+    layers,
+    layerInstructions,
     companionContext,
-    modelContext: companionContext
-      ? formatPearlCompanionContextForModel(companionContext, { promptLimit: 2_400 })
-      : "No active pearl.",
+    modelContext: [
+      companionContext
+        ? formatPearlCompanionContextForModel(companionContext, { promptLimit: 2_400 })
+        : "No active pearl.",
+      "",
+      layerInstructions,
+    ].join("\n"),
   };
 }
 
@@ -262,22 +280,22 @@ export function proposePearlPromptLocal(interpretation, observation = {}) {
   }
 
   if (intent === "create_pearl") {
-    const systemPrompt = defaultSystemPromptFromIntent({
-      name: name || utterance.slice(0, 80),
-      intent: utterance,
-      materialText: utterance,
-      topic: name || utterance.slice(0, 80),
-      systemPromptHint: interpretation?.hint || utterance,
-    });
     const title = name || titleFromUtterance(utterance) || "New pearl";
+    const layers = seedPearlLayersFromIntent({
+      name: title,
+      intent: utterance,
+      systemPromptHint: interpretation?.hint || utterance,
+      materialText: utterance,
+    });
     return {
       ok: true,
       source: "local",
       intent,
       title,
-      systemPrompt,
-      summary: `Seed system prompt for “${title}” from your request.`,
-      rationale: "Offline seed from intent (richer rewrite when AI is connected).",
+      systemPrompt: layers.systemPrompt,
+      layers,
+      summary: `Seed Moves · Weights · Lenses for “${title}” from your request.`,
+      rationale: "Offline layer seed (richer rewrite when AI is connected).",
       mode: "seed",
       needsRicherRewrite: true,
     };
@@ -415,12 +433,14 @@ export function mergeInstructionIntoPrompt(prior, instruction, options = {}) {
 export function buildPearlPromptRewriteRequest(observation, interpretation) {
   const system = [
     "You rewrite Pearl system prompts with full intelligence.",
+    "Canonical fidelity is Moves (how work is done) + Weights (what is valued) + Lenses (how to see). systemPrompt is the readable projection of those layers — not a flat-only brain.",
     "Preserve the user's taste and prior constraints; merge edits rather than discarding history unless they ask to replace everything.",
     "Never expose internal ids, hashes, storage keys, revisions, or raw metadata in title/summary/rationale/systemPrompt.",
     "Return only structured JSON matching the schema.",
-    "systemPrompt must be a complete, usable prompt (not a diff patch).",
+    "systemPrompt must be a complete, usable prompt (not a diff patch) that summarizes Moves, Weights, and Lenses when relevant.",
     "summary: one short human sentence of what changed (for Companion chat).",
     "rationale: one short internal why (also user-safe).",
+    observation.layerInstructions || "",
     observation.modelContext || "",
   ].filter(Boolean).join("\n\n");
 
@@ -514,6 +534,11 @@ export function applyPearlPromptProposal(proposal, options = {}) {
     };
   }
   if (proposal.intent === "create_pearl") {
+    const layers = proposal.layers || seedPearlLayersFromIntent({
+      name: proposal.title || "New pearl",
+      intent: options.utterance || proposal.summary || "",
+      systemPrompt: proposal.systemPrompt,
+    });
     return {
       ok: true,
       command: {
@@ -521,9 +546,18 @@ export function applyPearlPromptProposal(proposal, options = {}) {
         args: {
           ...(options.sceneId ? { sceneId: options.sceneId } : {}),
           name: proposal.title || "New pearl",
-          systemPrompt: proposal.systemPrompt,
+          systemPrompt: layers.systemPrompt || proposal.systemPrompt,
           intent: options.utterance || proposal.summary || "",
           activate: options.activate !== false,
+          orb: {
+            name: proposal.title || "New pearl",
+            systemPrompt: layers.systemPrompt || proposal.systemPrompt,
+            moves: layers.moves,
+            functions: layers.functions,
+            weights: layers.weights,
+            lenses: layers.lenses,
+            organization: layers.organization,
+          },
         },
       },
     };

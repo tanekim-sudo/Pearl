@@ -442,6 +442,67 @@ export function routePearlPromptHarness(text, options = {}) {
 }
 
 /**
+ * Deterministic Weights-layer edits (preferences / judgements / tradeoffs).
+ * Examples: "I care more about honesty than polish", "weight risk over upside".
+ */
+export function parsePearlWeightsCommand(text) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+
+  const show = /^(?:what(?:'s| are)|show|list|get|read)\s+(?:me\s+)?(?:(?:this|that|the)\s+)?(?:pearl(?:'s)?\s+)?weights?\b/i.test(value)
+    || /^(?:which|what)\s+factors?\s+(?:does|do)\s+(?:this|that|the)\s+pearl\s+value\b/i.test(value);
+  if (show) {
+    return { verb: "getPearlWeights", args: {} };
+  }
+
+  const careMore = value.match(
+    /^(?:i\s+)?(?:care|value|prefer)\s+(?:more\s+)?(?:about\s+)?(.+?)\s+(?:than|over)\s+(.+)$/i,
+  );
+  if (careMore?.[1] && careMore?.[2]) {
+    return {
+      verb: "editPearlWeights",
+      args: {
+        mode: "append",
+        text: value,
+        weights: [
+          { name: careMore[1].trim(), priority: 0.85, note: `Valued over ${careMore[2].trim()}` },
+          { name: careMore[2].trim(), priority: 0.45, note: `Lower than ${careMore[1].trim()}` },
+        ],
+      },
+    };
+  }
+
+  const weightOver = value.match(
+    /^(?:weight|prioriti[sz]e)\s+(.+?)\s+over\s+(.+)$/i,
+  );
+  if (weightOver?.[1] && weightOver?.[2]) {
+    return {
+      verb: "editPearlWeights",
+      args: {
+        mode: "append",
+        text: value,
+        weights: [
+          { name: weightOver[1].trim(), priority: 0.85, note: `Weighted over ${weightOver[2].trim()}` },
+          { name: weightOver[2].trim(), priority: 0.4, note: `Secondary to ${weightOver[1].trim()}` },
+        ],
+      },
+    };
+  }
+
+  if (
+    /\b(?:weights?|prefer|priority|trade.?off)\b/i.test(value)
+    && /\b(?:set|update|change|add|append|edit)\b/i.test(value)
+  ) {
+    return {
+      verb: "editPearlWeights",
+      args: { mode: "append", text: value },
+    };
+  }
+
+  return null;
+}
+
+/**
  * Deterministic edit / rename intents for pearls (no planner/credentials required).
  * Title edits → renameSemanticOrb. Body/notes edits → addSemanticOrbContext.
  * System-prompt edits are handled by parsePearlSystemPromptCommand (call first).
@@ -1368,6 +1429,7 @@ function wornPearlContextBlock(wornPearlPack) {
     purpose: wornPearlPack.purpose,
     functions: wornPearlPack.functions,
     moves: wornPearlPack.moves,
+    weights: wornPearlPack.weights,
     lenses: wornPearlPack.lenses,
     workingSet: { context: wornPearlPack.context, lenses: wornPearlPack.lenses },
     privacy: wornPearlPack.privacy,
@@ -1505,7 +1567,7 @@ Rules:
 - Dependency steps must be sequential. A create/use/compose plan may not put mutations in parallel.
 - Observe before acting when references are ambiguous. Use stable IDs from the snapshot.
 - The retrieved list is the only executable tool subset for this planning pass. If it lacks a prerequisite, return a precise blocker so the host can retrieve again; never invent a verb.
-- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, createCounterPearl for counter/opposition/foil intents, organizePearl for organize-dump / Moves→Functions→Lenses intents, reorderPearlFunctionMoves / decomposePearlFunctionMove for rearranging or breaking apart Moves inside a Function (canonical reorderStep / LensTreeEditor bridge — same domain handlers as Studio), mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, evaluateWithGauntlet for deck/page evaluation through worn lenses, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
+- Pearl remix family: prefer synthesizeSemanticOrbs for mutual notice / exchange-insights / breed / apply-onto intents, createCounterPearl for counter/opposition/foil intents, organizePearl for organize-dump / Moves→Weights→Lenses intents, editPearlWeights for preference/tradeoff language, reorderPearlFunctionMoves / decomposePearlFunctionMove for rearranging or breaking apart Moves (canonical reorderStep / LensTreeEditor bridge — same domain handlers as Studio; present as Moves not a Functions brain), mergeSemanticOrbs / composeSemanticOrbs for recombination, createSemanticOrb / interpretPearlPrompt / editPearlOutput / encodeConversationAsPearl / discoverFormingPearls for create/import, evaluateWithGauntlet for deck/page evaluation through worn lenses, inspectPearlMetadata + applyPearlCognitiveEdit / editPearlEntity for metadata harness edits, rearrangeGauntlet / wearPearl for working-memory layout. Freeform pearl ops must resolve to these validated verbs (or a precise blocker); open-ended model rewriting of pearl content needs credentials and must not fake mutation. Staged extension stacks never auto-run — pressExternalGo / Enter / voice “go” fires through the current gauntlet working-memory stack.
 - Compose generic transformMaterial, arrangeItems, groupItems, linkItems, and annotateFeedback capabilities instead of prompt-specific tricks.
 - Evaluation/reflection must end in an artifact or a real revision. Research must end in a cited visible artifact and may only be used when requested or materially authorized.
 - Follow each capability's generated confirmation annotation. Handler-confirmed actions stage the app's normal counted confirmation and MUST omit confirmed. Framework-confirmed actions use top-level action.confirmed only after explicit approval. Never place confirmed inside args.

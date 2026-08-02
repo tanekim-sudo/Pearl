@@ -5,6 +5,8 @@
  */
 
 import { normalizePearlSystemPrompt, readPearlSystemPrompt } from "./pearl-system-prompt.js";
+import { readPearlWeights } from "./pearl-weights.js";
+import { formatPearlLayerInstructionsForCompanion } from "./pearl-layer-instructions.js";
 
 export const PEARL_COMPANION_CONTEXT_VERSION = 1;
 
@@ -116,6 +118,11 @@ export function buildPearlCompanionContext(pearl, appState = {}) {
   );
   const functions = summarizeFunctions(pearl);
   const moves = summarizeMoves(pearl);
+  const weights = readPearlWeights(pearl).map((entry) => ({
+    name: bounded(entry.name, 80),
+    priority: entry.priority,
+    note: bounded(entry.note || "", 180),
+  }));
   const lenses = summarizeLenses(pearl);
   const context = summarizeContext(pearl);
   const privacy = privacySummary(pearl);
@@ -156,6 +163,7 @@ export function buildPearlCompanionContext(pearl, appState = {}) {
     taste: taste || null,
     functions,
     moves,
+    weights,
     lenses,
     context,
     privacy,
@@ -173,8 +181,10 @@ export function buildPearlCompanionContext(pearl, appState = {}) {
       [
         name,
         systemPrompt ? "system prompt set" : "no system prompt",
-        functions.length ? `${functions.length} functions` : null,
-        moves.length ? `${moves.length} moves` : null,
+        moves.length || functions.length
+          ? `${moves.length || functions.reduce((sum, fn) => sum + (fn.moveCount || 0), 0)} moves`
+          : null,
+        weights.length ? `${weights.length} weights` : null,
         lenses.length ? `${lenses.length} lenses` : null,
         context.length ? `${context.length} context` : null,
         gauntlet.worn ? `gauntlet ${gauntlet.filled}/${gauntlet.capacity}` : "on shelf",
@@ -202,15 +212,18 @@ export function formatPearlCompanionContextForModel(context, options = {}) {
     context.purpose ? `Purpose: ${soft(context.purpose, 600)}` : null,
     `System prompt (${context.systemPrompt ? "present" : "empty"}):`,
     context.systemPrompt ? soft(context.systemPrompt, promptLimit) : "(empty — ask the user to set one, or infer carefully)",
-    context.functions?.length
-      ? `Functions: ${context.functions.map((fn) => `${fn.name}${fn.moveCount ? ` (${fn.moveCount} moves)` : ""}`).join("; ")}`
-      : "Functions: none",
-    context.moves?.length
-      ? `Moves: ${context.moves.map((move) => move.name).join("; ")}`
+    context.moves?.length || context.functions?.length
+      ? `Moves: ${[
+        ...(context.moves || []).map((move) => move.name),
+        ...(context.functions || []).map((fn) => `${fn.name}${fn.moveCount ? ` (${fn.moveCount} steps)` : ""}`),
+      ].filter(Boolean).join("; ")}`
       : "Moves: none listed",
+    context.weights?.length
+      ? `Weights: ${context.weights.map((weight) => `${weight.name}${Number.isFinite(weight.priority) ? ` (${Math.round(weight.priority * 100)}%)` : ""}`).join("; ")}`
+      : "Weights: none",
     context.lenses?.length
-      ? `Lenses / taste: ${context.lenses.map((lens) => lens.name).join("; ")}`
-      : "Lenses / taste: (from system prompt)",
+      ? `Lenses: ${context.lenses.map((lens) => lens.name).join("; ")}`
+      : "Lenses: (from system prompt)",
     context.context?.length
       ? `Working context: ${context.context.map((entry) => entry.label).slice(0, 12).join("; ")}`
       : "Working context: empty",
@@ -223,8 +236,10 @@ export function formatPearlCompanionContextForModel(context, options = {}) {
     context.aesthetic?.label || context.aesthetic?.preset
       ? `Appearance: ${context.aesthetic.label || context.aesthetic.preset}`
       : null,
-    "Interpret and act through the system prompt first. Prefer this pearl's functions, moves, lenses, and context before inventing new ones.",
-    "Users edit the system prompt via setPearlSystemPrompt / editPearlSystemPrompt; never dump machine metadata in chat replies.",
+    "Canonical layers: Moves (how) · Weights (what is valued) · Lenses (how to see). systemPrompt summarizes them.",
+    "Prefer this pearl's moves, weights, lenses, and context before inventing new ones. Present function-of-moves storage as Moves.",
+    "Edit via interpretPearlPrompt / editPearlWeights / reorderPearlFunctionMoves / applySemanticOrbLens; never dump machine metadata in chat replies.",
+    formatPearlLayerInstructionsForCompanion({ includeExamples: false }),
   ];
   return lines.filter(Boolean).join("\n");
 }

@@ -129,7 +129,7 @@ import {
   boardSyncEnabled as readBoardSyncEnabled,
   setBoardSyncEnabled,
 } from "./lib/board-sync.js";
-import { setApiAccessTokenGetter, apiAuthHeaders } from "./lib/api-auth.js";
+import { setApiAccessTokenGetter, apiAuthHeaders, hasApiAccessToken } from "./lib/api-auth.js";
 import CanvasColumn from "./components/CanvasColumn.jsx";
 import AiColumn, { THOUGHT_MIME, AI_OUTPUT_MIME } from "./components/AiColumn.jsx";
 import AiNodeCanvas from "./components/AiNodeCanvas.jsx";
@@ -254,6 +254,8 @@ import {
   proposePearlPromptLocal,
   runPearlPromptHarnessOffline,
 } from "../shared/pearl-prompt-harness.js";
+import { seedPearlLayersFromIntent } from "../shared/pearl-layer-instructions.js";
+import { readPearlWeights } from "../shared/pearl-weights.js";
 import { collectReefPearls, findWorkspacePearl } from "./lib/reef-home.js";
 import {
   answerClarificationSession,
@@ -325,6 +327,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   parsePearlEditCommand,
+  parsePearlWeightsCommand,
   routePearlPromptHarness,
   parseCritiqueCommand,
   parsePearlVersionCommand,
@@ -353,6 +356,7 @@ import {
   EXECUTION_CODES,
   companionCommandReply,
   ensureExecutionOnReply,
+  inferExecutionCode,
   mapErrorToExecutionResult,
 } from "../shared/execution-result.js";
 import { loadCompanionMemory, rememberCompanionReference } from "./lib/companion-memory.js";
@@ -1735,7 +1739,15 @@ function parseApiResponse(res, raw) {
       throw new Error("Server returned invalid JSON. The request may have timed out — try again.");
     }
   }
-  if (!res.ok) throw new Error(data.error || "Request failed.");
+  if (!res.ok) {
+    const message = data.error || data.message || "Request failed.";
+    const code = data.code
+      || (res.status === 401 || /sign in required/i.test(message) ? "needs-credentials" : undefined);
+    const err = new Error(message);
+    if (code) err.code = code;
+    if (Number.isFinite(res.status)) err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -13283,7 +13295,7 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         scaffold,
         functions: createdFunctions,
         effects: ["role-pearl-created", "semantic-orb-created", ...(pearlId && a.wear !== false ? ["pearl-worn", "gauntlet-updated"] : [])],
-        visibleText: `${summary}. Deterministic scaffold (live firm research needs credentials) — open Studio to inspect Moves→Functions→Lenses, then apply freely.`,
+        visibleText: `${summary}. Deterministic scaffold (live firm research needs credentials) — open Studio to inspect Moves → Weights → Lenses, then apply freely.`,
       };
     },
     activateSemanticOrb: async (a) => {
@@ -13915,10 +13927,17 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       }
 
       let proposal = run.proposal;
-      // Intelligent rewrite when credentials/gateway work; always keep local fallback.
-      if (proposal?.ok && (run.interpretation?.intent === "edit_prompt"
-        || run.interpretation?.intent === "replace_prompt"
-        || run.interpretation?.intent === "create_pearl")) {
+      let aiNote = null;
+      // Intelligent rewrite only when signed in; always keep local fallback.
+      // Never fail the turn with Sign-in / unknown-error — offline propose/apply wins.
+      const canCallAi = hasApiAccessToken();
+      if (
+        canCallAi
+        && proposal?.ok
+        && (run.interpretation?.intent === "edit_prompt"
+          || run.interpretation?.intent === "replace_prompt"
+          || run.interpretation?.intent === "create_pearl")
+      ) {
         try {
           const req = buildPearlPromptRewriteRequest(observation, run.interpretation);
           const raw = await runClaude(req.prompt, utterance, {
@@ -13930,13 +13949,45 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
           });
           const modelProposal = normalizePearlPromptProposal(raw, run.interpretation, observation);
           if (modelProposal?.ok) proposal = modelProposal;
-        } catch {
-          // Offline proposal already in hand — never unknown-error.
+        } catch (err) {
+          const code = err?.code || inferExecutionCode(err);
+          if (code === EXECUTION_CODES.NEEDS_CREDENTIALS || /sign in required|needs-credentials|auth_required/i.test(String(err?.message || err || ""))) {
+            aiNote = "AI rewrite unavailable [needs-credentials] — applied local merge.";
+          } else {
+            aiNote = "AI rewrite unavailable — applied local merge.";
+          }
           proposal = proposal || proposePearlPromptLocal(run.interpretation, observation);
         }
+      } else if (!canCallAi && proposal?.needsRicherRewrite) {
+        aiNote = "Local merge — richer rewrite when signed in for AI.";
       }
       if (!proposal) {
         proposal = proposePearlPromptLocal(run.interpretation, observation);
+      }
+      // Canonical fidelity: seed Moves + Weights + Lenses (systemPrompt is the projection).
+      const layerSeed = seedPearlLayersFromIntent({
+        name: proposal?.title || observation.name || utterance.slice(0, 80),
+        intent: utterance,
+        systemPrompt: proposal?.systemPrompt,
+        systemPromptHint: utterance,
+      });
+      if (proposal?.ok && (run.interpretation?.intent === "create_pearl" || !observation.pearlId)) {
+        proposal = {
+          ...proposal,
+          systemPrompt: layerSeed.systemPrompt || proposal.systemPrompt,
+          layers: layerSeed,
+        };
+      } else if (proposal?.ok && run.interpretation?.intent === "edit_prompt") {
+        proposal = {
+          ...proposal,
+          layers: {
+            ...layerSeed,
+            // Prefer merging weights from utterance onto existing pearl weights.
+            weights: layerSeed.weights?.length
+              ? layerSeed.weights
+              : readPearlWeights(pearl || {}),
+          },
+        };
       }
 
       const trail = [
@@ -14003,6 +14054,11 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       let object = null;
       if (applyPlan.command.verb === "createSemanticOrb") {
         const pearlTitle = sensiblePearlName(applyPlan.command.args.name || proposal.title || utterance);
+        const layers = proposal.layers || seedPearlLayersFromIntent({
+          name: pearlTitle,
+          intent: utterance,
+          systemPrompt: proposal.systemPrompt,
+        });
         const material = {
           id: `pearl-text:${Date.now()}`,
           kind: "dump",
@@ -14016,16 +14072,75 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
             ...applyPlan.command.args,
             name: pearlTitle,
             material,
-            systemPrompt: proposal.systemPrompt,
+            systemPrompt: layers.systemPrompt || proposal.systemPrompt,
             intent: utterance,
             activate: true,
             sceneId: a.sceneId || sceneId,
+            orb: {
+              name: pearlTitle,
+              systemPrompt: layers.systemPrompt || proposal.systemPrompt,
+              moves: layers.moves,
+              functions: layers.functions,
+              weights: layers.weights,
+              lenses: layers.lenses,
+              organization: layers.organization,
+              workingSet: {
+                context: [{
+                  id: material.id,
+                  kind: "dump",
+                  label: pearlTitle,
+                  text: utterance,
+                  pinned: true,
+                }],
+                lenses: (layers.lenses || []).map((lens) => ({
+                  id: lens.id,
+                  name: lens.name,
+                  strength: lens.strength ?? 0.7,
+                  description: lens.description,
+                })),
+              },
+            },
           },
         }], { title: "Make a pearl" });
         const created = nested?.value || nested?.results?.[0] || {};
         effects = created?.effects || nested?.effects || ["semantic-orb-created"];
         object = created?.object || created;
-        applyResult = { ok: true, message: `Created pearl “${pearlTitle}” with a system prompt.` };
+        // Persist weights onto pearl entity when present.
+        try {
+          const createdId = created?.id || object?.id;
+          if (createdId && layers.weights?.length) {
+            const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+            const prior = store.entities?.[createdId] || {
+              id: createdId,
+              name: pearlTitle,
+              systemPrompt: layers.systemPrompt || proposal.systemPrompt,
+            };
+            const entity = createPearlEntity({
+              ...prior,
+              systemPrompt: layers.systemPrompt || proposal.systemPrompt,
+              moves: layers.moves,
+              functions: layers.functions,
+              weights: layers.weights,
+              lenses: layers.lenses,
+              revision: (prior.revision || 0) + 1,
+            });
+            localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+              ...store,
+              entities: { ...store.entities, [createdId]: entity },
+              activePearlId: createdId,
+              updatedAt: Date.now(),
+            }));
+          }
+        } catch { /* best-effort */ }
+        const layerSummary = [
+          layers.moves?.length ? `${layers.moves.length} Moves` : null,
+          layers.weights?.length ? `${layers.weights.length} Weights` : null,
+          layers.lenses?.length ? `${layers.lenses.length} Lenses` : null,
+        ].filter(Boolean).join(" · ");
+        applyResult = {
+          ok: true,
+          message: `Created pearl “${pearlTitle}” with Moves · Weights · Lenses${layerSummary ? ` (${layerSummary})` : ""}.`,
+        };
       } else {
         const setArgs = applyPlan.command.args;
         const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
@@ -14067,13 +14182,109 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       await tk?.wait?.(180);
       trail.push({ stage: "applied", detail: applyResult.message, summary: applyResult.message });
       const reveal = buildPearlPromptRevealMessage(proposal, applyResult, trail);
+      let visibleText = scrubPearlMetadataFromUserText(reveal.visibleText, { utterance });
+      if (aiNote && !/needs-credentials|Local merge|richer rewrite/i.test(visibleText)) {
+        visibleText = `${visibleText}\n${aiNote}`;
+      } else if (aiNote && proposal?.needsRicherRewrite && !/needs-credentials|Local merge|richer rewrite/i.test(visibleText)) {
+        visibleText = `${visibleText}\n${aiNote}`;
+      }
       return {
         type: "pearl-prompt-harness",
         id: object?.id || observation.pearlId,
-        object: { ...object, proposal, trail: reveal.trail, summary: proposal.summary },
+        object: { ...object, proposal, trail: reveal.trail, summary: proposal.summary, layers: proposal.layers || null },
         effects,
-        visibleText: scrubPearlMetadataFromUserText(reveal.visibleText, { utterance }),
+        visibleText,
         completed: true,
+      };
+    },
+    getPearlWeights: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id || a.pearlId, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to read its Weights.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`);
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      let weights = readPearlWeights(pearl);
+      try {
+        const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+        if (store.entities?.[pearl.id]) {
+          weights = readPearlWeights(store.entities[pearl.id]);
+        }
+      } catch { /* best-effort */ }
+      const names = weights.map((entry) => entry.name).filter(Boolean);
+      await tk?.wait?.(120);
+      return {
+        type: "pearl-weights",
+        id: pearl.id,
+        object: { id: pearl.id, name: pearl.name, weights },
+        effects: ["pearl-weights-read"],
+        visibleText: names.length
+          ? `Weights for “${pearl.name}”: ${names.join(" · ")}.`
+          : `“${pearl.name}” has no Weights yet — say what you care about more or less.`,
+      };
+    },
+    setPearlWeights: async (a, tk) => {
+      const nested = await executeCapabilityScriptDirect([{
+        verb: "editPearlWeights",
+        args: { ...a, mode: a.mode || "replace" },
+      }], { title: "Set pearl weights" });
+      return nested?.value || nested?.results?.[0] || null;
+    },
+    editPearlWeights: async (a, tk) => {
+      const pearl = resolvePearlByNameOrId(a.id || a.pearlId, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      if (!pearl) throw new Error("Choose a pearl to edit its Weights.");
+      const host = document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+        || document.querySelector(`[data-reef-pearl="${pearl.id}"]`)
+        || document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+      const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+        command: "editPearlWeights",
+        args: {
+          id: pearl.id,
+          pearlId: pearl.id,
+          mode: a.mode || "append",
+          weights: a.weights,
+          weight: a.weight,
+          text: a.text || a.utterance || "",
+          note: a.note,
+          priority: a.priority ?? a.value,
+          name: a.weightName || a.factor,
+          nextName: a.nextName,
+          sceneId: a.sceneId || pearl.sceneId || sceneId,
+        },
+      });
+      const weights = receipt?.object?.weights || a.weights || [];
+      try {
+        const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+        const prior = store.entities?.[pearl.id] || { id: pearl.id, name: pearl.name };
+        const entity = createPearlEntity({
+          ...prior,
+          weights,
+          revision: (prior.revision || 0) + 1,
+        });
+        localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+          ...store,
+          entities: { ...store.entities, [pearl.id]: entity },
+          activePearlId: pearl.id,
+          updatedAt: Date.now(),
+        }));
+      } catch { /* best-effort */ }
+      document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+        detail: { pearlId: pearl.id, semantic: "charge", durationMs: 280 },
+      }));
+      await tk?.wait?.(180);
+      const names = weights.map((entry) => entry.name).filter(Boolean);
+      return {
+        type: "pearl-weights",
+        id: pearl.id,
+        object: { id: pearl.id, name: pearl.name, weights },
+        effects: ["pearl-weights-updated", "pearl-entity-edited"],
+        visibleText: names.length
+          ? `Updated Weights for “${pearl.name}”: ${names.slice(0, 8).join(" · ")}.`
+          : `Cleared Weights for “${pearl.name}”.`,
       };
     },
     bindSemanticOrb: async (a) => {
@@ -18364,6 +18575,37 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         return { visible: true, text: scrubPearlMetadataFromUserText(result.value.visibleText, { utterance: text }) };
       }
       return null;
+    }
+
+    // Weights layer — preferences / judgements (before prompt harness so tradeoff NL is not only a prompt rewrite).
+    {
+      const weightsCmd = parsePearlWeightsCommand(text);
+      if (weightsCmd) {
+        onPhase?.("executing");
+        const activePearl = resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+          || resolvePearlByNameOrId(null, null);
+        const step = {
+          ...weightsCmd,
+          args: {
+            ...weightsCmd.args,
+            ...(activePearl?.id ? { id: activePearl.id, pearlId: activePearl.id } : {}),
+          },
+        };
+        const result = await executeCompanionScript([step], { title: "Pearl weights" });
+        updateCommand(commandEntry.id, result.completed
+          ? { status: "executed", effects: result.effects || result.value?.effects || ["pearl-weights-updated"] }
+          : { status: "failed", failure: result.errors?.[0] || "Weights edit failed" });
+        if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+        const weights = result.value?.object?.weights || result.value?.weights || [];
+        const names = weights.map((entry) => entry.name).filter(Boolean);
+        const reply = result.value?.visibleText
+          || (weightsCmd.verb === "getPearlWeights"
+            ? (names.length
+              ? `Weights: ${names.join(" · ")}.`
+              : "No weights yet — say what you care about more or less.")
+            : `Updated Weights${names.length ? `: ${names.slice(0, 6).join(" · ")}` : ""}.`);
+        return { visible: true, text: reply, completed: true };
+      }
     }
 
     // Pearl prompt harness (default): Observe→Interpret→Propose→Apply→Reveal.

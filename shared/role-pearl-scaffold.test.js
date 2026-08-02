@@ -33,7 +33,8 @@ test("deterministic scaffold materializes memo, diligence, investor lens, and mo
   );
   assert.match(scaffold.organization.lenses[0].name, /S32 investor lens/i);
   assert.ok(scaffold.organization.moves.length >= 3);
-  assert.equal(scaffold.organization.order.join("→"), "moves→functions→lenses");
+  assert.equal(scaffold.organization.order.join("→"), "moves→weights→lenses");
+  assert.ok(Array.isArray(scaffold.organization.weights));
   assert.ok(scaffold.pearl.workingSet.context.some((entry) => /S32/.test(entry.text)));
 });
 
@@ -46,16 +47,22 @@ test("parseRolePearlCommand returns createRolePearl with wear + studio", () => {
   assert.equal(parsed.args.materializeLibrary, true);
 });
 
-test("Studio view model exposes Moves → Functions → Lenses for the scaffolded pearl", () => {
+test("Studio view model exposes Moves → Weights → Lenses for the scaffolded pearl", () => {
   const scaffold = buildInvestorRolePearlScaffold({ utterance: S32, now: 1 });
   const entity = createPearlEntity({
     id: "pearl-s32",
     kind: "semantic",
     ...scaffold.pearl,
+    weights: scaffold.organization.weights,
   });
   const view = createPearlStudioViewModel(entity);
-  assert.ok(view.sections.some((section) => section.id === "moves" && section.value.items.length >= 3));
-  assert.ok(view.sections.some((section) => section.id === "functions" && section.value.items.length === 2));
+  const movesSection = view.sections.find((section) => section.id === "moves");
+  assert.ok(movesSection);
+  assert.ok(
+    (movesSection.value.items?.length || 0) >= 3
+    || (movesSection.value.orderedGroups?.length || 0) === 2,
+  );
+  assert.ok(view.sections.some((section) => section.id === "weights"));
   assert.ok(view.sections.some((section) => section.id === "lenses" && section.value.items.length === 1));
 });
 

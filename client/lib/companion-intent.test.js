@@ -20,6 +20,7 @@ import {
   titleFromPearlPurpose,
   titleFromPearlStyleSimile,
   parsePearlEditCommand,
+  parsePearlWeightsCommand,
   parsePearlSystemPromptCommand,
   routePearlPromptHarness,
   parsePearlFunctionMovesCommand,
@@ -146,6 +147,17 @@ test("routePearlPromptHarness catches novel create/edit without planner", () => 
   assert.equal(adapt?.interpretation?.intent, "edit_prompt");
 
   assert.equal(routePearlPromptHarness("what's for lunch"), null);
+});
+
+test("pearl weights intents are deterministic without planner", () => {
+  assert.equal(parsePearlWeightsCommand("what are this pearl's weights")?.verb, "getPearlWeights");
+  const care = parsePearlWeightsCommand("I care more about honesty than polish");
+  assert.equal(care?.verb, "editPearlWeights");
+  assert.ok(care.args.weights?.some((entry) => /honesty/i.test(entry.name)));
+  const risk = parsePearlWeightsCommand("weight risk over upside");
+  assert.equal(risk?.verb, "editPearlWeights");
+  assert.ok(COMPANION_VERBS.editPearlWeights);
+  assert.ok(COMPANION_VERBS.getPearlWeights);
 });
 
 test("pearl edit/rename/experiment intents are deterministic without planner credentials", () => {
@@ -669,7 +681,7 @@ test("wear / remove / encode conversation parse as companion pearl verbs", () =>
   });
   assert.match(adaptive, /Active pearl context|Title: “LP briefings”/);
   assert.match(adaptive, /System prompt/);
-  assert.match(adaptive, /Functions: Memo/);
+  assert.match(adaptive, /Moves:.*Memo/);
   assert.doesNotMatch(adaptive, /\(p1\)/);
   assert.ok(COMPANION_VERBS.wearPearl);
   assert.ok(COMPANION_VERBS.removeWornPearl);
@@ -743,7 +755,8 @@ test("planner requires executable commands to act without chatter", () => {
     wornPearlPack: { name: "LP briefings", functions: [{ name: "Memo" }], context: [{}] },
   });
   assert.match(worn, /Active pearl context|Title: “LP briefings”/);
-  assert.match(worn, /Functions:/);
+  assert.match(worn, /Moves:/);
+  assert.match(worn, /Weights:/);
   assert.doesNotMatch(worn, /schemaVersion|storageKey/);
 });
 

@@ -104,7 +104,10 @@ export async function attachLensUser(req, _res, next) {
 export function requireLensUser(req, res, next) {
   if (!isServerSupabaseConfigured()) return next();
   if (!req.lensUser?.user) {
-    res.status(401).json({ error: "Sign in required to use AI features." });
+    res.status(401).json({
+      error: "Sign in required to use AI features.",
+      code: "needs-credentials",
+    });
     return;
   }
   next();

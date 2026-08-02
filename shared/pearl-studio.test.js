@@ -26,14 +26,15 @@ test("Studio dynamically exposes only relevant sections and representations", ()
   assert.ok(!view.sections.some((section) => section.id === "soundscape"));
 });
 
-test("Studio cognitive sections keep load-bearing Moves → Functions → Lenses order", () => {
-  assert.deepEqual(PEARL_STUDIO_COGNITIVE_SECTION_ORDER, ["moves", "functions", "lenses"]);
+test("Studio cognitive sections keep load-bearing Moves → Weights → Lenses order", () => {
+  assert.deepEqual(PEARL_STUDIO_COGNITIVE_SECTION_ORDER, ["moves", "weights", "lenses"]);
   const entity = createPearlEntity({
     id: "studio-order",
     kind: "automation",
     lenses: [{ id: "l1", name: "Audience" }],
     moves: [{ id: "m1", name: "Distill" }],
     functions: [{ id: "f1", name: "Brief" }],
+    weights: [{ id: "w1", name: "Honesty", priority: 0.8 }],
     cognition: {
       layers: [
         { id: "cl-lens", kind: "lens", identity: { name: "Audience" } },
@@ -46,15 +47,20 @@ test("Studio cognitive sections keep load-bearing Moves → Functions → Lenses
   const view = createPearlStudioViewModel(entity);
   const ids = view.sections.map((section) => section.id);
   const movesAt = ids.indexOf("moves");
-  const functionsAt = ids.indexOf("functions");
+  const weightsAt = ids.indexOf("weights");
   const lensesAt = ids.indexOf("lenses");
-  assert.ok(movesAt >= 0 && functionsAt >= 0 && lensesAt >= 0);
-  assert.ok(movesAt < functionsAt && functionsAt < lensesAt);
-  assert.deepEqual(pearlStudioCognitiveSectionIds(view), ["moves", "functions", "lenses"]);
-  assert.match(view.sections.find((section) => section.id === "moves").value.help, /transformations/i);
-  assert.match(view.sections.find((section) => section.id === "functions").value.help, /composition/i);
-  assert.match(view.sections.find((section) => section.id === "lenses").value.help, /understanding/i);
-  assert.ok(!view.sections.some((section) => section.id === "process"), "legacy combined Process section must not replace Moves/Functions");
+  assert.ok(movesAt >= 0 && weightsAt >= 0 && lensesAt >= 0);
+  assert.ok(movesAt < weightsAt && weightsAt < lensesAt);
+  assert.deepEqual(pearlStudioCognitiveSectionIds(view), ["moves", "weights", "lenses"]);
+  assert.match(view.sections.find((section) => section.id === "moves").value.help, /how work is done|ordered steps/i);
+  assert.match(view.sections.find((section) => section.id === "weights").value.help, /valued|preferences|judgements/i);
+  assert.match(view.sections.find((section) => section.id === "lenses").value.help, /perspectives|frames|seeing/i);
+  assert.ok(
+    view.sections.find((section) => section.id === "moves").value.orderedGroups?.length >= 1,
+    "function-of-moves storage is nested under Moves",
+  );
+  assert.ok(!view.sections.some((section) => section.id === "functions"), "Functions must not be a middle brain section");
+  assert.ok(!view.sections.some((section) => section.id === "process"), "legacy combined Process section must not replace Moves/Weights/Lenses");
 });
 
 test("single activation is immediate while triple and keyboard still open Studio", async () => {

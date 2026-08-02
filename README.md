@@ -41,7 +41,7 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 ### Pearl
 
-A Pearl is a persistent unit whose **primary field is `systemPrompt`** — the instructions Companion uses when wearing it. Around that prompt it can also carry context, optional Moves→Functions→Lenses structure, and provenance. Companion receives that full internal context; the UI surfaces title + system prompt + actions.
+A Pearl is a persistent unit whose **readable projection is `systemPrompt`** — Companion uses it when wearing the pearl. Canonical fidelity is **Moves → Weights → Lenses** (how work is done, what is valued, how to see), plus context and provenance. Companion receives that full internal context; the UI surfaces title + system prompt + the three layers.
 
 | Property | Meaning |
 | --- | --- |
