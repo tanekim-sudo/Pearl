@@ -19,7 +19,9 @@ Contract ID → section map: [`docs/readme-coverage-audit.md`](docs/readme-cover
 
 **Mother Pearl = Companion.** Talk → type (or hold-to-speak) → **GO**. No mode picker. No tour wall. No user-facing “orb.” Confusion budget: ≤1 unexplained click to usable Talk + GO.
 
-**A Pearl stores a system prompt** — the taste, instructions, and capability it carries. Companion **interprets** that prompt when the pearl is worn, and can **edit** it from natural language (“make this pearl about…”, “add that I always want a risks section”, “rewrite the system prompt to…”). Creating a pearl seeds an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
+**A Pearl stores a system prompt** — the taste, instructions, and capability it carries. Companion **interprets** that prompt when the pearl is worn, and can **edit** it from natural language (“make this pearl about…”, “more like Plath”, “add skepticism about TAM”). Creating a pearl seeds an initial `systemPrompt` from the user’s intent (not an empty Untitled shell).
+
+**Pearl brain harness** (`shared/pearl-prompt-harness.js`): Companion treats `systemPrompt` as the pearl’s brain. Any create/edit instruction goes through Observe → Interpret → Propose → Apply → Reveal (a Cursor-like trail in chat: Working → Interpreting → Proposed change → Applied / Blocked). Offline, edits merge locally so the path never dies as unknown-error; with model credentials, the same pipeline can rewrite the full prompt via structured JSON. Deterministic phrase parsers are optional fast-path hints — not a whitelist.
 
 **Companion sees full pearl context** (internal): system prompt, title, purpose, Functions/Moves summary, lenses/taste, gauntlet slot, scene, privacy summary, lineage/version hints, and wear state — built by `shared/pearl-companion-context.js` and injected into planner/runtime. **Users see the prompt, not the metadata** — Studio, Reef inspector, chat, and the extension shelf hide ids, hashes, raw JSON, contract ids, storage keys, and machine privacy blobs (optional “show id” power path). Storage is unchanged.
 

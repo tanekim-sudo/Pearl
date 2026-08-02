@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-02T00:48:34.411Z",
+  "generatedAt": "2026-08-02T01:01:58.223Z",
   "counts": {
     "features": 65,
-    "companion": 414,
+    "companion": 415,
     "extension": 123,
     "commands": 137
   },
@@ -780,6 +780,7 @@
         "getPearlSystemPrompt",
         "setPearlSystemPrompt",
         "editPearlSystemPrompt",
+        "interpretPearlPrompt",
         "bindSemanticOrb",
         "addSemanticOrbContext",
         "removeSemanticOrbContext",
@@ -1318,6 +1319,7 @@
         "getPearlSystemPrompt",
         "setPearlSystemPrompt",
         "editPearlSystemPrompt",
+        "interpretPearlPrompt",
         "reorderPearlFunctionMoves",
         "decomposePearlFunctionMove",
         "executeUnifiedPearlAction",
@@ -1338,6 +1340,7 @@
       "tests": [
         "shared/pearl-studio.test.js",
         "shared/pearl-system-prompt.test.js",
+        "shared/pearl-prompt-harness.test.js",
         "shared/pearl-companion-context.test.js",
         "shared/pearl-function-moves.test.js",
         "shared/pearl-version-history.test.js",

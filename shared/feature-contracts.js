@@ -333,7 +333,7 @@ export const FEATURE_CONTRACTS = Object.freeze([
     ],
     companion: [
       "createSemanticOrb", "activateSemanticOrb", "moveSemanticOrb", "renameSemanticOrb",
-      "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt",
+      "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt", "interpretPearlPrompt",
       "bindSemanticOrb", "addSemanticOrbContext", "removeSemanticOrbContext", "applySemanticOrbLens",
       "removeSemanticOrbLens", "nestSemanticOrb", "unnestSemanticOrb", "mergeSemanticOrbs",
       "composeSemanticOrbs", "synthesizeSemanticOrbs", "splitSemanticOrb", "duplicateSemanticOrb", "archiveSemanticOrb",
@@ -602,11 +602,11 @@ export const FEATURE_CONTRACTS = Object.freeze([
     domains: ["semantic-orb", "result", "automation", "canvas", "privacy", "extension", "interface", "function", "move"],
     commands: ["openPearlStudio", "editPearlEntity", "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "setPearlStudioRepresentation", "undoPearlEntityEdit", "redoPearlEntityEdit", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion"],
     ui: ["client/components/PearlStudioView.jsx", "client/components/LensTreeEditor.jsx", "client/components/PearlFunctionMovesStudio.jsx", "client/components/CognitiveLayerStudio.jsx", "extension/src/result/main.js"],
-    companion: ["openPearlStudio", "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "executeUnifiedPearlAction", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion", "editPearlOutput", "revisePearlFromFeedback"],
+    companion: ["openPearlStudio", "getPearlSystemPrompt", "setPearlSystemPrompt", "editPearlSystemPrompt", "interpretPearlPrompt", "reorderPearlFunctionMoves", "decomposePearlFunctionMove", "executeUnifiedPearlAction", "browsePearlHistory", "snapshotPearlVersion", "labelPearlVersion", "restorePearlVersion", "editPearlOutput", "revisePearlFromFeedback"],
     extension: ["executeExternalPearlAction", "openExternalPearlStudio", "openExternalResultPearlTab", "reorderExternalPearlFunctionMoves", "decomposeExternalPearlFunctionMove"],
     persistence: ["pearlEntities.v1", "pearlEntities.v1.systemPrompt", "scene.semanticOrbs.systemPrompt", "pearlEntities.v1.functions.moves.order", "pearlStudioRefs.v1", "one-time profile/tab/origin-bound handoffs"],
-    tests: ["shared/pearl-studio.test.js", "shared/pearl-system-prompt.test.js", "shared/pearl-companion-context.test.js", "shared/pearl-function-moves.test.js", "shared/pearl-version-history.test.js", "client/lib/pearl-shell.test.js", "client/lib/companion-intent.test.js", "shared/pearl-presentation-clean.test.js"],
-    owner: "shared/pearl-system-prompt.js",
+    tests: ["shared/pearl-studio.test.js", "shared/pearl-system-prompt.test.js", "shared/pearl-prompt-harness.test.js", "shared/pearl-companion-context.test.js", "shared/pearl-function-moves.test.js", "shared/pearl-version-history.test.js", "client/lib/pearl-shell.test.js", "client/lib/companion-intent.test.js", "shared/pearl-presentation-clean.test.js"],
+    owner: "shared/pearl-prompt-harness.js",
   }),
   feature("shell.reef-home", {
     domains: ["interface", "scene", "semantic-orb"],

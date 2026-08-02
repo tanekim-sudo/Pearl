@@ -418,9 +418,9 @@ export default function PearlStudioView({ localRef }) {
       placeholder="Taste, instructions, and capability this pearl carries — Companion reads this when worn."
     />
     <p className="web-pearl-studio__hint" data-testid="studio-purpose">
-      This is the main thing. Ask Companion to rewrite or append (e.g. “add that I always want a risks section”).
+      Companion can edit this from chat.
       {functionSummary.length
-        ? ` Advanced structure available: ${functionSummary.map((fn) => fn.name).join(" · ")}.`
+        ? ` Advanced structure: ${functionSummary.map((fn) => fn.name).join(" · ")}.`
         : ""}
     </p>
     <p className="web-pearl-studio__status" aria-live="polite">{status}</p>

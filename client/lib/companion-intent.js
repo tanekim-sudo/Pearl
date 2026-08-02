@@ -15,6 +15,7 @@ import {
   buildPearlCompanionContext,
   formatPearlCompanionContextForModel,
 } from "../../shared/pearl-companion-context.js";
+import { interpretPearlPromptUtterance } from "../../shared/pearl-prompt-harness.js";
 export { COMPANION_VERBS } from "./companion-capabilities.js";
 export { parseCompanionPlan } from "./companion-plan.js";
 export { parseRolePearlCommand } from "../../shared/role-pearl-scaffold.js";
@@ -342,7 +343,8 @@ export function parsePearlCreationCommand(text) {
 }
 
 /**
- * Deterministic system-prompt edits (Pearl's primary field).
+ * Deterministic system-prompt edits (Pearl's primary field) — optional fast-path hints.
+ * Novel phrasing routes through interpretPearlPrompt / pearl-prompt-harness instead.
  * Examples: "make this pearl about …", "add that I always want …", "rewrite the system prompt to …"
  */
 export function parsePearlSystemPromptCommand(text) {
@@ -357,7 +359,7 @@ export function parsePearlSystemPromptCommand(text) {
   if (rewrite?.[1]?.trim()) {
     return {
       verb: "editPearlSystemPrompt",
-      args: { mode: "rewrite", text: rewrite[1].trim() },
+      args: { mode: "rewrite", text: rewrite[1].trim(), intelligent: true },
     };
   }
 
@@ -370,7 +372,10 @@ export function parsePearlSystemPromptCommand(text) {
       verb: "editPearlSystemPrompt",
       args: {
         mode: "rewrite",
-        text: `You are the Pearl “${topic}”. Interpret and execute through this taste and instructions. Focus on ${topic}. Prefer concrete, useful output over generic praise.`,
+        // Instruction for the harness — not a brittle full prompt body.
+        text: topic,
+        instruction: `make this pearl about ${topic}`,
+        intelligent: true,
       },
     };
   }
@@ -378,10 +383,10 @@ export function parsePearlSystemPromptCommand(text) {
   const addThat = value.match(
     /^(?:add|append|include)\s+(?:that\s+)?(.+)$/i,
   );
-  if (addThat?.[1]?.trim() && /\b(?:always|never|want|prefer|include|section|prompt|instruction)/i.test(addThat[1])) {
+  if (addThat?.[1]?.trim() && /\b(?:always|never|want|prefer|include|section|prompt|instruction|skepticism|skeptical|observe|risks?)\b/i.test(addThat[1])) {
     return {
       verb: "editPearlSystemPrompt",
-      args: { mode: "append", text: addThat[1].trim() },
+      args: { mode: "append", text: addThat[1].trim(), intelligent: true },
     };
   }
 
@@ -395,6 +400,45 @@ export function parsePearlSystemPromptCommand(text) {
   }
 
   return null;
+}
+
+/**
+ * Route any create/edit-prompt utterance through the pearl prompt harness.
+ * Parsers are optional fast-path hints; harness handles novel natural language.
+ * Returns null when the utterance should pass through to other handlers/planner.
+ */
+export function routePearlPromptHarness(text, options = {}) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return null;
+  const fastPrompt = parsePearlSystemPromptCommand(value);
+  if (fastPrompt?.verb === "getPearlSystemPrompt") return fastPrompt;
+  const fastCreate = parsePearlCreationCommand(value);
+  const fastPathHint = fastPrompt || fastCreate || null;
+  const interpretation = interpretPearlPromptUtterance(value, {
+    hasActivePearl: Boolean(options.hasActivePearl || options.pearl),
+    pearl: options.pearl || null,
+    fastPathHint,
+  });
+  if (interpretation.intent === "other") return null;
+  if (interpretation.intent === "clarify") {
+    return {
+      verb: "interpretPearlPrompt",
+      args: { utterance: value, apply: true },
+      interpretation,
+    };
+  }
+  return {
+    verb: "interpretPearlPrompt",
+    args: {
+      utterance: value,
+      apply: true,
+      ...(options.pearlId ? { id: options.pearlId } : {}),
+      ...(options.name ? { name: options.name } : {}),
+      ...(options.sceneId ? { sceneId: options.sceneId } : {}),
+    },
+    interpretation,
+    fastPathHint,
+  };
 }
 
 /**

@@ -245,6 +245,15 @@ import { createPearlEntity, pearlEntityObservation } from "../shared/pearl-entit
 import { listPearlVersions } from "../shared/pearl-version-history.js";
 import { sensiblePearlName } from "../shared/semantic-orbs.js";
 import { defaultSystemPromptFromIntent, readPearlSystemPrompt } from "../shared/pearl-system-prompt.js";
+import {
+  applyPearlPromptProposal,
+  buildPearlPromptRevealMessage,
+  buildPearlPromptRewriteRequest,
+  normalizePearlPromptProposal,
+  observePearlPromptContext,
+  proposePearlPromptLocal,
+  runPearlPromptHarnessOffline,
+} from "../shared/pearl-prompt-harness.js";
 import { collectReefPearls, findWorkspacePearl } from "./lib/reef-home.js";
 import {
   answerClarificationSession,
@@ -316,7 +325,7 @@ import {
   parseParallelBranchCommand,
   parsePearlCreationCommand,
   parsePearlEditCommand,
-  parsePearlSystemPromptCommand,
+  routePearlPromptHarness,
   parseCritiqueCommand,
   parsePearlVersionCommand,
   parsePearlRemixCommand,
@@ -13797,6 +13806,21 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       };
     },
     editPearlSystemPrompt: async (a, tk) => {
+      // Intelligent path: same harness as interpretPearlPrompt (offline merge or model rewrite).
+      // Avoid re-entrancy: only when intelligent !== false and not already harness-routed.
+      if (a.intelligent !== false && a._viaHarness !== true) {
+        const nested = await executeCapabilityScriptDirect([{
+          verb: "interpretPearlPrompt",
+          args: {
+            ...a,
+            utterance: a.instruction || a.text || a.systemPrompt || "",
+            apply: true,
+            _viaHarness: true,
+          },
+        }], { title: "Edit system prompt" });
+        if (nested?.completed !== false && nested?.value) return nested.value;
+        if (nested?.results?.[0]) return nested.results[0];
+      }
       const pearl = resolvePearlByNameOrId(a.id, a.name)
         || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
         || resolvePearlByNameOrId(null, null);
@@ -13845,6 +13869,211 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
         visibleText: a.mode === "append"
           ? `Added to the system prompt for “${pearl.name}”.`
           : `Updated system prompt for “${pearl.name}”.`,
+      };
+    },
+    interpretPearlPrompt: async (a, tk) => {
+      const utterance = String(a.utterance || a.instruction || a.text || a.systemPrompt || "").trim();
+      if (!utterance) throw new Error("Tell me how to create or change the pearl system prompt.");
+      const pearl = resolvePearlByNameOrId(a.id, a.name)
+        || resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      const worn = loadGauntletState() || {};
+      const observation = observePearlPromptContext(pearl, {
+        wornPearlIds: worn.pearlIds || [],
+        primaryPearlId: worn.primaryPearlId || null,
+        sceneId: a.sceneId || sceneId || pearl?.sceneId,
+        sceneName: currentSemanticScene()?.name || "",
+        gauntletFilled: (worn.pearlIds || []).length,
+        gauntletCapacity: 5,
+        worn: Boolean(pearl && (worn.pearlIds || []).includes(pearl.id)),
+      });
+      tk?.caption?.("Interpreting…");
+      await tk?.wait?.(60);
+
+      // Prefer offline harness first so UX never dies; enrich with model when available.
+      const run = runPearlPromptHarnessOffline({
+        utterance,
+        pearl,
+        appState: {
+          wornPearlIds: worn.pearlIds || [],
+          primaryPearlId: worn.primaryPearlId || null,
+          sceneId: a.sceneId || sceneId,
+          sceneName: currentSemanticScene()?.name || "",
+        },
+        fastPathHint: a.fastPathHint || null,
+        sceneId: a.sceneId || sceneId,
+      });
+      if (run.passThrough) {
+        throw new Error("That does not look like a pearl create or system-prompt edit.");
+      }
+      if (run.interpretation?.verb === "getPearlSystemPrompt") {
+        const nested = await executeCapabilityScriptDirect([{
+          verb: "getPearlSystemPrompt",
+          args: { id: pearl?.id, name: pearl?.name },
+        }], { title: "Read system prompt" });
+        return nested?.value || nested?.results?.[0] || null;
+      }
+
+      let proposal = run.proposal;
+      // Intelligent rewrite when credentials/gateway work; always keep local fallback.
+      if (proposal?.ok && (run.interpretation?.intent === "edit_prompt"
+        || run.interpretation?.intent === "replace_prompt"
+        || run.interpretation?.intent === "create_pearl")) {
+        try {
+          const req = buildPearlPromptRewriteRequest(observation, run.interpretation);
+          const raw = await runClaude(req.prompt, utterance, {
+            system: req.system,
+            jsonSchema: req.jsonSchema,
+            maxTokens: req.maxTokens || 2400,
+            profile: "companion_planning",
+            clientAbortMs: 12_000,
+          });
+          const modelProposal = normalizePearlPromptProposal(raw, run.interpretation, observation);
+          if (modelProposal?.ok) proposal = modelProposal;
+        } catch {
+          // Offline proposal already in hand — never unknown-error.
+          proposal = proposal || proposePearlPromptLocal(run.interpretation, observation);
+        }
+      }
+      if (!proposal) {
+        proposal = proposePearlPromptLocal(run.interpretation, observation);
+      }
+
+      const trail = [
+        ...(run.trail || [{ stage: "working" }, { stage: "interpreting" }]),
+      ];
+      const proposedIdx = trail.findIndex((step) => step.stage === "proposed");
+      if (proposedIdx >= 0) trail[proposedIdx] = { stage: "proposed", detail: proposal.summary, summary: proposal.summary };
+      else trail.push({ stage: "proposed", detail: proposal.summary, summary: proposal.summary });
+
+      if (!proposal.ok) {
+        const reveal = buildPearlPromptRevealMessage(proposal, {
+          ok: false,
+          code: proposal.code,
+          message: proposal.summary,
+        }, trail);
+        return {
+          type: "pearl-prompt-harness",
+          effects: [],
+          status: "blocked",
+          code: reveal.code,
+          visibleText: reveal.visibleText,
+          object: { proposal, trail: reveal.trail },
+        };
+      }
+
+      const applyPlan = applyPearlPromptProposal(proposal, {
+        pearlId: observation.pearlId || pearl?.id,
+        name: observation.name || pearl?.name,
+        sceneId: a.sceneId || sceneId,
+        utterance,
+        observation,
+        activate: true,
+      });
+      if (!applyPlan.ok || !applyPlan.command) {
+        const reveal = buildPearlPromptRevealMessage(proposal, applyPlan, trail);
+        return {
+          type: "pearl-prompt-harness",
+          effects: [],
+          status: "blocked",
+          code: reveal.code,
+          visibleText: reveal.visibleText,
+          object: { proposal, trail: reveal.trail },
+        };
+      }
+
+      if (a.apply === false) {
+        const reveal = buildPearlPromptRevealMessage(proposal, { ok: true }, trail);
+        return {
+          type: "pearl-prompt-harness",
+          effects: [],
+          visibleText: reveal.visibleText,
+          object: { proposal, command: applyPlan.command, trail: reveal.trail },
+        };
+      }
+
+      const host = pearl
+        ? (document.querySelector(`[data-semantic-orb-id="${pearl.id}"]`)
+          || document.querySelector(`[data-reef-pearl="${pearl.id}"]`))
+        : document.querySelector(".companion-orb");
+      if (host && tk?.moveTo) await tk.moveTo(host);
+
+      let applyResult = { ok: true };
+      let effects = [];
+      let object = null;
+      if (applyPlan.command.verb === "createSemanticOrb") {
+        const pearlTitle = sensiblePearlName(applyPlan.command.args.name || proposal.title || utterance);
+        const material = {
+          id: `pearl-text:${Date.now()}`,
+          kind: "dump",
+          label: pearlTitle,
+          text: utterance,
+          provenance: { source: "companion-prompt-harness" },
+        };
+        const nested = await executeCapabilityScriptDirect([{
+          verb: "createSemanticOrb",
+          args: {
+            ...applyPlan.command.args,
+            name: pearlTitle,
+            material,
+            systemPrompt: proposal.systemPrompt,
+            intent: utterance,
+            activate: true,
+            sceneId: a.sceneId || sceneId,
+          },
+        }], { title: "Make a pearl" });
+        const created = nested?.value || nested?.results?.[0] || {};
+        effects = created?.effects || nested?.effects || ["semantic-orb-created"];
+        object = created?.object || created;
+        applyResult = { ok: true, message: `Created pearl “${pearlTitle}” with a system prompt.` };
+      } else {
+        const setArgs = applyPlan.command.args;
+        const receipt = await dispatchOrbSurfaceCommand("lens:semantic-orb-command", {
+          command: "setPearlSystemPrompt",
+          args: {
+            id: setArgs.id,
+            systemPrompt: setArgs.systemPrompt,
+            mode: "replace",
+            sceneId: setArgs.sceneId || sceneId,
+          },
+        });
+        try {
+          const store = load(PEARL_STORE_KEY, { version: 1, entities: {} });
+          const pid = setArgs.id;
+          if (pid && store.entities?.[pid]) {
+            const entity = createPearlEntity({
+              ...store.entities[pid],
+              systemPrompt: receipt?.object?.systemPrompt || setArgs.systemPrompt,
+              revision: (store.entities[pid].revision || 0) + 1,
+            });
+            localStorage.setItem(PEARL_STORE_KEY, JSON.stringify({
+              ...store,
+              entities: { ...store.entities, [pid]: entity },
+              activePearlId: pid,
+              updatedAt: Date.now(),
+            }));
+          }
+        } catch { /* best-effort */ }
+        document.dispatchEvent(new CustomEvent("lens:pearl-host-animation", {
+          detail: { pearlId: setArgs.id, semantic: "charge", durationMs: 280 },
+        }));
+        effects = ["pearl-system-prompt-updated", "semantic-orb-updated"];
+        object = { id: setArgs.id, systemPrompt: receipt?.object?.systemPrompt || setArgs.systemPrompt };
+        applyResult = {
+          ok: true,
+          message: proposal.summary || `Updated system prompt for “${observation.name || "pearl"}”.`,
+        };
+      }
+      await tk?.wait?.(180);
+      trail.push({ stage: "applied", detail: applyResult.message, summary: applyResult.message });
+      const reveal = buildPearlPromptRevealMessage(proposal, applyResult, trail);
+      return {
+        type: "pearl-prompt-harness",
+        id: object?.id || observation.pearlId,
+        object: { ...object, proposal, trail: reveal.trail, summary: proposal.summary },
+        effects,
+        visibleText: scrubPearlMetadataFromUserText(reveal.visibleText, { utterance }),
+        completed: true,
       };
     },
     bindSemanticOrb: async (a) => {
@@ -18137,28 +18366,59 @@ Express this same underlying structure in the domain of ${domain}. Give exactly 
       return null;
     }
 
-    // System-prompt edits before critique — "make this pearl about …" must not become revisePearlFromFeedback.
-    const pearlSystemPromptEarly = parsePearlSystemPromptCommand(text);
-    if (pearlSystemPromptEarly) {
-      onPhase?.("executing");
-      const step = { ...pearlSystemPromptEarly, args: { ...pearlSystemPromptEarly.args } };
-      const resolvedSceneId = sceneId || currentSemanticScene()?.id || null;
-      if (resolvedSceneId && (step.args.sceneId == null || step.args.sceneId === "")) {
-        step.args.sceneId = resolvedSceneId;
-      } else if (step.args.sceneId == null || step.args.sceneId === "") {
-        delete step.args.sceneId;
-      }
-      const result = await executeCompanionScript([step], {
-        title: step.verb === "getPearlSystemPrompt" ? "Read system prompt" : "Edit system prompt",
+    // Pearl prompt harness (default): Observe→Interpret→Propose→Apply→Reveal.
+    // Deterministic parsers are optional fast-path hints inside the harness — not a phrase whitelist.
+    // Runs before critique so "make this pearl about …" never becomes revisePearlFromFeedback.
+    {
+      const activePearl = resolvePearlByNameOrId(currentSemanticScene()?.activeSemanticOrbId)
+        || resolvePearlByNameOrId(null, null);
+      const harnessRoute = routePearlPromptHarness(text, {
+        hasActivePearl: Boolean(activePearl),
+        pearl: activePearl,
+        pearlId: activePearl?.id,
+        name: activePearl?.name,
+        sceneId: sceneId || currentSemanticScene()?.id || null,
       });
-      updateCommand(commandEntry.id, result.completed
-        ? { status: "executed", effects: result.effects || ["pearl-system-prompt-updated"] }
-        : { status: "failed", failure: result.errors?.[0] || "System prompt edit failed" });
-      if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
-      const reply = result.value?.visibleText
-        || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
-        || "Updated the pearl system prompt.";
-      return { visible: true, text: reply, completed: true };
+      if (harnessRoute) {
+        onPhase?.("interpreting");
+        const step = {
+          verb: harnessRoute.verb,
+          args: {
+            ...harnessRoute.args,
+            fastPathHint: harnessRoute.fastPathHint || null,
+          },
+        };
+        const resolvedSceneId = sceneId || currentSemanticScene()?.id || null;
+        if (resolvedSceneId && (step.args.sceneId == null || step.args.sceneId === "")) {
+          step.args.sceneId = resolvedSceneId;
+        } else if (step.args.sceneId == null || step.args.sceneId === "") {
+          delete step.args.sceneId;
+        }
+        const result = await executeCompanionScript([step], {
+          title: step.verb === "getPearlSystemPrompt"
+            ? "Read system prompt"
+            : step.verb === "interpretPearlPrompt"
+              ? "Pearl prompt harness"
+              : "Edit system prompt",
+        });
+        updateCommand(commandEntry.id, result.completed
+          ? {
+            status: result.value?.status === "blocked" ? "blocked" : "executed",
+            effects: result.effects || result.value?.effects || ["pearl-system-prompt-updated"],
+          }
+          : { status: "failed", failure: result.errors?.[0] || "System prompt harness failed" });
+        if (!result.completed) return { visible: true, text: publicCompanionError(result.errors?.[0]) };
+        const reply = result.value?.visibleText
+          || result.results?.find?.((entry) => entry?.visibleText)?.visibleText
+          || "Updated the pearl system prompt.";
+        return {
+          visible: true,
+          text: scrubPearlMetadataFromUserText(reply, { utterance: text }),
+          completed: result.value?.status !== "blocked",
+          status: result.value?.status,
+          code: result.value?.code,
+        };
+      }
     }
 
     const critiqueIntent = parseCritiqueCommand(text, { sessionActive: Boolean(critiqueSessionRef.current) });

@@ -21,6 +21,7 @@ import {
   titleFromPearlStyleSimile,
   parsePearlEditCommand,
   parsePearlSystemPromptCommand,
+  routePearlPromptHarness,
   parsePearlFunctionMovesCommand,
   parseCritiqueCommand,
   parsePearlVersionCommand,
@@ -125,13 +126,26 @@ test("pearl system prompt intents are deterministic", () => {
     parsePearlSystemPromptCommand("make this pearl about investor memos that are skeptical of TAM").args.text,
     /skeptical of TAM/i,
   );
+  assert.equal(parsePearlSystemPromptCommand("make this pearl about investor memos that are skeptical of TAM").args.intelligent, true);
   assert.deepEqual(parsePearlSystemPromptCommand("add that I always want a risks section"), {
     verb: "editPearlSystemPrompt",
-    args: { mode: "append", text: "I always want a risks section" },
+    args: { mode: "append", text: "I always want a risks section", intelligent: true },
   });
   assert.equal(parsePearlSystemPromptCommand("rewrite the system prompt to critique hand-wavy market sizing").verb, "editPearlSystemPrompt");
   assert.equal(parsePearlSystemPromptCommand("what's the system prompt for this pearl").verb, "getPearlSystemPrompt");
   assert.equal(parsePearlSystemPromptCommand("add budget concerns to this pearl"), null);
+});
+
+test("routePearlPromptHarness catches novel create/edit without planner", () => {
+  const create = routePearlPromptHarness("forge me a pearl that watches rain and drafts short poems");
+  assert.equal(create?.verb, "interpretPearlPrompt");
+  assert.equal(create?.interpretation?.intent, "create_pearl");
+
+  const adapt = routePearlPromptHarness("more like Plath", { hasActivePearl: true });
+  assert.equal(adapt?.verb, "interpretPearlPrompt");
+  assert.equal(adapt?.interpretation?.intent, "edit_prompt");
+
+  assert.equal(routePearlPromptHarness("what's for lunch"), null);
 });
 
 test("pearl edit/rename/experiment intents are deterministic without planner credentials", () => {
