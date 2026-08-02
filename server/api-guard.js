@@ -15,7 +15,10 @@ export async function guardAiRequest(req, res) {
     return true;
   }
   if (!isServerSupabaseConfigured()) {
-    res.status(503).json({ error: "Authentication service is not configured." });
+    res.status(503).json({
+      error: "Accounts aren’t set up for this build. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server — or keep working locally.",
+      code: "needs-credentials",
+    });
     return false;
   }
   const verified = await verifyRequestUser(req);
